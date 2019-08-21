@@ -114,12 +114,12 @@ protected:
    * Each individual instance represents a single field (i.e. column) in the history file or on screen.   
    */
   struct HistoryOutputField {
-    string              FieldName;    /*!< \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
-    su2double           Value;        /*!< \brief The value of the field. */
-    unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
-    string              OutputGroup;  /*!< \brief The group this field belongs to. */
-    unsigned short      FieldType;
-    string              Description;
+    string              FieldName = "";    /*!< \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
+    su2double           Value = 0.0;        /*!< \brief The value of the field. */
+    unsigned short      ScreenFormat = FORMAT_FIXED; /*!< \brief The format that is used to print this value to screen. */
+    string              OutputGroup  ="";  /*!< \brief The group this field belongs to. */
+    unsigned short      FieldType = TYPE_DEFAULT;
+    string              Description = "";
     HistoryOutputField() {}           /*!< \brief Default constructor. */
     HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype, string description):
       FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype), Description(description){}
