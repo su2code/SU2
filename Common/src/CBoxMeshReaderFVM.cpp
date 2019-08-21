@@ -90,6 +90,9 @@ void CBoxMeshReaderFVM::ComputeBoxPointCoordinates() {
   /* Loop over our analytically defined of coordinates and store only
    those that contain a node within our linear partition of points. */
   localPointCoordinates.resize(dimension);
+  for (int k = 0; k < dimension; k++)
+    localPointCoordinates[k].reserve(numberOfLocalPoints);
+
   unsigned long globalIndex = 0;
   for (unsigned long kNode = 0; kNode < pNode; kNode++) {
     for (unsigned long jNode = 0; jNode < mNode; jNode++) {
@@ -97,9 +100,9 @@ void CBoxMeshReaderFVM::ComputeBoxPointCoordinates() {
         if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
           
           /* Store the coordinates more clearly. */
-          const su2double x = Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox;
-          const su2double y = Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy;
-          const su2double z = Lz*((su2double)kNode)/((su2double)(pNode-1))+Oz;
+          const passivedouble x = Lx*((passivedouble)iNode)/((passivedouble)(nNode-1))+Ox;
+          const passivedouble y = Ly*((passivedouble)jNode)/((passivedouble)(mNode-1))+Oy;
+          const passivedouble z = Lz*((passivedouble)kNode)/((passivedouble)(pNode-1))+Oz;
 
           /* Load into the coordinate class data structure. */
           localPointCoordinates[0].push_back(x);
