@@ -286,7 +286,7 @@ public:
 	 * \return pointer to the coordinate of the point.
 	 */
 	su2double *GetCoord(void);
-
+	
 	/*! 
 	 * \brief Set the coordinates for the control volume.
 	 * \param[in] val_dim - Position to store the coordinate.		 
