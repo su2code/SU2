@@ -12,6 +12,9 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
+subdir('externals/loguru')
+su2_deps += loguru_dep
+
 default_warning_flags = ['-Wno-unused-parameter',
                          '-Wno-empty-body',
                          '-Wno-format-security',

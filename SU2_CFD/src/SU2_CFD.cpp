@@ -76,6 +76,13 @@ int main(int argc, char *argv[]) {
   SU2_Comm MPICommunicator(0);
 #endif
 
+  if (SU2_MPI::GetRank() == MASTER_NODE)
+    // Optional, but useful to time-stamp the start of the log.
+    // Will also detect verbosity level on command line as -v.
+    loguru::init(argc, argv, NULL);
+
+  SU2_INFO(MASTER_NODE) << "TEST";
+  
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);
 
