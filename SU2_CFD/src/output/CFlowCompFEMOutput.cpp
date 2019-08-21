@@ -40,7 +40,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim) {
+CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, true) {
     
   turb_model = config->GetKind_Turb_Model();
   
@@ -74,10 +74,6 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : C
   ss << "Zone " << config->GetiZone() << " (Comp. Fluid)";
   MultiZoneHeaderString = ss.str();
   
-  /*--- Use FEM merging routines --- */
-  
-  fem_output = true;
-    
   /*--- Set the volume filename --- */
   
   VolumeFilename = config->GetVolume_FileName();

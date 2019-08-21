@@ -37,7 +37,7 @@
 
 #include "../../include/output/CDriverOutput.hpp"
 
-CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim) {
+CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim, false) {
 
   unsigned short iZone = 0;
   rank = SU2_MPI::GetRank();

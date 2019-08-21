@@ -38,7 +38,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim) : COutput (config, nDim){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
   
 }
 
@@ -790,53 +790,11 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
   
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff = 0.0;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
   char cstr[200];
-  
-  
-  nPointLocal = geometry->GetnPoint();
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nPointGlobal = nPointLocal;
-#endif
-  
-  Point2Vertex = new unsigned long[nPointGlobal][2];
-  PointInDomain = new bool[nPointGlobal];
-  
-  for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
-    PointInDomain[iPoint] = false;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary   = config->GetMarker_All_KindBC(iMarker);
-    
-    if ((Boundary == EULER_WALL             ) ||
-        (Boundary == HEAT_FLUX              ) ||
-        (Boundary == ISOTHERMAL             ) ||
-        (Boundary == NEARFIELD_BOUNDARY)) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        
-        /*--- The Pressure file uses the global numbering ---*/
-        
-#ifndef HAVE_MPI
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-#else
-        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
-#endif
-        
-        if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
-          Point2Vertex[iPoint][0] = iMarker;
-          Point2Vertex[iPoint][1] = iVertex;
-          PointInDomain[iPoint] = true;
-          solver_container->SetCPressureTarget(iMarker, iVertex, 0.0);
-        }
-        
-      }
-    }
-  }
   
   /*--- Prepare to read the surface pressure files (CSV) ---*/
   
@@ -853,6 +811,43 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
   Surface_file.open(cstr, ios::in);
   
   if (!(Surface_file.fail())) {
+    
+    nPointLocal = geometry->GetnPoint();
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+    nPointGlobal = nPointLocal;
+#endif
+    
+    Point2Vertex = new unsigned long[nPointGlobal][2];
+    PointInDomain = new bool[nPointGlobal];
+    
+    for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
+      PointInDomain[iPoint] = false;
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      Boundary   = config->GetMarker_All_KindBC(iMarker);
+      
+      if ((Boundary == EULER_WALL             ) ||
+          (Boundary == HEAT_FLUX              ) ||
+          (Boundary == ISOTHERMAL             ) ||
+          (Boundary == NEARFIELD_BOUNDARY)) {
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          
+          /*--- The Pressure file uses the global numbering ---*/
+          
+          iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+          
+          if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
+            Point2Vertex[iPoint][0] = iMarker;
+            Point2Vertex[iPoint][1] = iVertex;
+            PointInDomain[iPoint] = true;
+            solver_container->SetCPressureTarget(iMarker, iVertex, 0.0);
+          }
+          
+        }
+      }
+    }
     
     getline(Surface_file, text_line);
     
@@ -881,47 +876,48 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
     
     Surface_file.close();
     
-  }
-  
-  /*--- Compute the pressure difference ---*/
-  
-  PressDiff = 0.0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary   = config->GetMarker_All_KindBC(iMarker);
+    delete [] Point2Vertex;
+    delete [] PointInDomain;
     
-    if ((Boundary == EULER_WALL             ) ||
-        (Boundary == HEAT_FLUX              ) ||
-        (Boundary == ISOTHERMAL             ) ||
-        (Boundary == NEARFIELD_BOUNDARY)) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        
-        Cp = solver_container->GetCPressure(iMarker, iVertex);
-        CpTarget = solver_container->GetCPressureTarget(iMarker, iVertex);
-        
-        Area = 0.0;
-        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
-        
-        PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
-      }
+    /*--- Compute the pressure difference ---*/
+    
+    PressDiff = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      Boundary   = config->GetMarker_All_KindBC(iMarker);
       
+      if ((Boundary == EULER_WALL             ) ||
+          (Boundary == HEAT_FLUX              ) ||
+          (Boundary == ISOTHERMAL             ) ||
+          (Boundary == NEARFIELD_BOUNDARY)) {
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          
+          Cp = solver_container->GetCPressure(iMarker, iVertex);
+          CpTarget = solver_container->GetCPressureTarget(iMarker, iVertex);
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          
+          PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
+        }
+        
+      }
     }
-  }
-  
+    
 #ifdef HAVE_MPI
-  su2double MyPressDiff = PressDiff;   PressDiff = 0.0;
-  SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    su2double MyPressDiff = PressDiff;    
+    SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
+    
+  }
   
   /*--- Update the total Cp difference coeffient ---*/
   
   solver_container->SetTotal_CpDiff(PressDiff);
   
   SetHistoryOutputValue("CP_DIFF", PressDiff);
-  
-  delete [] Point2Vertex;
-  delete [] PointInDomain;
+
 }

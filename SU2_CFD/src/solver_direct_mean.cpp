@@ -5355,12 +5355,19 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     node[iPoint]->SetRmatrixZero();
     node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
     
+    AD::StartPreacc();
+    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
+    AD::SetPreaccIn(Coord_i, nDim);
+    
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       PrimVar_j = node[jPoint]->GetPrimitive();
-
+      
+      AD::SetPreaccIn(Coord_j, nDim);
+      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
+      
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -5387,9 +5394,10 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
             node[iPoint]->AddGradient_Primitive(iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight);
           }
         }
-        
       }
     }
+    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
+    AD::EndPreacc();
   }
   
   /*--- Correct the gradient values across any periodic boundaries. ---*/
@@ -5416,6 +5424,11 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     r12 = node[iPoint]->GetRmatrix(0,1);
     r22 = node[iPoint]->GetRmatrix(1,1);
     
+    AD::StartPreacc();
+    AD::SetPreaccIn(r11);
+    AD::SetPreaccIn(r12);
+    AD::SetPreaccIn(r22);
+    
     if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
     if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
     if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
@@ -5425,6 +5438,11 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
       r23_a = node[iPoint]->GetRmatrix(1,2);
       r23_b = node[iPoint]->GetRmatrix(2,1);
       r33   = node[iPoint]->GetRmatrix(2,2);
+      
+      AD::SetPreaccIn(r13);
+      AD::SetPreaccIn(r23_a);
+      AD::SetPreaccIn(r23_b);
+      AD::SetPreaccIn(r33);
 
       if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
       if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
@@ -5468,6 +5486,9 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
         Smatrix[2][2] = (z33*z33)/detR2;
       }
     }
+    
+    AD::SetPreaccOut(Smatrix, nDim, nDim);
+    AD::EndPreacc();
     
     /*--- Computation of the gradient: S*c ---*/
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {

@@ -1,12 +1,24 @@
 #include "../../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../../Common/include/geometry_structure.hpp"
 
-CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, std::vector<std::vector<su2double> >& Local_Data) : CParallelDataSorter(config, nFields){
- 
-  this->Local_Data = &Local_Data;
-    
+CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
+
+  std::vector<unsigned long> globalID;
+  
   nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
   nLocalPoint_Sort  = geometry->GetnPointDomain();
+
+  Local_Halo = new int[geometry->GetnPoint()];
+  
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  
+    /*--- Store the global IDs ---*/
+    
+    globalID.push_back(geometry->node[iPoint]->GetGlobalIndex());
+    
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  }
+  
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
    particular, consider only the recv conditions (these are the true halo
@@ -18,6 +30,11 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
   /*--- Create a linear partition --- */
   
   CreateLinearPartition(nGlobalPoint_Sort);  
+  
+  /*--- Prepare the send buffers ---*/
+  
+  PrepareSendBuffers(globalID);
+  
 }
 
 CFVMDataSorter::~CFVMDataSorter(){
@@ -28,6 +45,9 @@ CFVMDataSorter::~CFVMDataSorter(){
   delete [] nPoint_Lin;
   delete [] Local_Halo;
   
+  if (connSend != NULL)    delete [] connSend;
+  if (Index != NULL)       delete [] Index;
+  if (idSend != NULL)      delete [] idSend;
 }
 
 void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
@@ -37,10 +57,6 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
   int SendRecv, RecvFrom;
   bool notHalo;
 
-  Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
@@ -63,10 +79,8 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
   }
 }
 
+
 void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
-  
-  unsigned long iProcessor;
-  unsigned long iPoint, Global_Index;
   
   int VARS_PER_POINT = GlobalField_Counter;
   
@@ -75,138 +89,6 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   SU2_MPI::Status status;
   int ind;
 #endif
-  
-  /*--- We start with the grid nodes distributed across all procs with
-   no particular ordering assumed. We need to loop through our local partition
-   and decide how many nodes we must send to each other rank in order to
-   have all nodes sorted according to a linear partitioning of the grid
-   nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
-   First, initialize a counter and flag. ---*/
-  
-  int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
-  int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
-  int *nPoint_Flag = new int[size];
-  
-  for (int ii=0; ii < size; ii++) {
-    nPoint_Send[ii] = 0;
-    nPoint_Recv[ii] = 0;
-    nPoint_Flag[ii]= -1;
-  }
-  nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
-  
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++ ) {
-    
-    /*--- Get the global index of the current point. ---*/
-    
-    Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-    
-    /*--- Search for the processor that owns this point ---*/
-    
-    iProcessor = FindProcessor(Global_Index);
-    
-    /*--- If we have not visited this node yet, increment our
-       number of elements that must be sent to a particular proc. ---*/
-    
-    if (nPoint_Flag[iProcessor] != (int)iPoint) {
-      nPoint_Flag[iProcessor] = (int)iPoint;
-      nPoint_Send[iProcessor+1]++;
-    }
-  }
-  
-  /*--- Communicate the number of nodes to be sent/recv'd amongst
-   all processors. After this communication, each proc knows how
-   many cells it will receive from each other processor. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
-  
-  /*--- Prepare to send coordinates. First check how many
-   messages we will be sending and receiving. Here we also put
-   the counters into cumulative storage format to make the
-   communications simpler. ---*/
-  
-  int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
-  
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
-    
-    nPoint_Send[ii+1] += nPoint_Send[ii];
-    nPoint_Recv[ii+1] += nPoint_Recv[ii];
-  }
-  
-  /*--- Allocate memory to hold the connectivity that we are
-   sending. ---*/
-  
-  su2double *connSend = NULL;
-  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
-    connSend[ii] = 0;
-  
-  /*--- Allocate arrays for sending the global ID. ---*/
-  
-  unsigned long *idSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++)
-    idSend[ii] = 0;
-  
-  /*--- Create an index variable to keep track of our index
-   positions as we load up the send buffer. ---*/
-  
-  unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
-  
-  unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
-  
-  /*--- Loop through our elements and load the elems and their
-   additional data that we will send to the other procs. ---*/
-  
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
-    
-    /*--- Get the index of the current point. ---*/
-    
-    Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-    
-    /*--- Search for the processor that owns this point. ---*/
-    
-    iProcessor = FindProcessor(Global_Index);
-
-    /*--- Load node coordinates into the buffer for sending. ---*/
-    
-    if (nPoint_Flag[iProcessor] != (int)iPoint) {
-      
-      nPoint_Flag[iProcessor] = (int)iPoint;
-      unsigned long nn = index[iProcessor];
-      
-      /*--- Load the data values. ---*/
-      
-      for (unsigned short kk = 0; kk < VARS_PER_POINT; kk++) {
-        connSend[nn] = (*Local_Data)[iPoint][kk]; nn++;
-      }
-      
-      /*--- Load the global ID (minus offset) for sorting the
-         points once they all reach the correct processor. ---*/
-      
-      nn = idIndex[iProcessor];
-      idSend[nn] = Global_Index - beg_node[iProcessor];
-      
-      /*--- Increment the index by the message length ---*/
-      
-      index[iProcessor]  += VARS_PER_POINT;
-      idIndex[iProcessor]++;
-      
-    }
-  }
-  
-  /*--- Free memory after loading up the send buffer. ---*/
-  
-  delete [] index;
-  delete [] idIndex;
   
   /*--- Allocate the memory that we need for receiving the conn
    values and then cue up the non-blocking receives. Note that
@@ -321,6 +203,9 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] recv_req;
 #endif
   
+  delete [] connSend;
+  connSend = NULL;
+  
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate the
    appropriate amount of memory for this section. ---*/
@@ -349,13 +234,8 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   /*--- Free temporary memory from communications ---*/
   
-  delete [] connSend;
   delete [] connRecv;
-  delete [] idSend;
   delete [] idRecv;
-  delete [] nPoint_Recv;
-  delete [] nPoint_Send;
-  delete [] nPoint_Flag;
 }
 
 

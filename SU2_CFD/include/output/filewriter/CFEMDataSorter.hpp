@@ -3,13 +3,9 @@
 #include "CParallelDataSorter.hpp"
 
 class CFEMDataSorter : public CParallelDataSorter{
-private:
-  
-  std::vector<std::vector<su2double> >* Local_Data;
-  
-  
+
 public:
-  CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, std::vector<std::vector<su2double> > &Local_Data);
+  CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields);
   
   ~CFEMDataSorter();
   
