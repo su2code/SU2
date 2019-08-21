@@ -87,6 +87,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
+    case TNE2_EULER: case TNE2_NAVIER_STOKES: case TNE2_RANS:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:
@@ -110,14 +111,14 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: 
+      case RIGID_MOTION:
       case ELASTICITY:
         prefixed_motion[iZone] = true; break;
       case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
         prefixed_motion[iZone] = false; break;
     }
-    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) ||
         config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
         config_container[iZone]->GetSurface_Movement(DEFORMING) ||
         config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
@@ -212,12 +213,12 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- Store the current physical time in the config container, as
      this can be used for verification / MMS. This should also be more
      general once the drivers are more stable. ---*/
-    
+
     if (unsteady)
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
-    
+
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
     if (config_container[iZone]->GetInvDesign_Cp() == YES)
@@ -237,7 +238,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
         (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
-
+    if ((config_container[iZone]->GetKind_Solver() ==  TNE2_EULER) ||
+        (config_container[iZone]->GetKind_Solver() ==  TNE2_NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() ==  TNE2_RANS) ) {
+        if(!fsi) solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
+    }
   }
 
 #ifdef HAVE_MPI
@@ -629,7 +634,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone], 
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
                                                                grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
                                                                config_container[iZone], 0, ExtIter);
     }
@@ -638,7 +643,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
 
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
+  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone],
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                                            config_container[val_iZone], 0, ExtIter);
 

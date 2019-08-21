@@ -73,7 +73,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     SecondaryVariables = MESH_COORDS;
     break;
 
-  case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: //case DISC_ADJ_TNE2_RANS:
+  case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CTNE2Iteration(config);
@@ -214,9 +214,9 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   }
 
-  if (config->GetKind_Solver() == DISC_ADJ_TNE2_EULER ||
-      config->GetKind_Solver() == DISC_ADJ_TNE2_NAVIER_STOKES){// ||
-      //config->GetKind_Solver() == DISC_ADJ_TNE2_RANS){
+  if ((config->GetKind_Solver() == DISC_ADJ_TNE2_EULER) ||
+      (config->GetKind_Solver() == DISC_ADJ_TNE2_NAVIER_STOKES) ||
+      (config->GetKind_Solver() == DISC_ADJ_TNE2_RANS)){
 
     /*--- Compute the geometrical sensitivities ---*/
     SecondaryRecording();
@@ -378,8 +378,8 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     break;
 
-  case TNE2_EULER:           case TNE2_NAVIER_STOKES:           //case TNE2_RANS:
-  case DISC_ADJ_TNE2_EULER:  case DISC_ADJ_TNE2_NAVIER_STOKES:  //case DISC_ADJ_TNE2_RANS:
+  case TNE2_EULER:           case TNE2_NAVIER_STOKES:           case TNE2_RANS:
+  case DISC_ADJ_TNE2_EULER:  case DISC_ADJ_TNE2_NAVIER_STOKES:  case DISC_ADJ_TNE2_RANS:
 
     solver[TNE2_SOL]->SetTotal_ComboObj(0.0);
 
@@ -488,7 +488,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
       }
       break;
 
-    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: //case DISC_ADJ_TNE2_RANS:
+    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS:
       //THIS ISNT GENERAL YET --- DELETE ME
       cout << "log10[U(0)]: "   << log10(solver[TNE2_SOL]->GetRes_RMS(0))
            << ", log10[U(1)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(1))

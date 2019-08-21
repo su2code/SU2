@@ -1166,6 +1166,9 @@ void CTNE2Iteration::Iterate(COutput *output,
     case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
       config[val_iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter); break;
 
+    case TNE2_RANS: case DISC_ADJ_TNE2_RANS:
+      config[val_iZone]->SetGlobalParam(TNE2_RANS, RUNTIME_TNE2_SYS, ExtIter); break;
+
   }
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
@@ -1173,12 +1176,12 @@ void CTNE2Iteration::Iterate(COutput *output,
   integration[val_iZone][val_iInst][TNE2_SOL]->MultiGrid_Iteration(geometry, solver, numerics,
                                                                   config, RUNTIME_TNE2_SYS, IntIter, val_iZone, val_iInst);
 
-  if ((config[val_iZone]->GetKind_Solver() == RANS) ||
-      ((config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
+  if ((config[val_iZone]->GetKind_Solver() == TNE2_RANS) ||
+      ((config[val_iZone]->GetKind_Solver() == DISC_ADJ_TNE2_RANS) && !frozen_visc)) {
 
     /*--- Solve the turbulence model ---*/
 
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
+    config[val_iZone]->SetGlobalParam(TNE2_RANS, RUNTIME_TURB_SYS, ExtIter);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics,
                                                                      config, RUNTIME_TURB_SYS, IntIter, val_iZone, val_iInst);
 
@@ -1246,8 +1249,8 @@ void CTNE2Iteration::Update(COutput *output,
 
     /*--- Update dual time solver for the turbulence model ---*/
 
-    if ((config[val_iZone]->GetKind_Solver() == RANS) ||
-        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
+    if ((config[val_iZone]->GetKind_Solver() == TNE2_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_TNE2_RANS)) {
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][TURB_SOL], config[val_iZone], MESH_0);
       integration[val_iZone][val_iInst][TURB_SOL]->SetConvergence(false);
     }
@@ -2351,6 +2354,7 @@ void CAdjFluidIteration::Iterate(COutput *output,
   }
 
 }
+
 void CAdjFluidIteration::Update(COutput *output,
                                    CIntegration ****integration,
                                    CGeometry ****geometry,
@@ -2361,7 +2365,7 @@ void CAdjFluidIteration::Update(COutput *output,
                                    CVolumetricMovement ***grid_movement,
                                    CFreeFormDefBox*** FFDBox,
                                    unsigned short val_iZone,
-                                   unsigned short val_iInst)      {
+                                   unsigned short val_iInst) {
 
   su2double Physical_dt, Physical_t;
   unsigned short iMesh;
@@ -2395,7 +2399,8 @@ bool CAdjFluidIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { return false; }
+    unsigned short val_iInst) { return false; }
+
 void CAdjFluidIteration::Postprocess(COutput *output,
                                      CIntegration ****integration,
                                      CGeometry ****geometry,
@@ -2624,8 +2629,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   }
 }
 
-
-
 void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ****geometry,
                                            CSolver *****solver,
                                            CConfig **config,
@@ -2743,7 +2746,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
         config[iZone]);
   }
 }
-
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
@@ -2911,7 +2913,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CG
   }
 }
 
-
 void CDiscAdjFluidIteration::Update(COutput *output,
                                        CIntegration ****integration,
                                        CGeometry ****geometry,
@@ -2922,7 +2923,7 @@ void CDiscAdjFluidIteration::Update(COutput *output,
                                        CVolumetricMovement ***grid_movement,
                                        CFreeFormDefBox*** FFDBox,
                                        unsigned short val_iZone,
-                                       unsigned short val_iInst)      {
+                                       unsigned short val_iInst) {
 
   unsigned short iMesh;
 
@@ -2936,6 +2937,7 @@ void CDiscAdjFluidIteration::Update(COutput *output,
     }
   }
 }
+
 bool CDiscAdjFluidIteration::Monitor(COutput *output,
     CIntegration ****integration,
     CGeometry ****geometry,
@@ -2973,6 +2975,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
   return StopCalc;
 
 }
+
 void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CIntegration ****integration,
                                          CGeometry ****geometry,
@@ -2987,7 +2990,7 @@ void CDiscAdjFluidIteration::Postprocess(COutput *output,
 
 CDiscAdjTNE2Iteration::CDiscAdjTNE2Iteration(CConfig *config) : CIteration(config) {
 
-  turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
+  turbulent = ( config->GetKind_Solver() == DISC_ADJ_TNE2_RANS);
 
 }
 
@@ -3257,7 +3260,7 @@ void CDiscAdjTNE2Iteration::Iterate(COutput *output,
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
-  if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
 
     solver[val_iZone][val_iInst][MESH_0][ADJTNE2_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
@@ -3293,7 +3296,7 @@ void CDiscAdjTNE2Iteration::InitializeAdjoint(CSolver *****solver, CGeometry ***
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
 
     solver[iZone][iInst][MESH_0][ADJTNE2_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
                                                                   config[iZone]);
@@ -3320,7 +3323,7 @@ void CDiscAdjTNE2Iteration::RegisterInput(CSolver *****solver, CGeometry ****geo
 
     /*--- Register flow and turbulent variables as input ---*/
 
-    if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
+    if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
       solver[iZone][iInst][MESH_0][ADJTNE2_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
       solver[iZone][iInst][MESH_0][ADJTNE2_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -3400,7 +3403,7 @@ void CDiscAdjTNE2Iteration::RegisterOutput(CSolver *****solver, CGeometry ****ge
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
-  if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
 
   /*--- Register conservative variables as output of the iteration ---*/
 
@@ -3428,7 +3431,7 @@ void CDiscAdjTNE2Iteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CGe
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
- if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
+ if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
 
   solver[iZone][iInst][MESH_0][ADJTNE2_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
                                                                   config[iZone]);

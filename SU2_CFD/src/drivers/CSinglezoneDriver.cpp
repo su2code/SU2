@@ -114,12 +114,12 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Store the current physical time in the config container, as
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
-  
+
   if (config_container[ZONE_0]->GetUnsteady_Simulation())
     config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
-  
+
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
   if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
@@ -140,8 +140,8 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   }
 
   if ((config_container[ZONE_0]->GetKind_Solver() ==  TNE2_EULER) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  TNE2_NAVIER_STOKES)){ // ||
-      //(config_container[ZONE_0]->GetKind_Solver() ==  TNE2_RANS) ) {
+      (config_container[ZONE_0]->GetKind_Solver() ==  TNE2_NAVIER_STOKES) ||
+      (config_container[ZONE_0]->GetKind_Solver() ==  TNE2_RANS) ) {
       solver_container[ZONE_0][INST_0][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
   }
 #ifdef HAVE_MPI
@@ -289,9 +289,8 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
+    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0],
                                                           grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
                                                           config_container[ZONE_0], 0, ExtIter);  }
 
 }
-

@@ -175,6 +175,7 @@ am__libSU2Core_a_SOURCES_DIST = ../src/definition_structure.cpp \
 	../src/numerics_direct_tne2.cpp \
 	../src/numerics_direct_transition.cpp \
 	../src/numerics_direct_turbulent.cpp \
+	../src/numerics_direct_tne2_turbulent.cpp \
 	../src/numerics_direct_elasticity_nonlinear.cpp \
 	../src/numerics_direct_elasticity_linear.cpp \
 	../src/numerics_direct_elasticity.cpp \
@@ -192,6 +193,7 @@ am__libSU2Core_a_SOURCES_DIST = ../src/definition_structure.cpp \
 	../src/solver_direct_mean_inc.cpp \
 	../src/solver_direct_tne2.cpp \
 	../src/solver_direct_transition.cpp \
+	../src/solver_direct_tne2_turbulent.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_structure.cpp ../src/solver_template.cpp \
@@ -202,14 +204,17 @@ am__libSU2Core_a_SOURCES_DIST = ../src/definition_structure.cpp \
 	../src/variables/CVariable.cpp \
 	../src/variables/CAdjNSVariable.cpp \
 	../src/variables/CTurbSSTVariable.cpp \
+	../src/variables/CTNE2TurbSSTVariable.cpp \
 	../src/variables/CAdjTurbVariable.cpp \
 	../src/variables/CTransLMVariable.cpp \
 	../src/variables/CDiscAdjFEAVariable.cpp \
 	../src/variables/CIncEulerVariable.cpp \
 	../src/variables/CTurbVariable.cpp \
+	../src/variables/CTNE2TurbVariable.cpp \
 	../src/variables/CNSVariable.cpp \
 	../src/variables/CBaselineVariable.cpp \
 	../src/variables/CTurbSAVariable.cpp \
+	../src/variables/CTNE2TurbSAVariable.cpp \
 	../src/variables/CFEAVariable.cpp \
 	../src/variables/CAdjEulerVariable.cpp \
 	../src/variables/CDiscAdjVariable.cpp \
@@ -239,6 +244,7 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_direct_tne2.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_direct_transition.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_direct_turbulent.$(OBJEXT) \
+	../src/libSU2Core_a-numerics_direct_tne2_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_direct_elasticity_nonlinear.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_direct_elasticity_linear.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_direct_elasticity.$(OBJEXT) \
@@ -262,6 +268,7 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_mean_inc.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_tne2.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_transition.$(OBJEXT) \
+	../src/libSU2Core_a-solver_direct_tne2_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_elasticity.$(OBJEXT) \
 	../src/libSU2Core_a-solver_structure.$(OBJEXT) \
@@ -274,14 +281,17 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CAdjNSVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CTurbSSTVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CAdjTurbVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CTransLMVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CDiscAdjFEAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CIncEulerVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CTurbVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_a-CTNE2TurbVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CNSVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CBaselineVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CTurbSAVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_a-CTNE2TurbSAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CFEAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CAdjEulerVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_a-CDiscAdjVariable.$(OBJEXT) \
@@ -311,6 +321,7 @@ am__libSU2Core_AD_a_SOURCES_DIST = ../src/definition_structure.cpp \
 	../src/numerics_direct_tne2.cpp \
 	../src/numerics_direct_transition.cpp \
 	../src/numerics_direct_turbulent.cpp \
+	../src/numerics_direct_tne2_turbulent.cpp \
 	../src/numerics_direct_elasticity_nonlinear.cpp \
 	../src/numerics_direct_elasticity_linear.cpp \
 	../src/numerics_direct_elasticity.cpp \
@@ -328,6 +339,7 @@ am__libSU2Core_AD_a_SOURCES_DIST = ../src/definition_structure.cpp \
 	../src/solver_direct_mean_inc.cpp \
 	../src/solver_direct_tne2.cpp \
 	../src/solver_direct_transition.cpp \
+	../src/solver_direct_tne2_turbulent.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_structure.cpp ../src/solver_template.cpp \
@@ -338,14 +350,17 @@ am__libSU2Core_AD_a_SOURCES_DIST = ../src/definition_structure.cpp \
 	../src/variables/CVariable.cpp \
 	../src/variables/CAdjNSVariable.cpp \
 	../src/variables/CTurbSSTVariable.cpp \
+	../src/variables/CTNE2TurbSSTVariable.cpp \
 	../src/variables/CAdjTurbVariable.cpp \
 	../src/variables/CTransLMVariable.cpp \
 	../src/variables/CDiscAdjFEAVariable.cpp \
 	../src/variables/CIncEulerVariable.cpp \
 	../src/variables/CTurbVariable.cpp \
+	../src/variables/CTNE2TurbVariable.cpp \
 	../src/variables/CNSVariable.cpp \
 	../src/variables/CBaselineVariable.cpp \
 	../src/variables/CTurbSAVariable.cpp \
+	../src/variables/CTNE2TurbSAVariable.cpp \
 	../src/variables/CFEAVariable.cpp \
 	../src/variables/CAdjEulerVariable.cpp \
 	../src/variables/CDiscAdjVariable.cpp \
@@ -374,6 +389,7 @@ am__objects_2 = ../src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_direct_tne2.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_direct_transition.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_direct_turbulent.$(OBJEXT) \
+	../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_direct_elasticity_linear.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_direct_elasticity.$(OBJEXT) \
@@ -397,6 +413,7 @@ am__objects_2 = ../src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_AD_a-solver_direct_mean_inc.$(OBJEXT) \
 	../src/libSU2Core_AD_a-solver_direct_tne2.$(OBJEXT) \
 	../src/libSU2Core_AD_a-solver_direct_transition.$(OBJEXT) \
+	../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.$(OBJEXT) \
 	../src/libSU2Core_AD_a-solver_direct_turbulent.$(OBJEXT) \
 	../src/libSU2Core_AD_a-solver_direct_elasticity.$(OBJEXT) \
 	../src/libSU2Core_AD_a-solver_structure.$(OBJEXT) \
@@ -409,14 +426,17 @@ am__objects_2 = ../src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CAdjNSVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CTurbSSTVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CAdjTurbVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CTransLMVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CDiscAdjFEAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CIncEulerVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CTurbVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CNSVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CBaselineVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CTurbSAVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CFEAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CAdjEulerVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_AD_a-CDiscAdjVariable.$(OBJEXT) \
@@ -446,6 +466,7 @@ am__libSU2Core_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/numerics_direct_tne2.cpp \
 	../src/numerics_direct_transition.cpp \
 	../src/numerics_direct_turbulent.cpp \
+	../src/numerics_direct_tne2_turbulent.cpp \
 	../src/numerics_direct_elasticity_nonlinear.cpp \
 	../src/numerics_direct_elasticity_linear.cpp \
 	../src/numerics_direct_elasticity.cpp \
@@ -463,6 +484,7 @@ am__libSU2Core_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/solver_direct_mean_inc.cpp \
 	../src/solver_direct_tne2.cpp \
 	../src/solver_direct_transition.cpp \
+	../src/solver_direct_tne2_turbulent.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_structure.cpp ../src/solver_template.cpp \
@@ -473,14 +495,17 @@ am__libSU2Core_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/variables/CVariable.cpp \
 	../src/variables/CAdjNSVariable.cpp \
 	../src/variables/CTurbSSTVariable.cpp \
+	../src/variables/CTNE2TurbSSTVariable.cpp \
 	../src/variables/CAdjTurbVariable.cpp \
 	../src/variables/CTransLMVariable.cpp \
 	../src/variables/CDiscAdjFEAVariable.cpp \
 	../src/variables/CIncEulerVariable.cpp \
 	../src/variables/CTurbVariable.cpp \
+	../src/variables/CTNE2TurbVariable.cpp \
 	../src/variables/CNSVariable.cpp \
 	../src/variables/CBaselineVariable.cpp \
 	../src/variables/CTurbSAVariable.cpp \
+	../src/variables/CTNE2TurbSAVariable.cpp \
 	../src/variables/CFEAVariable.cpp \
 	../src/variables/CAdjEulerVariable.cpp \
 	../src/variables/CDiscAdjVariable.cpp \
@@ -510,6 +535,7 @@ am__objects_3 =  \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_transition.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_turbulent.$(OBJEXT) \
+	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_linear.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity.$(OBJEXT) \
@@ -533,6 +559,7 @@ am__objects_3 =  \
 	../src/libSU2Core_DIRECTDIFF_a-solver_direct_mean_inc.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-solver_direct_transition.$(OBJEXT) \
+	../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-solver_direct_elasticity.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-solver_structure.$(OBJEXT) \
@@ -545,14 +572,17 @@ am__objects_3 =  \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CAdjNSVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSSTVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CTransLMVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CDiscAdjFEAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CIncEulerVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CTurbVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CNSVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CBaselineVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSAVariable.$(OBJEXT) \
+	../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CFEAVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CAdjEulerVariable.$(OBJEXT) \
 	../src/variables/libSU2Core_DIRECTDIFF_a-CDiscAdjVariable.$(OBJEXT) \
@@ -845,6 +875,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_direct_tne2.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
+	../src/numerics_direct_tne2_turbulent.cpp \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
@@ -868,6 +899,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_tne2.cpp \
   ../src/solver_direct_transition.cpp \
+	../src/solver_direct_tne2_turbulent.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_structure.cpp \
@@ -880,14 +912,17 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
+	../src/variables/CTNE2TurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
+	../src/variables/CTNE2TurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CBaselineVariable.cpp \
   ../src/variables/CTurbSAVariable.cpp \
+	../src/variables/CTNE2TurbSAVariable.cpp \
   ../src/variables/CFEAVariable.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
@@ -919,13 +954,13 @@ su2_cfd_ldadd = @su2_externals_LIBS@ @su2_externals_LIBPTHREAD@ \
 @BUILD_DIRECTDIFF_TRUE@libSU2Core_DIRECTDIFF_a_SOURCES = $(libSU2Core_sources)
 @BUILD_DIRECTDIFF_TRUE@libSU2Core_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ $(libSU2Core_cxx_flags)
 @BUILD_DIRECTDIFF_TRUE@libSU2Core_DIRECTDIFF_a_LIBADD = @DIRECTDIFF_LIBS@ $(libSU2Core_libadd)
-@BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources) 
+@BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
 @BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
 @BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_LDADD = libSU2Core_DIRECTDIFF.a @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
 @BUILD_REVERSE_TRUE@libSU2Core_AD_a_SOURCES = $(libSU2Core_sources)
 @BUILD_REVERSE_TRUE@libSU2Core_AD_a_CXXFLAGS = @REVERSE_CXX@ $(libSU2Core_cxx_flags)
 @BUILD_REVERSE_TRUE@libSU2Core_AD_a_LIBADD = @REVERSE_LIBS@ $(libSU2Core_libadd)
-@BUILD_REVERSE_TRUE@___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources) 
+@BUILD_REVERSE_TRUE@___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources)
 @BUILD_REVERSE_TRUE@___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
 @BUILD_REVERSE_TRUE@___bin_SU2_CFD_AD_LDADD = libSU2Core_AD.a @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 all: all-am
@@ -1022,6 +1057,8 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-numerics_direct_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-numerics_direct_tne2_turbulent.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-numerics_direct_elasticity_nonlinear.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-numerics_direct_elasticity_linear.$(OBJEXT):  \
@@ -1068,6 +1105,8 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_direct_transition.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-solver_direct_tne2_turbulent.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_direct_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_direct_elasticity.$(OBJEXT):  \
@@ -1103,6 +1142,9 @@ clean-noinstLIBRARIES:
 ../src/variables/libSU2Core_a-CTurbSSTVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_a-CAdjTurbVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
@@ -1118,6 +1160,9 @@ clean-noinstLIBRARIES:
 ../src/variables/libSU2Core_a-CTurbVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_a-CTNE2TurbVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_a-CNSVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
@@ -1125,6 +1170,9 @@ clean-noinstLIBRARIES:
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_a-CTurbSAVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_a-CTNE2TurbSAVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_a-CFEAVariable.$(OBJEXT):  \
@@ -1199,6 +1247,8 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-numerics_direct_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-numerics_direct_elasticity_linear.$(OBJEXT):  \
@@ -1245,6 +1295,8 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-solver_direct_transition.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-solver_direct_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-solver_direct_elasticity.$(OBJEXT):  \
@@ -1274,6 +1326,9 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 ../src/variables/libSU2Core_AD_a-CTurbSSTVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_AD_a-CAdjTurbVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
@@ -1289,6 +1344,9 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 ../src/variables/libSU2Core_AD_a-CTurbVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_AD_a-CNSVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
@@ -1296,6 +1354,9 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_AD_a-CTurbSAVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_AD_a-CFEAVariable.$(OBJEXT):  \
@@ -1370,6 +1431,8 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_linear.$(OBJEXT):  \
@@ -1416,6 +1479,8 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-solver_direct_transition.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-solver_direct_elasticity.$(OBJEXT):  \
@@ -1445,6 +1510,9 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 ../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSSTVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
@@ -1460,6 +1528,9 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 ../src/variables/libSU2Core_DIRECTDIFF_a-CTurbVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_DIRECTDIFF_a-CNSVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
@@ -1467,6 +1538,9 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSAVariable.$(OBJEXT):  \
+	../src/variables/$(am__dirstamp) \
+	../src/variables/$(DEPDIR)/$(am__dirstamp)
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.$(OBJEXT):  \
 	../src/variables/$(am__dirstamp) \
 	../src/variables/$(DEPDIR)/$(am__dirstamp)
 ../src/variables/libSU2Core_DIRECTDIFF_a-CFEAVariable.$(OBJEXT):  \
@@ -1589,6 +1663,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-numerics_structure.Po@am__quote@
@@ -1611,6 +1686,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_mean_fem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-solver_structure.Po@am__quote@
@@ -1636,6 +1712,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_structure.Po@am__quote@
@@ -1658,6 +1735,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_mean_fem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_structure.Po@am__quote@
@@ -1683,6 +1761,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_direct_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_direct_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-numerics_structure.Po@am__quote@
@@ -1705,6 +1784,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_mean_fem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_structure.Po@am__quote@
@@ -1739,6 +1819,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CNSVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2EulerVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2NSVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTransLMVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTurbSAVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTurbSSTVariable.Po@am__quote@
@@ -1759,6 +1842,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CNSVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2EulerVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2NSVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTransLMVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTurbSAVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTurbSSTVariable.Po@am__quote@
@@ -1779,6 +1865,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CNSVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2EulerVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2NSVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTransLMVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTurbSAVariable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/variables/$(DEPDIR)/libSU2Core_a-CTurbSSTVariable.Po@am__quote@
@@ -2094,6 +2183,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_turbulent.cpp' object='../src/libSU2Core_a-numerics_direct_turbulent.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-numerics_direct_turbulent.obj `if test -f '../src/numerics_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_turbulent.cpp'; fi`
+
+../src/libSU2Core_a-numerics_direct_tne2_turbulent.o: ../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-numerics_direct_tne2_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_a-numerics_direct_tne2_turbulent.o `test -f '../src/numerics_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_tne2_turbulent.cpp' object='../src/libSU2Core_a-numerics_direct_tne2_turbulent.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-numerics_direct_tne2_turbulent.o `test -f '../src/numerics_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2_turbulent.cpp
+
+../src/libSU2Core_a-numerics_direct_tne2_turbulent.obj: ../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-numerics_direct_tne2_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_a-numerics_direct_tne2_turbulent.obj `if test -f '../src/numerics_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_tne2_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_tne2_turbulent.cpp' object='../src/libSU2Core_a-numerics_direct_tne2_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-numerics_direct_tne2_turbulent.obj `if test -f '../src/numerics_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_tne2_turbulent.cpp'; fi`
 
 ../src/libSU2Core_a-numerics_direct_elasticity_nonlinear.o: ../src/numerics_direct_elasticity_nonlinear.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-numerics_direct_elasticity_nonlinear.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-numerics_direct_elasticity_nonlinear.Tpo -c -o ../src/libSU2Core_a-numerics_direct_elasticity_nonlinear.o `test -f '../src/numerics_direct_elasticity_nonlinear.cpp' || echo '$(srcdir)/'`../src/numerics_direct_elasticity_nonlinear.cpp
@@ -2417,6 +2520,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_direct_transition.obj `if test -f '../src/solver_direct_transition.cpp'; then $(CYGPATH_W) '../src/solver_direct_transition.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_transition.cpp'; fi`
 
+../src/libSU2Core_a-solver_direct_tne2_turbulent.o: ../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_direct_tne2_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_a-solver_direct_tne2_turbulent.o `test -f '../src/solver_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_tne2_turbulent.cpp' object='../src/libSU2Core_a-solver_direct_tne2_turbulent.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_direct_tne2_turbulent.o `test -f '../src/solver_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2_turbulent.cpp
+
+../src/libSU2Core_a-solver_direct_tne2_turbulent.obj: ../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_direct_tne2_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_a-solver_direct_tne2_turbulent.obj `if test -f '../src/solver_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_tne2_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_tne2_turbulent.cpp' object='../src/libSU2Core_a-solver_direct_tne2_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_direct_tne2_turbulent.obj `if test -f '../src/solver_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_tne2_turbulent.cpp'; fi`
+
 ../src/libSU2Core_a-solver_direct_turbulent.o: ../src/solver_direct_turbulent.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_direct_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_direct_turbulent.Tpo -c -o ../src/libSU2Core_a-solver_direct_turbulent.o `test -f '../src/solver_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_turbulent.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_direct_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_direct_turbulent.Po
@@ -2585,6 +2702,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTurbSSTVariable.obj `if test -f '../src/variables/CTurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbSSTVariable.cpp'; fi`
 
+../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.o: ../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Tpo -c -o ../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.o `test -f '../src/variables/CTNE2TurbSSTVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSSTVariable.cpp' object='../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.o `test -f '../src/variables/CTNE2TurbSSTVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSSTVariable.cpp
+
+../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.obj: ../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Tpo -c -o ../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.obj `if test -f '../src/variables/CTNE2TurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSSTVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSSTVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSSTVariable.cpp' object='../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTNE2TurbSSTVariable.obj `if test -f '../src/variables/CTNE2TurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSSTVariable.cpp'; fi`
+
 ../src/variables/libSU2Core_a-CAdjTurbVariable.o: ../src/variables/CAdjTurbVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CAdjTurbVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CAdjTurbVariable.Tpo -c -o ../src/variables/libSU2Core_a-CAdjTurbVariable.o `test -f '../src/variables/CAdjTurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CAdjTurbVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CAdjTurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CAdjTurbVariable.Po
@@ -2655,6 +2786,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTurbVariable.obj `if test -f '../src/variables/CTurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbVariable.cpp'; fi`
 
+../src/variables/libSU2Core_a-CTNE2TurbVariable.o: ../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CTNE2TurbVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Tpo -c -o ../src/variables/libSU2Core_a-CTNE2TurbVariable.o `test -f '../src/variables/CTNE2TurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbVariable.cpp' object='../src/variables/libSU2Core_a-CTNE2TurbVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTNE2TurbVariable.o `test -f '../src/variables/CTNE2TurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbVariable.cpp
+
+../src/variables/libSU2Core_a-CTNE2TurbVariable.obj: ../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CTNE2TurbVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Tpo -c -o ../src/variables/libSU2Core_a-CTNE2TurbVariable.obj `if test -f '../src/variables/CTNE2TurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbVariable.cpp' object='../src/variables/libSU2Core_a-CTNE2TurbVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTNE2TurbVariable.obj `if test -f '../src/variables/CTNE2TurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbVariable.cpp'; fi`
+
 ../src/variables/libSU2Core_a-CNSVariable.o: ../src/variables/CNSVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CNSVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CNSVariable.Tpo -c -o ../src/variables/libSU2Core_a-CNSVariable.o `test -f '../src/variables/CNSVariable.cpp' || echo '$(srcdir)/'`../src/variables/CNSVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CNSVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CNSVariable.Po
@@ -2696,6 +2841,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTurbSAVariable.cpp' object='../src/variables/libSU2Core_a-CTurbSAVariable.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTurbSAVariable.obj `if test -f '../src/variables/CTurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbSAVariable.cpp'; fi`
+
+../src/variables/libSU2Core_a-CTNE2TurbSAVariable.o: ../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CTNE2TurbSAVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Tpo -c -o ../src/variables/libSU2Core_a-CTNE2TurbSAVariable.o `test -f '../src/variables/CTNE2TurbSAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSAVariable.cpp' object='../src/variables/libSU2Core_a-CTNE2TurbSAVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTNE2TurbSAVariable.o `test -f '../src/variables/CTNE2TurbSAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSAVariable.cpp
+
+../src/variables/libSU2Core_a-CTNE2TurbSAVariable.obj: ../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CTNE2TurbSAVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Tpo -c -o ../src/variables/libSU2Core_a-CTNE2TurbSAVariable.obj `if test -f '../src/variables/CTNE2TurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSAVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_a-CTNE2TurbSAVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSAVariable.cpp' object='../src/variables/libSU2Core_a-CTNE2TurbSAVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_a-CTNE2TurbSAVariable.obj `if test -f '../src/variables/CTNE2TurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSAVariable.cpp'; fi`
 
 ../src/variables/libSU2Core_a-CFEAVariable.o: ../src/variables/CFEAVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_a-CFEAVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_a-CFEAVariable.Tpo -c -o ../src/variables/libSU2Core_a-CFEAVariable.o `test -f '../src/variables/CFEAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CFEAVariable.cpp
@@ -3089,6 +3248,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-numerics_direct_turbulent.obj `if test -f '../src/numerics_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_turbulent.cpp'; fi`
 
+../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.o: ../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.o `test -f '../src/numerics_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_tne2_turbulent.cpp' object='../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.o `test -f '../src/numerics_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2_turbulent.cpp
+
+../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.obj: ../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.obj `if test -f '../src/numerics_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_tne2_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_tne2_turbulent.cpp' object='../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-numerics_direct_tne2_turbulent.obj `if test -f '../src/numerics_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_tne2_turbulent.cpp'; fi`
+
 ../src/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.o: ../src/numerics_direct_elasticity_nonlinear.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.Tpo -c -o ../src/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.o `test -f '../src/numerics_direct_elasticity_nonlinear.cpp' || echo '$(srcdir)/'`../src/numerics_direct_elasticity_nonlinear.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.Po
@@ -3411,6 +3584,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-solver_direct_transition.obj `if test -f '../src/solver_direct_transition.cpp'; then $(CYGPATH_W) '../src/solver_direct_transition.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_transition.cpp'; fi`
 
+../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.o: ../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.o `test -f '../src/solver_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_tne2_turbulent.cpp' object='../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.o `test -f '../src/solver_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2_turbulent.cpp
+
+../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.obj: ../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.obj `if test -f '../src/solver_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_tne2_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_tne2_turbulent.cpp' object='../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-solver_direct_tne2_turbulent.obj `if test -f '../src/solver_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_tne2_turbulent.cpp'; fi`
+
 ../src/libSU2Core_AD_a-solver_direct_turbulent.o: ../src/solver_direct_turbulent.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-solver_direct_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_turbulent.Tpo -c -o ../src/libSU2Core_AD_a-solver_direct_turbulent.o `test -f '../src/solver_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_turbulent.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-solver_direct_turbulent.Po
@@ -3579,6 +3766,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTurbSSTVariable.obj `if test -f '../src/variables/CTurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbSSTVariable.cpp'; fi`
 
+../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.o: ../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.o `test -f '../src/variables/CTNE2TurbSSTVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSSTVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.o `test -f '../src/variables/CTNE2TurbSSTVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSSTVariable.cpp
+
+../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.obj: ../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.obj `if test -f '../src/variables/CTNE2TurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSSTVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSSTVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSSTVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSSTVariable.obj `if test -f '../src/variables/CTNE2TurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSSTVariable.cpp'; fi`
+
 ../src/variables/libSU2Core_AD_a-CAdjTurbVariable.o: ../src/variables/CAdjTurbVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CAdjTurbVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CAdjTurbVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CAdjTurbVariable.o `test -f '../src/variables/CAdjTurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CAdjTurbVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CAdjTurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CAdjTurbVariable.Po
@@ -3649,6 +3850,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTurbVariable.obj `if test -f '../src/variables/CTurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbVariable.cpp'; fi`
 
+../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.o: ../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.o `test -f '../src/variables/CTNE2TurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.o `test -f '../src/variables/CTNE2TurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbVariable.cpp
+
+../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.obj: ../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.obj `if test -f '../src/variables/CTNE2TurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbVariable.obj `if test -f '../src/variables/CTNE2TurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbVariable.cpp'; fi`
+
 ../src/variables/libSU2Core_AD_a-CNSVariable.o: ../src/variables/CNSVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CNSVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CNSVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CNSVariable.o `test -f '../src/variables/CNSVariable.cpp' || echo '$(srcdir)/'`../src/variables/CNSVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CNSVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CNSVariable.Po
@@ -3690,6 +3905,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTurbSAVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTurbSAVariable.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTurbSAVariable.obj `if test -f '../src/variables/CTurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbSAVariable.cpp'; fi`
+
+../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.o: ../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.o `test -f '../src/variables/CTNE2TurbSAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSAVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.o `test -f '../src/variables/CTNE2TurbSAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSAVariable.cpp
+
+../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.obj: ../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.obj `if test -f '../src/variables/CTNE2TurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSAVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CTNE2TurbSAVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSAVariable.cpp' object='../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_AD_a-CTNE2TurbSAVariable.obj `if test -f '../src/variables/CTNE2TurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSAVariable.cpp'; fi`
 
 ../src/variables/libSU2Core_AD_a-CFEAVariable.o: ../src/variables/CFEAVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_AD_a-CFEAVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_AD_a-CFEAVariable.Tpo -c -o ../src/variables/libSU2Core_AD_a-CFEAVariable.o `test -f '../src/variables/CFEAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CFEAVariable.cpp
@@ -4083,6 +4312,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_turbulent.obj `if test -f '../src/numerics_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_turbulent.cpp'; fi`
 
+../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.o: ../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.o `test -f '../src/numerics_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_tne2_turbulent.cpp' object='../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.o `test -f '../src/numerics_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2_turbulent.cpp
+
+../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.obj: ../src/numerics_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.obj `if test -f '../src/numerics_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_tne2_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/numerics_direct_tne2_turbulent.cpp' object='../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_tne2_turbulent.obj `if test -f '../src/numerics_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_tne2_turbulent.cpp'; fi`
+
 ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.o: ../src/numerics_direct_elasticity_nonlinear.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.o `test -f '../src/numerics_direct_elasticity_nonlinear.cpp' || echo '$(srcdir)/'`../src/numerics_direct_elasticity_nonlinear.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-numerics_direct_elasticity_nonlinear.Po
@@ -4405,6 +4648,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-solver_direct_transition.obj `if test -f '../src/solver_direct_transition.cpp'; then $(CYGPATH_W) '../src/solver_direct_transition.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_transition.cpp'; fi`
 
+../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.o: ../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.o `test -f '../src/solver_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_tne2_turbulent.cpp' object='../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.o `test -f '../src/solver_direct_tne2_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2_turbulent.cpp
+
+../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.obj: ../src/solver_direct_tne2_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.obj `if test -f '../src/solver_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_tne2_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_tne2_turbulent.cpp' object='../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-solver_direct_tne2_turbulent.obj `if test -f '../src/solver_direct_tne2_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_tne2_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_tne2_turbulent.cpp'; fi`
+
 ../src/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.o: ../src/solver_direct_turbulent.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.o `test -f '../src/solver_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_turbulent.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-solver_direct_turbulent.Po
@@ -4573,6 +4830,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSSTVariable.obj `if test -f '../src/variables/CTurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbSSTVariable.cpp'; fi`
 
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.o: ../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.o `test -f '../src/variables/CTNE2TurbSSTVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSSTVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.o `test -f '../src/variables/CTNE2TurbSSTVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSSTVariable.cpp
+
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.obj: ../src/variables/CTNE2TurbSSTVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.obj `if test -f '../src/variables/CTNE2TurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSSTVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSSTVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSSTVariable.obj `if test -f '../src/variables/CTNE2TurbSSTVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSSTVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSSTVariable.cpp'; fi`
+
 ../src/variables/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.o: ../src/variables/CAdjTurbVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.o `test -f '../src/variables/CAdjTurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CAdjTurbVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CAdjTurbVariable.Po
@@ -4643,6 +4914,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTurbVariable.obj `if test -f '../src/variables/CTurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbVariable.cpp'; fi`
 
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.o: ../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.o `test -f '../src/variables/CTNE2TurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.o `test -f '../src/variables/CTNE2TurbVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbVariable.cpp
+
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.obj: ../src/variables/CTNE2TurbVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.obj `if test -f '../src/variables/CTNE2TurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbVariable.obj `if test -f '../src/variables/CTNE2TurbVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbVariable.cpp'; fi`
+
 ../src/variables/libSU2Core_DIRECTDIFF_a-CNSVariable.o: ../src/variables/CNSVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CNSVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CNSVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CNSVariable.o `test -f '../src/variables/CNSVariable.cpp' || echo '$(srcdir)/'`../src/variables/CNSVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CNSVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CNSVariable.Po
@@ -4684,6 +4969,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTurbSAVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSAVariable.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTurbSAVariable.obj `if test -f '../src/variables/CTurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTurbSAVariable.cpp'; fi`
+
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.o: ../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.o `test -f '../src/variables/CTNE2TurbSAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSAVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.o `test -f '../src/variables/CTNE2TurbSAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CTNE2TurbSAVariable.cpp
+
+../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.obj: ../src/variables/CTNE2TurbSAVariable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.obj -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.obj `if test -f '../src/variables/CTNE2TurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSAVariable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Tpo ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variables/CTNE2TurbSAVariable.cpp' object='../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CTNE2TurbSAVariable.obj `if test -f '../src/variables/CTNE2TurbSAVariable.cpp'; then $(CYGPATH_W) '../src/variables/CTNE2TurbSAVariable.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variables/CTNE2TurbSAVariable.cpp'; fi`
 
 ../src/variables/libSU2Core_DIRECTDIFF_a-CFEAVariable.o: ../src/variables/CFEAVariable.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/variables/libSU2Core_DIRECTDIFF_a-CFEAVariable.o -MD -MP -MF ../src/variables/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-CFEAVariable.Tpo -c -o ../src/variables/libSU2Core_DIRECTDIFF_a-CFEAVariable.o `test -f '../src/variables/CFEAVariable.cpp' || echo '$(srcdir)/'`../src/variables/CFEAVariable.cpp

@@ -79,6 +79,7 @@ libSU2Core_sources =  ../src/definition_structure.cpp \
   ../src/numerics_direct_tne2.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
+	../src/numerics_direct_tne2_turbulent.cpp \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
@@ -102,6 +103,7 @@ libSU2Core_sources =  ../src/definition_structure.cpp \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_tne2.cpp \
   ../src/solver_direct_transition.cpp \
+	../src/solver_direct_tne2_turbulent.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_structure.cpp \
@@ -114,14 +116,17 @@ libSU2Core_sources =  ../src/definition_structure.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
+	../src/variables/CTNE2TurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
+	../src/variables/CTNE2TurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CBaselineVariable.cpp \
   ../src/variables/CTurbSAVariable.cpp \
+	../src/variables/CTNE2TurbSAVariable.cpp \
   ../src/variables/CFEAVariable.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
@@ -135,7 +140,7 @@ su2_cfd_sources = \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC
-libSU2Core_libadd = 
+libSU2Core_libadd =
 
 su2_cfd_cxx_flags =
 su2_cfd_ldadd =
@@ -164,7 +169,7 @@ if BUILD_DIRECTDIFF
 libSU2Core_DIRECTDIFF_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ $(libSU2Core_cxx_flags)
 libSU2Core_DIRECTDIFF_a_LIBADD = @DIRECTDIFF_LIBS@ $(libSU2Core_libadd)
-___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources) 
+___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_DIRECTDIFF_LDADD = libSU2Core_DIRECTDIFF.a @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
 endif
@@ -173,7 +178,7 @@ if BUILD_REVERSE
 libSU2Core_AD_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_AD_a_CXXFLAGS = @REVERSE_CXX@ $(libSU2Core_cxx_flags)
 libSU2Core_AD_a_LIBADD = @REVERSE_LIBS@ $(libSU2Core_libadd)
-___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources) 
+___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_AD_LDADD = libSU2Core_AD.a @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 endif

@@ -3110,12 +3110,12 @@ public:
 };
 
 /*!
- * \class CTNE2UpwLin_TransLM
+ * \class CupwLin_TNE2TransLM
  * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
  * \ingroup ConvDiscr
  * \author A. Aranake, W. Maier
  */
-class CTNE2UpwLin_TransLM : public CNumerics {
+class CupwLin_TNE2TransLM : public CNumerics {
 private:
   su2double *Velocity_i;
   su2double *Velocity_j;
@@ -3131,12 +3131,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2UpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CupwLin_TNE2TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2UpwLin_TransLM(void);
+  ~CupwLin_TNE2TransLM(void);
 
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
@@ -3217,12 +3217,12 @@ public:
 };
 
 /*!
- * \class CTNE2UpwSca_TurbSA
+ * \class CUpwSca_TNE2TurbSA
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
  * \ingroup ConvDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2UpwSca_TurbSA : public CTNE2UpwScalar {
+class CUpwSca_TNE2TurbSA : public CTNE2UpwScalar {
 private:
 
   /*!
@@ -3248,21 +3248,21 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2UpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSca_TNE2TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2UpwSca_TurbSA(void);
+  ~CUpwSca_TNE2TurbSA(void);
 };
 
 /*!
- * \class CTNE2UpwSca_TurbSST
+ * \class CUpwSca_TNE2TurbSST
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
  * \author W. Maier, A. Campos.
  */
-class CTNE2UpwSca_TurbSST : public CTNE2UpwScalar {
+class CUpwSca_TNE2TurbSST : public CTNE2UpwScalar {
 private:
 
   /*!
@@ -3288,21 +3288,21 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2UpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSca_TNE2TurbSST(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2UpwSca_TurbSST(void);
+  ~CUpwSca_TNE2TurbSST(void);
 };
 
 /*!
- * \class CTNE2UpwSca_TransLM
+ * \class CUpwSca_TNE2TransLM
  * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
  * \ingroup ConvDiscr
  * \author W. Maier, A. Aranake.
  */
-class CTNE2UpwSca_TransLM : public CNumerics {
+class CUpwSca_TNE2TransLM : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
   bool implicit, grid_movement;
@@ -3317,12 +3317,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2UpwSca_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSca_TNE2TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2UpwSca_TransLM(void);
+  ~CUpwSca_TNE2TransLM(void);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -4379,7 +4379,7 @@ class CAvgGrad_Scalar : public CNumerics {
 };
 
 /*!
- * \class CTNE2AvgGrad_Scalar
+ * \class CAvgGrad_TNE2Scalar
  * \brief Template class for computing viscous residual of scalar values
  * \details This class serves as a template for the scalar viscous residual
  *   classes.  The general structure of a viscous residual calculation is the
@@ -4392,7 +4392,7 @@ class CAvgGrad_Scalar : public CNumerics {
  * \ingroup ViscDiscr
  * \author C. Pederson, A. Bueno, and F. Palacios
  */
-class CTNE2AvgGrad_Scalar : public CNumerics {
+class CAvgGrad_TNE2Scalar : public CNumerics {
  private:
 
   /*!
@@ -4431,13 +4431,13 @@ class CTNE2AvgGrad_Scalar : public CNumerics {
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2AvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGrad_TNE2Scalar(unsigned short val_nDim, unsigned short val_nVar,
                     bool correct_gradient, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2AvgGrad_Scalar(void);
+  ~CAvgGrad_TNE2Scalar(void);
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
@@ -4786,12 +4786,12 @@ public:
 };
 
 /*!
- * \class CTNE2AvgGrad_TurbSA
+ * \class CAvgGrad_TNE2TurbSA
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2AvgGrad_TurbSA : public CTNE2AvgGrad_Scalar {
+class CAvgGrad_TNE2TurbSA : public CAvgGrad_TNE2Scalar {
 private:
 
   const su2double sigma;
@@ -4820,13 +4820,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2AvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGrad_TNE2TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2AvgGrad_TurbSA(void);
+  ~CAvgGrad_TNE2TurbSA(void);
 };
 
 /*!
@@ -4918,12 +4918,12 @@ public:
 };
 
 /*!
- * \class CTNE2AvgGrad_TransLM
+ * \class CAvgGrad_TNE2TransLM
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2AvgGrad_TransLM : public CNumerics {
+class CAvgGrad_TNE2TransLM : public CNumerics {
 private:
   su2double **Mean_GradTransVar;
   su2double *Proj_Mean_GradTransVar_Kappa, *Proj_Mean_GradTransVar_Edge;
@@ -4942,12 +4942,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2AvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGrad_TNE2TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2AvgGrad_TransLM(void);
+  ~CAvgGrad_TNE2TransLM(void);
 
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -5228,12 +5228,12 @@ public:
 };
 
 /*!
- * \class CTNE2AvgGradCorrected_TransLM
+ * \class CAvgGradCorrected_TNE2TransLM
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2AvgGradCorrected_TransLM : public CNumerics {
+class CAvgGradCorrected_TNE2TransLM : public CNumerics {
 private:
   su2double **Mean_GradTurbVar;
   su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
@@ -5249,12 +5249,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2AvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGradCorrected_TNE2TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2AvgGradCorrected_TransLM(void);
+  ~CAvgGradCorrected_TNE2TransLM(void);
 
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
@@ -5325,12 +5325,12 @@ public:
 };
 
 /*!
- * \class CTNE2AvgGrad_TurbSST
+ * \class CAvgGrad_TNE2TurbSST
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2AvgGrad_TurbSST : public CTNE2AvgGrad_Scalar {
+class CAvgGrad_TNE2TurbSST : public CAvgGrad_TNE2Scalar {
 private:
   su2double sigma_k1, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
   sigma_k2,
@@ -5365,13 +5365,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2AvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGrad_TNE2TurbSST(unsigned short val_nDim, unsigned short val_nVar,
                    su2double* constants, bool correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2AvgGrad_TurbSST(void);
+  ~CAvgGrad_TNE2TurbSST(void);
 
   /*!
    * \brief Sets value of first blending function.
@@ -6680,12 +6680,12 @@ public:
 };
 
 /*!
- * \class CTNE2SourcePieceWise_TurbSA
+ * \class CSourcePieceWise_TNE2TurbSA
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2SourcePieceWise_TurbSA : public CNumerics {
+class CSourcePieceWise_TNE2TurbSA : public CNumerics {
 private:
   su2double cv1_3;
   su2double k2;
@@ -6719,12 +6719,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2SourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourcePieceWise_TNE2TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2SourcePieceWise_TurbSA(void);
+  ~CSourcePieceWise_TNE2TurbSA(void);
 
   /*!
    * \brief Residual for source term integration.
@@ -6782,12 +6782,12 @@ public:
 };
 
 /*!
- * \class CTNE2SourcePieceWise_TransLM
+ * \class CSourcePieceWise_TNE2TransLM
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author W. Maier, A. Bueno.
  */
-class CTNE2SourcePieceWise_TransLM : public CNumerics {
+class CSourcePieceWise_TNE2TransLM : public CNumerics {
 private:
 
   /*-- SA model constants --*/
@@ -6826,12 +6826,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2SourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourcePieceWise_TNE2TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2SourcePieceWise_TransLM(void);
+  ~CSourcePieceWise_TNE2TransLM(void);
 
   /*!
    * \brief Residual for source term integration.
@@ -6842,16 +6842,16 @@ public:
    */
   void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep);
 
-  void CTNE2SourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
+  void CSourcePieceWise_TNE2TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
 };
 
 /*!
- * \class CTNE2SourcePieceWise_TurbSST
+ * \class CSourcePieceWise_TNE2TurbSST
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  * \ingroup SourceDiscr
  * \author W. Maier, A. Campos.
  */
-class CTNE2SourcePieceWise_TurbSST : public CNumerics {
+class CSourcePieceWise_TNE2TurbSST : public CNumerics {
 private:
   su2double F1_i,
   F1_j,
@@ -6879,12 +6879,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2SourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
+  CSourcePieceWise_TNE2TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2SourcePieceWise_TurbSST(void);
+  ~CSourcePieceWise_TNE2TurbSST(void);
 
   /*!
    * \brief Set the value of the first blending function.
