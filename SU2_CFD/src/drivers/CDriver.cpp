@@ -684,8 +684,9 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   /*--- Check if Euler & Symmetry markers are straight/plane. This information
         is used in the Euler & Symmetry boundary routines. ---*/
-  if(config_container[iZone]->GetnMarker_Euler() != 0 || 
-     config_container[iZone]->GetnMarker_SymWall() != 0) {
+  if((config_container[iZone]->GetnMarker_Euler() != 0 || 
+     config_container[iZone]->GetnMarker_SymWall() != 0) && 
+     !fem_solver) {
 
     if (rank == MASTER_NODE)
       cout << "Checking if Euler & Symmetry markers are straight/plane:" << endl;
