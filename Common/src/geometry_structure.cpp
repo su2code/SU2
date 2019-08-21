@@ -2852,7 +2852,10 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
             UnitNormal = Normal;
             /*--- Compute unit normal using inner_product from the STl. ---*/
-            Area = sqrt(inner_product(Normal.begin(), Normal.end(), Normal.begin(), 0.0));
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area = Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
             
             /*--- Negate for outward convention. ---*/
             for_each(UnitNormal.begin(), UnitNormal.end(), [Area](su2double &iNormal) { iNormal /= -Area; });

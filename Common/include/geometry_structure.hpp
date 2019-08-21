@@ -320,7 +320,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  vector<bool> bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each marker (global order as in *CfgFile methods). */
+  vector<bool> bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
   unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
   unsigned short *nSpanSectionsByMarker; /*! <\brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
   unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
@@ -1042,9 +1042,9 @@ public:
 	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
   /*!
-   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE only!
-   *        For all other boundary types this will return true and could therfore be wrong.
-   *        Used ultimately for BC_Slip_Wall.
+   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE 
+   *        only and store the information in bound_is_straight. For all other boundary types
+   *        this will return true and could therfore be wrong. Used ultimately for BC_Slip_Wall.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
    */
