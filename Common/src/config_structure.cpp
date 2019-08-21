@@ -4041,9 +4041,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
-      //if (GetGrid_Movement()) {
-      //  SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
-      //}
+      if (GetGrid_Movement()) {
+        SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
+      }
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
@@ -4260,12 +4260,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
   }
-
-  /*--- Grid motion is not yet supported with the incompressible solver. ---*/
-
-  /*if ((Kind_Regime == INCOMPRESSIBLE) && (GetGrid_Movement())) {
-    SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
-  }*/
 
   /*--- Assert that there are two markers being analyzed if the
    pressure drop objective function is selected. ---*/
