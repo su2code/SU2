@@ -130,9 +130,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    //std::cout << std::endl << "Mutation iMarker=" << iMarker << std::endl << std::endl;
   
 
     KindBC = config->GetMarker_All_KindBC(iMarker);
+
+    //std::cout << std::endl << "Mutation KindBC=" << KindBC << std::endl << std::endl;
     switch (KindBC) {
       case EULER_WALL:
         //std::cout << "Mutation Space_Integration 6"  << std::endl<< std::endl<< std::endl<< std::endl;
@@ -158,7 +162,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Supersonic_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case OUTLET_FLOW:
+        //std::cout << std::endl << "Mutation integration 1" << std::endl << std::endl;
         solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        //std::cout << std::endl << "Mutation integration 2" << std::endl << std::endl;
         break;
       case SUPERSONIC_OUTLET:
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -175,9 +181,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       	}
       	break;
       case FAR_FIELD:
-        //std::cout << "Mutation Space_Integration 8"  << std::endl<< std::endl<< std::endl<< std::endl;
+        //std::cout << "Mutation Space_Integration 3"  << std::endl<< std::endl<< std::endl<< std::endl;
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        //std::cout << "Mutation Space_Integration 9"  << std::endl<< std::endl<< std::endl<< std::endl;
+        //std::cout << "Mutation Space_Integration 4"  << std::endl<< std::endl<< std::endl<< std::endl;
         break;
       case SYMMETRY_PLANE:
         solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);

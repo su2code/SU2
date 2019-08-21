@@ -47,6 +47,7 @@ CMutation::CMutation(su2double *composition, su2double nSpecies, Mutation::Mixtu
 
   hs = new su2double[ns];
   Ds = new su2double[ns];
+  Xs = new su2double[ns];
 
   
 }
@@ -55,6 +56,7 @@ CMutation::~CMutation(void) {
 
   delete [] Ds;
   delete [] hs;
+  delete [] Xs;
 
 }
 
@@ -358,6 +360,16 @@ su2double  CMutation::Mutation_Get_SoundSpeedFrozen(su2double *cs, su2double rho
    return a;
 
 }
+
+su2double  CMutation::Mutation_Get_Density(su2double T, su2double *Xs, su2double P){
+
+   
+   Density = mix.density(T, P, Xs);
+
+   return Density;
+
+}
+
 
 
 

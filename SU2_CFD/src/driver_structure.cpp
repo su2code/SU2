@@ -315,6 +315,7 @@ CDriver::CDriver(char* confFile,
 
     } // End of loop over iInst
 
+   // exit(0); //Mutation
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
 
@@ -590,10 +591,14 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
 
+  exit(0); //Mutation
+
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      std::cout << "Mutation post 0"  << std::endl<< std::endl<< std::endl<< std::endl;
       Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone][iInst],
           geometry_container[iZone][iInst], config_container[iZone], iInst);
+      std::cout << "Mutation post 1"  << std::endl<< std::endl<< std::endl<< std::endl;
     }
     delete [] numerics_container[iZone];
   }
@@ -606,6 +611,7 @@ void CDriver::Postprocessing() {
           geometry_container[iZone][iInst],
           config_container[iZone],
           iInst);
+      std::cout << "Mutation post 2"  << std::endl<< std::endl<< std::endl<< std::endl;
     }
     delete [] integration_container[iZone];
   }
@@ -618,6 +624,7 @@ void CDriver::Postprocessing() {
           geometry_container[iZone][iInst],
           config_container[iZone],
           iInst);
+      std::cout << "Mutation post 3"  << std::endl<< std::endl<< std::endl<< std::endl;
     }
     delete [] solver_container[iZone];
   }
@@ -2999,6 +3006,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  std::cout << "Mutation numerics numerics post 0"  << std::endl<< std::endl<< std::endl<< std::endl;
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; ns       = false; turbulent     = false;
@@ -3011,6 +3020,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   template_solver  = false;
     
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+
+  std::cout << "Mutation numerics numerics post 0.1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -3030,7 +3041,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
-  
+  std::cout << "Mutation numerics numerics post 0.2"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Assign turbulence model booleans ---*/
 
   if (turbulent || fem_turbulent)
@@ -3057,11 +3068,15 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+      std::cout << "Mutation numerics post 1"  << std::endl<< std::endl<< std::endl<< std::endl;
       delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][VISC_TERM];
+      std::cout << "Mutation numerics post 2"  << std::endl<< std::endl<< std::endl<< std::endl;
       /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
       delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM];
+      std::cout << "Mutation numerics post 3"  << std::endl<< std::endl<< std::endl<< std::endl;
       /*--- Definition of the boundary condition method ---*/
       delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM];
+      std::cout << "Mutation numerics post 4"  << std::endl<< std::endl<< std::endl<< std::endl;
     }
     
   }
@@ -3155,11 +3170,15 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((tne2_euler) || (tne2_ns)) {
 
+    std::cout << "Mutation numerics numerics post 0.3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_TNE2()) {
 
       case SPACE_CENTERED :
         if (compressible) {
+
+          std::cout << "Mutation numerics numerics post 0.3.1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_TNE2()) {
@@ -3177,12 +3196,17 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       case SPACE_UPWIND :
 
         if (compressible) {
+          std::cout << "Mutation numerics numerics post 0.3.2 " << config->GetKind_Upwind_Flow() << std::endl<< std::endl<< std::endl<< std::endl;
           /*--- Compressible flow ---*/
-          switch (config->GetKind_Upwind_Flow()) {
+          switch (config->GetKind_Upwind_TNE2()) {
             case ROE: case AUSM : case TURKEL: case HLLC: case MSW:  case CUSP: case L2ROE: case LMROE: case SLAU: case SLAU2:
+              std::cout << "Mutation numerics numerics post 0.3.3"  << std::endl<< std::endl<< std::endl<< std::endl;
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                std::cout << "Mutation numerics numerics post 0.4"  << std::endl<< std::endl<< std::endl<< std::endl;
                 delete numerics_container[val_iInst][iMGlevel][TNE2_SOL][CONV_TERM];
+                std::cout << "Mutation numerics numerics post 0.5"  << std::endl<< std::endl<< std::endl<< std::endl;
                 delete numerics_container[val_iInst][iMGlevel][TNE2_SOL][CONV_BOUND_TERM];
+                std::cout << "Mutation numerics numerics post 0.6"  << std::endl<< std::endl<< std::endl<< std::endl;
               }
 
               break;
@@ -4081,21 +4105,15 @@ void CDriver::StartSolver(){
       
     /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
 
-    //std::cout << "Mutation driver 1" << std::endl << std::endl ;   
-
+    
     Run();
 
-    //std::cout << "Mutation driver 2" << std::endl << std::endl ;  
-
-    //std::cout << "Mutation driver 3"  << std::endl<< std::endl<< std::endl<< std::endl;
-
     
-
     /*--- Update the solution for dual time stepping strategy ---*/
 
     Update();
 
-    //std::cout << "Mutation driver 4"  << std::endl<< std::endl<< std::endl<< std::endl;
+   
 
     /*--- Terminate the simulation if only the Jacobian must be computed. ---*/
     if (config_container[ZONE_0]->GetJacobian_Spatial_Discretization_Only()) break;
@@ -4104,10 +4122,12 @@ void CDriver::StartSolver(){
 
     Monitor(ExtIter);
 
+   
     /*--- Output the solution in files. ---*/
 
     Output(ExtIter);
 
+   
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
@@ -4168,6 +4188,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
 
+  
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -4205,12 +4226,17 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
+
+  //std::cout << "Mutation Monitor 1.1" << std::endl<< std::endl;
   
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-    case TNE2_EULER: case TNE2_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][INST_0][TNE2_SOL]->GetConvergence(); break;
+    case TNE2_EULER: case TNE2_NAVIER_STOKES:{
+      StopCalc = integration_container[ZONE_0][INST_0][TNE2_SOL]->GetConvergence(); 
+      ifstream file("abort.dat");
+      if (file) StopCalc = true; break;
+    }
     case HEAT_EQUATION_FVM:
       StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
@@ -4222,7 +4248,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
     case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
       StopCalc = integration_container[ZONE_0][INST_0][ADJTNE2_SOL]->GetConvergence(); break;
   }
-  
   return StopCalc;
   
 }
@@ -4312,6 +4337,8 @@ void CDriver::Output(unsigned long ExtIter) {
       if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
+
+    //std::cout <<std::endl<< "Mutation CDriver::Output 1"  << std::endl<< std::endl;
 
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
@@ -4431,7 +4458,7 @@ void CFluidDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-  //std::cout << "Mutation driver run 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+ // std::cout << "Mutation driver run 2"  << std::endl<< std::endl<< std::endl<< std::endl;
   
   /*--- Updating zone interface communication patterns,
    needed only for unsteady simulation since for steady problems
@@ -4466,9 +4493,9 @@ void CFluidDriver::Run() {
     
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetIntIter(IntIter);
-      //std::cout << "Mutation driver run 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+      //std::cout << "Mutation driver run 3"  << std::endl<< std::endl<< std::endl;
       iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-      //std::cout << "Mutation driver run 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+      //std::cout << "Mutation driver run 4"  << std::endl<< std::endl<< std::endl;
     }
 
    
@@ -4608,6 +4635,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   string Marker_Tag;
 
   bool print;
+
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

@@ -9474,7 +9474,9 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
         break;
         
       case TNE2_EULER: case TNE2_NAVIER_STOKES:
+      //std::cout << "MutationCOutput::SetResult_Files 1"  << std::endl<< std::endl<< std::endl<< std::endl;
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][TNE2_SOL], iExtIter, iZone, INST_0);
+        //std::cout << "MutationCOutput::SetResult_Files 2"  << std::endl<< std::endl<< std::endl<< std::endl;
         break;
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
@@ -9487,6 +9489,8 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
     }
     
     /*--- Get the file output format ---*/
+
+    //std::cout << "MutationCOutput::SetResult_Files 3"  << std::endl<< std::endl<< std::endl<< std::endl;
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
@@ -13475,6 +13479,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
   unsigned short nInst = 1;
   bool compressible = true;
 
+   //std::cout <<std::endl<< "Mutation SetResult_Files_Parallel 1"  << std::endl<< std::endl;
+
   for (iZone = 0; iZone < val_nZone; iZone++) {
 
     /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
@@ -13534,8 +13540,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       case TNE2_EULER : case TNE2_NAVIER_STOKES :
+      //std::cout <<std::endl<< "Mutation SetResult_Files_Parallel 2"  << std::endl<< std::endl;
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
           solver_container[iZone][iInst][MESH_0][TNE2_SOL], iExtIter, iZone, iInst);
+          //std::cout << std::endl<<"Mutation SetResult_Files_Parallel 3"  << std::endl<< std::endl;}
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
@@ -13551,6 +13559,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       default: break;
     }
 
+     //std::cout << std::endl<< "Mutation SetResult_Files_Parallel 4"  << std::endl<< std::endl;
+
     /*--- Write a template inlet profile file if requested. ---*/
 
     if (config[iZone]->GetWrt_InletFile()) {
@@ -13562,6 +13572,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       }
       config[iZone]->SetWrt_InletFile(false);
     }
+
+     //std::cout <<std::endl<< "Mutation SetResult_Files_Parallel 5"  << std::endl<< std::endl;
 
     /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads

@@ -513,10 +513,13 @@ void CIteration::Output(COutput *output,
 
   if (output_files) {
 
+    //std::cout << "Mutation CIteration::Output 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
+
 
     output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, nZone);
 

@@ -121,7 +121,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_ndim,
   if(config->GetMUTATION_PP()) r_TNE2variable  = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
   else r_TNE2variable = new CReactiveHardCode();
 
-  r_TNE2variable->InitializeMixture(config);
+  r_TNE2variable->InitializeMixture(config); //Cat1
+
+  //std::cout << "Mutation: r_TNE2variable"  << std::endl;
 
 
   /*--- Define structure of the primtive variable vector ---*/
@@ -150,9 +152,11 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
                                        unsigned short val_nvar,
                                        unsigned short val_nvarprim,
                                        unsigned short val_nvarprimgrad,
-                                       CConfig *config) : CVariable(val_ndim,
+                                       CConfig *config, CReactive *reactive) : CVariable(val_ndim,
                                                                     val_nvar,
                                                                     config   ) {
+
+                                        //std::cout << "Mutation VARIABLE 1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   unsigned short iEl, iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, nMGSmooth;
   unsigned short *nElStates;
@@ -161,7 +165,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   su2double RuSI, Ru, sqvel, num, denom, conc, soundspeed;
 
 
-  vector<su2double> Ms, Cvtr, Cvve, Cv, Energies;
+  vector<su2double>  Cvtr, Cvve, Cv, Energies, Ms;
 
   /*--- Get Mutation++ mixture ---*/
   nSpecies     = config->GetnSpecies();
@@ -262,20 +266,29 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
 
   //std::cout << "Mutation VARIABLE 1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
- 
-  if(config->GetMUTATION_PP()) reactive_TNE2variable = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
-  else reactive_TNE2variable = new CReactiveHardCode();
+  // std::cout << "Mutation VARIABLE 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 
+   reactive_TNE2variable = reactive;
+
+ 
+  //if(config->GetMUTATION_PP()) reactive_TNE2variable = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  //else reactive_TNE2variable = new CReactiveHardCode();
+
+
+// std::cout << "Mutation VARIABLE 3"  << std::endl<< std::endl<< std::endl<< std::endl;
   //std::cout << "Mutation VARIABLE 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 
-  reactive_TNE2variable->InitializeMixture(config);
+  //reactive_TNE2variable->InitializeMixture(config); //Cat1
 
   //std::cout << "Mutation VARIABLE 3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Load variables from the config class --*/
   //xi        = config->GetRotationModes();      // Rotational modes of energy storage
   //Ms = new su2double[nSpecies];
-  Ms        = reactive_TNE2variable->Get_MolarMass();         // Species molar mass //Cat
+ //su2double *Ms        = config->GetMolar_Mass();////Cat1 reactive_TNE2variable->Get_MolarMass();         // Species molar mass //Cat
+  Ms        = reactive_TNE2variable->Get_MolarMass(); ////Cat1 reactive_TNE2variable->Get_MolarMass();         // Species molar mass //Cat
+
+  //std::cout << "Mutation VARIABLE 4"  << std::endl<< std::endl<< std::endl<< std::endl;
   //thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
   //thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
   //g         = config->GetElDegeneracy();       // Degeneracy of electron states
@@ -295,6 +308,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   conc      = 0.0;
   rhoCvtr   = 0.0;
 
+ // std::cout << "Mutation VARIABLE 5"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+
   /*--- Calculate mixture density from supplied primitive quantities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     denom += val_massfrac[iSpecies] * (Ru/Ms[iSpecies]) * T;
@@ -305,23 +321,27 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   rho  = val_pressure / denom;
 
   
-  Cvtr = reactive_TNE2variable->Get_CvTraRotSpecies(val_massfrac, rho, T, Tve);
-  Cvve = reactive_TNE2variable->Get_CvVibElSpecies(val_massfrac, rho, T, Tve);
 
-  Cv.resize(nSpecies);
+//std::cout << "Mutation VARIABLE 6"  << std::endl<< std::endl<< std::endl<< std::endl;
+  
+  Cvtr = reactive_TNE2variable->Get_CvTraRotSpecies(val_massfrac, rho, T, Tve); //Cat1 
+  //Cvve = reactive_TNE2variable->Get_CvVibElSpecies(val_massfrac, rho, T, Tve);
+
+  //Cv.resize(nSpecies);
   //std::cout << "Mutation VARIABLE 4"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   //std::cout << "Mutation INITIALIZATION" <<   std::endl << std::endl<< std::endl;
   /*--- Calculate sound speed and extract velocities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    Cv[iSpecies] = Cvtr[iSpecies] + Cvve[iSpecies];
+    //Cv[iSpecies] = Cvtr[iSpecies] + Cvve[iSpecies];
     conc += val_massfrac[iSpecies]*rho/Ms[iSpecies];
     //rhoCvtr += rho*val_massfrac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]; //Cat
-    rhoCvtr += rho*val_massfrac[iSpecies] * Cv[iSpecies];
+    //rhoCvtr += rho*val_massfrac[iSpecies] * 0.0;//Cat1
+    rhoCvtr += rho*val_massfrac[iSpecies] * Cvtr[iSpecies]; //Cat1
    // std::cout << "Mutation rhos[iSpecies]=" << rho*val_massfrac[iSpecies]<<  std::endl << std::endl<< std::endl;
     //std::cout << "Mutation Cv[iSpecies]=" << Cv[iSpecies]<<  std::endl << std::endl<< std::endl;
   }
-
+//std::cout << "Mutation VARIABLE 7"  << std::endl<< std::endl<< std::endl<< std::endl;
   //std::cout << "Mutation mach init=" << val_mach[0] << std::endl << std::endl<< std::endl;
 
   soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * val_pressure/rho);
@@ -388,10 +408,15 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   //std::cout << "Mutation VARIABLE 5"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   
-  Energies = reactive_TNE2variable->Get_MixtureEnergies(val_massfrac, rho, T, Tve);
+  Energies = reactive_TNE2variable->Get_MixtureEnergies(val_massfrac, rho, T, Tve); //Cat1
 
-  rhoE   = rho*(Energies[0] + 0.5*sqvel);
-  rhoEve = rho*Energies[1];
+  rhoE   = rho*(Energies[0] + 0.5*sqvel);//Cat1
+  rhoEve = rho*Energies[1];//Cat1
+
+  //std::cout << "Mutation VARIABLE 8"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+//   rhoE   = rho*(0.0 + 0.5*sqvel);//Cat1
+  //rhoEve = rho*0.0;//Cat1
 
   //std::cout << "Mutation VARIABLE 6"  << std::endl<< std::endl<< std::endl<< std::endl;
 
@@ -424,7 +449,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   Primitive[TVE_INDEX] = val_temperature_ve;
   Primitive[P_INDEX]   = val_pressure; 
 
-  
+ // std::cout << "Mutation VARIABLE 9"  << std::endl<< std::endl<< std::endl<< std::endl;
 
 
 
@@ -1038,11 +1063,11 @@ void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
   }
 
   Cvtrs = reactive_TNE2variable->Get_CvTraRotSpecies(cs, rho, T, Tve);
-  Cvve  = reactive_TNE2variable->Get_CvVibElSpecies(cs, rho, T, Tve);
+  //Cvve  = reactive_TNE2variable->Get_CvVibElSpecies(cs, rho, T, Tve);
   Tref  = reactive_TNE2variable->Get_ReferenceTemperature(cs, rho, T, Tve);
   hf    = reactive_TNE2variable->Get_EnthalpiesFormation(cs, rho, T, Tve);
   
-  Cv.resize(nSpecies);
+  //Cv.resize(nSpecies);
   
   
     // COMPARAR VAL DPDU DEPOIS DAS MODIFICAÇOES E VER SE  MINIMAMENTE PARECIDO MUT VS NEMO
@@ -1050,7 +1075,7 @@ void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
 
   // Species density
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    Cv[iSpecies] = Cvtrs[iSpecies] + Cvve[iSpecies];
+    //Cv[iSpecies] = Cvtrs[iSpecies] + Cvve[iSpecies];
     rhos  = V[RHOS_INDEX+iSpecies];
     //ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
     ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref;
@@ -1061,7 +1086,7 @@ void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
          //ef + 0.5*sqvel);
 
     val_dPdU[iSpecies] =  T*Ru/Ms[iSpecies] + Ru*conc/rhoCvtr * //Cat ver se consigo isto tudo da mutation
-    (-Cv[iSpecies]*(T-Tref) -
+    (-Cvtrs[iSpecies]*(T-Tref) -
     ef + 0.5*sqvel);
   }
   if (ionization) { //Cat n interessa
@@ -1353,9 +1378,9 @@ void CTNE2EulerVariable::CalcdTdU(su2double *V, CConfig *config, //Cat Cvtrs, Tr
   RuSI    = UNIVERSAL_GAS_CONSTANT;
   Ru      = 1000.0*RuSI;
 
-  Cvve  = reactive_TNE2variable->Get_CvVibElSpecies(cs, V[RHO_INDEX], T, T);
+  //Cvve  = reactive_TNE2variable->Get_CvVibElSpecies(cs, V[RHO_INDEX], T, T);
 
-  Cv.resize(nSpecies);
+  //Cv.resize(nSpecies);
 
   /*--- Calculate supporting quantities ---*/
   v2 = 0.0;
@@ -1364,11 +1389,11 @@ void CTNE2EulerVariable::CalcdTdU(su2double *V, CConfig *config, //Cat Cvtrs, Tr
 
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    Cv[iSpecies] = Cvtrs[iSpecies] + Cvve[iSpecies];
+    //Cv[iSpecies] = Cvtrs[iSpecies] + Cvve[iSpecies];
     ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref; 
     //Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
     //val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs*(Tref[iSpecies]-T)) / rhoCvtr;
-    val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cv[iSpecies]*(Tref-T)) / rhoCvtr;   
+    val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Tref-T)) / rhoCvtr;   
 
   }
   if (ionization) {
@@ -1608,9 +1633,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   V[T_INDEX] = Temperatures[0];
 
-  Cvve = reactive_TNE2variable->Get_CvVibElSpecies(cs, rho, V[T_INDEX], V[T_INDEX]);
+  //Cvve = reactive_TNE2variable->Get_CvVibElSpecies(cs, rho, V[T_INDEX], V[T_INDEX]);
 
-  Cv.resize(nSpecies);
+  //Cv.resize(nSpecies);
 
   //std::cout << "Mutation rhoE=" << rhoE << std::endl<< std::endl<< std::endl<< std::endl;
   //std::cout << "Mutation rhoEve=" << rhoEve << std::endl<< std::endl<< std::endl<< std::endl;
@@ -1627,11 +1652,11 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   rhoCvtr = 0.0;
 
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    Cv[iSpecies] = Cvtrs[iSpecies] + Cvve[iSpecies];
+    //Cv[iSpecies] = Cvtrs[iSpecies] + Cvve[iSpecies];
     //rhoCvtr  += U[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]; //Cat
     //rhoE_ref += U[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * Tref[iSpecies]; //Cat
     //rhoE_f   += U[iSpecies] * (hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies]); //Cat
-    rhoCvtr  += U[iSpecies] * Cv[iSpecies]; //Cat
+    rhoCvtr  += U[iSpecies] * Cvtrs[iSpecies]; //Cat
 
     //std::cout << "Mutation rhos[" << iSpecies << "]=" << U[iSpecies]<<  std::endl << std::endl<< std::endl;
   //std::cout << "Mutation Cv[" << iSpecies << "]=" << Cv[iSpecies]<<  std::endl << std::endl<< std::endl;
@@ -1650,7 +1675,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 //std::cout << "Mutation Cvve=" << Cvve[4] << std::endl << std::endl<< std::endl;
 //std::cout << "Mutation Cv=" << Cv[4] << std::endl << std::endl<< std::endl;
 //std::cout << "Mutation rhoCvtr=" << rhoCvtr << std::endl << std::endl<< std::endl;
-  //std::cout << "Mutation rhoCvtr=" << rhoCvtr << std::endl << std::endl<< std::endl;
+  
+
+  //std::cout << "Mutation V[T_INDEX]=" << V[T_INDEX] << std::endl << std::endl<< std::endl;
  
 
   // Determine if the temperature lies within the acceptable range
@@ -1771,7 +1798,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
       // If absolutely no convergence, then assign to the TR temperature
       //if (!Bconvg) {
-        V[TVE_INDEX] = V[T_INDEX];
+        V[TVE_INDEX] = Temperatures[1];
       //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       //    val_eves[iSpecies]  = CalcEve(config, V, iSpecies); 
        //   val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies); }
@@ -1868,6 +1895,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   //std::cout << "Mutation mach init=" << val_mach[0] << std::endl << std::endl<< std::endl;
 
   V[A_INDEX] = sqrt((1.0 + Ru/rhoCvtr*conc) * V[P_INDEX]/rho);
+
+//  std::cout << std::endl << "Mutation V[A_INDEX]=" <<V[A_INDEX] << std::endl << std::endl;
 
 //std::cout << "Mutation CONS2PRIM"  << std::endl << std::endl<< std::endl;
   //std::cout << "Mutation Ru=" << Ru << std::endl << std::endl<< std::endl;
@@ -2191,7 +2220,7 @@ CTNE2NSVariable::CTNE2NSVariable(su2double val_pressure, su2double *val_massfrac
                                  unsigned short val_nvar,
                                  unsigned short val_nvarprim,
                                  unsigned short val_nvarprimgrad,
-                                 CConfig *config) : CTNE2EulerVariable(val_pressure,
+                                 CConfig *config, CReactive *reactive) : CTNE2EulerVariable(val_pressure,
                                                                        val_massfrac,
                                                                        val_mach,
                                                                        val_temperature,
@@ -2200,7 +2229,7 @@ CTNE2NSVariable::CTNE2NSVariable(su2double val_pressure, su2double *val_massfrac
                                                                        val_nvar,
                                                                        val_nvarprim,
                                                                        val_nvarprimgrad,
-                                                                       config) {
+                                                                       config, reactive) {
 
   Temperature_Ref = config->GetTemperature_Ref();
   Viscosity_Ref   = config->GetViscosity_Ref();

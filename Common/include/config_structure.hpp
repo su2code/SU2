@@ -3833,10 +3833,10 @@ public:
    */
   unsigned short GetKind_GasModel(void);
 
-  string GetGasModel(void);
+  string GetGasModel (void );
 
 
-  bool GetMUTATION_PP(void);
+  bool GetMUTATION_PP( void);
 
 
   /*!

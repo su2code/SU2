@@ -76,7 +76,7 @@ protected:
    unsigned short ns, i;
    su2double  *Cp_ks, E,  *Ws,  gammaFrozen, gammaEquilibrium, Tref, *hs;
    su2double mu, *Ds;
-   su2double  a;
+   su2double  a, Density, *Xs;
 
    vector<su2double> MolarMass, Cv_ks, Energies, OmegaVT, hf, Energies_species,  Temp,  lambda, rhos, temperatures;
 
@@ -132,6 +132,8 @@ public:
     vector<su2double> Mutation_Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve);
 
     su2double  Mutation_Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
+
+    su2double  Mutation_Get_Density(su2double T, su2double *cs, su2double P);
 
     
     

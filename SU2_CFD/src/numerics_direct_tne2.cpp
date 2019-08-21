@@ -497,6 +497,8 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
 
   reactive_AUSM->InitializeMixture(config);
 
+  //std::cout << "Mutation: reactive_AUSM"  << std::endl;
+
   //ionization = reactive_AUSM->Get_Ionization();
 }
 
@@ -601,39 +603,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-  //std::cout << "Mutation a_i[iDim]=" << a_i << std::endl << std::endl; 
-    //Fstd::cout << "Mutation a_j[iDim]=" << a_j << std::endl << std::endl;
-
   
- // std::cout << "Mutation V_i[RHOS_INDEX]=" << V_i[RHOS_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_i[RHOS_INDEX+1]=" << V_i[RHOS_INDEX+1]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[RHOS_INDEX]=" << V_j[RHOS_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[RHOS_INDEX+1]=" << V_j[RHOS_INDEX+1]<< std::endl << std::endl; 
-//
-//
- // std::cout << "Mutation V_i[P_INDEX]=" << V_i[P_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[P_INDEX]=" << V_j[P_INDEX]<< std::endl << std::endl;  
- // std::cout << "Mutation V_i[H_INDEX]=" << V_i[H_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[H_INDEX]=" << V_j[H_INDEX]<< std::endl << std::endl;  
- // std::cout << "Mutation V_i[A_INDEX]=" << V_i[A_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[A_INDEX]=" << V_j[A_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_i[RHO_INDEX]=" << V_i[RHO_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[RHO_INDEX]=" << V_j[RHO_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_i[T_INDEX]=" << V_i[T_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[T_INDEX]=" << V_j[T_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_i[TVE_INDEX]=" << V_i[TVE_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[TVE_INDEX]=" << V_j[TVE_INDEX]<< std::endl << std::endl; 
-//
- // std::cout << "Mutation U_i[nSpecies+nDim+1]=" << U_i[nSpecies+nDim+1] << std::endl << std::endl;
- // std::cout << "Mutation U_j[nSpecies+nDim+1]=" << U_j[nSpecies+nDim+1] << std::endl << std::endl;
-//
- // std::cout << "Mutation V_i[RHOCVTR_INDEX]=" << V_i[RHOCVTR_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[RHOCVTR_INDEX]=" << V_j[RHOCVTR_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_i[RHOCVVE_INDEX]=" << V_i[RHOCVVE_INDEX]<< std::endl << std::endl; 
- // std::cout << "Mutation V_j[RHOCVVE_INDEX]=" << V_j[RHOCVVE_INDEX]<< std::endl << std::endl; 
-
-  
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     cs_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho_i;
     cs_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/rho_j;
@@ -682,37 +652,15 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   FcL[nSpecies+nDim+1] = rho_i*a_i*e_ve_i;
   FcR[nSpecies+nDim+1] = rho_j*a_j*e_ve_j;
 
-  //std::cout << "Mutation rho_i=" << rho_i << std::endl << std::endl; 
-  //std::cout << "Mutation rho_j=" << rho_j << std::endl << std::endl; 
-  //std::cout << "Mutation e_ve_i=" << e_ve_i << std::endl << std::endl; 
-  //std::cout << "Mutation e_ve_j=" << e_ve_j << std::endl << std::endl; 
-
+ 
   /*--- Compute numerical flux ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
-  
-  
-  //std::cout << "Mutation Phi=" << Phi << std::endl << std::endl; 
-  //std::cout << "Mutation FcL[iVar]=" << FcL[iVar] << std::endl << std::endl; 
-  //std::cout << "Mutation FcR[iVar]=" << FcR[iVar] << std::endl << std::endl; 
-  //std::cout << "Mutation Area=" << Area << std::endl << std::endl; 
-  //std::cout << "Mutation val_residual[" << iVar << "]=" << val_residual[iVar] << std::endl << std::endl; 
   }
 
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
-
-  
-
-  //Cvtrs_i = reactive_AUSM->Get_CvTraRotSpecies(cs_i, rho_i, T_i, Tve_i);
-  //Cvtrs_j = reactive_AUSM->Get_CvTraRotSpecies(cs_j, rho_j, T_j, Tve_j);
-
-  //Cvve_i  = reactive_AUSM->Get_CvVibElSpecies(cs_i, rho_i, T_i, Tve_i);
-  //Cvve_j  = reactive_AUSM->Get_CvVibElSpecies(cs_j, rho_j, T_j, Tve_j);
-
-  //Cv_i.resize(nSpecies);
-  //Cv_j.resize(nSpecies);
 
   if (implicit) {
 
@@ -1277,9 +1225,7 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
 
   /*--- AUSM's Jacobian....requires tiny CFL's (this must be fixed) ---*/
   
-  Cvtrs_i = reactive_AUSMPLUSUP2->Get_CvTraRotSpecies(cs_i, rho_i, T_i, Tve_i);
-  Cvtrs_j = reactive_AUSMPLUSUP2->Get_CvTraRotSpecies(cs_j, rho_j, T_j, Tve_j);
-
+  
   if (implicit) {
 
     /*--- Initialize the Jacobians ---*/
@@ -2247,16 +2193,6 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
 
   RHO_INDEX = var->GetRhoIndex();
   
-
-  
-        
-
-  //}
-
-  //std::cout << "Mutation CAvgGrad_TNE2 1"  << std::endl<< std::endl<< std::endl<< std::endl;
-
-  //std::cout << "Mutation RHO_INDEX="  << RHO_INDEX << std::endl<< std::endl<< std::endl<< std::endl;
-
   unsigned short iSpecies, iVar, iDim;
 
   /*--- Normalized normal vector ---*/
@@ -2268,13 +2204,12 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  //std::cout << "Mutation CAvgGrad_TNE2 1.2"  << std::endl<< std::endl<< std::endl<< std::endl;
-
+  
   /*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
-  //std::cout << "Mutation CAvgGrad_TNE2 1.3"  << std::endl<< std::endl<< std::endl<< std::endl;
+  
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
                                 Laminar_Viscosity_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
@@ -2282,20 +2217,13 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
   Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
                                       Thermal_Conductivity_ve_j);
 
-  //std::cout << "Mutation CAvgGrad_TNE2 1.4"  << std::endl<< std::endl<< std::endl<< std::endl;
-
   
-
-
   /*--- Mean gradient approximation ---*/
   // Mass fraction
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     PrimVar_i[iSpecies] = V_i[iSpecies]/V_i[RHO_INDEX];
-    //std::cout << "Mutation CAvgGrad_TNE2 1.4.1"  << std::endl<< std::endl<< std::endl<< std::endl;
     PrimVar_j[iSpecies] = V_j[iSpecies]/V_j[RHO_INDEX];
-    //std::cout << "Mutation CAvgGrad_TNE2 1.4.2"  << std::endl<< std::endl<< std::endl<< std::endl;
     Mean_PrimVar[iSpecies] = 0.5*(PrimVar_i[iSpecies] + PrimVar_j[iSpecies]);
-    //std::cout << "Mutation CAvgGrad_TNE2 1.4.3"  << std::endl<< std::endl<< std::endl<< std::endl;
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iSpecies][iDim] =  0.5*(1.0/V_i[RHO_INDEX] *
                                           (PrimVar_Grad_i[iSpecies][iDim] -
@@ -2316,29 +2244,25 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
 
-  //std::cout << "Mutation CAvgGrad_TNE2 1.6"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
     }
   }
-  //std::cout << "Mutation CAvgGrad_TNE2 1.7"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
-  //std::cout << "Mutation CAvgGrad_TNE2 2"  << std::endl<< std::endl<< std::endl<< std::endl;
-
+  
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
                      Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
 
-  //std::cout << "Mutation CAvgGrad_TNE2 3"  << std::endl<< std::endl<< std::endl<< std::endl;
-
+ 
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
@@ -2612,6 +2536,8 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   else reactive_source = new CReactiveHardCode();
 
   reactive_source->InitializeMixture(config);
+
+  //std::cout << "Mutation: reactive_SOURCE"  << std::endl;
 
 
 }

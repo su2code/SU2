@@ -613,7 +613,7 @@ enum ENUM_TRANSCOEFFMODEL {
 	GUPTAYOS = 1
 };
 static const map<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = CCreateMap<string, ENUM_TRANSCOEFFMODEL>
-("WBE", WBE)
+("WILKE", WBE)
 ("GUPTA-YOS", GUPTAYOS);
 
 /*!

@@ -65,3 +65,4 @@ inline su2double  CReactive::Get_Viscosity(su2double *cs, su2double rho, su2doub
 inline vector<su2double> CReactive::Get_ThermalConductivity(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 inline vector<su2double> CReactive::Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve) {}
 inline su2double  CReactive::Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve) {}
+inline su2double  CReactive::Get_Density(su2double T, su2double *Xs, su2double P){}

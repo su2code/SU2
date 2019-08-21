@@ -70,25 +70,31 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Reading config options  ---*/
 
+  
   SetConfig_Options(val_iZone, val_nZone);
 
+  
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_filename);
 
+  
   /*--- Configuration file postprocessing ---*/
 
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
+  
   /*--- Configuration file boundaries/markers setting ---*/
 
   SetMarkers(val_software);
 
+  
   /*--- Configuration file output ---*/
 
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone == 0))
     SetOutput(val_software, val_iZone);
 
+  
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {

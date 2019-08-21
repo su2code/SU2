@@ -129,7 +129,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone, iInst);
 
-  //std::cout << "Mutation MultiGrid_Iteration 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "Mutation MultiGrid_Iteration 1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -140,6 +140,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                                          solver_container[iZone][iInst][MESH_0], config[iZone],
                                                                          MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
 
+  //std::cout << "Mutation MultiGrid_Iteration 2"  << std::endl<< std::endl<< std::endl<< std::endl;
  
   
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/

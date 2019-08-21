@@ -4266,7 +4266,7 @@ public:
                      su2double *val_mach, su2double val_temperature,
                      su2double val_temperature_ve, unsigned short val_ndim,
                      unsigned short val_nvar, unsigned short val_nvarprim,
-                     unsigned short val_nvarprimgrad, CConfig *config);
+                     unsigned short val_nvarprimgrad, CConfig *config, CReactive *reactive);
 
   /*!
    * \overload
@@ -4740,7 +4740,7 @@ public:
   CTNE2NSVariable(su2double val_density, su2double *val_massfrac, su2double *val_velocity,
                   su2double val_temperature, su2double val_temperature_ve, unsigned short val_ndim,
                   unsigned short val_nvar, unsigned short val_nvarprim,
-                  unsigned short val_nvarprimgrad, CConfig *config);
+                  unsigned short val_nvarprimgrad, CConfig *config, CReactive *reactive);
 
   /*!
    * \overload

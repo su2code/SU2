@@ -79,7 +79,7 @@ protected:
   CMutation *mutation;
   su2double *comp, *Cp_ks,  *Cp_trs, *Cp_ves, E, gamma, gammaFrozen, gammaEquilibrium, *Ws, Tref, *hs;
   su2double  mu, *Ds;
-  su2double  a;
+  su2double  a, Density, *Xs;
 
   vector<su2double> Ms, Cv_trs, Cv_ks, Energies, OmegaVT, hf, Energies_Species,  Cv_ves, Temp, lambda;
 
@@ -141,6 +141,8 @@ public:
     virtual vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve);
 
     virtual su2double  Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
+
+    virtual su2double  Get_Density(su2double T, su2double *Xs, su2double P);
 
     
 };
@@ -207,6 +209,8 @@ public:
 
   su2double  Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
 
+  su2double  Get_Density(su2double T, su2double *Xs, su2double P);
+
   
 };
 
@@ -271,6 +275,8 @@ public:
   vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve);
 
   su2double  Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
+
+  su2double  Get_Density(su2double T, su2double *Xs, su2double P);
 
  
 };

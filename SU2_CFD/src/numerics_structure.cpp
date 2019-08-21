@@ -728,21 +728,17 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   V   = val_primvar;
   GV  = val_gradprimvar;
 
- // std::cout << "Mutation GetViscousProjFlux 1"  << std::endl<< std::endl<< std::endl<< std::endl;
-
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     hs[iSpecies]  = var->CalcHs(config, val_primvar, iSpecies);
      
 
-  std::cout << "Mutation GetViscousProjFlux 1.2"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += GV[VEL_INDEX+iDim][iDim];
 
 
-   std::cout << "Mutation GetViscousProjFlux 1.2.1"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
@@ -750,8 +746,6 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
   }
-
-  std::cout << "Mutation GetViscousProjFlux 1.3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   
   /*--- Compute the viscous stress tensor ---*/
@@ -802,7 +796,6 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     }
   }
 
-  std::cout << "Mutation GetViscousProjFlux 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 }
 
 void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,

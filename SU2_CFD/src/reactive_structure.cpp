@@ -72,11 +72,12 @@ void CReactiveMutation::InitializeMixture(CConfig *config) {
 
   //std::cout << "MUTATION 1 reactive"  << std::endl;  
     
-  mutation = new CMutation(comp, nSpecies, opt);
+  mutation = new CMutation(comp, nSpecies, opt); //Cat1
 
   //std::cout << "MUTATION 2 reactive"  << std::endl;  
 
-  Ms       = mutation->Mutation_MolarMass();
+  Ms       = mutation->Mutation_MolarMass(); //Cat1cd -
+
 
   hs = new su2double[nSpecies];
   Ds = new su2double[nSpecies];
@@ -301,7 +302,13 @@ su2double CReactiveMutation::Get_SoundSpeedFrozen(su2double *cs, su2double rho, 
 
   return a;
 
+}
 
+su2double CReactiveMutation::Get_Density(su2double T, su2double *Xs, su2double P){
+
+  Density = mutation->Mutation_Get_Density(T, Xs, P);
+
+  return Density;
 }
 
 
@@ -358,3 +365,5 @@ vector<su2double> CReactiveHardCode::Get_ThermalConductivity(su2double *cs, su2d
 vector<su2double> CReactiveHardCode::Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve){}
 
 su2double  CReactiveHardCode::Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve){}
+
+su2double CReactiveHardCode::Get_Density(su2double T, su2double *Xs, su2double P){}
