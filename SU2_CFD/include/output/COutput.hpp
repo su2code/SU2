@@ -74,8 +74,6 @@ protected:
   
   COutputLegacy *output_legacy;
 
-  std::vector< std::vector<su2double> > Local_Data;
-
   vector<string> Variable_Names;
 
   su2double RhoRes_New, *RhoRes_Old;
@@ -196,7 +194,7 @@ public:
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *config, unsigned short nDim);
+  COutput(CConfig *config, unsigned short nDim, bool fem_output);
   
   /*! 
    * \brief Destructor of the class. 
