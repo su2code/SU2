@@ -5247,7 +5247,6 @@ public:
  * \class CSourceIncRotatingFrame_Flow 
  * \brief Class for a rotating frame source term. 
  * \ingroup SourceDiscr 
- * \author F. Palacios, T. Economon, C. Venkatesan-Crome 
  */ 
 class CSourceIncRotatingFrame_Flow : public CNumerics { 
 public: 

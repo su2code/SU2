@@ -564,22 +564,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  //TK:: Disturb the initial solution slightly to see whether ALE stuff is doing anything at all
-  //if(rank == MASTER_NODE) cout << "Disturbing initial solution slightly, CIncEulerSolver::CIncEulerSolver" << endl;
-  //su2double tmpPressure_Inf = Pressure_Inf + 0.2*Pressure_Inf;
-  //su2double *tmpVelocity_Inf = new su2double[nDim];
-  //for (iDim = 0; iDim < nDim; iDim++) {
-  //  if (Velocity_Inf[iDim] == 0.0) {
-  //    tmpVelocity_Inf[iDim] = 12.3;
-  //  } else {
-  //    tmpVelocity_Inf[iDim] = Velocity_Inf[iDim] + 0.2*Velocity_Inf[iDim];
-  //  }
-  //}
-  //su2double tmpTemperature_Inf = Temperature_Inf + 0.2*Temperature_Inf;
-  //TK:: end
-
-  //for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //  node[iPoint] = new CIncEulerVariable(tmpPressure_Inf, tmpVelocity_Inf, tmpTemperature_Inf, nDim, nVar, config);
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nDim, nVar, config);
 
@@ -4619,132 +4603,6 @@ void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
 }
 
-//void CIncEulerSolver::BC_Euler_Wall(CGeometry     *geometry,
-//                                   CSolver        **solver_container,
-//                                   CNumerics      *conv_numerics,
-//                                   CConfig        *config,
-//                                   unsigned short val_marker) {
-//  
-//  unsigned short iDim, iVar;
-//  unsigned long iVertex, iPoint;
-//  
-//  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-//  bool grid_movement = config->GetGrid_Movement();
-//  
-//  /*--- Allocation of variables necessary for convective fluxes. ---*/
-//  su2double Area, ProjVelocity_i;
-//  su2double *V_reflected, *V_domain;
-//  su2double *Normal     = new su2double[nDim];
-//  su2double *UnitNormal = new su2double[nDim];
-//
-//  su2double *GridVel = NULL;
-//  su2double ProjGridVel = 0.0;
-//  su2double *Velocity_b;
-//  Velocity_b = new su2double[nDim];
-//  su2double Density_b, BetaInc2_b, Enthalpy_b;
-//
-//  /*--- Loop over all the vertices on this boundary marker. ---*/
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//    
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//    
-//    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-//    if (geometry->node[iPoint]->GetDomain()) {
-//
-//      /*-------------------------------------------------------------------------------*/
-//      /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
-//      /*---         Primitive variables by copying all interior values to the       ---*/
-//      /*---         reflected. Only the velocity is mirrored along the symmetry     ---*/
-//      /*---         axis. Based on the Upwind_Residual routine.                     ---*/
-//      /*-------------------------------------------------------------------------------*/
-//
-//      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-//      geometry->vertex[val_marker][0]->GetNormal(Normal); 
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Normal[iDim] = -Normal[iDim];
-//
-//      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
-//      Area = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Area += Normal[iDim]*Normal[iDim];
-//      Area = sqrt (Area);
-//
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        UnitNormal[iDim] = -Normal[iDim]/Area;
-//      
-//      /*--- Allocate the reflected state at the symmetry boundary. ---*/
-//      V_reflected = GetCharacPrimVar(val_marker, iVertex);
-//      
-//      /*--- Grid movement ---*/
-//      //if (grid_movement)
-//      //  conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-//      
-//      /*--- Normal vector for this vertex (negate for outward convention). ---*/
-//      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Normal[iDim] = -Normal[iDim];
-//      //conv_numerics->SetNormal(Normal);
-//      
-//      /*--- Get current solution at this boundary node ---*/
-//      V_domain = node[iPoint]->GetPrimitive();
-//      
-//      /*--- Set the reflected state based on the boundary node. Scalars are copied and 
-//            the velocity is mirrored along the symmetry boundary, i.e. the velocity in 
-//            normal direction is substracted twice. ---*/
-//      for(iVar = 0; iVar < nPrimVar; iVar++)
-//        V_reflected[iVar] = node[iPoint]->GetPrimitive(iVar);
-//
-//      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
-//            velocity in normal direction: v_r = v - 2 (v*n)n ---*/
-//      ProjVelocity_i = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        ProjVelocity_i += node[iPoint]->GetVelocity(iDim)*UnitNormal[iDim];
-//      
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        V_reflected[iDim+1] = node[iPoint]->GetVelocity(iDim) - ProjVelocity_i*UnitNormal[iDim];
-//        
-//
-//      if (grid_movement) {
-//        GridVel = geometry->node[iPoint]->GetGridVel();
-//        ProjGridVel = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-//        for (iDim = 0; iDim < nDim; iDim++) V_reflected[iDim+1] += GridVel[iDim] - ProjGridVel * UnitNormal[iDim];
-//      }
-//
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Velocity_b[iDim] = V_reflected[iDim+1];
-//      
-//      /*--- Set Primitive and Secondary for numerics class. ---*/
-//      //conv_numerics->SetPrimitive(V_domain, V_reflected);
-//      //conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
-//
-//      /*--- Compute the residual using an upwind scheme. ---*/
-//      //conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//      
-//      //conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
-//
-//      Density_b = node[iPoint]->GetDensity();
-//      BetaInc2_b = node[iPoint]->GetBetaInc2();
-//      Enthalpy_b = node[iPoint]->GetEnthalpy();
-//      conv_numerics->GetInviscidIncProjFlux(&Density_b, Velocity_b, &V_reflected[0], &BetaInc2_b, &Enthalpy_b, Normal, Residual);
-//
-//      /*--- Update residual value ---*/     
-//      LinSysRes.AddBlock(iPoint, Residual);
-//      
-//      /*--- Jacobian contribution for implicit integration. ---*/
-//      if (implicit) {
-//        //Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//      }
-//      
-//    }
-//  }
-//  
-//  /*--- Free locally allocated memory ---*/
-//  delete [] Normal;
-//  delete [] UnitNormal;
-//  delete [] Velocity_b;
-//}
-
 void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
@@ -4874,7 +4732,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = GetVelocity_Inf(iDim);
 
-      /*--- Far-field pressure set to static pressure (0.0). ---*/ //TK:: why 0.0?!
+      /*--- Far-field pressure set to static pressure (0.0). ---*/
 
       V_infty[0] = GetPressure_Inf();
 
