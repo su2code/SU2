@@ -64,17 +64,15 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
-        case EULER: case NAVIER_STOKES: case RANS:
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
-          if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE) {
-            direct_output[iZone] = new CFlowCompOutput(config_container[iZone], nDim);
-          }
-          else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE) {
-            direct_output[iZone] = new CFlowIncOutput(config_container[iZone], nDim);
-          }
+          direct_output[iZone] = new CFlowCompOutput(config_container[iZone], nDim);
           break;
-        case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
+        case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+          direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+          direct_output[iZone] = new CFlowIncOutput(config_container[iZone], nDim);
+          break;
+        case DISC_ADJ_HEAT:
           direct_iteration[iZone][iInst] = new CHeatIteration(config_container[iZone]);
           direct_output[iZone] = new CHeatOutput(config_container[iZone], nDim);
           break;
@@ -379,49 +377,11 @@ void CDiscAdjMultizoneDriver::Run() {
       OuterConvergence(iOuter_Iter);
     }
 
-    /*--- Check convergence in each zone --*/
-
-    checkConvergence = 0;
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      switch (config_container[iZone]->GetKind_Solver()) {
-
-        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          checkConvergence += (int) integration_container[iZone][INST_0][ADJFLOW_SOL]->GetConvergence();
-          break;
-        case DISC_ADJ_HEAT:
-          checkConvergence += (int) integration_container[iZone][INST_0][ADJHEAT_SOL]->GetConvergence();
-          break;
-        default:
-          checkConvergence += 1;
-          break;
-      }
-    }
-
-    /*--- If convergence was reached in every zone --*/
-
-    if (checkConvergence == nZone) break;
-
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
 
-
     /*--- Compute the geometrical sensitivities ---*/
-
-    checkConvergence = 0;
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        checkConvergence += (int) integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence();
-        break;
-      case DISC_ADJ_HEAT:
-        checkConvergence += (int) integration_container[ZONE_0][INST_0][ADJHEAT_SOL]->GetConvergence();
-        break;
-      default:
-        checkConvergence += 1;
-        break;
-    }
 
     if (nZone == 1) {
       checkSensitivity = ((iInner_Iter+1 >= nIter) ||
@@ -467,6 +427,7 @@ void CDiscAdjMultizoneDriver::Run() {
         switch (config_container[iZone]->GetKind_Solver()) {
 
           case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+          case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
             solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
             break;
           case DISC_ADJ_HEAT:
@@ -618,9 +579,10 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
     switch (config_container[iZone]->GetKind_Solver()) {
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
         cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
         break;
-      case DISC_ADJ_RANS:
+      case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
         cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
         if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
           cout << " Zone " << iZone << " (turb) - log10[RMS k]         : " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
@@ -647,8 +609,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
@@ -658,7 +620,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
         break;
 
-      case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
+      case DISC_ADJ_HEAT:
         solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         break;
     }
@@ -678,9 +640,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
-        case EULER:                   case NAVIER_STOKES:                   case RANS:
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-
           // per-surface output to be added soon
           break;
 
@@ -700,8 +660,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
         switch(config_container[iZone]->GetKind_ObjFunc()) {
 
@@ -783,7 +743,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         }
         break;
 
-      case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
+        case DISC_ADJ_HEAT:
 
         switch(config_container[iZone]->GetKind_ObjFunc()) {
 
