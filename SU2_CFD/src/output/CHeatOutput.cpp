@@ -39,7 +39,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
+CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
   multizone = config->GetMultizone_Problem();
 

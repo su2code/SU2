@@ -3659,7 +3659,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     default:
       if (rank == MASTER_NODE)
         cout << ": default output structure." << endl;
-      output[iZone] = new COutput(config[iZone], nDim);
+      output[iZone] = new COutput(config[iZone], nDim, false);
       break;
     }
     
