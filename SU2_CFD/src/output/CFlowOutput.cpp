@@ -790,7 +790,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
   
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff = 0.0;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
@@ -911,8 +911,8 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
       }
     }
     
+    su2double MyPressDiff = PressDiff;
 #ifdef HAVE_MPI
-    su2double MyPressDiff = PressDiff;   PressDiff = 0.0;
     SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
     
