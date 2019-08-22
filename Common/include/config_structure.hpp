@@ -47,6 +47,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <array>
 #include <stdlib.h>
 #include <cmath>
 #include <map>
