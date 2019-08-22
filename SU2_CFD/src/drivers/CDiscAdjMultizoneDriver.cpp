@@ -108,7 +108,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
 
   if (rank == MASTER_NODE){
-    cout << endl <<"Simulation Run using the Discrete Adjoint Multizone Driver" << endl;
+    cout << endl << "Simulation Run using the Discrete Adjoint Multizone Driver" << endl;
+
     if (driver_config->GetTime_Domain())
       SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.", CURRENT_FUNCTION);
   }
@@ -305,8 +306,7 @@ void CDiscAdjMultizoneDriver::Run() {
      *
      *    To set the tape appropriately, the following recording methods are provided:
      *    (1) NONE: All information from a previous recording is removed.
-     *    (2) STATE_VARS: Store computational graph of one direct iteration with state variables
-     *        (e.g. conservatives variables for a flow solver) as input.
+     *    (2) FLOW_CONS_VARS: State variables of all solvers in a zone as input.
      *    (3) MESH_COORDS: Mesh coordinates as input.
      *    (4) COMBINED: Mesh coordinates and state variables as input.
      *
@@ -319,7 +319,6 @@ void CDiscAdjMultizoneDriver::Run() {
      *    If not, the whole tape of a coupled run will be created.   ---*/
 
     if(retape) {
-
       SetRecording(NONE, FULL_TAPE, ZONE_0);
       SetRecording(FLOW_CONS_VARS, OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
@@ -329,7 +328,14 @@ void CDiscAdjMultizoneDriver::Run() {
       SetRecording(FLOW_CONS_VARS, FULL_TAPE, ZONE_0);
     }
 
-    Set_OldAdjoints(); SetIter_Zero(); AD::ClearAdjoints();
+    /*--- Set Solution_Old (where an evaluation is initialized from) to value in Solution. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      Set_OldAdjoints(iZone);
+    }
+
+    SetIter_Zero(); AD::ClearAdjoints();
 
     SetAdj_ObjFunction();
 
@@ -351,17 +357,33 @@ void CDiscAdjMultizoneDriver::Run() {
         SetRecording(FLOW_CONS_VARS, ZONE_SPECIFIC_TAPE, iZone);
       }
 
-      ComputeAdjoints(iZone);
+      /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
-      for (jZone = 0; jZone < nZone; jZone++) {
+      for (unsigned short iInnerIter = 0; iInnerIter < 1; iInnerIter++) {
+
+        ComputeAdjoints(iZone);
+
+        for (jZone = 0; jZone < nZone; jZone++) {
+
+          /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
+          *     e.g. in case of a fluid iteration, the flow, turbulence (if RANS) and mesh (if FSI) adjoints. ---*/
 
           iteration_container[jZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, jZone, INST_0);
+        }
+
+        /*--- Set Solution_Old for a next inner evaluation. ---*/
+
+        Set_OldAdjoints(iZone);
       }
+
+      /*--- Add to Solution_Iter from Solution ---*/
 
       Add_IterAdjoints();
     }
+
+    /*--- Set Solution to value in Solution_Iter for a next outer evaluation. ---*/
 
     SetAdjoints_Iter();
 
@@ -405,7 +427,10 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
        *    of the current iteration. The values are passed to the AD tool. ---*/
 
-      Set_OldAdjoints();
+      for (iZone = 0; iZone < nZone; iZone++) {
+
+        Set_OldAdjoints(iZone);
+      }
 
       for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -824,17 +849,14 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
   AD::ComputeAdjoint(2,0);
 }
 
-void CDiscAdjMultizoneDriver::Set_OldAdjoints(void) {
+void CDiscAdjMultizoneDriver::Set_OldAdjoints(unsigned short iZone) {
 
-  unsigned short iZone, iSol;
+  unsigned short iSol;
 
-  for(iZone=0; iZone < nZone; iZone++) {
-
-    for (iSol=0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        }
+  for (iSol=0; iSol < MAX_SOLS; iSol++){
+    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+        solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
       }
     }
   }
