@@ -82,7 +82,7 @@ if options.dim == 3:
     for jIndex in range(options.jOrder):
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
-        dvList = dvList + "( 7, " + str(options.scale) + " | " + options.marker + " | "
+        dvList = dvList + "( 11, " + str(options.scale) + " | " + options.marker + " | "
         dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 1.0, 0.0, 0.0 )"
         if iVariable < (options.iOrder*(options.jOrder)*options.kOrder):
           dvList = dvList + "; "
@@ -99,7 +99,7 @@ if options.dim == 3:
     for jIndex in range(options.jOrder):
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
-        dvList = dvList + "( 7, " + str(options.scale) + " | " + options.marker + " | "
+        dvList = dvList + "( 11, " + str(options.scale) + " | " + options.marker + " | "
         dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 0.0, 1.0, 0.0 )"
         if iVariable < (options.iOrder*(options.jOrder)*options.kOrder):
           dvList = dvList + "; "
@@ -116,7 +116,7 @@ if options.dim == 3:
     for jIndex in range(options.jOrder):
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
-        dvList = dvList + "( 7, " + str(options.scale) + " | " + options.marker + " | "
+        dvList = dvList + "( 11, " + str(options.scale) + " | " + options.marker + " | "
         dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 0.0, 0.0, 1.0 )"
         if iVariable < (options.iOrder*(options.jOrder)*options.kOrder):
           dvList = dvList + "; "
@@ -133,7 +133,7 @@ if options.dim == 3:
     for jIndex in range(1+options.jOrder/2):
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
-        dvList = dvList + "( 22, " + str(options.scale) + " | " + options.marker + " | "
+        dvList = dvList + "( 12, " + str(options.scale) + " | " + options.marker + " | "
         dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 1.0, 0.0 )"
         if iVariable < (options.iOrder*(1+options.jOrder/2)*options.kOrder):
           dvList = dvList + "; "
@@ -150,7 +150,7 @@ if options.dim == 3:
     for jIndex in range(1+options.jOrder/2):
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
-        dvList = dvList + "( 22, " + str(options.scale) + " | " + options.marker + " | "
+        dvList = dvList + "( 12, " + str(options.scale) + " | " + options.marker + " | "
         dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 0.0, 1.0 )"
         if iVariable < (options.iOrder*(1+options.jOrder/2)*options.kOrder):
           dvList = dvList + "; "
@@ -167,7 +167,7 @@ if options.dim == 3:
     for jIndex in range(options.jOrder-4):
       for iIndex in range(options.iOrder-4):
         iVariable = iVariable + 1
-        dvList = dvList + "( 7, " + str(options.scale) + " | " + options.marker + " | "
+        dvList = dvList + "( 11, " + str(options.scale) + " | " + options.marker + " | "
         dvList = dvList + options.ffd_id + ", " + str(iIndex+2) + ", " + str(jIndex+2) + ", " + str(kIndex+2) + ", 0.0, 0.0, 1.0 )"
         if iVariable < (options.iOrder*(options.jOrder)*options.kOrder):
           dvList = dvList + "; "
@@ -176,44 +176,46 @@ if options.dim == 3:
   print(dvList)
 
   print(" ")
-  print("% FFD_CAMBER, FFD_THICKNESS, FFS_TWIST")
+  print("% FFD_CAMBER, FFD_TWIST, FFD_THICKNESS")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for jIndex in range(options.jOrder):
     for iIndex in range(options.iOrder):
       iVariable = iVariable + 1
-      dvList = dvList + "( 11, " + str(options.scale) + " | " + options.marker + " | "
-      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
-      dvList = dvList + "; "
-  iVariable = 0
-  for jIndex in range(options.jOrder):
-    for iIndex in range(options.iOrder):
-      iVariable = iVariable + 1
-      dvList = dvList + "( 12, " + str(options.scale) + " | " + options.marker + " | "
+      dvList = dvList + "( 14, " + str(options.scale) + " | " + options.marker + " | "
       dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
       dvList = dvList + "; "
   iVariable = 0
   for jIndex in range(options.jOrder):
     iVariable = iVariable + 1
-    dvList = dvList + "( 19, " + str(options.scale) + " | " + options.marker + " | "
+    dvList = dvList + "( 15, " + str(options.scale) + " | " + options.marker + " | "
     dvList = dvList + options.ffd_id + ", " + str(jIndex) + ", " + options.axis + " )"
     if iVariable < (options.jOrder):
       dvList = dvList + "; "
+  iVariable = 0
+  for jIndex in range(options.jOrder):
+    for iIndex in range(options.iOrder):
+      iVariable = iVariable + 1
+      dvList = dvList + "( 16, " + str(options.scale) + " | " + options.marker + " | "
+      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
+      dvList = dvList + "; "
+  
+  
 
   print(dvList)
 
 if options.dim == 2:
 
   print(" ")
-  print("% FFD_CONTROL_POINT (X)")
+  print("% FFD_CONTROL_POINT_2D (X)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for jIndex in range(options.jOrder):
     for iIndex in range(options.iOrder):
       iVariable = iVariable + 1
-      dvList = dvList + "( 15, " + str(options.scale) + " | " + options.marker + " | "
+      dvList = dvList + "( 19, " + str(options.scale) + " | " + options.marker + " | "
       dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", 1.0, 0.0 )"
       if iVariable < (options.iOrder*options.jOrder):
         dvList = dvList + "; "
@@ -221,14 +223,14 @@ if options.dim == 2:
   print(dvList)
 
   print(" ")
-  print("% FFD_CONTROL_POINT (Y)")
+  print("% FFD_CONTROL_POINT_2D (Y)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for jIndex in range(options.jOrder):
     for iIndex in range(options.iOrder):
       iVariable = iVariable + 1
-      dvList = dvList + "( 15, " + str(options.scale) + " | " + options.marker + " | "
+      dvList = dvList + "( 19, " + str(options.scale) + " | " + options.marker + " | "
       dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", 0.0, 1.0 )"
       if iVariable < (options.iOrder*options.jOrder):
         dvList = dvList + "; "
@@ -236,19 +238,19 @@ if options.dim == 2:
   print(dvList)
 
   print(" ")
-  print("FFD_CAMBER & FFD_THICKNESS")
+  print("FFD_CAMBER_2D & FFD_THICKNESS_2D")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for iIndex in range(options.iOrder):
     iVariable = iVariable + 1
-    dvList = dvList + "( 16, " + str(options.scale) + " | " + options.marker + " | "
+    dvList = dvList + "( 20, " + str(options.scale) + " | " + options.marker + " | "
     dvList = dvList + options.ffd_id + ", " + str(iIndex) + " )"
     dvList = dvList + "; "
   iVariable = 0
   for iIndex in range(options.iOrder):
     iVariable = iVariable + 1
-    dvList = dvList + "( 17, " + str(options.scale) + " | " + options.marker + " | "
+    dvList = dvList + "( 21, " + str(options.scale) + " | " + options.marker + " | "
     dvList = dvList + options.ffd_id + ", " + str(iIndex) + " )"
     if iVariable < (options.iOrder):
       dvList = dvList + "; "
