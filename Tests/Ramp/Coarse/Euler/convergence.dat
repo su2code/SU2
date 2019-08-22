@@ -1,4 +1,0 @@
-TITLE = "SU2 Simulation"
-VARIABLES = "Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","AoA","Custom_ObjFunc","Res_Flow[0]","Res_Flow[1]","Res_Flow[2]","Res_Flow[3]","Res_Flow[4]","Linear_Solver_Iterations","CFL_Number","Time(min)"
-ZONE T= "Convergence history"
-           0, -1.00282537e-03, 1.76825373e-04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00, -4.69263742e-04, 1.76825373e-04, -1.00282537e-03, 0.00000000e+00, -5.67127529e+00, 0.00000000e+00, 0.00000000e+00, 0.0000000000, 0.1000000000, 0.0003207167
