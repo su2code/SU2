@@ -18,7 +18,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - e.t.a.vanderweide@utwente.nl
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
