@@ -83,23 +83,31 @@ void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
   
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
-  
+
+  /* Determine number of local points */
+  for(unsigned long globalIndex=0; globalIndex < numberOfGlobalPoints; globalIndex++) {
+    if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
+      numberOfLocalPoints++;
+    }
+  }
+
   /* Loop over our analytically defined of coordinates and store only
    those that contain a node within our linear partition of points. */
   localPointCoordinates.resize(dimension);
+  for (int k = 0; k < dimension; k++)
+    localPointCoordinates[k].reserve(numberOfLocalPoints);
   unsigned long globalIndex = 0;
   for (unsigned long jNode = 0; jNode < mNode; jNode++) {
     for (unsigned long iNode = 0; iNode < nNode; iNode++) {
       if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
         
         /* Store the coordinates more clearly. */
-        const su2double x = Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox;
-        const su2double y = Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy;
+        const passivedouble x = SU2_TYPE::GetValue(Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox);
+        const passivedouble y = SU2_TYPE::GetValue(Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy);
         
         /* Load into the coordinate class data structure. */
         localPointCoordinates[0].push_back(x);
         localPointCoordinates[1].push_back(y);
-        numberOfLocalPoints++;
       }
       globalIndex++;
     }
