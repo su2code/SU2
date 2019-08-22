@@ -118,7 +118,7 @@ public:
   /*!
    * \brief Saves the current solution (adjoint) values to Solution_Old.
    */
-  void Set_OldAdjoints(void);
+  void Set_OldAdjoints(unsigned short iZone);
 
   /*!
    * \brief Sets the current iterated solution (adjoint) values to zero.
