@@ -427,7 +427,8 @@ private:
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
 
   bool SmoothGradient; /*!< \brief Flag for enabling gradient smoothing. */
-  su2double SmoothingParam;
+  su2double SmoothingParam; /*!< \brief Parameter for the Laplace part in gradient smoothing. */
+  bool SepDim; /*!< \brief Flag for enabling separated calculation for every dimension. */
 
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		/*!< \brief Number of design variables. */
@@ -2795,6 +2796,12 @@ public:
    * \return true means that smoothing is applied to the sensitivities
    */
   su2double GetSmoothingParam(void);
+
+  /*!
+   * \brief Check if we split in the dimensions
+   * \return true means that smoothing is for each dimension separate
+   */
+  bool GetSepDim(void);
 
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.

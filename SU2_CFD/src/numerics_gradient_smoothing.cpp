@@ -94,7 +94,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   unsigned short iNode, jNode, nNode;
   unsigned short bDim;
 
-  su2double Weight, Jac_X, GradNiXGradNj;
+  su2double Weight, Jac_X, GradNiXGradNj = 0;
 
   su2double val_HiHj;
   su2double *val_DHiHj;
@@ -174,6 +174,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
       for (jNode = 0; jNode < nNode; jNode++) {
         val_HiHj = Weight * Ni_Vec[iNode] * Ni_Vec[jNode];
         element->Add_HiHj(val_HiHj, iNode, jNode);
+        std::cout << "Adding in " << iNode << ", " << jNode << " : " << Weight << ", " << Ni_Vec[iNode] << ", " << Ni_Vec[jNode] << std::endl;
       }
     }
 

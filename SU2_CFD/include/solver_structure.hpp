@@ -12189,7 +12189,7 @@ public:
   su2double **mZeros_Aux;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
   su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
 
-
+  unsigned short dir;             /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
   /*!
    * \brief Constructor of the class.
