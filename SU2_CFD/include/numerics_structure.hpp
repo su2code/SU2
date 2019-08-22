@@ -5249,6 +5249,11 @@ public:
  * \ingroup SourceDiscr 
  */ 
 class CSourceIncRotatingFrame_Flow : public CNumerics { 
+
+private:
+  su2double Omega[3];
+  bool implicit;
+
 public: 
 
   /*! 

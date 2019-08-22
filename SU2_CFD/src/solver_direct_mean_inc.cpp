@@ -2091,39 +2091,38 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 
   if (rotating_frame) {
-    
+
     /*--- Loop over all points ---*/
-    
+
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
+
       /*--- Load the primitive variables ---*/
-      
+
       numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
 
       /*--- Set incompressible density ---*/
 
-      numerics->SetDensity(node[iPoint]->GetDensity(),
-                            node[iPoint]->GetDensity());
-      
+      numerics->SetDensity(node[iPoint]->GetDensity(), 0.0);
+
       /*--- Load the volume of the dual mesh cell ---*/
-      
+
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-      
+
       /*--- Compute the rotating frame source residual ---*/
-      
+
       numerics->ComputeResidual(Residual, Jacobian_i, config);
-      
+
       /*--- Add the source residual to the total ---*/
-      
+
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Add the implicit Jacobian contribution ---*/
-      
+
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
+
     }
   }
-  
+
   if (axisymmetric) {
     
     /*--- Zero out Jacobian structure ---*/
