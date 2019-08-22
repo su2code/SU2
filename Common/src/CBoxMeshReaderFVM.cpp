@@ -80,13 +80,20 @@ CBoxMeshReaderFVM::CBoxMeshReaderFVM(CConfig        *val_config,
 CBoxMeshReaderFVM::~CBoxMeshReaderFVM(void) { }
 
 void CBoxMeshReaderFVM::ComputeBoxPointCoordinates() {
-  
+
   /* Set the global count of points based on the grid dimensions. */
   numberOfGlobalPoints = (nNode)*(mNode)*(pNode);
-  
+
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
-  
+
+  /* Determine number of local points */
+  for(unsigned long globalIndex=0; globalIndex < numberOfGlobalPoints; globalIndex++) {
+    if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
+      numberOfLocalPoints++;
+    }
+  }
+
   /* Loop over our analytically defined of coordinates and store only
    those that contain a node within our linear partition of points. */
   localPointCoordinates.resize(dimension);
@@ -98,23 +105,22 @@ void CBoxMeshReaderFVM::ComputeBoxPointCoordinates() {
     for (unsigned long jNode = 0; jNode < mNode; jNode++) {
       for (unsigned long iNode = 0; iNode < nNode; iNode++) {
         if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
-          
+
           /* Store the coordinates more clearly. */
-          const passivedouble x = Lx*((passivedouble)iNode)/((passivedouble)(nNode-1))+Ox;
-          const passivedouble y = Ly*((passivedouble)jNode)/((passivedouble)(mNode-1))+Oy;
-          const passivedouble z = Lz*((passivedouble)kNode)/((passivedouble)(pNode-1))+Oz;
+          const passivedouble x = SU2_TYPE::GetValue(Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox);
+          const passivedouble y = SU2_TYPE::GetValue(Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy);
+          const passivedouble z = SU2_TYPE::GetValue(Lz*((su2double)kNode)/((su2double)(pNode-1))+Oz);
 
           /* Load into the coordinate class data structure. */
           localPointCoordinates[0].push_back(x);
           localPointCoordinates[1].push_back(y);
           localPointCoordinates[2].push_back(z);
-          numberOfLocalPoints++;
         }
         globalIndex++;
       }
     }
   }
-  
+
 }
 
 void CBoxMeshReaderFVM::ComputeBoxVolumeConnectivity() {
