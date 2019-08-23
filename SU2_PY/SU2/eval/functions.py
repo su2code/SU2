@@ -463,9 +463,6 @@ def multipoint( config, state=None, step=1e-2 ):
     # ----------------------------------------------------
     #  FIRST POINT
     # ----------------------------------------------------
-  
-    # config = copy.deepcopy(config)
-    # state  = copy.deepcopy(state)
     
     # will run in DIRECT/
 
@@ -480,10 +477,12 @@ def multipoint( config, state=None, step=1e-2 ):
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
     config.MARKER_OUTLET = new_marker_outlet
-    solution_flow_base = config.SOLUTION_FLOW_FILENAME 
+    
+    # solution_flow_base = config.SOLUTION_FLOW_FILENAME 
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
     if os.path.exists(solution_flow_list[0]): 
         state.FILES['DIRECT'] = solution_flow_list[0]
+        
     config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
 
 
@@ -491,7 +490,7 @@ def multipoint( config, state=None, step=1e-2 ):
 
     func[0] = aerodynamics(config,state)
 
-    config.SOLUTION_FLOW_FILENAME = solution_flow_base
+    #config.SOLUTION_FLOW_FILENAME = solution_flow_base
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/')+'/DIRECT/'
