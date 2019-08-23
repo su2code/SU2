@@ -1150,8 +1150,6 @@ inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, un
 
 inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config) { }
-
 inline su2double CSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
                                              unsigned short iDim) { return 0.0; }
 

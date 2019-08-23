@@ -148,7 +148,10 @@ protected:
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
-  
+
+  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
+
 public:
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -4336,7 +4339,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  virtual void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the adjoints of the vertex tractions.
@@ -4788,9 +4791,6 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
-
-  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
 public:
   
@@ -6874,13 +6874,6 @@ public:
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the tractions at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Set the adjoints of the vertex tractions.
    * \param[in] iMarker  - Index of the marker
    * \param[in] iVertex  - Index of the relevant vertex
@@ -7104,9 +7097,6 @@ protected:
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
-
-  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
   /* Sliding meshes variables */
 
@@ -8306,13 +8296,6 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the tractions at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the adjoints of the vertex tractions.
