@@ -1100,20 +1100,48 @@ def expand_time(name,config):
     return names
 
 def expand_zones(name, config):
+    names = []
     if int(config.NZONES) > 1:
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%d')
             names = [name_pat%i for i in range(int(config.NZONES))]
         else:
             for n in range(len(name)):
-                name_pat[i] = add_suffix(name, '%d')
-                names[i]    = [name_pat%i for i in range(int(config.NZONES))]
+                name_pat = add_suffix(name[n], '%d')
+                names.extend([name_pat%i for i in range(int(config.NZONES))])
+
     else:
         if not isinstance(name, list):
             names = [name]
         else:
             names = name
     return names
+
+def expand_multipoint(name,config):
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    names = []
+    n_multipoint = len(config['MULTIPOINT_WEIGHT'].split(','))
+
+    if any(elem in optnames_multi for elem in objectives):
+        if not isinstance(name, list):
+            if 'point' not in name:
+                name_pat = add_suffix(name,'point%d')
+                names = [name_pat%i for i in range(n_multipoint)]
+            else: 
+                name = name.split('point')
+            print names
+        else:
+            for n in range(len(name)):
+                name_pat = add_suffix(name[n], 'point%d')
+                names.extend([name_pat%i for i in range(n_multipoint)])
+    else:
+        if not isinstance(name, list):
+            names = [name]
+        else:
+            names = name
+    return names        
+
 
 
 def make_link(src,dst):
