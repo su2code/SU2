@@ -2305,8 +2305,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   int iProcessor;
   
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool transition     = (config->GetKind_Trans_Model() == LM);
@@ -4033,8 +4032,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
@@ -6440,8 +6438,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
   bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
   bool viscous            = config[val_iZone]->GetViscous();
-  bool dynamic_grid       = (config[val_iZone]->GetGrid_Movement() ||
-                            (config[val_iZone]->GetDeform_Mesh()&&(config[val_iZone]->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid       = config[val_iZone]->GetDynamic_Grid();
   bool gravity            = config[val_iZone]->GetGravityForce();
   bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
   bool fixed_cl           = config[val_iZone]->GetFixed_CL_Mode();
@@ -8835,8 +8832,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   ofstream Cp_File;
   unsigned short iDim;
   
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   
   Plane_P0 = new su2double[3];
   Plane_P0_ = new su2double[3];
@@ -12650,8 +12646,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
-  bool dynamic_grid         = (config->GetGrid_Movement() ||
-                              (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid         = config->GetDynamic_Grid();
   bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   
@@ -13277,8 +13272,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid         = config->GetDynamic_Grid();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   bool variable_density     = (config->GetKind_DensityModel() == VARIABLE);
   bool energy               = config->GetEnergy_Equation();
@@ -13892,8 +13886,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Normal, Area;
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid   = config->GetDynamic_Grid();
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo;
