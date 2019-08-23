@@ -720,25 +720,6 @@ def read_config(filename):
         Outlet_Value_List +=  str(Outlet_Value)
       Outlet_Value_List += ")"
       data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
-
-    # if 'MULTIPOINT_SOLUTION_FLOW_FILENAME' not in data_dict:
-    #   Solution_Flow_Filename = data_dict['SOLUTION_FLOW_FILENAME']
-    #   Solution_Flow_List = "("
-    #   for i in range(multipoints):
-    #     if i != 0: Solution_Flow_List +=  ", "
-    #     Solution_Flow_List += add_suffix(Solution_Flow_Filename, str(i))
-    #   Solution_Flow_List += ")"
-    #   data_dict['MULTIPOINT_SOLUTION_FLOW_FILENAME'] = Solution_Flow_List
-
-    # if 'MULTIPOINT_ADJ_FLOW_FILENAME' not in data_dict:
-    #   Solution_Adj_Filename = data_dict['SOLUTION_ADJ_FILENAME']
-    #   Solution_Adj_List = "("
-    #   for i in range(multipoints):
-    #     if i != 0: Solution_Adj_List +=  ", "
-    #     Solution_Adj_List += add_suffix(Solution_Adj_Filename, str(i))
-    #   Solution_Adj_List += ")"
-    #   data_dict['MULTIPOINT_SOLUTION_ADJ_FILENAME'] = Solution_Adj_List
-
       
 
     #
