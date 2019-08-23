@@ -1086,7 +1086,8 @@ private:
   unsigned long pastix_fact_freq; /*!< \brief (Re-)Factorization frequency for PaStiX */
   unsigned short pastix_verb_lvl; /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl; /*!< \brief Fill level for PaStiX ILU */
-  
+
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.

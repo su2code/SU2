@@ -2722,7 +2722,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     
   }
   
-  if (config->GetKind_Solver() == DISC_ADJ_RANS)
+  if (config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS)
   geometry_container[MESH_0]->ComputeWall_Distance(config);
   
 }
@@ -16022,8 +16022,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
@@ -16032,6 +16030,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
                (Kind_Solver == DISC_ADJ_RANS)           ||
                (Kind_Solver == DISC_ADJ_NAVIER_STOKES)  ||
+               (Kind_Solver == DISC_ADJ_INC_EULER)          ||
+               (Kind_Solver == DISC_ADJ_INC_RANS)           ||
+               (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES)  ||
                (Kind_Solver == ADJ_EULER)               ||
                (Kind_Solver == ADJ_NAVIER_STOKES)       ||
                (Kind_Solver == ADJ_RANS));
@@ -16055,8 +16056,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   unsigned short skipVar = nDim, skipMult = 1;
 
   if (flow) {
-    if (incompressible)      { skipVar += skipMult*(nDim+2); }
-    if (compressible)        { skipVar += skipMult*(nDim+2); }
+    skipVar += skipMult*(nDim+2);
     if (sst && !frozen_visc) { skipVar += skipMult*2;}
     if (sa && !frozen_visc)  { skipVar += skipMult*1;}
     if (grid_movement)       { skipVar += nDim;}
@@ -19973,3 +19973,123 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   }
   
 }
+
+CDummyGeometry::CDummyGeometry(CConfig *config){
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
+  nEdge      = 0;
+  nPoint     = 0;
+  nPointDomain = 0;
+  nPointNode = 0;
+  nElem      = 0;
+  nMarker    = 0;
+  nZone = config->GetnZone();
+  
+  nElem_Bound         = NULL;
+  Tag_to_Marker       = NULL;
+  elem                = NULL;
+  face                = NULL;
+  bound               = NULL;
+  node                = NULL;
+  edge                = NULL;
+  vertex              = NULL;
+  nVertex             = NULL;
+  newBound            = NULL;
+  nNewElem_Bound      = NULL;
+  Marker_All_SendRecv = NULL;
+  
+  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+
+  XCoordList.clear();
+  Xcoord_plane.clear();
+  Ycoord_plane.clear();
+  Zcoord_plane.clear();
+  FaceArea_plane.clear();
+  Plane_points.clear();
+  
+  /*--- Arrays for defining the linear partitioning ---*/
+  
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  nPoint_Linear = NULL;
+
+  /*--- Containers for customized boundary conditions ---*/
+
+  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
+  CustomBoundaryTemperature = NULL;   //Customized temperature wall
+
+  /*--- MPI point-to-point data structures ---*/
+  
+  nP2PSend = 0;
+  nP2PRecv = 0;
+  
+  countPerPoint = 0;
+  
+  bufD_P2PSend = NULL;
+  bufD_P2PRecv = NULL;
+  
+  bufS_P2PSend = NULL;
+  bufS_P2PRecv = NULL;
+  
+  req_P2PSend = NULL;
+  req_P2PRecv = NULL;
+  
+  nPoint_P2PSend = new int[size];
+  nPoint_P2PRecv = new int[size];
+  
+  Neighbors_P2PSend = NULL;
+  Neighbors_P2PRecv = NULL;
+  
+  Local_Point_P2PSend = NULL;
+  Local_Point_P2PRecv = NULL;
+
+  /*--- MPI periodic data structures ---*/
+  
+  nPeriodicSend = 0;
+  nPeriodicRecv = 0;
+  
+  countPerPeriodicPoint = 0;
+  
+  bufD_PeriodicSend = NULL;
+  bufD_PeriodicRecv = NULL;
+  
+  bufS_PeriodicSend = NULL;
+  bufS_PeriodicRecv = NULL;
+  
+  req_PeriodicSend = NULL;
+  req_PeriodicRecv = NULL;
+  
+  nPoint_PeriodicSend = NULL;
+  nPoint_PeriodicRecv = NULL;
+  
+  Neighbors_PeriodicSend = NULL;
+  Neighbors_PeriodicRecv = NULL;
+  
+  Local_Point_PeriodicSend = NULL;
+  Local_Point_PeriodicRecv = NULL;
+  
+  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicRecv = NULL;
+  
+  nVertex = new unsigned long[config->GetnMarker_All()];
+  
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    nVertex[iMarker] = 0;
+  }
+  
+  Tag_to_Marker = new string[config->GetnMarker_All()];
+  
+  for (unsigned short iRank = 0; iRank < size; iRank++){
+    nPoint_P2PRecv[iRank] = 0;
+    nPoint_P2PSend[iRank] = 0;
+  }
+  
+  nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  
+}
+
+CDummyGeometry::~CDummyGeometry(){}
