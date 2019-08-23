@@ -1591,7 +1591,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 }
 
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long ErrorCounter = 0;
 
   unsigned long ExtIter = config->GetExtIter();
@@ -1611,9 +1611,8 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
 
   /*--- Set the primitive variables ---*/
-  
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-  
+
   /*--- Upwind second order reconstruction ---*/
   
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
@@ -1910,7 +1909,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool grid_movement = config->GetGrid_Movement();
-  
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
@@ -1920,7 +1919,6 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
     
     /*--- Set primitive variables w/o reconstruction ---*/
-    
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     
     /*--- Set the largest convective eigenvalue ---*/
@@ -1948,7 +1946,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
-    
+
     /*--- Store implicit contributions from the residual calculation. ---*/
     
     if (implicit) {
@@ -1958,7 +1956,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
-  
+
 }
 
 void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -1978,7 +1976,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Loop over all the edges ---*/
-  
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
@@ -2468,10 +2466,10 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     /*--- Solution differences ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++)
       Diff[iVar] = node[iPoint]->GetSolution(iVar) - node[jPoint]->GetSolution(iVar);
-    
+
     boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
     boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
     
@@ -3474,7 +3472,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   bool adjoint = config->GetContinuous_Adjoint();
   
   /*--- Set maximum residual to zero ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
@@ -3487,7 +3485,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     /*--- Read the residual ---*/
     
     local_Res_TruncError = node[iPoint]->GetResTruncError();
-    
+
     /*--- Read the volume ---*/
     
     Vol = (geometry->node[iPoint]->GetVolume() +
@@ -3524,7 +3522,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     }
     
   }
-  
+
   /*--- Initialize residual and solution at the ghost points ---*/
   
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
@@ -4731,7 +4729,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Add value to the residual ---*/
 
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Form Jacobians for implicit computations ---*/
       
       if (implicit) {
@@ -4837,7 +4835,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Update residual value ---*/
 
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Convective Jacobian contribution for implicit integration ---*/
       
       if (implicit)
@@ -4889,7 +4887,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   /*--- Free locally allocated memory ---*/
   
   delete [] Normal;
-  
+
 }
 
 void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
@@ -5143,7 +5141,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   /*--- Free locally allocated memory ---*/
   
   delete [] Normal;
-  
+
 }
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -5351,7 +5349,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
-  
+
 }
 
 void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
@@ -5843,7 +5841,7 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
-  
+
   /*--- Local variables ---*/
   
   unsigned short iVar, jVar, iMarker, iDim;
@@ -5886,11 +5884,11 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. These are actually
        the primitive values, but we will convert to conservatives. ---*/
-      
+
       V_time_nM1 = node[iPoint]->GetSolution_time_n1();
       V_time_n   = node[iPoint]->GetSolution_time_n();
       V_time_nP1 = node[iPoint]->GetSolution();
-      
+
       /*--- Access the density and Cp at this node (constant for now). ---*/
       
       Density     = node[iPoint]->GetDensity();
@@ -6219,7 +6217,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
     }
   }
-  
+
 }
 
 void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
@@ -6850,6 +6848,9 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
     }
     node[iPoint]->SetSolution(nDim+1, Temperature_Inf);
   }
+
+  // Set values back to whats specified in DIFF_INPUTS, if that's the case
+  RegisterVariables((CGeometry *) NONE, config, true);
 }
 
 void CIncEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
@@ -7034,11 +7035,11 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
   short iMarker;
   unsigned short iDiff_Inputs;
   unsigned long nVec, iVec;
-  bool reset_nondimensionalization = false;
+  bool reset_nondimensionalization = false, reset_solution = false;
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
     if (Diff_Inputs_Vars[iDiff_Inputs].size() == 0) {
-      SU2_MPI::Error("Some diff input has not been set, probably missing call to Set/Apply DiffInputs",
+      SU2_MPI::Error("Some diff input has not been set, there is probably missing call to Set/Apply DiffInputs",
         CURRENT_FUNCTION);
     }
 
@@ -7096,57 +7097,63 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
         break;
 
       case DI_TEMP:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-            // Index 0 in compressible, nDim+1 in incompressible
+            // Index: 0 in compressible, nDim+1 in incompressible
             node[iVec]->SetSolution(nDim+1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
 
       case DI_PRESS:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-            // Index nDim+1 in compressible, 0 in incompressible
+            // Index: nDim+1 in compressible, 0 in incompressible
             node[iVec]->SetSolution(0, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
 
       case DI_VEL_X:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
             node[iVec]->SetSolution(1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
       case DI_VEL_Y:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
             node[iVec]->SetSolution(2, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
       case DI_VEL_Z:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
             node[iVec]->SetSolution(3, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
 
@@ -7160,7 +7167,12 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
     FluidModel = NULL;
     SetNondimensionalization(config, iMesh_Store);
   }
-
+  if (reset_solution) {
+    for (iVec = 0; iVec < nVec; iVec++) {
+      node[iVec]->Set_Solution_time_n();
+      node[iVec]->Set_Solution_time_n1();
+    }
+  }
 }
 
 void CIncEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
@@ -7971,7 +7983,7 @@ CIncNSSolver::~CIncNSSolver(void) {
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
   
@@ -7993,7 +8005,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Set the primitive variables ---*/
-  
+
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Compute gradient of the primitive variables ---*/
@@ -8010,7 +8022,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
       && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
-  
+
   /*--- Artificial dissipation for centered schemes. ---*/
 
   if (center && !Output) {
@@ -8026,11 +8038,11 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
 
   /*--- Compute properties needed for mass flow BCs. ---*/
-  
+
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
-  
+
   StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
@@ -8045,7 +8057,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     Omega_Max = max(Omega_Max, Omega);
     
   }
-  
+
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
@@ -8086,7 +8098,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     /*--- Retrieve the value of the kinetic energy (if needed) ---*/
-    
+
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
@@ -8103,7 +8115,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     /*--- Incompressible flow, primitive variables --- */
 
     physical = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
-    
+
     /*--- Record any non-physical points. ---*/
 
     if (!physical) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }

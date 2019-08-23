@@ -139,9 +139,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
 
-  Diff_Outputs_Backprop_Derivs.reserve(config->GetnDiff_Outputs());
-  Diff_Outputs_Backprop_Derivs.resize(config->GetnDiff_Outputs());
-
 }
 
 CDiscAdjSolver::~CDiscAdjSolver(void) { 
@@ -618,8 +615,84 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
-//  /*---
-  // Debug sensitivities
+  direct_solver->ExtractAdjoint_Variables(geometry, config);
+  Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
+
+  /*--- Copy variables that are dealt with here (adjoint solver) instead of direct solver to Diff Inputs ---*/
+
+  unsigned short TempPressIdx;
+  for (unsigned short iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
+
+    // TODO Add other cases like these, for sensitivities that are already computed in the code
+    if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+      switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+        case DI_MACH:
+          Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(1);
+          Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
+          Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_Mach);
+          break;
+        case DI_AOA:
+          Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(1);
+          Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
+          Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      // These are dealt with in ExtractAdjoint_Solution, but placed them here to have all DIFF extracts in one place
+      case DI_TEMP:
+        TempPressIdx = config->GetKind_Regime() == COMPRESSIBLE ? 0 : nDim + 1;
+        // TODO Is some sort of MPI Reducing or Gathering needed?
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(TempPressIdx));
+        }
+        break;
+      case DI_PRESS:
+        TempPressIdx = config->GetKind_Regime() == COMPRESSIBLE ? nDim + 1 : 0;
+        // TODO Is some sort of MPI Reducing or Gathering needed?
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(TempPressIdx));
+        }
+        break;
+      case DI_VEL_X:
+        // TODO Is some sort of MPI Reducing or Gathering needed?
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(1));
+        }
+        break;
+      case DI_VEL_Y:
+        // TODO Is some sort of MPI Reducing or Gathering needed?
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(2));
+        }
+        break;
+      case DI_VEL_Z:
+        // TODO Is some sort of MPI Reducing or Gathering needed?
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(3));
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+
+//  /*--- DEBUG SENSITIVITIES
 #ifdef HAVE_MPI
   if (SU2_MPI::GetRank() == 0)
 #endif
@@ -627,39 +700,23 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     cout << "Sensitivities: ";
     for (unsigned short i = 0; i < Total_Sens_Diff_Inputs.size(); i++) {
       cout << "[ ";
-      for (unsigned short j = 0; j < Total_Sens_Diff_Inputs[i].size(); j++) {
-        cout << Total_Sens_Diff_Inputs[i][j] << ", ";
+      unsigned short j = 0;
+      while (j < Total_Sens_Diff_Inputs[i].size()) {
+        cout << Total_Sens_Diff_Inputs[i][j];
+        if (j < Total_Sens_Diff_Inputs[i].size() - 1)
+          cout << ",";
+        cout << " ";
+        if (j == 2 && Total_Sens_Diff_Inputs[i].size() > 10) {
+          j = Total_Sens_Diff_Inputs[i].size() - 4;
+          cout << "..., ";
+        }
+        j++;
       }
       cout << "], ";
     }
     cout << endl;
   }
 //  ---*/
-
-  direct_solver->ExtractAdjoint_Variables(geometry, config);
-  Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
-
-  /*--- Copy variables that are dealt with here (adjoint solver) instead of direct solver to Diff Inputs ---*/
-  unsigned short iDiff_Inputs;
-  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
-
-    // TODO Add other cases like these, for sensitivities that are already computed in the code
-    if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
-      switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-        case DI_MACH:
-          Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
-          Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_Mach);
-          break;
-        case DI_AOA:
-          Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
-          Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
-          break;
-        default:
-          break;
-      }
-    }
-  }
-
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {

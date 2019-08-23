@@ -38,15 +38,15 @@ def run_forward(comm, forward_driver, inputs):
     # are we using numpy or torch
     is_numpy = len(inputs) == 0 or type(inputs[0]) is np.ndarray
     if is_numpy:
-        new_func = np.array
+        array_func = np.array
         cat_func = np.concatenate
     else:
         import torch
-        new_func = inputs[0].new_tensor
+        array_func = inputs[0].new_tensor
         cat_func = torch.cat
 
     num_diff_outputs = forward_driver.GetnDiff_Outputs()
-    outputs = [new_func(forward_driver.GetDiff_Outputs_Vars(i))
+    outputs = [array_func(forward_driver.GetDiff_Outputs_Vars(i))
                for i in range(num_diff_outputs)]
 
     for i in range(num_diff_outputs):
@@ -91,14 +91,14 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
         adjoint_driver.SetBackprop_Derivs(g.flatten().tolist(), i)
 
     adjoint_driver.StartSolver()
-    comm.Barrier()
+    # comm.Barrier()
 
     # are we using numpy or torch
     is_numpy = len(inputs) == 0 or type(inputs[0]) is np.ndarray
-    new_func = np.array if is_numpy else inputs[0].new_tensor
+    array_func = np.array if is_numpy else inputs[0].new_tensor
     grads = None
     if comm.Get_rank() == 0:
-        grads = tuple(new_func(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
+        grads = tuple(array_func(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
                       for i in range(adjoint_driver.GetnDiff_Inputs()))
     return grads
 

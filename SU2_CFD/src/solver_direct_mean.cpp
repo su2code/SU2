@@ -3357,7 +3357,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long ErrorCounter = 0;
   
   unsigned long ExtIter = config->GetExtIter();
@@ -8085,11 +8085,11 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
   short iMarker;
   unsigned short iDiff_Inputs;
   unsigned long nVec, iVec;
-  bool reset_nondimensionalization = false;
+  bool reset_nondimensionalization = false, reset_solution = false;
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
     if (Diff_Inputs_Vars[iDiff_Inputs].size() == 0) {
-      SU2_MPI::Error("Some diff input has not been set, probably missing call to Set/Apply DiffInputs",
+      SU2_MPI::Error("Some diff input has not been set, there is probably missing call to Set/Apply DiffInputs",
         CURRENT_FUNCTION);
     }
 
@@ -8146,57 +8146,62 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         break;
 
       case DI_TEMP:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-            // Index 0 in compressible, nDim+1 in incompressible
-            node[iVec]->SetSolution(0, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            // Index: 0 in compressible, nDim+1 in incompressible
+            node[iVec]->SetSolution(nDim+1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
 
       case DI_PRESS:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-            // Index nDim+1 in compressible, 0 in incompressible
-            node[iVec]->SetSolution(nDim+1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            // Index: nDim+1 in compressible, 0 in incompressible
+            node[iVec]->SetSolution(0, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
 
       case DI_VEL_X:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
             node[iVec]->SetSolution(1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
       case DI_VEL_Y:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
             node[iVec]->SetSolution(2, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
       case DI_VEL_Z:
+        // TODO Test
         if (reset) {
           nVec = nPointDomain;
           for (iVec = 0; iVec < nVec; iVec++) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
             node[iVec]->SetSolution(3, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
           reset_nondimensionalization = true; // TODO Is this needed?
+          if (!config->GetRestart()) reset_solution = true;
         }
         break;
 
@@ -8205,13 +8210,17 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
     }
   }
 
-//  reset_nondimensionalization = true;
   if (reset_nondimensionalization) {
     delete FluidModel;
     FluidModel = NULL;
     SetNondimensionalization(config, iMesh_Store);
   }
-
+  if (reset_solution) {
+    for (iVec = 0; iVec < nVec; iVec++) {
+      node[iVec]->Set_Solution_time_n();
+      node[iVec]->Set_Solution_time_n1();
+    }
+  }
 }
 
 void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {

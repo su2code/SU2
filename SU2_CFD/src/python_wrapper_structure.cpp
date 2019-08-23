@@ -1351,7 +1351,6 @@ void CDiscAdjSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, un
   // TODO Using iInst only equal to 0 for now (first idx in solver_container)
   iInst = 0;
 
-  // TODO Using only FLOW_SOL for now, iterate over solvers?
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
       solver_container[iZone][iInst][iMGlevel][FLOW_SOL]->SetDiff_Inputs_Vars(val, index);
