@@ -131,7 +131,10 @@ class Design(object):
 
         # check folder
         assert os.path.exists(folder) , 'cannot find design folder %s' % folder
+
+        print folder
         
+        # print os.getcwd()
         # list files to pull and link
         pull,link = state.pullnlink(config)
         

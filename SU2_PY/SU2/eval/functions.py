@@ -90,6 +90,9 @@ def function( func_name, config, state=None ):
     func_name_string = func_name
     if multi_objective:   func_name_string = func_name[0]  
 
+    print func_name_string
+    print state['FUNCTIONS']
+
     # redundancy check
     if not func_name_string in state['FUNCTIONS']:
 
@@ -103,7 +106,7 @@ def function( func_name, config, state=None ):
         
         # Multipoint
         elif func_name in su2io.optnames_multi:
-          multipoint( config, state )
+            multipoint( config, state )
 
         # Geometry
         elif func_name in su2io.optnames_geo:
@@ -425,9 +428,10 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-    solution_flow_list = config['MULTIPOINT_SOLUTION_FLOW_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
-    solution_adj_list = config['MULTIPOINT_SOLUTION_ADJ_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
-    
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+    solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
+    print solution_flow_list
+
     func = []
     folder = []
     for i in range(len(weight_list)):
@@ -464,47 +468,50 @@ def multipoint( config, state=None, step=1e-2 ):
     #  FIRST POINT
     # ----------------------------------------------------
   
-    konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(state)
+    # config = copy.deepcopy(config)
+    # state  = copy.deepcopy(state)
     
     # will run in DIRECT/
 
-    konfig.AOA = aoa_list[0]
-    konfig.SIDESLIP_ANGLE = sideslip_list[0]
-    konfig.MACH_NUMBER = mach_list[0]
-    konfig.REYNOLDS_NUMBER = reynolds_list[0]
-    konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
-    konfig.FREESTREAM_PRESSURE = freestream_press_list[0]
-    konfig.TARGET_CL = target_cl_list[0]
-    orig_marker_outlet = konfig['MARKER_OUTLET']
+    config.AOA = aoa_list[0]
+    config.SIDESLIP_ANGLE = sideslip_list[0]
+    config.MACH_NUMBER = mach_list[0]
+    config.REYNOLDS_NUMBER = reynolds_list[0]
+    config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
+    config.FREESTREAM_PRESSURE = freestream_press_list[0]
+    config.TARGET_CL = target_cl_list[0]
+    orig_marker_outlet = config['MARKER_OUTLET']
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
-    konfig.MARKER_OUTLET = new_marker_outlet
-    konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.MARKER_OUTLET = new_marker_outlet
+    solution_flow_base = config.SOLUTION_FLOW_FILENAME 
+    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
 
-    ztate.find_files(konfig)
+    state.find_files(config)
 
-    func[0] = aerodynamics(konfig,ztate)
+    func[0] = aerodynamics(config,state)
+
+    config.SOLUTION_FLOW_FILENAME = solution_flow_base
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/')+'/DIRECT/'
 
     # files to pull
-    files = ztate.FILES
+    files = state.FILES
     pull = []; link = []
     
     # files: mesh
     name = files['MESH']
-    name = su2io.expand_part(name,konfig)
+    name = su2io.expand_part(name,config)
     link.extend(name)
     
     # files: direct solution
     if 'DIRECT' in files:
       name = files['DIRECT']
-      name = su2io.expand_time(name,konfig)
+      name = su2io.expand_time(name,config)
       link.extend( name )
     else:
-      konfig['RESTART_SOL'] = 'NO'
+      config['RESTART_SOL'] = 'NO'
     
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and
@@ -541,11 +548,16 @@ def multipoint( config, state=None, step=1e-2 ):
       ztate  = copy.deepcopy(state)
 
       konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+      ztate.FILES.clear()
 
       ztate.find_files(konfig)
       files = ztate.FILES
       link = []
 
+      # print "Evaluating function multipoint #" + str(i+1)
+
+      # print files
+      
       # files: mesh
       name = files['MESH']
       name = su2io.expand_part(name,konfig)
@@ -595,6 +607,9 @@ def multipoint( config, state=None, step=1e-2 ):
       # make unix link
       string = "ln -s " + src + " " + dst
       os.system(string)
+
+    # config = copy.deepcopy(config)
+    # state = copy.deepcopy(state) 
       
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS

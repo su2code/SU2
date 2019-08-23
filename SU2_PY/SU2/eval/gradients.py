@@ -424,9 +424,8 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-    solution_flow_list = config['MULTIPOINT_SOLUTION_FLOW_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
-    solution_adj_list = config['MULTIPOINT_SOLUTION_ADJ_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
-
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+    solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
 
     grads = []
     folder = []
@@ -474,44 +473,42 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # will run in ADJOINT/
 
-    konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(state)
+    # config = copy.deepcopy(config)
+    # ztate  = copy.deepcopy(state)
     
-    # will run in DIRECT/
-
-    konfig.AOA = aoa_list[0]
-    konfig.SIDESLIP_ANGLE = sideslip_list[0]
-    konfig.MACH_NUMBER = mach_list[0]
-    konfig.REYNOLDS_NUMBER = reynolds_list[0]
-    konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
-    konfig.FREESTREAM_PRESSURE = freestream_press_list[0]
-    konfig.TARGET_CL = target_cl_list[0]
-    orig_marker_outlet = konfig['MARKER_OUTLET']
+    config.AOA = aoa_list[0]
+    config.SIDESLIP_ANGLE = sideslip_list[0]
+    config.MACH_NUMBER = mach_list[0]
+    config.REYNOLDS_NUMBER = reynolds_list[0]
+    config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
+    config.FREESTREAM_PRESSURE = freestream_press_list[0]
+    config.TARGET_CL = target_cl_list[0]
+    orig_marker_outlet = config['MARKER_OUTLET']
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
-    konfig.MARKER_OUTLET = new_marker_outlet
-    konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
-    konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+    config.MARKER_OUTLET = new_marker_outlet
+    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
 
-    ztate.find_files(konfig)
+    state.find_files(config)
 
-    grads[0] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
+    grads[0] = gradient(base_name,'DISCRETE_ADJOINT',config,state)
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/') + '/' + ADJ_NAME + '/'
 
 
     # ----------------------------------------------------
-    #  Run Forward Point
+    #  Run Multipoint
     # ----------------------------------------------------
     
     # files to pull
-    files = ztate.FILES
+    files = state.FILES
     pull = []; link = []
     
     # files: mesh
     name = files['MESH']
-    name = su2io.expand_part(name,konfig)
+    name = su2io.expand_part(name,config)
     link.extend(name)
     
     # files: direct solution
@@ -520,10 +517,10 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # files: adjoint solution
     if ADJ_NAME in files:
       name = files[ADJ_NAME]
-      name = su2io.expand_time(name,konfig)
+      name = su2io.expand_time(name,config)
       link.extend(name)
     else:
-      konfig['RESTART_SOL'] = 'NO'
+      config['RESTART_SOL'] = 'NO'
 
     # files: target equivarea adjoint weights
     ## DO NOT PULL EQUIVAREA WEIGHTS, use the one in MULTIPOINT/
@@ -549,15 +546,32 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
       konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
       konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
-
+      konfig.RESTART_SOL = 'YES'
+      ztate.FILES.clear()
       ztate.find_files(konfig)
       files = ztate.FILES
       link = []
+
+      # print "Evaluating gradient multipoint #" + str(i+1)
+
+      # print "Working Directory= " + os.getcwd()
+
+      # print konfig.RESTART_SOL
+
+      # print files
+      
+      # print konfig.SOLUTION_FLOW_FILENAME + ', ' + konfig.SOLUTION_ADJ_FILENAME
 
       # files: mesh
       name = files['MESH']
       name = su2io.expand_part(name,konfig)
       link.extend(name)
+
+      # files: direction solution
+      if 'DIRECT' in files:
+        name = files['DIRECT']
+        name = su2io.expand_time(name,konfig)
+        link.extend( name )
 
       # files: adjoint solution
       if ADJ_NAME in files:
