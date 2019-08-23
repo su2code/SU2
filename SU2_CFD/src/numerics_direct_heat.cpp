@@ -42,7 +42,7 @@ CUpwSca_Heat::CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CCo
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -94,7 +94,7 @@ CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, C
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));;
+  dynamic_grid = config->GetDynamic_Grid();
 
   MeanVelocity = new su2double [nDim];
 

@@ -1981,22 +1981,25 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *c
   Solution[0] = 0.0;
   Solution[1] = 0.0;
   if (nDim==3) Solution[2] = 0.0;
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
+
     /*--- Get node index ---*/
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Set and enforce solution at current and previous time-step ---*/
-      node[iPoint]->SetSolution(Solution);
-      
-      if (dynamic) {
-        node[iPoint]->SetSolution_Vel(Solution);
-        node[iPoint]->SetSolution_Accel(Solution);
-        node[iPoint]->Set_Solution_time_n(Solution);
-        node[iPoint]->SetSolution_Vel_time_n(Solution);
-        node[iPoint]->SetSolution_Accel_time_n(Solution);
+    node[iPoint]->SetSolution(Solution);
+
+    if (dynamic) {
+      node[iPoint]->SetSolution_Vel(Solution);
+      node[iPoint]->SetSolution_Accel(Solution);
+      node[iPoint]->Set_Solution_time_n(Solution);
+      node[iPoint]->SetSolution_Vel_time_n(Solution);
+      node[iPoint]->SetSolution_Accel_time_n(Solution);
     }
+
+    /*--- Set and enforce 0 solution for mesh deformation ---*/
+    node[iPoint]->SetBound_Disp(Solution);
 
     LinSysSol.SetBlock(iPoint, Solution);
     LinSysReact.SetBlock(iPoint, Solution);
