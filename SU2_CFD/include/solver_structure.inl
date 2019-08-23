@@ -1150,16 +1150,6 @@ inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, un
 
 inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
 
-inline su2double CSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                             unsigned short iDim) { return 0.0; }
-
-inline void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                                 unsigned short iDim, su2double val_adjoint) { }
-
-inline void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_periodic = val_implicit_periodic; }
 
 inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
@@ -1650,16 +1640,6 @@ inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
-
-inline su2double CEulerSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                                  unsigned short iDim) {
-  return VertexTraction[iMarker][iVertex][iDim];
-}
-
-inline void CEulerSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                                      unsigned short iDim, su2double val_adjoint) {
-  VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
-}
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
@@ -2189,16 +2169,6 @@ inline void CIncEulerSolver::SetDensity_Inf(su2double rho_inf){Density_Inf = rho
 inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
 
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
-
-inline su2double CIncEulerSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                                     unsigned short iDim) {
-  return VertexTraction[iMarker][iVertex][iDim];
-}
-
-inline void CIncEulerSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                                         unsigned short iDim, su2double val_adjoint) {
-  VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
-}
 
 inline su2double CIncNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
