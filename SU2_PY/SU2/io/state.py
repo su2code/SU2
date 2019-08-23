@@ -177,27 +177,24 @@ class State(ordered_bunch):
         
         pull = []; link = []
 
-        konfig = copy.deepcopy(config)
-
-        print self.FILES
         # choose files to pull and link
         for key, value in self.FILES.items():            
             # link big files
             if key == 'MESH':
                 # mesh (merged or partitioned)
-                value = expand_part(value,konfig)
+                value = expand_part(value,config)
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
-                value = expand_multipoint(value,konfig)
-                value = expand_zones(value,konfig)
-                value = expand_time(value,konfig)
+                value = expand_multipoint(value,config)
+                value = expand_zones(value,config)
+                value = expand_time(value,config)
                 link.extend(value)
             elif 'ADJOINT_' in key:
                 # adjoint solution
-                value = expand_multipoint(value,konfig)
-                value = expand_zones(value,konfig)
-                value = expand_time(value,konfig)
+                value = expand_multipoint(value,config)
+                value = expand_zones(value,config)
+                value = expand_time(value,config)
                 link.extend(value)
             #elif key == 'STABILITY':
                 #pass
@@ -246,7 +243,6 @@ class State(ordered_bunch):
         def register_file(label,filename):
             if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
-                  # names = expand_multipoint(filename, config)
                   names = expand_zones(filename, config)
                   found = False
                   for name in names:

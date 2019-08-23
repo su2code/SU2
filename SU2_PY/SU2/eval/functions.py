@@ -90,9 +90,6 @@ def function( func_name, config, state=None ):
     func_name_string = func_name
     if multi_objective:   func_name_string = func_name[0]  
 
-    print func_name_string
-    print state['FUNCTIONS']
-
     # redundancy check
     if not func_name_string in state['FUNCTIONS']:
 
@@ -430,16 +427,15 @@ def multipoint( config, state=None, step=1e-2 ):
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
     solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
-    print solution_flow_list
 
     func = []
     folder = []
     for i in range(len(weight_list)):
-      func.append(0)
-      folder.append(0)
+        func.append(0)
+        folder.append(0)
 
     for i in range(len(weight_list)):
-      folder[i] = 'MULTIPOINT_' + str(i)
+        folder[i] = 'MULTIPOINT_' + str(i)
 
     # ----------------------------------------------------
     #  Initialize
@@ -448,14 +444,14 @@ def multipoint( config, state=None, step=1e-2 ):
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
-      state.FILES.MESH = config['MESH_FILENAME']
+        state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
-      log_direct = 'log_Direct.out'
+        log_direct = 'log_Direct.out'
     else:
-      log_direct = None
+        log_direct = None
 
     # ----------------------------------------------------
     #  Update Mesh
@@ -487,7 +483,7 @@ def multipoint( config, state=None, step=1e-2 ):
     solution_flow_base = config.SOLUTION_FLOW_FILENAME 
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
 
-    state.find_files(config)
+    # state.find_files(config)
 
     func[0] = aerodynamics(config,state)
 
@@ -507,106 +503,107 @@ def multipoint( config, state=None, step=1e-2 ):
     
     # files: direct solution
     if 'DIRECT' in files:
-      name = files['DIRECT']
-      name = su2io.expand_time(name,config)
-      link.extend( name )
+        name = files['DIRECT']
+        name = su2io.expand_time(name,config)
+        link.extend( name )
     else:
-      config['RESTART_SOL'] = 'NO'
+        config['RESTART_SOL'] = 'NO'
     
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and
         'TARGET_EA' in files ) :
-      pull.append( files['TARGET_EA'] )
+        pull.append( files['TARGET_EA'] )
 
     # files: target pressure distribution
     if ( 'INV_DESIGN_CP' in special_cases and
         'TARGET_CP' in files ) :
-      pull.append( files['TARGET_CP'] )
+        pull.append( files['TARGET_CP'] )
     
     # files: target heat flux distribution
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
         'TARGET_HEATFLUX' in files ) :
-      pull.append( files['TARGET_HEATFLUX'] )
+        pull.append( files['TARGET_HEATFLUX'] )
 
     # pull needed files, start folder_0
     with redirect_folder( folder[0], pull, link ) as push:
-      with redirect_output(log_direct):
+        with redirect_output(log_direct):
+
+            konfig = copy.deepcopy(config)
+            ztate  = copy.deepcopy(state)
+
+            dst = os.getcwd()
+            dst = os.path.abspath(dst).rstrip('/')+'/'
+
+            # make unix link
+            string = "ln -s " + src + " " + dst
+            os.system(string)
+
+    for i in range(len(weight_list)-1):
+
+        restart_sol = config['RESTART_SOL']
 
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
 
-        dst = os.getcwd()
-        dst = os.path.abspath(dst).rstrip('/')+'/'
+        konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+        # ztate.FILES.clear()
 
+        # ztate.find_files(konfig)
+        files = ztate.FILES
+        link = []
+        
+        if config['RESTART_SOL']
+            files['DIRECT'] = solution_flow_list[i+1]
+
+        # files: mesh
+        name = files['MESH']
+        name = su2io.expand_part(name,konfig)
+        link.extend(name)
+
+        # files: direction solution
+        if 'DIRECT' in files:
+            name = files['DIRECT']
+            name = su2io.expand_time(name,konfig)
+            link.extend( name )
+        else:
+            konfig['RESTART_SOL'] = 'NO'
+
+      # pull needed files, start folder_1
+        with redirect_folder( folder[i+1], pull, link ) as push:
+            with redirect_output(log_direct):
+          
+                konfig.AOA = aoa_list[i+1]
+                konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
+                konfig.MACH_NUMBER = mach_list[i+1]
+                konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
+                konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
+                konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
+                konfig.TARGET_CL = target_cl_list[i+1]
+
+                orig_marker_outlet = config['MARKER_OUTLET']
+                orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
+                new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[i+1] + ")"
+                konfig.MARKER_OUTLET = new_marker_outlet
+
+                ztate.FUNCTIONS.clear()
+
+                func[i+1] = aerodynamics(konfig,ztate)
+
+                # direct files to push
+                dst = os.getcwd()
+                dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
+                name = ztate.FILES['DIRECT']
+                name = su2io.expand_zones(name,konfig)
+                name = su2io.expand_time(name,konfig)
+                push.extend(name)
+
+        # Link direct solution to MULTIPOINT_# folder
+        src = os.getcwd()
+        src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
+      
         # make unix link
         string = "ln -s " + src + " " + dst
         os.system(string)
-
-    for i in range(len(weight_list)-1):
-
-      konfig = copy.deepcopy(config)
-      ztate  = copy.deepcopy(state)
-
-      konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
-      ztate.FILES.clear()
-
-      ztate.find_files(konfig)
-      files = ztate.FILES
-      link = []
-
-      # print "Evaluating function multipoint #" + str(i+1)
-
-      # print files
-      
-      # files: mesh
-      name = files['MESH']
-      name = su2io.expand_part(name,konfig)
-      link.extend(name)
-
-      # files: direction solution
-      if 'DIRECT' in files:
-        name = files['DIRECT']
-        name = su2io.expand_time(name,konfig)
-        link.extend( name )
-      else:
-        konfig['RESTART_SOL'] = 'NO'
-
-      # pull needed files, start folder_1
-      with redirect_folder( folder[i+1], pull, link ) as push:
-        with redirect_output(log_direct):
-          
-          konfig.AOA = aoa_list[i+1]
-          konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
-          konfig.MACH_NUMBER = mach_list[i+1]
-          konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
-          konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
-          konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
-          konfig.TARGET_CL = target_cl_list[i+1]
-
-          orig_marker_outlet = config['MARKER_OUTLET']
-          orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
-          new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[i+1] + ")"
-          konfig.MARKER_OUTLET = new_marker_outlet
-
-          ztate.FUNCTIONS.clear()
-            
-          func[i+1] = aerodynamics(konfig,ztate)
-          
-          # direct files to push
-          dst = os.getcwd()
-          dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
-          name = ztate.FILES['DIRECT']
-          name = su2io.expand_zones(name,konfig)
-          name = su2io.expand_time(name,konfig)
-          push.extend(name)
-
-      # Link direct solution to MULTIPOINT_# folder
-      src = os.getcwd()
-      src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
-      
-      # make unix link
-      string = "ln -s " + src + " " + dst
-      os.system(string)
 
     # config = copy.deepcopy(config)
     # state = copy.deepcopy(state) 

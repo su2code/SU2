@@ -552,16 +552,6 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
       files = ztate.FILES
       link = []
 
-      # print "Evaluating gradient multipoint #" + str(i+1)
-
-      # print "Working Directory= " + os.getcwd()
-
-      # print konfig.RESTART_SOL
-
-      # print files
-      
-      # print konfig.SOLUTION_FLOW_FILENAME + ', ' + konfig.SOLUTION_ADJ_FILENAME
-
       # files: mesh
       name = files['MESH']
       name = su2io.expand_part(name,konfig)

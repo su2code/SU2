@@ -1125,16 +1125,26 @@ def expand_multipoint(name,config):
 
     if any(elem in optnames_multi for elem in objectives):
         if not isinstance(name, list):
-            if 'point' not in name:
+            if '_point0' not in name:
                 name_pat = add_suffix(name,'point%d')
                 names = [name_pat%i for i in range(n_multipoint)]
             else: 
-                name = name.split('point')
-            print names
+                name_parts = name.split('_point0')
+                name_base = name_parts[0]
+                name_suff = name_parts[1]
+                name_pat = name_base + '_point%d' + name_suff
+                names = [name_pat%i for i in range(n_multipoint)]
         else:
             for n in range(len(name)):
-                name_pat = add_suffix(name[n], 'point%d')
-                names.extend([name_pat%i for i in range(n_multipoint)])
+                if '_point0' not in name:
+                    name_pat = add_suffix(name[n], 'point%d')
+                    names.extend([name_pat%i for i in range(n_multipoint)])
+                else: 
+                    name_parts = name[n].split('_point0')
+                    name_base = name_parts[0]
+                    name_suff = name_parts[1]
+                    name_pat = name_base + '_point%d' + name_suff
+                    names.extend([name_pat%i for i in range(n_multipoint)])
     else:
         if not isinstance(name, list):
             names = [name]
