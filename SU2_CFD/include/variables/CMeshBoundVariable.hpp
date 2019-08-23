@@ -64,13 +64,13 @@ public:
    * \brief Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline su2double GetBound_Disp(unsigned short iDim) { return Boundary_Displacement[iDim]; }
+  inline su2double GetBound_Disp(unsigned short iDim) const final { return Boundary_Displacement[iDim]; }
 
   /*!
    * \brief Set the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBound_Disp(su2double *val_BoundDisp) {
+  inline void SetBound_Disp(const su2double *val_BoundDisp) final {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) Boundary_Displacement[iDim] = val_BoundDisp[iDim];
   }
 
@@ -79,7 +79,7 @@ public:
    * \param[in] iDim - Index of the dimension of interest.
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
-  inline void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) {
+  inline void SetBound_Disp(unsigned short iDim, const su2double val_BoundDisp) final {
     Boundary_Displacement[iDim] = val_BoundDisp;
   }
 
@@ -87,13 +87,13 @@ public:
    * \brief Determine whether the node is a moving vertex.
    * \return True. The node is at the boundary.
    */
-  inline bool Get_isVertex(void) { return true; }
+  inline bool Get_isVertex(void) const final { return true; }
 
   /*!
    * \brief Register the boundary displacements of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_BoundDisp(bool input){
+  inline void Register_BoundDisp(bool input) final {
     if (input) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         AD::RegisterInput(Boundary_Displacement[iVar]);
@@ -106,7 +106,7 @@ public:
   /*!
    * \brief Recover the value of the adjoint of the boundary displacements.
    */
-  inline void GetAdjoint_BoundDisp(su2double *adj_disp) {
+  inline void GetAdjoint_BoundDisp(su2double *adj_disp) final {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         adj_disp[iVar] = SU2_TYPE::GetDerivative(Boundary_Displacement[iVar]);
     }

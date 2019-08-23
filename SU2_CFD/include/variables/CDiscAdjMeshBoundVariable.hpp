@@ -73,7 +73,7 @@ public:
    * \brief Set the solution for the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBoundDisp_Direct(su2double *val_BoundDisp) {
+  inline void SetBoundDisp_Direct(const su2double *val_BoundDisp) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Bound_Disp_Direct[iDim] = val_BoundDisp[iDim];
   }
@@ -82,7 +82,7 @@ public:
    * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
    */
-  inline void SetBoundDisp_Sens(su2double *val_sens) {
+  inline void SetBoundDisp_Sens(const su2double *val_sens) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Bound_Disp_Sens[iDim] = val_sens[iDim];
   }
@@ -92,13 +92,13 @@ public:
    * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
    * \return Value of the original Mesh_Coord_Sens iDim.
    */
-  inline su2double GetBoundDisp_Sens(unsigned short iDim) { return Bound_Disp_Sens[iDim]; }
+  inline su2double GetBoundDisp_Sens(unsigned short iDim) const final { return Bound_Disp_Sens[iDim]; }
 
   /*!
    * \brief Determine whether the node is a moving vertex.
    * \return True. The node is at the boundary.
    */
-  inline bool Get_isVertex(void) { return true; }
+  inline bool Get_isVertex(void) const final { return true; }
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
