@@ -88,6 +88,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
+    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:    
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:
@@ -235,7 +236,10 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
     if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
         (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
+        (config_container[iZone]->GetKind_Solver() ==  RANS) ||
+        (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
+        (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() ==  INC_RANS) ) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
 
@@ -480,6 +484,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     for (iZone = 0; iZone < nZone; iZone++){
       if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
       if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
+      if (config_container[iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ZONE_FLOW = iZone;
     }
     output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
         config_container, integration_container, 0,
@@ -655,7 +660,8 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
     transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
-    if (config_container[targetZone]->GetKind_Solver() == RANS)
+    
+    if (config_container[targetZone]->GetKind_Solver() == RANS || config_container[targetZone]->GetKind_Solver() == INC_RANS)
       transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
                                                                          geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                          config_container[donorZone], config_container[targetZone]);
