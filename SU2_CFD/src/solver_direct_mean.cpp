@@ -186,7 +186,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
   bool low_mach_prec = config->Low_Mach_Preconditioning();
 
@@ -14253,7 +14253,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool low_mach_prec = config->Low_Mach_Preconditioning();

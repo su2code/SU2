@@ -5594,7 +5594,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
   }
 
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
   
 }
 
@@ -5627,7 +5627,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   }
 
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
 }
 

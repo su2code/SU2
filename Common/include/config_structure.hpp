@@ -5739,7 +5739,13 @@ public:
    * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
    */
   bool GetGrid_Movement(void);
-  
+
+  /*!
+   * \brief Get information about dynamic grids.
+   * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
+   */
+  bool GetDynamic_Grid(void);
+
   /*!
    * \brief Get information about the volumetric movement.
    * \return <code>TRUE</code> if there is a volumetric movement is required; otherwise <code>FALSE</code>.

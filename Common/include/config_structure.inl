@@ -1620,6 +1620,12 @@ inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
 inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC)); }
 
+inline bool CConfig::GetDynamic_Grid(void) {
+  return (Kind_GridMovement != NO_MOVEMENT)
+      || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC))
+      || (Deform_Mesh && (Unsteady_Simulation != NO));
+}
+
 inline unsigned short CConfig::GetKind_SurfaceMovement(unsigned short iMarkerMoving){return Kind_SurfaceMovement[iMarkerMoving];}
 
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }

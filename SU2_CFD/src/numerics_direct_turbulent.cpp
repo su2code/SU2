@@ -46,7 +46,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
