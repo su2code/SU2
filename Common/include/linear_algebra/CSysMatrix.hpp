@@ -61,57 +61,7 @@
 #endif
 
 #ifdef HAVE_PASTIX
-namespace PaStiX {
-extern "C" {
-#include <pastix.h>
-}
-}
-/*--- Small struct to aggregate main PaStiX data and simplify calls ---*/
-struct CPastixData
-{
-  PaStiX::pastix_data_t       *state;   /*!< \brief Internal state of the solver. */
-  PaStiX::pastix_int_t         nCols;   /*!< \brief Local number of columns. */
-  vector<PaStiX::pastix_int_t> colptr;  /*!< \brief Equiv. to our "row_ptr". */
-  vector<PaStiX::pastix_int_t> rowidx;  /*!< \brief Equiv. to our "col_ind". */
-  vector<passivedouble>        values;  /*!< \brief Equiv. to our "matrix". */
-  vector<PaStiX::pastix_int_t> loc2glb; /*!< \brief Global index of the columns held by this rank. */
-  vector<PaStiX::pastix_int_t> perm;    /*!< \brief Ordering computed by PaStiX. */
-  vector<passivedouble>        rhs;     /*!< \brief RHS vector which then becomes the solution. */
-
-  PaStiX::pastix_int_t iparm[PaStiX::IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
-  passivedouble        dparm[PaStiX::DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */
-
-  bool isinitialized;  /*!< \brief Signals that the sparsity pattern has been set. */
-  bool isfactorized;   /*!< \brief Signals that a factorization has been computed. */
-  unsigned long iter;  /*!< \brief Number of times a factorization has been requested. */
-  unsigned short verb; /*!< \brief Verbosity level. */
-
-  vector<unsigned long>          sort_rows;  /*!< \brief List of rows with halo points. */
-  vector<vector<unsigned long> > sort_order; /*!< \brief How each of those rows needs to be sorted. */
-
-  CPastixData() : state(NULL), isinitialized(false), isfactorized(false), iter(0), verb(0) {}
-
-  CPastixData(const CPastixData&) = delete;
-  CPastixData(CPastixData&&) = delete;
-  CPastixData& operator= (const CPastixData&) = delete;
-
-  ~CPastixData() { clean(); }
-
-  void clean() {
-    if(isfactorized) {
-      iparm[PaStiX::IPARM_VERBOSE] = (verb > 0) ? PaStiX::API_VERBOSE_NO : PaStiX::API_VERBOSE_NOT;
-      iparm[PaStiX::IPARM_START_TASK] = PaStiX::API_TASK_CLEAN;
-      iparm[PaStiX::IPARM_END_TASK]   = PaStiX::API_TASK_CLEAN;
-      run();
-      isfactorized = false;
-    }
-  }
-
-  void run() {
-    PaStiX::dpastix(&state, MPI_COMM_WORLD, nCols, colptr.data(), rowidx.data(), values.data(),
-                    loc2glb.data(), perm.data(), NULL, rhs.data(), 1, iparm, dparm);
-  }
-};
+#include "CPastixWrapper.hpp"
 #endif
 
 using namespace std;
@@ -174,7 +124,7 @@ private:
 #endif
 
 #ifdef HAVE_PASTIX
-  CPastixData pastix_data;
+  CPastixWrapper pastix_wrapper;
 #endif
 
   /*!
@@ -684,11 +634,6 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
-
-  /*!
-   * \brief Initialize the matrix format that PaStiX requires.
-   */
-  void PastixInitialize(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Factorize matrix using PaStiX.
