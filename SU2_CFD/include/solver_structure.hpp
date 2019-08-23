@@ -4335,6 +4335,54 @@ public:
   virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Initialize the vertex traction containers at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+
+  inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
+
+    unsigned long iVertex;
+    unsigned short iMarker, iDim;
+    unsigned long nMarker = config->GetnMarker_All();
+
+    VertexTraction = new su2double** [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        VertexTraction[iMarker][iVertex] = new su2double [nDim];
+        for (iDim = 0; iDim < nDim ; iDim++) {
+          VertexTraction[iMarker][iVertex][iDim] = 0.0;
+        }
+      }
+    }
+  }
+
+  /*!
+   * \brief Initialize the adjoint vertex traction containers at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+
+  inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
+
+    unsigned long iVertex;
+    unsigned short iMarker, iDim;
+    unsigned long nMarker = config->GetnMarker_All();
+
+    VertexTractionAdjoint = new su2double** [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim];
+        for (iDim = 0; iDim < nDim ; iDim++) {
+          VertexTractionAdjoint[iMarker][iVertex][iDim] = 0.0;
+        }
+      }
+    }
+  }
+
+  /*!
    * \brief Compute the tractions at the vertices.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
