@@ -157,7 +157,7 @@ def main():
     # Set SU2 defaults units, if definitions are not included in the cfg file
     if 'SYSTEM_MEASUREMENTS' not in config:
         config.SYSTEM_MEASUREMENTS = 'SI'
-    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+    if config.SOLVER == 'NAVIER_STOKES':
         if 'REYNOLDS_LENGTH' not in config:
             config.REYNOLDS_LENGTH = 1.0
 
@@ -282,12 +282,12 @@ def main():
     f.write('\n%  ')
     line_text = 'Mach : %7.2f  ,  '%(config.MACH_NUMBER)
     f.write(line_text)
-    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+    if config.SOLVER == 'NAVIER_STOKES':
         line_text = 'Reynolds Number  :  %s   '%(config.REYNOLDS_NUMBER)
         f.write(line_text)
         line_text = 'Reynolds length :   %s   [ %s ] '%(config.REYNOLDS_LENGTH, length_dimension)
     else:
-        line_text = 'Physical problem : %s '%( config.PHYSICAL_PROBLEM)
+        line_text = 'Physical problem : %s '%( config.SOLVER)
     f.write(line_text)
     f.write('\n%  ')
     rho = float(config.FREESTREAM_PRESSURE)/\
