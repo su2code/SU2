@@ -62,6 +62,6 @@ public:
    * \brief Determine whether the node is a moving vertex.
    * \return False. The node is not at the boundary.
    */
-  inline virtual bool Get_isVertex(void) { return false; }
+  inline virtual bool Get_isVertex(void) const override { return false; }
 
 };
