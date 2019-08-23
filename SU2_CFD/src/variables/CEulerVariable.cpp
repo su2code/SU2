@@ -230,7 +230,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Solution_BGS_k = NULL;
   if (fsi || multizone){
       Solution_BGS_k  = new su2double [nVar];
-      Solution[0] = val_density;
+      Solution_BGS_k[0] = val_density;
       for (iDim = 0; iDim < nDim; iDim++) {
         Solution_BGS_k[iDim+1] = val_density*val_velocity[iDim];
       }
