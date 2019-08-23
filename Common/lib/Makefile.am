@@ -64,6 +64,11 @@ lib_sources = \
   ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
+  ../include/CMultiGridQueue.hpp \
+  ../include/CMeshReaderFVM.hpp \
+  ../include/CCGNSMeshReaderFVM.hpp \
+  ../include/CRectangularMeshReaderFVM.hpp \
+  ../include/CBoxMeshReaderFVM.hpp \
   ../include/graph_coloring_structure.hpp \
   ../include/grid_adaptation_structure.hpp \
   ../include/grid_adaptation_structure.inl \
@@ -88,6 +93,7 @@ lib_sources = \
   ../include/wall_model.hpp \
   ../include/wall_model.inl \
   ../include/toolboxes/printing_toolbox.hpp \
+  ../include/toolboxes/CLinearPartitioner.hpp \
   ../include/toolboxes/MMS/CVerificationSolution.hpp \
   ../include/toolboxes/MMS/CVerificationSolution.inl \
   ../include/toolboxes/MMS/CIncTGVSolution.hpp \
@@ -119,6 +125,11 @@ lib_sources = \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
   ../src/geometry_structure.cpp \
+  ../src/CMultiGridQueue.cpp \
+  ../src/CMeshReaderFVM.cpp \
+  ../src/CCGNSMeshReaderFVM.cpp \
+  ../src/CRectangularMeshReaderFVM.cpp \
+  ../src/CBoxMeshReaderFVM.cpp \
   ../src/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
@@ -135,6 +146,7 @@ lib_sources = \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
   ../src/toolboxes/signal_processing_toolbox.cpp \
+  ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \
