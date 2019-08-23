@@ -482,6 +482,10 @@ def multipoint( config, state=None, step=1e-2 ):
     config.MARKER_OUTLET = new_marker_outlet
     solution_flow_base = config.SOLUTION_FLOW_FILENAME 
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    if os.path.exists(solution_flow_list[0]): 
+        state.FILES['DIRECT'] = solution_flow_list[0]
+    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+
 
     # state.find_files(config)
 
@@ -540,20 +544,21 @@ def multipoint( config, state=None, step=1e-2 ):
 
     for i in range(len(weight_list)-1):
 
-        restart_sol = config['RESTART_SOL']
-
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
 
         konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
-        # ztate.FILES.clear()
+        konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
+        if 'DIRECT' in ztate.FILES:
+            del ztate.FILES.DIRECT
+
+        if os.path.exists(solution_flow_list[i+1]):
+            ztate.FILES['DIRECT'] = solution_flow_list[i+1]
 
         # ztate.find_files(konfig)
         files = ztate.FILES
         link = []
-        
-        if config['RESTART_SOL']
-            files['DIRECT'] = solution_flow_list[i+1]
+
 
         # files: mesh
         name = files['MESH']
