@@ -1078,7 +1078,7 @@ CSolver* CDriver::GetSolver(unsigned short val_iZone,
 }
 
 void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile, vector<vector<passivedouble> > SolAdap,
-                                          vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+                                          vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                           vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                           unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) {
 

@@ -1797,7 +1797,7 @@ public:
    * \param[in] val_iZone - Domain to be loaded.
    * \param[in] val_nZone - Total number of domains.
    */
-  CPhysicalGeometry(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+  CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                     vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                     CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone);
   
@@ -2011,7 +2011,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Domain to be read from the grid file.
    */
-  void Load_Adapted_Mesh_Parallel_FVM(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+  void Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                       vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                       CConfig *config, unsigned short val_iZone);
 

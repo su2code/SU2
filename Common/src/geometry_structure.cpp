@@ -3765,7 +3765,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                      vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                      CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
@@ -10867,7 +10867,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
 }
 
-void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                                        vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                                        CConfig* config, unsigned short val_iZone) {
 
