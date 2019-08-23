@@ -102,7 +102,7 @@ inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC
 
 inline CBoundaryFEM::~CBoundaryFEM(void) { if( wallModel ) delete wallModel; }
 
-inline CMeshFEM::CMeshFEM(void) { blasFunctions = NULL; }
+inline CMeshFEM::CMeshFEM(void) : CGeometry() { blasFunctions = NULL; }
 
 inline CMeshFEM::~CMeshFEM(void) { if( blasFunctions ) {delete blasFunctions; blasFunctions = NULL;} }
 
@@ -144,7 +144,7 @@ inline const vector<unsigned short>& CMeshFEM::GetRotPerMarkers(void) const {ret
 
 inline const vector<vector<unsigned long> >& CMeshFEM::GetRotPerHalos(void) const {return rotPerHalos;}
 
-inline CMeshFEM_DG::CMeshFEM_DG(void) { }
+inline CMeshFEM_DG::CMeshFEM_DG(void) : CMeshFEM() { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
 
