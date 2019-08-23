@@ -68,7 +68,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
 }
 

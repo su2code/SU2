@@ -47,8 +47,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   unsigned long *LocalIndex = NULL;
   bool *SurfacePoint = NULL;
   
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
@@ -2157,7 +2156,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
-  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetGrid_Movement();
+  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetDynamic_Grid();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   unsigned long iExtIter = config->GetExtIter();
   unsigned short NVar, dims = geometry->GetnDim();
@@ -3068,7 +3067,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
-  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetGrid_Movement();
+  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetDynamic_Grid();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   unsigned long iPoint, iElem, iNode, iSurf_Poin, iExtIter = config->GetExtIter();
   unsigned short iDim, NVar, dims = geometry->GetnDim();
@@ -3432,8 +3431,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
   *NVar = 0;
   unsigned short nDim = geometry->GetnDim();
   unsigned short Kind_Solver  = config->GetKind_Solver();
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   
   

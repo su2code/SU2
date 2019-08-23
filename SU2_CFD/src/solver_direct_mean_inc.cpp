@@ -119,7 +119,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename_ = config->GetSolution_FlowFileName();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -6863,7 +6863,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename_ = config->GetSolution_FlowFileName();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
