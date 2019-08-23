@@ -763,7 +763,8 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  void SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ);
+  void SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+                    passivedouble LoadY, passivedouble LoadZ);
 
   /*!
    * \brief Return the displacements from the FEA solver.
@@ -771,7 +772,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of displacements.
    */
-  vector<passivedouble> GetDisplacements(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -779,7 +780,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities.
    */
-  vector<passivedouble> GetVelocity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -787,7 +788,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities at time n.
    */
-  vector<passivedouble> GetVelocity_n(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
