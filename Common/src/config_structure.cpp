@@ -1335,14 +1335,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("LEVELS_TIME_ACCURATE_LTS", nLevels_TimeAccurateLTS, 1);
   /* DESCRIPTION: Number of time DOFs used in the predictor step of ADER-DG. */
   addUnsignedShortOption("TIME_DOFS_ADER_DG", nTimeDOFsADER_DG, 2);
-  /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  addDoubleOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
-  /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
-  addDoubleOption("UNST_TIME", Total_UnstTime, 1.0);
   /* DESCRIPTION: Unsteady Courant-Friedrichs-Lewy number of the finest grid */
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
-  /* DESCRIPTION: Number of internal iterations (dual time method) */
-  addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
   /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
@@ -1442,44 +1436,15 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_CRITERIA
    *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
-  /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 5.0);
-  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
+  /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
-  /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
-  addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
-  /* DESCRIPTION: Min value of the residual (log10 of the residual) */
-  addDoubleOption("RESIDUAL_MINVAL_FSI", MinLogResidualFSI, -5.0);
-  /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_REDUCTION_BGS_FLOW", OrderMagResidual_BGS_F, 3.0);
-  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_MINVAL_BGS_FLOW", MinLogResidual_BGS_F, -8.0);
-  /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_REDUCTION_BGS_STRUCTURE", OrderMagResidual_BGS_S, 3.0);
-  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_MINVAL_BGS_STRUCTURE", MinLogResidual_BGS_S, -8.0);
-  /* DESCRIPTION: FEM: UTOL = norm(Delta_U(k)) / norm(U(k)) */
-  addDoubleOption("RESIDUAL_FEM_UTOL", Res_FEM_UTOL, -9.0);
-  /* DESCRIPTION: FEM: RTOL = norm(Residual(k)) / norm(Residual(0)) */
-  addDoubleOption("RESIDUAL_FEM_RTOL", Res_FEM_RTOL, -9.0);
-  /* DESCRIPTION: FEM: ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) */
-  addDoubleOption("RESIDUAL_FEM_ETOL", Res_FEM_ETOL, -9.0);
-  /* DESCRIPTION: FEM: ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) */
-  addEnumOption("RESIDUAL_CRITERIA_FEM", Res_FEM_CRIT, ResFem_Map, RESFEM_RELATIVE);
-  /*!\brief RESIDUAL_FUNC_FLOW\n DESCRIPTION: Flow functional for the Residual criteria\n OPTIONS: See \link Residual_Map \endlink \n DEFAULT: RHO_RESIDUAL \ingroup Config*/
-  addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
-  /*!\brief STARTCONV_ITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
+  /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
   addUnsignedLongOption("CONV_STARTITER", StartConv_Iter, 5);
-  /*!\brief CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
+  /*!\brief CONV_CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
   addUnsignedShortOption("CONV_CAUCHY_ELEMS", Cauchy_Elems, 100);
-  /*!\brief CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
+  /*!\brief CONV_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
   addDoubleOption("CONV_CAUCHY_EPS", Cauchy_Eps, 1E-10);
-  /*!\brief CAUCHY_FUNC_FLOW
-   *  \n DESCRIPTION: Flow functional for the Cauchy criteria \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
-  addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
-  /*!\brief CAUCHY_FUNC_ADJFLOW\n DESCRIPTION: Adjoint functional for the Cauchy criteria.\n OPTIONS: See \link Sens_Map \endlink. \n DEFAULT: SENS_GEOMETRY \ingroup Config*/
-  addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
-
+  /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
   addStringOption("CONV_FIELD", ConvField, "");
 
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
@@ -2023,9 +1988,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Direction of the Electic Fields */
   addDoubleListOption("ELECTRIC_FIELD_DIR", nDim_Electric_Field, Electric_Field_Dir);
 
-  /* DESCRIPTION: Convergence criteria for FEM adjoint */
-  addDoubleOption("CRITERIA_FEM_ADJ", Res_FEM_ADJ, -5.0);
-
   /*!\brief DESIGN_VARIABLE_FEA
    *  \n DESCRIPTION: Design variable for FEA problems \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, NODV_FEA);
@@ -2526,7 +2488,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
           if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
                                                                  "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
-
+          if (!option_name.compare("UNST_TIMESTEP")) newString.append("UNST_TIMESTEP is now TIME_STEP.\n");
+          if (!option_name.compare("UNST_TIME")) newString.append("UNST_TIME is now MAX_TIME.\n");
+          if (!option_name.compare("UNST_INT_ITER")) newString.append("UNST_INT_ITER is now INNER_ITER.\n");
+          if (!option_name.compare("RESIDUAL_MINVAL")) newString.append("RESIDUAL_MINVAL is now CONV_RESIDUAL_MINVAL.\n");
+          if (!option_name.compare("STARTCONV_ITER")) newString.append("STARTCONV_ITER is now CONV_STARTITER.\n");
+          if (!option_name.compare("CAUCHY_ELEMS")) newString.append("CAUCHY_ELEMS is now CONV_CAUCHY_ELEMS.\n");
+          if (!option_name.compare("CAUCHY_EPS")) newString.append("CAUCHY_EPS is now CONV_CAUCHY_EPS.\n");
+          
           errorString.append(newString);
           err_count++;
         continue;
@@ -4131,7 +4100,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
     ConvCriteria = RESIDUAL;
   		nInnerIter += Iter_dCL_dAlpha;
-  		OrderMagResidual = 24;
   		MinLogResidual = -24;
   	}
   }
@@ -6121,69 +6089,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
     cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
     cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
-
-
-    if (!fea){
-
-      if (ConvCriteria == CAUCHY) {
-        if (!ContinuousAdjoint && !DiscreteAdjoint)
-          switch (Cauchy_Func_Flow) {
-            case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-            case DRAG_COEFFICIENT: cout << "Cauchy criteria for Drag using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-          }
-
-        if (ContinuousAdjoint || DiscreteAdjoint)
-          switch (Cauchy_Func_AdjFlow) {
-            case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-            case SENS_MACH: cout << "Cauchy criteria for Mach number sensitivity using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-          }
-
-        cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-      
-      }
-
-
-      if (ConvCriteria == RESIDUAL) {
-        if (!ContinuousAdjoint && !DiscreteAdjoint) {
-          cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
-          cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
-          cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-        }
-
-        if (ContinuousAdjoint || DiscreteAdjoint) {
-          cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
-          cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
-        }
-
-      }
-
-    }
-    else{
-        if (Kind_Struct_Solver == SMALL_DEFORMATIONS) {cout << "Convergence criteria determined by the linear solver." << endl;}
-        else if (Kind_Solver == DISC_ADJ_FEM){
-
-        }
-        else{
-          if (Res_FEM_CRIT == RESFEM_ABSOLUTE){
-              cout << "Absolute convergence criteria" << endl;
-              cout << "Log10 of displacements (UTOL-A): " << Res_FEM_UTOL << "."<< endl;
-              cout << "Log10 of residual (RTOL-A): " << Res_FEM_RTOL << "."<< endl;
-              cout << "Log10 of energy (ETOL-A): " << Res_FEM_ETOL << "."<< endl;
-          }
-          else{
-              cout << "Relative convergence criteria" << endl;
-              cout << "Displacements tolerance (UTOL): Reduce " << -Res_FEM_UTOL << " orders of magnitude."<< endl;
-              cout << "Residual tolerance (RTOL): Reduce " << -Res_FEM_RTOL << " orders of magnitude."<< endl;
-              cout << "Energy tolerance (ETOL): Reduce " << -Res_FEM_ETOL << " orders of magnitude."<< endl;
-          }
-        }
-    }
-
-
+    
   }
 
   if (val_software == SU2_MSH) {
