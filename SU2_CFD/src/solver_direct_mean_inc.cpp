@@ -564,33 +564,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
    *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
   if(config->GetnMarker_Fluid_Load() > 0){
 
-  /* Store the forces at the boundary
-   * (this will be moved to a new postprocessing structure once in place)
-   */
-    VertexTraction = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim];
-        for (iVar = 0; iVar < nDim ; iVar++) {
-          VertexTraction[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-    }
+    InitVertexTractionContainer(geometry, config);
 
-  /* Store the force adjoint at the boundary
-   * (this will be moved to a new postprocessing structure once in place)
-   */
-    VertexTractionAdjoint = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim];
-        for (iVar = 0; iVar < nDim ; iVar++) {
-          VertexTractionAdjoint[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-    }
+    if (config->GetDiscrete_Adjoint())
+      InitVertexTractionAdjointContainer(geometry, config);
+
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
@@ -7372,33 +7350,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
    *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
   if(config->GetnMarker_Fluid_Load() > 0){
 
-  /* Store the forces at the boundary
-   * (this will be moved to a new postprocessing structure once in place)
-   */
-    VertexTraction = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim];
-        for (iVar = 0; iVar < nDim ; iVar++) {
-          VertexTraction[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-    }
+    InitVertexTractionContainer(geometry, config);
 
-  /* Store the force adjoint at the boundary
-   * (this will be moved to a new postprocessing structure once in place)
-   */
-    VertexTractionAdjoint = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim];
-        for (iVar = 0; iVar < nDim ; iVar++) {
-          VertexTractionAdjoint[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-    }
+    if (config->GetDiscrete_Adjoint())
+      InitVertexTractionAdjointContainer(geometry, config);
+
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
