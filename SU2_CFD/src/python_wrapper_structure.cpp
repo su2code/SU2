@@ -1078,7 +1078,8 @@ CSolver* CDriver::GetSolver(unsigned short val_iZone,
 }
 
 void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile, vector<vector<passivedouble> > SolAdap,
-                                          vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+                                          vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+                                          vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                           unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) {
 
   char zone_file_name[MAX_STRING_SIZE];
@@ -1154,7 +1155,8 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
 
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      geometry_aux = new CPhysicalGeometry(PoiAdap, EdgAdap, TriAdap, TetAdap, config_container[iZone], 
+                                           val_nDim, val_iZone, val_nZone);
 
       /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 

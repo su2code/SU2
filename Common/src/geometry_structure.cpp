@@ -3765,7 +3765,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+                                     vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                      CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
   size = SU2_MPI::GetSize();
@@ -3779,31 +3780,6 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vec
   ending_node   = NULL;
   npoint_procs  = NULL;
   nPoint_Linear = NULL;
-  
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = NULL;
-  nSpanSectionsByMarker   = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
-
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -3813,9 +3789,9 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vec
   nZone = val_nZone;
   ofstream boundary_file;
   string Grid_Marker;
-  
-  string val_mesh_filename  = config->GetMesh_FileName();
-  unsigned short val_format = config->GetMesh_FileFormat();
+
+  nDim  = val_nDim;
+  nZone = val_nZone;
 
   /*--- Determine whether or not a FEM discretization is used ---*/
 
@@ -3832,60 +3808,16 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vec
   if (rank == MASTER_NODE)
     cout << endl <<"------------------ Load Adapted Grid File Information -------------------" << endl;
 
-  if( fem_solver ) {
-    switch (val_format) {
-      case SU2:
-        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
+  if (fem_solver){
 
-      case CGNS:
-        Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-
-      default:
-        SU2_MPI::Error("Unrecognized mesh format specified for the FEM solver!", CURRENT_FUNCTION);
-        break;
-    }
   }
-  else {
-
-    switch (val_format) {
-      case SU2:
-        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-      case CGNS:
-        Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
-        break;
-    }
+  else{
+    Load_Adapted_Mesh_Parallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config, val_iZone);
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
   
   assert((nDim == 2) || (nDim == 3));
-  
-  /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
-  
-  if (config->GetKind_SU2() == SU2_CFD) {
-    
-    NewCoord = new su2double [nDim];
-    
-    /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
-    
-    if (config->GetSystemMeasurements() == US) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
-        }
-        node[iPoint]->SetCoord(NewCoord);
-      }
-    }
-    
-    delete [] NewCoord;
-    
-  }
   
 }
 
@@ -10931,6 +10863,65 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                  string("To use CGNS, remove the -DNO_CGNS directive ") +
                  string("from the makefile and supply the correct path ") + 
                  string("to the CGNS library."), CURRENT_FUNCTION);
+#endif
+  
+}
+
+void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+                                                       vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+                                                       CConfig* config, unsigned short val_iZone) {
+
+  string Marker_Tag;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+  unsigned long VTK_Type, iMarker, iChar;
+  unsigned long iCount = 0;
+  unsigned long iElem_Bound = 0, iPoint = 0, iElem = 0;
+  unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
+  unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
+  vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
+  unsigned long i;
+  long local_index;
+  vector<unsigned long>::iterator it;
+  char cstr[200];
+  su2double Coord_2D[2], Coord_3D[3], AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
+  
+  /*--- Initialize some additional counters for the parallel partitioning ---*/
+  
+  unsigned long element_count = 0;
+  unsigned long boundary_marker_count = 0;
+  unsigned long node_count = 0;
+  unsigned long local_element_count = 0;
+
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0; Global_nElemDomain = 0;
+  nelem_edge     = 0; Global_nelem_edge     = 0;
+  nelem_triangle = 0; Global_nelem_triangle = 0;
+  nelem_quad     = 0; Global_nelem_quad     = 0;
+  nelem_tetra    = 0; Global_nelem_tetra    = 0;
+  nelem_hexa     = 0; Global_nelem_hexa     = 0;
+  nelem_prism    = 0; Global_nelem_prism    = 0;
+  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+
+  /*--- Get numbers of points and elements (for now only edgs, tris, tets) ---*/
+  nPoint       = PoiAdap.size();
+  nPointDomain = nPoint;
+
+  if(nDim == 2){
+    nelem_edge_bound = EdgAdap.size();
+    nelem_triangle   = TriAdap.size();
+    nelem_tetra      = 0;
+  }
+  else{
+    nelem_edge_bound     = 0;
+    nelem_triangle_bound = TriAdap.size();
+    nelem_tetra          = TetAdap.size();
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nPoint = nPoint;
+  Global_nPointDomain = nPointDomain;
 #endif
   
 }

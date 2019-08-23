@@ -41,12 +41,11 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  unsigned short nZone = SINGLE_ZONE, nDim;
+  unsigned short nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  bool periodic = false;
 
   /*--- MPI initialization ---*/
 
@@ -80,7 +79,7 @@ int main(int argc, char *argv[]) {
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
 
-  ErrorEstimationDriver = new CErrorEstimationDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+  ErrorEstimationDriver = new CErrorEstimationDriver(config_file_name, nZone, MPICommunicator);
 
   ErrorEstimationDriver->ComputeMetric();
 

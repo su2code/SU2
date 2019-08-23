@@ -1789,6 +1789,7 @@ public:
   /*! 
    * \overload
    * \brief Loads the adjacency data from AMG. 
+   * \param[in] PoiAdap - Vector of coordinates.
    * \param[in] EdgAdap - Vector of edg adjacency.
    * \param[in] TriAdap - Vector of tri adjacency.
    * \param[in] TetAdap - Vector of tet adjacency.
@@ -1796,7 +1797,8 @@ public:
    * \param[in] val_iZone - Domain to be loaded.
    * \param[in] val_nZone - Total number of domains.
    */
-  CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+  CPhysicalGeometry(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+                    vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                     CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
@@ -1997,6 +1999,21 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void Read_CGNS_Format_Parallel_FEM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+
+  /*!
+   * \brief Loads the geometry of the adapted grid from the python interface and
+   *        adjust the boundary conditions with the configuration file in
+   *        parallel (for parmetis).
+   * \param[in] PoiAdap - Vector of coordinates.
+   * \param[in] EdgAdap - Vector of edg adjacency.
+   * \param[in] TriAdap - Vector of tri adjacency.
+   * \param[in] TetAdap - Vector of tet adjacency.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   */
+  void Load_Adapted_Mesh_Parallel_FVM(vector<vector<unsigned long> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+                                      vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+                                      CConfig *config, unsigned short val_iZone);
 
 	/*!
 	 * \brief Find repeated nodes between two elements to identify the common face.

@@ -59,9 +59,9 @@ private:
       size;                                     /*!< \brief MPI Size. */
 
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
-  CGeometry ****geometry_container;             /*!< \brief Geometry for which there is a solution */
-  CSolver *****solver_container;                /*!< \brief Solution for which error is being estimated */
-  CConfig **config_container;                   /*!< \brief Definition of the problem. */
+  CGeometry ****geometry;             /*!< \brief Geometry for which there is a solution */
+  CSolver *****solver;                /*!< \brief Solution for which error is being estimated */
+  CConfig **config;                   /*!< \brief Definition of the problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
 
@@ -107,8 +107,6 @@ public:
    */
   CErrorEstimationDriver(char* confFile,
                           unsigned short val_nZone,
-                          unsigned short val_nDim,
-                          bool val_periodic,
                           SU2_Comm MPICommunicator);
 
   /*!
@@ -119,33 +117,33 @@ public:
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing(CConfig **config_container, CGeometry ****geometry_container, bool val_periodic);
+  void Input_Preprocessing(CConfig **config, CGeometry ****geometry);
 
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
-  void Geometrical_Preprocessing(CConfig **config_container, CGeometry ****geometry_container);
+  void Geometrical_Preprocessing(CConfig **config, CGeometry ****geometry);
   
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    */
-  void Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container);
+  void Geometrical_Preprocessing_DGFEM(CConfig **config, CGeometry ****geometry);
 
   /*!
    * \brief Construction of solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+  void Solver_Preprocessing(CSolver ****solver, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Restart of the solvers from the restart files.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Restart(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
+  void Solver_Restart(CSolver ****solver, CGeometry ***geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
 
   /*!
    * \brief Perform all steps to compute the metric.
@@ -219,17 +217,17 @@ public:
 
   /*!
    * \brief Deallocation of solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
+  void Solver_Postprocessing(CSolver ****solver, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Deletion(CSolver ****solver_container, CConfig *config, unsigned short val_iInst);
+  void Solver_Deletion(CSolver ****solver, CConfig *config, unsigned short val_iInst);
 
 };
