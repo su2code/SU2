@@ -108,9 +108,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   if ( config->GetGrid_Movement() ) {
     GridVel  = new su2double[nDim];
-    GridVel_Old  = new su2double[nDim];
-    GridVel_n  = new su2double[nDim];
-    GridVel_n1  = new su2double[nDim];
+    if( config->GetDiscrete_Adjoint() ) {
+      GridVel_Old  = new su2double[nDim];
+      GridVel_n    = new su2double[nDim];
+      GridVel_n1   = new su2double[nDim];
+    }
 
     for (iDim = 0; iDim < nDim; iDim++) 
       GridVel[iDim] = 0.0;
@@ -208,9 +210,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   /*--- Storage of grid velocities for dynamic meshes ---*/
   if ( config->GetGrid_Movement() ) {
     GridVel  = new su2double[nDim];
-    GridVel_Old  = new su2double[nDim];
-    GridVel_n  = new su2double[nDim];
-    GridVel_n1  = new su2double[nDim];
+    if( config->GetDiscrete_Adjoint() ) {
+      GridVel_Old  = new su2double[nDim];
+      GridVel_n    = new su2double[nDim];
+      GridVel_n1   = new su2double[nDim];
+    }
 
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
@@ -314,9 +318,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
   if (config->GetGrid_Movement()) {
     GridVel = new su2double[nDim];
-    GridVel_Old  = new su2double[nDim];
-    GridVel_n  = new su2double[nDim];
-    GridVel_n1  = new su2double[nDim];
+    if( config->GetDiscrete_Adjoint() ) {
+      GridVel_Old  = new su2double[nDim];
+      GridVel_n    = new su2double[nDim];
+      GridVel_n1   = new su2double[nDim];
+    }
 
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
