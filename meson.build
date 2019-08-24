@@ -9,11 +9,16 @@ project('SU2', 'c', 'cpp',
 pymod = import('python')
 python = pymod.find_installation()
 
+add_project_link_arguments(['-rdynamic'], language: 'cpp')
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
 subdir('externals/loguru')
 su2_deps += loguru_dep
+
+vtk_dep = dependency('ParaView', cmake_args: ['-DCMAKE_CXX_COMPILER_VERSION=4.8.5', '-DCMAKE_CXX_STANDARD_COMPUTED_DEFAULT=4.8.5'], modules: ['vtkPVCatalyst', 'vtkCommonDataModel', 'vtkPVPythonCatalyst'])
+
+su2_deps += vtk_dep
 
 default_warning_flags = ['-Wno-unused-parameter',
                          '-Wno-empty-body',
@@ -74,18 +79,18 @@ subdir('Common/src')
 # compile SU2_CFD executable
 subdir('SU2_CFD/src')
 # compile SU2_DOT executable
-subdir('SU2_DOT/src')
+#subdir('SU2_DOT/src')
 # compile SU2_DEF executable
-subdir('SU2_DEF/src')
+#subdir('SU2_DEF/src')
 # compile SU2_GEO executable
-subdir('SU2_GEO/src')
+#subdir('SU2_GEO/src')
 # compile SU2_MSH executable
-subdir('SU2_MSH/src')
+#subdir('SU2_MSH/src')
 # compile SU2_SOL executable
-subdir('SU2_SOL/src')
+#subdir('SU2_SOL/src')
 # install python scripts
-subdir('SU2_PY')
+#subdir('SU2_PY')
 
-if get_option('enable-pywrapper')
-  subdir('SU2_PY/pySU2')
-endif
+#if get_option('enable-pywrapper')
+#  subdir('SU2_PY/pySU2')
+#endif

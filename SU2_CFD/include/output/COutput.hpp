@@ -187,6 +187,9 @@ protected:
   Convergence_FullMG;    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
   su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
   string Conv_Field;
+  
+  CFileWriter *catalyst_writer;
+  
 public:
   
   /*----------------------------- Public member functions ----------------------------*/

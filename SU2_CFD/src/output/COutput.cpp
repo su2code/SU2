@@ -48,6 +48,7 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+#include "../../include/output/filewriter/CCatalystWriter.hpp"
 
 
 #include "../../../Common/include/geometry_structure.hpp"
@@ -599,6 +600,10 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
 
   delete file_writer;
   
+  if (format == PARAVIEW_BINARY){
+    CCatalystWriter* cat = dynamic_cast<CCatalystWriter*>(catalyst_writer);
+    cat->Write_Data(curr_TimeIter, GetHistoryFieldValue("CUR_TIME"), data_sorter);
+  }
 }
 
 
@@ -1136,6 +1141,9 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     }
     cout << endl;
   }
+  
+  catalyst_writer = new CCatalystWriter(Variable_Names, nDim);
+  
 }
 
 void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){

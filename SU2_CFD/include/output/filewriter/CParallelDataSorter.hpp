@@ -138,6 +138,8 @@ public:
    */
   su2double GetData(unsigned short iField, unsigned long iPoint) {return Parallel_Data[iField][iPoint];}
   
+  su2double* GetData(unsigned short iField) {return Parallel_Data[iField];}
+  
   /*!
    * \brief Get the global index of a point.
    * \input iPoint - the point ID.
