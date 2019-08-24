@@ -158,16 +158,22 @@ class Project(object):
         # initialize folder with files
         pull,link = state.pullnlink(config)
 
+        objectives = def_objs.keys()
+        n_multipoint = len(config['MULTIPOINT_WEIGHT'].split(','))
+        multipoint = any(elem in su2io.optnames_multi for elem in objectives)
+
         if multipoint:
             solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
             solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
             for i in range(n_multipoint):
                 if os.path.exists(solution_flow_list[i]): 
-                    pull.extend(solution_flow_list[i])
-                for base_name in su2io.get_adjointSuffix.values():
-                    if os.path.exists(su2io.add_suffix(solution_adj_list[0],su2io.get_adjointSuffix(base_name))): 
-                        pull.extend(su2io.add_suffix(solution_adj_list[0],su2io.get_adjointSuffix(base_name)))
+                    link.extend([solution_flow_list[i]])
+                for obj,suff in su2io.get_adjointSuffix().items():
+                    if os.path.exists(su2io.add_suffix(solution_adj_list[0],suff)): 
+                        link.extend([su2io.add_suffix(solution_adj_list[0],suff)])
 
+        print(link)
+        print(folder)
 
         with redirect_folder(folder,pull,link,force=True):
         
