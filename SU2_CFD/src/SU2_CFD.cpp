@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, turbo, zone_specific;
   bool dry_run = false;
+  int verb = 0;
   std::string filename = "default";
   
   /*--- Command line parsing ---*/
@@ -60,6 +61,7 @@ int main(int argc, char *argv[]) {
   CLI::App app{"SU2 v6.2.0 \"Falcon\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n" 
                                        "Only execute preprocessing steps using a dummy geometry.");
+  app.add_option("-v,--verbosity", verb, "Set the verbosity level for logfile.")->default_val("0");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
   
   CLI11_PARSE(app, argc, argv);
@@ -75,13 +77,16 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
-
-  if (SU2_MPI::GetRank() == MASTER_NODE)
-    // Optional, but useful to time-stamp the start of the log.
-    // Will also detect verbosity level on command line as -v.
-    loguru::init(argc, argv, NULL);
-
-  SU2_INFO(MASTER_NODE) << "TEST";
+  
+  loguru::g_preamble_thread  = false;
+  loguru::g_stderr_verbosity = -1;
+  loguru::g_preamble_date    = false; // The date field
+  loguru::g_preamble_time    = false; // The time of the current day
+  loguru::init(argc, argv, NULL);
+  
+  loguru::add_file("info.log", loguru::Truncate, verb);
+  
+  
   
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);

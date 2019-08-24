@@ -31,7 +31,7 @@ public:
 //  }
   
   CSU2Logging(short rank, loguru::NamedVerbosity verb, const char* file, unsigned line) : 
-    rank_only(rank), _line(line), _file(file), _verb(verb){}
+      _file(file), _line(line), rank_only(rank), _verb(verb){}
   
   ~CSU2Logging(){
     if (SU2_MPI::GetRank() == rank_only || rank_only == -1)    
@@ -57,4 +57,9 @@ private:
   short rank_only;
   loguru::NamedVerbosity _verb;
 };
+
+#define CHECK_WITH_INFO_S(cond, info)                                                              \
+	LOGURU_PREDICT_TRUE((cond) == true)                                                            \
+		? (void)0                                                                                  \
+		: loguru::Voidify() & loguru::AbortLogger("CHECK FAILED:  " info "  ", __FILE__, __LINE__)
 

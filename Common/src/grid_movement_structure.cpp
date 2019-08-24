@@ -38,6 +38,7 @@
 #include "../include/grid_movement_structure.hpp"
 #include "../include/adt_structure.hpp"
 #include <list>
+#include "../include/toolboxes/SU2_LOG.hpp"
 
 using namespace std;
 
@@ -2393,12 +2394,12 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   deltaX[2] = xDot[2]*(time_new-time_old);
 
   if (rank == MASTER_NODE) {
-    cout << " New physical time: " << time_new << " seconds." << endl;
+    SU2_INFO << " New physical time: " << time_new << " seconds.";
     if (iter == 0) {
-    cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
-      cout << ", " << xDot[2]*config->GetVelocity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
-      else cout << ") ft/s." << endl;
+      SU2_INFO << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref()
+               << ", " << xDot[2]*config->GetVelocity_Ref() << ") m/s.";
+//      if (config->GetSystemMeasurements() == SI) cout << ") m/s.";
+//      else cout << ") ft/s." << endl;
     }
   }
   
@@ -2506,8 +2507,8 @@ void CVolumetricMovement::SetVolume_Translation(CGeometry *geometry, CConfig *co
   for (iDim = 0; iDim < nDim; iDim++)
     deltaX[iDim] = Ampl*deltaX[iDim]/length;
   if (rank == MASTER_NODE) {
-    cout << "Translational displacement: (" << deltaX[0] << ", ";
-    cout  << deltaX[1] << ", " << deltaX[2] << ")." << endl;
+    SU2_INFO << "Translational displacement: (" << deltaX[0] << ", "
+             << deltaX[1] << ", " << deltaX[2] << ").";
   }
   
   /*--- Loop over and move each node in the volume mesh ---*/
@@ -2557,10 +2558,10 @@ void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *confi
   
   /*--- Print to the console. ---*/
   if (rank == MASTER_NODE) {
-    cout << "Rotation axis vector: (" << u << ", ";
-    cout << v << ", " << w << ")." << endl;
-    cout << "Angle of rotation: " << config->GetDV_Value(0)*Scale;
-    cout << " degrees." << endl;
+    SU2_INFO << "Rotation axis vector: (" << u << ", "
+             << v << ", " << w << ")."
+             << "Angle of rotation: " << config->GetDV_Value(0)*Scale
+             << " degrees.";
   }
   
   /*--- Intermediate values used in computations. ---*/

@@ -45,6 +45,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
                                                           val_nZone,
                                                           MPICommunicator, 
                                                           false) {
+  LOG_SCOPE_FUNCTION(INFO);
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;

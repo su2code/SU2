@@ -38,6 +38,8 @@
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/SU2_LOG.hpp"
+
 #include "../include/element_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
@@ -5968,7 +5970,7 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 #endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << Global_nPoint << " vertices including ghost points. " << endl;
+    SU2_INFO << Global_nPoint << " vertices including ghost points. " << endl;
 
 }
 
@@ -6264,7 +6266,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 #endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << Global_nElem << " interior elements including halo cells. " << endl;
+    SU2_INFO << " interior elements including halo cells. " << endl;
 
   /*--- Set the value of Global_nElemDomain (stored in the geometry 
    container that is passed in). ---*/
@@ -6314,17 +6316,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   if (rank == MASTER_NODE) {
     if (Global_nelem_triangle > 0)
-      cout << Global_nelem_triangle << " triangles."      << endl;
+      SU2_INFO << Global_nelem_triangle << " triangles."      ;
     if (Global_nelem_quad     > 0)
-      cout << Global_nelem_quad     << " quadrilaterals." << endl;
+      SU2_INFO << Global_nelem_quad     << " quadrilaterals." ;
     if (Global_nelem_tetra    > 0)
-      cout << Global_nelem_tetra    << " tetrahedra."     << endl;
+      SU2_INFO << Global_nelem_tetra    << " tetrahedra."     ;
     if (Global_nelem_hexa     > 0)
-      cout << Global_nelem_hexa     << " hexahedra."      << endl;
+      SU2_INFO << Global_nelem_hexa     << " hexahedra."      ;
     if (Global_nelem_prism    > 0)
-      cout << Global_nelem_prism    << " prisms."         << endl;
+      SU2_INFO << Global_nelem_prism    << " prisms."         ;
     if (Global_nelem_pyramid  > 0)
-      cout << Global_nelem_pyramid  << " pyramids."       << endl;
+      SU2_INFO << Global_nelem_pyramid  << " pyramids."       ;
   }
 
 }
@@ -7883,7 +7885,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   if ((val_nZone > 1 && multizone_file) || harmonic_balance) {
     if (harmonic_balance) {
-      if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
+      SU2_INFO << "Reading time instance " << config->GetiInst()+1 << ".";
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -7892,7 +7894,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           text_line.erase (0,6);
           unsigned short jDomain = atoi(text_line.c_str());
           if (jDomain == val_iZone+1) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << "." << endl;
+             SU2_INFO << "Reading zone " << val_iZone+1 << ".";
             break;
           }
         }
@@ -7911,8 +7913,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       if (domain_flag == false) {
         text_line.erase (0,6); nDim = atoi(text_line.c_str());
         if (rank == MASTER_NODE) {
-          if (nDim == 2) cout << "Two dimensional problem." << endl;
-          if (nDim == 3) cout << "Three dimensional problem." << endl;
+          if (nDim == 2) SU2_INFO << "Two dimensional problem.";
+          if (nDim == 3) SU2_INFO << "Three dimensional problem.";
         }
         domain_flag = true;
       } else { break; }
@@ -7995,11 +7997,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         Global_nPoint = nPoint;
         Global_nPointDomain = nPointDomain;
         if (rank == MASTER_NODE && size > SINGLE_NODE) {
-          cout << Global_nPointDomain << " points and " << Global_nPoint-Global_nPointDomain;
-          cout << " ghost points before parallel partitioning." << endl;
+          SU2_INFO << Global_nPointDomain << " points and " << Global_nPoint-Global_nPointDomain
+                   << " ghost points before parallel partitioning.";
         } else if (rank == MASTER_NODE) {
-          cout << Global_nPointDomain << " points and " << Global_nPoint-Global_nPointDomain;
-          cout << " ghost points." << endl;
+          SU2_INFO << Global_nPointDomain << " points and " << Global_nPoint-Global_nPointDomain
+                   << " ghost points.";
         }
         
       } else if (iCount == 1) {
@@ -8011,9 +8013,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         Global_nPointDomain = nPoint;
         Global_nPoint = nPoint;
         if (rank == MASTER_NODE && size > SINGLE_NODE) {
-          cout << nPoint << " points before parallel partitioning." << endl;
+          SU2_INFO << nPoint << " points before parallel partitioning.";
         } else if (rank == MASTER_NODE) {
-          cout << nPoint << " points." << endl;
+          SU2_INFO << nPoint << " points.";
         }
       }
       else {
@@ -8021,7 +8023,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
       
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-        cout << "Performing linear partitioning of the grid nodes." << endl;
+        SU2_INFO << "Performing linear partitioning of the grid nodes.";
       
       /*--- Compute the number of points that will be on each processor.
        This is a linear partitioning with the addition of a simple load
@@ -8163,7 +8165,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       
       Global_nElem = nElem;
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-        cout << Global_nElem << " interior elements before parallel partitioning." << endl;
+        SU2_INFO << Global_nElem << " interior elements before parallel partitioning.";
       
       /*--- Loop over all the volumetric elements and store any element that
        contains at least one of an owned node for this rank (i.e., there will
@@ -8710,7 +8712,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       Global_to_Local_Elem.clear();
       
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-        cout << "Distributing elements across all ranks." << endl;
+        SU2_INFO << "Distributing elements across all ranks.";
       
       /*--- Loop over all the volumetric elements and store any element that
        contains at least one of an owned node for this rank (i.e., there will
@@ -9050,7 +9052,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         
         if (actuator_disk) { nMarker++;  }
         
-        if (rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
+        SU2_INFO << nMarker << " surface markers.";
         config->SetnMarker_All(nMarker);
         bound = new CPrimalGrid**[nMarker];
         nElem_Bound = new unsigned long [nMarker];

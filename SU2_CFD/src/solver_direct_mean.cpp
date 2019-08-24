@@ -37,6 +37,8 @@
 
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../Common/include/toolboxes/SU2_LOG.hpp"
+
 #include "../include/variables/CEulerVariable.hpp"
 #include "../include/variables/CNSVariable.hpp"
 
@@ -170,6 +172,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+  
+  LOG_SCOPE_FUNCTION(INFO);
   
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;

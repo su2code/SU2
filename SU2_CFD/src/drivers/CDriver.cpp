@@ -38,6 +38,7 @@
 #include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
 #include <cassert>
+#include "../../Common/include/toolboxes/SU2_LOG.hpp"
 
 #ifdef VTUNEPROF
 #include <ittnotify.h>
@@ -48,6 +49,8 @@ CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  SU2_Comm MPICommunicator, bool dummy_geo):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dummy_geometry(dummy_geo) {
 
+  LOG_SCOPE_FUNCTION(INFO);
+  
   unsigned short jZone;
 
   SU2_MPI::SetComm(MPICommunicator);
@@ -83,6 +86,8 @@ CDriver::CDriver(char* confFile,
 
   
   for (iZone = 0; iZone < nZone; iZone++) {
+    
+    LOG_SCOPE_F(INFO, "Zone %d", iZone);
     
     /*--- Read the number of instances for each zone ---*/
     
@@ -552,6 +557,8 @@ void CDriver::Postprocessing() {
 
 
 void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
+  
+  LOG_SCOPE_FUNCTION(INFO);
 
   char zone_file_name[MAX_STRING_SIZE];
   
@@ -561,9 +568,8 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-    if (rank == MASTER_NODE){
-      cout  << endl << "Parsing config file for zone " << iZone << endl;
-    }
+    SU2_INFO << "Parsing config file for zone " << iZone;
+    
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
@@ -606,6 +612,8 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
 }
 
 void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, bool dummy){
+  
+  LOG_SCOPE_FUNCTION(INFO);
 
   if (!dummy){
     if (rank == MASTER_NODE)
@@ -702,6 +710,8 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
 void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry) {
   
+  LOG_SCOPE_FUNCTION(INFO);
+  
   unsigned short iZone = config->GetiZone(), iMGlevel;
   unsigned short requestedMGlevels = config->GetnMGLevels();
   unsigned long iPoint;
@@ -751,47 +761,47 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   
   /*--- Compute elements surrounding points, points surrounding points ---*/
   
-  if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
+  SU2_INFO << "Setting point connectivity.";
   geometry[MESH_0]->SetPoint_Connectivity();
   
   /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
   
-  if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+ SU2_INFO << "Renumbering points (Reverse Cuthill McKee Ordering).";
   geometry[MESH_0]->SetRCM_Ordering(config);
   
   /*--- recompute elements surrounding points, points surrounding points ---*/
   
-  if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+  SU2_INFO <<  "Recomputing point connectivity.";
   geometry[MESH_0]->SetPoint_Connectivity();
   
   /*--- Compute elements surrounding elements ---*/
   
-  if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+  SU2_INFO <<  "Setting element connectivity.";
   geometry[MESH_0]->SetElement_Connectivity();
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
   geometry[MESH_0]->SetBoundVolume();
   if (config->GetReorientElements()) {
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+    SU2_INFO << "Checking the numerical grid orientation.";
     geometry[MESH_0]->Check_IntElem_Orientation(config);
     geometry[MESH_0]->Check_BoundElem_Orientation(config);
   }
   
   /*--- Create the edge structure ---*/
   
-  if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
+  SU2_INFO <<  "Identifying edges and vertices.";
   geometry[MESH_0]->SetEdges();
   geometry[MESH_0]->SetVertex(config);
   
   /*--- Compute cell center of gravity ---*/
   
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
+  SU2_INFO << "Computing centers of gravity.";
   geometry[MESH_0]->SetCoord_CG();
   
   /*--- Create the control volume structures ---*/
   
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+  SU2_INFO <<  "Setting the control volume structure.";
   geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
   geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
   
@@ -803,31 +813,33 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   
   /*--- Identify closest normal neighbor ---*/
   
-  if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
+  SU2_INFO << "Searching for the closest normal neighbors to the surfaces.";
   geometry[MESH_0]->FindNormal_Neighbor(config);
   
   /*--- Store the global to local mapping. ---*/
   
-  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+  SU2_INFO << "Storing a mapping from global to local point index.";
   geometry[MESH_0]->SetGlobal_to_Local_Point();
   
   /*--- Compute the surface curvature ---*/
   
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
+  SU2_INFO << "Compute the surface curvature.";
   geometry[MESH_0]->ComputeSurf_Curvature(config);
   
   /*--- Check for periodicity and disable MG if necessary. ---*/
   
-  if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+  SU2_INFO << "Checking for periodicity.";
   geometry[MESH_0]->Check_Periodicity(config);
   
   geometry[MESH_0]->SetMGLevel(MESH_0);
   if ((config->GetnMGLevels() != 0) && (rank == MASTER_NODE))
-    cout << "Setting the multigrid structure." << endl;
+    SU2_INFO << "Setting the multigrid structure.";
   
   /*--- Loop over all the new grid ---*/
   
   for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    
+    LOG_SCOPE_F(INFO, "Mesh Level %d", iMGlevel);
     
     /*--- Create main agglomeration structure ---*/
     
@@ -901,15 +913,17 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     
+    LOG_SCOPE_F(INFO, "Mesh Level %d", iMGlevel);
+    
     /*--- Compute the max length. ---*/
     
-    if ((rank == MASTER_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Finding max control volume width." << endl;
+    SU2_INFO << "Finding max control volume width.";
     geometry[iMGlevel]->SetMaxLength(config);
     
     /*--- Communicate the number of neighbors. This is needed for
          some centered schemes and for multigrid in parallel. ---*/
     
-    if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Communicating number of neighbors." << endl;
+    SU2_INFO << "Communicating number of neighbors.";
     geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, NEIGHBORS);
     geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, NEIGHBORS);
   }
@@ -1015,6 +1029,8 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
 }
 
 void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
+  
+  LOG_SCOPE_FUNCTION(INFO);
   
   unsigned short iSol;
   
@@ -1126,6 +1142,8 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
    and potential are incompatible, they use the same position in sol container ---*/
   
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    
+    LOG_SCOPE_F(INFO, "Mesh Level %d", iMGlevel);
     
     /*--- Allocate solution for a template problem ---*/
     
@@ -1269,7 +1287,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
 void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                                   CConfig *config) {
-
+  
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   heat,
@@ -1655,6 +1673,8 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
 }
 
 void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integration) {
+  
+  LOG_SCOPE_FUNCTION(INFO);
 
   unsigned short iSol;
   
@@ -1809,6 +1829,8 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
 
 void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics) {
   
+  LOG_SCOPE_FUNCTION(INFO);
+  
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
 
@@ -1957,6 +1979,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((euler) || (ns)) {
+    
+    SU2_INFO << "Allocating convective schemes";
     
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
@@ -2128,6 +2152,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
         SU2_MPI::Error("Convective scheme not implemented (Euler and Navier-Stokes).", CURRENT_FUNCTION);
         break;
     }
+    
+    SU2_INFO << "Allocating viscous schemes";
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
@@ -3046,6 +3072,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
 
 void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
   
+  LOG_SCOPE_FUNCTION(INFO);
+    
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
   
@@ -3121,6 +3149,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
 
 void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration* iteration,
                                         CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement){
+  LOG_SCOPE_FUNCTION(INFO);
   
   /*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
@@ -3180,6 +3209,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
 void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGeometry**** geometry,
                                       unsigned short** transfer_types, CTransfer ***&transfer, CInterpolator ***&interpolation) {
+  LOG_SCOPE_FUNCTION(INFO);
 
   unsigned short donorZone, targetZone;
   unsigned short nVar, nVarTransfer;
