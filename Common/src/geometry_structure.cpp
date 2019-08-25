@@ -16033,8 +16033,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
-  bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
+  bool sst = (config->GetKind_Turb_Model() == SST)  || (config->GetKind_Turb_Model() == SST_SUST);
+  bool sa  = (config->GetKind_Turb_Model() == SA)   || (config->GetKind_Turb_Model() == SA_NEG)  ||
+             (config->GetKind_Turb_Model() == SA_E) || (config->GetKind_Turb_Model() == SA_COMP) ||
+             (config->GetKind_Turb_Model() == SA_E_COMP);
   bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   unsigned short Kind_Solver = config->GetKind_Solver();

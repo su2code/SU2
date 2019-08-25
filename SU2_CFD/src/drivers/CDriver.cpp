@@ -1099,12 +1099,13 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;           break;
-      case SA_E:   e_spalart_allmaras = true;   break;
-      case SA_COMP: comp_spalart_allmaras = true; break;
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_E:      e_spalart_allmaras = true;      break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
@@ -1574,12 +1575,14 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
   
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
-    case SA:     spalart_allmaras = true;     break;
-    case SA_NEG: neg_spalart_allmaras = true; break;
-    case SST:    menter_sst = true;           break;
-    case SA_E: e_spalart_allmaras = true; break;
-    case SA_COMP: comp_spalart_allmaras = true; break;
+    case SA:        spalart_allmaras = true;        break;
+    case SA_NEG:    neg_spalart_allmaras = true;    break;
+    case SA_E:      e_spalart_allmaras = true;      break;
+    case SA_COMP:   comp_spalart_allmaras = true;   break;
     case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+    case SST:       menter_sst = true;              break;
+    case SST_SUST:  menter_sst = true;              break;
+    default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -1812,6 +1815,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   numerics = new CNumerics***[config->GetnMGLevels()+1];
   
   su2double *constants = NULL;
+  su2double kine_Inf = 0.0, omega_Inf = 0.0;
   
   bool
   euler, adj_euler,
@@ -1865,14 +1869,24 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SA_E:   e_spalart_allmaras = true; break;
-      case SA_COMP:   comp_spalart_allmaras = true; break;
-      case SA_E_COMP:   e_comp_spalart_allmaras = true; break;
-      case SST:    menter_sst = true; constants = solver[MESH_0][TURB_SOL]->GetConstants(); break;
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_E:      e_spalart_allmaras = true;      break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
+      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
+
+  /*--- If the Menter SST model is used, store the constants of the model and determine the
+        free stream values of the turbulent kinetic energy and dissipation rate. ---*/
+
+  if (menter_sst) {
+    constants = solver[MESH_0][TURB_SOL]->GetConstants();
+    kine_Inf  = solver[MESH_0][TURB_SOL]->GetTke_Inf();
+    omega_Inf = solver[MESH_0][TURB_SOL]->GetOmega_Inf();
+  }
   
   /*--- Number of variables for the template ---*/
   
@@ -2269,7 +2283,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
       else if (comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_COMP(nDim, nVar_Turb, config);
       else if (e_comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_E_COMP(nDim, nVar_Turb, config);
       else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
-      else if (menter_sst) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
+      else if (menter_sst) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, kine_Inf, omega_Inf, config);
       numerics[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
     }
     
@@ -2680,13 +2694,14 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;  break;
-      case SA_COMP: comp_spalart_allmaras = true; break;
-      case SA_E: e_spalart_allmaras = true; break;
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
+      case SA_E:      e_spalart_allmaras = true;      break;
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
   /*--- Solver definition for the template problem ---*/
