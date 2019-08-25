@@ -486,7 +486,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   bool grid_movement = config->GetGrid_Movement();
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
+  
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();

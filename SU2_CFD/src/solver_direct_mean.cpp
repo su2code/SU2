@@ -177,7 +177,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool rans = (config->GetKind_Turb_Model() != NONE);
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
@@ -1542,7 +1542,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
   //bool ActDisk_Perimeter;
-  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool rans = (config->GetKind_Turb_Model() != NONE);
   
   unsigned short nPrimVar_ = nPrimVar;
   if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
@@ -2229,7 +2229,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool turbulent          = (config->GetKind_Turb_Model() != NONE);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
@@ -2768,9 +2768,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
   unsigned short nDim = geometry[MESH_0]->GetnDim();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans = ((config->GetKind_Solver() == RANS) ||
-               (config->GetKind_Solver() == ADJ_RANS) ||
-               (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool rans = (config->GetKind_Turb_Model() != NONE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
@@ -8131,9 +8129,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous        = config->GetViscous();
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
-                     (config->GetKind_Solver() == DISC_ADJ_RANS))
-                    && (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
     
   su2double *Normal = new su2double[nDim];
   
@@ -8394,8 +8390,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
   
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
@@ -8905,8 +8900,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-      (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -10308,8 +10302,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double Gas_Constant       = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
   su2double *Normal = new su2double[nDim];
     
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -10609,8 +10602,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool grid_movement      = config->GetGrid_Movement();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -10785,8 +10777,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
   su2double *Normal = new su2double[nDim];
   su2double *Velocity = new su2double[nDim];
   
@@ -11050,8 +11041,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   unsigned short Kind_Engine_Inflow = config->GetKind_Engine_Inflow();
   su2double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
   bool Engine_HalfModel = config->GetEngine_HalfModel();
 
@@ -11270,8 +11260,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST);
   su2double DampingFactor = config->GetDamp_Engine_Exhaust();
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
   
@@ -11833,8 +11822,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   su2double Gas_Constant  = config->GetGas_ConstantND();
   bool grid_movement      = config->GetGrid_Movement();
-  bool tkeNeeded          = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                            (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded          = (config->GetKind_Turb_Model() == SST);
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
   su2double SecondaryFlow = config->GetSecondaryFlow_ActDisk();
   
@@ -12667,7 +12655,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
                      (config->GetFSI_Simulation()));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool turbulent     = (config->GetKind_Turb_Model() != NONE);
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -13155,7 +13143,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double TotalNu, TotalOmega, TotalKine, TotalMassNu, TotalMassOmega, TotalMassKine, TotalAreaNu, TotalAreaOmega, TotalAreaKine;
   su2double Nu, Kine, Omega;
   su2double MachTest, soundSpeed;
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turbulent = (config->GetKind_Turb_Model() != NONE);
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
 
@@ -14088,7 +14076,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
-  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool rans = (config->GetKind_Turb_Model() != NONE);
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
