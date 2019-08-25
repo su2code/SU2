@@ -4083,7 +4083,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
-  if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
+  if (Kind_Solver == RANS && Kind_Turb_Model != SST && Kind_Turb_Model != SST_SUST && using_uq){
     SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
   }
 
@@ -5048,21 +5048,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:     cout << "Spalart Allmaras" << endl; break;
-          case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
-          case SST:    cout << "Menter's SST"     << endl; break;
-          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
+          case SA:        cout << "Spalart Allmaras" << endl; break;
+          case SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
+          case SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case SST:       cout << "Menter's SST"     << endl; break;
+          case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES){
           case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
-          case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
-          case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         if (using_uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
