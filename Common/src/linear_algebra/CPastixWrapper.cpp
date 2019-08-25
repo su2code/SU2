@@ -36,13 +36,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/linear_algebra/CPastixWrapper.hpp"
+#ifdef HAVE_PASTIX
 
+#include "../../include/linear_algebra/CPastixWrapper.hpp"
 #include<numeric>
 
-
 void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
-#ifdef HAVE_PASTIX
+
   using namespace PaStiX;
 
   if (isinitialized) return; // only need to do this once
@@ -215,13 +215,11 @@ void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
     cout << " +--------------------------------------------------------------------+" << endl;
 
   isinitialized = true;
-#endif
 }
 
 
 void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
                                unsigned short kind_fact, bool transposed) {
-#ifdef HAVE_PASTIX
   using namespace PaStiX;
 
   /*--- Detect a possible change of settings between direct and adjoint that requires a reset ---*/
@@ -322,7 +320,5 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
     cout << " +--------------------------------------------------------------------+" << endl << endl;
 
   isfactorized = true;
-#else
-  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX",CURRENT_FUNCTION);
-#endif
 }
+#endif
