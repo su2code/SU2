@@ -3456,7 +3456,9 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   if (!search_limit) search_limit = numeric_limits<size_t>::max();
 
   /*--- Center of the search ---*/
-  neighbours.clear(); neighbours.push_back(iElem_global);
+  neighbours.clear();
+  neighbours.push_back(iElem_global);
+  is_neighbor[iElem_global] = true;
 
   passivedouble X0[3] = {0.0, 0.0, 0.0};
   for (unsigned short iDim=0; iDim<nDim; ++iDim)
