@@ -161,9 +161,9 @@ private:
   *Coord_n1,                          /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
   *Coord_p1;                          /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
   su2double *GridVel;                 /*!< \brief Velocity of the grid for dynamic mesh cases. */
-  su2double *GridVel_n;               /*!< \brief Velocity of the grid for dynamic mesh cases of previous time step. */
-  su2double *GridVel_n1;              /*!< \brief Velocity of the grid for dynamic mesh cases of second to current time step (2nd order timestepping only). */
-  su2double *GridVel_Old;             /*!< \brief Velocity of the grid for dynamic mesh cases, intermediate container. */
+//   su2double *GridVel_n;               /*!< \brief Velocity of the grid for dynamic mesh cases of previous time step. */
+//   su2double *GridVel_n1;              /*!< \brief Velocity of the grid for dynamic mesh cases of second to current time step (2nd order timestepping only). */
+//   su2double *GridVel_Old;             /*!< \brief Velocity of the grid for dynamic mesh cases, intermediate container. */
   su2double **GridVel_Grad;           /*!< \brief Gradient of the grid velocity for dynamic meshes. */
   unsigned long Parent_CV;            /*!< \brief Index of the parent control volume in the agglomeration process. */
   unsigned short nChildren_CV;        /*!< \brief Number of children in the agglomeration process. */
