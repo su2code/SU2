@@ -65,6 +65,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   switch (config->GetKind_Solver()) {
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) direct_iteration = new CTurboIteration(config);
@@ -199,7 +200,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   if (config->GetKind_Solver() == DISC_ADJ_EULER ||
       config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-      config->GetKind_Solver() == DISC_ADJ_RANS){
+      config->GetKind_Solver() == DISC_ADJ_RANS ||
+      config->GetKind_Solver() == DISC_ADJ_INC_EULER ||
+      config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES ||
+      config->GetKind_Solver() == DISC_ADJ_INC_RANS){
 
     /*--- Compute the geometrical sensitivities ---*/
     SecondaryRecording();
@@ -292,7 +296,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
   bool heat         = (config->GetWeakly_Coupled_Heat());
   bool turbo        = (config->GetBoolTurbomachinery());
 
@@ -301,7 +305,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case EULER:                    case NAVIER_STOKES:                   case RANS:
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
@@ -422,6 +426,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
     switch (config->GetKind_Solver()) {
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
            << ", log10[U(1)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(1))

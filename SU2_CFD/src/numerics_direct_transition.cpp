@@ -135,7 +135,7 @@ CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_n
   
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   

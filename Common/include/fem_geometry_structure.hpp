@@ -858,7 +858,7 @@ protected:
  * \version 6.2.0 "Falcon"
  */
 class CMeshFEM_DG: public CMeshFEM {
-private:
+protected:
   vector<CFEMStandardElement> standardElementsSol;  /*!< \brief Vector that contains the standard volume elements
                                                                 used for the solution of the DG solver. */
   vector<CFEMStandardElement> standardElementsGrid; /*!< \brief Vector that contains the standard volume elements
@@ -1069,7 +1069,7 @@ public:
    */
   void WallFunctionPreprocessing(CConfig *config);
 
-private:
+protected:
  /*!
   * \brief Function, which computes the correct sequence of the connectivities
            of a face, such that it matches the sequence of the given corner points.
@@ -1377,6 +1377,29 @@ private:
   void VolumeMetricTermsFromCoorGradients(const unsigned short nEntities,
                                           const su2double      *gradCoor,
                                           vector<su2double>    &metricTerms);
+};
+
+/*! 
+ * \class CDummyMeshFEM_DG
+ * \brief Class for defining a DG geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without 
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
+ */
+class CDummyMeshFEM_DG : public CMeshFEM_DG {
+  
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDummyMeshFEM_DG(CConfig *config);
+  
+  /*! 
+	 * \brief Destructor of the class.
+	 */
+  ~CDummyMeshFEM_DG();
+  
 };
 
 #include "fem_geometry_structure.inl"
