@@ -676,7 +676,11 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
       ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
       break;
   case VOLUME_FRACTION:
+  case TOPOL_DISCRETENESS:
       ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
+      break;
+  case TOPOL_COMPLIANCE:
+      ObjFunc_Value = direct_solver->GetTotal_OFCompliance();
       break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
@@ -1345,3 +1349,4 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
 }
 
+    
