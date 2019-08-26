@@ -714,7 +714,6 @@ void CConfig::SetPointersNull(void) {
   nPeriodic_Index  = 0;
 
   Aeroelastic_Simulation = false;
-  ZoneSpecific_Problem = false;
 
   nSpanMaxAllZones = 1;
 
@@ -795,8 +794,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("SOLVER", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MULTIZONE \n DESCRIPTION: Enable multizone mode \ingroup Config*/  
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
-  /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
-  addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
@@ -3084,11 +3081,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   } else {
     Wrt_Dynamic = false;
-  }
-
-  if (Kind_Solver == ZONE_SPECIFIC) {
-    ZoneSpecific_Problem = true;
-    Kind_Solver = Kind_Solver_PerZone[val_izone];
   }
 
   /*--- Check for unsupported features. ---*/
