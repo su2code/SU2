@@ -136,6 +136,8 @@ protected:
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
+  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   unsigned long nMarker_InletFile;       /*!< \brief Auxiliary structure for holding the number of markers in an inlet profile file. */
   vector<string> Marker_Tags_InletFile;       /*!< \brief Auxiliary structure for holding the string names of the markers in an inlet profile file. */
   unsigned long *nRow_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in an inlet profile file. */
@@ -4358,7 +4360,6 @@ public:
 
     unsigned long iVertex;
     unsigned short iMarker;
-    unsigned long nMarker = config->GetnMarker_All();
 
     VertexTraction = new su2double** [nMarker];
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -4379,7 +4380,6 @@ public:
 
     unsigned long iVertex;
     unsigned short iMarker;
-    unsigned long nMarker = config->GetnMarker_All();
 
     VertexTractionAdjoint = new su2double** [nMarker];
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -4773,8 +4773,6 @@ protected:
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -7100,8 +7098,6 @@ protected:
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
-  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -9282,8 +9278,6 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
-  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
-  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
   
   /* Sliding meshes variables */
 
@@ -10229,7 +10223,6 @@ protected:
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
   bool space_centered;  /*!< \brief True if space centered scheeme used. */
   su2double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
@@ -11535,7 +11528,6 @@ private:
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
   /*!< We maintain the name to avoid defining a new function... */
   
-  unsigned short nMarker;
   int nFEA_Terms; 
   bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
@@ -12487,7 +12479,6 @@ private:
   su2double Total_Sens_ModVel;    /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
   
@@ -12768,7 +12759,6 @@ private:
 
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
 
   /*!< \brief Definition of element based sensitivities. */
@@ -13106,8 +13096,6 @@ public:
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
-
-  unsigned long nMarker; /*!< \brief Total number of markers using the grid information. */
 
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */

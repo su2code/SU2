@@ -121,6 +121,10 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   rotate_periodic   = false;
   implicit_periodic = false;
 
+  /*--- Containers to store the markers. ---*/
+  nMarker = 0;
+  nVertex = nullptr;
+
   /*--- Flags for the dynamic grid (rigid movement or unsteady deformation). ---*/
   dynamic_grid = false;
 
