@@ -179,15 +179,6 @@ protected:
   void Solver_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***&solver);
 
   /*!
-   * \brief Preprocess the mesh solvers for dynamic mesh movement using a linear elastic solver.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iInst - Instance index.
-   */
-  void MeshSolver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
-
-  /*!
    * \brief Restart of the solvers from the restart files.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.

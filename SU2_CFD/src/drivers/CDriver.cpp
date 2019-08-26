@@ -1240,7 +1240,13 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
   /*--- Preprocess the mesh solver for dynamic meshes. ---*/
   /*--- This needs to be done before solver restart so the old coordinates are stored. ---*/
-  MeshSolver_Preprocessing(solver, geometry, config);
+  if (config->GetDeform_Mesh()){
+    solver[MESH_0][MESH_SOL] = new CMeshSolver(geometry[MESH_0], config);
+
+    if (config->GetDiscrete_Adjoint())
+      solver[MESH_0][ADJMESH_SOL] = new CDiscAdjMeshSolver(geometry[MESH_0], config, solver[MESH_0][MESH_SOL]);
+
+  }
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
   
@@ -1253,23 +1259,6 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
   Inlet_Preprocessing(solver, geometry, config);
   
-}
-
-void CDriver::MeshSolver_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) {
-
-  /*--- We need to update the GridMovement boolean so it also accounts for steady-state FSI ---*/
-  /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
-
-  bool discrete_adjoint = (config->GetDiscrete_Adjoint());
-
-  if (config->GetDeform_Mesh()){
-    solver[MESH_0][MESH_SOL] = new CMeshSolver(geometry[MESH_0], config);
-
-    if (discrete_adjoint)
-      solver[MESH_0][ADJMESH_SOL] = new CDiscAdjMeshSolver(geometry[MESH_0], config, solver[MESH_0][MESH_SOL]);
-
-  }
-
 }
 
 void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
