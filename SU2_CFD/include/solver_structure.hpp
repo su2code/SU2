@@ -11537,7 +11537,6 @@ private:
   
   unsigned short nMarker;
   int nFEA_Terms; 
-  bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
   su2double *GradN_X,
