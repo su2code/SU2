@@ -4343,17 +4343,14 @@ public:
   inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
 
     unsigned long iVertex;
-    unsigned short iMarker, iDim;
+    unsigned short iMarker;
     unsigned long nMarker = config->GetnMarker_All();
 
     VertexTraction = new su2double** [nMarker];
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim];
-        for (iDim = 0; iDim < nDim ; iDim++) {
-          VertexTraction[iMarker][iVertex][iDim] = 0.0;
-        }
+        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
       }
     }
   }
@@ -4367,17 +4364,14 @@ public:
   inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
 
     unsigned long iVertex;
-    unsigned short iMarker, iDim;
+    unsigned short iMarker;
     unsigned long nMarker = config->GetnMarker_All();
 
     VertexTractionAdjoint = new su2double** [nMarker];
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim];
-        for (iDim = 0; iDim < nDim ; iDim++) {
-          VertexTractionAdjoint[iMarker][iVertex][iDim] = 0.0;
-        }
+        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
       }
     }
   }
