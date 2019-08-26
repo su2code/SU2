@@ -94,5 +94,5 @@ public:
    * \param iPoint
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
-
+  bool SetInit_Residuals(CConfig *config);
 };
