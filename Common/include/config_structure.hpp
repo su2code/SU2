@@ -1033,12 +1033,12 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
 
-  unsigned short Kind_Streamwise_Periodic; /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
-  su2double Streamwise_Periodic_PressureDrop,  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
-            Streamwise_Periodic_TargetMassFlow,  /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
-            Streamwise_Periodic_MassFlow, /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
+  unsigned short Kind_Streamwise_Periodic;          /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
+  su2double Streamwise_Periodic_PressureDrop,       /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+            Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
+            Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  vector<su2double> Streamwise_Periodic_RefNode; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
+  vector<su2double> Streamwise_Periodic_RefNode;    /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
 
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */

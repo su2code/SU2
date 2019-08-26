@@ -2045,7 +2045,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set incompressible density  ---*/
       numerics->SetDensity(node[iPoint]->GetDensity(), 
-                           node[iPoint]->GetDensity());
+                           0.0);
 
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -6403,7 +6403,11 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   
 }
 
-void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { 
+void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry,
+                                                        CConfig *config,
+                                                        unsigned short iMesh,
+                                                        bool Output) {
+
   if (rank == MASTER_NODE) { cout << "------------------------------- New Routine Start --------------------------" << endl; }
   /*---------------------------------------------------------------------------------------------*/
   // 1. evaluate massflow, avg_density, Area at streamwise periodic outlet. also bulk temp at in/outlet. Loop periodic markers. Communicate and set results
@@ -6438,7 +6442,8 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY && config->GetMarker_All_PerBound(iMarker) == 2) { // outlet/donor periodic marker
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
+        config->GetMarker_All_PerBound(iMarker) == 2) { // outlet/donor periodic marker
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -7734,7 +7739,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute recovered pressure and temperature for streamwise periodic BC
         Second conditional is there to avoid a zero (massflow) in the denominator for recovered temperature. ---*/
   
-  if (config->GetKind_Streamwise_Periodic()) {
+  if (config->GetKind_Streamwise_Periodic() != NONE) {
     
     /*--- Define and initialize helping variables ---*/
     su2double norm2_translation = 0.0,
@@ -7767,7 +7772,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       Pressure_Recovered = node[iPoint]->GetSolution(0) - delta_p / norm2_translation * dot_product;
       node[iPoint]->SetStreamwise_Periodic_RecoveredPressure(Pressure_Recovered);
 
-      if (energy && ExtIter > 0) {
+      if (energy && ExtIter > 0) { //ExtIter > 0, hen egg problem
         Temperature_Recovered  = node[iPoint]->GetSolution(nDim+1);
         Temperature_Recovered += HeatFlow / (MassFlow * node[iPoint]->GetSpecificHeatCp() * norm2_translation) * dot_product;       
         node[iPoint]->SetStreamwise_Periodic_RecoveredTemperature(Temperature_Recovered);

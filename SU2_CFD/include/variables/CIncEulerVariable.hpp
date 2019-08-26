@@ -330,31 +330,36 @@ public:
    * \brief Get the value of the solution in the previous BGS subiteration.
    * \param[out] val_solution - solution in the previous BGS subiteration.
    */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
+  inline su2double Get_BGSSolution_k(unsigned short iDim) {
+    return Solution_BGS_k[iDim]; }
 
-    /*!
+  /*!
    * \brief Set the recovered pressure for streamwise periodic flow.
    * \param[in] val_pressure - pressure value.
    */
-  inline void SetStreamwise_Periodic_RecoveredPressure(su2double val_pressure) {Streamwise_Periodic_RecoveredPressure =  val_pressure;}
+  inline void SetStreamwise_Periodic_RecoveredPressure(su2double val_pressure) {
+    Streamwise_Periodic_RecoveredPressure =  val_pressure; }
   
   /*!
    * \brief Get the recovered pressure for streamwise periodic flow.
    * \return Recovered/Physical pressure for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredPressure(void) {return Streamwise_Periodic_RecoveredPressure;}
+  inline su2double GetStreamwise_Periodic_RecoveredPressure(void) {
+    return Streamwise_Periodic_RecoveredPressure; }
   
   /*!
    * \brief Set the recovered pressure for streamwise periodic flow.
    * \param[in] val_temperature - temperature value.
    */
-  inline void SetStreamwise_Periodic_RecoveredTemperature(su2double val_temperature) {Streamwise_Periodic_RecoveredTemperature = val_temperature;}
+  inline void SetStreamwise_Periodic_RecoveredTemperature(su2double val_temperature) {
+    Streamwise_Periodic_RecoveredTemperature = val_temperature; }
   
   /*!
    * \brief Get the recovered temperature for streamwise periodic flow.
    * \return Recovered/Physical temperature for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredTemperature(void) {return Streamwise_Periodic_RecoveredTemperature;}
+  inline su2double GetStreamwise_Periodic_RecoveredTemperature(void) {
+    return Streamwise_Periodic_RecoveredTemperature; }
 
   inline void SetVelocity(su2double *val_velocity) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)

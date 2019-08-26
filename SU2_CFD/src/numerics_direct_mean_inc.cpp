@@ -850,7 +850,11 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 
 }
 
-CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_nDim,
+                                                             unsigned short val_nVar,
+                                                             CConfig        *config) : CNumerics(val_nDim,
+                                                                                                 val_nVar,
+                                                                                                 config) {
   
   implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
@@ -870,7 +874,9 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
 CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) { }
 
-void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
+void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
+                                                    su2double **Jacobian_i,
+                                                    CConfig *config) {
 
   delta_p             = config->GetStreamwise_Periodic_PressureDrop();
   massflow            = config->GetStreamwise_Periodic_MassFlow();

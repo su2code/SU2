@@ -5247,6 +5247,7 @@ public:
   
 };
 
+
 /*!
  * \class CSourceIncStreamwise_Periodic
  * \brief Class for the source term integration of a streamwise periodic body force in the incompressible solver.
@@ -5280,7 +5281,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceIncStreamwise_Periodic(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceIncStreamwise_Periodic(unsigned short val_nDim,
+                                unsigned short val_nVar,
+                                CConfig        *config);
 
   /*!
    * \brief Destructor of the class.
@@ -5293,9 +5296,12 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
-  
+  void ComputeResidual(su2double *val_residual,
+                       su2double **Jacobian_i,
+                       CConfig   *config);
+
 };
+
 
 /*!
  * \class CSourceBoussinesq

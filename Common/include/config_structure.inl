@@ -1626,27 +1626,38 @@ inline bool CConfig::GetBody_Force(void) { return Body_Force; }
 
 inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
 
-inline su2double* CConfig::GetPeriodicTranslation(unsigned short val_index) { return Periodic_Translation[val_index]; }
+inline su2double* CConfig::GetPeriodicTranslation(unsigned short val_index) {
+  return Periodic_Translation[val_index]; }
 
-inline unsigned short CConfig::GetKind_Streamwise_Periodic(void) { return Kind_Streamwise_Periodic; }
+inline unsigned short CConfig::GetKind_Streamwise_Periodic(void) {
+  return Kind_Streamwise_Periodic; }
 
-inline su2double CConfig::GetStreamwise_Periodic_PressureDrop(void) { return Streamwise_Periodic_PressureDrop; }
+inline su2double CConfig::GetStreamwise_Periodic_PressureDrop(void) {
+  return Streamwise_Periodic_PressureDrop; }
 
-inline void CConfig::SetStreamwise_Periodic_PressureDrop(su2double delta_p) { Streamwise_Periodic_PressureDrop = delta_p; }
+inline void CConfig::SetStreamwise_Periodic_PressureDrop(su2double delta_p) {
+  Streamwise_Periodic_PressureDrop = delta_p; }
 
-inline su2double CConfig::GetStreamwise_Periodic_TargetMassFlow(void) { return Streamwise_Periodic_TargetMassFlow; }
+inline vector<su2double> CConfig::GetStreamwise_Periodic_RefNode(void) {
+  return Streamwise_Periodic_RefNode; }
 
-inline vector<su2double> CConfig::GetStreamwise_Periodic_RefNode(void) { return Streamwise_Periodic_RefNode; }
+inline void CConfig::SetStreamwise_Periodic_RefNode(vector<su2double> RefNode) {
+  Streamwise_Periodic_RefNode = RefNode; }
 
-inline void CConfig::SetStreamwise_Periodic_RefNode(vector<su2double> RefNode) { Streamwise_Periodic_RefNode = RefNode; }
+inline su2double CConfig::GetStreamwise_Periodic_TargetMassFlow(void) {
+  return Streamwise_Periodic_TargetMassFlow; }
 
-inline void CConfig::SetStreamwise_Periodic_MassFlow(su2double val_massflow) { Streamwise_Periodic_MassFlow = val_massflow; }
+inline void CConfig::SetStreamwise_Periodic_MassFlow(su2double val_massflow) {
+  Streamwise_Periodic_MassFlow = val_massflow; }
 
-inline su2double CConfig::GetStreamwise_Periodic_MassFlow() { return Streamwise_Periodic_MassFlow; }
+inline su2double CConfig::GetStreamwise_Periodic_MassFlow() {
+  return Streamwise_Periodic_MassFlow; }
   
-inline void CConfig::SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow) { Streamwise_Periodic_IntegratedHeatFlow = val_heatflow; }
+inline void CConfig::SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow) {
+  Streamwise_Periodic_IntegratedHeatFlow = val_heatflow; }
 
-inline su2double CConfig::GetStreamwise_Periodic_IntegratedHeatFlow() { return Streamwise_Periodic_IntegratedHeatFlow; }
+inline su2double CConfig::GetStreamwise_Periodic_IntegratedHeatFlow() {
+  return Streamwise_Periodic_IntegratedHeatFlow; }
 
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 

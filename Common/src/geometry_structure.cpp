@@ -14550,7 +14550,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
       cout << "Bad matches found. Computation will continue, but be cautious.\n";
     }
   }
-
+  
   /*--- Free local memory for communications. ---*/
   
   delete[] Buffer_Send_Coord;

@@ -2000,7 +2000,10 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetStreamwise_Periodic_Properties(CGeometry      *geometry,
+                                                 CConfig        *config,
+                                                 unsigned short iMesh,
+                                                 bool           Output);
   
   /*!
    * \brief A virtual member.
@@ -8206,11 +8209,14 @@ public:
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
-  
   /*!
-   * \brief Compute necessary quantities (massflow, integrated heatflux, ...) for streamwise periodic cases.
+   * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
+   *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.
    */
-  void GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void GetStreamwise_Periodic_Properties(CGeometry      *geometry,
+                                         CConfig        *config,
+                                         unsigned short iMesh,
+                                         bool           Output);
 
 };
 

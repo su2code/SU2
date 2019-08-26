@@ -835,7 +835,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
   /* DESCRIPTION: Delta pressure on which basis body force will be computed, serves as initial value if MASSFLOW is chosen */
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
-  /* DESCRIPTION: Massflow basis body (via Delta P) force will be computed  */
+  /* DESCRIPTION: Target Massflow, Delta P will be adapted until m_dot is met.  */
   addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
   
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
@@ -4247,10 +4247,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for Streamwise Periodic Boundary conditions ---*/
   if (Kind_Streamwise_Periodic != NONE) {
-    if (Kind_Solver == EULER) SU2_MPI::Error("Didn't test dat shit yet.", CURRENT_FUNCTION);
-    if (Kind_Regime != INCOMPRESSIBLE) SU2_MPI::Error("Streamwise Periodic BC currently only implemented for incompressible flow.", CURRENT_FUNCTION);
-    if (nMarker_PerBound != 2) SU2_MPI::Error("Streamwise Periodic BC currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible.", CURRENT_FUNCTION);
-    if (Energy_Equation && nMarker_Isothermal != 0) SU2_MPI::Error("No isothermal marker allowed with streamwise periodicity, only heatflux..", CURRENT_FUNCTION);
+    if (Kind_Solver == EULER)
+      SU2_MPI::Error("Streamwise_Periodic+Inc_Euler: Not tested yet.", CURRENT_FUNCTION);
+    if (Kind_Regime != INCOMPRESSIBLE)
+      SU2_MPI::Error("Streamwise Periodic BC currently only implemented for incompressible flow.", CURRENT_FUNCTION);
+    if (nMarker_PerBound != 2)
+      SU2_MPI::Error("Streamwise Periodic BC currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible yet.", CURRENT_FUNCTION);
+    if (Energy_Equation && nMarker_Isothermal != 0)
+      SU2_MPI::Error("No isothermal marker allowed with streamwise periodicity, only heatflux.", CURRENT_FUNCTION);
   
     /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
     Streamwise_Periodic_RefNode.resize(val_nDim);
