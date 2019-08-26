@@ -74,12 +74,14 @@ CTGVSolution::CTGVSolution(unsigned short val_nDim,
     SU2_MPI::Error("Unsteady mode must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION); 
 
-  if(config->GetKind_Regime() != COMPRESSIBLE)
+  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
+     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
+     Kind_Solver != FEM_LES)
     SU2_MPI::Error("Compressible flow equations must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if((config->GetKind_Solver() != NAVIER_STOKES) &&
-     (config->GetKind_Solver() != FEM_NAVIER_STOKES))
+  if((Kind_Solver != NAVIER_STOKES) &&
+     (Kind_Solver != FEM_NAVIER_STOKES))
     SU2_MPI::Error("Navier Stokes equations must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 

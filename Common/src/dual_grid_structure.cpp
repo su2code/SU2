@@ -104,8 +104,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   }
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh() && (config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
   bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
@@ -212,8 +211,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   }
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh() && (config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
   bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
@@ -322,8 +320,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   }
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh() && (config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
   bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||

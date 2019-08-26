@@ -49,6 +49,12 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   nDim = val_nDim;
   nVar = val_nVar;
 
+  const unsigned short DIM_STRAIN_2D = 3; //Exx, Eyy, Gxy
+  const unsigned short DIM_STRAIN_3D = 6; //Exx, Eyy, Ezz, Gxy, Gxz, Gyz
+
+  const unsigned short NNODES_2D = 4;     // Maximum number of nodes for 2D problems
+  const unsigned short NNODES_3D = 8;     // Maximum number of nodes for 3D problems
+
   unsigned long iVar;
 
   E = config->GetDeform_ElasticityMod();
@@ -80,35 +86,35 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   }
 
   if (nDim == 2) {
-    Ba_Mat = new su2double* [3];
-    Bb_Mat = new su2double* [3];
-    D_Mat  = new su2double* [3];
-    Ni_Vec  = new su2double [4];            /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    GradNi_Ref_Mat = new su2double* [4];
-    GradNi_Curr_Mat = new su2double* [4];
-    for (iVar = 0; iVar < 3; iVar++) {
-      Ba_Mat[iVar]      = new su2double[nDim];
-      Bb_Mat[iVar]      = new su2double[nDim];
-      D_Mat[iVar]       = new su2double[3];
+    Ba_Mat = new su2double* [DIM_STRAIN_2D];
+    Bb_Mat = new su2double* [DIM_STRAIN_2D];
+    D_Mat  = new su2double* [DIM_STRAIN_2D];
+    Ni_Vec  = new su2double [NNODES_2D];
+    GradNi_Ref_Mat = new su2double* [NNODES_2D];
+    GradNi_Curr_Mat = new su2double* [NNODES_2D];
+    for (iVar = 0; iVar < DIM_STRAIN_2D; iVar++) {
+      Ba_Mat[iVar] = new su2double[nDim];
+      Bb_Mat[iVar] = new su2double[nDim];
+      D_Mat[iVar]  = new su2double[DIM_STRAIN_2D];
     }
-    for (iVar = 0; iVar < 4; iVar++) {
+    for (iVar = 0; iVar < NNODES_2D; iVar++) {
       GradNi_Ref_Mat[iVar]   = new su2double[nDim];
       GradNi_Curr_Mat[iVar]   = new su2double[nDim];
     }
   }
   else if (nDim == 3) {
-    Ba_Mat = new su2double* [6];
-    Bb_Mat = new su2double* [6];
-    D_Mat  = new su2double* [6];
-    Ni_Vec  = new su2double [8];           /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    GradNi_Ref_Mat = new su2double* [8];
-    GradNi_Curr_Mat = new su2double* [8];
-    for (iVar = 0; iVar < 6; iVar++) {
-      Ba_Mat[iVar]      = new su2double[nDim];
-      Bb_Mat[iVar]      = new su2double[nDim];
-      D_Mat[iVar]        = new su2double[6];
+    Ba_Mat = new su2double* [DIM_STRAIN_3D];
+    Bb_Mat = new su2double* [DIM_STRAIN_3D];
+    D_Mat  = new su2double* [DIM_STRAIN_3D];
+    Ni_Vec  = new su2double [NNODES_3D];
+    GradNi_Ref_Mat = new su2double* [NNODES_3D];
+    GradNi_Curr_Mat = new su2double* [NNODES_3D];
+    for (iVar = 0; iVar < DIM_STRAIN_3D; iVar++) {
+      Ba_Mat[iVar] = new su2double[nDim];
+      Bb_Mat[iVar] = new su2double[nDim];
+      D_Mat[iVar]  = new su2double[DIM_STRAIN_3D];
     }
-    for (iVar = 0; iVar < 8; iVar++) {
+    for (iVar = 0; iVar < NNODES_3D; iVar++) {
       GradNi_Ref_Mat[iVar]   = new su2double[nDim];
       GradNi_Curr_Mat[iVar]   = new su2double[nDim];
     }

@@ -686,17 +686,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   unsigned short iMarker;
 
-  /*--- As initialization, move all the interfaces defined as moving. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
-
-      /*--- Impose the boundary condition ---*/
-      BC_Deforming(geometry, numerics, config, iMarker);
-
-    }
-  }
-
   /*--- Then, impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries) ---*/
   /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -712,10 +701,21 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   /*--- Symmetry plane is, for now, clamped. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Moving(iMarker) == NO) &&
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
          BC_Clamped(geometry, numerics, config, iMarker);
+
+    }
+  }
+
+  /*--- As initialization, move all the interfaces defined as moving. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
+
+      /*--- Impose the boundary condition ---*/
+      BC_Deforming(geometry, numerics, config, iMarker);
 
     }
   }
