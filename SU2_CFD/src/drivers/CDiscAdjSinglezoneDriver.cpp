@@ -396,15 +396,15 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Zone preprocessing ---*/
 
-  direct_iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
 
-  direct_iteration->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Print the direct residual to screen ---*/
 
