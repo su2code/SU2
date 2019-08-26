@@ -2184,7 +2184,9 @@ void CFEAIteration::Solve(COutput *output,
 }
 
 CAdjFluidIteration::CAdjFluidIteration(CConfig *config) : CIteration(config) { }
+
 CAdjFluidIteration::~CAdjFluidIteration(void) { }
+
 void CAdjFluidIteration::Preprocess(COutput *output,
                                        CIntegration ****integration,
                                        CGeometry ****geometry,

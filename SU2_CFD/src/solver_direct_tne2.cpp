@@ -849,9 +849,11 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
       SetPrimitive_Gradient_GG(geometry, config);
+      SetSolution_Gradient_GG(geometry, config);
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       SetPrimitive_Gradient_LS(geometry, config);
+      SetSolution_Gradient_LS(geometry, config);
     }
 
     /*--- Limiter computation ---*/
@@ -1282,8 +1284,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       /*--- Retrieve gradient information & limiter ---*/
       GradU_i = node[iPoint]->GetGradient();
       GradU_j = node[jPoint]->GetGradient();
-      GradV_i = node[iPoint]->GetGradient_Primitive();
-      GradV_j = node[jPoint]->GetGradient_Primitive();
+
+      // These are not currently used
+      //GradV_i = node[iPoint]->GetGradient_Primitive();
+      //GradV_j = node[jPoint]->GetGradient_Primitive();
 
       if (limiter) {
         Limiter_i = node[iPoint]->GetLimiter();
@@ -6425,8 +6429,6 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     }
   }
 }
-
-
 
 void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
                                  CSolver **solution_container,
