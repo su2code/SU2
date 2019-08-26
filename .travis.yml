@@ -22,7 +22,7 @@ notifications:
   
 branches:
     only:
-        - feature_periodic_streamwise
+        - develop
 
 virtualenv:
   system_site_packages: true
