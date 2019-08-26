@@ -761,24 +761,6 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] SlidingStateNodes;
   }
 
-  if (VertexTraction != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTraction[iMarker][iVertex];
-      delete [] VertexTraction[iMarker];
-    }
-    delete [] VertexTraction;
-  }
-
-  if (VertexTractionAdjoint != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTractionAdjoint[iMarker][iVertex];
-      delete [] VertexTractionAdjoint[iMarker];
-    }
-    delete [] VertexTractionAdjoint;
-  }
-
   if (Inlet_Ttotal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       if (Inlet_Ttotal[iMarker] != NULL)

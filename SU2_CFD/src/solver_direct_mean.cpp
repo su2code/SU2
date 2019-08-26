@@ -1053,24 +1053,6 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] SlidingStateNodes;
   }
 
-  if (VertexTraction != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTraction[iMarker][iVertex];
-      delete [] VertexTraction[iMarker];
-    }
-    delete [] VertexTraction;
-  }
-
-  if (VertexTractionAdjoint != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTractionAdjoint[iMarker][iVertex];
-      delete [] VertexTractionAdjoint[iMarker];
-    }
-    delete [] VertexTractionAdjoint;
-  }
-
   if (DonorPrimVar != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)

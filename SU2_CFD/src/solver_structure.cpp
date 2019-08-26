@@ -138,7 +138,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 CSolver::~CSolver(void) {
 
   unsigned short iVar, iDim;
-  unsigned long iPoint;
+  unsigned long iPoint, iMarker, iVertex;
   
   /*--- Public variables, may be accessible outside ---*/
 
@@ -242,6 +242,24 @@ CSolver::~CSolver(void) {
     for (iVar = 0; iVar < nVarGrad; iVar++)
       delete [] Cvector[iVar];
     delete [] Cvector;
+  }
+
+  if (VertexTraction != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] VertexTraction[iMarker][iVertex];
+      delete [] VertexTraction[iMarker];
+    }
+    delete [] VertexTraction;
+  }
+
+  if (VertexTractionAdjoint != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] VertexTractionAdjoint[iMarker][iVertex];
+      delete [] VertexTractionAdjoint[iMarker];
+    }
+    delete [] VertexTractionAdjoint;
   }
 
   if (Restart_Vars != NULL) {delete [] Restart_Vars; Restart_Vars = NULL;}
