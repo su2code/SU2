@@ -85,6 +85,8 @@ protected:
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
+  su2double Mpoints;                              /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
+  su2double MpointsDomain;                        /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
   unsigned long TimeIter;                        /*!< \brief External iteration.*/
