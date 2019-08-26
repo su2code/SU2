@@ -111,8 +111,8 @@ COutputLegacy::COutputLegacy(CConfig *config) {
   beg_node = NULL;
   end_node = NULL;
 
-  nPoint_Lin = NULL;
-  nPoint_Cum = NULL;
+  nPointLinear     = NULL;
+  nPointCumulative = NULL;
   
   /*--- Inlet profile data structures. ---*/
 
@@ -18194,7 +18194,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
    in cumulative storage format. ---*/
 
   disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-          nVar_Par*nPoint_Cum[rank]*sizeof(passivedouble));
+          nVar_Par*nPointCumulative[rank]*sizeof(passivedouble));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
@@ -18560,8 +18560,8 @@ void COutputLegacy::DeallocateData_Parallel(CConfig *config, CGeometry *geometry
   if (beg_node != NULL) delete [] beg_node;
   if (end_node != NULL) delete [] end_node;
 
-  if (nPoint_Lin != NULL) delete [] nPoint_Lin;
-  if (nPoint_Cum != NULL) delete [] nPoint_Cum;
+  if (nPointLinear     != NULL) delete [] nPointLinear;
+  if (nPointCumulative != NULL) delete [] nPointCumulative;
 
 }
 
@@ -21399,20 +21399,20 @@ void COutputLegacy::PrepareOffsets(CConfig *config, CGeometry *geometry) {
   beg_node = new unsigned long[size];
   end_node = new unsigned long[size];
 
-  nPoint_Lin = new unsigned long[size];
-  nPoint_Cum = new unsigned long[size+1];
+  nPointLinear     = new unsigned long[size];
+  nPointCumulative = new unsigned long[size+1];
 
   unsigned long total_points = 0;
   for (int ii = 0; ii < size; ii++) {
-    nPoint_Lin[ii] = nGlobalPoint_Sort/size;
-    total_points  += nPoint_Lin[ii];
+    nPointLinear[ii]   = nGlobalPoint_Sort/size;
+    total_points += nPointLinear[ii];
   }
 
   /*--- Get the number of remainder points after the even division. ---*/
 
   unsigned long remainder = nGlobalPoint_Sort - total_points;
   for (unsigned long ii = 0; ii < remainder; ii++) {
-    nPoint_Lin[ii]++;
+    nPointLinear[ii]++;
   }
 
   /*--- Store the local number of nodes on each proc in the linear
@@ -21420,14 +21420,14 @@ void COutputLegacy::PrepareOffsets(CConfig *config, CGeometry *geometry) {
    within an array in cumulative storage format. ---*/
 
   beg_node[0] = 0;
-  end_node[0] = beg_node[0] + nPoint_Lin[0];
-  nPoint_Cum[0] = 0;
+  end_node[0] = beg_node[0] + nPointLinear[0];
+  nPointCumulative[0] = 0;
   for (int ii = 1; ii < size; ii++) {
-    beg_node[ii]   = end_node[ii-1];
-    end_node[ii]   = beg_node[ii] + nPoint_Lin[ii];
-    nPoint_Cum[ii] = nPoint_Cum[ii-1] + nPoint_Lin[ii-1];
+    beg_node[ii] = end_node[ii-1];
+    end_node[ii] = beg_node[ii] + nPointLinear[ii];
+    nPointCumulative[ii] = nPointCumulative[ii-1] + nPointLinear[ii-1];
   }
-  nPoint_Cum[size] = nGlobalPoint_Sort;
+  nPointCumulative[size] = nGlobalPoint_Sort;
   
 }
 
@@ -21792,13 +21792,13 @@ void COutputLegacy::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 
     /*--- Search for the processor that owns this point ---*/
 
-    iProcessor = Global_Index/nPoint_Lin[0];
+    iProcessor = Global_Index/nPointLinear[0];
     if (iProcessor >= (unsigned long)size)
       iProcessor = (unsigned long)size-1;
-    if (Global_Index >= nPoint_Cum[iProcessor])
-      while(Global_Index >= nPoint_Cum[iProcessor+1]) iProcessor++;
+    if (Global_Index >= nPointCumulative[iProcessor])
+      while(Global_Index >= nPointCumulative[iProcessor+1]) iProcessor++;
     else
-      while(Global_Index <  nPoint_Cum[iProcessor])   iProcessor--;
+      while(Global_Index <  nPointCumulative[iProcessor])   iProcessor--;
 
     /*--- If we have not visted this node yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -21870,13 +21870,13 @@ void COutputLegacy::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 
     /*--- Search for the processor that owns this point. ---*/
 
-    iProcessor = Global_Index/nPoint_Lin[0];
+    iProcessor = Global_Index/nPointLinear[0];
     if (iProcessor >= (unsigned long)size)
       iProcessor = (unsigned long)size-1;
-    if (Global_Index >= nPoint_Cum[iProcessor])
-      while(Global_Index >= nPoint_Cum[iProcessor+1]) iProcessor++;
+    if (Global_Index >= nPointCumulative[iProcessor])
+      while(Global_Index >= nPointCumulative[iProcessor+1]) iProcessor++;
     else
-      while(Global_Index <  nPoint_Cum[iProcessor])   iProcessor--;
+      while(Global_Index <  nPointCumulative[iProcessor])   iProcessor--;
 
     /*--- Load data into the buffer for sending. ---*/
 
@@ -22119,13 +22119,13 @@ void COutputLegacy::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geome
   for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
 
     /* Search for the processor that owns this point. */
-    unsigned long iProcessor = globalSurfaceDOFIDs[i]/nPoint_Lin[0];
+    unsigned long iProcessor = globalSurfaceDOFIDs[i]/nPointLinear[0];
     if (iProcessor >= (unsigned long)size)
       iProcessor = (unsigned long)size-1;
-    if (globalSurfaceDOFIDs[i] >= nPoint_Cum[iProcessor])
-      while(globalSurfaceDOFIDs[i] >= nPoint_Cum[iProcessor+1]) ++iProcessor;
+    if (globalSurfaceDOFIDs[i] >= nPointCumulative[iProcessor])
+      while(globalSurfaceDOFIDs[i] >= nPointCumulative[iProcessor+1]) ++iProcessor;
     else
-      while(globalSurfaceDOFIDs[i] <  nPoint_Cum[iProcessor])   --iProcessor;
+      while(globalSurfaceDOFIDs[i] <  nPointCumulative[iProcessor])   --iProcessor;
 
     /* Store the global ID in the send buffer for iProcessor. */
     sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
@@ -22220,7 +22220,7 @@ void COutputLegacy::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geome
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nSurf_Poin_Par; ++i) {
-    const unsigned long ii = globalSurfaceDOFIDs[i] - nPoint_Cum[rank];
+    const unsigned long ii = globalSurfaceDOFIDs[i] - nPointCumulative[rank];
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
       Parallel_Surf_Data[jj][i] = Parallel_Data[jj][ii];

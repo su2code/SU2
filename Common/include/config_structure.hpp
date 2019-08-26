@@ -47,6 +47,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <array>
 #include <stdlib.h>
 #include <cmath>
 #include <map>
@@ -715,6 +716,10 @@ private:
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
   nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
   nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
+  unsigned short nMesh_Box_Size;
+  short *Mesh_Box_Size;     /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  su2double* Mesh_Box_Length;       /*!< \brief Array containing the length in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  su2double* Mesh_Box_Offset;       /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
   Solution_FileName,			/*!< \brief Flow solution input file. */
@@ -9004,6 +9009,24 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+  
+  /*!
+   * \brief Get the number of grid points in the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Number of grid points in the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  short GetMeshBoxSize(unsigned short val_iDim);
+  
+  /*!
+   * \brief Get the length of the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Length the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  su2double GetMeshBoxLength(unsigned short val_iDim);
+  
+  /*!
+   * \brief Get the offset from 0.0 of the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Offset from 0.0 the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  su2double GetMeshBoxOffset(unsigned short val_iDim);
 
   /*!
    * \brief Get the number of screen output variables requested (maximum 6)
