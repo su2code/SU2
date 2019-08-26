@@ -18,12 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ole.burghardt@scicomp.uni-kl.de
-            - tim.albring@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-            - sc_develop
+            - develop
 
 virtualenv:
   system_site_packages: true
