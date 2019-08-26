@@ -176,8 +176,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
   
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -1156,8 +1155,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
   
-  bool dynamic_grid = (config->GetGrid_Movement() ||
-                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   

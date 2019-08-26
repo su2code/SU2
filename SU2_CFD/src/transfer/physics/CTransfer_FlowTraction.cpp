@@ -133,7 +133,9 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
                              (flow_config->GetKind_Solver() == RANS) ||
                              (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                             (flow_config->GetKind_Solver() == DISC_ADJ_RANS));
+                             (flow_config->GetKind_Solver() == DISC_ADJ_RANS) ||
+                             (flow_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                             (flow_config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   // Parameters for the calculations
   // Pn: Pressure

@@ -523,7 +523,7 @@ passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned sho
   su2double vertexWallTemp(0.0);
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-
+  
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
@@ -605,7 +605,7 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-
+  
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
 
@@ -1017,7 +1017,7 @@ vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, u
 
 }
 
-void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
                        passivedouble LoadY, passivedouble LoadZ) {
 
   unsigned long iPoint;
@@ -1030,7 +1030,7 @@ void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedo
 
 }
 
-vector<passivedouble> CDriver::GetDisplacements(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsigned short iVertex) {
 
   unsigned long iPoint;
   vector<su2double> Displacements(3, 0.0);
@@ -1053,7 +1053,7 @@ vector<passivedouble> CDriver::GetDisplacements(unsigned short iMarker, unsigned
 }
 
 
-vector<passivedouble> CDriver::GetVelocity(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned short iVertex) {
 
   unsigned long iPoint, GlobalIndex;
   vector<su2double> Velocity(3, 0.0);
@@ -1083,7 +1083,7 @@ vector<passivedouble> CDriver::GetVelocity(unsigned short iMarker, unsigned shor
   return Velocity_passive;
 }
 
-vector<passivedouble> CDriver::GetVelocity_n(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigned short iVertex) {
 
   unsigned long iPoint;
   vector<su2double> Velocity_n(3, 0.0);

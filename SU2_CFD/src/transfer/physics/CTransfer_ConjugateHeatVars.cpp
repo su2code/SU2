@@ -74,7 +74,11 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   bool flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
+               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS)
+               || (donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (donor_config->GetKind_Solver() == INC_RANS)
+               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
   bool incompressible_flow = (donor_config->GetEnergy_Equation()) && flow;
   bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;

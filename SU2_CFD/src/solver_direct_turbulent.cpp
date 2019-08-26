@@ -68,7 +68,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
+  dynamic_grid = config->GetDynamic_Grid();
 
 }
 
@@ -237,7 +237,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
     
     /*--- Menter's first blending function (only SST)---*/
-    if (config->GetKind_Turb_Model() == SST)
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
       numerics->SetF1blending(node[iPoint]->GetF1blending(), node[jPoint]->GetF1blending());
     
     /*--- Compute residual, and Jacobians ---*/
@@ -422,7 +422,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         
         break;
 
-      case SST:
+      case SST: case SST_SUST:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           
@@ -478,6 +478,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  unsigned short turbModel = config->GetKind_Turb_Model();
 
   /*--- Store the physical time step ---*/
   
@@ -507,7 +508,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if ((turbModel == SST) || (turbModel == SST_SUST)) {
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
@@ -597,7 +598,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Multiply by density at node i for the SST model ---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if ((turbModel == SST) || (turbModel == SST_SUST)) {
         if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
         else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
@@ -614,7 +615,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Multiply by density at node j for the SST model ---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if ((turbModel == SST) || (turbModel == SST_SUST)) {
         if (incompressible) Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetDensity(); // Temporary fix
         else Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
@@ -656,7 +657,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- Multiply by density at node i for the SST model ---*/
         
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((turbModel == SST) || (turbModel == SST_SUST)) {
           if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
           else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
           for (iVar = 0; iVar < nVar; iVar++)
@@ -695,7 +696,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if ((turbModel == SST) || (turbModel == SST_SUST)) {
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/

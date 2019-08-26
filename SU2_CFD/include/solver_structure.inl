@@ -70,6 +70,8 @@ inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_con
 
 inline void CSolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::SetForceCoeff(su2double val_forcecoeff_history) { }
 
 inline void CSolver::SetFSI_Residual(su2double val_FSI_residual) { }
@@ -399,6 +401,8 @@ inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
 inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
 
 inline su2double CSolver::GetTotal_OFVolFrac() { return 0; }
+
+inline su2double CSolver::GetTotal_OFCompliance() { return 0; }
 
 inline bool CSolver::IsElementBased(void){ return false; }
 
@@ -1150,18 +1154,6 @@ inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, un
 
 inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config) { }
-
-inline su2double CSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                             unsigned short iDim) { return 0.0; }
-
-inline void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                                 unsigned short iDim, su2double val_adjoint) { }
-
-inline void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_periodic = val_implicit_periodic; }
 
 inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
@@ -1652,16 +1644,6 @@ inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
-
-inline su2double CEulerSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                                  unsigned short iDim) {
-  return VertexTraction[iMarker][iVertex][iDim];
-}
-
-inline void CEulerSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                                      unsigned short iDim, su2double val_adjoint) {
-  VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
-}
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
@@ -2192,16 +2174,6 @@ inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboO
 
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
-inline su2double CIncEulerSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                                     unsigned short iDim) {
-  return VertexTraction[iMarker][iVertex][iDim];
-}
-
-inline void CIncEulerSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                                         unsigned short iDim, su2double val_adjoint) {
-  VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
-}
-
 inline su2double CIncNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CIncNSSolver::GetTke_Inf(void) { return Tke_Inf; }
@@ -2330,6 +2302,8 @@ inline su2double CFEASolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
 inline su2double CFEASolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
 
 inline su2double CFEASolver::GetTotal_OFVolFrac(void){ return Total_OFVolFrac; }
+
+inline su2double CFEASolver::GetTotal_OFCompliance(void){ return Total_OFCompliance; }
 
 inline bool CFEASolver::IsElementBased(void){ return element_based; }
 
