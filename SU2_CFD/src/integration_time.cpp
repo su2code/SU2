@@ -1423,8 +1423,6 @@ void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
     case RUNTIME_FLOW_SYS: monitor = log10(solver_container[iZone][iInst][iMesh][FLOW_SOL]->GetRes_RMS(0)); break;
   }
   
-
-  
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
