@@ -2144,6 +2144,7 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("TOPOL_OPTIM_FILTER_KERNEL", top_optim_nKernel, top_optim_kernels, Filter_Kernel_Map);
   addDoubleListOption("TOPOL_OPTIM_FILTER_RADIUS", top_optim_nRadius, top_optim_filter_radius);
   addDoubleListOption("TOPOL_OPTIM_KERNEL_PARAM", top_optim_nKernelParams, top_optim_kernel_params);
+  addUnsignedShortOption("TOPOL_OPTIM_SEARCH_LIMIT", top_optim_search_lim, 0);
   addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, NO_PROJECTION);
   addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
 
@@ -5576,6 +5577,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case REFERENCE_GEOMETRY:        cout << "Target geometry objective function." << endl; break;
         case REFERENCE_NODE:            cout << "Target node displacement objective function." << endl; break;
         case VOLUME_FRACTION:           cout << "Volume fraction objective function." << endl; break;
+        case TOPOL_DISCRETENESS:        cout << "Topology discreteness objective function." << endl; break;
+        case TOPOL_COMPLIANCE:          cout << "Topology compliance objective function." << endl; break;
       }
 		}
 		else {
@@ -7568,6 +7571,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
         case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
+        case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
+        case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
       }
     }
     else{
