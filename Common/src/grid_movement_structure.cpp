@@ -138,7 +138,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
-  bool TapeActive = AD::IsRecording();
+  bool TapeActive = AD::TapeActive();
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
