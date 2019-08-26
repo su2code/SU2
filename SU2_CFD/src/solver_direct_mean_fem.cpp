@@ -803,7 +803,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
-  bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded          = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
@@ -3142,7 +3142,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
-
+  
   /*-----------------------------------------------------------------------------*/
   /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
   /*-----------------------------------------------------------------------------*/
@@ -3593,7 +3593,7 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
-
+  
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
@@ -9405,7 +9405,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   string UnstExt, text_line;
   ifstream restart_file;
-
+  
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   string restart_filename = config->GetSolution_FlowFileName();
@@ -10405,7 +10405,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
-
+  
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
