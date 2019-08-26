@@ -62,7 +62,7 @@ namespace AD{
    * \brief Get information whether tape is active or not.
    * \return <code>TRUE</code> if tape is active.
    */
-  bool IsRecording();
+  bool TapeActive();
 
   /*!
    * \brief Prints out tape statistics.

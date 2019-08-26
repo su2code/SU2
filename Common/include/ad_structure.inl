@@ -89,7 +89,7 @@ namespace AD{
 
   inline void StopRecording() {AD::globalTape.setPassive();}
 
-  inline bool IsRecording() { return AD::globalTape.isActive(); }
+  inline bool TapeActive() { return AD::globalTape.isActive(); }
 
   inline void PrintStatistics() {AD::globalTape.printStatistics();}
 
@@ -279,7 +279,7 @@ namespace AD{
 
   inline void StopRecording() {}
 
-  inline bool IsRecording() { return false; }
+  inline bool TapeActive() { return false; }
 
   inline void PrintStatistics() {}
 

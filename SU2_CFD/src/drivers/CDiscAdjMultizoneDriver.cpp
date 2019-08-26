@@ -328,7 +328,7 @@ void CDiscAdjMultizoneDriver::Run() {
       SetRecording(FLOW_CONS_VARS, FULL_TAPE, ZONE_0);
     }
 
-    /*--- Set Solution_Old (where an evaluation is initialized from) to value in Solution. ---*/
+    /*--- Set Solution_Old to value in Solution for a next outer evaluation. ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -342,6 +342,8 @@ void CDiscAdjMultizoneDriver::Run() {
     AD::ComputeAdjoint(3,0);
 
     for (iZone = 0; iZone < nZone; iZone++) {
+
+      /*--- Extracting adjoints for all solvers in iZone w.r.t. to the objective function. ---*/
       
       iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
@@ -366,7 +368,7 @@ void CDiscAdjMultizoneDriver::Run() {
         for (jZone = 0; jZone < nZone; jZone++) {
 
           /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
-          *     e.g. in case of a fluid iteration, the flow, turbulence (if RANS) and mesh (if FSI) adjoints. ---*/
+           *    i.e., for iZone != jZone we are (inherently) evaluating the cross derivatives between zones. ---*/
 
           iteration_container[jZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
@@ -378,17 +380,17 @@ void CDiscAdjMultizoneDriver::Run() {
         Set_OldAdjoints(iZone);
       }
 
-      /*--- Add to Solution_Iter from Solution ---*/
+      /*--- Add to Solution_Iter from Solution. ---*/
 
       Add_IterAdjoints();
     }
 
-    /*--- Set Solution to value in Solution_Iter for a next outer evaluation. ---*/
+    /*--- Set Solution to value in Solution_Iter. ---*/
 
     SetAdjoints_Iter();
 
-    SetResidual_RMS();
 
+    SetResidual_RMS();
 
     for (iZone = 0; iZone < nZone; iZone++) {
       output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
@@ -416,7 +418,7 @@ void CDiscAdjMultizoneDriver::Run() {
     if (checkSensitivity){
 
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-       * as argument ensures that all information from a previous recording is removed. ---*/
+       *    as argument ensures that all information from a previous recording is removed. ---*/
 
       SetRecording(NONE, FULL_TAPE, ZONE_0);
 
