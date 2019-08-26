@@ -131,11 +131,10 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
-    if (nDim == 3){
-      SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
-    }
+    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
+    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
+    SetHistoryOutputValue("RMS_ETOL", log10(dotProd(fea_solver->LinSysSol, fea_solver->LinSysRes)));
+    
   }
   
   if (multizone){
@@ -245,6 +244,10 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
   
 }
-
+bool CElasticityOutput::SetInit_Residuals(CConfig *config){
+  
+  return (config->GetTime_Domain() == NO && (curr_InnerIter  == 0));
+  
+}
 
 
