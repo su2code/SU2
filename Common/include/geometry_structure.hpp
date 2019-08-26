@@ -1634,12 +1634,13 @@ public:
    * \brief Filter values given at the element CG by performing a weighted average over a radial neighbourhood.
    * \param[in] filter_radius - Parameter defining the size of the neighbourhood.
    * \param[in] kernels - Kernel types and respective parameter, size of vector defines number of filter recursions.
+   * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
    * \param[in] input_values - "Raw" values.
    * \param[out] output_values - Filtered values.
    */
-  void FilterValuesAtElementCG(const vector<su2double> filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
-                               const su2double *input_values, su2double *output_values) const;
-  
+  void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+                               const unsigned short search_limit, const su2double *input_values, su2double *output_values) const;
+
   /*!
    * \brief Build the global (entire mesh!) adjacency matrix for the elements in compressed format.
    *        Used by FilterValuesAtElementCG to search for geometrically close neighbours.
@@ -1653,14 +1654,17 @@ public:
    * \brief Get the neighbours of the global element in the first position of "neighbours" that are within "radius" of it.
    * \param[in] iElem_global - Element of interest.
    * \param[in] radius - Parameter defining the size of the neighbourhood.
+   * \param[in] search_limit - Maximum "logical radius" to consider, limits cost in refined regions, use 0 for unlimited.
    * \param[in] neighbour_start - See GetGlobalElementAdjacencyMatrix.
    * \param[in] neighbour_idx - See GetGlobalElementAdjacencyMatrix.
    * \param[in] cg_elem - Global element centroid coordinates in row major format {x0,y0,x1,y1,...}. Size nDim*nElemDomain.
    * \param[in,out] neighbours - The neighbours of iElem_global.
+   * \param[in,out] is_neighbor - Working vector of size nElemGlobal, MUST be all false on entry (if so, on exit it will be the same).
+   * \return true if the search was successful, i.e. not limited.
    */
-  void GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius,
+  bool GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius, size_t search_limit,
                               const vector<unsigned long> &neighbour_start, const long *neighbour_idx,
-                              const su2double *cg_elem, vector<long> &neighbours) const;
+                              const su2double *cg_elem, vector<long> &neighbours, vector<bool> &is_neighbor) const;
 
   /*!
    * \brief Compute and store the volume of the elements.
