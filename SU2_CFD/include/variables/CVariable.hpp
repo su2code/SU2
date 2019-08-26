@@ -2375,7 +2375,7 @@ public:
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline virtual su2double* GetBoundDisp_Direct() { return NULL; }
+  inline virtual su2double* GetBoundDisp_Direct(void) { return NULL; }
 
   /*!
    * \brief A virtual member. Set the solution for the boundary displacements.
