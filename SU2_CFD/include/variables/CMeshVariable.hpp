@@ -58,7 +58,7 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+  CMeshVariable(const su2double *val_coor, unsigned short val_nDim, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

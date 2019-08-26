@@ -67,7 +67,7 @@ public:
    * \brief Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline su2double* GetBoundDisp_Direct() { return Bound_Disp_Direct; }
+  inline su2double* GetBoundDisp_Direct(void) { return Bound_Disp_Direct; }
 
   /*!
    * \brief Set the solution for the boundary displacements.

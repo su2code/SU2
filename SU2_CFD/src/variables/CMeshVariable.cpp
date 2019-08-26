@@ -37,17 +37,17 @@
 
 #include "../../include/variables/CMeshVariable.hpp"
 
-CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
+CMeshVariable::CMeshVariable(const su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
 
   unsigned short iDim;
 
   /*--- Initialize pointers to NULL ---*/
-  Mesh_Coord    = NULL;
+  Mesh_Coord       = nullptr;
 
-  Solution_Old = NULL;
+  Solution_Old     = nullptr;
 
-  Solution_time_n  = NULL;
-  Solution_time_n1 = NULL;
+  Solution_time_n  = nullptr;
+  Solution_time_n1 = nullptr;
 
   /*--- Booleans that determine the kind of problems ---*/
   bool time_domain = config->GetTime_Domain();
@@ -85,6 +85,6 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 
 CMeshVariable::~CMeshVariable(void) {
 
-  if (Mesh_Coord    != NULL)    delete [] Mesh_Coord;
+  if (Mesh_Coord != nullptr) delete [] Mesh_Coord;
 
 }
