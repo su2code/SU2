@@ -41,13 +41,14 @@
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 protected:
 
-  bool retape;                      /*!< \brief Boolean whether derivative information for all zones is kept in memory.*/
-  unsigned short RecordingState;    /*!< \brief The kind of recording the tape currently holds.*/
-  su2double ObjFunc;                /*!< \brief The value of the objective function.*/
-  int ObjFunc_Index;                /*!< \brief Index of the value of the objective function.*/
-  unsigned short* direct_nInst;     /*!< \brief Total number of instances in the direct problem (per zone). */
-  CIteration*** direct_iteration;   /*!< \brief A pointer to the direct iteration.*/
-  COutput** direct_output;          /*!< \brief A pointer to the direct output.*/
+  bool retape;                        /*!< \brief Boolean whether derivative information for all zones is kept in memory.*/
+  unsigned short RecordingState;      /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;                  /*!< \brief The value of the objective function.*/
+  int ObjFunc_Index;                  /*!< \brief Index of the value of the objective function.*/
+  unsigned short* direct_nInst;       /*!< \brief Total number of instances in the direct problem (per zone). */
+  unsigned short* nInnerIter_Adjoint; /*!< \brief Number of inner iterations for each set of adjoint variables in a zone. */
+  CIteration*** direct_iteration;     /*!< \brief A pointer to the direct iteration.*/
+  COutput** direct_output;            /*!< \brief A pointer to the direct output.*/
 
 public:
 
