@@ -92,7 +92,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       
       SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
       
-      // TDE scalar check
     }
   }
 	

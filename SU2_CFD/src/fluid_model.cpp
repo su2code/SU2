@@ -125,7 +125,7 @@ void CFluidModel::SetMassDiffusivityModel (CConfig *config) {
       MassDiffusivity = new CConstantDiffusivity(config->GetDiffusivity_ConstantND());
       break;
     case CONSTANT_SCHMIDT:
-      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) { // TDE
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
         MassDiffusivity = new CConstantSchmidtRANS(config->GetSchmidt_Lam(),config->GetSchmidt_Turb());
       } else {
         MassDiffusivity = new CConstantSchmidt(config->GetSchmidt_Lam());
