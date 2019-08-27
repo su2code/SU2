@@ -166,6 +166,10 @@ const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CG
 const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
+const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int CGNS_CONN_SIZE   = 10; /*!< \brief Size of the connectivity array that is allocated for each element that we read from a CGNS file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
+const int CGNS_SKIP_SIZE   = 2;  /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
+
 /*!
  * \brief Boolean answers
  */
@@ -1529,14 +1533,16 @@ static const map<string, ENUM_ANISO_SENSOR> Aniso_Sensor_Map = CCreateMap<string
  * \brief types of input file formats
  */
 enum ENUM_INPUT {
-  SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
+  SU2       = 1,  /*!< \brief SU2 input format. */
+  CGNS      = 2,  /*!< \brief CGNS input format for the computational grid. */
+  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS);
-
-const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */
+("CGNS", CGNS)
+("RECTANGLE", RECTANGLE)
+("BOX", BOX);
 
 /*!
  * \brief type of solution output file formats

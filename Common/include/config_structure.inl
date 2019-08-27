@@ -2086,3 +2086,9 @@ inline su2double CConfig::GetMesh_Hmax(void) { return Mesh_Hmax; }
 inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
 
 inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }
+
+inline short CConfig::GetMeshBoxSize(unsigned short val_iDim) { return Mesh_Box_Size[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mesh_Box_Length[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }

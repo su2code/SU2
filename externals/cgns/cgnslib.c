@@ -53,11 +53,8 @@ freely, subject to the following restrictions:
 #include "cgns_io.h"
 
 /* to determine default file type */
-#ifdef BUILD_HDF5
+#if CG_BUILD_HDF5
 # include "hdf5.h"
-# if H5_VERS_MAJOR < 2 && H5_VERS_MINOR < 8
-#  define HDF5_PRE_1_8
-# endif
 #endif
 
 /* fix for unresolved reference to __ftol2 when using VC7 with VC6 libs */
@@ -99,6 +96,10 @@ int posit_file, posit_base, posit_zone;
 int CGNSLibVersion=CGNS_VERSION;/* Version of the CGNSLibrary*1000  */
 int cgns_compress = 0;
 int cgns_filetype = CG_FILE_NONE;
+void* cgns_rindindex = CG_CONFIG_RIND_CORE;
+
+/* Flag for contiguous (0) or compact storage (1) */
+int HDF5storage_type = CG_COMPACT;
 
 extern void (*cgns_error_handler)(int, char *);
 
@@ -342,8 +343,8 @@ int cg_open(const char *filename, int mode, int *file_number)
     float FileVersion;
 
 #ifdef __CG_MALLOC_H__
-    fprintf(stderr, "before open:files %d/%d: memory %d/%d\n", n_open,
-        cgns_file_size, cgmemnow(), cgmemmax());
+    fprintf(stderr, "CGNS MEM_DEBUG: before open:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
+	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
     /* check file mode */
@@ -503,8 +504,8 @@ int cg_open(const char *filename, int mode, int *file_number)
     }
 
 #ifdef __CG_MALLOC_H__
-    fprintf(stderr, "after  open:files %d/%d: memory %d/%d\n", n_open,
-        cgns_file_size, cgmemnow(), cgmemmax());
+    fprintf(stderr, "CGNS MEM_DEBUG: after  open:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
+	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
     return CG_OK;
@@ -621,8 +622,8 @@ int cg_close(int file_number)
     if (cg == 0) return CG_ERROR;
 
 #ifdef __CG_MALLOC_H__
-    fprintf(stderr, "before close:files %d/%d: memory %d/%d\n", n_open,
-        cgns_file_size, cgmemnow(), cgmemmax());
+    fprintf(stderr, "CGNS MEM_DEBUG: before close:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
+	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
     if (cgns_compress && cg->mode == CG_MODE_MODIFY &&
@@ -656,8 +657,8 @@ int cg_close(int file_number)
     }
 
 #ifdef __CG_MALLOC_H__
-    fprintf(stderr, "after  close:files %d/%d: memory %d/%d\n",
-        n_open, cgns_file_size, cgmemnow(), cgmemmax());
+    fprintf(stderr, "CGNS MEM_DEBUG: after  close:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
+	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
 #ifdef DEBUG_HDF5_OBJECTS_CLOSE
@@ -700,18 +701,13 @@ int cg_set_file_type(int file_type)
     if (file_type == CG_FILE_NONE) {
         char *type = getenv("CGNS_FILETYPE");
 	if (type == NULL || !*type) {
-#if defined(BUILD_HDF5) && !defined(HDF5_PRE_1_8)
+#if CG_BUILD_HDF5
             cgns_filetype = CG_FILE_HDF5;
 #else
             cgns_filetype = CG_FILE_ADF;
 #endif
         }
-#ifdef BUILD_HDF5
-#ifdef BUILD_PARALLEL
-	else if (*type == '4' || *type == 'p' || *type == 'P') {
-            cgns_filetype = CG_FILE_PHDF5;
-        }
-#endif
+#if CG_BUILD_HDF5
 	else if (*type == '2' || *type == 'h' || *type == 'H') {
             cgns_filetype = CG_FILE_HDF5;
         }
@@ -798,6 +794,15 @@ int cg_configure(int what, void *value)
     /* default file type */
     else if (what == CG_CONFIG_FILE_TYPE) {
         return cg_set_file_type((int)((size_t)value));
+    }
+    /* allow pre v3.4 rind-plane indexing */
+    else if (what == CG_CONFIG_RIND_INDEX) {
+        if (value != CG_CONFIG_RIND_ZERO &&
+            value != CG_CONFIG_RIND_CORE) {
+            cgi_error("unknown config setting");
+            return CG_ERROR;
+        }
+        cgns_rindindex = value;
     }
     else {
         cgi_error("unknown config setting");
@@ -2154,39 +2159,73 @@ int cg_coord_info(int file_number, int B, int Z, int C, CGNS_ENUMT(DataType_t)  
     return CG_OK;
 }
 
-int cg_coord_read(int file_number, int B, int Z, const char * coordname,
-                  CGNS_ENUMT(DataType_t) type, const cgsize_t * rmin,
-                  const cgsize_t * rmax, void *coord_ptr)
+int cg_coord_read(int file_number, int B, int Z, const char *coordname,
+                  CGNS_ENUMT(DataType_t) type, const cgsize_t *s_rmin,
+                  const cgsize_t *s_rmax, void *coord_ptr)
 {
+    cgns_zone *zone;
+    int n, m_numdim;
+
+     /* get memory addresses */
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+    zone = cgi_get_zone(cg, B, Z);
+    if (zone == 0) return CG_ERROR;
+
+    m_numdim = zone->index_dim;
+
+    /* verify that range requested is not NULL */
+    if (s_rmin == NULL || s_rmax == NULL) {
+        cgi_error("NULL range value.");
+        return CG_ERROR;
+    }
+
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+    for (n = 0; n<m_numdim; n++) {
+        m_rmin[n] = 1;
+        m_rmax[n] = s_rmax[n] - s_rmin[n] + 1;
+        m_dimvals[n] = m_rmax[n];
+    }
+
+    return cg_coord_general_read(file_number, B, Z, coordname,
+                                 s_rmin, s_rmax, type,
+                                 m_numdim, m_dimvals, m_rmin, m_rmax,
+                                 coord_ptr);
+}
+
+int cg_coord_general_read(int fn, int B, int Z, const char *coordname,
+                          const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                          CGNS_ENUMT(DataType_t) m_type,
+                          int m_numdim, const cgsize_t *m_dimvals,
+                          const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                          void *coord_ptr)
+{
+     /* s_ prefix is file space, m_ prefix is memory space */
     cgns_zcoor *zcoor;
     cgns_array *coord;
-    int n, c;
-    void *xyz;
-    int read_full_range=1;
-    int index_dim, ierr = 0;
-    cgsize_t num = 1, npt = 0;
-    cgsize_t s_start[3], s_end[3], s_stride[3];
-    cgsize_t m_start[3], m_end[3], m_stride[3], m_dim[3];
+    int c, s_numdim;
 
      /* verify input */
-    if (type != CGNS_ENUMV(RealSingle) && type != CGNS_ENUMV(RealDouble)) {
-        cgi_error("Invalid data type for coord. array: %d",type);
+    if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble)) {
+        cgi_error("Invalid data type for coord. array: %d", m_type);
         return CG_ERROR;
     }
      /* find address */
-    cg = cgi_get_file(file_number);
+    cg = cgi_get_file(fn);
     if (cg == 0) return CG_ERROR;
 
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
 
-     /* Get memory address for node "GridCoordinates" */
+     /* get memory address for node "GridCoordinates" */
     zcoor = cgi_get_zcoorGC(cg, B, Z);
-    if (zcoor==0) return CG_ERROR;
+    if (zcoor == 0) return CG_ERROR;
 
      /* find the coord address in the database */
     coord = 0;
     for (c=0; c<zcoor->ncoords; c++) {
-        if (strcmp(zcoor->coord[c].name, coordname)==0) {
+        if (strcmp(zcoor->coord[c].name, coordname) == 0) {
             coord = &zcoor->coord[c];
             break;
         }
@@ -2196,88 +2235,13 @@ int cg_coord_read(int file_number, int B, int Z, const char * coordname,
         return CG_NODE_NOT_FOUND;
     }
 
-    index_dim=cg->base[B-1].zone[Z-1].index_dim;
+     /* zcoor implies zone exists */
+    s_numdim = cg->base[B-1].zone[Z-1].index_dim;
 
-     /* verify that range requested does not exceed range stored */
-    for (n=0; n<index_dim; n++) {
-        if (rmin[n]>rmax[n] || rmax[n]>coord->dim_vals[n] || rmin[n]<1) {
-            cgi_error("Invalid range of data requested");
-            return CG_ERROR;
-        }
-    }
-
-     /* check if requested to return full range */
-    for (n=0; n<index_dim; n++) {
-        if (rmin[n]!=1 || rmax[n] != coord->dim_vals[n]) {
-            read_full_range=0;
-            break;
-        }
-    }
-
-    num = 1;
-    if (read_full_range) {
-        for (n = 0; n < index_dim; n++)
-            num *= coord->dim_vals[n];
-    }
-    else {
-        for (n = 0; n < index_dim; n++) {
-            npt = rmax[n] - rmin[n] + 1;
-            num *= npt;
-            s_start[n]  = rmin[n];
-            s_end[n]    = rmax[n];
-            s_stride[n] = 1;
-            m_start[n]  = 1;
-            m_end[n]    = npt;
-            m_stride[n] = 1;
-            m_dim[n]    = npt;
-        }
-    }
-
-    /* quick transfer of data if same data types */
-    if (type == cgi_datatype(coord->data_type)) {
-        if (read_full_range) {
-            if (cgio_read_all_data(cg->cgio, coord->id, coord_ptr)) {
-                cg_io_error("cgio_read_all_data");
-                return CG_ERROR;
-            }
-        }
-        else {
-            if (cgio_read_data(cg->cgio, coord->id,
-                    s_start, s_end, s_stride, index_dim, m_dim,
-                    m_start, m_end, m_stride, coord_ptr)) {
-                cg_io_error("cgio_read_data");
-                return CG_ERROR;
-            }
-        }
-        return CG_OK;
-    }
-
-    /* need to read into temp array to convert data */
-    xyz = malloc((size_t)(num*size_of(coord->data_type)));
-    if (xyz == NULL) {
-        cgi_error("Error allocating xyz");
-        return CG_ERROR;
-    }
-    if (read_full_range) {
-        if (cgio_read_all_data(cg->cgio, coord->id, xyz)) {
-            free(xyz);
-            cg_io_error("cgio_read_all_data");
-            return CG_ERROR;
-        }
-    }
-    else {
-        if (cgio_read_data(cg->cgio, coord->id,
-                s_start, s_end, s_stride, index_dim, m_dim,
-                m_start, m_end, m_stride, xyz)) {
-            free(xyz);
-            cg_io_error("cgio_read_data");
-            return CG_ERROR;
-        }
-    }
-    ierr = cgi_convert_data(num, cgi_datatype(coord->data_type),
-               xyz, type, coord_ptr);
-    free(xyz);
-    return ierr ? CG_ERROR : CG_OK;
+    return cgi_array_general_read(coord, cgns_rindindex, zcoor->rind_planes,
+                                  s_numdim, s_rmin, s_rmax,
+                                  m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  coord_ptr);
 }
 
 int cg_coord_id(int file_number, int B, int Z, int C, double *coord_id)
@@ -2303,12 +2267,14 @@ int cg_coord_id(int file_number, int B, int Z, int C, double *coord_id)
 }
 
 int cg_coord_write(int file_number, int B, int Z, CGNS_ENUMT(DataType_t) type,
-                   const char * coordname, const void * coord_ptr, int *C)
+                   const char *coordname, const void *coord_ptr, int *C)
 {
     cgns_zone *zone;
     cgns_zcoor *zcoor;
-    cgns_array *coord;
-    int n, index, index_dim;
+    int n, m_numdim;
+    int status;
+
+    HDF5storage_type = CG_CONTIGUOUS;
 
      /* verify input */
     if (cgi_check_strlen(coordname)) return CG_ERROR;
@@ -2316,220 +2282,164 @@ int cg_coord_write(int file_number, int B, int Z, CGNS_ENUMT(DataType_t) type,
         cgi_error("Invalid datatype for coord. array:  %d", type);
         return CG_ERROR;
     }
-     /* get memory address for file */
+     /* get memory addresses */
     cg = cgi_get_file(file_number);
     if (cg == 0) return CG_ERROR;
-    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
-     /* get memory address for zone */
+
     zone = cgi_get_zone(cg, B, Z);
-    if (zone==0) return CG_ERROR;
+    if (zone == 0) return CG_ERROR;
+
      /* Get memory address for node "GridCoordinates" */
     zcoor = cgi_get_zcoorGC(cg, B, Z);
-    if (zcoor==0) return CG_ERROR;
-     /* Overwrite a DataArray_t Node of same size, name and data-type: */
-    for (index=0; index<zcoor->ncoords; index++) {
-        if (strcmp(coordname, zcoor->coord[index].name)==0) {
-            coord = &(zcoor->coord[index]);
+    if (zcoor == 0) return CG_ERROR;
 
-             /* in CG_MODE_WRITE, children names must be unique */
-            if (cg->mode==CG_MODE_WRITE) {
-                cgi_error("Duplicate child name found: %s",coordname);
-                return CG_ERROR;
-            }
+    m_numdim = zone->index_dim;
 
-             /* overwrite an existing coordinate vector */
-            if (type==cgi_datatype(coord->data_type)) {
-                if (cgio_write_all_data(cg->cgio, coord->id, coord_ptr)) {
-                    cg_io_error("cgio_write_all_data");
-                    return CG_ERROR;
-                }
-                (*C) = index+1;
-                return CG_OK;
-            }
-            cgi_error("To overwrite array %s, use data-type '%s'",
-                coord->name, DataTypeName[cgi_datatype(coord->data_type)]);
-            return CG_ERROR;
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+    cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+    for (n = 0; n<m_numdim; n++) {
+        m_dimvals[n] = zone->nijk[n] + zcoor->rind_planes[2*n] +
+                                       zcoor->rind_planes[2*n+1];
+        if (cgns_rindindex == CG_CONFIG_RIND_ZERO) {
+             /* old obsolete behavior (versions < 3.4) */
+            s_rmin[n] = 1;
         }
+        else {
+             /* new behavior consitent with SIDS */
+            s_rmin[n] = 1 - zcoor->rind_planes[2*n];
+        }
+        s_rmax[n] = s_rmin[n] + m_dimvals[n] - 1;
+        m_rmin[n] = 1;
+        m_rmax[n] = m_dimvals[n];
     }
 
-     /* ... or add a DataArray_t Node: */
-    if (zcoor->ncoords == 0) {
-        zcoor->coord = CGNS_NEW(cgns_array, zcoor->ncoords+1);
-    } else {
-        zcoor->coord = CGNS_RENEW(cgns_array, zcoor->ncoords+1, zcoor->coord);
-    }
-    coord = &(zcoor->coord[zcoor->ncoords]);
-    zcoor->ncoords++;
-    (*C) = zcoor->ncoords;
+    status = cg_coord_general_write(file_number, B, Z, coordname,
+                                  type, s_rmin, s_rmax,
+                                  type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  coord_ptr, C);
 
-     /* save coord. data in memory */
-    memset(coord, 0, sizeof(cgns_array));
-    strcpy(coord->data_type,cgi_adf_datatype(type));
-    strcpy(coord->name,coordname);
-    index_dim = zone->index_dim;
-    for (n=0; n<index_dim; n++)
-        coord->dim_vals[n] = zone->nijk[n] + zcoor->rind_planes[2*n]
-                             + zcoor->rind_planes[2*n+1];
-    coord->data_dim=index_dim;
+    HDF5storage_type = CG_COMPACT;
+    return status;
 
-     /* Create GridCoodinates_t node if not already created */
-    if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
-      if (zcoor->id == 0) {
-        if (cgi_new_node(zone->id, "GridCoordinates", "GridCoordinates_t",
-			 &zcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
-      }
-    }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
-      hid_t hid;
-      to_HDF_ID(zcoor->id, hid);
-      if (hid == 0) {
-        if (cgi_new_node(zone->id, "GridCoordinates", "GridCoordinates_t",
-			 &zcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
-      }
-    }
-#endif
-    else {
-      return CG_ERROR;
-    }
-     /* Create DataArray_t node on disk */
-    if (cgi_new_node(zcoor->id, coord->name, "DataArray_t", &coord->id,
-        coord->data_type, index_dim, coord->dim_vals, coord_ptr)) return CG_ERROR;
-
-    return CG_OK;
 }
 
 int cg_coord_partial_write(int file_number, int B, int Z,
-			   CGNS_ENUMT( DataType_t )  type,
-			   const char *coordname, const cgsize_t *rmin,
-                           const cgsize_t *rmax, const void *coord_ptr,
+                           CGNS_ENUMT(DataType_t) type,
+                           const char *coordname, const cgsize_t *s_rmin,
+                           const cgsize_t *s_rmax, const void *coord_ptr,
                            int *C)
 {
     cgns_zone *zone;
-    cgns_zcoor *zcoor;
-    cgns_array *coord;
-    int n, index, index_dim;
-    cgsize_t dims[CGIO_MAX_DIMENSIONS];
+    int n, m_numdim;
+    int status;
 
-     /* verify input */
-    if (cgi_check_strlen(coordname)) return CG_ERROR;
-    if (type!=CGNS_ENUMV( RealSingle ) && type!=CGNS_ENUMV( RealDouble )) {
-        cgi_error("Invalid datatype for coord. array:  %d", type);
+     /* get memory addresses */
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+    zone = cgi_get_zone(cg, B, Z);
+    if (zone == 0) return CG_ERROR;
+
+    m_numdim = zone->index_dim;
+
+    if (s_rmin == NULL || s_rmax == NULL) {
+        cgi_error("NULL range value.");
         return CG_ERROR;
     }
 
-    if(rmin == NULL || rmax == NULL) {
-	cgi_error("NULL range value.");
-	return CG_ERROR;
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+    for (n = 0; n<m_numdim; n++) {
+        m_rmin[n] = 1;
+        m_rmax[n] = s_rmax[n] - s_rmin[n] + 1;
+        m_dimvals[n] = m_rmax[n];
     }
 
-     /* get memory address for file */
-    cg = cgi_get_file(file_number);
+    status = cg_coord_general_write(file_number, B, Z, coordname,
+                                  type, s_rmin, s_rmax,
+                                  type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  coord_ptr, C);
+    return status;
+}
+
+int cg_coord_general_write(int fn, int B, int Z, const char *coordname,
+                           CGNS_ENUMT(DataType_t) s_type,
+                           const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                           CGNS_ENUMT(DataType_t) m_type,
+                           int m_numdim, const cgsize_t *m_dimvals,
+                           const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                           const void *coord_ptr, int *C)
+{
+     /* s_ prefix is file space, m_ prefix is memory space */
+    cgns_zone *zone;
+    cgns_zcoor *zcoor;
+    int n, s_numdim;
+    int status;
+
+    HDF5storage_type = CG_CONTIGUOUS;
+
+     /* verify input */
+    if (cgi_check_strlen(coordname)) return CG_ERROR;
+    if (s_type!=CGNS_ENUMV(RealSingle) && s_type!=CGNS_ENUMV(RealDouble)) {
+        cgi_error("Invalid file data type for coord. array: %d", s_type);
+        return CG_ERROR;
+    }
+    if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble) &&
+        m_type != CGNS_ENUMV(Integer) && m_type != CGNS_ENUMV(LongInteger)) {
+        cgi_error("Invalid input data type for coord. array: %d", m_type);
+        return CG_ERROR;
+    }
+
+     /* get memory addresses */
+    cg = cgi_get_file(fn);
     if (cg == 0) return CG_ERROR;
 
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
 
-     /* get memory address for zone */
     zone = cgi_get_zone(cg, B, Z);
-    if (zone==0) return CG_ERROR;
+    if (zone == 0) return CG_ERROR;
 
      /* Get memory address for node "GridCoordinates" */
     zcoor = cgi_get_zcoorGC(cg, B, Z);
-    if (zcoor==0) return CG_ERROR;
+    if (zcoor == 0) return CG_ERROR;
 
-    /* check for valid ranges */
-    index_dim = zone->index_dim;
-    for (n = 0; n < index_dim; n++) {
-        dims[n] = zone->nijk[n] + zcoor->rind_planes[2*n] +
-                                  zcoor->rind_planes[2*n+1];
-        if (rmin[n] > rmax[n] || rmin[n] < 1 || rmax[n] > dims[n]) {
-            cgi_error("Invalid index ranges.");
-            return CG_ERROR;
-        }
+    cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+    s_numdim = zone->index_dim;
+    for (n = 0; n<s_numdim; n++) {
+        s_dimvals[n] = zone->nijk[n] + zcoor->rind_planes[2*n] +
+                                       zcoor->rind_planes[2*n+1];
     }
 
-     /* Overwrite a DataArray_t Node of same size, name and data-type: */
-    for (index=0; index<zcoor->ncoords; index++) {
-        if (strcmp(coordname, zcoor->coord[index].name)==0) {
-            cgsize_t m_start[CGIO_MAX_DIMENSIONS], m_end[CGIO_MAX_DIMENSIONS];
-            cgsize_t m_dim[CGIO_MAX_DIMENSIONS], stride[CGIO_MAX_DIMENSIONS];
-
-            coord = &(zcoor->coord[index]);
-            /* data type must be the same */
-            if (strcmp(coord->data_type,cgi_adf_datatype(type))) {
-                cgi_error("Mismatch in data types.");
-                return CG_ERROR;
-            }
-            for (n = 0; n < coord->data_dim; n++) {
-                m_start[n] = 1;
-                m_end[n]   = rmax[n] - rmin[n] + 1;
-                m_dim[n]   = m_end[n];
-                stride[n]  = 1;
-            }
-
-            if (cgio_write_data(cg->cgio, coord->id, rmin, rmax, stride,
-                           coord->data_dim, m_dim, m_start, m_end,
-                           stride, coord_ptr)) {
-                cg_io_error("cgio_write_data");
-                return CG_ERROR;
-            }
-            return CG_OK;
-        }
-    }
-
-     /* add a DataArray_t Node: */
-    if (zcoor->ncoords == 0) {
-        zcoor->coord = CGNS_NEW(cgns_array, zcoor->ncoords+1);
-    } else {
-        zcoor->coord = CGNS_RENEW(cgns_array, zcoor->ncoords+1, zcoor->coord);
-    }
-    coord = &(zcoor->coord[zcoor->ncoords]);
-    zcoor->ncoords++;
-    (*C) = zcoor->ncoords;
-
-     /* save coord. data in memory */
-    strcpy(coord->data_type,cgi_adf_datatype(type));
-    strcpy(coord->name,coordname);
-    coord->id=0;        /* initialize */
-    coord->link=0;
-    for (n = 0; n < index_dim; n++)
-        coord->dim_vals[n] = dims[n];
-    coord->data_dim=index_dim;
-    coord->data=0;
-    coord->ndescr=0;
-    coord->data_class=CGNS_ENUMV( DataClassNull );
-    coord->units=0;
-    coord->exponents=0;
-    coord->convert=0;
-
-     /* Create GridCoodinates_t node if not already created */
+     /* Create GridCoordinates_t node if not already created */
     if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
-      if (zcoor->id == 0) {
-        if (cgi_new_node(zone->id, "GridCoordinates", "GridCoordinates_t",
-			 &zcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
-      }
+        if (zcoor->id == 0) {
+            if (cgi_new_node(zone->id, "GridCoordinates", "GridCoordinates_t",
+                             &zcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
+        }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
-      hid_t hid;
-      to_HDF_ID(zcoor->id, hid);
-      if (hid == 0) {
-        if (cgi_new_node(zone->id, "GridCoordinates", "GridCoordinates_t",
-			 &zcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
-      }
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
+        hid_t hid;
+        to_HDF_ID(zcoor->id, hid);
+        if (hid == 0) {
+            if (cgi_new_node(zone->id, "GridCoordinates", "GridCoordinates_t",
+                             &zcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
+        }
     }
 #endif
     else {
-      return CG_ERROR;
+        return CG_ERROR;
     }
 
-     /* Create DataArray_t node on disk */
-    if (cgi_new_node_partial(zcoor->id, coord->name, "DataArray_t", &coord->id,
-        coord->data_type, index_dim, coord->dim_vals, rmin, rmax,
-	coord_ptr))
-	return CG_ERROR;
-
-    return CG_OK;
+    status = cgi_array_general_write(zcoor->id, &(zcoor->ncoords),
+                                   &(zcoor->coord), coordname,
+                                   cgns_rindindex, zcoor->rind_planes,
+                                   s_type, s_numdim, s_dimvals, s_rmin, s_rmax,
+                                   m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                   coord_ptr, C);
+    HDF5storage_type = CG_COMPACT;
+    return status;
 }
 
 /*****************************************************************************\
@@ -2542,7 +2452,7 @@ static int adf2_check_elems(CGNS_ENUMT(ElementType_t) type,
     if (type < CGNS_ENUMV(NODE) || type > CGNS_ENUMV(MIXED)) {
         cgi_error("Element type %s not supported in ADF2.",
             cg_ElementTypeName(type));
-        return 1;
+        return CG_ERROR;
     }
     if (type == CGNS_ENUMV(MIXED)) {
         int npe;
@@ -2552,13 +2462,13 @@ static int adf2_check_elems(CGNS_ENUMT(ElementType_t) type,
             if (type < CGNS_ENUMV(NODE) || type >= CGNS_ENUMV(MIXED)) {
                 cgi_error("Element type %s not supported in ADF2.",
                     cg_ElementTypeName(type));
-                return 1;
+                return CG_ERROR;
             }
-            if (cg_npe(type, &npe) || npe <= 0) return 1;
+            if (cg_npe(type, &npe) || npe <= 0) return CG_ERROR;
             elems += npe;
         }
     }
-    return 0;
+    return CG_OK;
 }
 
 static void free_element_data(cgns_section *section)
@@ -2577,15 +2487,42 @@ static int read_element_data(cgns_section *section)
         section->connect->data = malloc(cnt * sizeof(cgsize_t));
         if (section->connect->data == NULL) {
             cgi_error("malloc failed for element data");
-            return 1;
+            return CG_ERROR;
         }
         if (cgi_read_int_data(section->connect->id,
                 section->connect->data_type, cnt, section->connect->data)) {
             free_element_data(section);
-            return 1;
+            return CG_ERROR;
         }
     }
-    return 0;
+    return CG_OK;
+}
+
+static void free_offset_data(cgns_section *section)
+{
+    if (section->connect_offset->data != NULL) {
+        free(section->connect_offset->data);
+        section->connect_offset->data = NULL;
+    }
+}
+
+static int read_offset_data(cgns_section *section)
+{
+    if (section->connect_offset->data == NULL) {
+	cgsize_t cnt = section->connect_offset->dim_vals[0];
+
+        section->connect_offset->data = malloc(cnt * sizeof(cgsize_t));
+        if (section->connect_offset->data == NULL) {
+            cgi_error("malloc failed for element connectivity offset data");
+            return CG_ERROR;
+        }
+        if (cgi_read_int_data(section->connect_offset->id,
+                section->connect_offset->data_type, cnt, section->connect_offset->data)) {
+            free_offset_data(section);
+            return CG_ERROR;
+        }
+    }
+    return CG_OK;
 }
 
 static void free_parent_data(cgns_section *section)
@@ -2610,48 +2547,48 @@ static int read_parent_data(cgns_section *section)
             section->parelem->data = malloc(cnt * sizeof(cgsize_t));
             if (section->parelem->data == NULL) {
                 cgi_error("malloc failed for ParentData data");
-                return 1;
+                return CG_ERROR;
             }
             if (cgi_read_int_data(section->parelem->id,
                 section->parelem->data_type, cnt, section->parelem->data)) {
                 free_parent_data(section);
-                return 1;
+                return CG_ERROR;
             }
         }
-        return 0;
+        return CG_OK;
     }
     if (section->parelem->dim_vals[0] != section->parface->dim_vals[0] ||
         section->parelem->dim_vals[1] != 2 ||
         section->parface->dim_vals[1] != 2) {
         cgi_error("mismatch in ParentElements and ParentElementsPosition data sizes");
-        return 1;
+        return CG_ERROR;
     }
     cnt = section->parelem->dim_vals[0] * 2;
     if (section->parelem->data == NULL) {
         section->parelem->data = malloc(cnt * sizeof(cgsize_t));
         if (section->parelem->data == NULL) {
             cgi_error("malloc failed for ParentElements data");
-            return 1;
+            return CG_ERROR;
         }
         if (cgi_read_int_data(section->parelem->id,
                 section->parelem->data_type, cnt, section->parelem->data)) {
             free_parent_data(section);
-            return 1;
+            return CG_ERROR;
         }
     }
     if (section->parface->data == NULL) {
         section->parface->data = malloc(cnt * sizeof(cgsize_t));
         if (section->parface->data == NULL) {
             cgi_error("malloc failed for ParentElementsPosition data");
-            return 1;
+            return CG_ERROR;
         }
         if (cgi_read_int_data(section->parface->id,
                 section->parface->data_type, cnt, section->parface->data)) {
             free_parent_data(section);
-            return 1;
+            return CG_ERROR;
         }
     }
-    return 0;
+    return CG_OK;
 }
 
 /*----------------------------------------------------------------------*/
@@ -2701,7 +2638,115 @@ int cg_section_read(int file_number, int B, int Z, int S, char *SectionName,
 
 int cg_section_write(int file_number, int B, int Z, const char * SectionName,
                      CGNS_ENUMT(ElementType_t)type, cgsize_t start, cgsize_t end,
-                     int nbndry, const cgsize_t * elements, int *S)
+                     int nbndry, const cgsize_t * elements,
+                     int *S)
+{
+    cgns_zone *zone;
+    cgns_section *section = NULL;
+    int index;
+    cgsize_t num, ElementDataSize=0;
+
+     /* verify input */
+    if (cgi_check_strlen(SectionName)) return CG_ERROR;
+
+    if (INVALID_ENUM(type,NofValidElementTypes)) {
+        cgi_error("Invalid element type defined for section '%s'",SectionName);
+        return CG_ERROR;
+    }
+
+    if (!IS_FIXED_SIZE(type)) {
+        cgi_error("Element must be a fixed size");
+        return CG_ERROR;
+    }
+
+    num = end - start + 1;
+    if (num <= 0) {
+        cgi_error("Invalid element range defined for section '%s'",SectionName);
+        return CG_ERROR;
+    }
+    if (nbndry > num) {
+        cgi_error("Invalid boundary element number for section '%s'",SectionName);
+        return CG_ERROR;
+    }
+
+     /* get file and check mode */
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+    if (cg->filetype == CG_FILE_ADF2 &&
+        adf2_check_elems(type, num, elements)) return CG_ERROR;
+
+    zone = cgi_get_zone(cg, B, Z);
+    if (zone==0) return CG_ERROR;
+
+     /* Overwrite a Elements_t Node: */
+    for (index=0; index<zone->nsections; index++) {
+        if (strcmp(SectionName, zone->section[index].name)==0) {
+
+             /* in CG_MODE_WRITE, children names must be unique */
+            if (cg->mode==CG_MODE_WRITE) {
+                cgi_error("Duplicate child name found: %s",SectionName);
+                return CG_ERROR;
+            }
+
+             /* overwrite an existing section */
+             /* delete the existing section from file */
+            if (cgi_delete_node(zone->id, zone->section[index].id))
+                return CG_ERROR;
+             /* save the old in-memory address to overwrite */
+            section = &(zone->section[index]);
+             /* free memory */
+            cgi_free_section(section);
+            break;
+        }
+    }
+     /* ... or add a Elements_t Node: */
+    if (index==zone->nsections) {
+        if (zone->nsections == 0) {
+            zone->section = CGNS_NEW(cgns_section, zone->nsections+1);
+        } else {
+            zone->section = CGNS_RENEW(cgns_section, zone->nsections+1, zone->section);
+        }
+        section = &(zone->section[zone->nsections]);
+        zone->nsections++;
+    }
+    (*S) = index+1;
+
+     /* save data in memory */
+    memset(section, 0, sizeof(cgns_section));
+    strcpy(section->name, SectionName);
+    section->el_type = type;
+    section->range[0] = start;
+    section->range[1] = end;
+    section->el_bound = nbndry;
+
+     /* Compute ElementDataSize */
+    ElementDataSize = cgi_element_data_size(type, num, elements, NULL);
+    if (ElementDataSize < 0) return CG_ERROR;
+
+     /* Write element connectivity in internal data structure */
+    section->connect = CGNS_NEW(cgns_array, 1);
+    strcpy(section->connect->name,"ElementConnectivity");
+    strcpy(section->connect->data_type, CG_SIZE_DATATYPE);
+    section->connect->data_dim=1;
+    section->connect->dim_vals[0]=ElementDataSize;
+
+    if (cgi_write_section(zone->id, section))
+        return CG_ERROR;
+    if (cgio_write_all_data(cg->cgio, section->connect->id, elements)) {
+        cg_io_error("cgio_write_all_data");
+        return CG_ERROR;
+    }
+
+    return CG_OK;
+}
+
+int cg_poly_section_write(int file_number, int B, int Z, const char * SectionName,
+                     CGNS_ENUMT(ElementType_t)type, cgsize_t start, cgsize_t end,
+                     int nbndry, const cgsize_t * elements, const cgsize_t * connect_offset,
+                     int *S)
 {
     cgns_zone *zone;
     cgns_section *section = NULL;
@@ -2779,7 +2824,7 @@ int cg_section_write(int file_number, int B, int Z, const char * SectionName,
     section->el_bound = nbndry;
 
      /* Compute ElementDataSize */
-    ElementDataSize = cgi_element_data_size(type, num, elements);
+    ElementDataSize = cgi_element_data_size(type, num, elements, connect_offset);
     if (ElementDataSize < 0) return CG_ERROR;
 
      /* Write element connectivity in internal data structure */
@@ -2789,12 +2834,28 @@ int cg_section_write(int file_number, int B, int Z, const char * SectionName,
     section->connect->data_dim=1;
     section->connect->dim_vals[0]=ElementDataSize;
 
+    if (connect_offset && ! IS_FIXED_SIZE(type)) {
+         /* Write element start offset connectivity in internal data structure */
+        section->connect_offset = CGNS_NEW(cgns_array, 1);
+        strcpy(section->connect_offset->name,"ElementStartOffset");
+        strcpy(section->connect_offset->data_type, CG_SIZE_DATATYPE);
+        section->connect_offset->data_dim=1;
+        section->connect_offset->dim_vals[0] = end-start+2;
+    }
+
     if (cgi_write_section(zone->id, section))
         return CG_ERROR;
     if (cgio_write_all_data(cg->cgio, section->connect->id, elements)) {
         cg_io_error("cgio_write_all_data");
         return CG_ERROR;
     }
+    if (section->connect_offset) {
+        if (cgio_write_all_data(cg->cgio, section->connect_offset->id, connect_offset)) {
+            cg_io_error("cgio_write_all_data");
+            return CG_ERROR;
+        }
+    }
+
     return CG_OK;
 }
 
@@ -2899,6 +2960,7 @@ int cg_section_partial_write(int file_number, int B, int Z, const char * Section
     section->parelem = section->parface = NULL;
     section->nuser_data=0;
     section->rind_planes=0;
+    section->connect_offset=0;
 
      /* initialize other fields */
     section->connect->id=0;
@@ -2910,15 +2972,36 @@ int cg_section_partial_write(int file_number, int B, int Z, const char * Section
     section->connect->convert=0;
 
     /* if not fixed element size, need to create valid data for sizing */
-
     if (!IS_FIXED_SIZE(type)) {
         cgsize_t n, nn, *data = CGNS_NEW(cgsize_t, ElementDataSize);
-	cgsize_t val = (type == CGNS_ENUMV(MIXED) ? (cgsize_t)CGNS_ENUMV(NODE) : 1);
+        cgsize_t *data_connect = CGNS_NEW(cgsize_t, (size_t)(num+1));
+        cgsize_t val = (type == CGNS_ENUMV(MIXED) ? (cgsize_t)CGNS_ENUMV(NODE) : 0);
         for (nn = 0, n = 0; n < num; n++) {
-	    data[nn++] = val;
+            data[nn++] = val;
             data[nn++] = 0;
         }
         section->connect->data = (void *)data;
+
+        section->connect_offset = CGNS_NEW(cgns_array, 1);
+        section->connect_offset->data = 0;
+        strcpy(section->connect_offset->name,"ElementStartOffset");
+        strcpy(section->connect_offset->data_type,CG_SIZE_DATATYPE);
+        section->connect_offset->data_dim=1;
+        section->connect_offset->dim_vals[0]=(num+1);
+
+        section->connect_offset->id=0;
+        section->connect_offset->link=0;
+        section->connect_offset->ndescr=0;
+        section->connect_offset->data_class=CGNS_ENUMV(DataClassNull);
+        section->connect_offset->units=0;
+        section->connect_offset->exponents=0;
+        section->connect_offset->convert=0;
+
+        data_connect[0] = 0;
+        for (n = 0; n < num; n++) {
+            data_connect[n+1] = data_connect[n]+2;
+        }
+        section->connect_offset->data = (void *) data_connect;
     }
 
     if (cgi_write_section(zone->id, section))
@@ -2953,7 +3036,9 @@ int cg_ElementPartialSize(int file_number, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, cgsize_t *ElementDataSize)
 {
     cgns_section *section;
-    cgsize_t size, offset, *data;
+    cgsize_t size, cnt, *offset_data;
+    cgsize_t s_start[1], s_end[1], s_stride[1];
+    cgsize_t m_start[1], m_end[1], m_stride[1], m_dim[1];
 
     cg = cgi_get_file(file_number);
     if (cg == 0) return CG_ERROR;
@@ -2975,20 +3060,83 @@ int cg_ElementPartialSize(int file_number, int B, int Z, int S,
     }
 
     if (IS_FIXED_SIZE(section->el_type)) {
-        size = cgi_element_data_size(section->el_type, end - start + 1, NULL);
+        size = cgi_element_data_size(section->el_type, end - start + 1, NULL, NULL);
         if (size < 0) return CG_ERROR;
         *ElementDataSize = size;
         return CG_OK;
     }
 
-    if (read_element_data(section)) return CG_ERROR;
+    if (section->connect_offset->data == NULL) {
+        // Only read a slice of the ElementStartOffset array
+        cnt = end-start+2;
+        s_start[0] = start - section->range[0] + 1;
+        s_end[0]   = end - section->range[0] + 2;
+        s_stride[0]= 1;
+        m_start[0] = 1;
+        m_end[0]   = cnt;
+        m_stride[0]= 1;
+        m_dim[0]   = cnt;
+        // Handle different compilation configuration for cgsize_t
+#if CG_SIZEOF_SIZE == 64
+        if (0 == strcmp(section->connect_offset->data_type, "I4")) {
+            int *offsets = (int *)malloc((size_t)(cnt*sizeof(int)));
+            if (NULL == offsets) {
+                cgi_error("Error allocating I4->I8 data array...");
+                return CG_ERROR;
+            }
+ 
+            if (cgio_read_data(cg->cgio, section->connect_offset->id,
+                               s_start, s_end, s_stride, 1, m_dim,
+                               m_start, m_end, m_stride, offsets)) {
+                cg_io_error("cgio_read_data");
+                CGNS_FREE(offsets);
+                return CG_ERROR;
+            }
+            size = (cgsize_t)(offsets[cnt-1]-offsets[0]);
+            CGNS_FREE(offsets);
+        }
+#else
+        if (0 == strcmp(section->connect_offset->data_type, "I8")) {
+            cglong_t *offsets = (cglong_t *)malloc((size_t)(cnt*sizeof(cglong_t)));
+            if (NULL == offsets) {
+                cgi_error("Error allocating I8->I4 data array...");
+                return CG_ERROR;
+            }
 
-    data = (cgsize_t *)section->connect->data;
-    offset = cgi_element_data_size(section->el_type,
-                 start - section->range[0], data);
-    if (offset < 0) return CG_ERROR;
-    size = cgi_element_data_size(section->el_type,
-               end - start + 1, &data[offset]);
+            if (cgio_read_data(cg->cgio, section->connect_offset->id,
+                               s_start, s_end, s_stride, 1, m_dim,
+                               m_start, m_end, m_stride, offsets)) {
+                cg_io_error("cgio_read_data");
+                CGNS_FREE(offsets);
+                return CG_ERROR;
+            }
+            size = (cgsize_t)(offsets[cnt-1]-offsets[0]);
+            CGNS_FREE(offsets);
+        }
+#endif
+        else {
+            cgsize_t *offsets = malloc(cnt * sizeof(cgsize_t));
+            if (NULL == offsets) {
+                cgi_error("Error allocating I8->I4 data array...");
+                return CG_ERROR;
+            }
+            if (cgio_read_data(cg->cgio, section->connect_offset->id,
+                               s_start, s_end, s_stride, 1, m_dim,
+                               m_start, m_end, m_stride, offsets)) {
+                cg_io_error("cgio_read_data");
+                CGNS_FREE(offsets);
+                return CG_ERROR;
+            }
+            size = (cgsize_t)(offsets[cnt-1]-offsets[0]);
+            CGNS_FREE(offsets);
+        }
+    } else {
+        // if ElementStartOffset is already fully loaded
+        offset_data = (cgsize_t *)section->connect_offset->data;
+        if (offset_data == 0) return CG_ERROR;
+        size = offset_data[end-section->range[0]+1] - offset_data[start-section->range[0]];
+    }
+
     if (size < 0) return CG_ERROR;
     *ElementDataSize = size;
     return CG_OK;
@@ -3011,12 +3159,17 @@ int cg_elements_read(int file_number, int B, int Z, int S, cgsize_t *elements,
     section = cgi_get_section(cg, B, Z, S);
     if (section == 0) return CG_ERROR;
 
+    if (!IS_FIXED_SIZE(section->el_type)) {
+        cgi_error("element must be a fixed size");
+        return CG_ERROR;
+    }
+
      /* cgns_internals takes care of adjusting for version */
     ElementDataSize = section->connect->dim_vals[0];
 
-     /* Double check ElementDataSize (not necessary) */
     num = section->range[1] - section->range[0] +1;
-    count = cgi_element_data_size(section->el_type, num, section->connect->data);
+    count = cgi_element_data_size(section->el_type, num,
+                                  section->connect->data, NULL);
     if (count < 0) return CG_ERROR;
     if (count && count != ElementDataSize) {
         cgi_error("Error in recorded element connectivity array...");
@@ -3024,26 +3177,97 @@ int cg_elements_read(int file_number, int B, int Z, int S, cgsize_t *elements,
     }
 
     if (section->connect->data &&
-        0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+            0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
         memcpy(elements, section->connect->data, (size_t)(ElementDataSize*sizeof(cgsize_t)));
     }
     else {
         if (cgi_read_int_data(section->connect->id, section->connect->data_type,
-                ElementDataSize, elements)) return CG_ERROR;
+                              ElementDataSize, elements)) return CG_ERROR;
     }
 
     if (parent_data && section->parelem && (section->parface ||
-        0 == strcmp(section->parelem->name, "ParentData"))) {
+                                            0 == strcmp(section->parelem->name, "ParentData"))) {
         if (0 == strcmp(section->parelem->name, "ParentData")) {
             if (cgi_read_int_data(section->parelem->id, section->parelem->data_type,
-                    num << 2, parent_data)) return CG_ERROR;
+                                  num << 2, parent_data)) return CG_ERROR;
         }
-	else {
+        else {
             if (cgi_read_int_data(section->parelem->id, section->parelem->data_type,
-                    num << 1, parent_data) ||
-                cgi_read_int_data(section->parface->id, section->parface->data_type,
-                    num << 1, &parent_data[num << 1])) return CG_ERROR;
-	}
+                                  num << 1, parent_data) ||
+                    cgi_read_int_data(section->parface->id, section->parface->data_type,
+                                      num << 1, &parent_data[num << 1])) return CG_ERROR;
+        }
+    }
+
+    return CG_OK;
+}
+
+/*----------------------------------------------------------------------*/
+
+int cg_poly_elements_read(int file_number, int B, int Z, int S, cgsize_t *elements,
+                     cgsize_t *connect_offset, cgsize_t *parent_data)
+{
+    cgns_section *section;
+    cgsize_t count, num, ElementDataSize=0, ConnectOffsetSize=0;
+    cgsize_t *offset_data=0;
+
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    section = cgi_get_section(cg, B, Z, S);
+    if (section == 0) return CG_ERROR;
+
+     /* cgns_internals takes care of adjusting for version */
+    ElementDataSize = section->connect->dim_vals[0];
+
+     /* Double check ElementDataSize (not necessary) */
+    if (section->connect_offset) {
+        offset_data = section->connect_offset->data;
+    }
+    num = section->range[1] - section->range[0] +1;
+    count = cgi_element_data_size(section->el_type, num,
+                                  section->connect->data, offset_data);
+    if (count < 0) return CG_ERROR;
+    if (count && count != ElementDataSize) {
+        cgi_error("Error in recorded element connectivity array...");
+        return CG_ERROR;
+    }
+
+    if (section->connect->data &&
+            0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+        memcpy(elements, section->connect->data, (size_t)(ElementDataSize*sizeof(cgsize_t)));
+    }
+    else {
+        if (cgi_read_int_data(section->connect->id, section->connect->data_type,
+                              ElementDataSize, elements)) return CG_ERROR;
+    }
+
+    if (connect_offset && section->connect_offset) {
+        ConnectOffsetSize  = section->connect_offset->dim_vals[0];
+        if (section->connect_offset->data &&
+                0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+            memcpy(connect_offset, section->connect_offset->data, (size_t)(ConnectOffsetSize*sizeof(cgsize_t)));
+        } else {
+            if (cgi_read_int_data(section->connect_offset->id, section->connect_offset->data_type,
+                                  ConnectOffsetSize, connect_offset)) return CG_ERROR;
+        }
+    }
+
+    if (parent_data && section->parelem && (section->parface ||
+                                            0 == strcmp(section->parelem->name, "ParentData"))) {
+        if (0 == strcmp(section->parelem->name, "ParentData")) {
+            if (cgi_read_int_data(section->parelem->id, section->parelem->data_type,
+                                  num << 2, parent_data)) return CG_ERROR;
+        }
+        else {
+            if (cgi_read_int_data(section->parelem->id, section->parelem->data_type,
+                                  num << 1, parent_data) ||
+                    cgi_read_int_data(section->parface->id, section->parface->data_type,
+                                      num << 1, &parent_data[num << 1])) return CG_ERROR;
+        }
     }
 
     return CG_OK;
@@ -3068,24 +3292,29 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
     section = cgi_get_section(cg, B, Z, S);
     if (section == 0) return CG_ERROR;
 
+    if (!IS_FIXED_SIZE(section->el_type)) {
+        cgi_error("Element must be a fixed size");
+        return CG_ERROR;
+    }
+
     /* check the requested element range against the stored element range,
     * and the validity of the requested range
     */
     if(start > end || start < section->range[0] || end > section->range[1]) {
-	cgi_error("Error in requested element data range.");
+        cgi_error("Error in requested element data range.");
         return CG_ERROR;
     }
 
     /* if the elements are fixed size, read directly into user memory */
-    if (section->connect->data == 0 && IS_FIXED_SIZE(section->el_type) &&
-        0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+    if (section->connect->data == 0 &&
+            0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
 
-        size = cgi_element_data_size(section->el_type, end - start + 1, NULL);
+        size = cgi_element_data_size(section->el_type, end - start + 1, NULL, NULL);
         if (size < 0) return CG_ERROR;
         s_start[0]  = cgi_element_data_size(section->el_type,
-                          start - section->range[0], NULL) + 1;
+                                            start - section->range[0], NULL, NULL) + 1;
         s_end[0]    = cgi_element_data_size(section->el_type,
-                          end - section->range[0] + 1, NULL);
+                                            end - section->range[0] + 1, NULL, NULL);
         s_stride[0] = 1;
         m_start[0]  = 1;
         m_end[0]    = size;
@@ -3093,20 +3322,19 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
         m_dim[0]    = size;
 
         if (cgio_read_data(cg->cgio, section->connect->id,
-                s_start, s_end, s_stride, 1, m_dim,
-                m_start, m_end, m_stride, elements)) {
+                           s_start, s_end, s_stride, 1, m_dim,
+                           m_start, m_end, m_stride, elements)) {
             cg_io_error("cgio_read_data");
             return CG_ERROR;
         }
-    }
-    else {
+    } else {
         /* need to get the elements to compute locations */
         if (read_element_data(section)) return CG_ERROR;
         data = (cgsize_t *)section->connect->data;
         offset = cgi_element_data_size(section->el_type,
-                     start - section->range[0], data);
+                                       start - section->range[0], data, NULL);
         size = cgi_element_data_size(section->el_type,
-                     end - start + 1, &data[offset]);
+                                     end - start + 1, &data[offset], NULL);
         memcpy(elements, &data[offset], (size_t)(size*sizeof(cgsize_t)));
     }
 
@@ -3134,8 +3362,8 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
                 m_dim[1]   = 4;
 
                 if (cgio_read_data(cg->cgio, section->parelem->id,
-                        s_start, s_end, s_stride, 2, m_dim,
-                        m_start, m_end, m_stride, parent_data)) {
+                                   s_start, s_end, s_stride, 2, m_dim,
+                                   m_start, m_end, m_stride, parent_data)) {
                     cg_io_error("cgio_read_data");
                     return CG_ERROR;
                 }
@@ -3148,7 +3376,7 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
                     return CG_ERROR;
                 }
                 if (cgi_read_int_data(section->parelem->id,
-                        section->parelem->data_type, nn, data)) {
+                                      section->parelem->data_type, nn, data)) {
                     free(data);
                     return CG_ERROR;
                 }
@@ -3161,7 +3389,7 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
             }
         }
         /* read from ParentElements and ParentElementsPosition */
-	else if (0 == strcmp(CG_SIZE_DATATYPE, section->parelem->data_type) &&
+        else if (0 == strcmp(CG_SIZE_DATATYPE, section->parelem->data_type) &&
                  0 == strcmp(CG_SIZE_DATATYPE, section->parface->data_type)) {
             s_start[0] = start - section->range[0] + 1;
             s_end[0]   = end - section->range[0] + 1;
@@ -3179,8 +3407,8 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
             m_dim[1]   = 4;
 
             if (cgio_read_data(cg->cgio, section->parelem->id,
-                    s_start, s_end, s_stride, 2, m_dim,
-                    m_start, m_end, m_stride, parent_data)) {
+                               s_start, s_end, s_stride, 2, m_dim,
+                               m_start, m_end, m_stride, parent_data)) {
                 cg_io_error("cgio_read_data");
                 return CG_ERROR;
             }
@@ -3189,8 +3417,8 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
             m_end[1]   = 4;
 
             if (cgio_read_data(cg->cgio, section->parface->id,
-                    s_start, s_end, s_stride, 2, m_dim,
-                    m_start, m_end, m_stride, parent_data)) {
+                               s_start, s_end, s_stride, 2, m_dim,
+                               m_start, m_end, m_stride, parent_data)) {
                 cg_io_error("cgio_read_data");
                 return CG_ERROR;
             }
@@ -3213,14 +3441,302 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
                 for (i = start; i <= end; i++)
                     parent_data[n++] = data[nn++];
             }
-	}
+        }
+    }
+    return CG_OK;
+}
+
+int cg_poly_elements_partial_read(int file_number, int B, int Z, int S,
+                             cgsize_t start, cgsize_t end, cgsize_t *elements,
+                             cgsize_t *connect_offset, cgsize_t *parent_data)
+{
+    cgns_section *section;
+    cgsize_t offset, size, n, cnt;
+    cgsize_t i, j, nn, *data;
+    cgsize_t s_start[2], s_end[2], s_stride[2];
+    cgsize_t m_start[2], m_end[2], m_stride[2], m_dim[2];
+
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    section = cgi_get_section(cg, B, Z, S);
+    if (section == 0) return CG_ERROR;
+
+    /* check the requested element range against the stored element range,
+    * and the validity of the requested range
+    */
+    if(start > end || start < section->range[0] || end > section->range[1]) {
+        cgi_error("Error in requested element data range.");
+        return CG_ERROR;
+    }
+
+    /* if the elements are fixed size, read directly into user memory */
+    if (IS_FIXED_SIZE(section->el_type)) {
+        if (section->connect->data == 0 &&
+                0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+
+            size = cgi_element_data_size(section->el_type, end - start + 1, NULL, NULL);
+            if (size < 0) return CG_ERROR;
+            s_start[0]  = cgi_element_data_size(section->el_type,
+                                                start - section->range[0], NULL, NULL) + 1;
+            s_end[0]    = cgi_element_data_size(section->el_type,
+                                                end - section->range[0] + 1, NULL, NULL);
+            s_stride[0] = 1;
+            m_start[0]  = 1;
+            m_end[0]    = size;
+            m_stride[0] = 1;
+            m_dim[0]    = size;
+
+            if (cgio_read_data(cg->cgio, section->connect->id,
+                               s_start, s_end, s_stride, 1, m_dim,
+                               m_start, m_end, m_stride, elements)) {
+                cg_io_error("cgio_read_data");
+                return CG_ERROR;
+            }
+        } else {
+            /* need to get the elements to compute locations */
+            if (read_element_data(section)) return CG_ERROR;
+            data = (cgsize_t *)section->connect->data;
+            offset = cgi_element_data_size(section->el_type,
+                                           start - section->range[0], data, NULL);
+            size = cgi_element_data_size(section->el_type,
+                                         end - start + 1, &data[offset], NULL);
+            memcpy(elements, &data[offset], (size_t)(size*sizeof(cgsize_t)));
+        }
+    }
+    else {
+        /* need to get the connectivity offset to compute locations */
+
+        if (connect_offset == 0) {
+            cgi_error("missing connectivity offset for reading");
+            return CG_ERROR;
+        }
+
+        if (section->connect_offset->data == NULL) {
+            // Only read a slice of the ElementStartOffset array
+            cnt = end-start+2;
+            s_start[0] = start - section->range[0] + 1;
+            s_end[0]   = end - section->range[0] + 2;
+            s_stride[0]= 1;
+            m_start[0] = 1;
+            m_end[0]   = cnt;
+            m_stride[0]= 1;
+            m_dim[0]   = cnt;
+            // Handle different compilation configuration for cgsize_t
+#if CG_SIZEOF_SIZE == 64
+            if (0 == strcmp(section->connect_offset->data_type, "I4")) {
+                int *offsets = (int *)malloc((size_t)(cnt*sizeof(int)));
+                if (NULL == offsets) {
+                    cgi_error("Error allocating I4->I8 data array...");
+                    return CG_ERROR;
+                }
+ 
+                if (cgio_read_data(cg->cgio, section->connect_offset->id,
+                                   s_start, s_end, s_stride, 1, m_dim,
+                                   m_start, m_end, m_stride, offsets)) {
+                    cg_io_error("cgio_read_data");
+                    CGNS_FREE(offsets);
+                    return CG_ERROR;
+                }
+                size = (cgsize_t)(offsets[cnt-1]-offsets[0]);
+                for (n=0; n<cnt; n++){
+                    connect_offset[n] = (cgsize_t)offsets[n];
+                }
+                CGNS_FREE(offsets);
+            }
+#else
+            if (0 == strcmp(section->connect_offset->data_type, "I8")) {
+                cglong_t *offsets = (cglong_t *)malloc((size_t)(cnt*sizeof(cglong_t)));
+                if (NULL == offsets) {
+                    cgi_error("Error allocating I8->I4 data array...");
+                    return CG_ERROR;
+                }
+
+                if (cgio_read_data(cg->cgio, section->connect_offset->id,
+                                   s_start, s_end, s_stride, 1, m_dim,
+                                   m_start, m_end, m_stride, offsets)) {
+                    cg_io_error("cgio_read_data");
+                    CGNS_FREE(offsets);
+                    return CG_ERROR;
+                }
+                size = (cgsize_t)(offsets[cnt-1]-offsets[0]);
+                for (n=0; n<cnt; n++){
+                    connect_offset[n] = (cgsize_t)offsets[n];
+                }
+                CGNS_FREE(offsets);
+            }
+#endif
+            else {
+                cgsize_t *offsets = malloc(cnt * sizeof(cgsize_t));
+                if (NULL == offsets) {
+                    cgi_error("Error allocating I8->I4 data array...");
+                    return CG_ERROR;
+                }
+                if (cgio_read_data(cg->cgio, section->connect_offset->id,
+                                   s_start, s_end, s_stride, 1, m_dim,
+                                   m_start, m_end, m_stride, offsets)) {
+                    cg_io_error("cgio_read_data");
+                    CGNS_FREE(offsets);
+                    return CG_ERROR;
+                }
+                size = (cgsize_t)(offsets[cnt-1]-offsets[0]);
+                for (n=0; n<cnt; n++){
+                    connect_offset[n] = (cgsize_t)offsets[n];
+                }
+                CGNS_FREE(offsets);
+            }
+        } else {
+            // if ElementStartOffset is already fully loaded
+            cgsize_t* offset_data = (cgsize_t *)section->connect_offset->data;
+            if (offset_data == 0) return CG_ERROR;
+            size = offset_data[end-section->range[0]+1] - offset_data[start-section->range[0]];
+            memcpy(connect_offset, &offset_data[start-section->range[0]],(size_t)((end-start+2)*sizeof(cgsize_t)));
+        }
+        
+        offset = connect_offset[0];
+        if (section->connect->data == 0 &&
+                0 == strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+            s_start[0]  = offset+1;
+            s_end[0]    = connect_offset[end-start+1];
+            s_stride[0] = 1;
+            m_start[0]  = 1;
+            m_end[0]    = size;
+            m_stride[0] = 1;
+            m_dim[0]    = size;
+
+            if (cgio_read_data(cg->cgio, section->connect->id,
+                               s_start, s_end, s_stride, 1, m_dim,
+                               m_start, m_end, m_stride, elements)) {
+                cg_io_error("cgio_read_data");
+                return CG_ERROR;
+            }
+        } else {
+            /* need to get the elements */
+            if (read_element_data(section)) return CG_ERROR;
+            data = (cgsize_t *)section->connect->data;
+            memcpy(elements, &data[offset], (size_t)(size*sizeof(cgsize_t)));
+        }
+
+        for (n=0; n<(end-start+2); n++)
+        {
+            connect_offset[n] -= offset;
+        }
+    }
+
+    if (parent_data && section->parelem && (section->parface ||
+        0 == strcmp(section->parelem->name, "ParentData"))) {
+        offset = start - section->range[0];
+        size = section->range[1] - section->range[0] + 1;
+
+        /* read from ParentData */
+        if (0 == strcmp(section->parelem->name, "ParentData")) {
+            if (0 == strcmp(CG_SIZE_DATATYPE, section->parelem->data_type)) {
+                s_start[0] = start - section->range[0] + 1;
+                s_end[0]   = end - section->range[0] + 1;
+                s_stride[0]= 1;
+                s_start[1] = 1;
+                s_end[1]   = 4;
+                s_stride[1]= 1;
+                m_start[0] = 1;
+                m_end[0]   = end - start + 1;
+                m_stride[0]= 1;
+                m_start[1] = 1;
+                m_end[1]   = 4;
+                m_stride[1]= 1;
+                m_dim[0]   = m_end[0];
+                m_dim[1]   = 4;
+
+                if (cgio_read_data(cg->cgio, section->parelem->id,
+                                   s_start, s_end, s_stride, 2, m_dim,
+                                   m_start, m_end, m_stride, parent_data)) {
+                    cg_io_error("cgio_read_data");
+                    return CG_ERROR;
+                }
+            }
+            else {
+                nn = section->parelem->dim_vals[0] * 4;
+                data = (cgsize_t *)malloc((size_t)(nn * sizeof(cgsize_t)));
+                if (data == NULL) {
+                    cgi_error("malloc failed for tempory ParentData array");
+                    return CG_ERROR;
+                }
+                if (cgi_read_int_data(section->parelem->id,
+                                      section->parelem->data_type, nn, data)) {
+                    free(data);
+                    return CG_ERROR;
+                }
+                for (n = 0, j = 0; j < 4; j++) {
+                    nn = j * size + offset;
+                    for (i = start; i <= end; i++)
+                        parent_data[n++] = data[nn++];
+                }
+                free(data);
+            }
+        }
+        /* read from ParentElements and ParentElementsPosition */
+        else if (0 == strcmp(CG_SIZE_DATATYPE, section->parelem->data_type) &&
+                 0 == strcmp(CG_SIZE_DATATYPE, section->parface->data_type)) {
+            s_start[0] = start - section->range[0] + 1;
+            s_end[0]   = end - section->range[0] + 1;
+            s_stride[0]= 1;
+            s_start[1] = 1;
+            s_end[1]   = 2;
+            s_stride[1]= 1;
+            m_start[0] = 1;
+            m_end[0]   = end - start + 1;
+            m_stride[0]= 1;
+            m_start[1] = 1;
+            m_end[1]   = 2;
+            m_stride[1]= 1;
+            m_dim[0]   = m_end[0];
+            m_dim[1]   = 4;
+
+            if (cgio_read_data(cg->cgio, section->parelem->id,
+                               s_start, s_end, s_stride, 2, m_dim,
+                               m_start, m_end, m_stride, parent_data)) {
+                cg_io_error("cgio_read_data");
+                return CG_ERROR;
+            }
+
+            m_start[1] = 3;
+            m_end[1]   = 4;
+
+            if (cgio_read_data(cg->cgio, section->parface->id,
+                               s_start, s_end, s_stride, 2, m_dim,
+                               m_start, m_end, m_stride, parent_data)) {
+                cg_io_error("cgio_read_data");
+                return CG_ERROR;
+            }
+        }
+        /* read into memory and copy */
+        else {
+            if (read_parent_data(section)) return CG_ERROR;
+            n = 0;
+
+            data = (cgsize_t *)section->parelem->data;
+            for (j = 0; j < 2; j++) {
+                nn = j * size + offset;
+                for (i = start; i <= end; i++)
+                    parent_data[n++] = data[nn++];
+            }
+
+            data = (cgsize_t *)section->parface->data;
+            for (j = 0; j < 2; j++) {
+                nn = j * size + offset;
+                for (i = start; i <= end; i++)
+                    parent_data[n++] = data[nn++];
+            }
+        }
     }
     return CG_OK;
 }
 
 int cg_elements_partial_write(int file_number, int B, int Z, int S,
-			      cgsize_t start, cgsize_t end,
-			      const cgsize_t *elements)
+                  cgsize_t start, cgsize_t end,
+                  const cgsize_t *elements)
 {
     cgns_section *section;
     CGNS_ENUMT(ElementType_t) type;
@@ -3231,7 +3747,7 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
     cgsize_t *oldelems, *newelems;
     double id;
 
-     /* get file and check mode */
+    /* get file and check mode */
     cg = cgi_get_file(file_number);
     if (cg == 0) return CG_ERROR;
 
@@ -3244,21 +3760,26 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
     num = end - start + 1;
     type = section->el_type;
 
+    if (!IS_FIXED_SIZE(type)) {
+        cgi_error("Element must be a fixed size");
+        return CG_ERROR;
+    }
+
     /* check input range */
 
     if (num <= 0) {
         cgi_error("Invalid element range for section '%s' elements",
-            section->name);
+                  section->name);
         return CG_ERROR;
     }
     if (strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
         cgi_error("element data type %s does not match stored value %s",
-            CG_SIZE_DATATYPE, section->connect->data_type);
+                  CG_SIZE_DATATYPE, section->connect->data_type);
         return CG_ERROR;
     }
 
     if (cg->filetype == CG_FILE_ADF2 &&
-        adf2_check_elems(type, num, elements)) return CG_ERROR;
+            adf2_check_elems(type, num, elements)) return CG_ERROR;
 
 
     /* get fill-in element type */
@@ -3267,18 +3788,20 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
 
     offset  = start < section->range[0] ? section->range[0] - start : 0;
     oldsize = section->range[1] - section->range[0] + 1;
-    ElementDataSize = cgi_element_data_size(type, end - start + 1, elements);
+
+    ElementDataSize = cgi_element_data_size(type, end - start + 1,
+                                            elements, NULL);
     if (ElementDataSize < 0) return CG_ERROR;
 
-    /* can we just use the user's data ? */
 
+    /* can we just use the user's data ? */
     if (start >= section->range[0] && end <= section->range[1] &&
-        IS_FIXED_SIZE(type) && section->connect->data == 0) {
+            section->connect->data == 0) {
         cgsize_t s_start, s_end, s_stride;
         cgsize_t m_start, m_end, m_stride, m_dim;
 
-        s_start  = cgi_element_data_size(type, start - section->range[0], 0) + 1;
-        s_end    = cgi_element_data_size(type, end - section->range[0] + 1, 0);
+        s_start  = cgi_element_data_size(type, start - section->range[0], 0, 0) + 1;
+        s_end    = cgi_element_data_size(type, end - section->range[0] + 1, 0, 0);
         s_stride = 1;
         m_start  = 1;
         m_end    = ElementDataSize;
@@ -3286,14 +3809,13 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
         m_stride = 1;
 
         if (cgio_write_data(cg->cgio, section->connect->id,
-                &s_start, &s_end, &s_stride, 1, &m_dim,
-                &m_start, &m_end, &m_stride, elements)) {
+                            &s_start, &s_end, &s_stride, 1, &m_dim,
+                            &m_start, &m_end, &m_stride, elements)) {
             cg_io_error("cgio_write_data");
             return CG_ERROR;
         }
     }
     else {
-
         /* got to do it in memory */
 
         if (read_element_data(section)) return CG_ERROR;
@@ -3314,13 +3836,13 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
             /* overlap */
             if (start >= section->range[0]) {
                 num = start - section->range[0];
-                size = cgi_element_data_size(type, num, oldelems);
+                size = cgi_element_data_size(type, num, oldelems, NULL);
                 if (size < 0) return CG_ERROR;
                 newsize += size;
             }
             if (end <= section->range[1]) {
                 num = end - section->range[0] + 1;
-                offset = cgi_element_data_size(type, num, oldelems);
+                offset = cgi_element_data_size(type, num, oldelems, NULL);
                 if (offset < 0) return CG_ERROR;
                 size = oldsize - offset;
                 newsize += size;
@@ -3340,24 +3862,15 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
             n += ElementDataSize;
             if (end < section->range[0]) {
                 num = section->range[0] - end - 1;
-                if (IS_FIXED_SIZE(type)) {
-                    while (num-- > 0) {
-                        for (i = 0; i < elemsize; i++)
-                            newelems[n++] = 0;
-                    }
-                } else {
-		    cgsize_t val = (type == CGNS_ENUMV(MIXED) ?
-		                   (cgsize_t)CGNS_ENUMV(NODE) : 1);
-                    while (num-- > 0) {
-		        newelems[n++] = val;
+                while (num-- > 0) {
+                    for (i = 0; i < elemsize; i++)
                         newelems[n++] = 0;
-                    }
                 }
                 memcpy(&newelems[n], oldelems, (size_t)(oldsize*sizeof(cgsize_t)));
                 n += oldsize;
             } else if (end < section->range[1]) {
                 num = end - section->range[0] + 1;
-                offset = cgi_element_data_size(type, num, oldelems);
+                offset = cgi_element_data_size(type, num, oldelems, NULL);
                 if (offset < 0) return CG_ERROR;
                 size = oldsize - offset;
                 memcpy(&newelems[n], &oldelems[offset], (size_t)(size*sizeof(cgsize_t)));
@@ -3367,31 +3880,22 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
             memcpy(newelems, oldelems, (size_t)(oldsize*sizeof(cgsize_t)));
             n += oldsize;
             num = start - section->range[1] - 1;
-            if (IS_FIXED_SIZE(type)) {
-                while (num-- > 0) {
-                    for (i = 0; i < elemsize; i++)
-                        newelems[n++] = 0;
-                }
-            } else {
-                cgsize_t val = (type == CGNS_ENUMV(MIXED) ?
-		               (cgsize_t)CGNS_ENUMV(NODE) : 1);
-                while (num-- > 0) {
-		    newelems[n++] = val;
+            while (num-- > 0) {
+                for (i = 0; i < elemsize; i++)
                     newelems[n++] = 0;
-                }
             }
             memcpy(&newelems[n], elements, (size_t)(ElementDataSize*sizeof(cgsize_t)));
             n += ElementDataSize;
         } else {
             num = start - section->range[0];
-            size = cgi_element_data_size(type, num, oldelems);
+            size = cgi_element_data_size(type, num, oldelems, NULL);
             memcpy(newelems, oldelems, (size_t)(size*sizeof(cgsize_t)));
             n += size;
             memcpy(&newelems[n], elements, (size_t)(ElementDataSize*sizeof(cgsize_t)));
             n += ElementDataSize;
             if (end < section->range[1]) {
                 num = end - section->range[0] + 1;
-                offset = cgi_element_data_size(type, num, oldelems);
+                offset = cgi_element_data_size(type, num, oldelems, NULL);
                 if (offset < 0) {
                     free(newelems);
                     return CG_ERROR;
@@ -3435,8 +3939,8 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
         /* update ElementConnectivity */
 
         if (cgio_set_dimensions(cg->cgio, section->connect->id,
-                section->connect->data_type, 1,
-                section->connect->dim_vals)) {
+                                section->connect->data_type, 1,
+                                section->connect->dim_vals)) {
             cg_io_error("cgio_set_dimensions");
             return CG_ERROR;
         }
@@ -3452,8 +3956,8 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
     newsize = section->range[1] - section->range[0] + 1;
 
     if (section->parelem && (section->parface ||
-        0 == strcmp(section->parelem->name, "ParentData")) &&
-        newsize != section->parelem->dim_vals[0]) {
+                             0 == strcmp(section->parelem->name, "ParentData")) &&
+            newsize != section->parelem->dim_vals[0]) {
         int cnt = section->parelem->dim_vals[1];
 
         if (read_parent_data(section)) return CG_ERROR;
@@ -3484,8 +3988,422 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
         section->parelem->dim_vals[0] = newsize;
 
         if (cgio_set_dimensions(cg->cgio, section->parelem->id,
-                section->parelem->data_type, 2,
-                section->parelem->dim_vals)) {
+                                section->parelem->data_type, 2,
+                                section->parelem->dim_vals)) {
+            cg_io_error("cgio_set_dimensions");
+            return CG_ERROR;
+        }
+        if (cgio_write_all_data(cg->cgio, section->parelem->id, newelems)) {
+            cg_io_error("cgio_write_all_data");
+            return CG_ERROR;
+        }
+
+        if (0 == strcmp(section->parelem->name, "ParentData"))
+            return CG_OK;
+
+        for (n = 0; n < 2*newsize; n++)
+            newelems[n] = 0;
+        oldelems = (cgsize_t *)section->parface->data;
+        for (num = 0, i = 0; i < 2; i++) {
+            j = i * newsize + offset;
+            for (n = 0; n < oldsize; n++)
+                newelems[j++] = oldelems[num++];
+        }
+        for (i = 0; i < 2; i++) {
+            j = i * newsize + offset;
+            for (n = start; n <= end; n++)
+                newelems[j++] = 0;
+        }
+
+        free(section->parface->data);
+        section->parface->data = newelems;
+        section->parface->dim_vals[0] = newsize;
+
+        if (cgio_set_dimensions(cg->cgio, section->parface->id,
+                section->parface->data_type, 2,
+                section->parface->dim_vals)) {
+            cg_io_error("cgio_set_dimensions");
+            return CG_ERROR;
+        }
+        if (cgio_write_all_data(cg->cgio, section->parface->id, newelems)) {
+            cg_io_error("cgio_write_all_data");
+            return CG_ERROR;
+        }
+    }
+
+    return CG_OK;
+}
+
+int cg_poly_elements_partial_write(int file_number, int B, int Z, int S,
+			      cgsize_t start, cgsize_t end,
+			      const cgsize_t *elements, const cgsize_t *connect_offset)
+{
+    cgns_section *section;
+    CGNS_ENUMT(ElementType_t) type;
+    int i, elemsize;
+    cgsize_t oldsize;
+    cgsize_t num, size, offset;
+    cgsize_t n, j, newsize, ElementDataSize;
+    cgsize_t *oldelems, *newelems;
+    double id;
+
+    /* get file and check mode */
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+        return CG_ERROR;
+
+    section = cgi_get_section(cg, B, Z, S);
+    if (section == 0 || section->connect == 0) return CG_ERROR;
+
+    num = end - start + 1;
+    type = section->el_type;
+
+    if (IS_FIXED_SIZE(type)) {
+        cgi_error("element data type should not be of fixed size");
+        return CG_ERROR;
+    }
+
+    /* check input range */
+
+    if (num <= 0) {
+        cgi_error("Invalid element range for section '%s' elements",
+                  section->name);
+        return CG_ERROR;
+    }
+    if (strcmp(CG_SIZE_DATATYPE, section->connect->data_type)) {
+        cgi_error("element data type %s does not match stored value %s",
+                  CG_SIZE_DATATYPE, section->connect->data_type);
+        return CG_ERROR;
+    }
+
+    if (cg->filetype == CG_FILE_ADF2 &&
+            adf2_check_elems(type, num, elements)) return CG_ERROR;
+
+
+    /* get fill-in element type */
+    if (cg_npe(type, &elemsize)) return CG_ERROR;
+    if (elemsize <= 0) elemsize = 2;
+
+    offset  = start < section->range[0] ? section->range[0] - start : 0;
+    oldsize = section->range[1] - section->range[0] + 1;
+
+    ElementDataSize = cgi_element_data_size(type, end - start + 1,
+                                            elements, connect_offset);
+    if (ElementDataSize < 0) return CG_ERROR;
+
+    /* NOT FIXED SIZE: NGON_n, NFACE_n, MIXED */
+    if (connect_offset == NULL){
+        cgi_error("element offsets not provided for partial write\n");
+        return CG_ERROR;
+    }
+
+    if (section->connect_offset == NULL){
+        cgi_error("missing offsets in section\n");
+        return CG_ERROR;
+    }
+
+    if (strcmp(CG_SIZE_DATATYPE, section->connect_offset->data_type)) {
+        cgi_error("element offsets data type %s does not match stored value %s",
+                  CG_SIZE_DATATYPE, section->connect_offset->data_type);
+        return CG_ERROR;
+    }
+
+    if (read_offset_data(section)) return CG_ERROR;
+
+    cgsize_t s_conn_size, m_conn_size;
+    cgsize_t *section_offset =  section->connect_offset->data;
+    int do_it_in_memory = 1;
+    if (start >= section->range[0] && end <= section->range[1]) {
+        s_conn_size = section_offset[end - section->range[0] + 1] - section_offset[start - section->range[0]];
+        m_conn_size = connect_offset[end - start + 1] - connect_offset[0];
+
+        /* use user data */
+        if (section->connect->data == 0 && (s_conn_size == m_conn_size)){
+            /* connectivity is of same size */
+            cgsize_t s_start, s_end, s_stride;
+            cgsize_t m_start, m_end, m_stride, m_dim;
+            cgsize_t ii;
+
+            s_start  = section_offset[start - section->range[0]];
+            s_end    = section_offset[end - section->range[0] + 1] - 1;
+            s_stride = 1;
+            m_start  = 1;
+            m_end    = m_conn_size;
+            m_dim    = m_conn_size;
+            m_stride = 1;
+
+            if (cgio_write_data(cg->cgio, section->connect->id,
+                                &s_start, &s_end, &s_stride, 1, &m_dim,
+                                &m_start, &m_end, &m_stride, elements)) {
+                cg_io_error("cgio_write_data");
+                return CG_ERROR;
+            }
+
+            /* update offset */
+            /* memcpy(&section_offset[start-section->range[0]], connect_offset, (size_t)(end-start+1)*sizeof(cgsize_t)); */
+            j = start-section->range[0];
+            for (ii=0; ii<end-start+1; ii++) {
+                section_offset[j+1] = (connect_offset[ii+1] - connect_offset[ii]) + section_offset[j];
+                j++;
+            }
+
+            if (cgio_write_all_data(cg->cgio, section->connect_offset->id, section->connect_offset)) {
+                cg_io_error("cgio_write_all_data");
+                return CG_ERROR;
+            }
+            do_it_in_memory = 0;
+        }
+    }
+
+    if (do_it_in_memory) {
+        cgsize_t *newoffsets;
+        cgsize_t elemcount;
+        cgsize_t ii;
+
+        /* got to do it in memory */
+        if (read_element_data(section)) return CG_ERROR;
+
+        oldelems = (cgsize_t *)section->connect->data;
+        oldsize = section->connect->dim_vals[0];
+        newsize = ElementDataSize;
+        elemcount = end-start+1;
+
+        if (end < section->range[0]) {
+            newsize += oldsize;
+            elemcount += (section->range[1]-section->range[0]+1);
+            num = section->range[0] - end - 1;
+            if (num > 0){
+                newsize += (elemsize * num);
+                elemcount += num;
+            }
+        } else if (start > section->range[1]) {
+            newsize += oldsize;
+            elemcount += (section->range[1]-section->range[0]+1);
+            num = start - section->range[1] - 1;
+            if (num > 0){
+                newsize += (elemsize * num);
+                elemcount += num;
+            }
+        } else {
+            /* overlap */
+            if (start >= section->range[0]) {
+                num = start - section->range[0];
+                size = section_offset[num] - section_offset[0];
+                if (size < 0) return CG_ERROR;
+                newsize += size;
+                elemcount += num;
+            }
+            if (end <= section->range[1]) {
+                num = end - section->range[0] + 1;
+                size = section_offset[section->range[1]-section->range[0]+1] - section_offset[num];
+                if (size < 0) return CG_ERROR;
+                newsize += size;
+                elemcount += (section->range[1] - end);
+            }
+        }
+        /* create new element connectivity array and offsets*/
+
+        newelems = (cgsize_t *) malloc ((size_t)(newsize * sizeof(cgsize_t)));
+        newoffsets = (cgsize_t *) malloc((size_t)((elemcount+1) * sizeof(cgsize_t)));
+        if (NULL == newelems) {
+            cgi_error("Error allocating new connectivity data");
+            return CG_ERROR;
+        }
+        if (NULL == newoffsets) {
+            cgi_error("Error allocating new connectivity offset data");
+            return CG_ERROR;
+        }
+
+        newoffsets[0] = 0;
+        n = 0; j = 0;
+        if (start <= section->range[0]) {
+            memcpy(newelems, elements, (size_t)(ElementDataSize*sizeof(cgsize_t)));
+            memcpy(newoffsets, connect_offset, (size_t)((end-start+2)*sizeof(cgsize_t)));
+            j += (end-start+1);
+            n += ElementDataSize;
+            if (end < section->range[0]) {
+                num = section->range[0] - end - 1;
+
+                cgsize_t val = (type == CGNS_ENUMV(MIXED) ? (cgsize_t)CGNS_ENUMV(NODE) : 0);
+                while (num-- > 0) {
+                    newelems[n++] = val;
+                    newelems[n++] = 0;
+                    newoffsets[j+1] = newoffsets[j] + 2;
+                    j++;
+                    n++;
+                }
+
+                memcpy(&newelems[n], oldelems, (size_t)(oldsize*sizeof(cgsize_t)));
+                n += oldsize;
+                for (ii=0; ii<(section->range[1]-section->range[0]+1); ii++) {
+                    newoffsets[j+1] = (section_offset[ii+1] - section_offset[ii]) + newoffsets[j];
+                    j++;
+                }
+            } else if (end < section->range[1]) {
+                num = end - section->range[0] + 1;
+                offset = section_offset[end - section->range[0] + 1];
+                if (offset < 0) return CG_ERROR;
+                size = section_offset[section->range[1]-section->range[0]+1] - section_offset[num];
+                memcpy(&newelems[n], &oldelems[offset], (size_t)(size*sizeof(cgsize_t)));
+                n += size;
+                for (ii=num; ii<(section->range[1]-section->range[0]+1); ii++) {
+                    newoffsets[j+1] = (section_offset[ii+1] - section_offset[ii]) + newoffsets[j];
+                    j++;
+                }
+            }
+        } else if (start > section->range[1]) {
+            cgsize_t ii;
+            memcpy(newelems, oldelems, (size_t)(oldsize*sizeof(cgsize_t)));
+            memcpy(newoffsets, section_offset, (size_t)((section->range[1]-section->range[0]+2)*sizeof(cgsize_t)));
+            n += oldsize;
+            j += section->range[1]-section->range[0]+1;
+            num = start - section->range[1] - 1;
+
+            cgsize_t val = (type == CGNS_ENUMV(MIXED) ? (cgsize_t)CGNS_ENUMV(NODE) : 0);
+            while (num-- > 0) {
+                newelems[n++] = val;
+                newelems[n++] = 0;
+                newoffsets[j+1] = newoffsets[j] + 2;
+                j++;
+                n++;
+            }
+            memcpy(&newelems[n], elements, (size_t)(ElementDataSize*sizeof(cgsize_t)));
+            n += ElementDataSize;
+            for (ii=0; ii<(end-start+1); ii++) {
+                newoffsets[j+1] = (connect_offset[ii+1] - connect_offset[ii]) + newoffsets[j];
+                j++;
+            }
+        } else {
+            cgsize_t ii;
+            num = start - section->range[0];
+            size = section_offset[num];
+            memcpy(newelems, oldelems, (size_t)(size*sizeof(cgsize_t)));
+            memcpy(newoffsets, section_offset, (size_t)(num+1)*sizeof(cgsize_t));
+            n += size;
+            j += num;
+            memcpy(&newelems[n], elements, (size_t)(ElementDataSize*sizeof(cgsize_t)));
+            for (ii=0; ii<(end-start+1); ii++) {
+                newoffsets[j+1] = (connect_offset[ii+1] - connect_offset[ii]) + newoffsets[j];
+                j++;
+            }
+            n += ElementDataSize;
+            if (end < section->range[1]) {
+                num = end - section->range[0] + 1;
+                offset = section_offset[num];
+                if (offset < 0) {
+                    free(newelems);
+                    free(newoffsets);
+                    return CG_ERROR;
+                }
+                size = oldsize - offset;
+                memcpy(&newelems[n], &oldelems[offset], (size_t)(size*sizeof(cgsize_t)));
+                n += size;
+                for (ii=num; ii<(section->range[1]-section->range[0]+1); ii++) {
+                    newoffsets[j+1] = (section_offset[ii+1] - section_offset[ii]) + newoffsets[j];
+                    j++;
+                }
+            }
+        }
+        if (n != newsize) {
+            free(newelems);
+            free(newoffsets);
+            cgi_error("my counting is off !!!\n");
+            return CG_ERROR;
+        }
+
+        free(section->connect->data);
+        free(section->connect_offset->data);
+        section->connect->dim_vals[0] = newsize;
+        section->connect->data = newelems;
+        section->connect_offset->dim_vals[0] = elemcount+1;
+        section->connect_offset->data = newoffsets;
+
+        /* update ranges */
+
+        if (start < section->range[0]) section->range[0] = start;
+        if (end   > section->range[1]) section->range[1] = end;
+
+        /* update ElementRange */
+
+        if (cgio_get_node_id(cg->cgio, section->id, "ElementRange", &id)) {
+            cg_io_error("cgio_get_node_id");
+            return CG_ERROR;
+        }
+        if (cgio_write_all_data(cg->cgio, id, section->range)) {
+            cg_io_error("cgio_write_all_data");
+            return CG_ERROR;
+        }
+
+        /* update Offsets */
+
+        if (cgio_set_dimensions(cg->cgio, section->connect_offset->id,
+                                section->connect_offset->data_type, 1,
+                                section->connect_offset->dim_vals)) {
+            cg_io_error("cgio_set_dimensions");
+            return CG_ERROR;
+        }
+
+        if (cgio_write_all_data(cg->cgio, section->connect_offset->id, newoffsets)) {
+            cg_io_error("cgio_write_all_data");
+            return CG_ERROR;
+        }
+
+        /* update ElementConnectivity */
+
+        if (cgio_set_dimensions(cg->cgio, section->connect->id,
+                                section->connect->data_type, 1,
+                                section->connect->dim_vals)) {
+            cg_io_error("cgio_set_dimensions");
+            return CG_ERROR;
+        }
+
+        if (cgio_write_all_data(cg->cgio, section->connect->id, newelems)) {
+            cg_io_error("cgio_write_all_data");
+            return CG_ERROR;
+        }
+    }
+
+    /* update the parent data array if it exists */
+
+    newsize = section->range[1] - section->range[0] + 1;
+
+    if (section->parelem && (section->parface ||
+                             0 == strcmp(section->parelem->name, "ParentData")) &&
+            newsize != section->parelem->dim_vals[0]) {
+        int cnt = section->parelem->dim_vals[1];
+
+        if (read_parent_data(section)) return CG_ERROR;
+
+        newelems = (cgsize_t *)malloc((size_t)(cnt * newsize * sizeof(cgsize_t)));
+        if (NULL == newelems) {
+            cgi_error("Error alocating new ParentElements data");
+            return CG_ERROR;
+        }
+        offset = start - section->range[0];
+
+        for (n = 0; n < cnt*newsize; n++)
+            newelems[n] = 0;
+        oldelems = (cgsize_t *)section->parelem->data;
+        for (num = 0, i = 0; i < cnt; i++) {
+            j = i * newsize + offset;
+            for (n = 0; n < oldsize; n++)
+                newelems[j++] = oldelems[num++];
+        }
+        for (i = 0; i < cnt; i++) {
+            j = i * newsize + offset;
+            for (n = start; n <= end; n++)
+                newelems[j++] = 0;
+        }
+
+        free(section->parelem->data);
+        section->parelem->data = newelems;
+        section->parelem->dim_vals[0] = newsize;
+
+        if (cgio_set_dimensions(cg->cgio, section->parelem->id,
+                                section->parelem->data_type, 2,
+                                section->parelem->dim_vals)) {
             cg_io_error("cgio_set_dimensions");
             return CG_ERROR;
         }
@@ -4091,129 +5009,97 @@ int cg_field_info(int file_number, int B, int Z, int S, int F,
 }
 
 int cg_field_read(int file_number, int B, int Z, int S, const char *fieldname,
-                  CGNS_ENUMT(DataType_t) type, const cgsize_t *rmin,
-                  const cgsize_t *rmax, void *field_ptr)
+                  CGNS_ENUMT(DataType_t) type, const cgsize_t *s_rmin,
+                  const cgsize_t *s_rmax, void *field_ptr)
 {
     cgns_sol *sol;
+    int n, m_numdim;
+
+     /* get memory addresses */
+    cg = cgi_get_file(file_number);
+    if (cg == 0) return CG_ERROR;
+
+     /* get memory address for solution */
+    sol = cgi_get_sol(cg, B, Z, S);
+    if (sol == 0) return CG_ERROR;
+
+    if (sol->ptset == NULL)
+         /* sol implies zone exists */
+        m_numdim = cg->base[B-1].zone[Z-1].index_dim;
+    else
+        m_numdim = 1;
+
+     /* verify that range requested does not exceed range stored */
+    if (s_rmin == NULL || s_rmax == NULL) {
+	cgi_error("NULL range value.");
+	return CG_ERROR;
+    }
+
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+    for (n = 0; n<m_numdim; n++) {
+        m_rmin[n] = 1;
+        m_rmax[n] = s_rmax[n] - s_rmin[n] + 1;
+        m_dimvals[n] = m_rmax[n];
+    }
+
+    return cg_field_general_read(file_number, B, Z, S, fieldname,
+                                 s_rmin, s_rmax, type,
+                                 m_numdim, m_dimvals, m_rmin, m_rmax,
+                                 field_ptr);
+}
+
+int cg_field_general_read(int fn, int B, int Z, int S, const char *fieldname,
+                          const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                          CGNS_ENUMT(DataType_t) m_type,
+                          int m_numdim, const cgsize_t *m_dimvals,
+                          const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                          void *field_ptr)
+{
+     /* s_ prefix is file space, m_ prefix is memory space */
+    cgns_sol *sol;
     cgns_array *field;
-    int n, f;
-    void *values;
-    int read_full_range=1;
-    int index_dim, ierr = CG_OK;
-    cgsize_t num = 1, npt = 0;
-    cgsize_t s_start[3], s_end[3], s_stride[3];
-    cgsize_t m_start[3], m_end[3], m_stride[3], m_dim[3];
+    int f, s_numdim;
 
      /* verify input */
-    if (INVALID_ENUM(type,NofValidDataTypes)) {
-        cgi_error("Invalid data type requested for flow solution: %d",type);
+    if (INVALID_ENUM(m_type, NofValidDataTypes)) {
+        cgi_error("Invalid data type requested for flow solution: %d", m_type);
         return CG_ERROR;
     }
-    cg = cgi_get_file(file_number);
+
+     /* find address */
+    cg = cgi_get_file(fn);
     if (cg == 0) return CG_ERROR;
 
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
 
+     /* get memory address for solution */
     sol = cgi_get_sol(cg, B, Z, S);
-    if (sol==0) return CG_ERROR;
+    if (sol == 0) return CG_ERROR;
+
+     /* find the field address in the database */
     field = 0;
     for (f=0; f<sol->nfields; f++) {
-        if (strcmp(sol->field[f].name, fieldname)==0) {
+        if (strcmp(sol->field[f].name, fieldname) == 0) {
             field = cgi_get_field(cg, B, Z, S, f+1);
-            if (field==0) return CG_ERROR;
+            if (field == 0) return CG_ERROR;
             break;
         }
     }
-    if (field==0) {
+    if (field == 0) {
         cgi_error("Flow solution array %s not found",fieldname);
         return CG_NODE_NOT_FOUND;
     }
 
     if (sol->ptset == NULL)
-        index_dim = cg->base[B-1].zone[Z-1].index_dim;
+        s_numdim = cg->base[B-1].zone[Z-1].index_dim;
     else
-        index_dim = 1;
+        s_numdim = 1;
 
-     /* verify that range requested does not exceed range stored */
-    for (n=0; n<index_dim; n++) {
-        if (rmin[n]>rmax[n] || rmax[n]>field->dim_vals[n] || rmin[n]<1) {
-            cgi_error("Invalid range of data requested");
-            return CG_ERROR;
-        }
-    }
-
-     /* check if requested to return full range */
-    for (n=0; n<index_dim; n++) {
-        if (rmin[n]!=1 || rmax[n]!=field->dim_vals[n]) {
-            read_full_range=0;
-            break;
-        }
-    }
-
-    num = 1;
-    if (read_full_range) {
-        for (n = 0; n < index_dim; n++)
-            num *= field->dim_vals[n];
-    }
-    else {
-        for (n = 0; n < index_dim; n++) {
-            npt = rmax[n] - rmin[n] + 1;
-            num *= npt;
-            s_start[n]  = rmin[n];
-            s_end[n]    = rmax[n];
-            s_stride[n] = 1;
-            m_start[n]  = 1;
-            m_end[n]    = npt;
-            m_stride[n] = 1;
-            m_dim[n]    = npt;
-        }
-    }
-
-     /* quick transfer of data if same data types */
-    if (type == cgi_datatype(field->data_type)) {
-        if (read_full_range) {
-            if (cgio_read_all_data(cg->cgio, field->id, field_ptr)) {
-                cg_io_error("cgio_read_all_data");
-                return CG_ERROR;
-            }
-        }
-        else {
-            if (cgio_read_data(cg->cgio, field->id,
-                    s_start, s_end, s_stride, index_dim, m_dim,
-                    m_start, m_end, m_stride, field_ptr)) {
-                cg_io_error("cgio_read_data");
-                return CG_ERROR;
-            }
-        }
-        return CG_OK;
-    }
-
-    /* need to read into temp array to convert data */
-    values = malloc((size_t)(num*size_of(field->data_type)));
-    if (values == NULL) {
-        cgi_error("Error allocating values");
-        return CG_ERROR;
-    }
-    if (read_full_range) {
-        if (cgio_read_all_data(cg->cgio, field->id, values)) {
-            free(values);
-            cg_io_error("cgio_read_all_data");
-            return CG_ERROR;
-        }
-    }
-    else {
-        if (cgio_read_data(cg->cgio, field->id,
-                s_start, s_end, s_stride, index_dim, m_dim,
-                m_start, m_end, m_stride, values)) {
-            free(values);
-            cg_io_error("cgio_read_data");
-            return CG_ERROR;
-        }
-    }
-    ierr = cgi_convert_data(num, cgi_datatype(field->data_type),
-               values, type, field_ptr);
-    free(values);
-    return ierr ? CG_ERROR : CG_OK;
+    return cgi_array_general_read(field, cgns_rindindex, sol->rind_planes,
+                                  s_numdim, s_rmin, s_rmax,
+                                  m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  field_ptr);
 }
 
 int cg_field_id(int file_number, int B, int Z, int S, int F, double *field_id)
@@ -4232,13 +5118,15 @@ int cg_field_id(int file_number, int B, int Z, int S, int F, double *field_id)
     return CG_OK;
 }
 
-int cg_field_write(int file_number, int B, int Z, int S, CGNS_ENUMT(DataType_t) type,
-                   const char * fieldname, const void * field_ptr, int *F)
+int cg_field_write(int file_number, int B, int Z, int S,
+                   CGNS_ENUMT(DataType_t) type, const char *fieldname,
+                   const void *field_ptr, int *F)
 {
     cgns_zone *zone;
     cgns_sol *sol;
-    cgns_array *field;
-    int index;
+    int n, m_numdim;
+
+    HDF5storage_type = CG_CONTIGUOUS;
 
      /* verify input */
     if (cgi_check_strlen(fieldname)) return CG_ERROR;
@@ -4247,190 +5135,168 @@ int cg_field_write(int file_number, int B, int Z, int S, CGNS_ENUMT(DataType_t) 
         cgi_error("Invalid datatype for solution array %s: %d",fieldname, type);
         return CG_ERROR;
     }
+
      /* get memory addresses */
     cg = cgi_get_file(file_number);
     if (cg == 0) return CG_ERROR;
 
-    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
-
     zone = cgi_get_zone(cg, B, Z);
-    if (zone==0) return CG_ERROR;
+    if (zone == 0) return CG_ERROR;
 
+     /* get memory address for solution */
     sol = cgi_get_sol(cg, B, Z, S);
-    if (sol==0) return CG_ERROR;
+    if (sol == 0) return CG_ERROR;
 
-     /* Overwrite a DataArray_t Node: */
-    for (index=0; index<sol->nfields; index++) {
-        if (strcmp(fieldname, sol->field[index].name)==0) {
-            field = &(sol->field[index]);
-
-             /* in CG_MODE_WRITE, children names must be unique */
-            if (cg->mode==CG_MODE_WRITE) {
-                cgi_error("Duplicate child name found: %s",fieldname);
-                return CG_ERROR;
-            }
-
-             /* overwrite an existing solution */
-            if (type==cgi_datatype(field->data_type)) {
-                if (cgio_write_all_data(cg->cgio, field->id, field_ptr)) {
-                    cg_io_error("cgio_write_all_data");
-                    return CG_ERROR;
-                }
-                (*F) = index+1;
-                return CG_OK;
-            }
-            cgi_error("To overwrite array %s, use data-type '%s'",
-                field->name, DataTypeName[cgi_datatype(field->data_type)]);
-            return CG_ERROR;
-        }
-    }
-     /* ... or add a DataArray_t Node: */
-    if (sol->nfields == 0) {
-        sol->field = CGNS_NEW(cgns_array, sol->nfields+1);
-    } else {
-        sol->field = CGNS_RENEW(cgns_array, sol->nfields+1, sol->field);
-    }
-    field = &(sol->field[sol->nfields]);
-    sol->nfields++;
-    (*F) = sol->nfields;
-
-     /* save data in memory */
-    memset(field, 0, sizeof(cgns_array));
-    strcpy(field->data_type, cgi_adf_datatype(type));
-    strcpy(field->name,fieldname);
-
+     /* dimension is dependent on multidim or ptset */
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
     if (sol->ptset == NULL) {
-        field->data_dim = zone->index_dim;
-        if (cgi_datasize(zone->index_dim, zone->nijk, sol->location,
-                sol->rind_planes, field->dim_vals)) return CG_ERROR;
-    } else {
-        field->data_dim = 1;
-        field->dim_vals[0] = sol->ptset->size_of_patch;
+        m_numdim = zone->index_dim;
+        if (cgi_datasize(m_numdim, zone->nijk, sol->location,
+                         sol->rind_planes, m_dimvals)) return CG_ERROR;
+    }
+    else {
+        m_numdim = 1;
+        m_dimvals[0] = sol->ptset->size_of_patch;
     }
 
-     /* Save DataArray_t node on disk: */
-    if (cgi_new_node(sol->id, field->name, "DataArray_t", &field->id,
-        field->data_type, field->data_dim, field->dim_vals, field_ptr))
-        return CG_ERROR;
+    cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+    cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+    for (n = 0; n < m_numdim; n++) {
+        if (cgns_rindindex == CG_CONFIG_RIND_ZERO) {
+             /* old obsolete behavior (versions < 3.4) */
+            s_rmin[n] = 1;
+        }
+        else {
+             /* new behavior consitent with SIDS */
+            s_rmin[n] = 1 - sol->rind_planes[2*n];
+        }
+        s_rmax[n] = s_rmin[n] + m_dimvals[n] - 1;
+        m_rmin[n] = 1;
+        m_rmax[n] = m_dimvals[n];
+    }
 
-    return CG_OK;
+    return cg_field_general_write(file_number, B, Z, S, fieldname,
+                                  type, s_rmin, s_rmax,
+                                  type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  field_ptr, F);
 }
 
 int cg_field_partial_write(int file_number, int B, int Z, int S,
 			   CGNS_ENUMT( DataType_t ) type, const char *fieldname,
-			   const cgsize_t *rmin, const cgsize_t *rmax,
+			   const cgsize_t *s_rmin, const cgsize_t *s_rmax,
                            const void *field_ptr, int *F)
 {
     cgns_zone *zone;
     cgns_sol *sol;
-    cgns_array *field;
-    int n, index, index_dim;
-    cgsize_t dims[CGIO_MAX_DIMENSIONS];
-
-     /* verify input */
-    if (cgi_check_strlen(fieldname)) return CG_ERROR;
-    if (type != CGNS_ENUMV(RealSingle) && type != CGNS_ENUMV(RealDouble) &&
-        type != CGNS_ENUMV(Integer) && type != CGNS_ENUMV(LongInteger)) {
-        cgi_error("Invalid datatype for solution array %s: %d",fieldname, type);
-        return CG_ERROR;
-    }
-
-    if(rmin == NULL || rmax == NULL) {
-	cgi_error("NULL range value.");
-	return CG_ERROR;
-    }
+    int n, m_numdim;
+    int status;
 
      /* get memory addresses */
     cg = cgi_get_file(file_number);
     if (cg == 0) return CG_ERROR;
 
+    zone = cgi_get_zone(cg, B, Z);
+    if (zone == 0) return CG_ERROR;
+
+     /* get memory address for solution */
+    sol = cgi_get_sol(cg, B, Z, S);
+    if (sol == 0) return CG_ERROR;
+
+     /* dimension is dependent on multidim or ptset */
+    if (sol->ptset == NULL) {
+        m_numdim = zone->index_dim;
+    }
+    else {
+        m_numdim = 1;
+    }
+
+    if (s_rmin == NULL || s_rmax == NULL) {
+	cgi_error("NULL range value.");
+	return CG_ERROR;
+    }
+
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+    for (n = 0; n<m_numdim; n++) {
+        m_rmin[n] = 1;
+        m_rmax[n] = s_rmax[n] - s_rmin[n] + 1;
+        m_dimvals[n] = m_rmax[n];
+    }
+
+    status = cg_field_general_write(file_number, B, Z, S, fieldname,
+                                  type, s_rmin, s_rmax,
+                                  type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  field_ptr, F);
+
+    HDF5storage_type = CG_COMPACT;
+    return status;
+
+}
+
+int cg_field_general_write(int fn, int B, int Z, int S, const char *fieldname,
+                           CGNS_ENUMT(DataType_t) s_type,
+                           const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                           CGNS_ENUMT(DataType_t) m_type,
+                           int m_numdim, const cgsize_t *m_dimvals,
+                           const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                           const void *field_ptr, int *F)
+{
+     /* s_ prefix is file space, m_ prefix is memory space */
+    cgns_zone *zone;
+    cgns_sol *sol;
+    int s_numdim;
+    int status;
+
+    HDF5storage_type = CG_CONTIGUOUS;
+
+     /* verify input */
+    if (cgi_check_strlen(fieldname)) return CG_ERROR;
+    if (s_type != CGNS_ENUMV(RealSingle) && s_type != CGNS_ENUMV(RealDouble) &&
+        s_type != CGNS_ENUMV(Integer) && s_type != CGNS_ENUMV(LongInteger)) {
+        cgi_error("Invalid file data type for solution array %s: %d",
+                  fieldname, s_type);
+        return CG_ERROR;
+    }
+    if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble) &&
+        m_type != CGNS_ENUMV(Integer) && m_type != CGNS_ENUMV(LongInteger)) {
+        cgi_error("Invalid input data type for solution array %s: %d",
+                  fieldname, m_type);
+        return CG_ERROR;
+    }
+
+     /* get memory addresses */
+    cg = cgi_get_file(fn);
+    if (cg == 0) return CG_ERROR;
+
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
 
     zone = cgi_get_zone(cg, B, Z);
-    if (zone==0) return CG_ERROR;
+    if (zone == 0) return CG_ERROR;
 
+     /* get memory address for solution */
     sol = cgi_get_sol(cg, B, Z, S);
-    if (sol==0) return CG_ERROR;
+    if (sol == 0) return CG_ERROR;
 
+     /* file dimension is dependent on multidim or ptset */
+    cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
     if (sol->ptset == NULL) {
-        index_dim = zone->index_dim;
-        if (cgi_datasize(index_dim, zone->nijk, sol->location,
-                sol->rind_planes, dims)) return CG_ERROR;
+        s_numdim = zone->index_dim;
+        if (cgi_datasize(s_numdim, zone->nijk, sol->location,
+                sol->rind_planes, s_dimvals)) return CG_ERROR;
     } else {
-        index_dim = 1;
-        dims[0] = sol->ptset->size_of_patch;
-    }
-    /* check for valid ranges */
-    for (n = 0; n < index_dim; n++) {
-        if (rmin[n] > rmax[n] || rmin[n] < 1 || rmax[n] > dims[n]) {
-            cgi_error("Invalid index ranges.");
-            return CG_ERROR;
-        }
+        s_numdim = 1;
+        s_dimvals[0] = sol->ptset->size_of_patch;
     }
 
-     /* Overwrite a DataArray_t  Node: */
-    for (index=0; index<sol->nfields; index++) {
-        if (strcmp(fieldname, sol->field[index].name)==0) {
-            cgsize_t m_start[CGIO_MAX_DIMENSIONS], m_end[CGIO_MAX_DIMENSIONS];
-            cgsize_t m_dim[CGIO_MAX_DIMENSIONS], stride[CGIO_MAX_DIMENSIONS];
-
-            field = &(sol->field[index]);
-            /* data type must be the same */
-            if (strcmp(field->data_type, cgi_adf_datatype(type))) {
-                cgi_error("Mismatch in data types.");
-                return CG_ERROR;
-            }
-            for (n = 0; n < field->data_dim; n++) {
-                m_start[n] = 1;
-                m_end[n]   = rmax[n] - rmin[n] + 1;
-                m_dim[n]   = m_end[n];
-                stride[n]  = 1;
-            }
-
-            if (cgio_write_data(cg->cgio, field->id, rmin, rmax, stride,
-                    field->data_dim, m_dim, m_start, m_end,
-                    stride, field_ptr)) {
-                cg_io_error("cgio_write_data");
-                return CG_ERROR;
-            }
-            return CG_OK;
-        }
-    }
-
-     /* add a DataArray_t Node: */
-    if (sol->nfields == 0) {
-        sol->field = CGNS_NEW(cgns_array, sol->nfields+1);
-    } else {
-        sol->field = CGNS_RENEW(cgns_array, sol->nfields+1, sol->field);
-    }
-    field = &(sol->field[sol->nfields]);
-    sol->nfields++;
-    (*F) = sol->nfields;
-
-     /* save data in memory */
-    strcpy(field->data_type, cgi_adf_datatype(type));
-    strcpy(field->name, fieldname);
-    field->data_dim = index_dim;
-    for (n = 0; n < index_dim; n++)
-        field->dim_vals[n] = dims[n];
-
-     /* initialize */
-    field->id = 0;
-    field->link= 0;
-    field->data=0;
-    field->ndescr= 0;
-    field->data_class= CGNS_ENUMV( DataClassNull );
-    field->units= 0;
-    field->exponents= 0;
-    field->convert= 0;
-
-     /* Save DataArray_t node on disk: */
-    if (cgi_new_node_partial(sol->id, field->name, "DataArray_t", &field->id,
-        field->data_type, index_dim, field->dim_vals, rmin, rmax,
-	field_ptr))
-	return CG_ERROR;
-
-    return CG_OK;
+    status= cgi_array_general_write(sol->id, &(sol->nfields),
+                                   &(sol->field), fieldname,
+                                   cgns_rindindex, sol->rind_planes,
+                                   s_type, s_numdim, s_dimvals, s_rmin, s_rmax,
+                                   m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                   field_ptr, F);
+    
+    HDF5storage_type = CG_COMPACT;
+    return status;
 }
 
 /*************************************************************************\
@@ -5102,8 +5968,8 @@ int cg_hole_write(int file_number, int B, int Z, const char * holename,
 			 &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(zconn->id, hid);
       if (hid==0) {
@@ -5526,8 +6392,8 @@ int cg_conn_write(int file_number, int B, int Z,  const char * connectname,
 			 &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(zconn->id, hid);
       if (hid==0) {
@@ -5915,8 +6781,8 @@ int cg_1to1_write(int file_number, int B, int Z, const char * connectname,
 			 &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(zconn->id, hid);
       if (hid==0) {
@@ -6222,8 +7088,8 @@ int cg_boco_write(int file_number, int B, int Z, const char * boconame,
 			 &zboco->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(zboco->id, hid);
       if (hid==0) {
@@ -7225,8 +8091,8 @@ int cg_bc_wallfunction_write(int file_number, int B, int Z, int BC,
 			 &bprop->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(bprop->id, hid);
       if (hid==0) {
@@ -7384,8 +8250,8 @@ int cg_bc_area_write(int file_number, int B, int Z, int BC,
 			 &bprop->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(bprop->id, hid);
       if (hid==0) {
@@ -7540,8 +8406,8 @@ int cg_conn_periodic_write(int file_number, int B, int Z, int I,
 			"GridConnectivityProperty_t", &cprop->id, "MT", 0, 0, 0)) return CG_ERROR;
      }
    }
-#ifdef BUILD_HDF5
-   else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+   else if (cg->filetype == CGIO_FILE_HDF5) {
      hid_t hid;
      to_HDF_ID(cprop->id, hid);
      if (hid==0) {
@@ -7651,8 +8517,8 @@ int cg_conn_average_write(int file_number, int B, int Z, int I,
 			 "GridConnectivityProperty_t", &cprop->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(cprop->id, hid);
       if (hid==0) {
@@ -7805,8 +8671,8 @@ int cg_1to1_periodic_write(int file_number, int B, int Z, int I,
 	  return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(cprop->id, hid);
       if (hid==0) {
@@ -7923,8 +8789,8 @@ int cg_1to1_average_write(int file_number, int B, int Z, int I,
 	  return CG_ERROR;
       }
     }
-#ifdef BUILD_HDF5
-    else if (cg->filetype == CGIO_FILE_HDF5 || cg->filetype == CGIO_FILE_PHDF5) {
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
       hid_t hid;
       to_HDF_ID(cprop->id, hid);
       if (hid==0) {
@@ -8915,7 +9781,7 @@ int cg_model_write(const char * ModelLabel, CGNS_ENUMT(ModelType_t) ModelType)
 	  ModelType!=CGNS_ENUMV( Interpolated ) && ModelType!=CGNS_ENUMV( Constant )) {
             cgi_error("Model Type '%s' is not supported for %s",
                 ModelTypeName[ModelType],ModelLabel);
-            return 1;
+            return CG_ERROR;
         }
     }
     else if (strcmp(ModelLabel, "EMMagneticFieldModel_t")==0) {
@@ -8924,7 +9790,7 @@ int cg_model_write(const char * ModelLabel, CGNS_ENUMT(ModelType_t) ModelType)
 	  ModelType!=CGNS_ENUMV( Constant )) {
             cgi_error("Model Type '%s' is not supported for %s",
                 ModelTypeName[ModelType],ModelLabel);
-            return 1;
+            return CG_ERROR;
         }
     }
     else if (strcmp(ModelLabel, "EMConductivityModel_t")==0) {
@@ -8934,7 +9800,7 @@ int cg_model_write(const char * ModelLabel, CGNS_ENUMT(ModelType_t) ModelType)
 	  ModelType!=CGNS_ENUMV( Chemistry_LinRessler )) {
             cgi_error("Model Type '%s' is not supported for %s",
                 ModelTypeName[ModelType],ModelLabel);
-            return 1;
+            return CG_ERROR;
         }
     }
 
@@ -9137,7 +10003,8 @@ int cg_array_info(int A, char *ArrayName, CGNS_ENUMT(DataType_t) *DataType,
      /* verify input */
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
 
-    array = cgi_array_address(CG_MODE_READ, A, "dummy", &ier);
+    int have_dup = 0;
+    array = cgi_array_address(CG_MODE_READ, 0, A, "dummy", &have_dup, &ier);
     if (array==0) return ier;
 
     strcpy(ArrayName, array->name);
@@ -9159,7 +10026,8 @@ int cg_array_read(int A, void *Data)
      /* verify input */
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
 
-    array = cgi_array_address(CG_MODE_READ, A, "dummy", &ier);
+    int have_dup = 0;
+    array = cgi_array_address(CG_MODE_READ, 0, A, "dummy", &have_dup, &ier);
     if (array==0) return ier;
 
     for (n=0; n<array->data_dim; n++) num *= array->dim_vals[n];
@@ -9188,7 +10056,8 @@ int cg_array_read_as(int A, CGNS_ENUMT(DataType_t) type, void *Data)
      /* verify input */
     if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
 
-    array = cgi_array_address(CG_MODE_READ, A, "dummy", &ier);
+    int have_dup = 0;
+    array = cgi_array_address(CG_MODE_READ, 0, A, "dummy", &have_dup, &ier);
     if (array==0) return ier;
 
     for (n=0; n<array->data_dim; n++) num *= array->dim_vals[n];
@@ -9235,6 +10104,46 @@ int cg_array_read_as(int A, CGNS_ENUMT(DataType_t) type, void *Data)
     return ier ? CG_ERROR : CG_OK;
 }
 
+int cg_array_general_read(int A,
+                          const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                          CGNS_ENUMT(DataType_t) m_type,
+                          int m_numdim, const cgsize_t *m_dimvals,
+                          const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                          void *data)
+{
+     /* s_ prefix is file space, m_ prefix is memory space */
+    cgns_array *array;
+    int s_numdim, ier = CG_OK;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+     /* find address */
+    int have_dup = 0;
+    array = cgi_array_address(CG_MODE_READ, 0, A, "dummy", &have_dup, &ier);
+    if (array == 0) return ier;
+
+    s_numdim = array->data_dim;
+
+     /* special for Character arrays */
+    if ((m_type != CGNS_ENUMV(Character) &&
+         cgi_datatype(array->data_type) == CGNS_ENUMV(Character))) {
+        cgi_error("Error exit:  Character array can only be read as character");
+        return CG_ERROR;
+    }
+
+     /* do we have rind planes? */
+    int *rind_planes = cgi_rind_address(CG_MODE_READ, &ier);
+    if (ier != CG_OK) rind_planes = NULL;
+
+    return cgi_array_general_read(array, cgns_rindindex, rind_planes,
+                                  s_numdim, s_rmin, s_rmax,
+                                  m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  data);
+}
+
 int cg_array_write(const char * ArrayName, CGNS_ENUMT(DataType_t) DataType,
                    int DataDimension, const cgsize_t * DimensionVector,
                    const void * Data)
@@ -9242,6 +10151,8 @@ int cg_array_write(const char * ArrayName, CGNS_ENUMT(DataType_t) DataType,
     cgns_array *array;
     int n, ier=0;
     double posit_id;
+
+    HDF5storage_type = CG_CONTIGUOUS;
 
     CHECK_FILE_OPEN
 
@@ -9268,8 +10179,8 @@ int cg_array_write(const char * ArrayName, CGNS_ENUMT(DataType_t) DataType,
     }
 
      /* get address */
-    array = cgi_array_address(CG_MODE_WRITE, 0, ArrayName, &ier);
-    /* printf("\tcgi_array_address = %x\n",array); */
+    int have_dup = 0;
+    array = cgi_array_address(CG_MODE_WRITE, 0, 0, ArrayName, &have_dup, &ier);
 
     if (array==0) return ier;
 
@@ -9292,8 +10203,70 @@ int cg_array_write(const char * ArrayName, CGNS_ENUMT(DataType_t) DataType,
     if (cgi_posit_id(&posit_id)) return CG_ERROR;
     if (cgi_new_node(posit_id, array->name, "DataArray_t", &array->id,
         array->data_type, array->data_dim, array->dim_vals, Data)) return CG_ERROR;
-
+    HDF5storage_type = CG_COMPACT;
     return CG_OK;
+}
+
+int cg_array_general_write(const char *arrayname,
+                           CGNS_ENUMT(DataType_t) s_type,
+                           int s_numdim, const cgsize_t *s_dimvals,
+                           const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                           CGNS_ENUMT(DataType_t) m_type,
+                           int m_numdim, const cgsize_t* m_dimvals,
+                           const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                           const void *data)
+{
+     /* s_ prefix is file space, m_ prefix is memory space */
+  int n, ier = CG_OK;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_strlen(arrayname)) return CG_ERROR;
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+    if (s_type != CGNS_ENUMV(RealSingle) && s_type != CGNS_ENUMV(RealDouble) &&
+        s_type != CGNS_ENUMV(Integer) && s_type != CGNS_ENUMV(LongInteger) &&
+        s_type != CGNS_ENUMV(Character)) {
+        cgi_error("Invalid file data type for data array: %d", s_type);
+        return CG_ERROR;
+    }
+    if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble) &&
+        m_type != CGNS_ENUMV(Integer) && m_type != CGNS_ENUMV(LongInteger) &&
+        m_type != CGNS_ENUMV(Character)) {
+        cgi_error("Invalid input data type for data array: %d", m_type);
+        return CG_ERROR;
+    }
+
+     /*** verfication for dataset in file */
+     /* verify the rank and dimensions of the file-space array */
+    if (s_numdim <= 0 || s_numdim > CGIO_MAX_DIMENSIONS) {
+        cgi_error("Data arrays are limited to %d dimensions in file",
+                  CGIO_MAX_DIMENSIONS);
+        return CG_ERROR;
+    }
+
+    if (s_dimvals == NULL) {
+        cgi_error("NULL dimension value");
+        return CG_ERROR;
+    }
+
+    for (n=0; n<s_numdim; n++) {
+        if (s_dimvals[n] < 1) {
+            cgi_error("Invalid array dimension for file: %d", s_dimvals[n]);
+            return CG_ERROR;
+        }
+    }
+
+     /* do we have rind planes? */
+    int *rind_planes = cgi_rind_address(CG_MODE_READ, &ier);
+    if (ier != CG_OK) rind_planes = NULL;
+
+    int A = 0;  /* unused */
+    return cgi_array_general_write(0.0, NULL, NULL, arrayname,
+                                   cgns_rindindex, rind_planes,
+                                   s_type, s_numdim, s_dimvals, s_rmin, s_rmax,
+                                   m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                   data, &A);
 }
 
 /*----------------------------------------------------------------------*/
@@ -9407,7 +10380,7 @@ int cg_rind_read(int *RindData)
 int cg_rind_write(const int * RindData)
 {
     int n, ier=0;
-    int *rind, index_dim;
+    int *rind, index_dim, narrays;
     double posit_id;
 
     CHECK_FILE_OPEN
@@ -9430,6 +10403,16 @@ int cg_rind_write(const int * RindData)
      /* save data in file & if different from default (6*0) */
     if (cgi_posit_id(&posit_id)) return CG_ERROR;
     if (cgi_write_rind(posit_id, rind, index_dim)) return CG_ERROR;
+
+     /* Writing rind planes invalidates dimensions of existing arrays.  The rind
+        planes are still written but an error is returned */
+    ier = cg_narrays(&narrays);
+    if (ier == CG_OK && narrays > 0) {
+        cgi_error("Writing rind planes invalidates dimensions of exisitng "
+                  "array(s).");
+        return CG_ERROR;
+    }
+
     return CG_OK;
 }
 
@@ -9957,7 +10940,7 @@ int cg_expfull_read(void *exponents)
     if(exponent->nexps != 8)
     {
 	cgi_error("Full set of exponents not written, use cg_exponents_read.");
-        return 1;
+        return CG_ERROR;
     }*/
 
     if (cgi_datatype(exponent->data_type)==CGNS_ENUMV( RealSingle )) {
@@ -11562,7 +12545,7 @@ int cg_delete_node(const char *node_name)
                 strcmp(parent->dataset[n].name, node_name); n++);
             if (n == parent->ndataset) {
                 cgi_error("Error in cg_delete: Can't find node '%s'",node_name);
-                return 1;
+                return CG_ERROR;
             }
             if (parent->dataset[n].ptset == parent->ptset)
                 parent->dataset[n].ptset = 0;
