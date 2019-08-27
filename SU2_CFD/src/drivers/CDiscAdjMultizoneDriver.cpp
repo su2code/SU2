@@ -76,9 +76,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
           direct_iteration[iZone][iInst] = new CHeatIteration(config_container[iZone]);
           direct_output[iZone] = new CHeatOutput(config_container[iZone], nDim);
           break;
+        case DISC_ADJ_FEM:
+          SU2_MPI::Error("There is no multizone discrete adjoint functionality for problems including elasticity yet.",
+                         CURRENT_FUNCTION);
+          direct_iteration[iZone][iInst] = new CFEAIteration(config_container[iZone]);
+          direct_output[iZone] = new CElasticityOutput(config_container[iZone], nDim);
+          break;
 
         default:
-          SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.", CURRENT_FUNCTION);
+          SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.",
+                         CURRENT_FUNCTION);
       }
     }
 
@@ -111,7 +118,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     cout << endl << "Simulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
     if (driver_config->GetTime_Domain())
-      SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.", CURRENT_FUNCTION);
+      SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
+                     CURRENT_FUNCTION);
   }
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -212,21 +220,26 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
         
         config_container[iZone]->SetiInst(iInst);
         
-        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0],
+                                           config_container[iZone], solver_container[iZone][iInst][MESH_0]);
         
         /*--- Write restart files ---*/
         
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat, TimeDomain);
+        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0],
+                                                  config_container[iZone], RestartFormat, TimeDomain);
         
         /*--- Write visualization files ---*/
         
         if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
+          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0],
+                                                    config_container[iZone], OutputFormat, TimeDomain);
         
         if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0],
+                                                     config_container[iZone], OutputFormat, TimeDomain);
         if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV, TimeDomain);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0],
+                                                     config_container[iZone], CSV, TimeDomain);
         
         output_container[iZone]->DeallocateData_Parallel();
         
@@ -279,8 +292,8 @@ void CDiscAdjMultizoneDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
-                                                     solver_container, numerics_container, config_container,
-                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                                   solver_container, numerics_container, config_container, surface_movement,
+                                                   grid_movement, FFDBox, iZone, INST_0);
   }
 
   /*--- Loop over the number of inner (nZone = 1) or coupled outer iterations ---*/
@@ -436,7 +449,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (iZone = 0; iZone < nZone; iZone++) {
 
-        iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone, INST_0);
+        iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
+                                                              config_container, iZone, INST_0);
       }
 
       /*--- Initialize the adjoint of the objective function with 1.0. ---*/
@@ -455,11 +469,16 @@ void CDiscAdjMultizoneDriver::Run() {
 
           case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-            solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+            solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
+                                                                                 config_container[iZone]);
             break;
           case DISC_ADJ_HEAT:
-            solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+            solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
+                                                                                 config_container[iZone]);
             break;
+          case DISC_ADJ_FEM:
+            solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
+                                                                                config_container[iZone]);
           default:
             cout << "WARNING: Setting sensitivities failed for one of the specified discrete adjoint solvers!" << endl;
             break;
@@ -472,7 +491,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (iZone = 0; iZone < nZone; iZone++) {
 
-        iteration_container[iZone][INST_0]->Output(output_container[iZone], geometry_container, solver_container, config_container, iIter, StopCalc, iZone, INST_0);
+        iteration_container[iZone][INST_0]->Output(output_container[iZone], geometry_container, solver_container,
+                                                   config_container, iIter, StopCalc, iZone, INST_0);
       }
     }
   }
@@ -493,7 +513,8 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetRecording(geometry_container[iZone][INST_0][MESH_0],
+                                                                      config_container[iZone]);
         }
       }
     }
@@ -514,7 +535,8 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container, config_container, iZone, INST_0, kind_recording);
+      iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,
+                                                        config_container, iZone, INST_0, kind_recording);
     }
   }
 
@@ -522,7 +544,8 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, iZone, INST_0, kind_recording);
+    iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
+                                                        config_container, iZone, INST_0, kind_recording);
   }
 
   AD::Push_TapePosition();
@@ -570,7 +593,8 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
         DirectIteration(iZone, kind_recording);
       }
 
-      iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container, config_container, output_container[iZone], iZone, INST_0);
+      iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
+                                                         config_container, output_container[iZone], iZone, INST_0);
 
       AD::Push_TapePosition();
     }
@@ -591,11 +615,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
   /*--- Do one iteration of the direct solver ---*/
   direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container, solver_container,
-      numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                              numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
   /*--- Iterate the zone as a block a single time ---*/
   direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container,
-      numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
   Corrector(iZone);
 
@@ -607,16 +631,21 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
-        cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+        cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
+             << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
         break;
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-        cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+        cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
+             << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+
         if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-          cout << " Zone " << iZone << " (turb) - log10[RMS k]         : " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+
+          cout << " Zone " << iZone << " (turb) - log10[RMS k]         : "
+               << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
         }
-        break;
       case DISC_ADJ_HEAT:
-        cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
+        cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: "
+             << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
         break;
     }
   }
@@ -638,21 +667,28 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[iZone][INST_0][MESH_0],
+                                                                           config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[iZone][INST_0][MESH_0],
+                                                                           config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[iZone][INST_0][MESH_0],
+                                                                           config_container[iZone]);
+
         if(config_container[iZone]->GetWeakly_Coupled_Heat()) {
-          solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+
+          solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0],
+                                                                         solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         }
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
         break;
-
       case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0],
+                                                                       solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         break;
     }
 
-    direct_output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    direct_output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],
+                                            solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
   }
 
   /*--- Extract objective function values. ---*/
@@ -842,7 +878,8 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
 
   /*--- Initialize the adjoints in iZone ---*/
 
-  iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone, INST_0);
+  iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
+                                                        config_container, iZone, INST_0);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -921,7 +958,8 @@ void CDiscAdjMultizoneDriver::SetResidual_RMS(void) {
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0],
+                                                                              config_container[iZone]);
         }
       }
     }
