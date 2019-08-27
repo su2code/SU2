@@ -829,28 +829,30 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
  */
 enum ENUM_TURB_MODEL {
   NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
-  SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SA        = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG    = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_E      = 3, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP   = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SST       = 6, /*!< \brief Kind of Turbulence model (Menter SST). */
+  SST_SUST  = 7  /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
 ("SA_E", SA_E)
 ("SA_COMP", SA_COMP)
-("SA_E_COMP", SA_E_COMP);
+("SA_E_COMP", SA_E_COMP)
+("SST", SST)
+("SST_SUST", SST_SUST);
 
 /*!
  * \brief types of transition models
  */
 enum ENUM_TRANS_MODEL {
   NO_TRANS_MODEL = 0,            /*!< \brief No transition model. */
-  LM = 1,	/*!< \brief Kind of transition model (LM for Spalart-Allmaras). */
+  LM = 1,	/*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
   BC = 2	/*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
@@ -1393,7 +1395,9 @@ enum ENUM_OBJECTIVE {
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
-  VOLUME_FRACTION=62              /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  VOLUME_FRACTION=62,             /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  TOPOL_DISCRETENESS=63,          /*!<\brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE=64             /*!<\brief Measure of the discreteness of the current topology. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1442,7 +1446,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
 ("REFERENCE_NODE", REFERENCE_NODE)
-("VOLUME_FRACTION", VOLUME_FRACTION);
+("VOLUME_FRACTION", VOLUME_FRACTION)
+("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
+("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE);
 
 /*!
  * \brief types of residual criteria equations
