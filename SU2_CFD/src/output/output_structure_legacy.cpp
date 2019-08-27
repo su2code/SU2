@@ -4499,13 +4499,17 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
     case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP: 
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
-    case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case SST:case SST_SUST:
+      SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\"");
+      break;
   }
   switch (config->GetKind_Turb_Model()) {
     case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
-    case SST:   	SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\""); break;
+    case SST:case SST_SUST:
+      SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\"");
+      break;
   }
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
@@ -4875,7 +4879,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
-        case SST:    nVar_Turb = 2; break;
+        case SST: case SST_SUST: nVar_Turb = 2; break;
       }
     }
     if (transition) nVar_Trans = 2;
@@ -4894,7 +4898,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
-        case SST:    nVar_AdjTurb = 2; break;
+        case SST: case SST_SUST: nVar_AdjTurb = 2; break;
       }
     }
     if (weakly_coupled_heat) nVar_AdjHeat = 1;
@@ -5765,7 +5769,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
-              case SST:	      cout << "     Res[kine]" << "     Res[omega]"; break;
+              case SST:	case SST_SUST: cout << "     Res[kine]" << "     Res[omega]"; break;
             }
 
             if (weakly_coupled_heat) {
@@ -6898,7 +6902,11 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         switch (Kind_Turb_Model) {
           case SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
           case SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
+          case SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
+          case SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
+          case SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
           case SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
+          case SST_SUST:  Breakdown_file << "Menter's SST with sustaining terms" << "\n"; break;
         }
         break;
     }
@@ -11730,7 +11738,7 @@ void COutputLegacy::WriteTurboPerfConvHistory(CConfig *config){
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
+  bool menter_sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   unsigned short nBladesRow, nStages;
   unsigned short iStage;
@@ -12780,7 +12788,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
   Variable_Names.push_back("Energy");
   
   if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
       Variable_Names.push_back("TKE");
       Variable_Names.push_back("Omega");
     } else {
@@ -12806,7 +12814,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
       Variable_Names.push_back("Limiter_Energy");
       
       if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           Variable_Names.push_back("Limiter_TKE");
           Variable_Names.push_back("Limiter_Omega");
         } else {
@@ -12828,7 +12836,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
       Variable_Names.push_back("Residual_Energy");
       
       if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           Variable_Names.push_back("Residual_TKE");
           Variable_Names.push_back("Residual_Omega");
         } else {
@@ -13423,7 +13431,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
   if (energy || weakly_coupled_heat) Variable_Names.push_back("Temperature");
 
   if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
       Variable_Names.push_back("TKE");
       Variable_Names.push_back("Omega");
     } else {
@@ -13450,7 +13458,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
         Variable_Names.push_back("Limiter_Temperature");
 
       if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           Variable_Names.push_back("Limiter_TKE");
           Variable_Names.push_back("Limiter_Omega");
         } else {
@@ -13473,7 +13481,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
         Variable_Names.push_back("Residual_Temperature");
 
       if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           Variable_Names.push_back("Residual_TKE");
           Variable_Names.push_back("Residual_Omega");
         } else {
@@ -14018,7 +14026,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
     Variable_Names.push_back("Adjoint_Energy");
   }
   if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
       Variable_Names.push_back("Adjoint_TKE");
       Variable_Names.push_back("Adjoint_Omega");
     } else {
@@ -14067,7 +14075,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
         Variable_Names.push_back("Limiter_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           Variable_Names.push_back("Limiter_Adjoint_TKE");
           Variable_Names.push_back("Limiter_Adjoint_Omega");
         } else {
@@ -14096,7 +14104,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
         Variable_Names.push_back("Residual_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           Variable_Names.push_back("Residual_Adjoint_TKE");
           Variable_Names.push_back("Residual_Adjoint_Omega");
         } else {
@@ -18874,7 +18882,7 @@ void COutputLegacy::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, C
         nVar_Turb = 1;
         turb_val[0] = solver[TURB_SOL]->GetNuTilde_Inf();
         break;
-      case SST:
+      case SST: case SST_SUST:
         nVar_Turb = 2;
         turb_val[0] = solver[TURB_SOL]->GetTke_Inf();
         turb_val[1] = solver[TURB_SOL]->GetOmega_Inf();
