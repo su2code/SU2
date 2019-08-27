@@ -459,12 +459,6 @@ public:
   unsigned long GetExtIter();
 
   /*!
-   * \brief Get the number of points for a zone, inst, mesh.
-   * \return Number of points.
-   */
-  unsigned long GetnPointDomain(unsigned short val_iZone, unsigned short val_iInst, unsigned short val_iMesh);
-
-  /*!
    * \brief Get the unsteady time step.
    * \return Unsteady time step.
    */
