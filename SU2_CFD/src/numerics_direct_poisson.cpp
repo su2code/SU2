@@ -54,14 +54,6 @@ CAvgGradCorrected_Poisson::CAvgGradCorrected_Poisson(unsigned short val_nDim, un
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradPoissonVar[iVar] = new su2double [nDim];
 
-  ConsVar_Grad_i = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    ConsVar_Grad_i[iVar] = new su2double [nDim];
-  
-  ConsVar_Grad_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    ConsVar_Grad_j[iVar] = new su2double [nDim];
-
   Poisson_Coeff_i = 1.0;
   Poisson_Coeff_j = 1.0;
   
@@ -77,23 +69,12 @@ CAvgGradCorrected_Poisson::~CAvgGradCorrected_Poisson(void) {
 	delete [] Proj_Mean_GradPoissonVar_Edge;
 	delete [] Proj_Mean_GradPoissonVar_Kappa;
 	delete [] Proj_Mean_GradPoissonVar_Corrected;
+	delete [] Mom_Coeff_i;
+	delete [] Mom_Coeff_j;
 	
 	for (iVar = 0; iVar < nVar; iVar++) 
        delete [] Mean_GradPoissonVar[iVar];
     delete [] Mean_GradPoissonVar;
-    
-    /*for (iVar = 0; iVar < nVar; iVar++) 
-       if (ConsVar_Grad_i[iVar] != NULL) delete [] ConsVar_Grad_i[iVar];
-    if (ConsVar_Grad_i != NULL) delete [] ConsVar_Grad_i;*/
-    
-    /*for (iVar = 0; iVar < nVar; iVar++)
-       delete [] ConsVar_Grad_j[iVar];
-    delete [] ConsVar_Grad_j;*/
-    
-    //delete Mom_Coeff_i;
-	//delete Mom_Coeff_j;
-
-
 }
 
 void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
@@ -184,6 +165,7 @@ void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2doub
   AD::EndPreacc();*/
   
   delete [] MomCoeffxNormal;
+  delete [] MomCoeffxNormalCorrected;
 }
 
 CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_nVar,
@@ -204,16 +186,6 @@ CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_n
   for (iVar = 0; iVar < nVar; iVar++)
    Mean_GradPoissonVar[iVar] = new su2double [nDim];
 
-  ConsVar_Grad_i = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    ConsVar_Grad_i[iVar] = new su2double [nDim];
-  
-  ConsVar_Grad_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    ConsVar_Grad_j[iVar] = new su2double [nDim];
-  
-
-
   Poisson_Coeff_i = 1.0;
   Poisson_Coeff_j = 1.0;
 }
@@ -225,26 +197,14 @@ CAvgGrad_Poisson::~CAvgGrad_Poisson(void) {
 	delete [] Edge_Vector;
 	delete [] Proj_Mean_GradPoissonVar_Normal;
 	delete [] Proj_Mean_GradPoissonVar_Corrected;
-	/*delete [] Mom_Coeff_i;
+	delete [] Mom_Coeff_i;
 	delete [] Mom_Coeff_j;
 	
-	for (iDim = 0; iVar < nVar; iVar++) 
+	for (iVar = 0; iVar < nVar; iVar++) 
       delete [] Mean_GradPoissonVar[iVar];
     
     delete [] Mean_GradPoissonVar;
-    
-    /*for (iDim = 0; iVar < nVar; iVar++) 
-      delete [] ConsVar_Grad_i[iVar];
-    
-    delete [] ConsVar_Grad_i;
-    
-    for (iDim = 0; iVar < nVar; iVar++) 
-      delete [] ConsVar_Grad_j[iVar];
-   
-    delete [] ConsVar_Grad_j;	*/
-    
-    
-
+      
 }
 
 void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {

@@ -1921,7 +1921,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 
   /*--- Allocate solution for direct problem ---*/
 
-  if (euler && !pressure_based) integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
+  //if (euler && !pressure_based) integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
   if (euler) integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
   if (ns) integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[val_iInst][TURB_SOL] = new CSingleGridIntegration(config);
@@ -1931,13 +1931,13 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   if (euler && pressure_based) { 
 	  //integration_container[val_iInst][FLOW_SOL] = new CSingleGridIntegration(config);
 	  //integration_container[val_iInst][POISSON_SOL] = new CSingleGridIntegration(config);
-	  integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
+	  //integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
 	  integration_container[val_iInst][POISSON_SOL] = new CMultiGridIntegration(config);
   }
   if (ns && pressure_based) { 
 	  //integration_container[val_iInst][FLOW_SOL] = new CSingleGridIntegration(config);
 	  //integration_container[val_iInst][POISSON_SOL] = new CSingleGridIntegration(config);
-	  integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
+	  //integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
 	  integration_container[val_iInst][POISSON_SOL] = new CMultiGridIntegration(config);
   }
 
@@ -2005,6 +2005,8 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
     case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
+  
+  if (config->GetKind_Incomp_System()==PRESSURE_BASED) pressure_based = true;
 
   /*--- DeAllocate solution for a template problem ---*/
   if (template_solver) integration_container[val_iInst][TEMPLATE_SOL] = new CSingleGridIntegration(config);
@@ -2950,6 +2952,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; ns     = false; turbulent     = false;
@@ -3068,6 +3071,12 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case FDS:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
+                delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+              }
+              break;
+            case SCALAR_UPWIND: 
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
@@ -3192,6 +3201,19 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         break;
       }
     }
+  }
+  
+  if (pressure_based) {
+	  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+		  /*--- Delete the visc containers. ---*/
+		  delete numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_TERM];
+		  delete numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_BOUND_TERM];
+		  
+		  /*--- Delete the source term container. ---*/
+		  delete numerics_container[val_iInst][iMGlevel][POISSON_SOL][SOURCE_FIRST_TERM];
+		  delete numerics_container[val_iInst][iMGlevel][POISSON_SOL][SOURCE_SECOND_TERM];
+	  }
+	  
   }
   
   /*--- Solver definition for the flow adjoint problem ---*/

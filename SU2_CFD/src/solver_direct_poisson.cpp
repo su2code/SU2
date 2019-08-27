@@ -477,8 +477,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     LinSysRes.AddBlock(iPoint, Residual);
     
-    
-    //MPI_File_write(Fine_GridFile, &Src_Term, sizeof(double), MPI_DOUBLE, &status);
+   //MPI_File_write(Fine_GridFile, &Src_Term, sizeof(double), MPI_DOUBLE, &status);
    
     //Source term is constant ==> jacobian is zero
     

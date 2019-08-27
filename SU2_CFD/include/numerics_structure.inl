@@ -610,8 +610,10 @@ inline void CPressure_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2dou
 inline void CUpwPB_Flow::SetFaceVel(su2double val_FaceVel) { FaceVel = val_FaceVel; }
 
 inline void CAvgGradCorrected_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) { 
-  Mom_Coeff_i = val_Mom_Coeff_i;
-  Mom_Coeff_j = val_Mom_Coeff_j;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Mom_Coeff_i[iDim] = val_Mom_Coeff_i[iDim];
+    Mom_Coeff_j[iDim] = val_Mom_Coeff_j[iDim];
+  }
 }
 
 

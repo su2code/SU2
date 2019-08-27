@@ -1819,7 +1819,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
   
   /*--- Warning message about non-physical reconstructions. ---*/
   
-  if (config->GetConsole_Output_Verb() == COMM_FULL) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -4034,6 +4034,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   
   SetResMassFluxRMS(geometry, config);
   delete [] Normal;
+  delete [] Vel_i;
+  delete [] Vel_j;
 }
 
 
@@ -4229,6 +4231,19 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
          }
          
          break;
+         
+         case INLET_FLOW:
+		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+           if (geometry->node[iPoint]->GetDomain()) {
+              for (iDim = 0; iDim < nDim; iDim++)
+                  vel_corr[iPoint][iDim] = 0.0;
+              
+              //alpha_p[iPoint] = 1.0;
+              //cout<<iPoint<<"\t"<<Pressure_Correc[iPoint]<<endl;
+           }    
+	    }
+	    break;
 
 		default: 
 		break;
@@ -5109,6 +5124,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
   }
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+  delete [] val_normal;
   
 }
 
@@ -6041,7 +6057,7 @@ void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Error message ---*/
   
-  if (config->GetConsole_Output_Verb() == COMM_FULL) {
+  if (config->GetComm_Level() == COMM_FULL) {
     
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
@@ -6312,7 +6328,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   }
   
   /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetConsole_Output_Verb() == COMM_FULL) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
@@ -6443,6 +6459,8 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       }      
     }
   }
+  
+  delete [] Normal;
 }
 
   
@@ -6875,6 +6893,6 @@ unsigned long iVertex, iPoint, iPointNormal;
     Surface_CMz[iMarker_Monitoring]        += Surface_CMz_Visc[iMarker_Monitoring];
   }
 
-
+  delete [] Normal;
 }
 

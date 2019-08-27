@@ -7521,7 +7521,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
-  
   if (config->GetComm_Level() == COMM_FULL) {
     
 #ifdef HAVE_MPI
