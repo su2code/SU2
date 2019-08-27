@@ -174,6 +174,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    positions as we load up the send buffer. ---*/
   
   unsigned long *idIndex = new unsigned long[size]();
+  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
   
   /*--- Now loop back through the local connectivities for the surface
    elements and load up the global IDs for sending to their home proc. ---*/
@@ -361,17 +362,17 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Create a local data structure that acts as a mask to extract the
    set of points within the local set that are on the surface. ---*/
   
-  int *surfPoint = new int[nLocalPoint_Sort];
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) surfPoint[iPoint] = -1;
+  int *surfPoint = new int[volume_sorter->GetnPoints()];
+  for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) surfPoint[iPoint] = -1;
   
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    surfPoint[(int)idRecv[ii]- linearPartitioner->GetFirstIndexOnRank(rank)] = (int)idRecv[ii];
+    surfPoint[(int)idRecv[ii] - volume_sorter->GetNodeBegin(rank)] = (int)idRecv[ii];
   }
   
   /*--- First, add up the number of surface points I have on my rank. ---*/
   
   nParallel_Poin = 0;
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
+  for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) {
     if (surfPoint[iPoint] != -1) {
       
       /*--- Save the global index values for CSV output. ---*/
@@ -416,7 +417,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
     Parallel_Data[jj] = new su2double[nParallel_Poin]();
     count = 0;
-    for (int ii = 0; ii < (int)nLocalPoint_Sort; ii++) {
+    for (int ii = 0; ii < (int)volume_sorter->GetnPoints(); ii++) {
       if (surfPoint[ii] !=-1) {
         Parallel_Data[jj][count] = volume_sorter->GetData(jj,ii);
         count++;
@@ -443,7 +444,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   unsigned long *renumbP = new unsigned long[nParallel_Poin]();
   
   count = 0;
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
+  for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) {
     if (surfPoint[iPoint] != -1) {
       globalP[count] = surfPoint[iPoint];
       renumbP[count] = count + nPoint_Recv[rank];
