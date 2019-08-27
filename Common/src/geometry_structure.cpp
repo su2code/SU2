@@ -3798,10 +3798,10 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
+  beg_node = NULL;
+  end_node   = NULL;
+  nPointLinear = NULL;
+  nPointCumulative = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
