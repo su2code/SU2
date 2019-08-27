@@ -10883,7 +10883,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   long local_index;
   vector<unsigned long>::iterator it;
   char cstr[200];
-  su2double Coord_2D[2], Coord_3D[3], AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
+  su2double AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
@@ -10901,6 +10901,12 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   nelem_prism    = 0; Global_nelem_prism    = 0;
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
 
+  /*--- Initialize AoA and AoS offsets (TODO: don't hardcode to 0.) ---*/
+  AoA_Offset = 0.;
+  AoS_Offset = 0.;
+  AoA_Current = config->GetAoA();
+  AoS_Current = config->GetAoS();
+
   /*--- Get numbers of points and elements (for now only edgs, tris, tets) ---*/
   nPoint       = PoiAdap.size();
   nPointDomain = nPoint;
@@ -10909,20 +10915,126 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
     nelem_edge_bound = EdgAdap.size();
     nelem_triangle   = TriAdap.size();
     nelem_tetra      = 0;
+    nElem            = nelem_edge_bound + nelem_triangle;
   }
   else{
     nelem_edge_bound     = 0;
     nelem_triangle_bound = TriAdap.size();
     nelem_tetra          = TetAdap.size();
+    nElem                = nelem_triangle_bound + nelem_tetra;
   }
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   Global_nPoint = nPoint;
   Global_nPointDomain = nPointDomain;
+  Global_nElem = nElem;
 #endif
+
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+      
+  PrepareOffsets(Global_nPoint);
+
+  /*--- Store the local nodes in the geometry structure ---*/
+  node = new CPoint*[nPoint];
+  for(iPoint = 0; iPoint < nPoint; iPoint++) {
+    GlobalIndex = beg_node[rank]+iPoint;
+    if(nDim == 2) node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], GlobalIndex, config);
+    else node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], PoiAdap[iPoint][2], GlobalIndex, config);
+
+    /*--- Free memory ---*/
+    vector<passivedouble>().swap(PoiAdap[iPoint]);
+  }
+
+  /*--- Load the elements in the file with two loops. The first builds 
+   the adjacency for ParMETIS (if parallel). The second stores the
+   elements. ---*/
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
+  adj_nodes.clear();
+  adj_nodes.resize(nPoint, vector<unsigned long>(0));
+
+  /*--- Store the adjacency structure. ---*/
+  /*--- 2D ---*/
+  if(nDim == 2) {
+    for(iElem = 0; iElem < nelem_triangle; iElem++){
+
+      for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
+                
+        local_index = TriAdap[iElem][i]-beg_node[rank];
+        
+        if ((local_index >= 0) && (local_index < (long)nPoint)) {
+          
+          /*--- Build adjacency assuming the VTK connectivity ---*/
+          for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
+            if (i != j) adj_nodes[local_index].push_back(TriAdap[iElem][j]);
+          }
+
+        }
+      }
+      
+    }
+  }
+
+  /*--- 3D ---*/
+  else {
+    for(iElem = 0; iElem < nelem_tetra; iElem++){
+
+      for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+                
+        local_index = TetAdap[iElem][i]-beg_node[rank];
+        
+        if ((local_index >= 0) && (local_index < (long)nPoint)) {
+          
+          /*--- Build adjacency assuming the VTK connectivity ---*/
+          for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+            if (i != j) adj_nodes[local_index].push_back(TetAdap[iElem][j]);
+          }
+
+        }
+      }
+    }
+    
+  }
+#endif
+#endif
+
+
+  /*--- Prepare the adjacency information that ParMETIS will need for
+   completing the graph partitioning in parallel. ---*/
+  
+  SortAdjacency(config);
+
+  /*--- Store the elements in the geometry structure. Here we assume
+   that an initial partitioning performed in the python wrapper has
+   assigned elements to processors that own at least one of its nodes.
+   Note that the last 2 values for each element are the marker and
+   global index. ---*/
+  elem = new CPrimalGrid*[nElem];
+  local_element_count = 0;
+  for(iElem = 0; iElem < nelem_triangle; iElem++){
+    Global_to_Local_Elem[TriAdap[iElem][4]] = local_element_count;
+    elem[local_element_count] = new CTriangle(TriAdap[iElem][0],
+                                              TriAdap[iElem][1],
+                                              TriAdap[iElem][2], 2);
+    local_element_count++;
+
+  }
+  for(iElem = 0; iElem < nelem_tetra; iElem++){
+    Global_to_Local_Elem[TetAdap[iElem][5]] = local_element_count;
+    elem[local_element_count] = new CTetrahedron(TetAdap[iElem][0],
+                                                 TetAdap[iElem][1],
+                                                 TetAdap[iElem][2],
+                                                 TetAdap[iElem][3]);
+    local_element_count++;
+  }
   
 }
 

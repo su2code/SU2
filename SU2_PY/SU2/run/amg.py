@@ -102,6 +102,7 @@ def amg ( config , kind='' ):
     os.makedirs(adap_dir)
     os.chdir(adap_dir)
     sys.stdout.write('The %s folder was deleted\n' % adap_dir)
+    sys.stdout.flush()
     
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
     os.symlink(os.path.join(cwd, config.SOLUTION_FLOW_FILENAME), config.SOLUTION_FLOW_FILENAME)
@@ -128,6 +129,7 @@ def amg ( config , kind='' ):
         val_out = [False]
         
         sys.stdout.write('Running initial CFD solution.\n')
+        sys.stdout.flush()
         
         try: # run with redirected outputs
             
@@ -180,6 +182,7 @@ def amg ( config , kind='' ):
         current_solution = config['SOLUTION_FLOW_FILENAME']
         
         sys.stdout.write('Initial CFD solution is provided.\n')
+        sys.stdout.flush()
         
     #--- Check existence of initial mesh, solution
     
@@ -233,6 +236,7 @@ def amg ( config , kind='' ):
     global_iter = 0
     
     sys.stdout.write("\nStarting mesh adaptation process.\n")
+    sys.stdout.flush()
     
     for iSiz in range(len(mesh_sizes)):
         
@@ -240,6 +244,7 @@ def amg ( config , kind='' ):
         nSub        = int(sub_iter[iSiz])
                         
         sys.stdout.write("\nIteration %d - Mesh size coefficient %.1lf\n" % (iSiz, mesh_size))
+        sys.stdout.flush()
         
         for iSub in range(nSub):
             
@@ -276,6 +281,7 @@ def amg ( config , kind='' ):
                 #--- Run amg
                                 
                 sys.stdout.write("Running amg. Log : %s\n" % config_amg['amg_log'])
+                sys.stdout.flush()
                 
                 if os.path.exists("current.itp.solb"):
                     os.remove("current.itp.solb")
@@ -329,12 +335,14 @@ def amg ( config , kind='' ):
                     mesh.pop('sensor', None)
 
                     sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
+                    sys.stdout.flush()
                     
                     mesh_new = su2amg.amg_call_python(mesh, config_amg)
                                     
                     #--- print mesh size
                     
                     sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
+                    sys.stdout.flush()
                                     
                     mesh_new['markers'] = mesh['markers']
                     mesh_new['dimension'] = mesh['dimension']
@@ -353,12 +361,14 @@ def amg ( config , kind='' ):
                     mesh['sensor'] = sensor_wrap['solution']
                     
                     sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
+                    sys.stdout.flush()
                     
                     mesh_new = su2amg.amg_call_python(mesh, config_amg)
                                     
                     #--- print mesh size
                     
                     sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
+                    sys.stdout.flush()
                                     
                     mesh_new['markers'] = mesh['markers']
                     mesh_new['dimension'] = mesh['dimension']
@@ -378,6 +388,7 @@ def amg ( config , kind='' ):
             val_out = [False]
             
             sys.stdout.write(' %s Running CFD\n' % pad_nul)
+            sys.stdout.flush()
         
             try: # run with redirected outputs
             
@@ -443,6 +454,7 @@ def amg ( config , kind='' ):
             del history
             
             sys.stdout.write(' %s CFD done. Residual convergence %.2lf orders of magnitude\n' % (pad_nul, res_cvg))
+            sys.stdout.flush()
             
             
             # to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
@@ -456,4 +468,5 @@ def amg ( config , kind='' ):
     
     sys.stdout.write("\nMesh adaptation successfully ended. Results files:\n")
     sys.stdout.write("%s\n%s\n\n" % (config.MESH_OUT_FILENAME,config.RESTART_FLOW_FILENAME))
+    sys.stdout.flush()
     

@@ -978,7 +978,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double Lam1 = (a+c+sqrt(d))/2.;
     const su2double Lam2 = (a+c-sqrt(d))/2.;
 
-    const su2double factor = pow(outNPoint/(1.54*globalScale), 2./nDim);
+    // const su2double factor = pow(outNPoint/(1.54*globalScale), 2./nDim);
+    const su2double factor = pow(outNPoint/(globalScale), 2./nDim);
 
     su2double RuH[2][2] = {{b, b},
                            {Lam1-a, Lam2-a}};
@@ -1132,7 +1133,8 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double e = var->GetAnisoMetr(4);
     const su2double f = var->GetAnisoMetr(5);
 
-    const su2double factor = pow(outNPoint/(1.54*globalScale), 2./nDim);
+    // const su2double factor = pow(outNPoint/(1.54*globalScale), 2./nDim);
+    const su2double factor = pow(outNPoint/(globalScale), 2./nDim);
 
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
