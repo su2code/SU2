@@ -804,8 +804,6 @@ private:
   *Inc_Velocity_Init,    /*!< \brief Initial velocity vector for incompressible flows. */
   Inc_Temperature_Init,    /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
   Scalar_Init,    /*!< \brief Initial uniform value for scalar transport. */
-  Laminar_Flame_Speed,    /*!< \brief Value of the laminar flame speed for combustion. */
-  Flame_Temperature,    /*!< \brief Value of the flame temperature for combustion. */
   Heat_Flux_Ref,  /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
   Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
@@ -2138,18 +2136,6 @@ public:
    * \return Initial value for scalar transport.
    */
   su2double GetScalar_Init(void);
-  
-  /*!
-   * \brief Get the laminar flame speed for combustion.
-   * \return Laminar flame speed for combustion.
-   */
-  su2double GetLaminar_Flame_Speed(void);
-  
-  /*!
-   * \brief Get the flame temperature for combustion.
-   * \return Flame temperature for combustion.
-   */
-  su2double GetFlame_Temperature(void);
   
   /*!
    * \brief Get the flag for activating scalar transport clipping

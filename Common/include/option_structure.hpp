@@ -876,7 +876,7 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("BC", BC); //BAS-CAKMAKCIOGLU
 
 /*!
- * \brief types of transition models
+ * \brief types of scalar transport models
  */
 enum ENUM_SCALAR_MODEL {
   NO_SCALAR_MODEL = 0,     /*!< \brief No scalar transport model. */

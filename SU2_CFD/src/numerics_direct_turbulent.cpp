@@ -38,81 +38,17 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwSca_Turb::CUpwSca_Turb(unsigned short val_nDim,
-                                   unsigned short val_nVar,
-                                   CConfig *config)
-    : CNumerics(val_nDim, val_nVar, config) {
-
-  implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  grid_movement   = config->GetGrid_Movement();
-
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-
-}
-
-CUpwSca_Turb::~CUpwSca_Turb(void) {
-
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-
-}
-
-void CUpwSca_Turb::ComputeResidual(su2double *val_residual,
-                                       su2double **val_Jacobian_i,
-                                       su2double **val_Jacobian_j,
-                                       CConfig *config) {
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
-  if (grid_movement) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
-  }
-
-  ExtraADPreaccIn();
-
-  Density_i = V_i[nDim+2];
-  Density_j = V_j[nDim+2];
-
-  q_ij = 0.0;
-  if (grid_movement) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-    }
-  }
-  else {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1];
-      Velocity_j[iDim] = V_j[iDim+1];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-    }
-  }
-
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
-
-  FinishResidualCalc(val_residual, val_Jacobian_i, val_Jacobian_j, config);
-
-
-  AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();
-
-}
-
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                CConfig *config)
-    : CUpwSca_Turb(val_nDim, val_nVar, config) {
+    : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
 }
 
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
+  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
 }
 
@@ -1081,14 +1017,14 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  CConfig *config)
-    : CUpwSca_Turb(val_nDim, val_nVar, config) {
+    : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-
+  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
   AD::SetPreaccIn(V_i, nDim+3);
   AD::SetPreaccIn(V_j, nDim+3);
   

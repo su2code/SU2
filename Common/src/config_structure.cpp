@@ -985,10 +985,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SCALAR_CLIPPING_MAX", Scalar_Clipping_Max, 1.0e15);
   /*!\brief SCALAR_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
   addDoubleOption("SCALAR_CLIPPING_MIN", Scalar_Clipping_Min, -1.0e15);
-  /*!\brief LAMINAR_FLAME_SPEED \n DESCRIPTION: Laminar flame speed for combustion \ingroup Config*/
-  addDoubleOption("LAMINAR_FLAME_SPEED", Laminar_Flame_Speed, 0.0);
-  /*!\brief FLAME_TEMPERATURE \n DESCRIPTION: Flame temperature for combustion \ingroup Config*/
-  addDoubleOption("FLAME_TEMPERATURE", Flame_Temperature, 0.0);
 
   /*!\brief INC_INLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);

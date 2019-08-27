@@ -487,10 +487,6 @@ inline su2double CConfig::GetInc_Temperature_Init(void) { return Inc_Temperature
 
 inline su2double CConfig::GetScalar_Init(void) { return Scalar_Init; }
 
-inline su2double CConfig::GetLaminar_Flame_Speed(void) { return Laminar_Flame_Speed; }
-
-inline su2double CConfig::GetFlame_Temperature(void) { return Flame_Temperature; }
-
 inline bool CConfig::GetScalar_Clipping(void) { return Scalar_Clipping; }
 
 inline su2double CConfig::GetScalar_Clipping_Max(void) { return Scalar_Clipping_Max; }

@@ -2382,9 +2382,10 @@ public:
   void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
+
 /*!
- * \class CUpwSca_Turb
- * \brief Template class for turbulent scalar upwind fluxes between nodes i and j.
+ * \class CUpwScalar
+ * \brief Template class for scalar upwind fluxes between nodes i and j.
  * \details This class serves as a template for the scalar upwinding residual
  *   classes.  The general structure of a scalar upwinding calculation is the
  *   same for many different  models, which leads to a lot of repeated code.
@@ -2394,16 +2395,16 @@ public:
  *   calculation for a convection residual, extend this class and implement
  *   the pure virtual functions with model-specific behavior.
  * \ingroup ConvDiscr
- * \author C. Pederson, A. Bueno., and A. Campos.
+ * \author C. Pederson, A. Bueno, A. Campos, T. Economon
  */
-class CUpwSca_Turb : public CNumerics {
+class CUpwScalar : public CNumerics {
 private:
-
+  
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD
    */
   virtual void ExtraADPreaccIn() = 0;
-
+  
   /*!
    * \brief Model-specific steps in the ComputeResidual method
    * \param[out] val_residual - Pointer to the total residual.
@@ -2415,31 +2416,31 @@ private:
                                   su2double **Jacobian_i,
                                   su2double **Jacobian_j,
                                   CConfig *config) = 0;
-
+  
 protected:
-  su2double *Velocity_i, *Velocity_j; /*!< \brief Velocity, minus any grid movement. */
-  su2double Density_i, Density_j;
-  bool implicit, grid_movement, incompressible;
-  su2double q_ij, /*!< \brief Projected velocity at the face. */
-            a0,   /*!< \brief The maximum of the face-normal velocity and 0 */
-            a1;   /*!< \brief The minimum of the face-normal velocity and 0 */
-  unsigned short iDim;
-
+  su2double *Velocity_i, *Velocity_j;            /*!< \brief Velocity at nodes i and j. */
+  su2double Density_i, Density_j;                /*!< \brief Density at nodes i and j. */
+  bool implicit, grid_movement, incompressible;  /*!< \brief Boolean flags. */
+  su2double q_ij,                                /*!< \brief Projected velocity at the face. */
+  a0,                                            /*!< \brief The maximum of the face-normal velocity and 0 */
+  a1;                                            /*!< \brief The minimum of the face-normal velocity and 0 */
+  unsigned short iDim;                           /*!< \brief Dimension index. */
+  
 public:
-
+  
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Turb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
+  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_Turb(void);
-
+  ~CUpwScalar(void);
+  
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
@@ -2447,7 +2448,52 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual,
+                       su2double **val_Jacobian_i,
+                       su2double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+/*!
+ * \class CUpwScalar_General
+ * \brief Class for doing a scalar upwind solver for scalar transport eqns.
+ * \ingroup ConvDiscr
+ * \author T. Economon
+ */
+class CUpwScalar_General : public CUpwScalar {
+private:
+  
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn();
+  
+  /*!
+   * \brief SST specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                          su2double **Jacobian_j, CConfig *config);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwScalar_General(unsigned short val_nDim,
+                     unsigned short val_nVar,
+                     CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwScalar_General(void);
 };
 
 /*!
@@ -2456,7 +2502,7 @@ public:
  * \ingroup ConvDiscr
  * \author A. Campos.
  */
-class CUpwSca_TurbSST : public CUpwSca_Turb {
+class CUpwSca_TurbSST : public CUpwScalar {
 private:
   
   /*!
@@ -2496,7 +2542,7 @@ public:
  * \ingroup ConvDiscr
  * \author A. Bueno.
  */
-class CUpwSca_TurbSA : public CUpwSca_Turb {
+class CUpwSca_TurbSA : public CUpwScalar {
 private:
 
   /*!
@@ -2643,119 +2689,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CUpwScalar
- * \brief Template class for scalar upwind fluxes between nodes i and j.
- * \details This class serves as a template for the scalar upwinding residual
- *   classes.  The general structure of a scalar upwinding calculation is the
- *   same for many different  models, which leads to a lot of repeated code.
- *   By using the template design pattern, these sections of repeated code are
- *   moved to this shared base class, and the specifics of each model
- *   are implemented by derived classes.  In order to add a new residual
- *   calculation for a convection residual, extend this class and implement
- *   the pure virtual functions with model-specific behavior.
- * \ingroup ConvDiscr
- * \author C. Pederson, T. Economon
- */
-class CUpwScalar : public CNumerics {
-private:
-  
-  /*!
-   * \brief A pure virtual function; Adds any extra variables to AD
-   */
-  virtual void ExtraADPreaccIn() = 0;
-  
-  /*!
-   * \brief Model-specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void FinishResidualCalc(su2double *val_residual,
-                                  su2double **Jacobian_i,
-                                  su2double **Jacobian_j,
-                                  CConfig *config) = 0;
-  
-protected:
-  su2double *Velocity_i, *Velocity_j;            /*!< \brief Velocity at nodes i and j. */
-  su2double Density_i, Density_j;                /*!< \brief Density at nodes i and j. */
-  bool implicit, grid_movement, incompressible;  /*!< \brief Boolean flags. */
-  su2double q_ij,                                /*!< \brief Projected velocity at the face. */
-  a0,                                            /*!< \brief The maximum of the face-normal velocity and 0 */
-  a1;                                            /*!< \brief The minimum of the face-normal velocity and 0 */
-  unsigned short iDim;                           /*!< \brief Dimension index. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwScalar(void);
-  
-  /*!
-   * \brief Compute the scalar upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual,
-                       su2double **val_Jacobian_i,
-                       su2double **val_Jacobian_j,
-                       CConfig *config);
-};
-
-/*!
- * \class CUpwScalar_General
- * \brief Class for doing a scalar upwind solver for scalar transport eqns.
- * \ingroup ConvDiscr
- * \author T. Economon
- */
-class CUpwScalar_General : public CUpwScalar {
-private:
-  
-  /*!
-   * \brief Adds any extra variables to AD
-   */
-  void ExtraADPreaccIn();
-  
-  /*!
-   * \brief SST specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                          su2double **Jacobian_j, CConfig *config);
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwScalar_General(unsigned short val_nDim,
-                     unsigned short val_nVar,
-                     CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwScalar_General(void);
 };
 
 /*!
