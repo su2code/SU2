@@ -2009,6 +2009,8 @@ inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsi
   radius = top_optim_filter_radius[iKernel];
 }
 
+inline unsigned short CConfig::GetTopology_Search_Limit(void) const { return top_optim_search_lim; }
+
 inline void CConfig::GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
   type = top_optim_proj_type;  param = top_optim_proj_param;
 }
