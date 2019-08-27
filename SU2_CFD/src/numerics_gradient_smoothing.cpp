@@ -131,9 +131,9 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
       for (jNode = iNode; jNode < nNode; jNode++) {
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][jDim];
-          }
+          //for (jDim = 0; jDim < nDim; jDim++) {
+            GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][iDim];
+          //}
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -165,6 +165,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
     Weight = element->GetWeight(iGauss);
+    Jac_X = element->GetJ_X(iGauss);
 
     for (iNode = 0; iNode < nNode; iNode++) {
       Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
@@ -172,9 +173,8 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (jNode = 0; jNode < nNode; jNode++) {
-        val_HiHj = Weight * Ni_Vec[iNode] * Ni_Vec[jNode];
+        val_HiHj = Weight * Jac_X * Ni_Vec[iNode] * Ni_Vec[jNode];
         element->Add_HiHj(val_HiHj, iNode, jNode);
-        std::cout << "Adding in " << iNode << ", " << jNode << " : " << Weight << ", " << Ni_Vec[iNode] << ", " << Ni_Vec[jNode] << std::endl;
       }
     }
 

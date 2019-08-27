@@ -161,6 +161,20 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
   dir = 0;
 
+    CSysVector<su2double> auxVec;
+    auxVec.Initialize(nPoint, nPointDomain, nDim, 0.0);
+
+    auxVec.SetValZero();
+    for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+        for(auto iDim=0; iDim<nDim; iDim++) {
+        auxVec.SetBlock(iPoint, iDim, solver->node[iPoint]->GetSensitivity(iDim));
+        }
+    }
+
+    ofstream input ("input.txt");
+    auxVec.printVec(input);
+    input.close();
+
   /*--- Initialize vector and sparse matrix ---*/
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
@@ -182,9 +196,19 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
       ofstream matrix ("matrix.dat");
       Jacobian.printMat(matrix);
       matrix.close();
+      ofstream rhs ("rhs.txt");
+      LinSysRes.printVec(rhs);
+      rhs.close();
 
       Solve_Linear_System(geometry, config);
       Set_Sensitivities(geometry, solver, config);
+
+      ofstream result ("result.txt");
+      LinSysSol.printVec(result);
+      result.close();
+
+      LinSysSol.SetValZero();
+      LinSysRes.SetValZero();
     }
 
   } else {
@@ -211,11 +235,24 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
   }
 
+  auxVec.SetValZero();
+  for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+      for(auto iDim=0; iDim<nDim; iDim++) {
+      auxVec.SetBlock(iPoint, iDim, solver->node[iPoint]->GetSensitivity(iDim));
+      }
+  }
+
+  ofstream output ("output.txt");
+  auxVec.printVec(output);
+  output.close();
+
+  /*
   for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++) {
 
     std::cout << "SU2 node "<< iPoint << " is mesh node " << geometry->node[iPoint]->GetGlobalIndex() << std::endl;
 
   }
+  */
 }
 
 
@@ -270,10 +307,12 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
         //DHiHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
 
-        std::cout << "Element: " << iElem
+        /*
+         * std::cout << "Element: " << iElem
                   << " Jacobian Block: " << iNode << ", " << jNode << ", "
                   << indexNode[iNode] << ", " << indexNode[jNode] << ", "
                   << geometry->node[indexNode[iNode]]->GetGlobalIndex()<< ", " << geometry->node[indexNode[jNode]]->GetGlobalIndex() << std::endl;
+        */
 
         if ( config->GetSepDim() ) {
 
@@ -341,7 +380,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
   unsigned short iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double Weight;
+  su2double Weight, Jac_X;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
@@ -351,6 +390,17 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        auto val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+
+    }
 
     element_container[GRAD_TERM][EL_KIND]->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear();
@@ -363,23 +413,29 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
       }
 
       Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
+      Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
 
       for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
 
         if ( config->GetSepDim() ) {
 
-          Residual[dir] = Weight * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(dir);
-          LinSysRes.SetBlock(indexNode[iNode], &Residual[dir]);
-
+          Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(dir);
+          LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
+          std::cout << "Input " << indexNode[iNode] << ", " << dir << ", " << solver->node[indexNode[iNode]]->GetSensitivity(dir) << std::endl;
         } else {
 
           for (iDim = 0; iDim < nDim; iDim++) {
-            Residual[iDim] = Weight * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(iDim);
+            Residual[iDim] += Weight * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(iDim);
             // std:: cout << Weight << ", " << Jac_X << ", " << element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) << ", " << solver->node[indexNode[iNode]]->GetSensitivity(iDim) << std::endl;
           }
-          LinSysRes.SetBlock(indexNode[iNode], Residual);
+          LinSysRes.AddBlock(indexNode[iNode], Residual);
 
         }
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Residual[iDim] = 0;
+        }
+
       }
     }
   }
@@ -558,6 +614,9 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       solver->node[iPoint]->SetSensitivity(dir,LinSysSol[iPoint]);
+
+                std::cout << "Output " << iPoint << ", " << dir << ", " << LinSysSol[iPoint] << std::endl;
+
     }
 
   } else {

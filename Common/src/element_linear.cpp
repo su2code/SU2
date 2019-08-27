@@ -47,12 +47,14 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
   /*--- Allocate internal structures ---*/
 
   nNodes = 3;
-  nGaussPoints = 1;
+  nGaussPoints = 3;
   AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 1.0/3.0;  GaussCoord[0][1] = 1.0/3.0;  GaussWeight[0] = 0.5;
+  GaussCoord[0][0] = 0.66666666666666666667; GaussCoord[0][1] = 0.16666666666666666667; GaussWeight[0] = 0.33333333333333333333;
+  GaussCoord[1][0] = 0.16666666666666666667; GaussCoord[1][1] = 0.66666666666666666667; GaussWeight[1] = 0.33333333333333333333;
+  GaussCoord[2][0] = 0.16666666666666666667; GaussCoord[2][1] = 0.16666666666666666667; GaussWeight[2] = 0.33333333333333333333;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
