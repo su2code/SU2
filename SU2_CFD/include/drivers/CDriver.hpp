@@ -50,6 +50,8 @@
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
+#include "../output/COutputLegacy.hpp"
+
 #include "../output/COutput.hpp"
 #include "../output/CDriverOutput.hpp"
 #include "../output/CElasticityOutput.hpp"
@@ -1084,7 +1086,8 @@ public:
  * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFSIDriver : public CDriver {
-
+  
+  COutputLegacy* output_legacy;
   CIteration** direct_iteration;
   unsigned short RecordingState;
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */

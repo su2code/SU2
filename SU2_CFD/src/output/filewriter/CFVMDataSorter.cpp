@@ -8,7 +8,7 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
   nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
   nLocalPoint_Sort  = geometry->GetnPointDomain();
 
-  Local_Halo = new int[geometry->GetnPoint()];
+  Local_Halo = new int[geometry->GetnPoint()]();
   
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
   
@@ -27,9 +27,9 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
   SetHaloPoints(geometry, config);
   
-  /*--- Create a linear partition --- */
+  /*--- Create the linear partitioner --- */
   
-  CreateLinearPartition(nGlobalPoint_Sort);  
+  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
   
   /*--- Prepare the send buffers ---*/
   
@@ -39,15 +39,12 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
 CFVMDataSorter::~CFVMDataSorter(){
   
-  delete [] beg_node;
-  delete [] end_node;
-  delete [] nPoint_Cum;
-  delete [] nPoint_Lin;
   delete [] Local_Halo;
   
   if (connSend != NULL)    delete [] connSend;
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
+  if (linearPartitioner != NULL) delete linearPartitioner;
 }
 
 void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
@@ -80,7 +77,7 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
 }
 
 
-void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
+void CFVMDataSorter::SortOutputData() {
   
   int VARS_PER_POINT = GlobalField_Counter;
   
@@ -96,13 +93,9 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
    directly copy our own data later. ---*/
   
   su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]];
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
-    connRecv[ii] = 0;
+  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
   
-  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    idRecv[ii] = 0;
+  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
   
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
@@ -212,7 +205,7 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   Parallel_Data = new su2double*[VARS_PER_POINT];
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nPoint_Recv[size]];
+    Parallel_Data[jj] = new su2double[nPoint_Recv[size]]();
     for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
       Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
     }
@@ -324,9 +317,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    nodes, i.e., rank 0 holds the first nPoint()/nProcessors nodes.
    First, initialize a counter and flag. ---*/
   
-  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
-  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
-  int *nElem_Flag = new int[size];
+  int *nElem_Send = new int[size+1](); nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1](); nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size]();
   
   for (int ii=0; ii < size; ii++) {
     nElem_Send[ii] = 0;
@@ -360,7 +353,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
         
         if (val_sort) {
-          iProcessor = FindProcessor(Global_Index);
+          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -409,23 +402,21 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    sending. ---*/
   
   unsigned long *connSend = NULL;
-  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
-    connSend[ii] = 0;
+  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
   
   /*--- Allocate arrays for storing halo flags. ---*/
   
-  unsigned short *haloSend = new unsigned short[nElem_Send[size]];
+  unsigned short *haloSend = new unsigned short[nElem_Send[size]]();
   for (int ii = 0; ii < nElem_Send[size]; ii++)
     haloSend[ii] = false;
   
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
   
-  unsigned long *index = new unsigned long[size];
+  unsigned long *index = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
   
-  unsigned long *haloIndex = new unsigned long[size];
+  unsigned long *haloIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
   
   /*--- Loop through our elements and load the elems and their
@@ -456,7 +447,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
         
         if (val_sort) {
-          iProcessor = FindProcessor(Global_Index);    
+          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -505,13 +496,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    directly copy our own data later. ---*/
   
   unsigned long *connRecv = NULL;
-  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
-    connRecv[ii] = 0;
+  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]]();
   
-  unsigned short *haloRecv = new unsigned short[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    haloRecv[ii] = false;
+  unsigned short *haloRecv = new unsigned short[nElem_Recv[size]]();
   
 #ifdef HAVE_MPI
 
@@ -617,7 +604,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    to the connectivity for vizualization packages. First, allocate
    appropriate amount of memory for this section. ---*/
   
-  if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
+  if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]]();
   int count = 0; nElem_Total = 0;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     if (!haloRecv[ii]) {

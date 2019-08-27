@@ -52,64 +52,64 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("RMS_RES");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   /*--- Default fields for screen output ---*/
   if (nRequestedScreenFields == 0){
-    if (dynamic) RequestedScreenFields.push_back("TIME_ITER");
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
+    if (dynamic) requestedScreenFields.push_back("TIME_ITER");
+    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
+    requestedScreenFields.push_back("INNER_ITER");
     if(linear_analysis){
-      RequestedScreenFields.push_back("RMS_DISP_X");
-      RequestedScreenFields.push_back("RMS_DISP_Y");
-      RequestedScreenFields.push_back("RMS_DISP_Z");
+      requestedScreenFields.push_back("RMS_DISP_X");
+      requestedScreenFields.push_back("RMS_DISP_Y");
+      requestedScreenFields.push_back("RMS_DISP_Z");
     }
     if(nonlinear_analysis){
-      RequestedScreenFields.push_back("RMS_UTOL");
-      RequestedScreenFields.push_back("RMS_RTOL");
-      RequestedScreenFields.push_back("RMS_ETOL");
+      requestedScreenFields.push_back("RMS_UTOL");
+      requestedScreenFields.push_back("RMS_RTOL");
+      requestedScreenFields.push_back("RMS_ETOL");
     }
-    RequestedScreenFields.push_back("VMS");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    requestedScreenFields.push_back("VMS");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
   /*--- Default fields for volume output ---*/
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("STRESS");    
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.push_back("COORDINATES");
+    requestedVolumeFields.push_back("SOLUTION");
+    requestedVolumeFields.push_back("STRESS");    
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Structure)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetVolume_FileName();
+  volumeFilename = config->GetVolume_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfCoeff_FileName();
+  surfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DISP_X";
+  if (convField.size() == 0 ) convField = "RMS_DISP_X";
 
 }
 
 CElasticityOutput::~CElasticityOutput(void) {
 
   if (rank == MASTER_NODE){
-    HistFile.close();
+    histFile.close();
 
   }
 
@@ -137,7 +137,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     
   }
   
-  if (multizone){
+  if (multiZone){
     SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
     if (nDim == 3) SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));
@@ -246,7 +246,7 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
 }
 bool CElasticityOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetTime_Domain() == NO && (curr_InnerIter  == 0));
+  return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
   
 }
 

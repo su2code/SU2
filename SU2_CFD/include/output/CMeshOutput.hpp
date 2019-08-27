@@ -1,8 +1,7 @@
 /*!
- * \file output_mesh.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file CMeshOutput.hpp
+ * \brief  Headers of the mesh output.
+ * \author R. Sanchez, T. Albring.
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -45,7 +44,7 @@
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CMeshOutput : public COutput {
+class CMeshOutput final: public COutput {
 
 public:
 
@@ -58,21 +57,21 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CMeshOutput(void);
+  ~CMeshOutput(void) override;
 
   /*!
-   * \brief SetVolumeOutputFields
-   * \param config
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields(CConfig *config);
+  void SetVolumeOutputFields(CConfig *config) override;
 
   /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override; 
 
 };
