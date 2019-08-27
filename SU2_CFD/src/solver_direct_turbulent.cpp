@@ -883,7 +883,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     
     /*--- Loop over the STG box and calculate the most energetic scale. ---*/
     
-    su2double lengthEnergetic, wallDistance, turb_ke, omega, lengthTurb, maxLength;
+    su2double wallDistance, turb_ke, omega, lengthTurb, maxLength;
     su2double local_lengthEnergetic[3], max_localVelocity = 0.0, max_lengthEnergetic = 0.0;
     su2double Density, Velocity2, max_lengthNyquist = 0.0;
     
@@ -3595,11 +3595,49 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetVolumeSTG()){
     
     su2double Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
-    su2double rho, omega, lenScale, kinematicViscosityTurb, U0, rhoUOmega;
+    su2double rho, omega, lenScale, kinematicViscosityTurb, U0, rhoUOmega, *Coord;
+    
+    // Load the STG box.
+    const su2double *STGBox = config->GetVolumeSTGBox_Values();
+    
+    const su2double Lbf = STGBox[3] - STGBox[0];
+    const su2double p1[2] = {STGBox[0], 0.0};
+    const su2double p2[2] = { (Lbf / 2.) + STGBox[0], 1.0};
+    const su2double p3[2] = {STGBox[3], 0.0};
+    
+    // Spatial distribution of the source intensity.
+    vector<su2double> ListCoordX = geometry->GetSTG_GlobalListCoordX();
+    vector<su2double> AlphaX;
+    
+    su2double CoordX_Sum = 0.0;
+    /*--- Piecewise linear function controlling the spatial distribution ---*/
+    su2double AlphaX_Sum = 0.0;
+    for(std::vector<int>::size_type ii = 0; ii != ListCoordX.size(); ii++) {
+      CoordX_Sum += (ListCoordX[ii] - STGBox[0]);
+      if (ListCoordX[ii] <= p2[0]){
+        su2double slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
+        AlphaX.push_back(slope * ListCoordX[ii] - 2.0 * STGBox[0]);
+        AlphaX_Sum += slope * ListCoordX[ii] - 2.0 * STGBox[0];
+      }
+      else{
+        su2double slope = (p3[1] - p2[1]) / (p3[0] - p2[0]);
+        AlphaX.push_back(slope * ListCoordX[ii] + 2.0 * STGBox[3]);
+        AlphaX_Sum +=slope * ListCoordX[ii] + 2.0 * STGBox[3];
+      }
+    }
+    
+    // Normalizing the spatial distribution
+    for(std::vector<int>::size_type ii = 0; ii != AlphaX.size(); ii++) {
+      AlphaX[ii] = AlphaX[ii] / AlphaX_Sum;
+    }
     
     vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
     
+    
     for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
+      
+      /* Get Coordinates */
+      Coord = geometry->node[LocalPoints[ii]]->GetCoord();
       
       /* Get Density */
       rho =  solver_container[FLOW_SOL]->node[LocalPoints[ii]]->GetSolution(0);
@@ -3621,9 +3659,34 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       /* Get specific dissipation rate */
       omega   = node[LocalPoints[ii]]->GetSolution(1);
       
-      rhoUOmega = rho * U0 * omega;
+      /* Spatial distribution */
+      unsigned short indx = -1;
+      for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
+        indx += 1;
+        if (ListCoordX[indx] >= (Coord[0]-1E-6) && ListCoordX[indx] <= (Coord[0]+1E-6) ) break;
+      }
+      
+      rhoUOmega = rho * U0 * omega * AlphaX[indx];;
       
       node[LocalPoints[ii]]->SetKSinkTerm(rhoUOmega, kinematicViscosityTurb, lenScale, Grad_Vel);
+      
+//      if ((Coord[1] <= 0.001) && (Coord[1] >= -0.001) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399)){
+//        su2double const_smag  = 0.1;
+//        su2double filter_mult = 2.0;
+//
+//        su2double C_s_filter_width = const_smag*filter_mult*lenScale;
+//
+//        su2double S12 = 0.5*(Grad_Vel[0][1] + Grad_Vel[1][0]);
+//        su2double S13 = 0.5*(Grad_Vel[0][2] + Grad_Vel[2][0]);
+//        su2double S23 = 0.5*(Grad_Vel[1][2] + Grad_Vel[2][1]);
+//        su2double strain_rate2 = 2.0*(pow(Grad_Vel[0][0],2.) + pow(Grad_Vel[1][1],2.) + pow(Grad_Vel[2][2],2.)
+//                                      +      2.0*(S12*S12 + S13*S13 + S23*S23));
+//
+//        /* Smagorinsky SGS kinetic viscosity. */
+//        su2double nut_sgs = C_s_filter_width*C_s_filter_width*sqrt(strain_rate2);
+//
+//        cout << "Viscosities: " << kinematicViscosityTurb << " " << nut_sgs << endl;
+//      }
     }
   }
 }
