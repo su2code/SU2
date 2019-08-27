@@ -52,10 +52,11 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   int rank = MASTER_NODE;
 
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
@@ -279,10 +280,12 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
@@ -498,10 +501,10 @@ void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_con
 
   su2double *V_i, *V_j, Temp_i, Temp_j;
   unsigned long iEdge, iPoint, jPoint;
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   if(flow) {
 
@@ -548,10 +551,10 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
           **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad, Non_Physical = 1.0;
   unsigned short iDim, iVar;
   unsigned long iEdge, iPoint, jPoint;
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool muscl = (config->GetMUSCL_Heat());
 
   if(flow) {
@@ -645,12 +648,12 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
       thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
   unsigned long iEdge, iPoint, jPoint;
 
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
-  bool turb = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   eddy_viscosity_i = 0.0;
   eddy_viscosity_j = 0.0;
@@ -787,10 +790,10 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   //su2double Prandtl_Turb;
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   Prandtl_Lam = config->GetPrandtl_Lam();
 //  Prandtl_Turb = config->GetPrandtl_Turb();
@@ -850,10 +853,10 @@ void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, iPoint;
   su2double Wall_HeatFlux, Area, *Normal;
 
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -914,11 +917,11 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *Flow_Dir,  Vel_Mag;
   su2double *V_inlet, *V_domain;
-
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   bool viscous              = config->GetViscous();
   bool grid_movement        = config->GetGrid_Movement();
@@ -1034,10 +1037,11 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain;
 
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  
   bool grid_movement        = config->GetGrid_Movement();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -1106,10 +1110,10 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
       Temperature_Ref, Tinterface, T_Conjugate, Tnormal_Conjugate, Conductance, HeatFluxDensity, HeatFluxValue;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   su2double *Normal = new su2double[nDim];
 
@@ -1195,11 +1199,10 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
   su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
       thermal_conductivity, thermal_diffusivity;
   string Marker_Tag, HeatFlux_Tag;
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
-
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 #ifdef HAVE_MPI
   su2double MyAllBound_HeatFlux, MyAllBound_AvgTemperature;
 #endif
@@ -1337,11 +1340,12 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
   
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool turb = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  
+  bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -1597,10 +1601,10 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   unsigned short iVar;
   unsigned long iPoint, total_index;
   su2double Delta, Vol, *local_Res_TruncError;
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == INC_RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
 
   /*--- Set maximum residual to zero ---*/
