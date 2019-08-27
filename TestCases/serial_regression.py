@@ -227,6 +227,17 @@ def main():
     rae2822_sst.tol       = 0.00001
     test_list.append(rae2822_sst)
 
+    # RAE2822 SST_SUST
+    rae2822_sst_sust           = TestCase('rae2822_sst_sust')
+    rae2822_sst_sust.cfg_dir   = "rans/rae2822"
+    rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
+    rae2822_sst_sust.test_iter = 20
+    rae2822_sst_sust.test_vals = [-2.401009, 4.909241, 0.825023, 0.052675] #last 4 columns
+    rae2822_sst_sust.su2_exec  = "SU2_CFD"
+    rae2822_sst_sust.timeout   = 1600
+    rae2822_sst_sust.tol       = 0.00001
+    test_list.append(rae2822_sst_sust)
+
     # Flat plate
     turb_flatplate           = TestCase('turb_flatplate')
     turb_flatplate.cfg_dir   = "rans/flatplate"
@@ -286,6 +297,18 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
+
+    # NACA0012 (SST_SUST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
+    turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
+    turb_naca0012_sst_sust.test_iter = 10
+    turb_naca0012_sst_sust.test_vals = [-13.280975, -5.646508, 1.022304, 0.019539] #last 4 columns
+    turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
+    turb_naca0012_sst_sust.timeout   = 3200
+    turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_sust)
+
 
     # PROPELLER 
     propeller           = TestCase('propeller')
@@ -398,7 +421,7 @@ def main():
     ### Incompressible RANS  ###
     ############################
 
-    # NACA0012
+    # NACA0012, SA
     inc_turb_naca0012           = TestCase('inc_turb_naca0012')
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
@@ -409,7 +432,18 @@ def main():
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
-    
+
+    # NACA0012, SST_SUST
+    inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
+    inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
+    inc_turb_naca0012_sst_sust.test_iter = 20
+    inc_turb_naca0012_sst_sust.test_vals = [-7.277591, 0.146922, 0.000021, 0.311963] #last 4 columns
+    inc_turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
+    inc_turb_naca0012_sst_sust.timeout   = 1600
+    inc_turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(inc_turb_naca0012_sst_sust)
+
     ####################
     ### DG-FEM Euler ###
     ####################
