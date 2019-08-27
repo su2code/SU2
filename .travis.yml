@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ole.burghardt@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - remove_CMultiphysicsZonalDriver
+        - develop
 
 virtualenv:
   system_site_packages: true
