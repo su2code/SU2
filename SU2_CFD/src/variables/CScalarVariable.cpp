@@ -61,7 +61,7 @@ CScalarVariable::CScalarVariable(su2double *val_scalar,
   
   if (dual_time) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar]     = val_scalar[iVar];
+      Solution_time_n[iVar]  = val_scalar[iVar];
       Solution_time_n1[iVar] = val_scalar[iVar];
     }
   }

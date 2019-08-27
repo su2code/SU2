@@ -109,7 +109,7 @@ CUpwScalar_General::CUpwScalar_General(unsigned short val_nDim,
 CUpwScalar_General::~CUpwScalar_General(void) { }
 
 void CUpwScalar_General::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim+2); AD::SetPreaccIn(V_j, nDim+2);
+  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3);
 }
 
 void CUpwScalar_General::FinishResidualCalc(su2double *val_residual,
@@ -180,6 +180,8 @@ void CAvgGradScalar::ComputeResidual(su2double *val_residual,
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+  AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
   if (correct_gradient) {
     AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j, nVar);
   }

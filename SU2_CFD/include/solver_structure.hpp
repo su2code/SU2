@@ -2223,6 +2223,12 @@ public:
    * \return Value of the objective function for the volume fraction.
    */
   virtual su2double GetTotal_OFVolFrac(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the objective function for the structural compliance.
+   */
+  virtual su2double GetTotal_OFCompliance(void);
 
   /*!
    * \brief A virtual member.
@@ -3498,6 +3504,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -10469,103 +10483,6 @@ public:
 };
 
 /*!
- * \class CCombustionScalarSolver
- * \brief Main class for defining the combustion scalar solver.
- * \ingroup Scalar_Model
- * \author T. Economon
- */
-class CCombustionScalarSolver: public CScalarSolver {
-private:
-  CFluidModel *FluidModel;  /*!< \brief Fluid model for the calar transport problem. */
-  
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CCombustionScalarSolver(void);
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] FluidModel
-   */
-  CCombustionScalarSolver(CGeometry *geometry, CConfig *config,
-                       unsigned short iMesh);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCombustionScalarSolver(void);
-  
-  /*!
-   * \brief Restart residual and compute gradients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container,
-                     CConfig *config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem,
-                     bool Output);
-  
-  /*!
-   * \brief Post-processing routine for the passive scalar model.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container,
-                      CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Compute the primitive variables (diffusivities)
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
-  
-  /*!
-   * \brief Set the initial condition for the scalar transport problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
-                           CConfig *config, unsigned long ExtIter);
-  
-  /*!
-   * \brief Compute the preconditioner for low-Mach flows.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                       CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-};
-
-/*!
  * \class CAdjEulerSolver
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
@@ -11903,6 +11820,7 @@ private:
   int nFEA_Terms;
   
   bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
+  bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
   su2double *GradN_X,
   *GradN_x;
@@ -11952,6 +11870,7 @@ private:
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
+  su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
 
   su2double Global_OFRefGeom;        /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;        /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -12328,6 +12247,12 @@ public:
    * \param[out] OFVolFrac - value of the objective function.
    */
   su2double GetTotal_OFVolFrac(void);
+  
+  /*!
+   * \brief Retrieve the value of the structural compliance objective function
+   * \return Value of the objective function.
+   */
+  su2double GetTotal_OFCompliance(void);
 
   /*!
    * \brief Determines whether there is an element-based file or not.
@@ -12457,6 +12382,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Compute the compliance objective function
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Compute the penalty due to the stiffness increase

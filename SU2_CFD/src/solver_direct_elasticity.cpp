@@ -93,6 +93,7 @@ CFEASolver::CFEASolver(void) : CSolver() {
   
   iElem_iDe   = NULL;
   
+  topol_filter_applied = false;
 }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -111,6 +112,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   
   element_based = false;          // A priori we don't have an element-based input file (most of the applications will be like this)
+  topol_filter_applied = false;
   
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -989,9 +991,10 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * so we ask "geometry" to compute them.
    * This only needs to be done for the undeformed (initial) shape.
    */
-  if (topology_mode && (restart || initial_calc || initial_calc_restart || disc_adj_fem)) {
+  if (topology_mode && (!topol_filter_applied || disc_adj_fem)) {
     geometry->SetElemVolume(config);
     FilterElementDensities(geometry,config);
+    topol_filter_applied = true;
   }
   
   /*
@@ -4223,14 +4226,16 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
   /*--- Perform a volume average of the physical density of the elements for topology optimization ---*/
 
   unsigned long iElem, nElem = geometry->GetnElem();
-  su2double total_volume = 0.0, integral = 0.0;
+  su2double total_volume = 0.0, integral = 0.0, discreteness = 0.0;
 
   for (iElem=0; iElem<nElem; ++iElem) {
     /*--- count only elements that belong to the partition ---*/
     if ( geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain() ){
       su2double volume = geometry->elem[iElem]->GetVolume();
+      su2double rho = element_properties[iElem]->GetPhysicalDensity();
       total_volume += volume;
-      integral += volume*element_properties[iElem]->GetPhysicalDensity();
+      integral += volume*rho;
+      discreteness += volume*4.0*rho*(1.0-rho);
     }
   }
   
@@ -4241,19 +4246,91 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
     total_volume = tmp;
     SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     integral = tmp;
+    SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    discreteness = tmp;
   }
 #endif
 
-  Total_OFVolFrac = integral/total_volume;
+  if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
+    Total_OFVolFrac = discreteness/total_volume;
+  else
+    Total_OFVolFrac = integral/total_volume;
 
   // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
   if (rank == MASTER_NODE){
     cout << "Objective function: " << Total_OFVolFrac << "." << endl;
+
     ofstream myfile_res;
-    myfile_res.open ("of_volfrac.dat");
+    if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
+      myfile_res.open ("of_topdisc.dat");
+    else
+      myfile_res.open ("of_volfrac.dat");
+
     myfile_res.precision(15);
     myfile_res << scientific << Total_OFVolFrac << endl;
     myfile_res.close();
+  }
+}
+
+void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config)
+{
+  unsigned long iPoint;
+  unsigned short iVar;
+  su2double nodalForce[3];
+
+  /*--- Types of loads to consider ---*/
+  bool fsi = config->GetFSI_Simulation();
+  bool body_forces = config->GetDeadLoad();
+
+  /*--- If the loads are being applied incrementaly ---*/
+  bool incremental_load = config->GetIncrementalLoad();
+
+  /*--- Computation (compliance = sum(f dot u) ) ---*/
+  /*--- Cannot be computed as u^T K u as the problem may not be linear ---*/
+
+  Total_OFCompliance = 0.0;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Initialize with loads speficied through config ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      nodalForce[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+
+    /*--- Add contributions due to body forces ---*/
+    if (body_forces)
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodalForce[iVar] += node[iPoint]->Get_BodyForces_Res(iVar);
+
+    /*--- Add contributions due to fluid loads---*/
+    if (fsi)
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodalForce[iVar] += node[iPoint]->Get_FlowTraction(iVar);
+
+    /*--- Correct for incremental loading ---*/
+    if (incremental_load)
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodalForce[iVar] *= loadIncrement;
+
+    /*--- Add work contribution from this node ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Total_OFCompliance += nodalForce[iVar]*node[iPoint]->GetSolution(iVar);
+  }
+
+#ifdef HAVE_MPI
+  su2double tmp;
+  SU2_MPI::Allreduce(&Total_OFCompliance,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  Total_OFCompliance = tmp;
+#endif
+
+  // TODO: Temporary output file for the objective function. Will be integrated in the output once refurbished.
+  if (rank == MASTER_NODE) {
+    cout << "Objective function: " << Total_OFCompliance << "." << endl;
+
+    ofstream file;
+    file.open("of_topcomp.dat");
+    file.precision(15);
+    file << scientific << Total_OFCompliance << endl;
+    file.close();
   }
 }
 
@@ -4570,10 +4647,10 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 {
   /*--- Apply a filter to the design densities of the elements to generate the
   physical densities which are the ones used to penalize their stiffness. ---*/
-  
-  unsigned short type;
+
+  unsigned short type, search_lim;
   su2double param, radius;
-  
+
   vector<pair<unsigned short,su2double> > kernels;
   vector<su2double> filter_radius;
   for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
@@ -4582,17 +4659,23 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
     kernels.push_back(make_pair(type,param));
     filter_radius.push_back(radius);
   }
+  search_lim = config->GetTopology_Search_Limit();
 
   unsigned long iElem, nElem = geometry->GetnElem();
-  
+
   su2double *design_rho = new su2double [nElem],
             *physical_rho = new su2double [nElem];
-  
-  for (iElem=0; iElem<nElem; ++iElem)
-    design_rho[iElem] = element_properties[iElem]->GetDesignDensity();
-  
-  geometry->FilterValuesAtElementCG(filter_radius, kernels, design_rho, physical_rho);
-  
+
+  /*--- "Rectify" the input ---*/
+  for (iElem=0; iElem<nElem; ++iElem) {
+    su2double rho = element_properties[iElem]->GetDesignDensity();
+    if      (rho > 1.0) design_rho[iElem] = 1.0;
+    else if (rho < 0.0) design_rho[iElem] = 0.0;
+    else                design_rho[iElem] = rho;
+  }
+
+  geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, design_rho, physical_rho);
+
   /*--- Apply projection ---*/
   config->GetTopology_Optim_Projection(type,param);
   switch (type) {
@@ -4608,10 +4691,16 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
     default:
       SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
   }
-  
-  for (iElem=0; iElem<nElem; ++iElem)
-    element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
-  
+
+  /*--- If input was out of bounds use the bound instead of the filtered
+   value, useful to enforce solid or void regions (e.g. a skin). ---*/
+  for (iElem=0; iElem<nElem; ++iElem) {
+    su2double rho = element_properties[iElem]->GetDesignDensity();
+    if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
+    else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
+    else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+  }
+
   delete [] design_rho;
   delete [] physical_rho;
 }
