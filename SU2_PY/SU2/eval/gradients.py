@@ -453,6 +453,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     base_name = matches[0]
     
     ADJ_NAME = 'ADJOINT_' + base_name
+    MULTIPOINT_ADJ_NAME = 'MULTIPOINT_' + ADJ_NAME
     
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
@@ -486,8 +487,8 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     config.MARKER_OUTLET = new_marker_outlet
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
     config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
-    if os.path.exists(su2io.add_suffix(solution_adj_list[0],su2io.get_adjointSuffix(base_name))): 
-        state.FILES[ADJ_NAME] = su2io.add_suffix(solution_adj_list[0],su2io.get_adjointSuffix(base_name))
+    if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][0]:
+        state.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][0]
 
     #state.find_files(config)
 
@@ -518,6 +519,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         name = files[ADJ_NAME]
         name = su2io.expand_time(name,config)
         link.extend(name)
+        files[MULTIPOINT_ADJ_NAME][0] = files[ADJ_NAME]
     else:
         config['RESTART_SOL'] = 'NO'
 
@@ -551,12 +553,12 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         if ADJ_NAME in ztate.FILES:
             del ztate.FILES[ADJ_NAME]
 
-        if os.path.exists(su2io.add_suffix(solution_adj_list[i+1],su2io.get_adjointSuffix(base_name))): 
-            ztate.FILES[ADJ_NAME] = su2io.add_suffix(solution_adj_list[i+1],su2io.get_adjointSuffix(base_name))
+        if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][i+1]:
+            ztate.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][i+1]
 
         files = ztate.FILES
         link = []
-        files['DIRECT'] = solution_flow_list[i+1]
+        files['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
 
         
 
@@ -565,7 +567,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         name = su2io.expand_part(name,konfig)
         link.extend(name)
 
-        # files: direction solution
+        # files: direct solution
         if 'DIRECT' in files:
             name = files['DIRECT']
             name = su2io.expand_time(name,konfig)
@@ -607,6 +609,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
                 dst = os.getcwd()
                 dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES[ADJ_NAME]
                 name = ztate.FILES[ADJ_NAME]
+                state.FILES[MULTIPOINT_ADJ_NAME][i+1] = name
                 name = su2io.expand_zones(name,konfig)
                 name = su2io.expand_time(name,konfig)
                 push.extend(name)
