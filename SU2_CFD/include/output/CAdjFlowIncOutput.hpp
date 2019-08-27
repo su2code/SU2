@@ -1,8 +1,7 @@
 /*!
- * \file output_flow_inc_discadj.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file CAdjFlowIncOutput.hpp
+ * \brief Headers of the adjoint incompressible flow output.
+ * \author T. Albring
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -40,18 +39,19 @@
 
 #include "COutput.hpp"
 
-/*! \class CDiscAdjFlowOutput
- *  \brief Output class for flow discrete adjoint problems.
+/*! \class CAdjFlowIncOutput
+ *  \brief Output class for incompressible flow discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CAdjFlowIncOutput : public COutput {
+class CAdjFlowIncOutput final: public COutput {
 private:
   
-  bool cont_adj;
+  bool cont_adj; /*!< \brief Boolean indicating whether we run a cont. adjoint problem */ 
 
-  unsigned short turb_model;
-  bool heat, weakly_coupled_heat;
+  unsigned short turb_model; /*!< \brief Boolean indicating whether have a turbulence model*/ 
+  bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/ 
+  weakly_coupled_heat; /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/ 
   
 public:
 
@@ -65,55 +65,59 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjFlowIncOutput(void);
+  ~CAdjFlowIncOutput(void) override;
 
   /*!
-   * \brief Set the history file header
+   * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
-
-  void SetHistoryOutputFields(CConfig *config);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
   
   /*!
-   * \brief SetVolumeOutputFields
-   * \param config
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config) override;
   
   /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  void SetVolumeOutputFields(CConfig *config) override;
   
   /*!
-   * \brief LoadSurfaceData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
-   * \param iMarker
-   * \param iVertex
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
   
   /*!
-   * \brief SetInit_Residuals
-   * \param config
-   * \return 
+   * \brief Set the values of the volume output fields for a surface point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver  - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Index of the vertex on the marker.
    */
-  bool SetInit_Residuals(CConfig *config);
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, 
+                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;  
   
   /*!
-   * \brief SetUpdate_Averages
-   * \param config
-   * \param dualtime
-   * \return 
+   * \brief Check whether the base values for relative residuals should be initialized
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetUpdate_Averages(CConfig *config);
+  bool SetInit_Residuals(CConfig *config) override;
+  
+  /*!
+   * \brief Check whether the averaged values should be updated
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> averages should be updated.
+   */
+  bool SetUpdate_Averages(CConfig *config) override;
 
 };

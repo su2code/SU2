@@ -51,46 +51,46 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("RMS_RES");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
-    RequestedScreenFields.push_back("RMS_PRESSURE");
-    RequestedScreenFields.push_back("RMS_VELOCITY-X");
-    RequestedScreenFields.push_back("RMS_VELOCITY-Y");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
+    requestedScreenFields.push_back("INNER_ITER");
+    requestedScreenFields.push_back("RMS_PRESSURE");
+    requestedScreenFields.push_back("RMS_VELOCITY-X");
+    requestedScreenFields.push_back("RMS_VELOCITY-Y");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("PRIMITIVE");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.push_back("COORDINATES");
+    requestedVolumeFields.push_back("SOLUTION");
+    requestedVolumeFields.push_back("PRIMITIVE");
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Incomp. Fluid)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetVolume_FileName(); 
+  volumeFilename = config->GetVolume_FileName(); 
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfCoeff_FileName();
+  surfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_PRESSURE";
+  if (convField.size() == 0 ) convField = "RMS_PRESSURE";
 
 
 }
@@ -98,7 +98,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 CFlowIncOutput::~CFlowIncOutput(void) {
 
   if (rank == MASTER_NODE){
-    HistFile.close();
+    histFile.close();
   }
 
 
@@ -254,7 +254,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
   
-  if (multizone){
+  if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
     SetHistoryOutputValue("BGS_VELOCITY-Y", log10(flow_solver->GetRes_BGS(2)));
@@ -277,7 +277,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
-    if (multizone) SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
+    if (multiZone) SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
   }
   if (heat){
     SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
@@ -288,7 +288,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     
     if (nDim == 3) SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(3)));
-    if (multizone){
+    if (multiZone){
       if (nDim == 3) SetHistoryOutputValue("BGS_HEAT",         log10(flow_solver->GetRes_BGS(4)));
       else           SetHistoryOutputValue("BGS_HEAT",         log10(flow_solver->GetRes_BGS(3)));
     }
@@ -609,8 +609,8 @@ su2double CFlowIncOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, C
 
 bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetTime_Marching() != STEADY && (curr_InnerIter == 0))|| 
-        (config->GetTime_Marching() == STEADY && (curr_TimeIter < 2)); 
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
+        (config->GetTime_Marching() == STEADY && (curTimeIter < 2)); 
   
 }
 

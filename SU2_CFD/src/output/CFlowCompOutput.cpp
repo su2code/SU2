@@ -44,52 +44,52 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   
   turb_model = config->GetKind_Turb_Model();
   
-  grid_movement = config->GetGrid_Movement(); 
+  gridMovement = config->GetGrid_Movement(); 
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("RMS_RES");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    if (config->GetTime_Domain()) RequestedScreenFields.push_back("TIME_ITER");
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
-    RequestedScreenFields.push_back("RMS_DENSITY");
-    RequestedScreenFields.push_back("RMS_MOMENTUM-X");
-    RequestedScreenFields.push_back("RMS_MOMENTUM-Y");
-    RequestedScreenFields.push_back("RMS_ENERGY");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (config->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");
+    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
+    requestedScreenFields.push_back("INNER_ITER");
+    requestedScreenFields.push_back("RMS_DENSITY");
+    requestedScreenFields.push_back("RMS_MOMENTUM-X");
+    requestedScreenFields.push_back("RMS_MOMENTUM-Y");
+    requestedScreenFields.push_back("RMS_ENERGY");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("PRIMITIVE");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.push_back("COORDINATES");
+    requestedVolumeFields.push_back("SOLUTION");
+    requestedVolumeFields.push_back("PRIMITIVE");
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Comp. Fluid)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetVolume_FileName();
+  volumeFilename = config->GetVolume_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfCoeff_FileName();
+  surfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  restartFilename = config->GetRestart_FileName();
 
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DENSITY";
+  if (convField.size() == 0 ) convField = "RMS_DENSITY";
 
   
 }
@@ -97,7 +97,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 CFlowCompOutput::~CFlowCompOutput(void) {
 
   if (rank == MASTER_NODE){
-    HistFile.close();
+    histFile.close();
 
   }
 
@@ -531,9 +531,9 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
   
-  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
-  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
-  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+  SetHistoryOutputValue("TIME_ITER",  curTimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curInnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curOuterIter); 
 
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
@@ -578,7 +578,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   default: break;
   }
   
-  if (multizone){
+  if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_MOMENTUM-X", log10(flow_solver->GetRes_BGS(1)));
     SetHistoryOutputValue("BGS_MOMENTUM-Y", log10(flow_solver->GetRes_BGS(2)));
@@ -658,14 +658,14 @@ su2double CFlowCompOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, 
 
 bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetTime_Marching() != STEADY && (curr_InnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curr_InnerIter < 2));
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
+        (config->GetTime_Marching() == STEADY && (curInnerIter < 2));
   
 }
 
 bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
   
-  return (config->GetTime_Marching() != STEADY && curr_InnerIter == 0);
+  return (config->GetTime_Marching() != STEADY && curInnerIter == 0);
       
 }
 
