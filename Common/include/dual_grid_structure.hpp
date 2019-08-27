@@ -730,10 +730,10 @@ public:
 	 */
 	void SetCoord_Old(su2double *val_coord_old);
 
-//   /*!
-//    * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
-//    */
-//   void SetCoord_Old(void);
+  /*!
+   * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
+   */
+  void SetCoord_Old(void);
 	
 	/*! 
 	 * \brief Set the value of the grid velocity at the point.

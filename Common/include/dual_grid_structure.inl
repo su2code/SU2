@@ -220,10 +220,10 @@ inline su2double CPoint::GetVolume_n (void) { return Volume[1]; }
 
 inline su2double CPoint::GetVolume_nM1 (void) { return Volume[2]; }
 
-// inline void CPoint::SetCoord_Old (void) {
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     Coord_Old[iDim] = Coord[iDim];
-// }
+inline void CPoint::SetCoord_Old (void) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Coord_Old[iDim] = Coord[iDim];
+}
 
 inline void CPoint::SetCoord_n (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
