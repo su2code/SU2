@@ -228,9 +228,13 @@ CDriver::CDriver(char* confFile,
   OutputCount        = 0;
   MDOFs              = 0.0;
   MDOFsDomain        = 0.0;
+  Mpoints            = 0.0;
+  MpointsDomain      = 0.0;
   for (iZone = 0; iZone < nZone; iZone++) {
-    MDOFs       += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
-    MDOFsDomain += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    Mpoints       +=(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MpointsDomain +=(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    MDOFs         += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MDOFsDomain   += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
@@ -509,8 +513,8 @@ void CDriver::Postprocessing() {
     cout << "Simulation totals:" << endl;
     cout << setw(25) << "Cores:" << setw(12) << size << " | ";
     cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
-    cout << setw(25) << "DOFs/core:" << setw(12) << 1.0e6*MDOFsDomain/(su2double)size << " | ";
-    cout << setw(20) << "Ghost DOFs/core:" << setw(12) << 1.0e6*(MDOFs-MDOFsDomain)/(su2double)size << endl;
+    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/(su2double)size << " | ";
+    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/(su2double)size << endl;
     cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
     cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
     cout << endl;
@@ -524,8 +528,8 @@ void CDriver::Postprocessing() {
     cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount << " | ";
     if (IterCount != 0) {
       cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
-      cout << setw(25) << "Core-s/iter/MDOFs:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/MDOFsDomain << " | ";
-      cout << setw(20) << "MDOFs/s:" << setw(12)<< MDOFsDomain*(su2double)IterCount/UsedTimeCompute << endl;
+      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/Mpoints << " | ";
+      cout << setw(20) << "Mpoints/s:" << setw(12)<< Mpoints*(su2double)IterCount/UsedTimeCompute << endl;
     } else cout << endl;
     cout << endl;
     cout << "Output phase:" << endl;
@@ -721,7 +725,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   nDim = geometry_aux->GetnDim();
   
   /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-  
+
   geometry_aux->SetColorGrid_Parallel(config);
   
   /*--- Allocate the memory of the current domain, and divide the grid
@@ -731,7 +735,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   geometry = new CGeometry *[config->GetnMGLevels()+1];
   
   /*--- Build the grid data structures using the ParMETIS coloring. ---*/
-  
+
   geometry[MESH_0] = new CPhysicalGeometry(geometry_aux, config);
   
   /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
@@ -743,8 +747,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetBoundaries(config);
-  
-  
   
   fea = ((config->GetKind_Solver() == FEM_ELASTICITY) ||
          (config->GetKind_Solver() == DISC_ADJ_FEM));
@@ -867,8 +869,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     }
     
   }
-  
-  
   
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
@@ -1113,12 +1113,13 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;           break;
-      case SA_E:   e_spalart_allmaras = true;   break;
-      case SA_COMP: comp_spalart_allmaras = true; break;
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_E:      e_spalart_allmaras = true;      break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
@@ -1588,12 +1589,14 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
   
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
-    case SA:     spalart_allmaras = true;     break;
-    case SA_NEG: neg_spalart_allmaras = true; break;
-    case SST:    menter_sst = true;           break;
-    case SA_E: e_spalart_allmaras = true; break;
-    case SA_COMP: comp_spalart_allmaras = true; break;
+    case SA:        spalart_allmaras = true;        break;
+    case SA_NEG:    neg_spalart_allmaras = true;    break;
+    case SA_E:      e_spalart_allmaras = true;      break;
+    case SA_COMP:   comp_spalart_allmaras = true;   break;
     case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+    case SST:       menter_sst = true;              break;
+    case SST_SUST:  menter_sst = true;              break;
+    default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -1826,6 +1829,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   numerics = new CNumerics***[config->GetnMGLevels()+1];
   
   su2double *constants = NULL;
+  su2double kine_Inf = 0.0, omega_Inf = 0.0;
   
   bool
   euler, adj_euler,
@@ -1879,14 +1883,24 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SA_E:   e_spalart_allmaras = true; break;
-      case SA_COMP:   comp_spalart_allmaras = true; break;
-      case SA_E_COMP:   e_comp_spalart_allmaras = true; break;
-      case SST:    menter_sst = true; constants = solver[MESH_0][TURB_SOL]->GetConstants(); break;
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_E:      e_spalart_allmaras = true;      break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
+      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
+
+  /*--- If the Menter SST model is used, store the constants of the model and determine the
+        free stream values of the turbulent kinetic energy and dissipation rate. ---*/
+
+  if (menter_sst) {
+    constants = solver[MESH_0][TURB_SOL]->GetConstants();
+    kine_Inf  = solver[MESH_0][TURB_SOL]->GetTke_Inf();
+    omega_Inf = solver[MESH_0][TURB_SOL]->GetOmega_Inf();
+  }
   
   /*--- Number of variables for the template ---*/
   
@@ -2283,7 +2297,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
       else if (comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_COMP(nDim, nVar_Turb, config);
       else if (e_comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_E_COMP(nDim, nVar_Turb, config);
       else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
-      else if (menter_sst) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
+      else if (menter_sst) numerics[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, kine_Inf, omega_Inf, config);
       numerics[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
     }
     
@@ -2694,13 +2708,14 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;  break;
-      case SA_COMP: comp_spalart_allmaras = true; break;
-      case SA_E: e_spalart_allmaras = true; break;
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
+      case SA_E:      e_spalart_allmaras = true;      break;
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
   /*--- Solver definition for the template problem ---*/
@@ -5440,6 +5455,8 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   case REFERENCE_GEOMETRY:
   case REFERENCE_NODE:
   case VOLUME_FRACTION:
+  case TOPOL_DISCRETENESS:
+  case TOPOL_COMPLIANCE:
     Kind_Objective_Function = FEM_OBJECTIVE_FUNCTION;
     break;
   default:
@@ -6013,6 +6030,14 @@ void CDiscAdjFSIDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
         case VOLUME_FRACTION:
           kind_OFunction = "(Volume Fraction): ";
           val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFVolFrac();
+          break;
+        case TOPOL_DISCRETENESS:
+          kind_OFunction = "(Topology discreteness): ";
+          val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFVolFrac();
+          break;
+        case TOPOL_COMPLIANCE:
+          kind_OFunction = "(Topology compliance): ";
+          val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFCompliance();
           break;
         default:
           val_OFunction = 0.0;  // If the objective function is computed in a different physical problem

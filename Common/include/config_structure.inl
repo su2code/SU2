@@ -1954,6 +1954,8 @@ inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsi
   radius = top_optim_filter_radius[iKernel];
 }
 
+inline unsigned short CConfig::GetTopology_Search_Limit(void) const { return top_optim_search_lim; }
+
 inline void CConfig::GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
   type = top_optim_proj_type;  param = top_optim_proj_param;
 }
@@ -2020,6 +2022,12 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
+inline short CConfig::GetMeshBoxSize(unsigned short val_iDim) { return Mesh_Box_Size[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mesh_Box_Length[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
+
 inline string CConfig::GetConv_Field(){ return ConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
@@ -2029,5 +2037,4 @@ inline su2double  CConfig::Get_StartTime() {return StartTime;}
 inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
-
 

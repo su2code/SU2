@@ -215,6 +215,17 @@ def main():
     rae2822_sst.tol       = 0.00001
     test_list.append(rae2822_sst)
 
+    # RAE2822 SST_SUST
+    rae2822_sst_sust           = TestCase('rae2822_sst_sust')
+    rae2822_sst_sust.cfg_dir   = "rans/rae2822"
+    rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
+    rae2822_sst_sust.test_iter = 20
+    rae2822_sst_sust.test_vals = [-2.407053, 4.916635, 0.827705, 0.053331] #last 4 columns
+    rae2822_sst_sust.su2_exec  = "parallel_computation.py -f"
+    rae2822_sst_sust.timeout   = 1600
+    rae2822_sst_sust.tol       = 0.00001
+    test_list.append(rae2822_sst_sust)
+
     # Flat plate
     turb_flatplate           = TestCase('turb_flatplate')
     turb_flatplate.cfg_dir   = "rans/flatplate"
@@ -269,6 +280,17 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
+
+    # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
+    turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
+    turb_naca0012_sst_sust.test_iter = 10
+    turb_naca0012_sst_sust.test_vals = [-13.280836, -5.645158, 1.022304, 0.019539] #last 4 columns
+    turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_sust.timeout   = 3200
+    turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_sust)
 
     # PROPELLER
     propeller           = TestCase('propeller')
@@ -359,6 +381,17 @@ def main():
     inc_poly_cylinder.timeout   = 1600
     inc_poly_cylinder.tol       = 0.00001
     test_list.append(inc_poly_cylinder)
+    
+    # X-coarse laminar bend as a mixed element CGNS test
+    inc_lam_bend          = TestCase('inc_lam_bend')
+    inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
+    inc_lam_bend.cfg_file  = "lam_bend.cfg"
+    inc_lam_bend.test_iter = 10
+    inc_lam_bend.test_vals = [-3.437518, -3.087892, -0.022290, -0.172644] #last 4 columns
+    inc_lam_bend.su2_exec  = "mpirun -n 2 SU2_CFD"
+    inc_lam_bend.timeout   = 1600
+    inc_lam_bend.tol       = 0.00001
+    test_list.append(inc_lam_bend)
 
     ############################
     ### Incompressible RANS  ###
@@ -374,6 +407,17 @@ def main():
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
+
+    # NACA0012, SST_SUST
+    inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
+    inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
+    inc_turb_naca0012_sst_sust.test_iter = 20
+    inc_turb_naca0012_sst_sust.test_vals = [-7.277551, 0.147212, -0.000000, 0.311977] #last 4 columns
+    inc_turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
+    inc_turb_naca0012_sst_sust.timeout   = 1600
+    inc_turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(inc_turb_naca0012_sst_sust)
     
     ####################
     ### DG-FEM Euler ###
