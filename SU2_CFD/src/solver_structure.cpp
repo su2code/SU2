@@ -262,6 +262,8 @@ CSolver::~CSolver(void) {
     delete [] VertexTractionAdjoint;
   }
 
+  if (nVertex != nullptr) delete [] nVertex;
+
   if (Restart_Vars != NULL) {delete [] Restart_Vars; Restart_Vars = NULL;}
   if (Restart_Data != NULL) {delete [] Restart_Data; Restart_Data = NULL;}
 
