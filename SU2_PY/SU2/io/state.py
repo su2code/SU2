@@ -41,7 +41,7 @@
 
 import os, sys, shutil, copy, time
 from ..io   import expand_part, expand_zones, expand_time, get_adjointSuffix, add_suffix, \
-                   get_specialCases, Config, expand_multipoint
+                   get_specialCases, Config, expand_multipoint, optnames_multi
 from ..util import bunch
 from ..util import ordered_bunch
 
@@ -92,6 +92,8 @@ def State_Factory(state=None,config=None):
             MESH: mesh.su2
             DIRECT: solution_flow.dat
             ADJOINT_DRAG: solution_adj_cd.dat
+            MULTIPOINT_DIRECT: [solution_flow_point0.dat solution_flow_point1.dat ...]
+            MULTIPOINT_ADJOINT_DRAG: [solution_adj_point0_cd.dat solution_adj_point1_cd.dat ...]
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
@@ -186,13 +188,18 @@ class State(ordered_bunch):
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
-                value = expand_multipoint(value,config)
+                # value = expand_multipoint(value,config)
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             elif 'ADJOINT_' in key:
                 # adjoint solution
-                value = expand_multipoint(value,config)
+                # value = expand_multipoint(value,config)
+                value = expand_zones(value,config)
+                value = expand_time(value,config)
+                link.extend(value)
+            elif 'MULTIPOINT' in key:
+                # multipoint files
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
@@ -239,27 +246,40 @@ class State(ordered_bunch):
         adj_map = get_adjointSuffix()
         restart = config.RESTART_SOL == 'YES'
         special_cases = get_specialCases(config)
+
+        def_objs = config['OPT_OBJECTIVE']
+        objectives = def_objs.keys()
+        multipoint = any(elem in optnames_multi for elem in objectives)
         
         def register_file(label,filename):
             if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
-                  names = expand_zones(filename, config)
-                  found = False
-                  for name in names:
-                    if os.path.exists(name):
-                      found = True
+                    names = expand_zones(filename, config)
+                    found = False
+                    for name in names:
+                        if os.path.exists(name):
+                            found = True
+                        else:
+                            found = False
+                            break
+
+                    if found:
+                        files[label] = filename
+                        print('Found: %s' % filename)
+
                     else:
-                      found = False
-                      break
+                        if os.path.exists(filename):
+                            files[label] = filename
+                            print('Found: %s' % filename)
 
-                  if found:
-                    files[label] = filename
-                    print('Found: %s' % filename)
+                elif label.split('_')[0] in ['MULTIPOINT']:
+                    files[label] = [];
+                    for name in filename:
+                        if os.path.exists(name):
+                            files[label].append(name)
+                        else:
+                            files[label].append('')
 
-                else:
-                  if os.path.exists(filename):
-                      files[label] = filename
-                      print('Found: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
@@ -274,6 +294,8 @@ class State(ordered_bunch):
         # direct solution
         if restart:
             register_file('DIRECT',direct_name)
+            if multipoint:
+                register_file('MULTIPOINT_DIRECT',expand_multipoint(direct_name,config))
         
         # adjoint solutions
         if restart:
@@ -281,6 +303,8 @@ class State(ordered_bunch):
                 ADJ_LABEL = 'ADJOINT_' + obj
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
+                if multipoint:
+                    register_file('MULTIPOINT_' + ADJ_LABEL, add_suffix(expand_multipoint(adjoint_name,config),suff))
         
         # equivalent area
         if 'EQUIV_AREA' in special_cases:

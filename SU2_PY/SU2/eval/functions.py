@@ -426,7 +426,6 @@ def multipoint( config, state=None, step=1e-2 ):
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
-    solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
 
     func = []
     folder = []
@@ -480,10 +479,10 @@ def multipoint( config, state=None, step=1e-2 ):
     
     # solution_flow_base = config.SOLUTION_FLOW_FILENAME 
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
-    if os.path.exists(solution_flow_list[0]): 
-        state.FILES['DIRECT'] = solution_flow_list[0]
+    if state.FILES.MULTIPOINT_DIRECT[0]: 
+        state.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[0]
         
-    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+    # config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
 
 
     # state.find_files(config)
@@ -509,6 +508,7 @@ def multipoint( config, state=None, step=1e-2 ):
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend( name )
+        files.MULTIPOINT_DIRECT[0] = files['DIRECT']
     else:
         config['RESTART_SOL'] = 'NO'
     
@@ -547,12 +547,12 @@ def multipoint( config, state=None, step=1e-2 ):
         ztate  = copy.deepcopy(state)
 
         konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
-        konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
+        # konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
         if 'DIRECT' in ztate.FILES:
             del ztate.FILES.DIRECT
 
-        if os.path.exists(solution_flow_list[i+1]):
-            ztate.FILES['DIRECT'] = solution_flow_list[i+1]
+        if state.FILES.MULTIPOINT_DIRECT[i+1]: 
+            ztate.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
 
         # ztate.find_files(konfig)
         files = ztate.FILES
@@ -597,6 +597,7 @@ def multipoint( config, state=None, step=1e-2 ):
                 dst = os.getcwd()
                 dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
                 name = ztate.FILES['DIRECT']
+                state.FILES.MULTIPOINT_DIRECT[i+1] = name
                 name = su2io.expand_zones(name,konfig)
                 name = su2io.expand_time(name,konfig)
                 push.extend(name)

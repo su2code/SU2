@@ -685,9 +685,14 @@ def add_suffix(base_name,suffix):
             suffix      = 'new'
             suffix_name = 'input_new.txt'
     """
-    
-    base_name = os.path.splitext(base_name)    
-    suffix_name = base_name[0] + '_' + suffix + base_name[1]
+    if isinstance(base_name, list):
+        suffix_name = []
+        for name in base_name:
+            name_split = os.path.splitext(name)
+            suffix_name.append(name_split[0] + '_' + suffix + name_split[1])
+    else:
+        base_name = os.path.splitext(base_name)    
+        suffix_name = base_name[0] + '_' + suffix + base_name[1]
     
     return suffix_name
     
