@@ -116,7 +116,7 @@ def main():
   disp=[]
   # Recover the sensitivity 
   sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
-  disp.append(SU2Driver.GetDisplacements(MarkerID,5))
+  disp.append(SU2Driver.GetFEA_Displacements(MarkerID,5))
   
   print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
   print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
