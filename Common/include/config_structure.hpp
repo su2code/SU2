@@ -1053,6 +1053,7 @@ private:
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
   unsigned long nOuterIter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
   nInnerIter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
+  nInnerIter_Adjoint,           /*!< \brief Determines the number of adjoint inner iterations in each multizone block */
   nTimeIter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
   nIter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
@@ -8924,6 +8925,12 @@ public:
    * \return Number of inner iterations on each multizone block
    */
   unsigned long GetnInner_Iter(void);
+
+  /*!
+   * \brief Get the number of adjoint inner iterations
+   * \return Number of adjoint inner iterations on each multizone block
+   */
+  unsigned long GetnInner_Iter_Adjoint(void);
 
   /*!
    * \brief Get the number of outer iterations
