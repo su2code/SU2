@@ -135,15 +135,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
     /*--- Element container structure ---*/
 
-    /*--- First level: only the FEA_TERM is considered ---*/
-    element_container = new CElement** [1];
-    element_container[FEA_TERM] = new CElement* [MAX_FE_KINDS];
-
-    /*--- Initialize all subsequent levels ---*/
-    for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
-      element_container[FEA_TERM][iKind] = NULL;
-    }
-
     if (nDim == 2) {
         element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
         element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
@@ -216,29 +207,9 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 }
 
 CMeshSolver::~CMeshSolver(void) {
-
-  unsigned short iDim;
-
-  delete [] Residual;
-  delete [] Solution;
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] mZeros_Aux[iDim];
-    delete [] mId_Aux[iDim];
-    delete [] Jacobian_ij[iDim];
-  }
-  delete [] mZeros_Aux;
-  delete [] mId_Aux;
-  delete [] Jacobian_ij;
-
-  if (element_container != NULL) {
-    for (unsigned short jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
-       if (element_container[FEA_TERM][jVar] != NULL) delete element_container[FEA_TERM][jVar];
-    }
-    delete [] element_container[FEA_TERM];
-    delete [] element_container;
-  }
-
+  
+  if (Coordinate != NULL) delete [] Coordinate;
+  if (element  !=NULL ) delete [] element;
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
@@ -642,9 +613,9 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
 
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim]
                     +  1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
 
@@ -764,35 +735,21 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Restart the solution from file information ---*/
   unsigned short iDim;
   unsigned long index;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   su2double curr_coord, displ;
 
   string UnstExt, text_line;
   ifstream restart_file;
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (dual_time || time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
-
+  restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+  
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
@@ -919,7 +876,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   unsigned short iDim;
-  string filename = config->GetSolution_FlowFileName();
+  string filename = config->GetSolution_FileName();
   string filename_n;
 
   /*--- Auxiliary variables for storing the coordinates ---*/
@@ -934,15 +891,15 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   /*-------------------------------------------------------------------------------------------*/
   /*----------------------- First, load the restart file for time n ---------------------------*/
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -1007,7 +964,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   /*------------ Now, load the restart file for time n-1, if the simulation is 2nd Order ------*/
   /*-------------------------------------------------------------------------------------------*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+  if (config->GetTime_Marching() == DT_STEPPING_2ND) {
 
     ifstream restart_file_n1;
     string filename_n1;
@@ -1017,8 +974,8 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 

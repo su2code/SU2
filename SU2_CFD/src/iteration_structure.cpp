@@ -1802,10 +1802,12 @@ bool CFEAIteration::Monitor(COutput *output,
 #endif
   UsedTime = StopTime - StartTime;
 
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
+  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry[val_iZone][val_iInst][MESH_0],
+                                                                     numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
 
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(), config[val_iZone]->GetInnerIter());
+    output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
+                              config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(), config[val_iZone]->GetInnerIter());
   }
   
   StopCalc = output->GetConvergence();

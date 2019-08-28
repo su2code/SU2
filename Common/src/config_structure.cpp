@@ -768,8 +768,8 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Variable initialization ---*/
   
-  ExtIter    = 0;
-  IntIter    = 0;
+  TimeIter    = 0;
+  InnerIter    = 0;
   nIntCoeffs = 0;
   OuterIter  = 0;
   

@@ -1588,7 +1588,7 @@ inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MO
 inline bool CConfig::GetDynamic_Grid(void) {
   return (Kind_GridMovement != NO_MOVEMENT)
       || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC))
-      || (Deform_Mesh && (Unsteady_Simulation != NO));
+      || (Deform_Mesh && (Time_Domain));
 }
 
 inline unsigned short CConfig::GetKind_SurfaceMovement(unsigned short iMarkerMoving){return Kind_SurfaceMovement[iMarkerMoving];}
