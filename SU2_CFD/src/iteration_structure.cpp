@@ -59,10 +59,8 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
           unsigned long IntIter,
           unsigned long ExtIter)   {
 
-  unsigned short iDim;
   unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
   unsigned long nIterMesh;
-  unsigned long iPoint;
   bool stat_mesh = true;
   bool adjoint = config->GetContinuous_Adjoint();
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
