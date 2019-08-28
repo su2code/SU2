@@ -186,6 +186,10 @@ def download_module(name, alt_name, git_repo, commit_sha):
       f.close()
 
 def install_pyamg(alt_name_amgint):
+  # Some log and error files
+  log = open( 'preconf_inria.log', 'w' )
+  err = open( 'preconf_inria.err', 'w' )
+  
   # Setup AMG interface
     subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
