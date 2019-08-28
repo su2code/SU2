@@ -30,7 +30,7 @@ endif
 
 if get_option('enable-inria')
   subdir('externals/libMeshb/sources')
-  su2_dep += libmeshb7_dep
+  su2_deps += libmeshb7_dep
   su2_cpp_args += '-DHAVE_INRIA'
 endif
 
