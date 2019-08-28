@@ -104,6 +104,7 @@
 		E9C830832061E60E004417A9 /* fem_work_estimate_metis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830792061E60E004417A9 /* fem_work_estimate_metis.cpp */; };
 		E9C830852061E60E004417A9 /* geometry_structure_fem_part.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C8307B2061E60E004417A9 /* geometry_structure_fem_part.cpp */; };
 		E9C830932061E799004417A9 /* solver_direct_mean_fem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830922061E799004417A9 /* solver_direct_mean_fem.cpp */; };
+		E9D6EE5A23165FD300618E36 /* CDummyDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE5923165FD300618E36 /* CDummyDriver.cpp */; };
 		E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D85B4B1C3F1B9E0077122F /* ad_structure.cpp */; };
 		E9D885A92303F8E400917362 /* CBoxMeshReaderFVM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D885A82303F8E400917362 /* CBoxMeshReaderFVM.cpp */; };
 		E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */; };
@@ -332,6 +333,8 @@
 		E9C8308D2061E6B6004417A9 /* fem_standard_element.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_standard_element.hpp; path = ../../Common/include/fem_standard_element.hpp; sourceTree = "<group>"; };
 		E9C8308E2061E6B6004417A9 /* fem_standard_element.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_standard_element.inl; path = ../../Common/include/fem_standard_element.inl; sourceTree = "<group>"; };
 		E9C830922061E799004417A9 /* solver_direct_mean_fem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_mean_fem.cpp; path = ../../SU2_CFD/src/solver_direct_mean_fem.cpp; sourceTree = "<group>"; };
+		E9D6EE5923165FD300618E36 /* CDummyDriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDummyDriver.cpp; path = ../../SU2_CFD/src/drivers/CDummyDriver.cpp; sourceTree = "<group>"; };
+		E9D6EE5B23165FE400618E36 /* CDummyDriver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDummyDriver.hpp; path = ../../SU2_CFD/include/drivers/CDummyDriver.hpp; sourceTree = "<group>"; };
 		E9D85B4B1C3F1B9E0077122F /* ad_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = ad_structure.cpp; path = ../../Common/src/ad_structure.cpp; sourceTree = "<group>"; };
 		E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = ad_structure.hpp; path = ../../Common/include/ad_structure.hpp; sourceTree = "<group>"; };
 		E9D85B4E1C3F1BE00077122F /* ad_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = ad_structure.inl; path = ../../Common/include/ad_structure.inl; sourceTree = "<group>"; };
@@ -498,6 +501,7 @@
 				E9E51ADB22FAB10D00773E0C /* CCGNSMeshReaderFVM.hpp */,
 				EB14FF9C22F790720045FB27 /* CDiscAdjSinglezoneDriver.hpp */,
 				EB14FF9D22F790720045FB27 /* CDriver.hpp */,
+				E9D6EE5B23165FE400618E36 /* CDummyDriver.hpp */,
 				E9C2835A22A701B6007B4E59 /* CIncTGVSolution.hpp */,
 				E9C2835722A701B5007B4E59 /* CInviscidVortexSolution.hpp */,
 				E9E51AD722FA314F00773E0C /* CLinearPartitioner.hpp */,
@@ -798,6 +802,7 @@
 			children = (
 				EB14FF9522F790500045FB27 /* CDiscAdjSinglezoneDriver.cpp */,
 				EB14FF9622F790500045FB27 /* CDriver.cpp */,
+				E9D6EE5923165FD300618E36 /* CDummyDriver.cpp */,
 				EB14FF9722F790500045FB27 /* CMultizoneDriver.cpp */,
 				EB14FF9422F790500045FB27 /* CSinglezoneDriver.cpp */,
 			);
@@ -959,6 +964,7 @@
 				EB14FF9922F790500045FB27 /* CDiscAdjSinglezoneDriver.cpp in Sources */,
 				E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */,
 				05E6DC2F17EB62A100FA1F7E /* solver_structure.cpp in Sources */,
+				E9D6EE5A23165FD300618E36 /* CDummyDriver.cpp in Sources */,
 				05E6DC3017EB62A100FA1F7E /* solver_template.cpp in Sources */,
 				EB14FF9B22F790500045FB27 /* CMultizoneDriver.cpp in Sources */,
 				05E6DC3117EB62A100FA1F7E /* SU2_CFD.cpp in Sources */,
