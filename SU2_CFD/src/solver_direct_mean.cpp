@@ -7343,29 +7343,10 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Target_CL = config->GetTarget_CL();
 
     /* --- Check for CL convergence ---*/
-    //cout << "CL diff = " << fabs(Total_CL - Total_CL_Prev) << ". Cauchy_Eps=  " << config->GetCauchy_Eps() << endl;
     if (fabs(Total_CL - Target_CL) < config->GetCauchy_Eps()) {
       CL_Converged = true;
     }
 
-
-    /*--- Retrieve the old AoA (radians) ---*/
-    
-    AoA_old = config->GetAoA()*PI_NUMBER/180.0;
-
-    /*--- Update dCL_dAlpha estimate if this isn't the first update---*/
-
-    // if (AoA_Counter > 1) {
-    //   dCL_dAlpha = (Total_CL - Total_CL_Prev)/(AoA_old - AoA_Prev); // * 180.0 / PI_NUMBER;
-    // }
-
-    /*--- Store current C_L and AoA to estimate dCL_dAlpha for next update ---*/
-
-    if (!CL_Converged) {
-      Total_CL_Prev = Total_CL;
-      AoA_Prev = AoA_old;
-    }
-    
     /*--- Retrieve the old AoA (radians) ---*/
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
@@ -7436,7 +7417,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       cout.precision(7);
       cout.setf(ios::fixed, ios::floatfield);
       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-      cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha * PI_NUMBER / 180.0<< endl;
       cout << "CL: " << Total_CL;
       cout << " (target: " << config->GetTarget_CL() <<")." << endl;
       cout.precision(4);
