@@ -28,6 +28,14 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_for_args = '-DCODI_FORWARD_TYPE'
 endif
 
+if get_option('enable-inria')
+  inria_dep = [declare_dependency(include_directories: 'externals/inria/include')]
+  inria_args = '-DHAVE_INRIA'
+else
+  inria_dep = ''
+  inria_args = ''
+endif
+
 # Add cgns library
 if get_option('enable-cgns')
   subdir('externals/cgns')
@@ -76,6 +84,8 @@ subdir('SU2_DOT/src')
 subdir('SU2_DEF/src')
 # compile SU2_GEO executable
 subdir('SU2_GEO/src')
+# compile SU2_MET executable
+subdir('SU2_MET/src')
 # compile SU2_MSH executable
 subdir('SU2_MSH/src')
 # compile SU2_SOL executable
