@@ -192,7 +192,7 @@ class State(ordered_bunch):
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
-            elif 'ADJOINT_' in key:
+            elif 'ADJOINT_' in key and  (not 'MULTIPOINT' in key):
                 # adjoint solution
                 # value = expand_multipoint(value,config)
                 value = expand_zones(value,config)
@@ -200,9 +200,11 @@ class State(ordered_bunch):
                 link.extend(value)
             elif 'MULTIPOINT' in key:
                 # multipoint files
-                value = expand_zones(value,config)
+		value = expand_zones(value,config)
                 value = expand_time(value,config)
-                link.extend(value)
+                for elem in value:
+		    if elem:
+			link.append(elem)
             #elif key == 'STABILITY':
                 #pass
             # copy all other files
@@ -267,24 +269,30 @@ class State(ordered_bunch):
                         files[label] = filename
                         print('Found: %s' % filename)
 
-                    else:
-                        if os.path.exists(filename):
-                            files[label] = filename
-                            print('Found: %s' % filename)
-
                 elif label.split('_')[0] in ['MULTIPOINT']:
-                    files[label] = [];
-                    for name in filename:
-                        if os.path.exists(name):
-                            files[label].append(name)
-                        else:
-                            files[label].append('')
+                    file_list= [];
 
+                    for name in filename:
+                        
+			if os.path.exists(name):
+                            file_list.append(name)
+                        else:
+                            file_list.append('')
+		    if any(file for file in file_list):
+			files[label] = file_list
+		else:
+                    if os.path.exists(filename):
+                        files[label] = filename
+                        print('Found: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
                         assert os.path.exists(name), 'state expected file: %s' % filename
-                else:
+                elif label.split('_')[0] in ['MULTIPOINT']:
+                    for name in expand_zones(files[label], config):
+                        if name:
+                            assert os.path.exists(name), 'state expected file: %s' % name
+		else:
                     assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
 
@@ -295,7 +303,8 @@ class State(ordered_bunch):
         if restart:
             register_file('DIRECT',direct_name)
             if multipoint:
-                register_file('MULTIPOINT_DIRECT',expand_multipoint(direct_name,config))
+		name_list = expand_multipoint(direct_name,config)
+                register_file('MULTIPOINT_DIRECT',name_list)
         
         # adjoint solutions
         if restart:
@@ -304,11 +313,13 @@ class State(ordered_bunch):
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
                 if multipoint:
-                    register_file('MULTIPOINT_' + ADJ_LABEL, add_suffix(expand_multipoint(adjoint_name,config),suff))
+		    name_list = add_suffix(expand_multipoint(adjoint_name,config), suff)
+		    multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
+                    register_file(multipoint_adj_name, name_list)
         
         # equivalent area
         if 'EQUIV_AREA' in special_cases:
-            register_file('TARGET_EA',targetea_name)
+	            register_file('TARGET_EA',targetea_name)
         
         # pressure inverse design
         if 'INV_DESIGN_CP' in special_cases:

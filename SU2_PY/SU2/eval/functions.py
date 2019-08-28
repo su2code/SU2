@@ -426,7 +426,7 @@ def multipoint( config, state=None, step=1e-2 ):
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
-
+    restart_sol = config['RESTART_SOL']
     func = []
     folder = []
     for i in range(len(weight_list)):
@@ -479,7 +479,7 @@ def multipoint( config, state=None, step=1e-2 ):
     
     # solution_flow_base = config.SOLUTION_FLOW_FILENAME 
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
-    if state.FILES.MULTIPOINT_DIRECT[0]: 
+    if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[0]: 
         state.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[0]
         
     # config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
@@ -508,7 +508,7 @@ def multipoint( config, state=None, step=1e-2 ):
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend( name )
-        files.MULTIPOINT_DIRECT[0] = files['DIRECT']
+        # files.MULTIPOINT_DIRECT[0] = files['DIRECT']
     else:
         config['RESTART_SOL'] = 'NO'
     
@@ -533,7 +533,8 @@ def multipoint( config, state=None, step=1e-2 ):
 
             konfig = copy.deepcopy(config)
             ztate  = copy.deepcopy(state)
-
+	    konfig['RESTART_SOL'] = restart_sol
+	    
             dst = os.getcwd()
             dst = os.path.abspath(dst).rstrip('/')+'/'
 
@@ -551,7 +552,7 @@ def multipoint( config, state=None, step=1e-2 ):
         if 'DIRECT' in ztate.FILES:
             del ztate.FILES.DIRECT
 
-        if state.FILES.MULTIPOINT_DIRECT[i+1]: 
+        if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[i+1]: 
             ztate.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
 
         # ztate.find_files(konfig)
@@ -597,7 +598,7 @@ def multipoint( config, state=None, step=1e-2 ):
                 dst = os.getcwd()
                 dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
                 name = ztate.FILES['DIRECT']
-                state.FILES.MULTIPOINT_DIRECT[i+1] = name
+                # state.FILES.MULTIPOINT_DIRECT[i+1] = name
                 name = su2io.expand_zones(name,konfig)
                 name = su2io.expand_time(name,konfig)
                 push.extend(name)
@@ -609,7 +610,7 @@ def multipoint( config, state=None, step=1e-2 ):
         # make unix link
         string = "ln -s " + src + " " + dst
         os.system(string)
-
+    state.FILES.MULTIPOINT_DIRECT = solution_flow_list
     # config = copy.deepcopy(config)
     # state = copy.deepcopy(state) 
       
