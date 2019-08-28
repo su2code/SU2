@@ -288,7 +288,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     
     if (nDim == 3) SetHistoryOutputValue("MAX_TEMPERATURE",         log10(flow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_TEMPERATURE",         log10(flow_solver->GetRes_Max(3)));
-    if (multizone){
+    if (multiZone){
       if (nDim == 3) SetHistoryOutputValue("BGS_TEMPERATURE",         log10(flow_solver->GetRes_BGS(4)));
       else           SetHistoryOutputValue("BGS_TEMPERATURE",         log10(flow_solver->GetRes_BGS(3)));
     }

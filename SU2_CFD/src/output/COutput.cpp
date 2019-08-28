@@ -1248,18 +1248,18 @@ void COutput::Postprocess_HistoryData(CConfig *config){
            
     }
 
-    for (unsigned short iField = 0; iField < HistoryOutputPerSurface_List.size(); iField++){
-      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField]].size(); iMarker++){
-        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField]][iMarker];
-        if (Field.FieldType == TYPE_COEFFICIENT){
+    for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
+      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
+        HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
+        if (Field.fieldType == TYPE_COEFFICIENT){
           if (config->GetDirectDiff() != NO_DERIVATIVE){
-            SetHistoryOutputValue("D_" + HistoryOutputPerSurface_List[iField][iMarker], SU2_TYPE::GetDerivative(Field.Value));
+            SetHistoryOutputValue("D_" + historyOutputPerSurface_List[iField][iMarker], SU2_TYPE::GetDerivative(Field.value));
           }
         }
       }
     }
 
-    if (currentField.FieldType == TYPE_COEFFICIENT){
+    if (currentField.fieldType == TYPE_COEFFICIENT){
       if(SetUpdate_Averages(config)){
         SetHistoryOutputValue("TAVG_" + historyOutput_List[iField], runningAverages[historyOutput_List[iField]].Update(currentField.value));
       }
@@ -1316,11 +1316,11 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     }
   }
 
-  for (unsigned short iField = 0; iField < HistoryOutputPerSurface_List.size(); iField++){
-    for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField]].size(); iMarker++){
-      HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField]][iMarker];
-      if (Field.FieldType == TYPE_COEFFICIENT){
-        AddHistoryOutput("D_"      + HistoryOutputPerSurface_List[iField][iMarker], "d["     + Field.FieldName + "]", Field.ScreenFormat, "D_"      + Field.OutputGroup, "Derivative values for per-surface output.", TYPE_AUTO_COEFFICIENT);
+  for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
+    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
+      HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
+      if (Field.fieldType == TYPE_COEFFICIENT){
+        AddHistoryOutput("D_"      + historyOutputPerSurface_List[iField][iMarker], "d["     + Field.fieldName + "]", Field.screenFormat, "D_"      + Field.outputGroup, "Derivative values for per-surface output.", TYPE_AUTO_COEFFICIENT);
       }
     }
   }

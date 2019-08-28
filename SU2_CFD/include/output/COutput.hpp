@@ -397,7 +397,7 @@ public:
   }
 
   su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
-    return HistoryOutputPerSurface_Map[field][iMarker].Value;
+    return historyOutputPerSurface_Map[field][iMarker].value;
   }
   
   /*!
