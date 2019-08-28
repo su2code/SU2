@@ -331,7 +331,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- If we want to set up zone-specific tapes later on,
      *    we just record the objective function section here.
-     *    If not, the whole tape of a coupled run will be created.   ---*/
+     *    If not, the whole tape of a coupled run will be created. ---*/
 
     if(retape) {
       SetRecording(NONE, FULL_TAPE, ZONE_0);
@@ -472,15 +472,15 @@ void CDiscAdjMultizoneDriver::Run() {
           case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
             solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
-                                                                                 config_container[iZone]);
+                                                                                 NULL, config_container[iZone]);
             break;
           case DISC_ADJ_HEAT:
             solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
-                                                                                 config_container[iZone]);
+                                                                                 NULL, config_container[iZone]);
             break;
           case DISC_ADJ_FEM:
             solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
-                                                                                config_container[iZone]);
+                                                                                NULL, config_container[iZone]);
           default:
             cout << "WARNING: Setting sensitivities failed for one of the specified discrete adjoint solvers!" << endl;
             break;
