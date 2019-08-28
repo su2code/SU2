@@ -94,7 +94,7 @@ def init_submodules(method = 'auto'):
   # Setup pyamg
   try:
     import pyamg
-  except:
+  except ImportError:
     install_pyamg(log, err)
 
 def is_git_directory(path = '.'):
@@ -221,7 +221,7 @@ def install_pyamg(log, err):
   subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
   subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
   try:
-      subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+      subprocess.check_call('pip3 install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
   except:
       print('pyAMG installation failed')
   subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
