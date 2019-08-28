@@ -4063,7 +4063,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
     for (iZone = 0; iZone < nZone; iZone++){
       if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output_container[iZone]->SetCFL_Number(solver_container, config_container, iZone);
+        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
     }
   }
 
@@ -4247,7 +4247,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     if(mixingplane){
       CFL = 0;
       for (iZone = 0; iZone < nZone; iZone++){
-        output_container[iZone]->SetCFL_Number(solver_container, config_container, iZone);
+        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
         CFL += config_container[iZone]->GetCFL(MESH_0);
       }
       /*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
@@ -4256,7 +4256,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
       }
     }
     else{
-      output_container[ZONE_0]->SetCFL_Number(solver_container, config_container, ZONE_0);
+      output_container[ZONE_0]->SetCFL_Number(solver_container[ZONE_0], config_container[ZONE_0]);
     }
   }
 
@@ -5065,8 +5065,8 @@ void CFSIDriver::Run() {
           surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
       /*--- Write the convergence history for the fluid (only screen output) ---*/
-      if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
-        output_container[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst],geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
+//      if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
+//        output_container[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst],geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
 
       /*--- If the convergence criteria is met for the flow, break the loop ---*/
       StopCalc_Flow = integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence();
@@ -5091,8 +5091,8 @@ void CFSIDriver::Run() {
     }
 
     /*--- Write the convergence history for the fluid (only screen output) ---*/
-    if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
-      output_container[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW, INST_0);
+//    if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
+//      output_container[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW, INST_0);
 
   } else {
 
@@ -5119,8 +5119,8 @@ void CFSIDriver::Run() {
                                   surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
 
     /*--- Write the convergence history for the structure (only screen output) ---*/
-   if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
-     output_container[ZONE_STRUCT]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_STRUCT, INST_0);
+//   if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
+//     output_container[ZONE_STRUCT]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_STRUCT, INST_0);
 
     /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
@@ -5586,7 +5586,18 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
 //  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
 //  config_container[ZONE_0]->SetnExtIter(1);
 //  config_container[ZONE_1]->SetnExtIter(1);
-
+  ConvHist_file = NULL;
+  ConvHist_file = new ofstream*[nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    ConvHist_file[iZone] = NULL;
+    if (rank == MASTER_NODE){
+      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
+      }
+    }
+  }
 }
 
 CDiscAdjFSIDriver::~CDiscAdjFSIDriver(void) {
@@ -6723,9 +6734,9 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
   unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetOuterIter();
 
 
-  if (rank == MASTER_NODE)  
-    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
-     output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Header(&ConvHist_file[ZONE_0][INST_0], config_container[ZONE_0], ZONE_0, INST_0);
+//  if (rank == MASTER_NODE)  
+//    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
+//     output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Header(&ConvHist_file[ZONE_0][INST_0], config_container[ZONE_0], ZONE_0, INST_0);
 
   if (kind_recording == FLOW_CONS_VARS) {
 
@@ -6749,12 +6760,12 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
     }
   }
 
-  if (kind_recording == FEA_DISP_VARS) {
-    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
-    /*--- Set the convergence criteria (only residual possible) ---*/
-       output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
+//  if (kind_recording == FEA_DISP_VARS) {
+//    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
+//    /*--- Set the convergence criteria (only residual possible) ---*/
+//       output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
 
-  }
+//  }
 
 
 }
@@ -7091,7 +7102,7 @@ void CMultiphysicsZonalDriver::Run() {
 
       // When running a unsteady simulation, we have to adapt CFL values here.
       if (unsteady && (config_container[ZONE_0]->GetCFL_Adapt() == YES)) {
-          output_container[iZone]->SetCFL_Number(solver_container, config_container, iZone);
+          output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
       }
 
       config_container[iZone]->SetInnerIter(IntIter);

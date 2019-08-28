@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
   
-  CLI11_PARSE(app, argc, argv);
+  CLI11_PARSE(app, argc, argv)
   
   /*--- MPI initialization, and buffer setting ---*/
   

@@ -53,60 +53,60 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COu
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    RequestedHistoryFields.push_back("SENSITIVITY");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("RMS_RES");
+    requestedHistoryFields.push_back("SENSITIVITY");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    if (config->GetTime_Domain()) RequestedScreenFields.push_back("TIME_ITER");    
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");    
-    RequestedScreenFields.push_back("RMS_ADJ_PRESSURE");
-    RequestedScreenFields.push_back("RMS_ADJ_VELOCITY-X");
-    RequestedScreenFields.push_back("SENS_GEO");
-    RequestedScreenFields.push_back("SENS_AOA");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (config->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");    
+    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
+    requestedScreenFields.push_back("INNER_ITER");    
+    requestedScreenFields.push_back("RMS_ADJ_PRESSURE");
+    requestedScreenFields.push_back("RMS_ADJ_VELOCITY-X");
+    requestedScreenFields.push_back("SENS_GEO");
+    requestedScreenFields.push_back("SENS_AOA");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");    
-    RequestedVolumeFields.push_back("SENSITIVITY");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.push_back("COORDINATES");
+    requestedVolumeFields.push_back("SOLUTION");    
+    requestedVolumeFields.push_back("SENSITIVITY");
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Incomp. Fluid)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetAdj_FileName();
+  volumeFilename = config->GetAdj_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfAdjCoeff_FileName();
+  surfaceFilename = config->GetSurfAdjCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_AdjFileName();
+  restartFilename = config->GetRestart_AdjFileName();
   
   /*--- Add the obj. function extension --- */
   
-  RestartFilename = config->GetObjFunc_Extension(RestartFilename);
+  restartFilename = config->GetObjFunc_Extension(restartFilename);
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_ADJ_PRESSURE";
+  if (convField.size() == 0 ) convField = "RMS_ADJ_PRESSURE";
 
 }
 
 CAdjFlowIncOutput::~CAdjFlowIncOutput(void) {
 
   if (rank == MASTER_NODE){
-    HistFile.close();
+    histFile.close();
   }
 
 }
@@ -270,7 +270,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     }
   }
   
-  if (multizone){
+  if (multiZone){
     SetHistoryOutputValue("BGS_ADJ_PRESSURE", log10(adjflow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_ADJ_VELOCITY-X", log10(adjflow_solver->GetRes_BGS(1)));
     SetHistoryOutputValue("BGS_ADJ_VELOCITY-Y", log10(adjflow_solver->GetRes_BGS(2)));
@@ -485,8 +485,8 @@ void CAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CS
 
 bool CAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetTime_Marching() != STEADY && (curr_InnerIter == 0))|| 
-        (config->GetTime_Marching() == STEADY && (curr_TimeIter < 2)); 
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
+        (config->GetTime_Marching() == STEADY && (curTimeIter < 2)); 
   
 }
 

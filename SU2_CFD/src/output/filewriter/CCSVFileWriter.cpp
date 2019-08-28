@@ -2,11 +2,7 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 
 CCSVFileWriter::CCSVFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".csv";
-    
-}
+  CFileWriter(fields, ".csv", nDim){}
 
 
 CCSVFileWriter::~CCSVFileWriter(){
@@ -56,10 +52,10 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
   
-  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldnames.size()];
+  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldnames.size()]();
   su2double *bufD_Recv = NULL;
   
-  unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface];
+  unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
   unsigned long *bufL_Recv = NULL;
   
   /*--- Load send buffers with the local data on this rank. ---*/
@@ -83,7 +79,7 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   /*--- Only the master rank allocates buffers for the recv. ---*/
   
   if (rank == MASTER_NODE) {
-    bufD_Recv = new su2double[nProcessor*MaxLocalVertex_Surface*fieldnames.size()];
+    bufD_Recv = new su2double[nProcessor*MaxLocalVertex_Surface*fieldnames.size()]();
     bufL_Recv = new unsigned long[nProcessor*MaxLocalVertex_Surface];
   }
   
