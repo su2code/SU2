@@ -445,6 +445,8 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
   Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
+  Marker_CfgFile_Deform_Mesh   = NULL;  Marker_All_Deform_Mesh   = NULL;
+  Marker_CfgFile_Fluid_Load    = NULL;  Marker_All_Fluid_Load    = NULL;
 
   Marker_CfgFile_Turbomachinery       = NULL; Marker_All_Turbomachinery       = NULL;
   Marker_CfgFile_TurbomachineryFlag   = NULL; Marker_All_TurbomachineryFlag   = NULL;
@@ -467,7 +469,8 @@ void CConfig::SetPointersNull(void) {
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
   Marker_SymWall              = NULL;    Marker_PerBound       = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;
+  Marker_Deform_Mesh          = NULL;    Marker_Fluid_Load       = NULL;
   Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
@@ -1075,6 +1078,10 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /*!\brief MARKER_FLUID_INTERFACE\n DESCRIPTION: Fluid interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
+  /*!\brief MARKER_DEFORM_MESH\n DESCRIPTION: Deformable marker(s) at the interface \ingroup Config*/
+  addStringListOption("MARKER_DEFORM_MESH", nMarker_Deform_Mesh, Marker_Deform_Mesh);
+  /*!\brief MARKER_FLUID_LOAD\n DESCRIPTION: Marker(s) in which the flow load is computed/applied \ingroup Config*/
+  addStringListOption("MARKER_FLUID_LOAD", nMarker_Fluid_Load, Marker_Fluid_Load);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
@@ -1951,8 +1958,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
   /* DESCRIPTION: Visualize the deformation (volume grid) */
   addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
+
+  /*!\par CONFIG_CATEGORY: Deformable mesh \ingroup Config*/
+  /*--- option related to deformable meshes ---*/
+  /* DESCRIPTION: Decide whether the mesh will undergo deformations */
+  addBoolOption("DEFORM_MESH", Deform_Mesh, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
@@ -3206,8 +3218,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         if (Kind_SurfaceMovement[iMarker] != MOVING_WALL){
           SU2_MPI::Error("Unsupported kind of surface movement for steady state problems.", CURRENT_FUNCTION);                
         }
-      }  
-    } 
+      }
+    }
   }
 
   /*--- The Line Search should be applied only in the deformation stage. ---*/
@@ -4415,6 +4427,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
+  iMarker_Fluid_Load, iMarker_Deform_Mesh,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
@@ -4428,7 +4441,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Compute the total number of markers in the config file ---*/
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
+  nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -4457,6 +4471,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_Deform_Mesh    = new unsigned short[nMarker_All];	// Store whether the boundary is deformable.
+  Marker_All_Fluid_Load     = new unsigned short[nMarker_All];	// Store whether the boundary computes/applies fluid loads.
   Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
   Marker_All_PerBound       = new short[nMarker_All];		// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
@@ -4476,6 +4492,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_ZoneInterface[iMarker_All]        = 0;
     Marker_All_DV[iMarker_All]                   = 0;
     Marker_All_Moving[iMarker_All]               = 0;
+    Marker_All_Deform_Mesh[iMarker_All]          = 0;
+    Marker_All_Fluid_Load[iMarker_All]           = 0;
     Marker_All_PerBound[iMarker_All]             = 0;
     Marker_All_Turbomachinery[iMarker_All]       = 0;
     Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
@@ -4495,6 +4513,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
@@ -4512,6 +4532,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile]        = 0;
     Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
+    Marker_CfgFile_Deform_Mesh[iMarker_CfgFile]          = 0;
+    Marker_CfgFile_Fluid_Load[iMarker_CfgFile]           = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
@@ -4685,7 +4707,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NEARFIELD_BOUNDARY;
     iMarker_CfgFile++;
   }
-
   
   for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
@@ -4991,6 +5012,20 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Moving[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Deform_Mesh[iMarker_CfgFile] = NO;
+    for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Deform_Mesh[iMarker_Deform_Mesh])
+        Marker_CfgFile_Deform_Mesh[iMarker_CfgFile] = YES;
+  }
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Fluid_Load[iMarker_CfgFile] = NO;
+    for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Fluid_Load[iMarker_Fluid_Load])
+        Marker_CfgFile_Fluid_Load[iMarker_CfgFile] = YES;
+  }
+
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_PyCustom[iMarker_CfgFile] = NO;
     for(iMarker_PyCustom=0; iMarker_PyCustom < nMarker_PyCustom; iMarker_PyCustom++)
@@ -5005,6 +5040,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Deform_Mesh, iMarker_Fluid_Load,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
@@ -6335,6 +6371,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
+  if (nMarker_Deform_Mesh != 0) {
+    BoundaryTable << "Deformable mesh boundary";
+    for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++) {
+      BoundaryTable << Marker_Deform_Mesh[iMarker_Deform_Mesh];
+      if (iMarker_Deform_Mesh < nMarker_Deform_Mesh-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_Fluid_Load != 0) {
+    BoundaryTable << "Fluid loads boundary";
+    for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++) {
+      BoundaryTable << Marker_Fluid_Load[iMarker_Fluid_Load];
+      if (iMarker_Fluid_Load < nMarker_Fluid_Load-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+  
   if (nMarker_Fluid_InterfaceBound != 0) {
     BoundaryTable << "Fluid interface boundary";
     for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
@@ -6825,6 +6879,20 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Deform_Mesh[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Fluid_Load[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker){
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -7001,6 +7069,12 @@ CConfig::~CConfig(void) {
   
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+
+  if (Marker_CfgFile_Deform_Mesh != NULL) delete[] Marker_CfgFile_Deform_Mesh;
+  if (Marker_All_Deform_Mesh     != NULL) delete[] Marker_All_Deform_Mesh;
+
+  if (Marker_CfgFile_Fluid_Load != NULL) delete[] Marker_CfgFile_Fluid_Load;
+  if (Marker_All_Fluid_Load     != NULL) delete[] Marker_All_Fluid_Load;
 
   if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
   if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
@@ -7254,6 +7328,8 @@ CConfig::~CConfig(void) {
   if (Marker_PerBound != NULL )           delete[] Marker_PerBound;
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
+  if (Marker_Deform_Mesh != NULL )        delete[] Marker_Deform_Mesh;
+  if (Marker_Fluid_Load != NULL )         delete[] Marker_Fluid_Load;
   if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
   if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
@@ -7929,6 +8005,26 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
     if (Marker_Moving[iMarker_Moving] == val_marker) break;
 
   return iMarker_Moving;
+}
+
+unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) {
+  unsigned short iMarker_Deform_Mesh;
+
+  /*--- Find the marker for this interface boundary. ---*/
+  for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++)
+    if (Marker_Deform_Mesh[iMarker_Deform_Mesh] == val_marker) break;
+
+  return iMarker_Deform_Mesh;
+}
+
+unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) {
+  unsigned short iMarker_Fluid_Load;
+
+  /*--- Find the marker for this interface boundary. ---*/
+  for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++)
+    if (Marker_Fluid_Load[iMarker_Fluid_Load] == val_marker) break;
+
+  return iMarker_Fluid_Load;
 }
 
 su2double CConfig::GetDirichlet_Value(string val_marker) {
@@ -9243,6 +9339,8 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   if (driver_config->GetTime_Domain()){
     Delta_UnstTime = driver_config->GetTime_Step();
     Delta_DynTime  = driver_config->GetTime_Step();
+
+    Time_Domain = true;
   }
 
   /*------------------------------------------------------------*/
