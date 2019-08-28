@@ -2855,7 +2855,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
             /*--- Compute unit normal. ---*/
             Area = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              Area = Normal[iDim]*Normal[iDim];
+              Area += Normal[iDim]*Normal[iDim];
             Area = sqrt(Area);
             
             /*--- Negate for outward convention. ---*/
@@ -2878,10 +2878,10 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
             }
 
           iVertex++;
-          } //while iVertex
+          }//while iVertex
         }//if Local == Global
       }//for iMarker_Global
-    } else { bound_is_straight[iMarker] = false; }//if sym or euler ...
+    }//if sym or euler ...
   }//for iMarker
 
   /*--- Communicate results and print on screen. ---*/
