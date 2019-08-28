@@ -39,7 +39,7 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
-#include <CLI11.hpp>
+#include "../../externals/CLI11/CLI11.hpp"
 
 #include <ctime>
 
