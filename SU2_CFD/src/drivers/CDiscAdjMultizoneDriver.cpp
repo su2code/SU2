@@ -481,6 +481,8 @@ void CDiscAdjMultizoneDriver::Run() {
           case DISC_ADJ_FEM:
             solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
                                                                                 NULL, config_container[iZone]);
+            break;
+
           default:
             cout << "WARNING: Setting sensitivities failed for one of the specified discrete adjoint solvers!" << endl;
             break;
