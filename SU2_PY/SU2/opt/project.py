@@ -162,18 +162,15 @@ class Project(object):
         n_multipoint = len(config['MULTIPOINT_WEIGHT'].split(','))
         multipoint = any(elem in su2io.optnames_multi for elem in objectives)
 
-        if multipoint:
-            solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
-            solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
-            for i in range(n_multipoint):
-                if os.path.exists(solution_flow_list[i]): 
-                    link.extend([solution_flow_list[i]])
-                for obj,suff in su2io.get_adjointSuffix().items():
-                    if os.path.exists(su2io.add_suffix(solution_adj_list[0],suff)): 
-                        link.extend([su2io.add_suffix(solution_adj_list[0],suff)])
-
-        print(link)
-        print(folder)
+        #if multipoint:
+        #   solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+        #    solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
+        #    for i in range(n_multipoint):
+        #        if os.path.exists(solution_flow_list[i]): 
+        #            link.extend([solution_flow_list[i]])
+        #        for obj,suff in su2io.get_adjointSuffix().items():
+        #            if os.path.exists(su2io.add_suffix(solution_adj_list[0],suff)): 
+        #                link.extend([su2io.add_suffix(solution_adj_list[0],suff)])
 
         with redirect_folder(folder,pull,link,force=True):
         
@@ -372,9 +369,15 @@ class Project(object):
                 if key == 'MESH': continue 
                 # build file path
                 name = seed_files[key]
-                name = os.path.join(seed_folder,name)
-                # update pull files
-                ztate.FILES[key] = name
+		if isinstance(name,list):
+		    built_name = []
+		    for elem in name:
+			built_name.append(os.path.join(seed_folder,elem))
+		    ztate.FILES[key] = built_name
+		else:
+		    name = os.path.join(seed_folder,name)
+                    # update pull files
+                    ztate.FILES[key] = name
             
         # name new folder
         folder = self._design_folder.replace('*',self._design_number)
@@ -386,8 +389,14 @@ class Project(object):
         # update local state filenames ( ??? why not in Design() )
         for key in design.files:
             name = design.files[key]
-            name = os.path.split(name)[-1]
-            design.files[key] = name
+            if isinstance(name,list):
+            	built_name = []
+                for elem in name:
+                    built_name.append(os.path.split(elem)[-1])
+                design.files[key] = built_name
+	    else: 
+		name = os.path.split(name)[-1]
+            	design.files[key] = name
         
         # add design to project 
         self.designs.append(design)        

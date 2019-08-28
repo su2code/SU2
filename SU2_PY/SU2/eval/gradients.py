@@ -426,7 +426,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
     solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
-
+    restart_sol = config['RESTART_SOL']
     grads = []
     folder = []
     for i in range(len(weight_list)):
@@ -519,7 +519,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         name = files[ADJ_NAME]
         name = su2io.expand_time(name,config)
         link.extend(name)
-        files[MULTIPOINT_ADJ_NAME][0] = files[ADJ_NAME]
+        solution_adj_list[0] = files[ADJ_NAME]
     else:
         config['RESTART_SOL'] = 'NO'
 
@@ -544,6 +544,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
+	konfig['RESTART_SOL'] = restart_sol
 
         konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
         konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
@@ -609,7 +610,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
                 dst = os.getcwd()
                 dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES[ADJ_NAME]
                 name = ztate.FILES[ADJ_NAME]
-                state.FILES[MULTIPOINT_ADJ_NAME][i+1] = name
+                solution_adj_list[i+1] = name
                 name = su2io.expand_zones(name,konfig)
                 name = su2io.expand_time(name,konfig)
                 push.extend(name)
@@ -621,7 +622,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # make unix link
         string = "ln -s " + src + " " + dst
         os.system(string)
-    
+    state.FILES[MULTIPOINT_ADJ_NAME] = solution_adj_list
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
     # ----------------------------------------------------
