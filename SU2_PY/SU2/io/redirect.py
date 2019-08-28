@@ -198,7 +198,7 @@ class folder(object):
             shutil.copy(old_name,new_name)
 
         # make links
-	for name in link:
+        for name in link:
             old_name = os.path.abspath(name)
             new_name = os.path.split(name)[-1]
             new_name = os.path.join(folder,new_name)

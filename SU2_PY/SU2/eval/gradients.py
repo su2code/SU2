@@ -544,24 +544,24 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
+	# Reset RESTART_SOL to original value
 	konfig['RESTART_SOL'] = restart_sol
-
+	
+	# Set correct config option names
         konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
         konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
-        #konfig.RESTART_SOL = 'YES'
-        #ztate.FILES.clear()
-        #ztate.find_files(konfig)
-        if ADJ_NAME in ztate.FILES:
+        
+	# Delete file run in previous case
+	if ADJ_NAME in ztate.FILES:
             del ztate.FILES[ADJ_NAME]
-
+	
+	# Update ADJOINT filename with MULTIPOINT_ADJOINT filename
         if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][i+1]:
             ztate.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][i+1]
 
         files = ztate.FILES
         link = []
         files['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
-
-        
 
         # files: mesh
         name = files['MESH']
@@ -585,7 +585,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
       # pull needed files, start folder
         with redirect_folder( folder[i+1], pull, link ) as push:
             with redirect_output(log_direct):
-    
+ 		# Set the multipoint options   
                 konfig.AOA = aoa_list[i+1]
                 konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
                 konfig.MACH_NUMBER = mach_list[i+1]
@@ -601,7 +601,6 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
  
                 # let's start somethin somthin
                 ztate.GRADIENTS.clear()
-                #ztate.find_files(konfig)
 
                 # the gradient
                 grads[i+1] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
@@ -622,7 +621,9 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # make unix link
         string = "ln -s " + src + " " + dst
         os.system(string)
+    # Update MULTPOINT_ADJOINT files in state.FILES
     state.FILES[MULTIPOINT_ADJ_NAME] = solution_adj_list
+
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
     # ----------------------------------------------------

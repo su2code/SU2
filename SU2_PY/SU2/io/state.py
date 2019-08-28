@@ -188,13 +188,11 @@ class State(ordered_bunch):
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
-                # value = expand_multipoint(value,config)
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             elif 'ADJOINT_' in key and  (not 'MULTIPOINT' in key):
                 # adjoint solution
-                # value = expand_multipoint(value,config)
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
@@ -270,14 +268,15 @@ class State(ordered_bunch):
                         print('Found: %s' % filename)
 
                 elif label.split('_')[0] in ['MULTIPOINT']:
-                    file_list= [];
-
+                    # if multipoint, list of files needs to be added
+		    file_list= [];
                     for name in filename:
-                        
 			if os.path.exists(name):
                             file_list.append(name)
                         else:
+			    # if file doesn't exist, enter empty string as placeholder
                             file_list.append('')
+		    # If even one of the multipoint files is found, add the list
 		    if any(file for file in file_list):
 			files[label] = file_list
 		else:
@@ -319,15 +318,15 @@ class State(ordered_bunch):
         
         # equivalent area
         if 'EQUIV_AREA' in special_cases:
-	            register_file('TARGET_EA',targetea_name)
+	    register_file('TARGET_EA',targetea_name)
         
         # pressure inverse design
         if 'INV_DESIGN_CP' in special_cases:
-          register_file('TARGET_CP',targetcp_name)
+            register_file('TARGET_CP',targetcp_name)
             
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
-          register_file('TARGET_HEATFLUX',targetheatflux_name)
+            register_file('TARGET_HEATFLUX',targetheatflux_name)
         
         return
     
