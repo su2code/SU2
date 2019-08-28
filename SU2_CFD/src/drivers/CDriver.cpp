@@ -1543,7 +1543,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
   if ((restart || restart_flow) && config->GetDeform_Mesh() && update_geo){
     /*--- Always restart with the last state ---*/
-    val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     solver[MESH_0][MESH_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
   }
 
@@ -1672,10 +1672,19 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
     if (disc_adj_fem) {
       delete solver[val_iInst][iMGlevel][ADJFEA_SOL];
     }
-    
+
+    if (iMGlevel == 0){
+      if (config->GetDeform_Mesh()){
+        delete solver[val_iInst][MESH_0][MESH_SOL];
+        if (config->GetDiscrete_Adjoint())
+          delete solver[val_iInst][MESH_0][ADJMESH_SOL];
+      }
+    }
+        
     delete [] solver[val_iInst][iMGlevel];
+    
   }
-  
+
   delete [] solver[val_iInst];
 
 }
@@ -3074,6 +3083,10 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
     delete numerics[val_iInst][MESH_0][FEA_SOL][FEA_TERM];
     
   }
+  
+  /*--- We initialize the numerics for the mesh solver ---*/
+  if (config->GetDeform_Mesh())
+    delete [] numerics[val_iInst][MESH_0][MESH_SOL][FEA_TERM];
   
   /*--- Definition of the Class for the numerical method: numerics_container[INST_LEVEL][MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {

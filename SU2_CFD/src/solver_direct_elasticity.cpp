@@ -58,6 +58,11 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   loadIncrement = 1.0;
   
   element_container = NULL;
+  unsigned short iTerm;  
+  element_container = new CElement** [MAX_TERMS]();
+  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
+  
   node = NULL;
   
   element_properties = NULL;
@@ -95,6 +100,8 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   iElem_iDe   = NULL;
   
   topol_filter_applied = false;
+  
+  element_based = false;
 }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -128,15 +135,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Here is where we assign the kind of each element ---*/
   
   /*--- First level: different possible terms of the equations ---*/
-  element_container = new CElement** [MAX_TERMS];
+  element_container = new CElement** [MAX_TERMS]();
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS];
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
   
-  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
-    for (iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
-      element_container[iTerm][iKind] = NULL;
-    }
-  }
   
   if (nDim == 2) {
 
@@ -487,11 +489,11 @@ CFEASolver::~CFEASolver(void) {
   }
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij[iVar];
+    if (Jacobian_s_ij!= NULL) delete [] Jacobian_s_ij[iVar];
     if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
-    delete [] mZeros_Aux[iVar];
-    delete [] mId_Aux[iVar];
-    delete [] stressTensor[iVar];
+    if (mZeros_Aux != NULL) delete [] mZeros_Aux[iVar];
+    if (mId_Aux != NULL) delete [] mId_Aux[iVar];
+    if (stressTensor!= NULL) delete [] stressTensor[iVar];
   }
   
   if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
@@ -504,19 +506,21 @@ CFEASolver::~CFEASolver(void) {
   delete [] GradN_X;
   delete [] GradN_x;
   
-  delete [] mZeros_Aux;
-  delete [] mId_Aux;
+  if (mZeros_Aux != NULL) delete [] mZeros_Aux;
+  if (mId_Aux != NULL) delete [] mId_Aux;
   
   delete [] nodeReactions;
   
   delete [] normalVertex;
-  delete [] stressTensor;
+  if (stressTensor != NULL) delete [] stressTensor;
   
   if (solutionPredictor != NULL) delete [] solutionPredictor;
   
   if (iElem_iDe != NULL) delete [] iElem_iDe;
   
   delete [] elProperties;
+  
+  if (Res_FSI_Cont != NULL) delete [] Res_FSI_Cont;
   
 }
 
