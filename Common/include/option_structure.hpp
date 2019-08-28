@@ -116,7 +116,7 @@ const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parame
 const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 7;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 10;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
@@ -376,7 +376,8 @@ enum ENUM_TRANSFER {
   NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
   NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
   FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
-  STRUCTURAL_DISPLACEMENTS          = 11,   /*!< \brief Structural displacements (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS_LEGACY   = 11,   /*!< \brief Structural displacements (between fluids and solids) - legacy version (to be removed). */
+  BOUNDARY_DISPLACEMENTS            = 21,   /*!< \brief Boundary displacements (between fluids and solids) */
   STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
@@ -386,20 +387,7 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
 };
-static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
-("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
-("NO_COMMON_INTERFACE", NO_COMMON_INTERFACE)
-("NO_TRANSFER", NO_TRANSFER)
-("FLOW_TRACTION", FLOW_TRACTION)
-("STRUCTURAL_DISPLACEMENTS", STRUCTURAL_DISPLACEMENTS)
-("STRUCTURAL_DISPLACEMENTS_DISC_ADJ", STRUCTURAL_DISPLACEMENTS_DISC_ADJ)
-("SLIDING_INTERFACE", SLIDING_INTERFACE)
-("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
-("MIXING_PLANE", MIXING_PLANE)
-("CONJUGATE_HEAT_FS", CONJUGATE_HEAT_FS)
-("CONJUGATE_HEAT_WEAKLY_FS", CONJUGATE_HEAT_WEAKLY_FS)
-("CONJUGATE_HEAT_SF", CONJUGATE_HEAT_SF)
-("CONJUGATE_HEAT_WEAKLY_SF", CONJUGATE_HEAT_WEAKLY_SF);
+
 /*!
  * \brief different regime modes
  */
@@ -484,6 +472,9 @@ const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the num
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
 const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
+
+const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
+const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 
 /*!
@@ -1863,9 +1854,9 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
  * \brief types of element stiffnesses imposed for FEA mesh deformation
  */
 enum ENUM_DEFORM_STIFFNESS {
-  CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
-  INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  CONSTANT_STIFFNESS = 0,       /*!< \brief Impose a constant stiffness for each element (steel). */
+  INVERSE_VOLUME = 1,			      /*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
+  SOLID_WALL_DISTANCE = 2			  /*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
@@ -1920,7 +1911,8 @@ enum ENUM_RECORDING {
   FLOW_CROSS_TERM = 5,
   FEM_CROSS_TERM_GEOMETRY = 6,
   GEOMETRY_CROSS_TERM = 7,
-  ALL_VARIABLES = 8
+  ALL_VARIABLES = 8,
+  MESH_DEFORM = 9
 };
 
 /*!
@@ -1996,7 +1988,10 @@ enum MPI_QUANTITIES {
   SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
+  SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
+  MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
+  SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
+  SOLUTION_TIME_N1     = 29   /*!< \brief Solution at time n-1. */
 };
 
 /*!
