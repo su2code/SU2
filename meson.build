@@ -29,12 +29,9 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
 endif
 
 if get_option('enable-inria')
-  inria_dep = [declare_dependency(include_directories: 'externals/libMeshb/sources')]
-  inria_args = '-DHAVE_INRIA'
   subdir('externals/libMeshb/sources')
-else
-  inria_dep = ''
-  inria_args = ''
+  su2_dep += libmeshb7_dep
+  su2_cpp_args += '-DHAVE_INRIA'
 endif
 
 # Add cgns library
