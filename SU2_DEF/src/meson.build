@@ -5,6 +5,7 @@ if get_option('enable-normal')
                     		         'output_structure.cpp',
                                          'output_cgns.cpp',
                                          'output_fieldview.cpp',
+                                         'output_inria.cpp',
                                          'output_paraview.cpp',
                                          'output_physics.cpp',
                                          'output_su2.cpp',
