@@ -416,10 +416,9 @@ public:
   SU2_MPI::Request *req_PeriodicSend;       /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
   
-  vector<su2double> Orthogonality;
-  vector<su2double> Aspect_Ratio;
-  vector<su2double> Volume_Ratio;
-
+  vector<su2double> Orthogonality;          /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
+  vector<su2double> Aspect_Ratio;           /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
+  vector<su2double> Volume_Ratio;           /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
   
 	/*!
 	 * \brief Constructor of the class.
@@ -1689,6 +1688,10 @@ public:
    */
   unsigned short GetMGLevel(void);
 
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
   virtual void ComputeMeshQualityStatistics(CConfig *config);
 
 };
@@ -2263,9 +2266,9 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
 
 	/*! 
-	 * \brief Compute some parameters about the grid quality.
-	 * \param[out] statistics - Information about the grid quality, statistics[0] = (r/R)_min, statistics[1] = (r/R)_ave.		 
-	 */	
+   * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
+   * \param[in] config - Definition of the particular problem.
+	 */
 	void ComputeMeshQualityStatistics(CConfig *config);
 
 	/*!
