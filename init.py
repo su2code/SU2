@@ -191,39 +191,39 @@ def install_pyamg(alt_name_amgint):
   err = open( 'preconf_inria.err', 'w' )
   
   # Setup AMG interface
-    subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
+  subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
-    # Install pyAMG
-    if os.path.exists('pyAMG'):
-        print('Removing pyAMG')
-        shutil.rmtree('pyAMG')
+  # Install pyAMG
+  if os.path.exists('pyAMG'):
+      print('Removing pyAMG')
+      shutil.rmtree('pyAMG')
 
-    if sys.platform == 'linux' or sys.platform == 'linux2':
-        print('Installing pyAMG for Linux.')
-        pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
-        pyamg_targz = 'LinuxPyAmg.tar.gz'
-        import sysconfig
-        if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
-            pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
-        else:
-            pyamg_whl   = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
+  if sys.platform == 'linux' or sys.platform == 'linux2':
+      print('Installing pyAMG for Linux.')
+      pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
+      pyamg_targz = 'LinuxPyAmg.tar.gz'
+      import sysconfig
+      if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
+          pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
+      else:
+          pyamg_whl   = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
 
-    elif sys.platform == 'darwin':
-        print('Installing pyAMG for Mac.')
-        pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/MacPyAmg.tar.gz'
-        pyamg_targz = 'MacPyAmg.tar.gz'
-        pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
-        
-    subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
-    subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
-    subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
-    try:
-        subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-    except:
-        print('pyAMG installation failed')
-    subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
+  elif sys.platform == 'darwin':
+      print('Installing pyAMG for Mac.')
+      pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/MacPyAmg.tar.gz'
+      pyamg_targz = 'MacPyAmg.tar.gz'
+      pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
+      
+  subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
+  subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
+  subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
+  try:
+      subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+  except:
+      print('pyAMG installation failed')
+  subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
 
-    return True
+  return True
 
 
    
