@@ -2,11 +2,7 @@
 
 
 CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, nDim){
-  
-  file_ext = ".vtk";
-    
-}
+  CFileWriter(fields, ".vtk", nDim){}
 
 
 CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
@@ -27,7 +23,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   ofstream Paraview_File;
     
-  int MAX_STRING_LENGTH = 255;
+  const int MAX_STRING_LENGTH = 255;
   char str_buf[MAX_STRING_LENGTH], fname[100];
   
   const int NCOORDS = 3;

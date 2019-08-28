@@ -3,11 +3,7 @@
 #include <iomanip> // for setprecision
 
 CSTLFileWriter::CSTLFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".stl";
-
-}
+  CFileWriter(fields, ".stl", nDim){}
 
 
 CSTLFileWriter::~CSTLFileWriter(){
@@ -19,7 +15,7 @@ void CSTLFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
 
   filename += file_ext;
   
-  /*--- Routine to write the surface CSV files (ASCII). We
+  /*--- Routine to write the surface STL files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the
    surface data onto the master rank for writing for 2 reasons:
    (a) as a surface file, the amount of data should be much less

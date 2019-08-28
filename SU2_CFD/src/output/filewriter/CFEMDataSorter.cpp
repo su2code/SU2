@@ -37,15 +37,9 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
   nGlobalPoint_Sort = nLocalPoint_Sort;
 #endif
 
-  /*--- Set a final variable for the number of points in the restart
-   file. We do not write the periodic points for the FV solver, even if
-   they show up in the viz. files. ---*/
-
-  nPoint_Restart = nGlobalPoint_Sort;
-  
   /*--- Create a linear partition --- */
   
-  CreateLinearPartition(nGlobalPoint_Sort);  
+  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
   
   /*--- Prepare the send buffers ---*/
   
@@ -54,20 +48,16 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 }
 
 CFEMDataSorter::~CFEMDataSorter(){
-  
-  delete [] beg_node;
-  delete [] end_node;
-  delete [] nPoint_Cum;
-  delete [] nPoint_Lin;
 
   if (connSend != NULL)    delete [] connSend;
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
+  if (linearPartitioner != NULL) delete linearPartitioner;
   
 }
 
 
-void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
+void CFEMDataSorter::SortOutputData() {
 
   /* For convenience, set the total number of variables stored at each DOF. */
 
@@ -85,11 +75,11 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
    directly copy our own data later. ---*/
 
   su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]];
+  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
   for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
     connRecv[ii] = 0;
 
-  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
+  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
   for (int ii = 0; ii < nPoint_Recv[size]; ii++)
     idRecv[ii] = 0;
 
@@ -201,7 +191,7 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
 
   Parallel_Data = new su2double*[VARS_PER_POINT];
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nPoint_Recv[size]];
+    Parallel_Data[jj] = new su2double[nPoint_Recv[size]]();
     for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
       Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
     }

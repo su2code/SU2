@@ -786,7 +786,7 @@ void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
   
 }
 
-void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config){
+void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config){
   
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
@@ -800,7 +800,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
   
   surfCp_filename = "TargetCp";
   
-  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curr_TimeIter, ".dat");
+  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curTimeIter, ".dat");
   
   strcpy (cstr, surfCp_filename.c_str());
     
@@ -842,7 +842,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
             Point2Vertex[iPoint][0] = iMarker;
             Point2Vertex[iPoint][1] = iVertex;
             PointInDomain[iPoint] = true;
-            solver_container->SetCPressureTarget(iMarker, iVertex, 0.0);
+            solver->SetCPressureTarget(iMarker, iVertex, 0.0);
           }
           
         }
@@ -868,7 +868,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
         iMarker = Point2Vertex[iPoint][0];
         iVertex = Point2Vertex[iPoint][1];
         
-        solver_container->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+        solver->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
         
       }
       
@@ -893,8 +893,8 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
           
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           
-          Cp = solver_container->GetCPressure(iMarker, iVertex);
-          CpTarget = solver_container->GetCPressureTarget(iMarker, iVertex);
+          Cp = solver->GetCPressure(iMarker, iVertex);
+          CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
           
           Area = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
@@ -916,7 +916,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
   
   /*--- Update the total Cp difference coeffient ---*/
   
-  solver_container->SetTotal_CpDiff(PressDiff);
+  solver->SetTotal_CpDiff(PressDiff);
   
   SetHistoryOutputValue("CP_DIFF", PressDiff);
 

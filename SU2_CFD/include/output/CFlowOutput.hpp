@@ -1,7 +1,6 @@
 /*!
- * \file output_flow.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ * \file CFlowOutput.hpp
+ * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 6.2.0 "Falcon"
  *
@@ -41,30 +40,58 @@
 #include "COutput.hpp"
 
 class CFlowOutput : public COutput{
-  
-  
 public:
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output);
+  CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFlowOutput(void);
+  ~CFlowOutput(void) override;
   
+  /*!
+   * \brief Add flow surface output fields
+   * \param[in] config - Definition of the particular problem.
+   */
   void AddAnalyzeSurfaceOutput(CConfig *config);
   
+  /*!
+   * \brief Set flow surface output field values
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Boolean indicating whether information should be written to screen
+   */
   void SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
+  /*!
+   * \brief Add aerodynamic coefficients as output fields
+   * \param[in] config - Definition of the particular problem.
+   */
   void AddAerodynamicCoefficients(CConfig *config);
   
+  /*!
+   * \brief  Set the value of the aerodynamic coefficients 
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - The container holding all solution data.
+   */
   void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
   
+  /*!
+   * \brief Add CP inverse design output as history fields
+   * \param[in] config - Definition of the particular problem.
+   */
   void Add_CpInverseDesignOutput(CConfig *config);
   
-  void Set_CpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  /*!
+   * \brief Set CP inverse design output field values
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
   
 };
