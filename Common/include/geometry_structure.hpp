@@ -838,12 +838,6 @@ public:
 	 */
 	virtual void MatchActuator_Disk(CConfig *config);
 
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void MatchInterface(CConfig *config);
-
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
@@ -2823,12 +2817,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchActuator_Disk(CConfig *config);
-
-	/*! 
-	 * \brief Mach the interface boundary condition.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void MatchInterface(CConfig *config);
 
   /*!
    * \brief Mach the periodic boundary conditions.
