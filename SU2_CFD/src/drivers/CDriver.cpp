@@ -3086,7 +3086,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
   
   /*--- We initialize the numerics for the mesh solver ---*/
   if (config->GetDeform_Mesh())
-    delete [] numerics[val_iInst][MESH_0][MESH_SOL][FEA_TERM];
+    delete numerics[val_iInst][MESH_0][MESH_SOL][FEA_TERM];
   
   /*--- Definition of the Class for the numerical method: numerics_container[INST_LEVEL][MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
