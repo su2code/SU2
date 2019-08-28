@@ -1121,7 +1121,7 @@ def main():
     dynbeam2d.unsteady  = True
     dynbeam2d.new_output= True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
+    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "SU2_CFD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001
@@ -1138,7 +1138,40 @@ def main():
     fsi2d.multizone = True
     fsi2d.unsteady  = True
     fsi2d.tol       = 0.00001
-    test_list.append(fsi2d)    
+    test_list.append(fsi2d)
+
+    # FSI, Static, 2D, new mesh solver
+    stat_fsi           = TestCase('stat_fsi')
+    stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
+    stat_fsi.cfg_file  = "config.cfg"
+    stat_fsi.test_iter = 7000
+    stat_fsi.test_vals = [-6.762763, -6.522814, -9.205275, -10.113188] #last 4 columns
+    stat_fsi.su2_exec  = "SU2_CFD"
+    stat_fsi.timeout   = 1600
+    stat_fsi.tol       = 0.00001
+    test_list.append(stat_fsi)
+
+    # FSI, Static, 2D, new mesh solver, restart
+    stat_fsi_restart           = TestCase('stat_fsi_restart')
+    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
+    stat_fsi_restart.cfg_file  = "config_restart.cfg"
+    stat_fsi_restart.test_iter = 1000
+    stat_fsi_restart.test_vals = [-9.692985, -9.452006, -12.132021, -13.042439] #last 4 columns
+    stat_fsi_restart.su2_exec  = "SU2_CFD"
+    stat_fsi_restart.timeout   = 1600
+    stat_fsi_restart.tol       = 0.00001
+    test_list.append(stat_fsi_restart)
+
+    # FSI, Dynamic, 2D, new mesh solver
+    dyn_fsi           = TestCase('dyn_fsi')
+    dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
+    dyn_fsi.cfg_file  = "config.cfg"
+    dyn_fsi.test_iter = 4000
+    dyn_fsi.test_vals = [-4.828422, -3.010379, -7.776602, -8.791331] #last 4 columns
+    dyn_fsi.su2_exec  = "SU2_CFD"
+    dyn_fsi.timeout   = 1600
+    dyn_fsi.tol       = 0.00001
+    test_list.append(dyn_fsi)
 
     # FSI, 2D airfoil with RBF interpolation
     airfoilRBF           = TestCase('airfoil_fsi_rbf')

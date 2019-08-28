@@ -44,6 +44,7 @@ CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false),
   mesh_deform = mesh_deform_mode;
   LinSysRes_ptr = NULL;
   LinSysSol_ptr = NULL;
+  Residual = 0.0;
 }
 
 template<class ScalarType>
