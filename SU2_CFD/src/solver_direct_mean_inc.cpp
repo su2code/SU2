@@ -6403,10 +6403,10 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   
 }
 
-void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry,
-                                                        CConfig *config,
+void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry,
+                                                        CConfig        *config,
                                                         unsigned short iMesh,
-                                                        bool Output) {
+                                                        bool           Output) {
 
   if (rank == MASTER_NODE) { cout << "------------------------------- New Routine Start --------------------------" << endl; }
   /*---------------------------------------------------------------------------------------------*/
@@ -6424,8 +6424,6 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry,
                        && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
 
-  su2double AxiFactor;
-
   /*-------------------------------------------------------------------------------------------------*/
   /*--- 1. Evaluate Massflow [kg/s], area-averaged density [kg/m^3] and Area [m^2] at the         ---*/
   /*---    (there can be only one) streamwise periodic outlet/donor marker. Massflow is obviously ---*/
@@ -6434,16 +6432,18 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry,
   /*---    Pressure-Drop update in case of a prescribed massflow.                                 ---*/
   /*-------------------------------------------------------------------------------------------------*/
   
-  su2double Area_Local = 0.0, Area_Global = 0.0, FaceArea,
-            MassFlow_Local = 0.0, MassFlow_Global = 0.0,
-            Average_Density_Local = 0.0, Average_Density_Global = 0.0;
+  su2double Area_Local            = 0.0, Area_Global            = 0.0,
+            MassFlow_Local        = 0.0, MassFlow_Global        = 0.0,
+            Average_Density_Local = 0.0, Average_Density_Global = 0.0,
+            FaceArea, AxiFactor;
   
   vector<su2double> AreaNormal(nDim);
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
+    /*--- Only "outlet"/donor periodic marker ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-        config->GetMarker_All_PerBound(iMarker) == 2) { // outlet/donor periodic marker
+        config->GetMarker_All_PerBound(iMarker) == 2) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -6462,22 +6462,17 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry,
             AxiFactor = 1.0;
           }
 
-          /*--- m_dot = dot_prod(n*v) * A * rho * Axifactor, with n beeing unit normal. ---*/
-          MassFlow_Local = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            MassFlow_Local += AreaNormal[iDim] * node[iPoint]->GetSolution()[iDim+1];
-
-          MassFlow_Local *= node[iPoint]->GetDensity() * AxiFactor; 
-
           /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
+          /*--- m_dot = dot_prod(n*v) * A * rho * Axifactor, with n beeing unit normal. ---*/
           FaceArea = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2);
+            MassFlow_Local += AreaNormal[iDim] * node[iPoint]->GetVelocity(iDim) * node[iPoint]->GetDensity() * AxiFactor;
+          }
           FaceArea = sqrt(FaceArea);
           Area_Local += FaceArea;
-          
-          Average_Density_Local += FaceArea * node[iPoint]->GetDensity();
 
+          Average_Density_Local += FaceArea * node[iPoint]->GetDensity();
 
         } // if domain
       } // loop vertices
