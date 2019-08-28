@@ -83,9 +83,19 @@ def init_submodules(method = 'auto'):
     download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
-  # Setup pyamg
+  # Some log and error files
   alt_name_amgint  = cur_dir + '/SU2_PY/SU2/amginria'
-  install_pyamg(alt_name_amgint)
+  log = open( 'preconf_inria.log', 'w' )
+  err = open( 'preconf_inria.err', 'w' )
+
+  # Setup AMG interface
+  subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
+
+  # Setup pyamg
+  try:
+    import pyamg
+  except:
+    install_pyamg(log, err)
 
 def is_git_directory(path = '.'):
   try:
@@ -185,14 +195,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
       f = open(alt_name + '/' + commit_sha, 'w')
       f.close()
 
-def install_pyamg(alt_name_amgint):
-  # Some log and error files
-  log = open( 'preconf_inria.log', 'w' )
-  err = open( 'preconf_inria.err', 'w' )
-
-  # Setup AMG interface
-  subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
-
+def install_pyamg(log, err):
   # Install pyAMG
   if os.path.exists('pyAMG'):
       print('Removing pyAMG')
