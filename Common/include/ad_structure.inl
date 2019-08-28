@@ -279,16 +279,10 @@ namespace AD{
 
   inline void StopRecording() {}
 
-<<<<<<< HEAD
   inline bool TapeActive() { return false; }
 
   inline void PrintStatistics() {}
 
-||||||| merged common ancestors
-=======
-  inline bool TapeActive() {return false;}
-
->>>>>>> 30c95946da678ed8474dcbf3c689aa4e617ba823
   inline void ClearAdjoints() {}
 
   inline void ComputeAdjoint() {}
