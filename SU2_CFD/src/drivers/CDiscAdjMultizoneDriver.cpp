@@ -278,8 +278,7 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
 void CDiscAdjMultizoneDriver::Run() {
 
   bool            checkSensitivity  = false;
-  unsigned short  checkConvergence  = 0,
-                  jZone             = 0,
+  unsigned short  jZone             = 0,
                   wrt_sol_freq      = config_container[ZONE_0]->GetWrt_Sol_Freq();
   unsigned long   iIter             = 0,
                   nIter             = 0,
@@ -503,7 +502,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsigned short tape_type, unsigned short record_zone) {
 
-  unsigned short iZone, jZone, iSol, iMesh, UpdateMesh;
+  unsigned short iZone, jZone, iSol, UpdateMesh;
   unsigned long ExtIter = 0;
   bool DeformMesh       = false;
 
