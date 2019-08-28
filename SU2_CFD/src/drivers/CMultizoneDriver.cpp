@@ -113,10 +113,10 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
       case RIGID_MOTION: 
-      case ELASTICITY:
         prefixed_motion[iZone] = true; break;
       case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
+      case ELASTICITY:
         prefixed_motion[iZone] = false; break;
     }
     if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
@@ -470,9 +470,10 @@ void CMultizoneDriver::Update() {
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
+      if (integration_container[iZone][INST_0][iSol] != NULL){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
     }
   }
 
@@ -623,9 +624,22 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
 
+  /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement()) {
   iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                                            config_container[val_iZone], 0, TimeIter);
+  }
+
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  if (config_container[ZONE_0]->GetDeform_Mesh()) {
+    iteration_container[val_iZone][INST_0]->SetMesh_Deformation(geometry_container[val_iZone][INST_0],
+                                                                solver_container[val_iZone][INST_0][MESH_0],
+                                                                numerics_container[val_iZone][INST_0][MESH_0],
+                                                                config_container[ZONE_0],
+                                                                NONE);
+  }
 
 }
 
@@ -665,8 +679,14 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) {
+  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_LEGACY) {
     transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+    UpdateMesh = true;
+  }
+  else if (transfer_types[donorZone][targetZone] == BOUNDARY_DISPLACEMENTS) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
     UpdateMesh = true;

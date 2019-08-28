@@ -41,7 +41,8 @@
 CUpwSca_Heat::CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  grid_movement   = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -65,7 +66,7 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
@@ -92,7 +93,8 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
 CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  grid_movement   = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   MeanVelocity = new su2double [nDim];
 
@@ -117,7 +119,7 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
   AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
