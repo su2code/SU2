@@ -784,6 +784,8 @@ void CConfig::SetPointersNull(void) {
   Wrt_InletFile = false;
  
   Restart_Bandwidth_Agg = 0.0;
+  
+  Mesh_Box_Size = NULL;
  
 }
 
@@ -7380,7 +7382,7 @@ CConfig::~CConfig(void) {
   if (ScreenOutput != NULL) delete [] ScreenOutput;
   if (HistoryOutput != NULL) delete [] HistoryOutput;
   if (VolumeOutput != NULL) delete [] VolumeOutput;
-  
+  if (Mesh_Box_Size != NULL) delete [] Mesh_Box_Size;
 
 }
 

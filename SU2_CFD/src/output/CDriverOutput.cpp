@@ -45,7 +45,7 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned 
   
   nZone = driver_config->GetnZone();
 
-  field_width = 12;
+  fieldWidth = 12;
   
   bgs_res_name = "BGS_RES";
   
@@ -57,30 +57,30 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned 
   }
 
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("ITER");
     for (iZone = 0; iZone < nZone; iZone++){
-      RequestedHistoryFields.push_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");      
-      RequestedHistoryFields.push_back("AVG_RES[" + PrintingToolbox::to_string(iZone) + "]");
+      requestedHistoryFields.push_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");      
+      requestedHistoryFields.push_back("AVG_RES[" + PrintingToolbox::to_string(iZone) + "]");
     }
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    if (config[ZONE_0]->GetTime_Domain()) RequestedScreenFields.push_back("TIME_ITER");    
-    RequestedScreenFields.push_back("OUTER_ITER");
+    if (config[ZONE_0]->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");    
+    requestedScreenFields.push_back("OUTER_ITER");
     for (iZone = 0; iZone < nZone; iZone++){
-      RequestedScreenFields.push_back("AVG_" + bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]"); 
+      requestedScreenFields.push_back("AVG_" + bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]"); 
     }
-    nRequestedScreenFields = RequestedScreenFields.size();
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
-  MultiZoneHeaderString = "Multizone Summary";
+  multiZoneHeaderString = "Multizone Summary";
   
-  HistoryFilename = "multizone_history";
+  historyFilename = "multizone_history";
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "AVG_BGS_RES[0]";
+  if (convField.size() == 0 ) convField = "AVG_BGS_RES[0]";
 
 }
 
@@ -96,9 +96,9 @@ void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config)
   string name, header;
 
   if (config[ZONE_0]->GetTime_Domain()){
-    SetHistoryOutputValue("TIME_ITER", curr_TimeIter);
+    SetHistoryOutputValue("TIME_ITER", curTimeIter);
   }
-  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter);
+  SetHistoryOutputValue("OUTER_ITER", curOuterIter);
   
   
   for (iZone = 0; iZone < nZone; iZone++){
@@ -116,7 +116,7 @@ void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config)
         
         name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
         
-        SetHistoryOutputValue(name, ZoneHistoryFields[ZoneHistoryNames[iField]].Value);
+        SetHistoryOutputValue(name, ZoneHistoryFields[ZoneHistoryNames[iField]].value);
 
       }
     }
@@ -149,10 +149,10 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
       if (ZoneHistoryNames[iField] != "TIME_ITER" && ZoneHistoryNames[iField] != "OUTER_ITER"){
         
         name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
-        header = ZoneHistoryFields[ZoneHistoryNames[iField]].FieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
-        group  = ZoneHistoryFields[ZoneHistoryNames[iField]].OutputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
+        header = ZoneHistoryFields[ZoneHistoryNames[iField]].fieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
+        group  = ZoneHistoryFields[ZoneHistoryNames[iField]].outputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
         
-        AddHistoryOutput(name, header, ZoneHistoryFields[ZoneHistoryNames[iField]].ScreenFormat, group, "", ZoneHistoryFields[ZoneHistoryNames[iField]].FieldType );
+        AddHistoryOutput(name, header, ZoneHistoryFields[ZoneHistoryNames[iField]].screenFormat, group, "", ZoneHistoryFields[ZoneHistoryNames[iField]].fieldType );
       }
     }
   }
@@ -163,7 +163,7 @@ bool CDriverOutput::WriteScreen_Header(CConfig *config) {
   bool write_header = true;
 
   /*--- If the outer iteration is zero ---*/
-  write_header = (write_header && (curr_OuterIter == 0)) || write_zone;
+  write_header = (write_header && (curOuterIter == 0)) || write_zone;
 
   return write_header;
 
@@ -176,17 +176,17 @@ bool CDriverOutput::WriteScreen_Output(CConfig *config) {
 
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq_Time)&& 
-      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+  if (!PrintOutput(curTimeIter, ScreenWrt_Freq_Time)&& 
+      !(curTimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
     
   }
   
-  if (Convergence) {return true;}
+  if (convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq_Outer) && 
-      !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
+  if (!PrintOutput(curOuterIter, ScreenWrt_Freq_Outer) && 
+      !(curOuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
@@ -202,17 +202,17 @@ bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
     
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq_Time)&& 
-      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+  if (!PrintOutput(curTimeIter, HistoryWrt_Freq_Time)&& 
+      !(curTimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
     
   }
   
-  if (Convergence) {return true;}
+  if (convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, HistoryWrt_Freq_Outer) && 
-      !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
+  if (!PrintOutput(curOuterIter, HistoryWrt_Freq_Outer) && 
+      !(curOuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     

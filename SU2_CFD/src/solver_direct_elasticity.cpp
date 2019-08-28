@@ -2202,69 +2202,6 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   else {
     if (nonlinear_analysis){
 
-      /*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
-
-      /*--- UTOL = norm(Delta_U(k)) / norm(U(k)) --------------------------*/
-      /*--- RTOL = norm(Residual(k)) / norm(Residual(0)) ------------------*/
-      /*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
-
-      if (first_iter){
-        Conv_Ref[0] = 1.0;                                        // Position for the norm of the solution
-        Conv_Ref[1] = max(LinSysRes.norm(), EPS);                 // Position for the norm of the residual
-        Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);    // Position for the energy tolerance
-
-        /*--- Make sure the computation runs at least 2 iterations ---*/
-        Conv_Check[0] = 1.0;
-        Conv_Check[1] = 1.0;
-        Conv_Check[2] = 1.0;
-
-        /*--- If absolute, we check the norms ---*/
-        switch (config->GetResidual_Criteria_FEM()) {
-          case RESFEM_ABSOLUTE:
-            Conv_Check[0] = LinSysSol.norm();         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm();         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
-            break;
-        }
-      }
-      else {
-        /*--- Compute the norm of the solution vector Uk ---*/
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-          for (iVar = 0; iVar < nVar; iVar++){
-            solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
-          }
-        }
-
-        // We need to communicate the norm of the solution and compute the RMS throughout the different processors
-
-#ifdef HAVE_MPI
-        /*--- We sum the squares of the norms across the different processors ---*/
-        SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-        solNorm_recv         = solNorm;
-#endif
-
-        Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);           // Norm of the solution vector
-
-        switch (config->GetResidual_Criteria_FEM()) {
-          case RESFEM_RELATIVE:
-            Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
-            break;
-          case RESFEM_ABSOLUTE:
-            Conv_Check[0] = LinSysSol.norm();         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm();         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
-            break;
-          default:
-            Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
-            break;
-        }
-
-      }
 
       /*--- MPI solution ---*/
 

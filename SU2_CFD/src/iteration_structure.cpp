@@ -575,7 +575,7 @@ void CFluidIteration::Preprocess(COutput *output,
 
   /*--- Evaluate the new CFL number (adaptive). ---*/
   if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
-    output->SetCFL_Number(solver, config, val_iZone);
+    output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
   }
 
 }
@@ -667,14 +667,6 @@ void CFluidIteration::Iterate(COutput *output,
     
   }
   
-  /*--- Write the convergence history ---*/
-
-  if ( unsteady && !config[val_iZone]->GetDiscrete_Adjoint() && (!config[val_iZone]->GetMultizone_Problem() && !config[val_iZone]->GetSinglezone_Driver())) {
-    
-    output->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry, solver, config, integration, true, 0.0, val_iZone, val_iInst);
-    
-  }
-  
 }
 
 void CFluidIteration::Update(COutput *output,
@@ -755,7 +747,7 @@ bool CFluidIteration::Monitor(COutput *output,
   
   if (config[val_iZone]->GetCFL_Adapt() == YES) {
       if (!(config[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output->SetCFL_Number(solver, config, val_iZone);
+        output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
   }
 
   /*--- If convergence was reached --*/
@@ -1248,7 +1240,7 @@ void CHeatIteration::Preprocess(COutput *output,
 
   /*--- Evaluate the new CFL number (adaptive). ---*/
   if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
-    output->SetCFL_Number(solver, config, val_iZone);
+    output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
   }
 
 }

@@ -5877,7 +5877,7 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
   SU2_MPI::Bcast(&nMarker_Global, 1, MPI_UNSIGNED_LONG,
                  MASTER_NODE, MPI_COMM_WORLD);
 
-  char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE];
+  char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE]();
   if (rank == MASTER_NODE) {
     for (iMarker = 0; iMarker < nMarker_Global; iMarker++) {
       SPRINTF(&mpi_str_buf[iMarker*MAX_STRING_SIZE], "%s",
