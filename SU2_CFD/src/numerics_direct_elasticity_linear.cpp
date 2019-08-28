@@ -38,6 +38,12 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
+CFEALinearElasticity::CFEALinearElasticity(void) : CFEAElasticity () {
+
+  nodalDisplacement = NULL;
+
+}
+
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 

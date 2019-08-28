@@ -103,26 +103,37 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     Coord_Sum = new su2double[nDim];
   }
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  bool dynamic_grid = config->GetDynamic_Grid();
+
+  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
+  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
+                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
+                             config->GetKind_Solver() == ADJ_RANS);
+
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
-  if ( config->GetGrid_Movement() ) {
+  if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) 
       GridVel[iDim] = 0.0;
 
+    if (continuous_adjoint){
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new su2double*[nDim];
+      GridVel_Grad = new su2double*[nDim];
 
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        GridVel_Grad[iDim][jDim] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GridVel_Grad[iDim] = new su2double[nDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          GridVel_Grad[iDim][jDim] = 0.0;
+      }
     }
 
     /*--- Structures for storing old node coordinates for computing grid 
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if ( config->GetUnsteady_Simulation() != NO ) {
+    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
+    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -199,23 +210,34 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
     Coord_Sum = new su2double[nDim];
   }
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  bool dynamic_grid = config->GetDynamic_Grid();
+
+  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
+  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
+                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
+                             config->GetKind_Solver() == ADJ_RANS);
+
   /*--- Storage of grid velocities for dynamic meshes ---*/
-  if ( config->GetGrid_Movement() ) {
+  if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
 
+    if (continuous_adjoint){
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        GridVel_Grad[iDim][jDim] = 0.0;
+      GridVel_Grad = new su2double*[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GridVel_Grad[iDim] = new su2double[nDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          GridVel_Grad[iDim][jDim] = 0.0;
+      }
     }
 
     /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if (config->GetUnsteady_Simulation() != NO) {
+    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
+    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -297,24 +319,35 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
     Coord_Sum = new su2double[nDim];
   }
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  bool dynamic_grid = config->GetDynamic_Grid();
+
+  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
+  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
+                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
+                             config->GetKind_Solver() == ADJ_RANS);
+
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
-  if (config->GetGrid_Movement()) {
+  if (dynamic_grid) {
     GridVel = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
 
+    if (continuous_adjoint){
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        GridVel_Grad[iDim][jDim] = 0.0;
+      GridVel_Grad = new su2double*[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GridVel_Grad[iDim] = new su2double[nDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          GridVel_Grad[iDim][jDim] = 0.0;
+      }
     }
 
     /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if ( config->GetUnsteady_Simulation() != NO ) {
+    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
+    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];

@@ -249,6 +249,20 @@ public:
   }
 
   /*!
+   * \brief Set the variable solution at time n-1.
+   */
+  inline void Set_Solution_time_n(unsigned short iVar, su2double val_sol) {
+    Solution_time_n[iVar] = val_sol;
+  }
+
+  /*!
+   * \brief Set the variable solution at time n-1.
+   */
+  inline void Set_Solution_time_n1(unsigned short iVar, su2double val_sol) {
+    Solution_time_n1[iVar] = val_sol;
+  }
+
+  /*!
    * \brief Set to zero the velocity components of the solution.
    */
   inline void SetVelSolutionZero(void) {
@@ -1641,7 +1655,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool Get_isVertex(void) {return false;}
+  inline virtual bool Get_isVertex(void) const {return false;}
 
   /*!
    * \brief A virtual member.
@@ -2065,26 +2079,6 @@ public:
   inline virtual su2double* GetSolution_Accel_Direct() {return NULL; }
 
   /*!
-   * \brief Set the value of the old solution.
-   */
-  inline virtual void SetSolution_time_n(void) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_time_n - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(unsigned short val_var, su2double val_solution) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(su2double *val_solution_time_n) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_time_n[iVar] = val_solution_time_n[iVar];
-  }
-
-  /*!
    * \brief Set the value of the velocity (Structural Analysis).
    * \param[in] val_solution - Solution of the problem (velocity).
    */
@@ -2121,6 +2115,13 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   inline su2double GetSolution_time_n(unsigned short val_var) {return Solution_time_n[val_var]; }
+
+  /*!
+   * \brief Get the solution at time n-1.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  inline su2double GetSolution_time_n1(unsigned short val_var) {return Solution_time_n1[val_var]; }
 
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -2306,6 +2307,106 @@ public:
    */
   inline virtual su2double GetReference_Geometry(unsigned short iVar) {return 0.0; }
 
+  /*!
+   * \brief A virtual member. Get the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the original coordinate iDim.
+   */
+  inline virtual su2double GetMesh_Coord(unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member. Get the undeformed coordinates.
+   * \return Pointer to the reference coordinates.
+   */
+  inline virtual su2double *GetMesh_Coord() { return NULL; }
+
+  /*!
+   * \brief A virtual member. Set the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord[nDim]
+   */
+  inline virtual void SetMesh_Coord(unsigned short iDim, const su2double val_coord) { }
+
+    /*!
+   * \brief A virtual member. Get the value of the wall distance in reference coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the wall distance in reference coordinates.
+   */
+  inline virtual su2double GetWallDistance(void) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member. Set the value of the wall distance in reference coordinates.
+   * \param[in] val_dist - Value of wall distance.
+   */
+  inline virtual void SetWallDistance(const su2double val_dist) { }
+
+  /*!
+   * \brief A virtual member. Register the reference coordinates of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  inline virtual void Register_MeshCoord(bool input) { }
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
+   */
+  inline virtual void GetAdjoint_MeshCoord(su2double *adj_mesh) const { }
+
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  inline virtual su2double GetBound_Disp(unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  inline virtual void SetBound_Disp(const su2double *val_BoundDisp) { }
+
+
+  /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  inline virtual void SetBound_Disp(unsigned short iDim, const su2double val_BoundDisp) { }
+
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  inline virtual su2double* GetBoundDisp_Direct(void) { return NULL; }
+
+  /*!
+   * \brief A virtual member. Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  inline virtual void SetBoundDisp_Direct(const su2double *val_BoundDisp) { }
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
+   */
+  inline virtual void SetBoundDisp_Sens(const su2double *val_sens) { }
+
+  /*!
+   * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  inline virtual su2double GetBoundDisp_Sens(unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member. Register the boundary displacements of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  inline virtual void Register_BoundDisp(bool input) { }
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the boundary displacements.
+   */
+  inline virtual void GetAdjoint_BoundDisp(su2double *adj_disph) { }
+
    /*!
     * \brief A virtual member.
     */
@@ -2330,6 +2431,16 @@ public:
    * \brief A virtual member.
    */
   inline virtual void RegisterSolution_Accel_time_n() {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void RegisterFlowTraction() { }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned short iDim) {return 0.0;}
 
   /*!
    * \brief A virtual member.
@@ -2511,5 +2622,33 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned short iVar) {return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned short iVar) {return 0.0; }
+
+  /*!
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  virtual void SetFlowTractionSensitivity(unsigned short iDim, su2double val) { }
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  virtual su2double GetFlowTractionSensitivity(unsigned short iDim) { return 0.0; }
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  virtual void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val) { }
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  virtual su2double GetSourceTerm_DispAdjoint(unsigned short iDim) { return 0.0; }
 
 };
