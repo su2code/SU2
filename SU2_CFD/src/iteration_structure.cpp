@@ -3222,7 +3222,7 @@ void CDiscAdjTNE2Iteration::LoadUnsteady_Solution(CGeometry ****geometry,
       cout << " Setting freestream conditions at direct iteration " << val_DirectIter << "." << endl;
     for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
       solver[val_iZone][val_iInst][iMesh][TNE2_SOL]->SetFreeStream_Solution(config[val_iZone]);
-      solver[val_iZone][val_iInst][iMesh][TNE2_SOL]->Preprocessing(geometry[val_iZone][val_iInst][iMesh],solver[val_iZone][val_iInst][iMesh], config[val_iZone], iMesh, val_DirectIter, RUNTIME_FLOW_SYS, false);
+      solver[val_iZone][val_iInst][iMesh][TNE2_SOL]->Preprocessing(geometry[val_iZone][val_iInst][iMesh],solver[val_iZone][val_iInst][iMesh], config[val_iZone], iMesh, val_DirectIter, RUNTIME_TNE2_SYS, false);
       if (turbulent) {
         solver[val_iZone][val_iInst][iMesh][TURB_SOL]->SetFreeStream_Solution(config[val_iZone]);
         solver[val_iZone][val_iInst][iMesh][TURB_SOL]->Postprocessing(geometry[val_iZone][val_iInst][iMesh],solver[val_iZone][val_iInst][iMesh], config[val_iZone], iMesh);
