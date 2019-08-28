@@ -919,13 +919,13 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   config->SetDiscrete_Adjoint(false);
 
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-    case DISC_ADJ_EULER: config_container[ZONE_0]->SetKind_Solver(EULER); break;
-    case DISC_ADJ_NAVIER_STOKES: config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES); break;
-    case DISC_ADJ_RANS: config_container[ZONE_0]->SetKind_Solver(RANS); break;
+  switch (config->GetKind_Solver()) {
+    case DISC_ADJ_EULER: config->SetKind_Solver(EULER); break;
+    case DISC_ADJ_NAVIER_STOKES: config->SetKind_Solver(NAVIER_STOKES); break;
+    case DISC_ADJ_RANS: config->SetKind_Solver(RANS); break;
   }
 
-  COutput *output_direct = new COutput(config_container[ZONE_0]);
+  COutput *output_direct = new COutput(config);
 
   /*--- Zone preprocessing ---*/
 
@@ -935,7 +935,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   /*--- Set the iteration ---*/
 
-  config_container[ZONE_0]->SetOuterIter(TimeIter);
+  config->SetOuterIter(TimeIter);
 
   /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
   direct_iteration->Solve(output, integration_container, geometry_container, solver_container,
@@ -954,7 +954,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   /*--- A corrector step can help preventing numerical instabilities ---*/
 
-  if (config_container[ZONE_0]->GetRelaxation())
+  if (config->GetRelaxation())
     direct_iteration->Relaxation(output, integration_container, geometry_container, solver_container,
                                                     numerics_container, config_container, surface_movement, grid_movement, 
                                                     FFDBox, ZONE_0, INST_0);
@@ -967,7 +967,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   /*--- Monitor the direct solver ---*/
   bool StopCalc = false;
-  bool steady = (config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY);
+  bool steady = (config->GetUnsteady_Simulation() == STEADY);
   bool output_history = false;
 
 #ifndef HAVE_MPI
@@ -978,7 +978,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
   UsedTime = StopTime - StartTime;
 
   /*--- If convergence was reached --*/
-  StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence();
+  StopCalc = integration[FLOW_SOL]->GetConvergence();
 
   /*--- Write the convergence history for the fluid (only screen output) ---*/
 
@@ -996,25 +996,21 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   if (
 
-      /*--- General if statements to print output statements ---*/
-
-//      (ExtIter+1 >= nExtIter) || (StopCalc) ||
-
       /*--- Fixed CL problem ---*/
 
-      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
-       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == TimeIter)) ||
+      ((config->GetFixed_CL_Mode()) &&
+       (config->GetnExtIter()-config->GetIter_dCL_dAlpha() - 1 == TimeIter)) ||
 
       /*--- Steady problems ---*/
 
-      ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
-       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
+      ((TimeIter % config->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
+       ((config->GetUnsteady_Simulation() == STEADY) ||
+        (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
+        (config->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
 
       /*--- No inlet profile file found. Print template. ---*/
 
-      (config_container[ZONE_0]->GetWrt_InletFile())
+      (config->GetWrt_InletFile())
 
       ) {
 
@@ -1025,9 +1021,9 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
   /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
 
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < TimeIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == TimeIter) output_files = true;
+  if (config->GetFixed_CL_Mode()) {
+    if (config->GetnExtIter()-config->GetIter_dCL_dAlpha() - 1 < TimeIter) output_files = false;
+    if (config->GetnExtIter() - 1 == TimeIter) output_files = true;
   }
 
   /*--- write the solution ---*/
@@ -1049,12 +1045,12 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   }
 
-  config_container[ZONE_0]->SetDiscrete_Adjoint(true);
+  config->SetDiscrete_Adjoint(true);
 
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-    case EULER: config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_EULER); break;
-    case NAVIER_STOKES: config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_NAVIER_STOKES); break;
-    case RANS: config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_RANS); break;
+  switch (config->GetKind_Solver()) {
+    case EULER: config->SetKind_Solver(DISC_ADJ_EULER); break;
+    case NAVIER_STOKES: config->SetKind_Solver(DISC_ADJ_NAVIER_STOKES); break;
+    case RANS: config->SetKind_Solver(DISC_ADJ_RANS); break;
   }
 
   return StopCalc;
