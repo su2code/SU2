@@ -478,7 +478,7 @@ inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}
 
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
 
-inline void CGeometry::GetQualityStatistics(CConfig* config) {}
+inline void CGeometry::ComputeMeshQualityStatistics(CConfig* config) {}
 
 inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
 

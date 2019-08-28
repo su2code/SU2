@@ -35,9 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
- #include "../include/driver_structure.hpp"
+ #include "../include/drivers/CDriver.hpp"
 
-void CDriver::PythonInterface_Preprocessing(){
+void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geometry, CSolver *****solver){
 
   int rank = MASTER_NODE;
 
@@ -47,17 +47,23 @@ void CDriver::PythonInterface_Preprocessing(){
 
   /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
   for(iZone=0; iZone < nZone; iZone++){
-    if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-      geometry_container[iZone][INST_0][iMesh]->SetCustomBoundary(config_container[iZone]);
-    }
-    geometry_container[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone][INST_0], config_container[iZone]);
-
-    if ((config_container[iZone]->GetKind_Solver() == EULER) ||
-        (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() == RANS)) {
-
-          solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry_container[iZone][INST_0], config_container[iZone]);
+    
+    if (config[iZone]->GetnMarker_PyCustom() > 0){
+      
+      if (rank == MASTER_NODE) cout << endl << "----------------- Python Interface Preprocessing ( Zone "<< iZone <<" ) -----------------" << endl;
+      
+      if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
+      for (iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
+        geometry[iZone][INST_0][iMesh]->SetCustomBoundary(config[iZone]);
+      }
+      geometry[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
+      
+      if ((config[iZone]->GetKind_Solver() == EULER) ||
+          (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+          (config[iZone]->GetKind_Solver() == RANS)) {
+        
+        solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
+      }
     }
   }
   /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
@@ -507,7 +513,7 @@ su2double CDriver::GetVertexTemperature(unsigned short iMarker, unsigned short i
   su2double vertexWallTemp(0.0);
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-
+  
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
@@ -589,7 +595,7 @@ su2double CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned shor
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-
+  
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
 

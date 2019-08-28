@@ -56,15 +56,15 @@
 #include "task_definition.hpp"
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
-#include "variable_structure.hpp"
+#include "variables/CVariable.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/matrix_structure.hpp"
-#include "../../Common/include/vector_structure.hpp"
-#include "../../Common/include/linear_solvers_structure.hpp"
+#include "../../Common/include/linear_algebra/CSysMatrix.hpp"
+#include "../../Common/include/linear_algebra/CSysVector.hpp"
+#include "../../Common/include/linear_algebra/CSysSolve.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_coloring_structure.hpp"
@@ -721,13 +721,6 @@ public:
     * \param[in] geometry - Geometrical definition of the problem.
     * \param[in] config - Definition of the particular problem.
     */
-  virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
   virtual void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
   
   /*!
@@ -2223,6 +2216,12 @@ public:
    * \return Value of the objective function for the volume fraction.
    */
   virtual su2double GetTotal_OFVolFrac(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the objective function for the structural compliance.
+   */
+  virtual su2double GetTotal_OFCompliance(void);
 
   /*!
    * \brief A virtual member.
@@ -3492,6 +3491,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4980,13 +4987,6 @@ public:
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
@@ -10177,13 +10177,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
   void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
@@ -11438,6 +11431,7 @@ private:
   int nFEA_Terms;
   
   bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
+  bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
   su2double *GradN_X,
   *GradN_x;
@@ -11487,6 +11481,7 @@ private:
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
+  su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
 
   su2double Global_OFRefGeom;        /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;        /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -11863,6 +11858,12 @@ public:
    * \param[out] OFVolFrac - value of the objective function.
    */
   su2double GetTotal_OFVolFrac(void);
+  
+  /*!
+   * \brief Retrieve the value of the structural compliance objective function
+   * \return Value of the objective function.
+   */
+  su2double GetTotal_OFCompliance(void);
 
   /*!
    * \brief Determines whether there is an element-based file or not.
@@ -11992,6 +11993,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Compute the compliance objective function
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Compute the penalty due to the stiffness increase

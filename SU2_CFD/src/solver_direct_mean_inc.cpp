@@ -37,6 +37,8 @@
 
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../include/variables/CIncEulerVariable.hpp"
+#include "../include/variables/CIncNSVariable.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -322,8 +324,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -821,9 +822,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool unsteady      = (config->GetUnsteady_Simulation() != NO);
   bool viscous       = config->GetViscous();
   bool grid_movement = config->GetGrid_Movement();
-  bool turbulent     = ((config->GetKind_Solver() == RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool tkeNeeded     = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == BOUSSINESQ);
 
@@ -1395,9 +1396,8 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   su2double Area_Children, Area_Parent, *Solution_Fine, *Solution;
     
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans      = ((config->GetKind_Solver() == RANS) ||
-                    (config->GetKind_Solver() == ADJ_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool rans      = ((config->GetKind_Solver() == INC_RANS) ||
+                    (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -1528,7 +1528,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool fixed_cl         = config->GetFixed_CL_Mode();
@@ -1902,8 +1902,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned long ExtIter = config->GetExtIter();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool grid_movement    = config->GetGrid_Movement();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
@@ -3778,9 +3777,20 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
   su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
-  *Primitive, *Primitive_i, *Primitive_j, *LocalMinPrimitive, *LocalMaxPrimitive,
-  *GlobalMinPrimitive, *GlobalMaxPrimitive,
+  *Primitive, *Primitive_i, *Primitive_j,
+  *LocalMinPrimitive = NULL, *LocalMaxPrimitive = NULL,
+  *GlobalMinPrimitive = NULL, *GlobalMaxPrimitive = NULL,
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
+  
+#ifdef CODI_REVERSE_TYPE
+  bool TapeActive = false;
+
+  if (config->GetDiscrete_Adjoint() && config->GetFrozen_Limiter_Disc()) {
+    /*--- If limiters are frozen do not record the computation ---*/
+    TapeActive = AD::globalTape.isActive();
+    AD::StopRecording();
+  }
+#endif
   
   dave = config->GetRefElemLength();
   LimK = config->GetVenkat_LimiterCoeff();
@@ -3925,33 +3935,34 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   if ((config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN) ||
       (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
     
-    /*--- Allocate memory for the max and min primitive value --*/
-    
-    LocalMinPrimitive = new su2double [nPrimVarGrad]; GlobalMinPrimitive = new su2double [nPrimVarGrad];
-    LocalMaxPrimitive = new su2double [nPrimVarGrad]; GlobalMaxPrimitive = new su2double [nPrimVarGrad];
-    
-    /*--- Compute the max value and min value of the solution ---*/
-    
-    Primitive = node[0]->GetPrimitive();
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      LocalMinPrimitive[iVar] = Primitive[iVar];
-      LocalMaxPrimitive[iVar] = Primitive[iVar];
-    }
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
       
-      /*--- Get the primitive variables ---*/
+      /*--- Allocate memory for the max and min primitive value --*/
       
-      Primitive = node[iPoint]->GetPrimitive();
-
+      LocalMinPrimitive = new su2double [nPrimVarGrad]; GlobalMinPrimitive = new su2double [nPrimVarGrad];
+      LocalMaxPrimitive = new su2double [nPrimVarGrad]; GlobalMaxPrimitive = new su2double [nPrimVarGrad];
+      
+      /*--- Compute the max value and min value of the solution ---*/
+      
+      Primitive = node[0]->GetPrimitive();
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        LocalMinPrimitive[iVar] = min (LocalMinPrimitive[iVar], Primitive[iVar]);
-        LocalMaxPrimitive[iVar] = max (LocalMaxPrimitive[iVar], Primitive[iVar]);
+        LocalMinPrimitive[iVar] = Primitive[iVar];
+        LocalMaxPrimitive[iVar] = Primitive[iVar];
       }
       
-    }
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Get the primitive variables ---*/
+        
+        Primitive = node[iPoint]->GetPrimitive();
 
-    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          LocalMinPrimitive[iVar] = min (LocalMinPrimitive[iVar], Primitive[iVar]);
+          LocalMaxPrimitive[iVar] = max (LocalMaxPrimitive[iVar], Primitive[iVar]);
+        }
+        
+      }
+
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(LocalMinPrimitive, GlobalMinPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(LocalMaxPrimitive, GlobalMaxPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -3971,15 +3982,22 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       Gradient_j = node[jPoint]->GetGradient_Primitive();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-
-      AD::StartPreacc();
-      AD::SetPreaccIn(Gradient_i, nPrimVarGrad, nDim);
-      AD::SetPreaccIn(Gradient_j, nPrimVarGrad, nDim);
-      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-
+      
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          
+        AD::StartPreacc();
+        AD::SetPreaccIn(Gradient_i[iVar], nDim);
+        AD::SetPreaccIn(Gradient_j[iVar], nDim);
+        AD::SetPreaccIn(Coord_i, nDim);
+        AD::SetPreaccIn(Coord_j, nDim);
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
         
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          AD::SetPreaccIn(GlobalMaxPrimitive[iVar]);
+          AD::SetPreaccIn(GlobalMinPrimitive[iVar]);
           eps1 = LimK * (GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar]);
           eps2 = eps1*eps1;
         }
@@ -3988,11 +4006,6 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
           eps2 = eps1*eps1*eps1;
         }
         
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
-
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
         dm = 0.0;
@@ -4027,14 +4040,14 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
           AD::SetPreaccOut(node[jPoint]->GetLimiter_Primitive()[iVar]);
         }
         
+        AD::EndPreacc();
       }
-
-      AD::EndPreacc();
-      
     }
     
-    delete [] LocalMinPrimitive; delete [] GlobalMinPrimitive;
-    delete [] LocalMaxPrimitive; delete [] GlobalMaxPrimitive;
+    if (LocalMinPrimitive  != NULL) delete [] LocalMinPrimitive;
+    if (LocalMaxPrimitive  != NULL) delete [] LocalMaxPrimitive;
+    if (GlobalMinPrimitive != NULL) delete [] GlobalMinPrimitive;
+    if (GlobalMaxPrimitive != NULL) delete [] GlobalMaxPrimitive;
 
   }
   
@@ -4049,7 +4062,10 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   
   InitiateComms(geometry, config, PRIMITIVE_LIMITER);
   CompleteComms(geometry, config, PRIMITIVE_LIMITER);
-  
+
+#ifdef CODI_REVERSE_TYPE
+  if (TapeActive) AD::StartRecording();
+#endif
 }
 
 void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
@@ -4591,9 +4607,8 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
-                     (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (((config->GetKind_Solver() == INC_RANS ) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) &&
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   
   Normal     = new su2double[nDim];
   NormalArea = new su2double[nDim];
@@ -4776,7 +4791,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5029,7 +5044,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5239,7 +5254,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5486,7 +5501,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
         
         /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5624,7 +5639,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
 
               /*--- Turbulent kinetic energy ---*/
 
-              if (config->GetKind_Turb_Model() == SST)
+              if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
               /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -6500,7 +6515,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool turbulent     = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
   
   string UnstExt, text_line;
   ifstream restart_file;
@@ -6527,7 +6542,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    (that could appear in the restart file before the grid velocities). ---*/
   unsigned short turbVars = 0;
   if (turbulent){
-    if (turb_model == SST) turbVars = 2;
+    if ((turb_model == SST) || (turb_model == SST_SUST)) turbVars = 2;
     else turbVars = 1;
   }
   
@@ -6971,8 +6986,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -7437,8 +7451,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
+  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
@@ -7537,7 +7551,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool physical = true;
   
-  bool tkeNeeded = (turb_model == SST);
+  bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
@@ -7820,7 +7834,7 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Turbulent kinetic energy ---*/
     
-    if (config->GetKind_Turb_Model() == SST)
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     

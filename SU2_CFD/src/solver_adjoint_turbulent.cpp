@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CAdjTurbVariable.hpp"
 
 CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
@@ -49,9 +50,13 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Dimension of the problem  ---*/
   switch (config->GetKind_Turb_Model()) {
-    case SA :     nVar = 1; break;
-    case SA_NEG : nVar = 1; break;
-    case SST :    nVar = 2; break;
+    case SA :        nVar = 1; break;
+    case SA_NEG :    nVar = 1; break;
+    case SA_E :      nVar = 1; break;
+    case SA_COMP :   nVar = 1; break;
+    case SA_E_COMP : nVar = 1; break;
+    case SST :       nVar = 2; break;
+    case SST_SUST :  nVar = 2; break;
   }
   
   /*--- Initialize nVarGrad for deallocation ---*/
@@ -95,8 +100,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialization of the structure of the whole Jacobian ---*/
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
     if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
   }
