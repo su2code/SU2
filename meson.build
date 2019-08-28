@@ -31,6 +31,7 @@ endif
 if get_option('enable-inria')
   inria_dep = [declare_dependency(include_directories: 'externals/libMeshb/sources')]
   inria_args = '-DHAVE_INRIA'
+  subdir('externals/libMeshb/sources')
 else
   inria_dep = ''
   inria_args = ''
