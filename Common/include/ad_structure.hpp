@@ -59,8 +59,8 @@ namespace AD{
   void StopRecording();
 
   /*!
-   * \brief Get information whether tape is active or not.
-   * \return <code>TRUE</code> if tape is active.
+   * \brief Check if the tape is active
+   * \param[out] Boolean which determines whether the tape is active.
    */
   bool TapeActive();
 
