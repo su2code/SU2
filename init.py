@@ -54,7 +54,6 @@ def init_submodules(method = 'auto'):
   alt_name_medi =   cur_dir + '/externals/medi'
   alt_name_codi =   cur_dir + '/externals/codi'
   alt_name_libMeshb = cur_dir + '/externals/libMeshb'
-  alt_name_amgint  = cur_dir + '/SU2_PY/SU2/amginria'
   alt_name_meson =  cur_dir + '/externals/meson'
   alt_name_ninja =  cur_dir + '/externals/ninja'
 
@@ -85,6 +84,7 @@ def init_submodules(method = 'auto'):
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
   # Setup pyamg
+  alt_name_amgint  = cur_dir + '/SU2_PY/SU2/amginria'
   install_pyamg(alt_name_amgint)
 
 def is_git_directory(path = '.'):
@@ -189,7 +189,7 @@ def install_pyamg(alt_name_amgint):
   # Some log and error files
   log = open( 'preconf_inria.log', 'w' )
   err = open( 'preconf_inria.err', 'w' )
-  
+
   # Setup AMG interface
   subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 

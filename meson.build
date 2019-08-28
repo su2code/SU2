@@ -29,7 +29,7 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
 endif
 
 if get_option('enable-inria')
-  inria_dep = [declare_dependency(include_directories: 'externals/libMeshb/include')]
+  inria_dep = [declare_dependency(include_directories: 'externals/libMeshb/sources')]
   inria_args = '-DHAVE_INRIA'
 else
   inria_dep = ''
