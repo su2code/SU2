@@ -788,7 +788,7 @@ void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates() {
         /*--- We only read information for this node if it is owned by this
          rank based upon our initial linear partitioning. ---*/
         
-        su2double Coords[3] = {0.0,0.0,0.0};
+        passivedouble Coords[3] = {0.0,0.0,0.0};
         if ((int)pointPartitioner.GetRankContainingIndex(GlobalIndex) == rank) {
           
           istringstream point_line(text_line);
