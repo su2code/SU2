@@ -310,7 +310,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
     SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
-    SetHistoryOutputValue("DEFOMR_RESIDUAL", mesh_solver->GetLinSol_Residual());    
+    SetHistoryOutputValue("DEFORM_RESIDUAL", mesh_solver->GetLinSol_Residual());
   }
   
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
