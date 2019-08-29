@@ -1,7 +1,7 @@
 /*!
  * \file CDiscAdjFEAVariable.hpp
- * \brief Main class for defining the variables of the adjoint solver.
- * \author F. Palacios, T. Economon
+ * \brief Main class for defining the variables of the adjoint FEA solver.
+ * \author T. Albring, R. Sanchez.
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -39,13 +39,6 @@
 
 #include "CVariable.hpp"
 
-/*!
- * \class CDiscAdjFEAVariable
- * \brief Main class for defining the variables of the adjoint solver.
- * \ingroup Discrete_Adjoint
- * \author T. Albring, R. Sanchez.
- * \version 6.2.0 "Falcon"
- */
 class CDiscAdjFEAVariable : public CVariable {
 private:
   su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
@@ -196,14 +189,6 @@ public:
   inline su2double GetSolution_Vel_time_n(unsigned short val_var) {return Solution_Vel_time_n[val_var]; }
 
   /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = Solution[iVar];
-  }
-
-  /*!
    * \brief Set the value of the acceleration (Structural Analysis - adjoint).
    * \param[in] val_solution - Solution of the problem (acceleration).
    */
@@ -300,4 +285,8 @@ public:
    */
   inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 
+  /*!
+   * \brief Get whether this node is on the boundary
+   */
+  inline virtual bool Get_isVertex(void) { return false; }
 };

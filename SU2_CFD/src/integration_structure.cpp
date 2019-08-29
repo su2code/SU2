@@ -162,20 +162,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case DISPLACEMENT_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
   }
@@ -192,9 +180,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
-        break;
-      case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -247,7 +232,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
     if ((linear_analysis && (initial_calc || dynamic)) ||
       (linear_analysis && restart && initial_calc_restart)) {
-      solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
+      solver_container[MainSolver]->Compute_StiffMatrix(geometry, numerics, config);
     }
     else if (!linear_analysis) {
       /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
@@ -255,7 +240,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       /*--- They are calculated together to avoid looping twice over the elements ---*/
       if (IterativeScheme == NEWTON_RAPHSON) {
         /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
-        solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+        solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
       }
 
       /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
@@ -263,11 +248,11 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
 
         if (first_iter) {
-          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
         }
 
         else {
-          solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
+          solver_container[MainSolver]->Compute_NodalStressRes(geometry, numerics, config);
         }
 
       }
@@ -282,10 +267,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         switch (config->GetMarker_All_KindBC(iMarker)) {
           case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
           case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
         }
       }
@@ -295,10 +280,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case LOAD_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DAMPER_BOUNDARY:
-          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
         break;
       }
     }
@@ -409,19 +394,19 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case CLAMPED_BOUNDARY:
-          solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DISP_DIR_BOUNDARY:
-          solver_container[MainSolver]->BC_DispDir(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DISPLACEMENT_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
           break;
       }
 
   /*--- Solver linearized system ---*/
 
-    solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
+    solver_container[MainSolver]->Solve_System(geometry, config);
 
   /*--- Update solution ---*/
 
@@ -442,10 +427,10 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+      solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
       break;
 //      case DISPLACEMENT_BOUNDARY:
-//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
 //      break;
     }
 
@@ -677,7 +662,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver->node[iPoint]->SetSolution_time_n();
+    solver->node[iPoint]->Set_Solution_time_n();
     solver->node[iPoint]->SetSolution_Vel_time_n();
     solver->node[iPoint]->SetSolution_Accel_time_n();
     
@@ -722,7 +707,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
+    solver_container[FEA_SOL]->node[iPoint]->Set_Solution_time_n();
     solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
     solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
     
