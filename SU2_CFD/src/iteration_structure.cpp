@@ -2197,7 +2197,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             if (grid_IsMoving) {
               geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n();
               geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n1();
-
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
@@ -2241,8 +2240,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
       /*--- 
       Here the primal solutions (only working variables) are loaded and put in the correct order
-      into containers. For ALE the mesh coordinates and the Grid-Velocities have to be put into the 
-      correct containers as well, i.e. follow the same logic for the solution.
+      into containers. For ALE the mesh coordinates have to be put into the 
+      correct containers as well, i.e. follow the same logic for the solution. 
+      Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
 
       /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/

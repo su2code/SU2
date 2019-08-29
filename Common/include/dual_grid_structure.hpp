@@ -1,5 +1,4 @@
 /*!
-
  * \file dual_grid_structure.hpp
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
@@ -728,7 +727,7 @@ public:
 	 * \param[in] val_gridvel - Value of the grid velocity.
 	 */
 	void SetGridVel(su2double *val_gridvel);
-	
+
 	/*!
 	 * \brief Set the gradient of the grid velocity.
 	 * \param[in] val_var - Index of the variable.

@@ -3810,7 +3810,8 @@ void CDriver::StartSolver(){
 
     /*--- Perform a dynamic mesh update if required. ---*/
 
-    if (!fem_solver && !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
+    if (!fem_solver && 
+        !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
       DynamicMeshUpdate(ExtIter);
     }
 
