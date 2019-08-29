@@ -37,6 +37,7 @@
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CDiscAdjFEAVariable.hpp"
+#include "../include/variables/CDiscAdjFEABoundVariable.hpp"
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
 
@@ -84,20 +85,11 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   unsigned short iVar, iMarker, iDim;
 
-  bool restart = config->GetRestart();
-
-  restart = false;
-
-  unsigned long iVertex, iPoint, index;
+  unsigned long iVertex, iPoint;
   string text_line, mesh_filename;
-  ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
@@ -115,25 +107,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   normalLoads = NULL;
 
   nMarker_nL = 0;
-
-//  nMarker_nL = 0;
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    switch (config->GetMarker_All_KindBC(iMarker)) {
-//      case LOAD_BOUNDARY:
-//        nMarker_nL += 1;
-//        break;
-//    }
-//  }
-//
-//  normalLoads = new su2double[nMarker_nL];
-//  /*--- Store the value of the normal loads ---*/
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    switch (config->GetMarker_All_KindBC(iMarker)) {
-//      case LOAD_BOUNDARY:
-//        normalLoads[iMarker] = config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker));
-//        break;
-//    }
-//  }
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -212,93 +185,26 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
     }
   }
 
+  node = new CDiscAdjFEABoundVariable(Solution, Solution_Accel, Solution_Vel, nPoint, nDim, nVar, dynamic, config);
+  snode = static_cast<CDiscAdjFEABoundVariable*>(node);
 
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-
-  node = new CDiscAdjFEAVariable(Solution, Solution_Accel, Solution_Vel, nPoint, nDim, nVar, dynamic, config);
-  snode = static_cast<CDiscAdjFEAVariable*>(node);
-
-  if (restart && (iMesh == MESH_0)) {
-
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFEMFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-
-    restart_file.open(filename.data(), ios::in);
-
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      SU2_MPI::Error(string("There is no adjoint restart file ") + filename, CURRENT_FUNCTION);
-    }
-
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    /*--- First, set all indices to a negative value by default ---*/
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;\
-
-    /*--- Skip coordinates ---*/
-    unsigned short skipVars = nDim;
-
-    /*--- Skip flow adjoint variables ---*/
-    if (Kind_Solver == RUNTIME_TURB_SYS){
-      if (compressible){
-        skipVars += nDim + 2;
-      }
-      if (incompressible){
-        skipVars += nDim + 1;
-      }
-    }
-
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
-
-        point_line >> index;
-        for (iVar = 0; iVar < skipVars; iVar++) point_line >> dull_val;
-        for (iVar = 0; iVar < nVar;     iVar++) point_line >> Solution[iVar];
-
-        snode->SetSolution(iPoint,Solution);
-
-        if (dynamic) {
-          for (iVar = 0; iVar < nVar; iVar++) point_line >> Solution_Vel[iVar];
-          for (iVar = 0; iVar < nVar; iVar++) point_line >> Solution_Accel[iVar];
-
-          snode->SetSolution_Vel(iPoint,Solution_Vel);
-          snode->SetSolution_Accel(iPoint,Solution_Accel);
-        }
-      }
-      iPoint_Global++;
-    }
-
-    /*--- Close the restart file ---*/
-    restart_file.close();
-
-    /*--- Free memory needed for the transformation ---*/
-    delete [] Global2Local;
-  }
+// ToDo: Apply vertex mechanism to this class
+//    bool isVertex;
+//    long indexVertex;
+//    /*--- Restart the solution from zero ---*/
+//    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+//      isVertex = false;
+//      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//        if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+//          indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
+//          if (indexVertex != -1){isVertex = true; break;}
+//        }
+//      }
+//      if (isVertex)
+//        node[iPoint] = new CDiscAdjFEABoundVariable(Solution, nDim, nVar, config);
+//      else
+//        node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
+//    }
 
   /*--- Store the direct solution ---*/
 
@@ -605,6 +511,13 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
         if (config->GetTopology_Optimization())
           direct_solver->RegisterVariables(geometry,config);
+
+        /*--- Register the flow traction sensitivities ---*/
+        if (config->GetnMarker_Fluid_Load() > 0){
+          for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+            direct_solver->node->RegisterFlowTraction(iPoint);
+          }
+        }
     }
 
   }
@@ -782,7 +695,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint solution at time n ---*/
 
-      node->SetSolution_time_n(iPoint,Solution);
+      node->Set_Solution_time_n(iPoint,Solution);
     }
 
     /*--- The acceleration solution at time n... ---*/
@@ -897,6 +810,18 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
     if (config->GetTopology_Optimization())
       direct_solver->ExtractAdjoint_Variables(geometry,config);
+
+    /*--- Extract the flow traction sensitivities ---*/
+    if (config->GetnMarker_Fluid_Load() > 0){
+      su2double val_sens;
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        for (unsigned short iDim = 0; iDim < nDim; iDim++){
+          val_sens = direct_solver->node->ExtractFlowTraction_Sensitivity(iPoint,iDim);
+          snode->SetFlowTractionSensitivity(iPoint, iDim, val_sens);
+        }
+      }
+    }
+
   }
 
 
@@ -906,6 +831,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi = config->GetFSI_Simulation();
+  bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -920,6 +846,12 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       }
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += snode->GetCross_Term_Derivative(iPoint,iVar);
+      }
+    }
+
+    if(deform_mesh){
+      for (iVar = 0; iVar < nVar; iVar++){
+        Solution[iVar] += snode->GetSourceTerm_DispAdjoint(iPoint,iVar);
       }
     }
 
@@ -1013,7 +945,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
 }
 
-void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
+void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){
 
   unsigned short iVar;
 
@@ -1075,8 +1007,7 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
 
 }
 
-void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                            unsigned short val_marker) {
+void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);

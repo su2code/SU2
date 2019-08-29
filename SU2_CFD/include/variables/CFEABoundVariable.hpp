@@ -179,6 +179,21 @@ public:
   }
 
   /*!
+   * \brief Register the flow tractions as input variable.
+   */
+  inline void RegisterFlowTraction(Idx_t iPoint) override {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(FlowTraction(iPoint,iVar));
+  }
+
+  /*!
+   * \brief Extract the flow traction derivatives.
+   */
+  inline su2double ExtractFlowTraction_Sensitivity(Idx_t iPoint, Idx_t iDim) const override {
+    return SU2_TYPE::GetDerivative(FlowTraction(iPoint,iDim));
+  }
+
+  /*!
    * \brief Get whether a node is on the boundary
    */
   inline bool Get_isVertex(Idx_t iPoint) const override { return VertexMap(iPoint)!=0; }
