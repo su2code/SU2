@@ -40,6 +40,7 @@
 #include "../include/toolboxes/printing_toolbox.hpp"
 #include "../include/toolboxes/CLinearPartitioner.hpp"
 #include "../include/element_structure.hpp"
+#include "../include/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
 #include "../include/CRectangularMeshReaderFVM.hpp"
 #include "../include/CBoxMeshReaderFVM.hpp"
@@ -3702,11 +3703,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   else {
 
     switch (val_format) {
-      case SU2:
-        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-      case CGNS: case RECTANGLE: case BOX:
-        Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+      case SU2: case CGNS: case RECTANGLE: case BOX:
+        Read_Mesh_FVM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
       default:
         SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
@@ -9318,7 +9316,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
 }
 
-void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
+void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
                                                   string         val_mesh_filename,
                                                   unsigned short val_iZone,
                                                   unsigned short val_nZone) {
@@ -9345,6 +9343,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
   
   CMeshReaderFVM *MeshFVM = NULL;
   switch (val_format) {
+    case SU2:
+      MeshFVM = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
+      break;
     case CGNS:
       MeshFVM = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
@@ -9416,8 +9417,8 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
   
   /*--- Initialize point counts and the grid node data structure. ---*/
   
-  nPointNode  = nPoint;
-  node        = new CPoint*[nPoint];
+  nPointNode = nPoint;
+  node       = new CPoint*[nPoint];
   
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
    structure. Note that since we have performed a linear partitioning
@@ -9477,12 +9478,12 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
     /*--- Get the global ID for this element. This is stored in
      the first entry of our connectivity stucture. ---*/
     
-    Global_Index_Elem = connElems[jElem*CGNS_CONN_SIZE + 0];
+    Global_Index_Elem = connElems[jElem*SU2_CONN_SIZE + 0];
     
     /*--- Get the VTK type for this element. This is stored in the
      second entry of the connectivity structure. ---*/
     
-    int vtk_type = (int)connElems[jElem*CGNS_CONN_SIZE + 1];
+    int vtk_type = (int)connElems[jElem*SU2_CONN_SIZE + 1];
     
     /*--- Instantiate this element in the proper SU2 data structure.
      During this loop, we also set the global to local element map
@@ -9493,7 +9494,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case TRIANGLE:
         
         for (unsigned long j = 0; j < N_POINTS_TRIANGLE; j++) {
-          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CTriangle(connectivity[0],
@@ -9505,7 +9506,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case QUADRILATERAL:
         
         for (unsigned long j = 0; j < N_POINTS_QUADRILATERAL; j++) {
-          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CQuadrilateral(connectivity[0],
@@ -9518,7 +9519,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case TETRAHEDRON:
         
         for (unsigned long j = 0; j < N_POINTS_TETRAHEDRON; j++) {
-          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CTetrahedron(connectivity[0],
@@ -9531,7 +9532,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case HEXAHEDRON:
         
         for (unsigned long j = 0; j < N_POINTS_HEXAHEDRON; j++) {
-          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CHexahedron(connectivity[0],
@@ -9548,7 +9549,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case PRISM:
         
         for (unsigned long j = 0; j < N_POINTS_PRISM; j++) {
-          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CPrism(connectivity[0],
@@ -9563,7 +9564,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case PYRAMID:
         
         for (unsigned long j = 0; j < N_POINTS_PYRAMID; j++) {
-          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CPyramid(connectivity[0],
@@ -9685,16 +9686,16 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
         /*--- Not a mixed section. We already know the element type,
          which is stored ---*/
         
-        vtk_type = (int)connElems[jElem*CGNS_CONN_SIZE + 1];
+        vtk_type = (int)connElems[jElem*SU2_CONN_SIZE + 1];
         
         /*--- Store the loop size more easily. ---*/
         
-        npe = (int)(CGNS_CONN_SIZE-CGNS_SKIP_SIZE);
+        npe = (int)(SU2_CONN_SIZE-SU2_CONN_SKIP);
         
         /*--- Store the nodes for this element more clearly. ---*/
         
         for (int j = 0; j < npe; j++) {
-          unsigned long nn = jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j;
+          unsigned long nn = jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j;
           connectivity[j] = connElems[nn];
         }
         
