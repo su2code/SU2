@@ -118,12 +118,6 @@ inline su2double *CPoint::GetCoord_Sum(void) { return Coord_Sum; }
 
 inline su2double *CPoint::GetGridVel(void) { return GridVel; }
 
-// inline su2double *CPoint::GetGridVel_n(void) { return GridVel_n; }
-
-// inline su2double *CPoint::GetGridVel_n1(void) { return GridVel_n1; }
-
-// inline su2double *CPoint::GetGridVel_Old(void) { return GridVel_Old; }
-
 inline su2double **CPoint::GetGridVel_Grad(void) { return GridVel_Grad; }
 
 inline void CPoint::SetCoord_Old(su2double *val_coord_old) {
@@ -181,36 +175,6 @@ inline void CPoint::SetGridVel(su2double *val_gridvel) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     GridVel[iDim] = val_gridvel[iDim];
 }
-
-// inline void CPoint::SetGridVel_Old(su2double *val_gridvel) { 
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     GridVel_Old[iDim] = val_gridvel[iDim];
-// }
-
-// inline void CPoint::SetGridVel_Old(void) { 
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     GridVel_Old[iDim] = GridVel[iDim];
-// }
-
-// inline void CPoint::SetGridVel_n(void) {
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     GridVel_n[iDim] = GridVel[iDim];
-// }
-
-// inline void CPoint::SetGridVel_n(su2double *val_gridvel) { 
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     GridVel_n[iDim] = val_gridvel[iDim];
-// }
-
-// inline void CPoint::SetGridVel_n1(void) {
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     GridVel_n1[iDim] = GridVel_n[iDim];
-// }
-
-// inline void CPoint::SetGridVel_n1(su2double *val_gridvel) { 
-//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//     GridVel_n1[iDim] = val_gridvel[iDim];
-// }
 
 inline void CPoint::SetVolume_n (void) { Volume[1] = Volume[0]; }
 
