@@ -226,7 +226,7 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
 
 }
 
-void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -256,13 +256,13 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
 
       /*--- Store the sensitivities ---*/
       if (!time_stepping) {
-        solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, Sensitivity);
+        // solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, Sensitivity);
       } else {
-        solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(iDim) + Sensitivity);
+        // solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, node[iPoint]->GetSensitivity(iDim) + Sensitivity);
       }
     }
   }
-  solver[ADJFLOW_SOL]->SetSurface_Sensitivity(geometry, config);
+  // solver[ADJFLOW_SOL]->SetSurface_Sensitivity(geometry, config);
 
 }
 

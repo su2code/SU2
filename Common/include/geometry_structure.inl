@@ -103,8 +103,6 @@ inline unsigned long CGeometry::GetGlobal_nElemPris(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemPyra(void) { return 0; }
 
-inline unsigned long CGeometry::GetnElem_Local_Bound(void) { return 0; }
-
 inline unsigned long CGeometry::GetnElemLine(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemTria(void) { return 0; }
@@ -293,8 +291,6 @@ inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
-inline void CGeometry::MatchInterface(CConfig *config) { }
-
 inline void CGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
@@ -426,8 +422,6 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nElemHexa(void) { return Globa
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemPris(void) { return Global_nelem_prism; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemPyra(void) { return Global_nelem_pyramid; }
-
-inline unsigned long CPhysicalGeometry::GetnElem_Local_Bound(void) { return nLocal_Bound_Elem; }
 
 inline unsigned long CPhysicalGeometry::GetnElemLine(void) { return nelem_edge; }
 

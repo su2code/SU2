@@ -491,7 +491,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       /* Determine the local ID of the corresponding domain element. */
       unsigned long elemID = geometry->bound[iMarker][i]->GetDomainElement()
-                           - geometry->beg_node[rank];
+                           - geometry->starting_node[rank];
 
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
@@ -801,8 +801,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
      stored in cumulative storage format. */
   vector<unsigned long> nElemPerRankOr(size+1);
 
-  for(int i=0; i<size; ++i) nElemPerRankOr[i] = geometry->beg_node[i];
-  nElemPerRankOr[size] = geometry->end_node[size-1];
+  for(int i=0; i<size; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
+  nElemPerRankOr[size] = geometry->ending_node[size-1];
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
@@ -947,10 +947,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
-      const long localID = globalID - geometry->beg_node[rank];
-      if(localID < 0 || localID >= (long) geometry->nPointLinear[rank]) {
+      const long localID = globalID - geometry->starting_node[rank];
+      if(localID < 0 || localID >= (long) geometry->npoint_procs[rank]) {
         ostringstream message;
-        message << localID << " " << geometry->nPointLinear[rank] << endl;
+        message << localID << " " << geometry->npoint_procs[rank] << endl;
         message << "Invalid local element ID";
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
@@ -6972,11 +6972,10 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   
   /*--- Arrays for defining the linear partitioning ---*/
   
-  beg_node = NULL;
-  end_node = NULL;
-  
-  nPointLinear     = NULL;
-  nPointCumulative = NULL;
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  nPoint_Linear = NULL;
 
   /*--- Containers for customized boundary conditions ---*/
 

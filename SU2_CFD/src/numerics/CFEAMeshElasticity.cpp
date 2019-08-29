@@ -38,7 +38,7 @@
 #include "../../include/numerics/CFEAMeshElasticity.hpp"
 #include <limits>
 
-CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config) : CFEALinearElasticity() {
+CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config) : CFEALinearElasticity(val_nDim, val_nVar, config) {
 
   DV_Val         = NULL;
   FAux_Dead_Load = NULL;

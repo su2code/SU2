@@ -534,10 +534,10 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   /*--- Extract the computed sensitivity values. ---*/
   switch(SecondaryVariables){
   case MESH_COORDS:
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
+    solver[ADJFLOW_SOL]->SetSensitivity(geometry, config);
     break;
   case MESH_DEFORM:
-    solver[ADJMESH_SOL]->SetSensitivity(geometry, solver, config);
+    solver[ADJMESH_SOL]->SetSensitivity(geometry, config);
     break;
   }
 
