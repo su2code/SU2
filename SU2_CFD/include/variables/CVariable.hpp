@@ -2545,19 +2545,19 @@ public:
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline virtual su2double* GetBoundDisp_Direct(Idx_t iPoint) const { return nullptr; }
+  inline virtual const su2double* GetBoundDisp_Direct(Idx_t iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member. Set the solution for the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline virtual void SetBoundDisp_Direct(const su2double *val_BoundDisp) { }
+  inline virtual void SetBoundDisp_Direct(Idx_t iPoint, const su2double *val_BoundDisp) { }
 
   /*!
    * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
    */
-  inline virtual void SetBoundDisp_Sens(const su2double *val_sens) { }
+  inline virtual void SetBoundDisp_Sens(Idx_t iPoint, const su2double *val_sens) { }
 
   /*!
    * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.

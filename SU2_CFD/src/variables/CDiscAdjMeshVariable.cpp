@@ -38,13 +38,9 @@
 
 #include "../../include/variables/CDiscAdjMeshVariable.hpp"
 
-CDiscAdjMeshVariable::CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
+CDiscAdjMeshVariable::CDiscAdjMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
+  CVariable(npoint, ndim, config) {
 
   /*--- Store the dimensionality of the problem ---*/
-  nDim = val_nDim;
-
-}
-
-CDiscAdjMeshVariable::~CDiscAdjMeshVariable(void) {
-
+  nDim = ndim;
 }

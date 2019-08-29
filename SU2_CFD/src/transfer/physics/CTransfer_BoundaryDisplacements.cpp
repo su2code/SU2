@@ -62,7 +62,7 @@ void CTransfer_BoundaryDisplacements::GetDonor_Variable(CSolver *struct_solution
   unsigned short iVar;
 
   /*--- The displacements come from the predicted solution, but they are no longer incremental ---*/
-  DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();
+  DisplacementDonor = struct_solution->node->GetSolution_Pred(Point_Struct);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = DisplacementDonor[iVar];
@@ -75,6 +75,6 @@ void CTransfer_BoundaryDisplacements::SetTarget_Variable(CSolver *mesh_solver, C
 
   /*--- Impose the boundary displacements ---*/
 
-  mesh_solver->node[Point_Mesh]->SetBound_Disp(Target_Variable);
+  mesh_solver->node->SetBound_Disp(Point_Mesh,Target_Variable);
 
 }

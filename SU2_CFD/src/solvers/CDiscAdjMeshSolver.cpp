@@ -108,26 +108,28 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 1e-16;
 
   /*--- Initialize the node structure ---*/
-  node       = new CVariable*[nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- In principle, the node is not at the boundary ---*/
-    isVertex = false;
-    /*--- Looping over all markers ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-      /*--- If the marker is flagged as moving, retrieve the node vertex ---*/
-      if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      else iVertex = -1;
-
-      if (iVertex != -1){isVertex = true; break;}
-    }
-
-    /*--- The MeshBound variable includes the displacements at the boundaries ---*/
-    if (isVertex) node[iPoint] = new CDiscAdjMeshBoundVariable(Solution, nDim, config);
-    else          node[iPoint] = new CDiscAdjMeshVariable(Solution, nDim, config);
-
-  }
+  node = new CDiscAdjMeshBoundVariable(nPoint,nDim,config);
+  
+// ToDo: Apply vertex storage for this class  
+//  for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//    /*--- In principle, the node is not at the boundary ---*/
+//    isVertex = false;
+//    /*--- Looping over all markers ---*/
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//
+//      /*--- If the marker is flagged as moving, retrieve the node vertex ---*/
+//      if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+//      else iVertex = -1;
+//
+//      if (iVertex != -1){isVertex = true; break;}
+//    }
+//
+//    /*--- The MeshBound variable includes the displacements at the boundaries ---*/
+//    if (isVertex) node[iPoint] = new CDiscAdjMeshBoundVariable(Solution, nDim, config);
+//    else          node[iPoint] = new CDiscAdjMeshVariable(Solution, nDim, config);
+//
+//  }
 
 
 }
@@ -148,8 +150,8 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
   unsigned long iPoint;
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->SetBound_Disp(node[iPoint]->GetBoundDisp_Direct());
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    direct_solver->node->SetBound_Disp(iPoint,node->GetBoundDisp_Direct(iPoint));
   }
 
   /*--- Set indices to zero ---*/
@@ -165,9 +167,8 @@ void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   /*--- Register reference mesh coordinates ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->Register_MeshCoord(input);
-  }
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    direct_solver->node->Register_MeshCoord(iPoint,input);
 
 }
 
@@ -180,9 +181,8 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
 
   /*--- Register reference mesh coordinates ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->Register_BoundDisp(input);
-  }
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    direct_solver->node->Register_BoundDisp(iPoint,input);
 
 }
 
@@ -196,11 +196,11 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
 
     /*--- Extract the adjoint solution from the original mesh coordinates ---*/
 
-    direct_solver->node[iPoint]->GetAdjoint_MeshCoord(Solution);
+    direct_solver->node->GetAdjoint_MeshCoord(iPoint,Solution);
 
     /*--- Store the adjoint solution (the container is reused) ---*/
 
-    node[iPoint]->SetSolution(Solution);
+    node->SetSolution(iPoint,Solution);
 
   }
 
@@ -216,11 +216,11 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
 
     /*--- Extract the adjoint solution of the boundary displacements ---*/
 
-    direct_solver->node[iPoint]->GetAdjoint_BoundDisp(Solution);
+    direct_solver->node->GetAdjoint_BoundDisp(iPoint,Solution);
 
     /*--- Store the sensitivities of the boundary displacements ---*/
 
-    node[iPoint]->SetBoundDisp_Sens(Solution);
+    node->SetBoundDisp_Sens(iPoint,Solution);
 
   }
 
@@ -245,7 +245,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
     for (iDim = 0; iDim < nDim; iDim++) {
 
       /*--- The sensitivity was extracted using ExtractAdjoint_Solution ---*/
-      Sensitivity = node[iPoint]->GetSolution(iDim);
+      Sensitivity = node->GetSolution(iPoint,iDim);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
       if (config->GetSens_Remove_Sharp()) {
@@ -256,9 +256,10 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
 
       /*--- Store the sensitivities ---*/
       if (!time_stepping) {
-        solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, Sensitivity);
+        solver[ADJFLOW_SOL]->node->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
-        solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(iDim) + Sensitivity);
+        solver[ADJFLOW_SOL]->node->SetSensitivity(iPoint, iDim,
+          solver[ADJFLOW_SOL]->node->GetSensitivity(iPoint, iDim) + Sensitivity);
       }
     }
   }
@@ -282,10 +283,10 @@ void CDiscAdjMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig 
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     /*--- Only for the boundary vertices ---*/
-    if (node[iPoint]->Get_isVertex()){
+    if (node->Get_isVertex(iPoint)){
       for (iVar = 0; iVar < nVar; iVar++){
           /*--- Compute only for the sensitivities of the boundary displacements ---*/
-          residual = node[iPoint]->GetBoundDisp_Sens(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
+          residual = node->GetBoundDisp_Sens(iPoint,iVar) - node->Get_BGSSolution_k(iPoint,iVar);
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
@@ -295,19 +296,6 @@ void CDiscAdjMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig 
   SetResidual_BGS(geometry, config);
 
 }
-
-
-void CDiscAdjMeshSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    if (node[iPoint]->Get_isVertex()) node[iPoint]->Set_BGSSolution_k();
-  }
-
-}
-
 
 void CDiscAdjMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
