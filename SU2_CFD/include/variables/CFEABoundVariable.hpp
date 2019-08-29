@@ -49,9 +49,6 @@
 class CFEABoundVariable : public CFEAVariable {
 protected:
 
-  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
-
   su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
   su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
 
@@ -111,44 +108,6 @@ public:
    * \brief Get the surface load from the previous time step.
    */
   inline su2double Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar]; }
-
-  /*!
-   * \brief Set the flow traction at a node on the structural side
-   */
-  inline void Set_FlowTraction(su2double *val_flowTraction) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = val_flowTraction[iVar];
-  }
-
-  /*!
-   * \brief Add a value to the flow traction at a node on the structural side
-   */
-  inline void Add_FlowTraction(su2double *val_flowTraction) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] += val_flowTraction[iVar];
-  }
-
-  /*!
-   * \brief Get the residual term due to the flow traction
-   */
-  inline su2double Get_FlowTraction(unsigned short iVar) {return FlowTraction[iVar]; }
-
-  /*!
-   * \brief Set the value of the flow traction at the previous time step.
-   */
-  void Set_FlowTraction_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction_n[iVar] = FlowTraction[iVar];
-  }
-
-  /*!
-   * \brief Retrieve the value of the flow traction from the previous time step.
-   */
-  inline su2double Get_FlowTraction_n(unsigned short iVar) {return FlowTraction_n[iVar]; }
-
-  /*!
-   * \brief Clear the flow traction residual
-   */
-  inline void Clear_FlowTraction(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = 0.0;
-  }
 
   /*!
    * \brief Get whether this node is on the boundary

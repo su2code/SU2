@@ -59,6 +59,12 @@ namespace AD{
   void StopRecording();
 
   /*!
+   * \brief Check if the tape is active
+   * \param[out] Boolean which determines whether the tape is active.
+   */
+  bool TapeActive();
+
+  /*!
    * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
    * \param[in] data - The variable to be registered as input.
    */

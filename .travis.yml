@@ -42,7 +42,7 @@ env:
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-directdiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
