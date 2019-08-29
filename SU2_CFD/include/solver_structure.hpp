@@ -12774,7 +12774,7 @@ private:
   su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
   su2double *Total_Sens_DV;
 
-  CDiscAdjFEAVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CDiscAdjFEABoundVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
 public:
   

@@ -80,35 +80,27 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     MaxVolume_Curr = 0.0;
 
     /*--- Initialize the node structure ---*/
-    bool isVertex;
-    long iVertex;
+
     Coordinate = new su2double[nDim];
-    node       = new CMeshBoundVariable(nPoint, nDim, config);
+    node = new CMeshBoundVariable(nPoint, nDim, config);
     
-//  ToDo: Boundary allocation for this class
-//    for (iPoint = 0; iPoint < nPoint; iPoint++){
-//
-//      /*--- We store directly the reference coordinates ---*/
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Coordinate[iDim] = geometry->node[iPoint]->GetCoord(iDim);
-//
-//      /*--- In principle, the node is not at the boundary ---*/
-//      isVertex = false;
-//      /*--- Looping over all markers ---*/
-//      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//
-//        /*--- If the marker is flagged as deforming, retrieve the node vertex ---*/
-//        if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-//        else iVertex = -1;
-//
-//        if (iVertex != -1){isVertex = true; break;}
-//      }
-//
-//      /*--- Temporarily, keep everything the same ---*/
-//      if (isVertex) node[iPoint] = new CMeshBoundVariable(Coordinate, nDim, config);
-//      else          node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
-//
-//    }
+    /*--- Set which points are vertices and allocate boundary data. ---*/
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+      for (iDim = 0; iDim < nDim; ++iDim)
+        node->SetMesh_Coord(iPoint, iDim, geometry->node[iPoint]->GetCoord(iDim));
+
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex >= 0) {
+          node->Set_isVertex(iPoint,true);
+          break;
+        }
+      }
+    }
+    static_cast<CMeshBoundVariable*>(node)->AllocateBoundaryVariables(config);
+
 
     /*--- Initialize the element structure ---*/
     element = new CMeshElement[nElement];

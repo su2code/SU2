@@ -188,23 +188,18 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   node = new CDiscAdjFEABoundVariable(Solution, Solution_Accel, Solution_Vel, nPoint, nDim, nVar, dynamic, config);
   snode = static_cast<CDiscAdjFEABoundVariable*>(node);
 
-// ToDo: Apply vertex mechanism to this class
-//    bool isVertex;
-//    long indexVertex;
-//    /*--- Restart the solution from zero ---*/
-//    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-//      isVertex = false;
-//      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//        if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
-//          indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
-//          if (indexVertex != -1){isVertex = true; break;}
-//        }
-//      }
-//      if (isVertex)
-//        node[iPoint] = new CDiscAdjFEABoundVariable(Solution, nDim, nVar, config);
-//      else
-//        node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
-//    }
+  /*--- Set which points are vertices and allocate boundary data. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex >= 0) {
+        snode->Set_isVertex(iPoint,true);
+        break;
+      }
+    }
+  snode->AllocateBoundaryVariables(config);
+
 
   /*--- Store the direct solution ---*/
 
