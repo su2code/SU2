@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/transfer_structure.hpp"
+#include "../include/transfer/CTransfer.hpp"
 
 CTransfer_FlowTraction::CTransfer_FlowTraction(void) : CTransfer() {
 
@@ -211,7 +211,6 @@ void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry
   fea_solution->node->Add_FlowTraction(Point_Struct,Target_Variable);
 
 }
-
 
 CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(void) : CTransfer() {
 

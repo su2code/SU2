@@ -129,11 +129,6 @@ public:
 
   /*!
    * \brief Set the value of the old solution.
-   */
-  void SetSolution_time_n() final;
-
-  /*!
-   * \brief Set the value of the old solution.
    * \param[in] val_solution_time_n - Pointer to the residual vector.
    */
   inline void SetSolution_time_n(Idx_t iPoint, const su2double *val_solution_time_n) final {

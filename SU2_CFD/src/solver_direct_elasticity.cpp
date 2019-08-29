@@ -40,7 +40,7 @@
 #include "../include/variables/CFEAVariable.hpp"
 #include <algorithm>
 
-CFEASolver::CFEASolver(void) : CSolver() {
+CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   
   nElement = 0;
   nDim = 0;
@@ -105,7 +105,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  bool fsi = config->GetFSI_Simulation();
   /*--- Generalized alpha method requires residual at previous time step. ---*/
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
   /*--- Test whether we consider dielectric elastomers ---*/
@@ -315,10 +314,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   }
   
   /*--- Contribution of the fluid tractions to the residual (auxiliary vector) ---*/
-  Res_FSI_Cont = NULL;
-  if (fsi) {
-    Res_FSI_Cont = new su2double[nVar];
-  }
+  Res_FSI_Cont = new su2double[nVar];
   
   /*--- Time integration contribution to the residual ---*/
   Res_Time_Cont = NULL;
@@ -528,7 +524,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
   string filename;
   ifstream properties_file;
 
-  element_properties = new CElementProperty*[nElement];
+  element_properties = new CProperty*[nElement];
 
   /*--- Restart the solution from file information ---*/
 
@@ -956,7 +952,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
   
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
   bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
                                   (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
   
@@ -1015,7 +1011,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
       (dynamic && disc_adj_fem)) {
     MassMatrix.SetValZero();
     Compute_IntegrationConstants(config);
-    Compute_MassMatrix(geometry, solver_container, numerics, config);
+    Compute_MassMatrix(geometry, numerics, config);
   }
   
   /*
@@ -1034,7 +1030,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
       for (iPoint = 0; iPoint < nPoint; iPoint++) snode->Clear_BodyForces_Res(iPoint);
     }
     // Compute the dead load term
-    Compute_DeadLoad(geometry, solver_container, numerics, config);
+    Compute_DeadLoad(geometry, numerics, config);
   }
   
   /*
@@ -1112,7 +1108,7 @@ void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 }
 
-void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1145,7 +1141,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
@@ -1198,7 +1194,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1239,7 +1235,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
 
         /*--- Set current coordinate ---*/
@@ -1334,7 +1330,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
   
 }
 
-void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1364,7 +1360,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_contai
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
@@ -1402,7 +1398,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   unsigned long iElem, iVar, iPoint;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1437,7 +1433,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
@@ -1477,7 +1473,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   
   unsigned long iElem, iVar;
@@ -1511,7 +1507,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (prestretch_fem) {
@@ -1556,7 +1552,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iPoint, iElem, iVar;
   unsigned short iNode, iDim, iStress;
@@ -1609,7 +1605,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
       //        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       //      }
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (prestretch_fem) {
@@ -1849,7 +1845,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1876,7 +1872,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_containe
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
@@ -1962,8 +1958,7 @@ void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
 }
 
 
-void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                       unsigned short val_marker) {
+void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
   
@@ -1972,22 +1967,25 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
   Solution[0] = 0.0;
   Solution[1] = 0.0;
   if (nDim==3) Solution[2] = 0.0;
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
+
     /*--- Get node index ---*/
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
+    
     /*--- Set and enforce solution at current and previous time-step ---*/
     snode->SetSolution(iPoint,Solution);
 
     if (dynamic) {
       snode->SetSolution_Vel(iPoint,Solution);
       snode->SetSolution_Accel(iPoint,Solution);
-      snode->SetSolution_time_n(iPoint,Solution);
+      snode->Set_Solution_time_n(iPoint,Solution);
       snode->SetSolution_Vel_time_n(iPoint,Solution);
       snode->SetSolution_Accel_time_n(iPoint,Solution);
     }
+
+    /*--- Set and enforce 0 solution for mesh deformation ---*/
+    snode->SetBound_Disp(iPoint,Solution);
 
     LinSysSol.SetBlock(iPoint, Solution);
     LinSysReact.SetBlock(iPoint, Solution);
@@ -1997,8 +1995,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
 
 }
 
-void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                            unsigned short val_marker) {
+void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
@@ -2027,8 +2024,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                            unsigned short val_marker) {
+void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
   unsigned long iNode, iVertex;
@@ -2304,11 +2300,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                                   unsigned short val_marker) { }
+void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
-void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                           unsigned short val_marker) {
+void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   /*--- Retrieve the normal pressure and the application conditions for the considered boundary ---*/
   
@@ -2369,7 +2363,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
       for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
         for (iDim = 0; iDim < nDim; iDim++) {
-          val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+          val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
           val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
           /*--- Assign values to the container ---*/
           nodeCoord_ref[iNode][iDim]  = val_Coord;
@@ -2605,8 +2599,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) {
+void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   su2double a[3], b[3], AC[3], BD[3];
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
@@ -2735,11 +2728,9 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
   
 }
 
-void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                         unsigned short val_marker) { }
+void CFEASolver::BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
-void CFEASolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                      unsigned short val_marker) {
+void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar;
   su2double dampValue, dampC;
@@ -2787,6 +2778,27 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNum
 
   }
 
+
+}
+
+void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
+
+  unsigned short iDim;
+  unsigned long iNode, iVertex;
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Retrieve the boundary displacement ---*/
+    for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = snode->GetBound_Disp(iNode,iDim);
+
+    /*--- Set and enforce solution ---*/
+    LinSysSol.SetBlock(iNode, Solution);
+    Jacobian.EnforceSolutionAtNode(iNode, Solution, LinSysRes);
+
+  }
 
 }
 
@@ -2991,7 +3003,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   su2double TransferTime = 1.0;
 
   bool restart = config->GetRestart(); // Restart analysis
-  bool fsi = config->GetFSI_Simulation();  // FSI simulation.
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);  // FSI simulation.
   bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
@@ -3071,10 +3083,9 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
-  
+  bool fsi = config->GetFSI_Simulation();
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
-  
+
   bool incremental_load = config->GetIncrementalLoad();
   
   if (!dynamic) {
@@ -3114,19 +3125,18 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       }
 
       /*---  Add the contribution to the residual due to flow loads (FSI contribution) ---*/
+
       if (fsi) {
-        if (incremental_load){
-          for (iVar = 0; iVar < nVar; iVar++){
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++)
             Res_FSI_Cont[iVar] = loadIncrement * snode->Get_FlowTraction(iPoint,iVar);
-          }
         }
         else {
-            for (iVar = 0; iVar < nVar; iVar++){
-              Res_FSI_Cont[iVar] = snode->Get_FlowTraction(iPoint,iVar);
-            }
+          for (iVar = 0; iVar < nVar; iVar++)
+            Res_FSI_Cont[iVar] = snode->Get_FlowTraction(iPoint,iVar);
         }
-        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
+      LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
     }
     
   }
@@ -3215,6 +3225,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       }
       
       /*--- FSI contribution (flow loads) ---*/
+
       if (fsi) {
         if (incremental_load) {
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -3228,9 +3239,10 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
         }
         LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
+
     }
+
   }
-  
   
 }
 
@@ -3384,8 +3396,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
-  
+  bool fsi = config->GetFSI_Simulation();
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
   su2double alpha_f = config->Get_Int_Coeffs(2);
@@ -3515,6 +3526,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
       }
       
       /*--- Add FSI contribution ---*/
+
       if (fsi) {
         if (incremental_load) {
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -3530,9 +3542,11 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
         }
         LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
+
     }
+
   }
-  
+
 }
 
 void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -3632,18 +3646,18 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 }
 
 void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-  
+
   bool fsi = config->GetFSI_Simulation();
-  
+
   /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
   snode->Set_SurfaceLoad_Res_n();
   if (fsi) snode->Set_FlowTraction_n();
-  
+
 }
 
-void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   
-  unsigned long IterLinSol = 0, iPoint, total_index;
+  unsigned long iPoint, total_index;
   unsigned short iVar;
   
   /*--- Initialize residual and solution at the ghost points ---*/
@@ -3663,6 +3677,10 @@ void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, C
   /*--- The the number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
+
+  /*--- Store the value of the residual. ---*/
+
+  valResidual = System.GetResidual();
   
 }
 
@@ -3929,7 +3947,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
@@ -4064,7 +4082,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double distance_sq = 0.0 ;
@@ -4281,17 +4299,17 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Initialize with loads speficied through config ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      nodalForce[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+      nodalForce[iVar] = snode->Get_SurfaceLoad_Res(iPoint,iVar);
 
     /*--- Add contributions due to body forces ---*/
     if (body_forces)
       for (iVar = 0; iVar < nVar; iVar++)
-        nodalForce[iVar] += node[iPoint]->Get_BodyForces_Res(iVar);
+        nodalForce[iVar] += snode->Get_BodyForces_Res(iPoint,iVar);
 
     /*--- Add contributions due to fluid loads---*/
     if (fsi)
       for (iVar = 0; iVar < nVar; iVar++)
-        nodalForce[iVar] += node[iPoint]->Get_FlowTraction(iVar);
+        nodalForce[iVar] += snode->Get_FlowTraction(iPoint,iVar);
 
     /*--- Correct for incremental loading ---*/
     if (incremental_load)
@@ -4300,7 +4318,7 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Add work contribution from this node ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      Total_OFCompliance += nodalForce[iVar]*node[iPoint]->GetSolution(iVar);
+      Total_OFCompliance += nodalForce[iVar]*snode->GetSolution(iPoint,iVar);
   }
 
 #ifdef HAVE_MPI
@@ -4351,10 +4369,10 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
     for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
         for (iDim = 0; iDim < nDim; iDim++) {
-            val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-            val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
-            element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-            element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+          val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+          val_Sol = snode->GetSolution(indexNode[iNode],iDim) + val_Coord;
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+          element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         }
     }
 
@@ -4437,7 +4455,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short nZone = geometry[MESH_0]->GetnZone();
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fluid_structure = config->GetFSI_Simulation();
+  bool fluid_structure = (config->GetnMarker_Fluid_Load() > 0);
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   if (dynamic) nSolVar = 3 * nVar;
@@ -4497,7 +4515,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
       for (iVar = 0; iVar < nVar; iVar++) {
         snode->SetSolution(iPoint_Local,iVar, Sol[iVar]);
         if (dynamic) {
-          snode->SetSolution_time_n(iPoint_Local,iVar, Sol[iVar]);
+          snode->Set_Solution_time_n(iPoint_Local,iVar, Sol[iVar]);
           snode->SetSolution_Vel(iPoint_Local,iVar, Sol[iVar+nVar]);
           snode->SetSolution_Vel_time_n(iPoint_Local,iVar, Sol[iVar+nVar]);
           snode->SetSolution_Accel(iPoint_Local,iVar, Sol[iVar+2*nVar]);
