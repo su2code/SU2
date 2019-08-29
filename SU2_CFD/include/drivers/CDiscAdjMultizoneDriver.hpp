@@ -117,6 +117,11 @@ public:
   void ComputeAdjoints(unsigned short iZone);
 
   /*!
+   * \brief Restores solution (adjoint) values to from Solution_Old.
+   */
+  void SetAdjoints_Old(unsigned short iZone);
+
+  /*!
    * \brief Saves the current solution (adjoint) values to Solution_Old.
    */
   void Set_OldAdjoints(unsigned short iZone);

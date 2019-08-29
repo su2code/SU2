@@ -525,6 +525,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the solution vector to solution in Solution_Old.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   */
+  void SetSolution_Old(CGeometry *geometry);
   
   /*!
    * \brief Set the solution vector to iterated (summed-up) solution.

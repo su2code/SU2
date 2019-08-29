@@ -775,12 +775,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetMultiphysicsDiscrete_Adjoint()) {
-        Solution[iVar] = node[iPoint]->GetSolution_Old(iVar);      
-      }
-      else {
-        Solution[iVar] = node[iPoint]->GetSolution(iVar);
-      }      
+      Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
     if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++) {
