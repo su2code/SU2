@@ -1,7 +1,7 @@
 /*!
- * \file transfer_structure.hpp
- * \brief Headers of the transfer structure
- *        The subroutines and functions are in the <i>transfer_structure.cpp</i> and <i>transfer_physics.cpp</i> files.
+ * \file CTransfer.hpp
+ * \brief Declarations and inlines of the transfer structure.
+ *        The subroutines and functions are in the physics folders.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -51,7 +51,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
-#include "solver_structure.hpp"
+#include "../solver_structure.hpp"
 
 using namespace std;
 
@@ -118,9 +118,9 @@ public:
    * \brief A virtual member.
    */
 
-  virtual void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                                       CGeometry *donor_geometry, CGeometry *target_geometry,
-                     CConfig *donor_config, CConfig *target_config);
+  inline virtual void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+                                            CGeometry *donor_geometry, CGeometry *target_geometry,
+                                            CConfig *donor_config, CConfig *target_config) { }
   /*!
    * \brief A virtual member.
    * \param[in] donor_solution - Solution from the donor mesh.
@@ -129,9 +129,9 @@ public:
    * \param[in] Marker_Donor - Index of the donor marker.
    * \param[in] Vertex_Donor - Index of the donor vertex.
    */
-  virtual void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                   CConfig *donor_config, unsigned long Marker_Donor,
-                   unsigned long Vertex_Donor, unsigned long Point_Donor);
+  inline virtual void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+                                        CConfig *donor_config, unsigned long Marker_Donor,
+                                        unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
   /*!
    * \brief Initializes the target variable.
@@ -140,8 +140,10 @@ public:
    * \param[in] Vertex_Target - Index of the target vertex.
    * \param[in] nDonorPoints - Number of donor points.
    */
-  virtual void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
-                                         unsigned long Vertex_Target, unsigned short nDonorPoints);
+  inline virtual void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                                unsigned long Vertex_Target, unsigned short nDonorPoints){
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
+  }
 
   /*!
    * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
@@ -149,8 +151,12 @@ public:
    * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
    * \param[in] donorCoeff - value of the donor coefficient.
    */
-  virtual void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
-                                      su2double donorCoeff);
+  inline virtual void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                             su2double donorCoeff){
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+
+  }
 
   /*!
    * \brief A virtual member.
@@ -161,9 +167,9 @@ public:
    * \param[in] Vertex_Target - Index of the target vertex.
    * \param[in] Point_Target - Index of the target point.
    */
-  virtual void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                  CConfig *target_config, unsigned long Marker_Target,
-                  unsigned long Vertex_Target, unsigned long Point_Target);
+  inline virtual void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+                                         CConfig *target_config, unsigned long Marker_Target,
+                                         unsigned long Vertex_Target, unsigned long Point_Target) { }
 
   /*!
    * \brief A virtual member.
@@ -172,7 +178,8 @@ public:
    * \param[in] donor_zone      - Index of the donorZone.
    */
 
-  virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,  unsigned short donorZone);
+  inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
+                                       unsigned short donorZone){ }
 
   /*!
    * \brief A virtual member.
@@ -180,14 +187,15 @@ public:
    * \param[in] target_geometry - Geometry of the target mesh.
    * \param[in] donor_zone      - Index of the donorZone.
    */
-  virtual void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
+  inline virtual void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
+                                               unsigned short donorZone) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  virtual void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config);
+  inline virtual void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }
 
 
   /*!
@@ -790,5 +798,3 @@ public:
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
               unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
 };
-
-#include "transfer_structure.inl"
