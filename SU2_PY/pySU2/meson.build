@@ -22,27 +22,38 @@ swig_gen = generator(
     depfile: '@BASENAME@.d',
 )
 
-swig_sources = [
-    'pySU2.i',
-]
-
 wrapper_deps = [
     dependency('python3'), 
 ]
 
-foreach swig_source: swig_sources
-    cpp_source = swig_gen.process(swig_source)
-    swig_lib = shared_library(
-       '_pysu2',
-       cpp_source,
-       dependencies: [wrapper_deps, common_dep, su2_deps],
-       objects: su2_cfd.extract_all_objects(),
-       install: true,
-       include_directories : mpi4py_include,
-       cpp_args : [default_warning_flags,su2_cpp_args],
-       name_prefix : '',
-       install_dir: 'bin'
-    )
-endforeach
-
+if get_option('enable-normal')
+  cpp_source = swig_gen.process('pySU2.i')
+  swig_lib = shared_library(
+      '_pysu2',
+      cpp_source,
+      dependencies: [wrapper_deps, common_dep, su2_deps],
+      objects: su2_cfd.extract_all_objects(),
+      install: true,
+      include_directories : mpi4py_include,
+      cpp_args : [default_warning_flags,su2_cpp_args],
+      name_prefix : '',
+      install_dir: 'bin'
+  )
 meson.add_install_script('install.sh', meson.current_build_dir(), 'pysu2.py')
+endif
+
+if get_option('enable-autodiff')
+  cpp_source = swig_gen.process('pySU2ad.i')
+  swig_lib = shared_library(
+      '_pysu2ad',
+      cpp_source,
+      dependencies: [wrapper_deps, commonAD_dep, su2_deps, codi_dep],
+      objects: su2_cfd_ad.extract_all_objects(),
+      install: true,
+      include_directories : mpi4py_include,
+      cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args],
+      name_prefix : '',
+      install_dir: 'bin'
+  )
+meson.add_install_script('install.sh', meson.current_build_dir(), 'pysu2ad.py')
+endif
