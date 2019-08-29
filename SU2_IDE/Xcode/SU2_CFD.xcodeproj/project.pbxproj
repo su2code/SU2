@@ -105,6 +105,7 @@
 		E9C830852061E60E004417A9 /* geometry_structure_fem_part.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C8307B2061E60E004417A9 /* geometry_structure_fem_part.cpp */; };
 		E9C830932061E799004417A9 /* solver_direct_mean_fem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830922061E799004417A9 /* solver_direct_mean_fem.cpp */; };
 		E9D6EE5A23165FD300618E36 /* CDummyDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE5923165FD300618E36 /* CDummyDriver.cpp */; };
+		E9D6EE5D2316653200618E36 /* CSU2ASCIIMeshReaderFVM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE5C2316653100618E36 /* CSU2ASCIIMeshReaderFVM.cpp */; };
 		E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D85B4B1C3F1B9E0077122F /* ad_structure.cpp */; };
 		E9D885A92303F8E400917362 /* CBoxMeshReaderFVM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D885A82303F8E400917362 /* CBoxMeshReaderFVM.cpp */; };
 		E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */; };
@@ -335,6 +336,8 @@
 		E9C830922061E799004417A9 /* solver_direct_mean_fem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_mean_fem.cpp; path = ../../SU2_CFD/src/solver_direct_mean_fem.cpp; sourceTree = "<group>"; };
 		E9D6EE5923165FD300618E36 /* CDummyDriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDummyDriver.cpp; path = ../../SU2_CFD/src/drivers/CDummyDriver.cpp; sourceTree = "<group>"; };
 		E9D6EE5B23165FE400618E36 /* CDummyDriver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDummyDriver.hpp; path = ../../SU2_CFD/include/drivers/CDummyDriver.hpp; sourceTree = "<group>"; };
+		E9D6EE5C2316653100618E36 /* CSU2ASCIIMeshReaderFVM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CSU2ASCIIMeshReaderFVM.cpp; path = ../../Common/src/CSU2ASCIIMeshReaderFVM.cpp; sourceTree = "<group>"; };
+		E9D6EE5E2316655400618E36 /* CSU2ASCIIMeshReaderFVM.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSU2ASCIIMeshReaderFVM.hpp; path = ../../Common/include/CSU2ASCIIMeshReaderFVM.hpp; sourceTree = "<group>"; };
 		E9D85B4B1C3F1B9E0077122F /* ad_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = ad_structure.cpp; path = ../../Common/src/ad_structure.cpp; sourceTree = "<group>"; };
 		E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = ad_structure.hpp; path = ../../Common/include/ad_structure.hpp; sourceTree = "<group>"; };
 		E9D85B4E1C3F1BE00077122F /* ad_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = ad_structure.inl; path = ../../Common/include/ad_structure.inl; sourceTree = "<group>"; };
@@ -439,6 +442,7 @@
 				E9E51AD822FA603700773E0C /* CMeshReaderFVM.cpp */,
 				E9E674332302A2E3009B6A25 /* CMultiGridQueue.cpp */,
 				E9E674362302A92C009B6A25 /* CRectangularMeshReaderFVM.cpp */,
+				E9D6EE5C2316653100618E36 /* CSU2ASCIIMeshReaderFVM.cpp */,
 				05E6DB8A17EB61E600FA1F7E /* dual_grid_structure.cpp */,
 				E96FAF132189FECA0046BF5D /* fem_cgns_elements.cpp */,
 				E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */,
@@ -519,6 +523,7 @@
 				E9E674382302A942009B6A25 /* CRectangularMeshReaderFVM.hpp */,
 				E9C2835822A701B5007B4E59 /* CRinglebSolution.hpp */,
 				EB14FF9E22F790720045FB27 /* CSinglezoneDriver.hpp */,
+				E9D6EE5E2316655400618E36 /* CSU2ASCIIMeshReaderFVM.hpp */,
 				E9C2835922A701B5007B4E59 /* CTGVSolution.hpp */,
 				E9C2835422A701B5007B4E59 /* CUserDefinedSolution.hpp */,
 				E9C2835522A701B5007B4E59 /* CVerificationSolution.hpp */,
@@ -872,6 +877,7 @@
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
 				E96FAF152189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */,
 				05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */,
+				E9D6EE5D2316653200618E36 /* CSU2ASCIIMeshReaderFVM.cpp in Sources */,
 				E90B4FFE22DFDFE4000ED392 /* CAdjEulerVariable.cpp in Sources */,
 				E90B500522DFDFE4000ED392 /* CTransLMVariable.cpp in Sources */,
 				05E6DB9517EB61E600FA1F7E /* grid_adaptation_structure.cpp in Sources */,
