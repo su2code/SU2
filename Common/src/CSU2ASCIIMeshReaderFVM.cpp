@@ -111,14 +111,14 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata() {
           unsigned short jZone = atoi(text_line.c_str());
           if (jZone == myZone+1) {
             if (rank == MASTER_NODE)
-              cout << "Reading zone " << myZone+1 << "." << endl;
+              cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
             foundZone = true;
             break;
           }
         }
       }
       if (!foundZone) {
-        SU2_MPI::Error(string("Could not find the IZONE= keyword or the zone content.") +
+        SU2_MPI::Error(string("Could not find the IZONE= keyword or the zone contents.") +
                        string(" \n Check the SU2 ASCII file format."),
                        CURRENT_FUNCTION);
       }
@@ -140,10 +140,6 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata() {
     if (position != string::npos) {
       text_line.erase (0,6);
       dimension = atoi(text_line.c_str());
-      if (rank == MASTER_NODE) {
-        if (dimension == 2) cout << "Two dimensional problem." << endl;
-        if (dimension == 3) cout << "Three dimensional problem." << endl;
-      }
       foundNDIME = true;
     }
     
@@ -226,6 +222,11 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata() {
       foundNMARK = true;
     }
     
+    /* Stop before we reach the next zone then check for errors below. */
+    position = text_line.find ("IZONE=",0);
+    if (position != string::npos) {
+      break;
+    }
   }
   
   /* Close the mesh file. */
@@ -275,7 +276,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
   vector<unsigned long> ActDiskPoint_Front;
   vector<unsigned long> VolumePoint;
   vector<unsigned long> PerimeterPoint;
-
+  
   ActDiskNewPoints = 0;
   
   /* Note this routine is hard-coded to split for only one actuator disk
@@ -788,7 +789,7 @@ void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates() {
         /*--- We only read information for this node if it is owned by this
          rank based upon our initial linear partitioning. ---*/
         
-        su2double Coords[3] = {0.0,0.0,0.0};
+        passivedouble Coords[3] = {0.0,0.0,0.0};
         if ((int)pointPartitioner.GetRankContainingIndex(GlobalIndex) == rank) {
           
           istringstream point_line(text_line);
@@ -1206,17 +1207,17 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
   
   string text_line;
   string::size_type position;
+  bool foundMarkers = false;
   while (getline (mesh_file, text_line)) {
     
     /*--- Jump to the section containing the markers. ---*/
     
     position = text_line.find ("NMARK=",0);
-    
     if (position != string::npos) {
       
+      foundMarkers = true;
       unsigned short iMarker = 0;
       while (iMarker < numberOfMarkers) {
-        
         getline (mesh_file, text_line);
         text_line.erase (0,11);
         string::size_type position;
@@ -1229,9 +1230,8 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
           position = text_line.find( "\n", 0 );
           if (position != string::npos) text_line.erase (position,1);
         }
-        
         markerNames[iMarker] = text_line.c_str();
-        
+
         bool duplicate = false;
         string Marker_Tag_Duplicate;
         if ((actuator_disk) &&
@@ -1353,9 +1353,7 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
                   
                 }
                 
-                
                 break;
-                
                 
             }
           }
@@ -1376,9 +1374,9 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
         }
         
         if (iMarker == numberOfMarkers) break;
-        
       }
     }
+    if (foundMarkers) break;
   }
   
   /*--- Final error check for deprecated periodic BC format. ---*/
@@ -1425,7 +1423,7 @@ void CSU2ASCIIMeshReaderFVM::FastForwardToMyZone() {
         text_line.erase (0,6);
         unsigned short jZone = atoi(text_line.c_str());
         if (jZone == myZone+1) {
-          break;
+          return;
         }
       }
     }

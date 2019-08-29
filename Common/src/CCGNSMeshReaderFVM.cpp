@@ -154,10 +154,6 @@ void CCGNSMeshReaderFVM::ReadCGNSDatabaseMetadata() {
   /*--- Set the number of dimensions baed on cell_dim. ---*/
   
   dimension = (unsigned short)cell_dim;
-  if (rank == MASTER_NODE) {
-    if (dimension == 2) cout << "Two dimensional problem." << endl;
-    if (dimension == 3) cout << "Three dimensional problem." << endl;
-  }
   
 }
 
