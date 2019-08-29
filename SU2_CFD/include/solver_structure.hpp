@@ -155,6 +155,9 @@ protected:
   su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
   
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
+  
+  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
+  
 public:
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -4457,6 +4460,12 @@ public:
    * \return 
    */
   virtual su2double GetMaximum_Volume(){ return 0.0; }
+  
+  /*!
+   * \brief Get residual of the linear solver
+   * \return 
+   */
+  su2double GetLinSol_Residual(){ return valResidual; }
   
 protected:
   /*!
@@ -11595,8 +11604,6 @@ protected:
   su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
   su2double *Res_Stress_i;        /*!< \brief Submatrix to store the nodal stress contribution of node i. */
-
-  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
 
 public:
   
