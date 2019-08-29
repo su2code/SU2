@@ -35,21 +35,38 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
+
 CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
-  CDiscAdjMeshVariable(npoint, ndim, config) {
+  CVariable(npoint, ndim, config) {
+
+  VertexMap.Reset(nPoint);
+}
+
+void CDiscAdjMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
+
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  Idx_t nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
 
   bool fsi = false;
 
   /*--- Initialize Boundary Displacement container to 0.0 ---*/
 
-  Bound_Disp_Sens.resize(nPoint,nDim) = su2double(0.0);
-  Bound_Disp_Direct.resize(nPoint,nDim) = su2double(0.0);
+  Bound_Disp_Sens.resize(nBoundPt,nDim) = su2double(0.0);
+  Bound_Disp_Direct.resize(nBoundPt,nDim) = su2double(0.0);
 
   /*--- Container for the BGS solution at the previous iteration ---*/
 
-  if (fsi) Solution_BGS_k.resize(nPoint,nDim) = su2double(0.0);
+  if (fsi) Solution_BGS_k.resize(nBoundPt,nDim) = su2double(0.0);
 
+}
+
+void CDiscAdjMeshBoundVariable::Set_BGSSolution_k() {
+  Solution_BGS_k = Bound_Disp_Sens;
 }

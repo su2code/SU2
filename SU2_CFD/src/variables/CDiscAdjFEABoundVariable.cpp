@@ -37,11 +37,24 @@
 
 #include "../../include/variables/CDiscAdjFEABoundVariable.hpp"
 
-CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel, const su2double *accel,
-  Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config) :
-    CDiscAdjFEAVariable(disp, vel, accel, npoint, ndim, nvar, unsteady, config){
+CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel,
+  const su2double *accel, Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config) :
+    CDiscAdjFEAVariable(disp, vel, accel, npoint, ndim, nvar, unsteady, config) {
 
-  FlowTraction_Sens.resize(nPoint,nDim);
-  SourceTerm_DispAdjoint.resize(nPoint,nDim) = su2double(0.0);
+  VertexMap.Reset(nPoint);
+}
+
+void CDiscAdjFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
+
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  Idx_t nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
+
+  FlowTraction_Sens.resize(nBoundPt,nDim) = su2double(0.0);
+  SourceTerm_DispAdjoint.resize(nBoundPt,nDim) = su2double(0.0);
 
 }

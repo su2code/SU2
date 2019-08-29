@@ -47,7 +47,7 @@
  * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFEAVariable : public CVariable {
-private:
+protected:
   Mat_t Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
   Mat_t Solution_Direct;
 
@@ -76,7 +76,6 @@ private:
   Mat_t Solution_BGS;
   Mat_t Solution_BGS_k;
 
-public:
   /*!
    * \brief Constructor of the class.
    * \param[in] disp - Pointer to the adjoint value (initialization value).
@@ -91,6 +90,7 @@ public:
   CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel,
                       Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config);
 
+public:
   /*!
    * \brief Destructor of the class.
    */

@@ -40,6 +40,18 @@
 CMeshBoundVariable::CMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
   CMeshVariable(npoint, ndim, config) {
 
-  Boundary_Displacement.resize(nPoint,nDim) = 0.0;
+  VertexMap.Reset(nPoint);
+}
 
+void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
+
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  Idx_t nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
+  
+  Boundary_Displacement.resize(nBoundPt,nDim) = 0.0;
 }
