@@ -4446,6 +4446,18 @@ public:
    */
   void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Get minimun volume in the mesh
+   * \return 
+   */
+  virtual su2double GetMinimum_Volume(){ return 0.0; }
+  
+  /*!
+   * \brief Get maximum volume in the mesh
+   * \return 
+   */
+  virtual su2double GetMaximum_Volume(){ return 0.0; }
+  
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
