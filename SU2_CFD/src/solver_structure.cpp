@@ -3011,6 +3011,13 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   CompleteComms(geometry, config, SOLUTION_GRADIENT);
   
 }
+
+void CSolver::SetSolution_Old(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolution(node[iPoint]->GetSolution_Old());
+  }
+}
+
 void CSolver::SetSolution_Iter(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     node[iPoint]->SetSolution(node[iPoint]->Get_IterSolution());
