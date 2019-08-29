@@ -149,15 +149,15 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Secondary sensitivities must be computed with a certain frequency. ---*/
     /*--- It is also done at the beginning so all memory gets allocated.     ---*/
-    if ((Adjoint_Iter % config->GetWrt_Sol_Freq() == 0) && (SecondaryVariables != NONE)){
+//    if ((Adjoint_Iter % config->GetWrt_Sol_Freq() == 0) && (SecondaryVariables != NONE)){
 
       /*--- Computes secondary sensitivities ---*/
-      SecondaryRecording();
+//      SecondaryRecording();
 
       /*--- Recompute main sensitivities ---*/
-      MainRecording();
+//      MainRecording();
 
-    }
+//    }
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
