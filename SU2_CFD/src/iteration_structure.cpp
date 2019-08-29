@@ -341,9 +341,6 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
 
   bool ActiveTape = NO;
 
-  if ((rank == MASTER_NODE) && (!config->GetDiscrete_Adjoint()))
-    cout << endl << "Deforming the grid for imposed boundary displacements." << endl;
-
   /*--- Perform the elasticity mesh movement ---*/
   if (config->GetDeform_Mesh()) {
 

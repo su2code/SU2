@@ -221,14 +221,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   su2double MaxVolume, MinVolume;
   int EL_KIND = 0;
 
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
-
   bool RightVol = true;
 
   su2double ElemVolume;
-
-  if ((rank == MASTER_NODE) && (!discrete_adjoint))
-    cout << "Computing volumes of the grid elements." << endl;
 
   MaxVolume = -1E22; MinVolume = 1E22;
 
@@ -471,21 +466,10 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
 
 void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
-
   if (multizone) SetSolution_Old();
 
   /*--- Initialize sparse matrix ---*/
   Jacobian.SetValZero();
-
-  /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
-  if (rank == MASTER_NODE) {
-    if (discrete_adjoint) cout << scientific; // Ensure the mesh deformation output, if requested, remains scientific
-    else{
-      if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
-      else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
-    }
-  }
 
   /*--- Compute the stiffness matrix. ---*/
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
@@ -524,12 +508,6 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Check for failed deformation (negative volumes). ---*/
   /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
   SetMinMaxVolume(geometry[MESH_0], config, true);
-
-  if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-    cout << scientific << "Linear solver iter.: " << IterLinSol << ". ";
-    if (nDim == 2) cout << "Min. area in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
-    else cout << "Min. volume in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
-  }
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);

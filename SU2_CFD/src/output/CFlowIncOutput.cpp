@@ -208,6 +208,12 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");  
   
+  if (config->GetDeform_Mesh()){
+    AddHistoryOutput("MIN_VOLUME", "MinVolume", FORMAT_SCIENTIFIC, "MESH", "Minimum volume in the mesh");
+    AddHistoryOutput("MAX_VOLUME", "MaxVolume", FORMAT_SCIENTIFIC, "MESH", "Maximum volume in the mesh");
+    AddHistoryOutput("MESH_DEFORM_ITER", "DeformIter", FORMAT_INTEGER, "MESH", "Linear solver iterations for the mesh deformation");
+  }
+  
   /*--- Add analyze surface history fields --- */
   
   AddAnalyzeSurfaceOutput(config);
@@ -223,6 +229,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];  
   CSolver* heat_solver = solver[HEAT_SOL];
+  CSolver* mesh_solver = solver[MESH_SOL];
   
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
@@ -294,6 +301,13 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     }
 
   }  
+  
+  if (config->GetDeform_Mesh()){
+    SetHistoryOutputValue("MIN_VOLUME", mesh_solver->GetMinimum_Volume());
+    SetHistoryOutputValue("MAX_VOLUME", mesh_solver->GetMaximum_Volume());
+    SetHistoryOutputValue("MESH_DEFORM_ITER", mesh_solver->GetIterLinSolver());
+  }
+  
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
   
