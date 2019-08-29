@@ -222,7 +222,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   /*--- Storage of grid velocities for dynamic meshes ---*/
   if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
-
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
 
@@ -273,7 +272,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
   Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
   GridVel = NULL;  GridVel_Grad = NULL;
-
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
   if ( config->GetUnsteady_Simulation() == NO ) { 
@@ -335,7 +333,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
   if (dynamic_grid) {
     GridVel = new su2double[nDim];
-
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
 
