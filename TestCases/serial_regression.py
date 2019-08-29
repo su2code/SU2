@@ -1145,7 +1145,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-6.762767, -6.439588, 4.1223e-08, 2.0107e-12 ,1.4315e-21] #last 5 columns
+    stat_fsi.test_vals = [-6.762767, -6.439588, 4.1223e-08, -11.696645, -20.844194] #last 5 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.multizone = True
@@ -1157,7 +1157,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-9.685290, -8.386780, 4.1223e-08, 2.0107e-12, 5.5044e-21] #last 5 columns
+    stat_fsi_restart.test_vals = [-9.685290, -8.386780, 4.1223e-08, -11.696645, -20.259286] #last 5 columns
     stat_fsi_restart.multizone = True
     stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
@@ -1169,7 +1169,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.413915, -4.837080, 4.7367e-08, 1.0297e-21,  5.0771e-17] #last 5 columns
+    dyn_fsi.test_vals = [-4.413915, -4.837080, 4.7367e-08, -20.987299,-16.294380] #last 5 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "SU2_CFD"
