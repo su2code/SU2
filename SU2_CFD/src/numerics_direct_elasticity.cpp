@@ -38,6 +38,38 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
+CFEAElasticity::CFEAElasticity(void) : CNumerics () {
+
+  E        = 1.0;          /*!< \brief Aux. variable, Young's modulus of elasticity. */
+  Nu       = 0.0;          /*!< \brief Aux. variable, Poisson's ratio. */
+  Rho_s    = 0.0;          /*!< \brief Aux. variable, Structural density. */
+  Rho_s_DL = 0.0;          /*!< \brief Aux. variable, Structural density (for dead loads). */
+  Mu       = 0.0;          /*!< \brief Aux. variable, Lame's coeficient. */
+  Lambda   = 0.0;          /*!< \brief Aux. variable, Lame's coeficient. */
+  Kappa    = 0.0;          /*!< \brief Aux. variable, Compressibility constant. */
+
+  E_i        = NULL;       /*!< \brief Young's modulus of elasticity (list). */
+  Nu_i       = NULL;       /*!< \brief Poisson's ratio (list). */
+  Rho_s_i    = NULL;       /*!< \brief Structural density (list). */
+  Rho_s_DL_i = NULL;       /*!< \brief Structural density (for dead loads) (list). */
+
+  plane_stress = false;    /*!< \brief Checks if we are solving a plane stress case */
+
+  Ba_Mat          = NULL;  /*!< \brief Matrix B for node a - Auxiliary. */
+  Bb_Mat          = NULL;  /*!< \brief Matrix B for node b - Auxiliary. */
+  Ni_Vec          = NULL;  /*!< \brief Vector of shape functions - Auxiliary. */
+  D_Mat           = NULL;  /*!< \brief Constitutive matrix - Auxiliary. */
+  KAux_ab         = NULL;  /*!< \brief Node ab stiffness matrix - Auxiliary. */
+  GradNi_Ref_Mat  = NULL;  /*!< \brief Gradients of Ni - Auxiliary. */
+  GradNi_Curr_Mat = NULL;  /*!< \brief Gradients of Ni - Auxiliary. */
+
+  FAux_Dead_Load  = NULL;  /*!< \brief Auxiliar vector for the dead loads */
+
+  DV_Val = NULL;           /*!< \brief For optimization cases, value of the design variables. */
+  n_DV = 0.0;              /*!< \brief For optimization cases, number of design variables. */
+
+}
+
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
@@ -203,6 +235,11 @@ CFEAElasticity::~CFEAElasticity(void) {
 
   if (FAux_Dead_Load     != NULL) delete [] FAux_Dead_Load;
 
+  if (E_i != NULL) delete [] E_i;
+  if (Nu_i != NULL) delete [] Nu_i;
+  if (Rho_s_i != NULL) delete [] Rho_s_i;
+  if (Rho_s_DL_i != NULL) delete [] Rho_s_DL_i;
+  if (Ni_Vec != NULL) delete [] Ni_Vec;
 }
 
 void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {

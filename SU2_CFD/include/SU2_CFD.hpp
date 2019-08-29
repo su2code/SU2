@@ -59,6 +59,6 @@
 #include "../../Common/include/interpolation_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
-#include "../include/transfer_structure.hpp"
+#include "../include/transfer/CTransfer.hpp"
 
 using namespace std;

@@ -80,6 +80,9 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
     }
     /*--- Flush the file and wait for all processors to arrive. ---*/
     restart_file.flush();
+#ifdef HAVE_MPI
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
     
   }
   
