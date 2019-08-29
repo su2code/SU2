@@ -52,6 +52,9 @@ private:
   Mat_t FlowTraction_Sens;         /*!< \brief Adjoint of the flow tractions. */
   Mat_t SourceTerm_DispAdjoint;    /*!< \brief Source term applied into the displacement
                                                adjoint coming from external solvers. */
+
+  CVertexMap VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
+
 public:
   /*!
    * \overload
@@ -71,6 +74,12 @@ public:
    * \brief Destructor of the class.
    */
   ~CDiscAdjFEABoundVariable() = default;
+  
+  /*!
+   * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AllocateBoundaryVariables(CConfig *config);
 
   /*!
    * \brief Set the FSI force sensitivity at the node
@@ -78,6 +87,7 @@ public:
    * \param[in] val - value of the Sensitivity
    */
   inline void SetFlowTractionSensitivity(Idx_t iPoint, Idx_t iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     FlowTraction_Sens(iPoint,iDim) = val;
   }
 
@@ -87,6 +97,7 @@ public:
    * \return value of the Sensitivity
    */
   inline su2double GetFlowTractionSensitivity(Idx_t iPoint, Idx_t iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return FlowTraction_Sens(iPoint,iDim);
   }
 
@@ -96,6 +107,7 @@ public:
    * \param[in] val - value of the source term
    */
   inline void SetSourceTerm_DispAdjoint(Idx_t iPoint, Idx_t iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     SourceTerm_DispAdjoint(iPoint,iDim) = val;
   }
 
@@ -105,12 +117,22 @@ public:
    * \return value of the source term
    */
   inline su2double GetSourceTerm_DispAdjoint(Idx_t iPoint, Idx_t iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SourceTerm_DispAdjoint(iPoint,iDim);
   }
 
   /*!
-   * \brief Get whether this node is on the boundary
+   * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override { return true; }
+  inline bool Get_isVertex(Idx_t iPoint) const override {
+    return VertexMap.GetVertexIndex(iPoint);
+  }
+
+  /*!
+   * \brief Set whether a node is on the boundary
+   */
+  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
+    VertexMap.SetVertex(iPoint,isVertex);
+  }
 
 };

@@ -49,6 +49,7 @@ CMeshVariable::CMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
 
   /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
   Mesh_Coord.resize(nPoint,nDim) = su2double(0.0);
+  WallDistance.resize(nPoint) = su2double(1e-9);
 
   /*--- Initialize the variables necessary when the problem is multizone ---*/
   if (multizone)

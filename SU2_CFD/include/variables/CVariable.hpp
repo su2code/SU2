@@ -103,6 +103,49 @@ protected:
     su2double** operator[] (Idx_t i) { return interface[i]; }
   };
 
+  /*--- Auxilary class for derived classes that only allocate data for boundary points. ---*/
+  class CVertexMap {
+   private:
+    TVec_t<unsigned> Map;  /*!< \brief Map from range 0-(nPoint-1) to 1-nBoundPt. */
+    bool isValid = true;   /*!< \brief Set to true when it is safe to use the accessors. */
+    Idx_t nVertex = 0;     /*!< \brief Number of vertices. */
+
+   public:
+    bool GetIsValid() { return isValid; }
+
+    Idx_t GetnVertex() { return nVertex; }
+
+    void Reset(Idx_t nPoint) { Map.resize(nPoint) = 0; nVertex = 0; isValid = true; }
+
+    void SetVertex(Idx_t iPoint, bool isVertex) {
+      /*--- Invalidate map if change is requested as that destroys it. ---*/
+      if (isVertex != bool(Map(iPoint))) {
+        isValid = false;
+        Map(iPoint) = unsigned(isVertex);
+      }
+    }
+
+    Idx_t Build() {
+      nVertex = 0; // map is 1 based, the accessors correct accordingly.
+
+      for (Idx_t iPoint = 0; iPoint < Map.size(); ++iPoint)
+        if (Map(iPoint)!=0)
+          Map(iPoint) = ++nVertex;
+
+      isValid = true;
+
+      return nVertex;
+    }
+
+    bool GetVertexIndex(Idx_t &iPoint) const {
+      assert(isValid && "Variable in invalid state.");
+      iPoint = Map(iPoint);
+      if(iPoint==0) return false; // not a vertex
+      iPoint--;    // decrement for 0 based
+      return true; // is a vertex
+    }
+  };
+
   Mat_t Solution;       /*!< \brief Solution of the problem. */
   Mat_t Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 

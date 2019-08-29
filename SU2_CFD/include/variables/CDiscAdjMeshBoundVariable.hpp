@@ -38,15 +38,17 @@
 
 #pragma once
 
-#include "CDiscAdjMeshVariable.hpp"
+#include "CVariable.hpp"
 
-class CDiscAdjMeshBoundVariable final : public CDiscAdjMeshVariable {
+class CDiscAdjMeshBoundVariable final : public CVariable {
 private:
 
   Mat_t Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
   Mat_t Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
 
   Mat_t Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
+
+  CVertexMap VertexMap;      /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
 
@@ -64,16 +66,26 @@ public:
   ~CDiscAdjMeshBoundVariable() = default;
 
   /*!
+   * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AllocateBoundaryVariables(CConfig *config);
+
+  /*!
    * \brief Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline const su2double* GetBoundDisp_Direct(Idx_t iPoint) const override { return Bound_Disp_Direct[iPoint]; }
+  inline const su2double* GetBoundDisp_Direct(Idx_t iPoint) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return nullptr;
+    return Bound_Disp_Direct[iPoint];
+  }
 
   /*!
    * \brief Set the solution for the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   inline void SetBoundDisp_Direct(Idx_t iPoint, const su2double *val_BoundDisp) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iDim = 0; iDim < nDim; iDim++)
       Bound_Disp_Direct(iPoint,iDim) = val_BoundDisp[iDim];
   }
@@ -83,6 +95,7 @@ public:
    * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
    */
   inline void SetBoundDisp_Sens(Idx_t iPoint, const su2double *val_sens) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iDim = 0; iDim < nDim; iDim++)
       Bound_Disp_Sens(iPoint,iDim) = val_sens[iDim];
   }
@@ -93,28 +106,35 @@ public:
    * \return Value of the original Mesh_Coord_Sens iDim.
    */
   inline su2double GetBoundDisp_Sens(Idx_t iPoint, Idx_t iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Bound_Disp_Sens(iPoint,iDim);
   }
 
   /*!
-   * \brief Determine whether the node is a moving vertex.
-   * \return True. The node is at the boundary.
+   * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override { return true; }
+  inline bool Get_isVertex(Idx_t iPoint) const override {
+    return VertexMap.GetVertexIndex(iPoint);
+  }
+
+  /*!
+   * \brief Set whether a node is on the boundary
+   */
+  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
+    VertexMap.SetVertex(iPoint,isVertex);
+  }
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k() override {
-    // ToDo: Move to cpp
-    Solution_BGS_k = Bound_Disp_Sens;
-  }
+  void Set_BGSSolution_k() override;
 
   /*!
    * \brief Get the value of the solution in the previous BGS subiteration.
    * \param[out] val_solution - solution in the previous BGS subiteration.
    */
   inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Solution_BGS_k(iPoint,iDim);
   }
 

@@ -46,7 +46,6 @@ protected:
   Vec_t WallDistance;  /*!< \brief Store the wall distance in reference coordinates. */
   Mat_t Mesh_Coord;    /*!< \brief Store the reference coordinates of the mesh. */
 
-public:
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -55,6 +54,7 @@ public:
    */
   CMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config);
 
+public:
   /*!
    * \brief Destructor of the class.
    */

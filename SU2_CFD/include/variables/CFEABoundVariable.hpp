@@ -58,13 +58,7 @@ protected:
   Mat_t Residual_Ext_Surf;    /*!< \brief Term of the residual due to external forces. */
   Mat_t Residual_Ext_Surf_n;  /*!< \brief Term of the residual due to external forces at time n. */
 
-  TVec_t<unsigned> VertexMap; /*!< \brief Map from range 0-nPoint to 0-nBoundPt. */
-
-  bool isAllocated;           /*!< \brief Set to true when it is safe to use the accessors. */
-
-#define APPLY_VERTEXMAP(DEFAULT_RETURN) \
-  assert(isAllocated && "Variable in invalid state, call AllocateBoundaryVariables before accessing data.");\
-  iPoint = VertexMap(iPoint); if(iPoint==0) return DEFAULT_RETURN; else iPoint--; // decrement for 0 based
+  CVertexMap VertexMap;       /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
   /*!
@@ -92,7 +86,7 @@ public:
    * \brief Add surface load to the residual term
    */
   inline void Add_SurfaceLoad_Res(Idx_t iPoint, const su2double *val_surfForce) override {
-    APPLY_VERTEXMAP()
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) += val_surfForce[iVar];
   }
 
@@ -100,7 +94,7 @@ public:
    * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
   inline void Set_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar, su2double val_surfForce) override {
-    APPLY_VERTEXMAP()
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     Residual_Ext_Surf(iPoint,iVar) = val_surfForce;
   }
 
@@ -108,7 +102,7 @@ public:
    * \brief Get the residual term due to surface load
    */
   inline su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const override {
-    APPLY_VERTEXMAP(0.0)
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Residual_Ext_Surf(iPoint,iVar);
   }
 
@@ -116,7 +110,7 @@ public:
    * \brief Clear the surface load residual
    */
   inline void Clear_SurfaceLoad_Res(Idx_t iPoint) override {
-    APPLY_VERTEXMAP()
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
   }
 
@@ -129,7 +123,7 @@ public:
    * \brief Get the surface load from the previous time step.
    */
   inline su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) const override {
-    APPLY_VERTEXMAP(0.0)
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Residual_Ext_Surf_n(iPoint,iVar);
   }
 
@@ -137,7 +131,7 @@ public:
    * \brief Set the flow traction at a node on the structural side
    */
   inline void Set_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
-    APPLY_VERTEXMAP()
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = val_flowTraction[iVar];
   }
 
@@ -145,7 +139,7 @@ public:
    * \brief Add a value to the flow traction at a node on the structural side
    */
   inline void Add_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
-    APPLY_VERTEXMAP()
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) += val_flowTraction[iVar];
   }
 
@@ -153,7 +147,7 @@ public:
    * \brief Get the residual term due to the flow traction
    */
   inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const override {
-    APPLY_VERTEXMAP(0.0)
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return FlowTraction(iPoint,iVar);
   }
 
@@ -166,7 +160,7 @@ public:
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
   inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const override {
-    APPLY_VERTEXMAP(0.0)
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return FlowTraction_n(iPoint,iVar);
   }
 
@@ -174,7 +168,7 @@ public:
    * \brief Clear the flow traction residual
    */
   inline void Clear_FlowTraction(Idx_t iPoint) override {
-    APPLY_VERTEXMAP()
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = 0.0;
   }
 
@@ -182,6 +176,7 @@ public:
    * \brief Register the flow tractions as input variable.
    */
   inline void RegisterFlowTraction(Idx_t iPoint) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(FlowTraction(iPoint,iVar));
   }
@@ -190,24 +185,22 @@ public:
    * \brief Extract the flow traction derivatives.
    */
   inline su2double ExtractFlowTraction_Sensitivity(Idx_t iPoint, Idx_t iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SU2_TYPE::GetDerivative(FlowTraction(iPoint,iDim));
   }
 
   /*!
    * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override { return VertexMap(iPoint)!=0; }
+  inline bool Get_isVertex(Idx_t iPoint) const override {
+    return VertexMap.GetVertexIndex(iPoint);
+  }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
   inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
-    /*--- Invalidate allocation if change is requested as that destroys map. ---*/
-    if (isVertex != bool(VertexMap(iPoint))) {
-      isAllocated = false;
-      VertexMap(iPoint) = unsigned(isVertex);
-    }
+    VertexMap.SetVertex(iPoint,isVertex);
   }
 
-#undef APPLY_VERTEXMAP
 };
