@@ -189,4 +189,16 @@ public:
       node[iPoint]->Set_OldSolution();
   }
 
+  /*!
+   * \brief Get minimun volume in the mesh
+   * \return 
+   */
+  su2double GetMinimum_Volume(){return MinVolume_Curr;}
+  
+  /*!
+   * \brief Get maximum volume in the mesh
+   * \return 
+   */
+  su2double GetMaximum_Volume(){return MaxVolume_Curr;}
+  
 };

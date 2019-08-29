@@ -3481,6 +3481,10 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
   SetIterLinSolver(IterLinSol);
   
+  /*--- Set the residual --- */
+  
+  valResidual = System.GetResidual();
+  
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
