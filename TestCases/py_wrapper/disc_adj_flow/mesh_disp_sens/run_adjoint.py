@@ -40,10 +40,8 @@
 # ----------------------------------------------------------------------
 
 import sys
-import shutil
 from optparse import OptionParser	# use a parser for configuration
 import pysu2ad as pysu2          # imports the SU2 adjoint-wrapped module
-from math import *
 
 # -------------------------------------------------------------------
 #  Main 
@@ -54,27 +52,14 @@ def main():
   # Command line options
   parser=OptionParser()
   parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
-  parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
-                    metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
-                    metavar="ZONES")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
 
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-
-  parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
-                    help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-
-
   (options, args) = parser.parse_args()
-  options.nDim  = int( options.nDim )
-  options.nZone = int( options.nZone )
-  options.fsi = options.fsi.upper() == 'TRUE'
-  options.fem = options.fem.upper() == 'TRUE'
-  options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
+  options.nDim  = 2
+  options.nZone = 1
+
+  print(args)
 
   # Import mpi4py for parallel run
   if options.with_MPI == True:
@@ -86,15 +71,7 @@ def main():
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  try:
-    SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, options.nDim, comm);
-  except TypeError as exception:
-    print('A TypeError occured in pysu2.CDriver : ',exception)
-    if options.with_MPI == True:
-      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
-    else:
-      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
-    return
+  SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
 
   MarkerID = None
   MarkerName = 'wallF'       # Specified by the user
@@ -111,13 +88,9 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_Marker = 0         #total number of vertices (physical + halo)
-  nVertex_Marker_HALO = 0    #number of halo vertices
-  nVertex_Marker_PHYS = 0    #number of physical vertices
 
   if MarkerID != None:
     nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
-    nVertex_Marker_HALO = SU2Driver.GetNumberHaloVertices(MarkerID)
-    nVertex_Marker_PHYS = nVertex_Marker - nVertex_Marker_HALO
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
@@ -139,7 +112,7 @@ def main():
   SU2Driver.Update()
   
   # Monitor the solver and output solution to file if required
-  stopCalc = SU2Driver.Monitor(0)
+  SU2Driver.Monitor(0)
   
   # Output the solution to file
   SU2Driver.Output(0)

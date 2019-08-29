@@ -60,6 +60,7 @@ protected:
   CIntegration **integration;                   /*!< \brief Container vector with all the integration methods. */
   CGeometry *geometry;                          /*!< \brief Geometrical definition of the problem. */
   CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
+  CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
 
 public:

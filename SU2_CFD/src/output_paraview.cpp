@@ -176,7 +176,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
   
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -634,7 +634,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       
       Paraview_File << "\nSCALARS Grid_Velx double 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -1155,7 +1155,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
   
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
@@ -1560,7 +1560,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       
       Paraview_File << "\nSCALARS Grid_Velx double 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";

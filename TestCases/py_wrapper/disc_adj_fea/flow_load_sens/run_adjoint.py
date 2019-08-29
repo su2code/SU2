@@ -40,10 +40,8 @@
 # ----------------------------------------------------------------------
 
 import sys
-import shutil
 from optparse import OptionParser	# use a parser for configuration
 import pysu2ad as pysu2          # imports the SU2 adjoint-wrapped module
-from math import *
 
 # -------------------------------------------------------------------
 #  Main 
@@ -54,29 +52,15 @@ def main():
   # Command line options
   parser=OptionParser()
   parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
-  parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
-                    metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
-                    metavar="ZONES")
-  parser.add_option("--periodic", dest="periodic", default="False", help="Define whether the problem has periodic boundary conditions", metavar="PERIODIC")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
 
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-
-  parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
-                    help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-
 
   (options, args) = parser.parse_args()
-  options.nDim  = int( options.nDim )
-  options.nZone = int( options.nZone )
-  options.periodic = options.periodic.upper() == 'TRUE'
-  options.fsi = options.fsi.upper() == 'TRUE'
-  options.fem = options.fem.upper() == 'TRUE'
-  options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
+  options.nDim  = 2
+  options.nZone = 1
+
+  print(args)
 
   # Import mpi4py for parallel run
   if options.with_MPI == True:
@@ -88,15 +72,7 @@ def main():
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  try:
-    SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, options.nDim, comm);
-  except TypeError as exception:
-    print('A TypeError occured in pysu2.CDriver : ',exception)
-    if options.with_MPI == True:
-      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
-    else:
-      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
-    return
+  SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
 
   MarkerID = None
   MarkerName = 'RightBeamS'       # Specified by the user
@@ -111,22 +87,6 @@ def main():
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
     MarkerID = allMarkerIDs[MarkerName]
 
-  # Number of vertices on the specified marker (per rank)
-  nVertex_Marker = 0         #total number of vertices (physical + halo)
-  nVertex_Marker_HALO = 0    #number of halo vertices
-  nVertex_Marker_PHYS = 0    #number of physical vertices
-
-  if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
-    nVertex_Marker_HALO = SU2Driver.GetNumberHaloVertices(MarkerID)
-    nVertex_Marker_PHYS = nVertex_Marker - nVertex_Marker_HALO
-    
-  # Coordinates of the marker
-  for iVertex in range(nVertex_Marker):
-    posX = SU2Driver.GetVertexCoordX(MarkerID, iVertex)
-    posY = SU2Driver.GetVertexCoordY(MarkerID, iVertex)
-    posZ = SU2Driver.GetVertexCoordZ(MarkerID, iVertex)
-
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
     print("\n------------------------------ Begin Solver -----------------------------\n")
@@ -135,7 +95,7 @@ def main():
     comm.Barrier()
   
   # Define the load at the target vertex
-  SU2Driver.SetLoads(MarkerID,5,0,-0.005,0)
+  SU2Driver.SetFEA_Loads(MarkerID,5,0,-0.005,0)
   
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
@@ -143,14 +103,11 @@ def main():
   # Run one time-step (static: one simulation)
   SU2Driver.Run()
   
-  # Postprocess
-  #SU2Driver.Postprocess()  
-  
   # Update the solver for the next time iteration
   SU2Driver.Update()
   
   # Monitor the solver and output solution to file if required
-  stopCalc = SU2Driver.Monitor(0)
+  SU2Driver.Monitor(0)
   
   # Output the solution to file
   SU2Driver.Output(0)
@@ -159,11 +116,10 @@ def main():
   disp=[]
   # Recover the sensitivity 
   sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
-  disp.append(SU2Driver.GetDisplacements(MarkerID,5))
+  disp.append(SU2Driver.GetFEA_Displacements(MarkerID,5))
   
   print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
-  for i in range(len(sens)):
-    print(100, 100, sens[i][0], sens[i][1], disp[i][0], disp[i][1])
+  print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()

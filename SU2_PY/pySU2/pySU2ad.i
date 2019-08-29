@@ -52,7 +52,10 @@ threads="1"
 #include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+<<<<<<< HEAD
 #include "../../SU2_CFD/include/error_estimation_structure.hpp"
+=======
+>>>>>>> develop
 
 %}
 
@@ -107,6 +110,9 @@ const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. 
 %include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+<<<<<<< HEAD
 
 // CErrorEstimationDriver class
 %include "../../SU2_CFD/include/error_estimation_structure.hpp"
+=======
+>>>>>>> develop
