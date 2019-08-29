@@ -111,12 +111,6 @@ public:
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */

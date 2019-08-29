@@ -41,27 +41,18 @@
 #include "CVariable.hpp"
 
 class CDiscAdjMeshVariable : public CVariable {
-protected:
-
 public:
-
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_coor - Values of the coordinates (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] npoint - Number of nodes/points.
+   * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+  CDiscAdjMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshVariable(void);
-
-  /*!
-   * \brief Determine whether the node is a moving vertex.
-   * \return False. The node is not at the boundary.
-   */
-  inline virtual bool Get_isVertex(void) const override { return false; }
+  ~CDiscAdjMeshVariable() = default;
 
 };
