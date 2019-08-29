@@ -55,8 +55,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Volume  = NULL;  Vertex       = NULL;
   Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
   Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;//  GridVel_Old = NULL;
-  //GridVel_n = NULL;  GridVel_n1 = NULL;
+  GridVel = NULL;  GridVel_Grad = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -116,11 +115,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
-    // if( config->GetDiscrete_Adjoint() ) {
-    //   GridVel_Old  = new su2double[nDim];
-    //   GridVel_n    = new su2double[nDim];
-    //   GridVel_n1   = new su2double[nDim];
-    // }
 
     for (iDim = 0; iDim < nDim; iDim++) 
       GridVel[iDim] = 0.0;
@@ -167,8 +161,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Volume  = NULL;  Vertex       = NULL;
   Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
   Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1  = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;  //GridVel_Old = NULL;
-  //GridVel_n = NULL;  GridVel_n1 = NULL;
+  GridVel = NULL;  GridVel_Grad = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -229,11 +222,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   /*--- Storage of grid velocities for dynamic meshes ---*/
   if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
-    // if( config->GetDiscrete_Adjoint() ) {
-    //   GridVel_Old  = new su2double[nDim];
-    //   GridVel_n    = new su2double[nDim];
-    //   GridVel_n1   = new su2double[nDim];
-    // }
 
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
@@ -284,8 +272,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Volume  = NULL;  Vertex       = NULL;
   Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
   Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;  //GridVel_Old = NULL;
-  //GridVel_n = NULL;  GridVel_n1 = NULL;
+  GridVel = NULL;  GridVel_Grad = NULL;
 
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
@@ -348,11 +335,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
   if (dynamic_grid) {
     GridVel = new su2double[nDim];
-    // if( config->GetDiscrete_Adjoint() ) {
-    //   GridVel_Old  = new su2double[nDim];
-    //   GridVel_n    = new su2double[nDim];
-    //   GridVel_n1   = new su2double[nDim];
-    // }
 
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
@@ -402,9 +384,6 @@ CPoint::~CPoint() {
   if (Coord_n1     != NULL) delete[] Coord_n1;
   if (Coord_p1     != NULL) delete[] Coord_p1;
   if (GridVel      != NULL) delete[] GridVel;
-  // if (GridVel_Old  != NULL) delete[] GridVel_Old;
-  // if (GridVel_n    != NULL) delete[] GridVel_n;
-  // if (GridVel_n1   != NULL) delete[] GridVel_n1;
   if (GridVel_Grad != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       delete [] GridVel_Grad[iDim];
