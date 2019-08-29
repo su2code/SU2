@@ -64,7 +64,7 @@ class CIncEulerVariable;
 class CTurbVariable;
 class CFEABoundVariable;
 class CDiscAdjVariable;
-class CDiscAdjFEAVariable;
+class CDiscAdjFEABoundVariable;
 
 /*!
  * \class CVariable

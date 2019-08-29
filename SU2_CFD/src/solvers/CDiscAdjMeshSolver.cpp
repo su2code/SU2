@@ -37,7 +37,6 @@
 
 
 #include "../../include/solvers/CDiscAdjMeshSolver.hpp"
-#include "../../include/variables/CDiscAdjMeshVariable.hpp"
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
 CDiscAdjMeshSolver::CDiscAdjMeshSolver(void) : CSolver (){
@@ -56,10 +55,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config)  : 
 
 CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver)  : CSolver(){
 
-  unsigned short iVar, iMarker, iDim;
-  unsigned long iPoint;
-  long iVertex;
-  bool isVertex;
+  unsigned short iVar, iDim;
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();
@@ -110,27 +106,21 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   /*--- Initialize the node structure ---*/
   node = new CDiscAdjMeshBoundVariable(nPoint,nDim,config);
   
-// ToDo: Apply vertex storage for this class  
-//  for (iPoint = 0; iPoint < nPoint; iPoint++){
-//
-//    /*--- In principle, the node is not at the boundary ---*/
-//    isVertex = false;
-//    /*--- Looping over all markers ---*/
-//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//
-//      /*--- If the marker is flagged as moving, retrieve the node vertex ---*/
-//      if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-//      else iVertex = -1;
-//
-//      if (iVertex != -1){isVertex = true; break;}
-//    }
-//
-//    /*--- The MeshBound variable includes the displacements at the boundaries ---*/
-//    if (isVertex) node[iPoint] = new CDiscAdjMeshBoundVariable(Solution, nDim, config);
-//    else          node[iPoint] = new CDiscAdjMeshVariable(Solution, nDim, config);
-//
-//  }
+  /*--- Set which points are vertices and allocate boundary data. ---*/
 
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    node->SetSolution(iPoint,Solution);
+    
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex >= 0) {
+        node->Set_isVertex(iPoint,true);
+        break;
+      }
+    }
+  }
+  static_cast<CDiscAdjMeshBoundVariable*>(node)->AllocateBoundaryVariables(config);
 
 }
 
