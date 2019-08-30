@@ -42,7 +42,6 @@
 import sys
 import shutil
 from optparse import OptionParser	# use a parser for configuration
-import pysu2            # imports the SU2 wrapped module
 import pysu2ad          # imports the SU2 adjoint-wrapped module
 import numpy as np
 import pyamg
@@ -117,8 +116,8 @@ def main():
     TimeIter += 1
 
   # Retrieve some control parameters from the driver
-  TimeIter = SU2Driver.GetIter()
-  nTimeIter = SU2Driver.GetnIter()
+  TimeAdjIter = 0
+  nTimeAdjIter = 1
 
   if rank == 0:
     print("\n-------------------------- Begin Adjoint Solver -------------------------\n")
@@ -126,9 +125,9 @@ def main():
   if options.with_MPI == True:
     comm.Barrier()
 
-  while (TimeIter < nTimeIter):
+  while (TimeAdjIter < nTimeAdjIter):
     # Time iteration preprocessing
-    SU2Driver.Preprocess(TimeIter)
+    SU2Driver.Preprocess(TimeAdjIter)
     # Run one time-step (static: one simulation)
     SU2Driver.Run()
     # Postprocess
@@ -136,14 +135,14 @@ def main():
     # Update the solver for the next time iteration
     SU2Driver.Update()
     # Monitor the solver and output solution to file if required
-    stopCalc = SU2Driver.Monitor(TimeIter)
+    stopCalc = SU2Driver.Monitor(TimeAdjIter)
     
     # Output the solution to file
-    SU2Driver.Output(TimeIter)
+    SU2Driver.Output(TimeAdjIter)
     if (stopCalc == True):
       break
     # Update control parameters
-    TimeIter += 1
+    TimeAdjIter += 1
 
   # Initialize the error estimation driver
   try:

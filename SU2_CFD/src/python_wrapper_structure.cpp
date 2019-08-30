@@ -1210,6 +1210,8 @@ vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker,
 
 bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
+  bool steady = (config->GetUnsteady_Simulation() == STEADY);
+
   config->SetDiscrete_Adjoint(false);
 
   switch (config->GetKind_Solver()) {
@@ -1218,8 +1220,8 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
     case DISC_ADJ_RANS: config->SetKind_Solver(RANS); break;
   }
 
-  /*--- Create an output structure for the direct solver ---*/
   if(TimeIter == 0) {
+    /*--- Create an output structure for the direct solver ---*/
     direct_output = new COutput(config);
 
     /*--- Open the convergence history file ---*/
@@ -1240,23 +1242,25 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
     if (config->GetKind_Solver() == FEM_ELASTICITY
         && config->GetWrt_Dynamic() && config->GetRestart())
       ExtIter = config->GetDyn_RestartIter();
+
+    /*--- Zone preprocessing ---*/
+    direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container,
+                                 numerics_container, config_container, surface_movement, grid_movement, 
+                                 FFDBox, ZONE_0, INST_0);
   }
 
-  /*--- Zone preprocessing ---*/
+  /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+  /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 
-  direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container,
-                               numerics_container, config_container, surface_movement, grid_movement, 
-                               FFDBox, ZONE_0, INST_0);
-
-  /*--- Set the iteration ---*/
-
-  config->SetOuterIter(0);
-  config->SetIntIter(TimeIter);
-
-  /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-  direct_iteration->Solve(direct_output, integration_container, geometry_container, solver_container,
-                          numerics_container, config_container, surface_movement, grid_movement, 
-                          FFDBox, ZONE_0, INST_0);
+  /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+  if (steady) config->SetExtIter(TimeIter);
+  /*--- For unsteady flow simulations, we need to loop over IntIter for the number of time steps ---*/
+  else config->SetIntIter(TimeIter);
+  /*--- If only one internal iteration is required, the ExtIter/IntIter is the OuterIter of the block structure ---*/
+  if (config->GetnIter() == 1) {
+    if (steady) config->SetExtIter(config->GetOuterIter());
+    else config->SetIntIter(config->GetOuterIter());
+  }
 
   /*--- Iterate the direct solver ---*/
 
@@ -1285,7 +1289,6 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   /*--- Monitor the direct solver ---*/
   bool StopCalc = false;
-  bool steady = (config->GetUnsteady_Simulation() == STEADY);
 
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
