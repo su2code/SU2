@@ -84,11 +84,11 @@ all:
 real: ${SWIG_SO_REAL}
 
 if BUILD_NORMAL
-  EXTRA_CC_FLAGS = -fPIC -O3
+  EXTRA_CC_FLAGS = -fPIC
 endif
 
 if BUILD_REVERSE
-  EXTRA_CC_FLAGS = -fPIC -O3 -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
+  EXTRA_CC_FLAGS = -fPIC -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
 #  EXTRA_CC_FLAGS = -fPIC -g3 -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
 endif
 

@@ -1208,12 +1208,34 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
     case DISC_ADJ_RANS: config->SetKind_Solver(RANS); break;
   }
 
-  COutput *output_direct = new COutput(config);
+  /*--- Create an output structure for the direct solver ---*/
+  if(TimeIter == 0) {
+    direct_output = new COutput(config);
+
+    /*--- Open the convergence history file ---*/
+    ConvHist_file_direct = NULL;
+    if (rank == MASTER_NODE){
+      ConvHist_file = new ofstream[nInst[ZONE_0]];
+      for (iInst = 0; iInst < nInst[ZONE_0]; iInst++) {
+        direct_output->SetConvHistory_Header(&ConvHist_file_direct[iInst], config, ZONE_0, iInst);
+        config->SetHistFile(&ConvHist_file_direct[INST_0]);
+      }
+    }
+
+    /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
+    if (config->GetWrt_Unsteady() && config->GetRestart())
+      ExtIter = config->GetUnst_RestartIter();
+
+    /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
+    if (config->GetKind_Solver() == FEM_ELASTICITY
+        && config->GetWrt_Dynamic() && config->GetRestart())
+      ExtIter = config->GetDyn_RestartIter();
+  }
 
   /*--- Zone preprocessing ---*/
 
-  direct_iteration->Preprocess(output_direct, integration_container, geometry_container, solver_container,
-                               numerics_container, config_container, surface_movement, grid_movement,
+  direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container,
+                               numerics_container, config_container, surface_movement, grid_movement, 
                                FFDBox, ZONE_0, INST_0);
 
   /*--- Set the iteration ---*/
@@ -1221,37 +1243,38 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
   config->SetOuterIter(TimeIter);
 
   /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-  direct_iteration->Solve(output, integration_container, geometry_container, solver_container,
-                          numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Solve(direct_output, integration_container, geometry_container, solver_container,
+                          numerics_container, config_container, surface_movement, grid_movement, 
+                          FFDBox, ZONE_0, INST_0);
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(output_direct, integration_container, geometry_container, solver_container, numerics_container,
-                            config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, 
+                            numerics_container, config_container, surface_movement, grid_movement, 
+                            FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
 
-  direct_iteration->Postprocess(output_direct, integration_container, geometry_container, solver_container,
+  direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container,
                                 numerics_container, config_container, surface_movement, grid_movement,
                                 FFDBox, ZONE_0, INST_0);
 
   /*--- A corrector step can help preventing numerical instabilities ---*/
 
   if (config->GetRelaxation())
-    direct_iteration->Relaxation(output, integration_container, geometry_container, solver_container,
-                                                    numerics_container, config_container, surface_movement, grid_movement, 
-                                                    FFDBox, ZONE_0, INST_0);
+    direct_iteration->Relaxation(direct_output, integration_container, geometry_container, solver_container,
+                                 numerics_container, config_container, surface_movement, grid_movement, 
+                                 FFDBox, ZONE_0, INST_0);
 
    /*--- Update the direct solver ---*/
 
-  direct_iteration->Update(output_direct, integration_container, geometry_container, solver_container,
+  direct_iteration->Update(direct_output, integration_container, geometry_container, solver_container,
                            numerics_container, config_container, surface_movement, grid_movement,
                            FFDBox, ZONE_0, INST_0);
 
   /*--- Monitor the direct solver ---*/
   bool StopCalc = false;
   bool steady = (config->GetUnsteady_Simulation() == STEADY);
-  bool output_history = false;
 
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -1268,7 +1291,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
   /*--- The logic is right now case dependent ----*/
   /*--- This needs to be generalized when the new output structure comes ---*/
 
-  if (steady) output_direct->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, ZONE_0, INST_0);
+  if (steady) direct_output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, ZONE_0, INST_0);
 
   /*--- File output ---*/
 
@@ -1318,10 +1341,10 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output_direct->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
+    direct_output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
 
     /*--- Execute the routine for writing special output. ---*/
-    output_direct->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+    direct_output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
 
 
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
