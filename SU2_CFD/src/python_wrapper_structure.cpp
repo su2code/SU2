@@ -1568,7 +1568,7 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
       
       /*--- Create main agglomeration structure ---*/
       
-      geometry_container[val_iZone][iInst][iMesh] = new CMultiGridGeometry(geometry, config_container[val_iZone], iMesh);
+      geometry_container[val_iZone][iInst][iMesh] = new CMultiGridGeometry(geometry_container[val_iZone][iInst], config_container[val_iZone], iMesh);
       
       /*--- Compute points surrounding points. ---*/
       
