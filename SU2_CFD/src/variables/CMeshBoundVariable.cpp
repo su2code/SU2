@@ -53,5 +53,5 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Allocate ---*/
   
-  Boundary_Displacement.resize(nBoundPt,nDim) = 0.0;
+  Boundary_Displacement.resize(nBoundPt,nDim) = su2double(0.0);
 }
