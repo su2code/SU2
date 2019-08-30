@@ -98,8 +98,8 @@ def main():
     return
 
   # Retrieve some control parameters from the driver
-  TimeIter = SU2Driver.GetExtIter()
-  nTimeIter = SU2Driver.GetnExtIter()
+  TimeIter = SU2Driver.GetIter()
+  nTimeIter = SU2Driver.GetnIter()
 
   # Time loop is defined in Python so that we have access to SU2 functionalities at each time step
   if rank == 0:
@@ -117,8 +117,8 @@ def main():
     TimeIter += 1
 
   # Retrieve some control parameters from the driver
-  TimeIter = SU2Driver.GetExtIter()
-  nTimeIter = SU2Driver.GetnExtIter()
+  TimeIter = SU2Driver.GetIter()
+  nTimeIter = SU2Driver.GetnIter()
 
   if rank == 0:
     print("\n-------------------------- Begin Adjoint Solver -------------------------\n")
@@ -183,13 +183,13 @@ def main():
   iInst = 0
 
   if options.nDim == 2:
-    Edg = np.array(SU2Error.GetConnectivityEdg(iZone, iInst), int)
-    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), int)
-    Tet = np.empty(0, int)
+    Edg = np.array(SU2Error.GetConnectivityEdg(iZone, iInst), np.int64)
+    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.int64)
+    Tet = np.empty(0, np.int64)
   else:
-    Edg = np.empty(0, int)
-    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), int)
-    Tet = np.array(SU2Error.GetConnectivityTet(iZone, iInst), int)
+    Edg = np.empty(0, np.int64)
+    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.int64)
+    Tet = np.array(SU2Error.GetConnectivityTet(iZone, iInst), np.int64)
 
   # Gather data to rank 0
   if options.with_MPI == True:

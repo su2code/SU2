@@ -463,6 +463,18 @@ public:
   unsigned long GetExtIter();
 
   /*!
+   * \brief Get the number of iterations.
+   * \return Number of iterations.
+   */
+  unsigned long GetnIter();
+
+  /*!
+   * \brief Get the current iteration.
+   * \return Current iteration.
+   */
+  unsigned long GetIter();
+
+  /*!
    * \brief Get the unsteady time step.
    * \return Unsteady time step.
    */

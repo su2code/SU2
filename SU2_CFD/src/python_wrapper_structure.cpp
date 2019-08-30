@@ -305,6 +305,16 @@ unsigned long CDriver::GetExtIter(){
   return ExtIter;
 }
 
+unsigned long CDriver::GetnIter() {
+
+    return config_container[ZONE_0]->GetnIter();
+}
+
+unsigned long CDriver::GetIter(){
+
+  return ExtIter;
+}
+
 passivedouble CDriver::GetUnsteady_TimeStep(){
 
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetDelta_UnstTime());
@@ -1240,7 +1250,8 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   /*--- Set the iteration ---*/
 
-  config->SetOuterIter(TimeIter);
+  config->SetOuterIter(0);
+  config->SetInnerIter(TimeIter);
 
   /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
   direct_iteration->Solve(direct_output, integration_container, geometry_container, solver_container,
