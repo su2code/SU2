@@ -874,7 +874,6 @@ public:
                                    vector<vector<unsigned long> > EdgAdap,
                                    vector<vector<unsigned long> > TriAdap,
                                    vector<vector<unsigned long> > TetAdap,
-                                   unsigned short val_nDim, 
                                    unsigned short val_iZone, 
                                    unsigned short val_nZone);
 
