@@ -48,24 +48,24 @@ CErrorEstimationDriver::CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_ad
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-  geometry            = NULL;
-  solver              = NULL;
-  config              = NULL;
-  output                        = NULL;
-  nInst                         = NULL;
+  geometry = NULL;
+  solver   = NULL;
+  config   = NULL;
+  output   = NULL;
+  nInst    = NULL;
 
   /*--- Definition of the containers for all possible zones. ---*/
 
-  geometry            = new CGeometry***[nZone];
-  solver              = new CSolver****[nZone];
-  config              = new CConfig*[nZone];
-  nInst                         = new unsigned short[nZone];
+  geometry = new CGeometry***[nZone];
+  solver   = new CSolver****[nZone];
+  config   = new CConfig*[nZone];
+  nInst    = new unsigned short[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver[iZone]                   = NULL;
-    geometry[iZone]                 = NULL;
-    config[iZone]                   = disc_adj_driver->GetConfig(iZone);
-    nInst[iZone]                              = 1;
+    solver[iZone]   = NULL;
+    geometry[iZone] = NULL;
+    config[iZone]   = disc_adj_driver->GetConfig(iZone);
+    nInst[iZone]    = 1;
   }
 
   /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
@@ -132,24 +132,24 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-  geometry            = NULL;
-  solver              = NULL;
-  config              = NULL;
-  output                        = NULL;
-  nInst                         = NULL;
+  geometry = NULL;
+  solver   = NULL;
+  config   = NULL;
+  output   = NULL;
+  nInst    = NULL;
 
   /*--- Definition of the containers for all possible zones. ---*/
 
-  geometry            = new CGeometry***[nZone];
-  solver              = new CSolver****[nZone];
-  config              = new CConfig*[nZone];
-  nInst                         = new unsigned short[nZone];
+  geometry = new CGeometry***[nZone];
+  solver   = new CSolver****[nZone];
+  config   = new CConfig*[nZone];
+  nInst    = new unsigned short[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver[iZone]                   = NULL;
-    geometry[iZone]                 = NULL;
-    config[iZone]                   = NULL;
-    nInst[iZone]                              = 1;
+    solver[iZone]   = NULL;
+    geometry[iZone] = NULL;
+    config[iZone]   = NULL;
+    nInst[iZone]    = 1;
   }
 
   /*--- Initialize the configuration of the driver ---*/
