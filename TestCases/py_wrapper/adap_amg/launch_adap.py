@@ -182,13 +182,13 @@ def main():
   iInst = 0
 
   if options.nDim == 2:
-    Edg = np.array(SU2Error.GetConnectivityEdg(iZone, iInst), np.int64)
-    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.int64)
-    Tet = np.empty(0, np.int64)
+    Edg = np.array(SU2Error.GetConnectivityEdg(iZone, iInst), np.uint64)
+    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.uint64)
+    Tet = np.empty(0, np.uint64)
   else:
-    Edg = np.empty(0, np.int64)
-    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.int64)
-    Tet = np.array(SU2Error.GetConnectivityTet(iZone, iInst), np.int64)
+    Edg = np.empty(0, np.uint64)
+    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.uint64)
+    Tet = np.array(SU2Error.GetConnectivityTet(iZone, iInst), np.uint64)
 
   # Gather data to rank 0
   if options.with_MPI == True:
