@@ -287,7 +287,7 @@ def main():
 
       SU2Driver.Adapted_Input_Preprocessing(comm, options.filename,
                                             SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap,
-                                            options.nDim, iZone, options.nZone)
+                                            iZone, options.nZone)
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
