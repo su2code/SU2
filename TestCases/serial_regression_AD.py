@@ -323,7 +323,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
-    pywrapper_FEA_AD_FlowLoad.unsteady      = True
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 
@@ -336,7 +336,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
-    pywrapper_FEA_AD_FlowLoad.unsteady      = True
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 
