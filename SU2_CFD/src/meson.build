@@ -43,7 +43,6 @@ su2_cfd_src = files(['output_structure.cpp',
                      'numerics_template.cpp',
                      'solver_adjoint_discrete.cpp',
                      'numerics_direct_elasticity_nonlinear.cpp',
-                     'error_estimation_structure.cpp',
                      'SU2_CFD.cpp'])
 
 
@@ -85,7 +84,8 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
                       'drivers/CSinglezoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
-                      'drivers/CDummyDriver.cpp'])
+                      'drivers/CDummyDriver.cpp',
+                      'drivers/CErrorEstimationDriver.cpp'])
 
 if get_option('enable-normal')
   su2_cfd = executable('SU2_CFD',

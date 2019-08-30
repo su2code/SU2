@@ -71,7 +71,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
-  ../src/error_estimation_structure.cpp \
+  ../src/drivers/CErrorEstimationDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \

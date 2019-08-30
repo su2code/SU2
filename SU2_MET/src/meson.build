@@ -47,7 +47,6 @@ if get_option('enable-autodiff')
                        'numerics_template.cpp',
                        'solver_adjoint_discrete.cpp',
                        'numerics_direct_elasticity_nonlinear.cpp',
-                       'error_estimation_structure.cpp',
                        'variables/CIncNSVariable.cpp',
                        'variables/CTransLMVariable.cpp',
                        'variables/CAdjEulerVariable.cpp',
@@ -82,7 +81,8 @@ if get_option('enable-autodiff')
                        'drivers/CMultizoneDriver.cpp',
                        'drivers/CSinglezoneDriver.cpp',
                        'drivers/CDiscAdjSinglezoneDriver.cpp',
-                       'drivers/CDummyDriver.cpp'])
+                       'drivers/CDummyDriver.cpp',
+                       'drivers/CErrorEstimationDriver.cpp'])
 
   su2_met = executable('SU2_MET',
                        su2_met_src, 

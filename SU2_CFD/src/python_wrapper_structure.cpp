@@ -1215,7 +1215,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
     /*--- Open the convergence history file ---*/
     ConvHist_file_direct = NULL;
     if (rank == MASTER_NODE){
-      ConvHist_file = new ofstream[nInst[ZONE_0]];
+      ConvHist_file_direct = new ofstream[nInst[ZONE_0]];
       for (iInst = 0; iInst < nInst[ZONE_0]; iInst++) {
         direct_output->SetConvHistory_Header(&ConvHist_file_direct[iInst], config, ZONE_0, iInst);
         config->SetHistFile(&ConvHist_file_direct[INST_0]);

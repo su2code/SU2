@@ -88,7 +88,7 @@ def main():
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    SU2Driver = pysu2ad.CDiscAdjSinglezoneDriver(options.filename, options.nZone, options.nDim, comm);
+    SU2Driver = pysu2ad.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
@@ -96,29 +96,6 @@ def main():
     else:
       print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
     return
-
-  MarkerID = None
-  MarkerName = 'airfoil'       # Specified by the user
-
-  # Get all the boundary tags
-  MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
-
-  # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
-
-  #Check if the specified marker exists and if it belongs to this rank.
-  if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
-    MarkerID = allMarkerIDs[MarkerName]
-
-  # Number of vertices on the specified marker (per rank)
-  nVertex_Marker = 0         #total number of vertices (physical + halo)
-  nVertex_Marker_HALO = 0    #number of halo vertices
-  nVertex_Marker_PHYS = 0    #number of physical vertices
-
-  if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
-    nVertex_Marker_HALO = SU2Driver.GetNumberHaloVertices(MarkerID)
-    nVertex_Marker_PHYS = nVertex_Marker - nVertex_Marker_HALO
 
   # Retrieve some control parameters from the driver
   TimeIter = SU2Driver.GetExtIter()
@@ -170,7 +147,7 @@ def main():
 
   # Initialize the error estimation driver
   try:
-    SU2Error = pysu2ad.CErrorEstimationDriver(SU2Driver, options.nZone, options.nDim, comm);
+    SU2Error = pysu2ad.CErrorEstimationDriver(SU2Driver, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
@@ -293,19 +270,21 @@ def main():
 
       if options.nDim == 2:
         SolAdap = mesh_new['solution'].tolist()
+        PoiAdap = mesh_new['xy'].tolist()
         EdgAdap = mesh_new['Edges'].tolist()
         TriAdap = mesh_new['Triangles'].tolist()
         TetAdap = [[]]
       else:
         SolAdap = mesh_new['solution'].tolist()
         EdgAdap = [[]]
+        PoiAdap = mesh_new['xyz'].tolist()
         TriAdap = mesh_new['Triangles'].tolist()
         TetAdap = mesh_new['Tetrahedra'].tolist()
 
       del [mesh, mesh_new]
 
       SU2Driver.Adapted_Input_Preprocessing(comm, options.filename,
-                                            SolAdap, EdgAdap, TriAdap, TetAdap,
+                                            SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap,
                                             options.nDim, iZone, options.nZone)
 
   # Postprocess the solver and exit cleanly
