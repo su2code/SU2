@@ -55,3 +55,18 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
   
   Boundary_Displacement.resize(nBoundPt,nDim) = su2double(0.0);
 }
+
+void CMeshBoundVariable::Register_BoundDisp(bool input) {
+  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++) {
+    Idx_t iVertex = iPoint;
+    
+    if (VertexMap.GetVertexIndex(iVertex)) {
+      for (Idx_t iVar = 0; iVar < nVar; iVar++) {
+        if (input)
+          AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
+        else
+          AD::RegisterOutput(Boundary_Displacement(iVertex,iVar));
+      }
+    }
+  }
+}

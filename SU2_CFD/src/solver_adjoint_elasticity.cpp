@@ -430,35 +430,26 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
   bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
   bool input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node->RegisterSolution(iPoint,input);
-  }
+  direct_solver->node->RegisterSolution(input);
 
-  if (dynamic){
+  if (dynamic) {
+
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->RegisterSolution_Accel(iPoint,input);
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->RegisterSolution_Vel(iPoint,input);
-    }
+    
+    direct_solver->node->RegisterSolution_Accel(input);
+    direct_solver->node->RegisterSolution_Vel(input);
+    
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->Register_femSolution_time_n(iPoint);
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->RegisterSolution_Accel_time_n(iPoint);
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->RegisterSolution_Vel_time_n(iPoint);
-    }
+    
+    direct_solver->node->Register_femSolution_time_n();
+    direct_solver->node->RegisterSolution_Accel_time_n();
+    direct_solver->node->RegisterSolution_Vel_time_n();
+
   }
 
 }
@@ -490,29 +481,26 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 //        for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
 //    }
 
-    if (!reset){
-        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(E_i[iVar]);
-        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Nu_i[iVar]);
-        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_i[iVar]);
-        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_DL_i[iVar]);
+    if (!reset) {
+      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(E_i[iVar]);
+      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Nu_i[iVar]);
+      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_i[iVar]);
+      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_DL_i[iVar]);
 
-        if(de_effects){
-          for (iVar = 0; iVar < nEField; iVar++) AD::RegisterInput(EField[iVar]);
-        }
+      if(de_effects){
+        for (iVar = 0; iVar < nEField; iVar++) AD::RegisterInput(EField[iVar]);
+      }
 
-        if(fea_dv){
-          for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
-        }
+      if(fea_dv){
+        for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
+      }
 
-        if (config->GetTopology_Optimization())
-          direct_solver->RegisterVariables(geometry,config);
+      if (config->GetTopology_Optimization())
+        direct_solver->RegisterVariables(geometry,config);
 
-        /*--- Register the flow traction sensitivities ---*/
-        if (config->GetnMarker_Fluid_Load() > 0){
-          for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-            direct_solver->node->RegisterFlowTraction(iPoint);
-          }
-        }
+      /*--- Register the flow traction sensitivities ---*/
+      if (config->GetnMarker_Fluid_Load() > 0)
+        direct_solver->node->RegisterFlowTraction();
     }
 
   }
@@ -525,29 +513,19 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
 void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
   bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
 
   /*--- Register variables as output of the solver iteration ---*/
 
   bool input = false;
 
-  /*--- Register output variables on the tape ---*/
+  direct_solver->node->RegisterSolution(input);
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node->RegisterSolution(iPoint,input);
-  }
-  if (dynamic){
+  if (dynamic) {
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->RegisterSolution_Accel(iPoint,input);
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->RegisterSolution_Vel(iPoint,input);
-    }
+    direct_solver->node->RegisterSolution_Accel(input);
+    direct_solver->node->RegisterSolution_Vel(input);
   }
-
 
 }
 

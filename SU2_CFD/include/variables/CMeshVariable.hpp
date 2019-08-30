@@ -99,16 +99,7 @@ public:
    * \brief Register the reference coordinates of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_MeshCoord(Idx_t iPoint, bool input) final {
-    if (input) {
-      for (Idx_t iDim = 0; iDim < nDim; iDim++)
-        AD::RegisterInput(Mesh_Coord(iPoint,iDim));
-    }
-    else {
-      for (Idx_t iDim = 0; iDim < nDim; iDim++)
-        AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
-    }
-  }
+  void Register_MeshCoord(bool input) final;
 
   /*!
    * \brief Recover the value of the adjoint of the mesh coordinates.

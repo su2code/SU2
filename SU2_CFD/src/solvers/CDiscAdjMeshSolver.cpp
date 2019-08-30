@@ -152,27 +152,17 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-  bool input = true;
-
   /*--- Register reference mesh coordinates ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    direct_solver->node->Register_MeshCoord(iPoint,input);
+  bool input = true;
+  direct_solver->node->Register_MeshCoord(input);
 
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
   /*--- Register boundary displacements as input ---*/
-
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
   bool input = true;
-
-  /*--- Register reference mesh coordinates ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    direct_solver->node->Register_BoundDisp(iPoint,input);
+  direct_solver->node->Register_BoundDisp(input);
 
 }
 
