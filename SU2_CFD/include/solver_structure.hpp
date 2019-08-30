@@ -11578,8 +11578,6 @@ private:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
-  CFEABoundVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-
 protected:
 
   bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
