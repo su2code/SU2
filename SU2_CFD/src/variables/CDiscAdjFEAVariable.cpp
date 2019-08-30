@@ -93,8 +93,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
 
 void CDiscAdjFEAVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution_BGS; }
 
-void CDiscAdjFEAVariable::SetSolution_time_n() { Solution_time_n = Solution; }
-
 void CDiscAdjFEAVariable::Set_OldSolution_Vel() { Solution_Old_Vel = Solution_Vel; }
 
 void CDiscAdjFEAVariable::Set_OldSolution_Accel() { Solution_Old_Accel = Solution_Accel; }

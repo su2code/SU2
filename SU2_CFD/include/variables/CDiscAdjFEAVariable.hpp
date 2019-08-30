@@ -209,11 +209,6 @@ public:
   inline su2double GetSolution_Vel_time_n(Idx_t iPoint, Idx_t iVar) const final { return Solution_Vel_time_n(iPoint,iVar); }
 
   /*!
-   * \brief Set the value of the old solution.
-   */
-  void SetSolution_time_n() final;
-
-  /*!
    * \brief Set the value of the acceleration (Structural Analysis - adjoint).
    * \param[in] val_solution - Solution of the problem (acceleration).
    */

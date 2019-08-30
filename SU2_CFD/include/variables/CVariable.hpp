@@ -2153,26 +2153,6 @@ public:
   inline virtual su2double* GetSolution_Accel_Direct(Idx_t iPoint) { return nullptr; }
 
   /*!
-   * \brief Set the value of the old solution.
-   */
-  inline virtual void SetSolution_time_n() {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] solution_time_n - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(Idx_t iPoint, Idx_t iVar, su2double solution) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] solution_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(Idx_t iPoint, const su2double *solution_time_n) {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
-      Solution_time_n(iPoint,iVar) = solution_time_n[iVar];
-  }
-
-  /*!
    * \brief Set the value of the velocity (Structural Analysis).
    * \param[in] solution - Solution of the problem (velocity).
    */
