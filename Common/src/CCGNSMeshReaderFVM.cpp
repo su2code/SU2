@@ -171,12 +171,13 @@ void CCGNSMeshReaderFVM::ReadCGNSZoneMetadata() {
     cout <<  nzones << " total zone(s)." << endl;
   }
   
-  /*--- Check if there is more than one zone. Throw an
-   error if the number of zones does not match the expected number. ---*/
+  /*--- Check if there is more than one zone. Until we enable it, we
+   will require a single zone CGNS file. Multizone problems can still
+   be run with CGNS by using separate CGNS files for each zone. ---*/
   
-  if (nzones != nZones) {
-    SU2_MPI::Error("Mismatch in the number of zones (nzones != val_nZone)",
-                   CURRENT_FUNCTION);
+  if ( nzones > 1 ) {
+    SU2_MPI::Error(string("CGNS reader currently expects only 1 zone per CGNS file.") +
+                   string("Multizone problems can be run with separate CGNS files for each zone."), CURRENT_FUNCTION);
   }
   
   /*--- Read the basic information for this zone, including
