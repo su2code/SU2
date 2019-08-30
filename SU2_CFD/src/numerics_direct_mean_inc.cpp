@@ -329,13 +329,6 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
-  if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim);
-    AD::SetPreaccIn(GridVel_j, nDim);
-  }
-  
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
@@ -498,9 +491,6 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-
-  AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();
 }
 
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -549,13 +539,6 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
   
-  AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
-  if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim);
-    AD::SetPreaccIn(GridVel_j, nDim);
-  }
-
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
@@ -714,9 +697,6 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-  
-  AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();
 }
 
 CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
