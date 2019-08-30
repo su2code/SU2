@@ -89,12 +89,10 @@ public:
   /*! 
    * \brief Constructor of the class.
    * \param[in] disc_adj_driver - Single zone discrete adjoint driver.
-   * \param[in] val_nDim - Number of dimensions.   
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
                           unsigned short val_nZone,
-                          unsigned short val_nDim, 
                           SU2_Comm MPICommunicator);
 
   /*! 
