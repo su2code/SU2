@@ -41,6 +41,8 @@
 CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
 
+  nDim = ndim;
+
   VertexMap.Reset(nPoint);
 }
 

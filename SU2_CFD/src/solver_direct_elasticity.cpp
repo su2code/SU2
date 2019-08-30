@@ -3080,7 +3080,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
 
   bool incremental_load = config->GetIncrementalLoad();
@@ -3099,9 +3098,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
         for (iVar = 0; iVar < nVar; iVar++) {
           Res_Ext_Surf[iVar] = node->Get_SurfaceLoad_Res(iPoint,iVar);
         }
-        //Res_Ext_Surf = node->Get_SurfaceLoad_Res(iPoint);
       }
-      
       LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
       
       /*--- Add the contribution to the residual due to body forces ---*/
@@ -3117,25 +3114,23 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
             Res_Dead_Load[iVar] = node->Get_BodyForces_Res(iPoint,iVar);
           }
         }
-        
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
       }
 
       /*---  Add the contribution to the residual due to flow loads (FSI contribution) ---*/
 
-      if (fsi) {
-        if (incremental_load) {
-          for (iVar = 0; iVar < nVar; iVar++)
-            Res_FSI_Cont[iVar] = loadIncrement * node->Get_FlowTraction(iPoint,iVar);
-        }
-        else {
-          for (iVar = 0; iVar < nVar; iVar++)
-            Res_FSI_Cont[iVar] = node->Get_FlowTraction(iPoint,iVar);
-        }
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Res_FSI_Cont[iVar] = loadIncrement * node->Get_FlowTraction(iPoint,iVar);
+      }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Res_FSI_Cont[iVar] = node->Get_FlowTraction(iPoint,iVar);
       }
       LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+
     }
-    
+
   }
   
   if (dynamic) {
@@ -3217,30 +3212,28 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
             Res_Dead_Load[iVar] = node->Get_BodyForces_Res(iPoint,iVar);
           }
         }
-        
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
       }
-      
+
+
       /*--- FSI contribution (flow loads) ---*/
 
-      if (fsi) {
-        if (incremental_load) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_FSI_Cont[iVar] = loadIncrement * node->Get_FlowTraction(iPoint,iVar);
-          }
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_FSI_Cont[iVar] = loadIncrement * node->Get_FlowTraction(iPoint,iVar);
         }
-        else {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_FSI_Cont[iVar] = node->Get_FlowTraction(iPoint,iVar);
-          }
-        }
-        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_FSI_Cont[iVar] = node->Get_FlowTraction(iPoint,iVar);
+        }
+      }
+      LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
 
     }
 
   }
-  
+
 }
 
 void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -3393,7 +3386,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
   su2double alpha_f = config->Get_Int_Coeffs(2);
@@ -3524,21 +3516,19 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
       
       /*--- Add FSI contribution ---*/
 
-      if (fsi) {
-        if (incremental_load) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_FSI_Cont[iVar] = loadIncrement * ( (1 - alpha_f) * node->Get_FlowTraction(iPoint,iVar) +
-                                                  alpha_f  * node->Get_FlowTraction_n(iPoint,iVar) );
-          }
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_FSI_Cont[iVar] = loadIncrement * ( (1 - alpha_f) * node->Get_FlowTraction(iPoint,iVar) +
+                                                alpha_f  * node->Get_FlowTraction_n(iPoint,iVar) );
         }
-        else {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_FSI_Cont[iVar] = (1 - alpha_f) * node->Get_FlowTraction(iPoint,iVar) +
-            alpha_f  * node->Get_FlowTraction_n(iPoint,iVar);
-          }
-        }
-        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_FSI_Cont[iVar] = (1 - alpha_f) * node->Get_FlowTraction(iPoint,iVar) +
+          alpha_f  * node->Get_FlowTraction_n(iPoint,iVar);
+        }
+      }
+      LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
 
     }
 
@@ -3644,11 +3634,9 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 
 void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  bool fsi = config->GetFSI_Simulation();
-
   /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
   node->Set_SurfaceLoad_Res_n();
-  if (fsi) node->Set_FlowTraction_n();
+  node->Set_FlowTraction_n();
 
 }
 
@@ -4281,7 +4269,6 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
   su2double nodalForce[3];
 
   /*--- Types of loads to consider ---*/
-  bool fsi = config->GetFSI_Simulation();
   bool body_forces = config->GetDeadLoad();
 
   /*--- If the loads are being applied incrementaly ---*/
@@ -4304,9 +4291,8 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
         nodalForce[iVar] += node->Get_BodyForces_Res(iPoint,iVar);
 
     /*--- Add contributions due to fluid loads---*/
-    if (fsi)
-      for (iVar = 0; iVar < nVar; iVar++)
-        nodalForce[iVar] += node->Get_FlowTraction(iPoint,iVar);
+    for (iVar = 0; iVar < nVar; iVar++)
+      nodalForce[iVar] += node->Get_FlowTraction(iPoint,iVar);
 
     /*--- Correct for incremental loading ---*/
     if (incremental_load)

@@ -106,7 +106,8 @@ public:
       for (Idx_t iVar = 0; iVar < nVar; iVar++)
         AD::RegisterInput(Boundary_Displacement(iPoint,iVar));
     }
-    else { for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    else {
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
         AD::RegisterOutput(Boundary_Displacement(iPoint,iVar));
     }
   }

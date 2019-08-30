@@ -54,8 +54,8 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Allocate ---*/
 
-  bool gen_alpha    = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-  bool fsi_analysis = config->GetFSI_Simulation();
+  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
+  fsi_analysis   = (config->GetnMarker_Fluid_Load() > 0); // FSI simulation
 
   /*--- Surface residual ---*/
   Residual_Ext_Surf.resize(nBoundPt,nVar) = su2double(0.0);

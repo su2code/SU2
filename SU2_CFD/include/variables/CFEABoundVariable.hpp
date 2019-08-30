@@ -60,6 +60,8 @@ protected:
 
   CVertexMap VertexMap;       /*!< \brief Object that controls accesses to the variables of this class. */
 
+  bool fsi_analysis = false;  /*!< \brief If flow tractions are available. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -131,6 +133,7 @@ public:
    * \brief Set the flow traction at a node on the structural side
    */
   inline void Set_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
+    if (!fsi_analysis) return;
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = val_flowTraction[iVar];
   }
@@ -139,6 +142,7 @@ public:
    * \brief Add a value to the flow traction at a node on the structural side
    */
   inline void Add_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
+    if (!fsi_analysis) return;
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) += val_flowTraction[iVar];
   }
@@ -147,6 +151,7 @@ public:
    * \brief Get the residual term due to the flow traction
    */
   inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const override {
+    if (!fsi_analysis) return 0.0;
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return FlowTraction(iPoint,iVar);
   }
@@ -160,6 +165,7 @@ public:
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
   inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const override {
+    if (!fsi_analysis) return 0.0;
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return FlowTraction_n(iPoint,iVar);
   }
@@ -168,6 +174,7 @@ public:
    * \brief Clear the flow traction residual
    */
   inline void Clear_FlowTraction(Idx_t iPoint) override {
+    if (!fsi_analysis) return;
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = 0.0;
   }
@@ -176,6 +183,7 @@ public:
    * \brief Register the flow tractions as input variable.
    */
   inline void RegisterFlowTraction(Idx_t iPoint) override {
+    if (!fsi_analysis) return;
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(FlowTraction(iPoint,iVar));
@@ -185,6 +193,7 @@ public:
    * \brief Extract the flow traction derivatives.
    */
   inline su2double ExtractFlowTraction_Sensitivity(Idx_t iPoint, Idx_t iDim) const override {
+    if (!fsi_analysis) return 0.0;
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SU2_TYPE::GetDerivative(FlowTraction(iPoint,iDim));
   }
