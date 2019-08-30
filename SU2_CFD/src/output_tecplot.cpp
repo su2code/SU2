@@ -47,7 +47,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   unsigned long *LocalIndex = NULL;
   bool *SurfacePoint = NULL;
   
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
@@ -154,7 +154,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       }
       
       /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-      if (grid_movement) {
+      if (dynamic_grid) {
         if (nDim == 2) {
           Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
         } else {
@@ -2167,7 +2167,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
-  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetGrid_Movement();
+  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetDynamic_Grid();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   unsigned long iExtIter = config->GetExtIter();
   unsigned short NVar, dims = geometry->GetnDim();
@@ -3078,7 +3078,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
-  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetGrid_Movement();
+  bool first_zone = true, unsteady = config->GetUnsteady_Simulation(), GridMovement = config->GetDynamic_Grid();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   unsigned long iPoint, iElem, iNode, iSurf_Poin, iExtIter = config->GetExtIter();
   unsigned short iDim, NVar, dims = geometry->GetnDim();
@@ -3442,7 +3442,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
   *NVar = 0;
   unsigned short nDim = geometry->GetnDim();
   unsigned short Kind_Solver  = config->GetKind_Solver();
-  bool grid_movement = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   
   
@@ -3460,7 +3460,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
      the PointID as well as each coordinate (x, y, z). ---*/
     string varname;
     
-    if (Wrt_Unsteady && grid_movement) {
+    if (Wrt_Unsteady && dynamic_grid) {
       
       *NVar = config->fields.size()-1;
       for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
@@ -3482,7 +3482,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     
   } else {
     
-    if (Wrt_Unsteady && grid_movement) {
+    if (Wrt_Unsteady && dynamic_grid) {
       if (nDim == 2) {
         variables << "x y "; *NVar += 2;
       } else {
@@ -3505,7 +3505,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-    if (grid_movement) {
+    if (dynamic_grid) {
       if (nDim == 2) {
         variables << "Grid_Velx Grid_Vely "; *NVar += 2;
       } else {
