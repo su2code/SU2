@@ -1494,7 +1494,7 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
     
     if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetRCM_Ordering(config);
+    geometry_container[val_iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[val_iZone]);
     
     /*--- recompute elements surrounding points, points surrounding points ---*/
     
@@ -1511,15 +1511,15 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     geometry_container[val_iZone][iInst][MESH_0]->SetBoundVolume();
     if (config_container[val_iZone]->GetReorientElements()) {
       if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
-      geometry_container[val_iZone][iInst][MESH_0]->Check_IntElem_Orientation(config);
-      geometry_container[val_iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config);
+      geometry_container[val_iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[val_iZone]);
+      geometry_container[val_iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[val_iZone]);
     }
     
     /*--- Create the edge structure ---*/
     
     if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
     geometry_container[val_iZone][iInst][MESH_0]->SetEdges();
-    geometry_container[val_iZone][iInst][MESH_0]->SetVertex(config);
+    geometry_container[val_iZone][iInst][MESH_0]->SetVertex(config_container[val_iZone]);
     
     /*--- Compute cell center of gravity ---*/
     
@@ -1529,19 +1529,19 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     /*--- Create the control volume structures ---*/
     
     if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetControlVolume(config, ALLOCATE);
-    geometry_container[val_iZone][iInst][MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+    geometry_container[val_iZone][iInst][MESH_0]->SetControlVolume(config_container[val_iZone], ALLOCATE);
+    geometry_container[val_iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[val_iZone], ALLOCATE);
     
     /*--- Visualize a dual control volume if requested ---*/
     
     if ((config_container[val_iZone]->GetVisualize_CV() >= 0) &&
         (config_container[val_iZone]->GetVisualize_CV() < (long)geometry_container[val_iZone][iInst][MESH_0]->GetnPointDomain()))
-      geometry_container[val_iZone][iInst][MESH_0]->VisualizeControlVolume(config, UPDATE);
+      geometry_container[val_iZone][iInst][MESH_0]->VisualizeControlVolume(config_container[val_iZone], UPDATE);
     
     /*--- Identify closest normal neighbor ---*/
     
     if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->FindNormal_Neighbor(config);
+    geometry_container[val_iZone][iInst][MESH_0]->FindNormal_Neighbor(config_container[val_iZone]);
     
     /*--- Store the global to local mapping. ---*/
     
@@ -1551,12 +1551,12 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     /*--- Compute the surface curvature ---*/
     
     if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->ComputeSurf_Curvature(config);
+    geometry_container[val_iZone][iInst][MESH_0]->ComputeSurf_Curvature(config_container[val_iZone]);
     
     /*--- Check for periodicity and disable MG if necessary. ---*/
     
     if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->Check_Periodicity(config);
+    geometry_container[val_iZone][iInst][MESH_0]->Check_Periodicity(config_container[val_iZone]);
     
     geometry_container[val_iZone][iInst][MESH_0]->SetMGLevel(MESH_0);
     if ((config_container[val_iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
@@ -1568,7 +1568,7 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
       
       /*--- Create main agglomeration structure ---*/
       
-      geometry_container[val_iZone][iInst][iMesh] = new CMultiGridGeometry(geometry, config, iMesh);
+      geometry_container[val_iZone][iInst][iMesh] = new CMultiGridGeometry(geometry, config_container[val_iZone], iMesh);
       
       /*--- Compute points surrounding points. ---*/
       
@@ -1577,17 +1577,17 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
       /*--- Create the edge structure ---*/
       
       geometry_container[val_iZone][iInst][iMesh]->SetEdges();
-      geometry_container[val_iZone][iInst][iMesh]->SetVertex(geometry_container[val_iZone][iInst][iMesh-1], config);
+      geometry_container[val_iZone][iInst][iMesh]->SetVertex(geometry_container[val_iZone][iInst][iMesh-1], config_container[val_iZone]);
       
       /*--- Create the control volume structures ---*/
       
-      geometry_container[val_iZone][iInst][iMesh]->SetControlVolume(config, geometry_container[val_iZone][iInst][iMesh-1], ALLOCATE);
-      geometry_container[val_iZone][iInst][iMesh]->SetBoundControlVolume(config, geometry_container[val_iZone][iInst][iMesh-1], ALLOCATE);
+      geometry_container[val_iZone][iInst][iMesh]->SetControlVolume(config_container[val_iZone], geometry_container[val_iZone][iInst][iMesh-1], ALLOCATE);
+      geometry_container[val_iZone][iInst][iMesh]->SetBoundControlVolume(config_container[val_iZone], geometry_container[val_iZone][iInst][iMesh-1], ALLOCATE);
       geometry_container[val_iZone][iInst][iMesh]->SetCoord(geometry_container[val_iZone][iInst][iMesh-1]);
       
       /*--- Find closest neighbor to a surface point ---*/
       
-      geometry_container[val_iZone][iInst][iMesh]->FindNormal_Neighbor(config);
+      geometry_container[val_iZone][iInst][iMesh]->FindNormal_Neighbor(config_container[val_iZone]);
       
       /*--- Store our multigrid index. ---*/
       
