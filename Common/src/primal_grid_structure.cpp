@@ -882,7 +882,7 @@ void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
 
   /*--- Get the corner points of the face local to the element. ---*/
 
-  unsigned long thisFaceConn[4];
+  unsigned long thisFaceConn[4] = {0, 0, 0, 0};
   GetLocalCornerPointsFace(VTK_Type, nPolyGrid, nDOFsGrid,
                            nPointsPerFace[0], thisFaceConn);
 
