@@ -15581,10 +15581,10 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     const unsigned long iPoint = edge[iEdge]->GetNode(0);
     const unsigned long jPoint = edge[iEdge]->GetNode(1);
     
-    const su2double *Normal = edge[iEdge]->GetNormal();
-    
     const unsigned long GlobalIndex_i = node[iPoint]->GetGlobalIndex();
     const unsigned long GlobalIndex_j = node[iPoint]->GetGlobalIndex();
+    
+    const su2double *Normal = edge[iEdge]->GetNormal();
     
     /*--- Face area (norm of the normal vector) ---*/
     
@@ -15702,7 +15702,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
             Area += Normal[iDim]*Normal[iDim];
           Area = sqrt(Area);
           
-          /*--- Check to store the area as the min or max for point i or j. ---*/
+          /*--- Check to store the area as the min or max for i or j. ---*/
           
           if (Area < Area_Min[iPoint]) Area_Min[iPoint] = Area;
           if (Area > Area_Max[iPoint]) Area_Max[iPoint] = Area;
@@ -15721,11 +15721,11 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
   unsigned long face_iPoint = 0, face_jPoint = 0;
   unsigned short nEdgesFace = 1;
   
-  su2double *Coord_Edge_CG     = new su2double[nDim];
-  su2double *Coord_FaceElem_CG = new su2double[nDim];
-  su2double *Coord_Elem_CG     = new su2double[nDim];
-  su2double *Coord_FaceiPoint  = new su2double[nDim];
-  su2double *Coord_FacejPoint  = new su2double[nDim];
+  vector<su2double> Coord_Edge_CG(nDim);
+  vector<su2double> Coord_FaceElem_CG(nDim);
+  vector<su2double> Coord_Elem_CG(nDim);
+  vector<su2double> Coord_FaceiPoint(nDim);
+  vector<su2double> Coord_FacejPoint(nDim);
   
   for (unsigned long iElem = 0; iElem < nElem; iElem++)
     for (unsigned short iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
@@ -15780,9 +15780,9 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
             
             /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
             
-            Volume_i = edge[iEdge]->GetVolume(Coord_FaceiPoint,
-                                              Coord_Edge_CG,
-                                              Coord_Elem_CG);
+            Volume_i = edge[iEdge]->GetVolume(Coord_FaceiPoint.data(),
+                                              Coord_Edge_CG.data(),
+                                              Coord_Elem_CG.data());
             if (node[face_iPoint]->GetDomain()) {
               if (Volume_i < SubVolume_Min[face_iPoint])
                 SubVolume_Min[face_iPoint] = Volume_i;
@@ -15792,9 +15792,9 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
             
             /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
             
-            Volume_j = edge[iEdge]->GetVolume(Coord_FacejPoint,
-                                              Coord_Edge_CG,
-                                              Coord_Elem_CG);
+            Volume_j = edge[iEdge]->GetVolume(Coord_FacejPoint.data(),
+                                              Coord_Edge_CG.data(),
+                                              Coord_Elem_CG.data());
             if (node[face_jPoint]->GetDomain()) {
               if (Volume_j < SubVolume_Min[face_jPoint])
                 SubVolume_Min[face_jPoint] = Volume_j;
@@ -15807,10 +15807,10 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
             
             /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
             
-            Volume_i = edge[iEdge]->GetVolume(Coord_FaceiPoint,
-                                              Coord_Edge_CG,
-                                              Coord_FaceElem_CG,
-                                              Coord_Elem_CG);
+            Volume_i = edge[iEdge]->GetVolume(Coord_FaceiPoint.data(),
+                                              Coord_Edge_CG.data(),
+                                              Coord_FaceElem_CG.data(),
+                                              Coord_Elem_CG.data());
             if (node[face_iPoint]->GetDomain()) {
               if (Volume_i < SubVolume_Min[face_iPoint])
                 SubVolume_Min[face_iPoint] = Volume_i;
@@ -15820,10 +15820,10 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
             
             /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
             
-            Volume_j = edge[iEdge]->GetVolume(Coord_FacejPoint,
-                                              Coord_Edge_CG,
-                                              Coord_FaceElem_CG,
-                                              Coord_Elem_CG);
+            Volume_j = edge[iEdge]->GetVolume(Coord_FacejPoint.data(),
+                                              Coord_Edge_CG.data(),
+                                              Coord_FaceElem_CG.data(),
+                                              Coord_Elem_CG.data());
             if (node[face_jPoint]->GetDomain()) {
               if (Volume_j < SubVolume_Min[face_jPoint])
                 SubVolume_Min[face_jPoint] = Volume_j;
@@ -15877,13 +15877,16 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
   
   /*--- Print the summary to the console for the user. ---*/
   
-  if (rank == MASTER_NODE) {
-    cout << " Orthogonality Min.: " << Global_Ortho_Min << " deg.";
-    cout << " Orthogonality Max.: " << Global_Ortho_Max << " deg." << endl;
-    cout << " Aspect Ratio Min.: "  << Global_AR_Min;
-    cout << "  Aspect Ratio Max.: " << Global_AR_Max << endl;
-    cout << " Volume Ratio Min.: "  << Global_VR_Min;
-    cout << "  Volume Ratio Max.: " << Global_VR_Max << endl;
+  PrintingToolbox::CTablePrinter MetricsTable(&std::cout);
+  MetricsTable.AddColumn("Mesh Quality Metric", 30);
+  MetricsTable.AddColumn("Minimum", 15);
+  MetricsTable.AddColumn("Maximum", 15);
+  if (rank == MASTER_NODE){
+    MetricsTable.PrintHeader();
+    MetricsTable << "Orthogonality Angle (deg.)" << Global_Ortho_Min << Global_Ortho_Max;
+    MetricsTable << "CV Face Area Aspect Ratio" << Global_AR_Min << Global_AR_Max;
+    MetricsTable << "CV Sub-Volume Ratio" << Global_VR_Min << Global_VR_Max;
+    MetricsTable.PrintFooter();
   }
   
   /*--- If we will not be writing the stats to the visualization files,
@@ -15894,12 +15897,6 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     vector<su2double>().swap(Aspect_Ratio);
     vector<su2double>().swap(Volume_Ratio);
   }
-  
-  delete[] Coord_Edge_CG;
-  delete[] Coord_FaceElem_CG;
-  delete[] Coord_Elem_CG;
-  delete[] Coord_FaceiPoint;
-  delete[] Coord_FacejPoint;
   
 }
 
