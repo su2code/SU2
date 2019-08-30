@@ -107,3 +107,28 @@ void CVariable::SetGradientZero() { Gradient.storage.setConstant(0.0); }
 void CVariable::SetRmatrixZero() { Rmatrix.storage.setConstant(0.0); }
 
 void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }
+
+void CVariable::RegisterSolution(bool input) {
+  if (input) {
+    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+      for(Idx_t iVar=0; iVar<nVar; ++iVar)
+        AD::RegisterInput(Solution(iPoint,iVar));
+  }
+  else {
+    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+      for(Idx_t iVar=0; iVar<nVar; ++iVar)
+        AD::RegisterOutput(Solution(iPoint,iVar));
+  }
+}
+
+void CVariable::RegisterSolution_time_n() {
+  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+    for(Idx_t iVar=0; iVar<nVar; ++iVar)
+      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+}
+
+void CVariable::RegisterSolution_time_n1() {
+  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+    for(Idx_t iVar=0; iVar<nVar; ++iVar)
+      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+}

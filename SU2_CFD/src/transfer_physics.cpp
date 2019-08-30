@@ -82,8 +82,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++) 
-    struct_solution->node->Clear_FlowTraction(iPoint);
+  struct_solution->node->Clear_FlowTraction();
 
   Preprocess(flow_config);
 
@@ -319,8 +318,7 @@ void CTransfer_FlowTraction_DiscAdj::GetPhysical_Constants(CSolver *flow_solutio
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
-    struct_solution->node->Clear_FlowTraction(iPoint);
+  struct_solution->node->Clear_FlowTraction();
 
   Preprocess(flow_config);
 

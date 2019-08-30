@@ -173,21 +173,12 @@ public:
   /*!
    * \brief Clear the flow traction residual
    */
-  inline void Clear_FlowTraction(Idx_t iPoint) override {
-    if (!fsi_analysis) return;
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = 0.0;
-  }
+  void Clear_FlowTraction() override;
 
   /*!
    * \brief Register the flow tractions as input variable.
    */
-  inline void RegisterFlowTraction(Idx_t iPoint) override {
-    if (!fsi_analysis) return;
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      AD::RegisterInput(FlowTraction(iPoint,iVar));
-  }
+  void RegisterFlowTraction() override;
 
   /*!
    * \brief Extract the flow traction derivatives.

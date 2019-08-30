@@ -102,3 +102,47 @@ void CFEAVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
 void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }
 
 void CFEAVariable::SetSolution_Accel_time_n() { Solution_Accel_time_n = Solution_Accel; }
+
+void CFEAVariable::Register_femSolution_time_n() {
+  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+}
+
+void CFEAVariable::RegisterSolution_Vel(bool input) {
+  if (input) {
+    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput(Solution_Vel(iPoint,iVar));
+  }
+  else {
+    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Solution_Vel(iPoint,iVar));
+  }
+}
+
+void CFEAVariable::RegisterSolution_Vel_time_n() {
+  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar));
+}
+
+void CFEAVariable::RegisterSolution_Accel(bool input) {
+  if (input) {
+    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput(Solution_Accel(iPoint,iVar));
+  }
+  else {
+    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Solution_Accel(iPoint,iVar));
+  }
+}
+
+void CFEAVariable::RegisterSolution_Accel_time_n() {
+  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar));
+}

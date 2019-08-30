@@ -408,46 +408,29 @@ public:
    * \brief Register the variables in the solution time_n array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  inline void Register_femSolution_time_n(Idx_t iPoint) final {
-	  for (Idx_t iVar = 0; iVar < nVar; iVar++)
-	    AD::RegisterInput(Solution_time_n(iPoint,iVar));
-  }
+  void Register_femSolution_time_n() final;
 
   /*!
    * \brief Register the variables in the velocity array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  inline void RegisterSolution_Vel(Idx_t iPoint, bool input) final {
-	  if (input)
-	    for (Idx_t iVar = 0; iVar < nVar; iVar++) AD::RegisterInput(Solution_Vel(iPoint,iVar));
-	  else
-      for (Idx_t iVar = 0; iVar < nVar; iVar++) AD::RegisterOutput(Solution_Vel(iPoint,iVar));
-  }
+  void RegisterSolution_Vel(bool input) final;
 
   /*!
    * \brief Register the variables in the velocity time_n array as input/output variable.
    */
-  inline void RegisterSolution_Vel_time_n(Idx_t iPoint) final {
-	  for (Idx_t iVar = 0; iVar < nVar; iVar++) AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar));
-  }
+  void RegisterSolution_Vel_time_n() final;
 
   /*!
    * \brief Register the variables in the acceleration array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  inline void RegisterSolution_Accel(Idx_t iPoint, bool input) final {
-	  if (input)
-	    for (Idx_t iVar = 0; iVar < nVar; iVar++) AD::RegisterInput(Solution_Accel(iPoint,iVar));
-	  else
-      for (Idx_t iVar = 0; iVar < nVar; iVar++) AD::RegisterOutput(Solution_Accel(iPoint,iVar));
-  }
+  void RegisterSolution_Accel(bool input) final;
 
   /*!
    * \brief Register the variables in the acceleration time_n array as input/output variable.
    */
-  inline void RegisterSolution_Accel_time_n(Idx_t iPoint) final {
-	  for (Idx_t iVar = 0; iVar < nVar; iVar++) AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar));
-  }
+  void RegisterSolution_Accel_time_n() final;
 
   /*!
    * \brief Set the velocity adjoint values of the solution.

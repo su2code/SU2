@@ -100,17 +100,7 @@ public:
    * \brief Register the boundary displacements of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_BoundDisp(Idx_t iPoint, bool input) override {
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    if (input) {
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterInput(Boundary_Displacement(iPoint,iVar));
-    }
-    else {
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterOutput(Boundary_Displacement(iPoint,iVar));
-    }
-  }
+  void Register_BoundDisp(bool input) override;
 
   /*!
    * \brief Recover the value of the adjoint of the boundary displacements.

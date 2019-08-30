@@ -2881,8 +2881,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
 
   /*--- 2nd pass to set values. This is to account for overlap in the markers. ---*/
   /*--- By putting the integrated values back into the nodes no changes have to be made elsewhere. ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint)
-    node->Clear_FlowTraction(iPoint);
+  node->Clear_FlowTraction();
   
   vector<su2double>::iterator force_it = forces.begin();
   

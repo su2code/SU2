@@ -242,28 +242,20 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 }
 
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
-  input = true;
+  bool time_n1_needed = (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool time_n_needed  = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || time_n1_needed;
+  bool input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    direct_solver->node->RegisterSolution(iPoint,input);
-  }
-  if (time_n_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      direct_solver->node->RegisterSolution_time_n(iPoint);
-    }
-  }
-  if (time_n1_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      direct_solver->node->RegisterSolution_time_n1(iPoint);
-    }
-  }
+  direct_solver->node->RegisterSolution(input);
+
+  if (time_n_needed)
+    direct_solver->node->RegisterSolution_time_n();
+
+  if (time_n1_needed)
+    direct_solver->node->RegisterSolution_time_n1();
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -363,17 +355,10 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
   /*--- Register variables as output of the solver iteration ---*/
-
   bool input = false;
+  direct_solver->node->RegisterSolution(input);
 
-  /*--- Register output variables on the tape ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    direct_solver->node->RegisterSolution(iPoint,input);
-  }
 }
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {

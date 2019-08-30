@@ -1842,7 +1842,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_FlowTraction(Idx_t iPoint) {}
+  inline virtual void Clear_FlowTraction() {}
 
   /*!
    * \brief A virtual member.
@@ -2556,7 +2556,7 @@ public:
    * \brief A virtual member. Register the reference coordinates of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline virtual void Register_MeshCoord(Idx_t iPoint, bool input) { }
+  inline virtual void Register_MeshCoord(bool input) { }
 
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
@@ -2612,7 +2612,7 @@ public:
    * \brief A virtual member. Register the boundary displacements of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline virtual void Register_BoundDisp(Idx_t iPoint, bool input) { }
+  inline virtual void Register_BoundDisp(bool input) { }
 
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the boundary displacements.
@@ -2622,27 +2622,27 @@ public:
    /*!
     * \brief A virtual member.
     */
-  inline virtual void Register_femSolution_time_n(Idx_t iPoint) {}
+  inline virtual void Register_femSolution_time_n() {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel(Idx_t iPoint, bool input) {}
+  inline virtual void RegisterSolution_Vel(bool input) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel_time_n(Idx_t iPoint) {}
+  inline virtual void RegisterSolution_Vel_time_n() {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Accel(Idx_t iPoint, bool input) {}
+  inline virtual void RegisterSolution_Accel(bool input) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Accel_time_n(Idx_t iPoint) {}
+  inline virtual void RegisterSolution_Accel_time_n() {}
 
   /*!
    * \brief A virtual member.
@@ -2652,7 +2652,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterFlowTraction(Idx_t iPoint) { }
+  inline virtual void RegisterFlowTraction() { }
 
   /*!
    * \brief A virtual member.
@@ -2698,26 +2698,17 @@ public:
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  inline void RegisterSolution(Idx_t iPoint, bool input) {
-    if (input)
-      for(Idx_t iVar=0; iVar<nVar; ++iVar) AD::RegisterInput(Solution(iPoint,iVar));
-    else
-      for(Idx_t iVar=0; iVar<nVar; ++iVar) AD::RegisterOutput(Solution(iPoint,iVar));
-  }
+  void RegisterSolution(bool input);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
-  inline void RegisterSolution_time_n(Idx_t iPoint) {
-    for(Idx_t iVar=0; iVar<nVar; ++iVar) AD::RegisterInput(Solution_time_n(iPoint,iVar));
-  }
+  void RegisterSolution_time_n();
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
-  inline void RegisterSolution_time_n1(Idx_t iPoint) {
-    for(Idx_t iVar=0; iVar<nVar; ++iVar) AD::RegisterInput(Solution_time_n1(iPoint,iVar));
-  }
+  void RegisterSolution_time_n1();
 
   /*!
    * \brief Set the adjoint values of the solution.
