@@ -225,14 +225,6 @@ public:
    */
   inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const override { return Solution_BGS_k(iPoint,iDim);}
 
-//  /*!
-//   * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
-//   */
-//  inline void Set_BGSSolution_Geometry(Idx_t iPoint) override {
-//    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-//      Solution_Geometry_BGS_k(iPoint,iDim) = Solution_Geometry(iPoint,iDim);
-//  }
-
   /*!
    * \brief Get the value of the adjoint geometry solution in the previous BGS subiteration.
    * \param[out] val_solution - geometrical adjoint solution in the previous BGS subiteration.

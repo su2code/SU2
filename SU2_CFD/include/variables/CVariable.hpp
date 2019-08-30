@@ -307,14 +307,6 @@ public:
    */
   void Set_Solution();
 
-//  /*!
-//   * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
-//   * \param[in] iPoint - Point index.
-//   */
-//  inline void Set_OldSolution_Adj(Idx_t iPoint) {
-//    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution_Adj_Old(iPoint,iVar) = Solution(iPoint,iVar);
-//  }
-
   /*!
    * \brief Set the variable solution at time n.
    */
@@ -379,29 +371,6 @@ public:
   inline void SetVelSolutionOldZero(Idx_t iPoint) {
     for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = 0.0;
   }
-
-//  /*!
-//   * \brief Specify a vector to set the velocity components of the old solution.
-//   * \param[in] iPoint - Point index.
-//   * \param[in] val_vector - Pointer to the vector.
-//   */
-//  inline void SetVelSolutionOldVector(Idx_t iPoint, const su2double *val_vector) {
-//    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = val_vector[iDim];
-//  }
-
-//  /*!
-//   * \brief Set to zero the solution.
-//   * \param[in] iPoint - Point index.
-//   */
-//  inline void SetSolutionZero(Idx_t iPoint) {
-//    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution(iPoint,iVar) = 0.0;
-//  }
-
-//  /*!
-//   * \brief Set to zero a particular solution.
-//   * \param[in] iPoint - Point index.
-//   */
-//  inline void SetSolutionZero(Idx_t iPoint, Idx_t iVar) { Solution(iPoint, iVar) = 0.0;}
 
   /*!
    * \brief Add a value to the solution.
@@ -870,20 +839,6 @@ public:
    * \return Value of the min solution for the variable <i>iVar</i>.
    */
   inline su2double GetSolution_Min(Idx_t iPoint, Idx_t iVar) const { return Solution_Min(iPoint,iVar); }
-
-//  /*!
-//   * \brief Get the value of the preconditioner Beta.
-//   * \param[in] iPoint - Point index.
-//   * \return Value of the low Mach preconditioner variable Beta
-//   */
-//  inline virtual su2double GetPreconditioner_Beta(Idx_t iPoint) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the preconditioner Beta.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_Beta - Value of the low Mach preconditioner variable Beta
-   */
-  inline virtual void SetPreconditioner_Beta(Idx_t iPoint, su2double val_Beta) {}
 
   /*!
    * \brief Get the value of the wind gust
@@ -1906,11 +1861,6 @@ public:
    */
   inline virtual bool SetVorticity_StrainMag() { return false; }
 
-//  /*!
-//   * \brief A virtual member.
-//   */
-//  inline virtual void SetVelSolutionOldDVector(Idx_t iPoint) {}
-
   /*!
    * \brief A virtual member.
    */
@@ -1978,69 +1928,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double *GetLimiter_Primitive(Idx_t iPoint) { return nullptr; }
-
-//  /*!
-//   * \brief A virtual member.
-//   */
-//  inline virtual void SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) {}
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iVar - Index of the variable.
-//   * \param[in] val_dim - Index of the dimension.
-//   * \param[in] val_value - Value to add to the gradient of the Secondary variables.
-//   */
-//  inline virtual void AddGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iVar - Index of the variable.
-//   * \param[in] val_dim - Index of the dimension.
-//   * \param[in] val_value - Value to subtract to the gradient of the Secondary variables.
-//   */
-//  inline virtual void SubtractGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iVar - Index of the variable.
-//   * \param[in] val_dim - Index of the dimension.
-//   * \return Value of the Secondary variables gradient.
-//   */
-//  inline virtual su2double GetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim) const { return 0.0; }
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iVar - Index of the variable.
-//   * \return Value of the Secondary variables gradient.
-//   */
-//  inline virtual su2double GetLimiter_Secondary(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iVar - Index of the variable.
-//   * \param[in] val_dim - Index of the dimension.
-//   * \param[in] val_value - Value of the gradient.
-//   */
-//  inline virtual void SetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iVar - Index of the variable.
-//   * \param[in] val_value - Value of the gradient.
-//   */
-//  inline virtual void SetLimiter_Secondary(Idx_t iPoint, Idx_t iVar, su2double val_value) {}
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \return Value of the Secondary variables gradient.
-//   */
-//  inline virtual su2double **GetGradient_Secondary(Idx_t iPoint) {return nullptr; }
-//
-//  /*!
-//   * \brief A virtual member.
-//   * \return Value of the Secondary variables gradient.
-//   */
-//  inline virtual su2double *GetLimiter_Secondary(Idx_t iPoint) {return nullptr; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
@@ -2223,11 +2110,6 @@ public:
    * \param[out] solution - old adjoint solution for coordinate iDim
    */
   inline virtual su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
-
-//  /*!
-//   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
-//   */
-//  inline virtual void Set_BGSSolution_Geometry(Idx_t iPoint) {}
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).

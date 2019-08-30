@@ -65,13 +65,6 @@ public:
    */
   ~CAdjNSVariable() = default;
 
-//  /*!
-//   * \brief Set the value of the force projection vector on the solution vector.
-//   */
-//  inline void SetVelSolutionOldDVector(Idx_t iPoint) override {
-//    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint,iDim+1) = ForceProj_Vector(iPoint,iDim);
-//  }
-
   /*!
    * \brief Set the value of the force projection vector on the old solution vector.
    */

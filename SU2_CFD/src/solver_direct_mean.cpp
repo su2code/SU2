@@ -3567,14 +3567,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
-    
-    /*--- Roe Turkel preconditioning, set the value of beta ---*/
-    
-    if (roe_turkel) {
-      snode->SetPreconditioner_Beta(iPoint,numerics->GetPrecond_Beta());
-      snode->SetPreconditioner_Beta(jPoint,numerics->GetPrecond_Beta());
-    }
-    
+
     /*--- Set the final value of the Roe dissipation coefficient ---*/
     
     if (kind_dissipation != NO_ROELOWDISS){
@@ -8195,12 +8188,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      
-      if (config->GetKind_Upwind() == TURKEL)
-        snode->SetPreconditioner_Beta(iPoint,conv_numerics->GetPrecond_Beta());
-      
+
       /*--- Viscous residual contribution ---*/
       
       if (viscous) {
@@ -8651,10 +8639,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if (config->GetKind_Upwind() == TURKEL)
-        snode->SetPreconditioner_Beta(iPoint,conv_numerics->GetPrecond_Beta());
       
       /*--- Viscous contribution ---*/
       
@@ -9157,10 +9141,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-        /*--- Roe Turkel preconditioning, set the value of beta ---*/
-        if (config->GetKind_Upwind() == TURKEL)
-          snode->SetPreconditioner_Beta(iPoint,conv_numerics->GetPrecond_Beta());
 
         /*--- Viscous contribution ---*/
         
@@ -10063,11 +10043,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if (config->GetKind_Upwind() == TURKEL)
-        snode->SetPreconditioner_Beta(iPoint,conv_numerics->GetPrecond_Beta());
-      
+
       /*--- Viscous contribution ---*/
       
       if (viscous) {
@@ -10409,12 +10385,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      
-      if (config->GetKind_Upwind() == TURKEL)
-        snode->SetPreconditioner_Beta(iPoint,conv_numerics->GetPrecond_Beta());
-      
+
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
 //      if (viscous) {
@@ -10588,11 +10559,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       if (implicit) {
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
-      
-      /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if (config->GetKind_Upwind() == TURKEL)
-        snode->SetPreconditioner_Beta(iPoint,conv_numerics->GetPrecond_Beta());
-      
+
 //      /*--- Viscous contribution, commented out because serious convergence problems  ---*/
 //
 //      if (viscous) {
