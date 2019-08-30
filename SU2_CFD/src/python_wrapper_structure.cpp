@@ -1251,7 +1251,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
   /*--- Set the iteration ---*/
 
   config->SetOuterIter(0);
-  config->SetInnerIter(TimeIter);
+  config->SetIntIter(TimeIter);
 
   /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
   direct_iteration->Solve(direct_output, integration_container, geometry_container, solver_container,
