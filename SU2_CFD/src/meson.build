@@ -40,7 +40,6 @@ su2_cfd_src = files(['output_structure.cpp',
                      'python_wrapper_structure.cpp',
                      'numerics_structure.cpp',
                      'numerics_template.cpp',
-                     'transfer_structure.cpp',
                      'solver_adjoint_discrete.cpp',
                      'numerics_direct_elasticity_nonlinear.cpp',
                      'SU2_CFD.cpp'])
@@ -54,16 +53,31 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                      'variables/CAdjNSVariable.cpp',
                      'variables/CBaselineVariable.cpp',
                      'variables/CDiscAdjFEAVariable.cpp',
+                     'variables/CDiscAdjFEABoundVariable.cpp',
+                     'variables/CDiscAdjMeshVariable.cpp',
+                     'variables/CDiscAdjMeshBoundVariable.cpp',
                      'variables/CFEABoundVariable.cpp',
+                     'variables/CFEAFSIBoundVariable.cpp',
                      'variables/CDiscAdjVariable.cpp',
                      'variables/CTurbSAVariable.cpp',
                      'variables/CFEAVariable.cpp',
+                     'variables/CMeshVariable.cpp',
+                     'variables/CMeshBoundVariable.cpp',
+                     'variables/CMeshElement.cpp',
                      'variables/CTurbSSTVariable.cpp',
                      'variables/CVariable.cpp',
                      'variables/CNSVariable.cpp',
                      'variables/CAdjTurbVariable.cpp',
                      'variables/CIncEulerVariable.cpp',
                      'variables/CEulerVariable.cpp'])
+
+su2_cfd_src += files(['solvers/CMeshSolver.cpp',
+                     'solvers/CDiscAdjMeshSolver.cpp'])
+
+su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
+
+su2_cfd_src += files(['transfer/CTransfer.cpp',
+                      'transfer/physics/CTransfer_BoundaryDisplacements.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
