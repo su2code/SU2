@@ -61,7 +61,7 @@ protected:
 
   su2double *Solution,    /*!< \brief Solution of the problem. */
   *Solution_Old,      /*!< \brief Old solution of the problem R-K. */
-  *Solution_Iter;     /*!< \brief Intermediate solution of the discrete adjoint multizone problem. */
+  *Solution_Outer;     /*!< \brief Intermediate solution of the discrete adjoint multizone problem. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -370,7 +370,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Set_IterSolution_Zero(void) {}
+  inline virtual void Set_OuterSolution_Zero(void) {}
 
   /*!
    * \brief A virtual member.
@@ -382,7 +382,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Add_IterSolution(su2double* val_sol) {}
+  inline virtual void Add_OuterSolution(su2double* val_sol) {}
 
   /*!
    * \brief Add a value to the solution, clipping the values.
@@ -756,7 +756,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *Get_IterSolution(void) { return NULL; }
+  inline virtual su2double *Get_OuterSolution(void) { return NULL; }
 
   /*!
    * \brief Get the value of the preconditioner Beta.

@@ -350,26 +350,9 @@ void CDiscAdjMultizoneDriver::Run() {
       Set_OldAdjoints(iZone);
     }
 
-    SetIter_Zero(); AD::ClearAdjoints();
+    SetOuter_Zero();
 
-    SetAdj_ObjFunction();
-
-    /*--- Evaluate the tape section belonging to the objective function. ---*/
-
-    AD::ComputeAdjoint(3,0);
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      /*--- Extracting adjoints for all solvers in iZone w.r.t. to the objective function. ---*/
-      
-      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                            solver_container, numerics_container, config_container,
-                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
-    }
-
-    /*--- Add contribution from objective function to Solution_Iter (from Solution). ---*/
-
-    Add_IterAdjoints();
+    AD::ClearAdjoints();
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -386,29 +369,53 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter_Adjoint[iZone]; iInnerIter++) {
 
-        /*--- Evaluate the tape section belonging to solvers in iZone. ---*/
+        /*--- Evaluate the tape section belonging to solvers in iZone, including the objective function gradient. ---*/
 
-        ComputeAdjoints(iZone);
+        ComputeAdjoints(iZone, true);
+
+        /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone. ---*/
+
+        iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                                    solver_container, numerics_container, config_container,
+                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
+      }
+
+      /*--- Add (diagonal) contribution from iZone to Solution_Outer, including the objective function gradient. ---*/
+
+      Add_OuterAdjoints(iZone);
+
+      /*--- Add off-diagonal contributions ---*/
+
+      if (nZone > 1) {
+
+        SetAdjoints_Old(iZone);
+
+        /*--- Evaluate the tape section belonging to solvers in iZone ---*/
+
+        ComputeAdjoints(iZone, false);
 
         for (jZone = 0; jZone < nZone; jZone++) {
 
-          /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
-           *    i.e., for iZone != jZone we are (inherently) evaluating the cross derivatives between zones. ---*/
+          if (jZone != iZone) {
 
-          iteration_container[jZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                            solver_container, numerics_container, config_container,
-                                            surface_movement, grid_movement, FFDBox, jZone, INST_0);
+            /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
+             *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
+
+            iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
+                                                        solver_container, numerics_container, config_container,
+                                                        surface_movement, grid_movement, FFDBox, jZone, INST_0);
+
+            /*--- Add cross terms from iZone<-jZone dependencies to Solution_Outer. ---*/
+
+            Add_OuterAdjoints(jZone);
+          }
         }
       }
-
-      /*--- Add contribution from iZone to Solution_Iter (from Solution). ---*/
-
-      Add_IterAdjoints();
     }
 
-    /*--- Set Solution to value in Solution_Iter. ---*/
+    /*--- Set Solution to value in Solution_Outer. ---*/
 
-    SetAdjoints_Iter();
+    SetAdjoints_Outer();
 
     /*--- Compute residual from Solution and Solution_Old and set history output. ---*/
 
@@ -563,10 +570,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
   /*--- Extract the objective function and store it --- */
 
-  if (tape_type != ZONE_SPECIFIC_TAPE) {
-
-      SetObjFunction(kind_recording);
-  }
+  SetObjFunction(kind_recording);
 
   AD::Push_TapePosition();
 
@@ -872,7 +876,7 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
   }
 }
 
-void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool objective_function) {
 
   /*--- Position markers
    * 0: Recording started
@@ -887,6 +891,13 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
 
   AD::ClearAdjoints();
 
+  /*--- Initialize objective function with 1.0, if needed ---*/
+
+  if (objective_function) {
+
+    SetAdj_ObjFunction();
+  }
+
   /*--- Initialize the adjoints in iZone ---*/
 
   iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
@@ -895,8 +906,14 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
-  AD::ComputeAdjoint(4,3);
-  AD::ComputeAdjoint(2,0);
+
+  if (objective_function) {
+    AD::ComputeAdjoint(4,0);
+  }
+  else {
+    AD::ComputeAdjoint(4,3);
+    AD::ComputeAdjoint(2,0);
+  }
 }
 
 void CDiscAdjMultizoneDriver::SetAdjoints_Old(unsigned short iZone) {
@@ -925,7 +942,7 @@ void CDiscAdjMultizoneDriver::Set_OldAdjoints(unsigned short iZone) {
   }
 }
 
-void CDiscAdjMultizoneDriver::SetIter_Zero(void) {
+void CDiscAdjMultizoneDriver::SetOuter_Zero(void) {
 
   unsigned short iZone, iSol;
 
@@ -934,30 +951,27 @@ void CDiscAdjMultizoneDriver::SetIter_Zero(void) {
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->Set_OuterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
         }
       }
     }
   }
 }
 
-void CDiscAdjMultizoneDriver::Add_IterAdjoints(void) {
+void CDiscAdjMultizoneDriver::Add_OuterAdjoints(unsigned short iZone) {
 
-  unsigned short iZone, iSol;
+  unsigned short iSol;
 
-  for(iZone=0; iZone < nZone; iZone++) {
-
-    for (iSol=0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        }
+  for (iSol=0; iSol < MAX_SOLS; iSol++){
+    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+        solver_container[iZone][INST_0][MESH_0][iSol]->Add_OuterSolution(geometry_container[iZone][INST_0][MESH_0]);
       }
     }
   }
 }
 
-void CDiscAdjMultizoneDriver::SetAdjoints_Iter(void) {
+void CDiscAdjMultizoneDriver::SetAdjoints_Outer(void) {
 
   unsigned short iZone, iSol;
 
@@ -966,7 +980,7 @@ void CDiscAdjMultizoneDriver::SetAdjoints_Iter(void) {
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetSolution_Outer(geometry_container[iZone][INST_0][MESH_0]);
         }
       }
     }

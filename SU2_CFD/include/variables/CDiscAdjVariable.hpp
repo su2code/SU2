@@ -161,14 +161,14 @@ public:
    * \brief Get the intermediate value of a solution update.
    * \return Pointer to the Solution_Iter array.
    */
-  inline su2double* Get_IterSolution(void) { return Solution_Iter; }
+  inline su2double* Get_OuterSolution(void) { return Solution_Outer; }
 
   /*!
    * \brief Set the intermediate value of a solution update to zero.
    */
-  inline void Set_IterSolution_Zero(void) {
+  inline void Set_OuterSolution_Zero(void) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Solution_Iter[iVar] = 0.0;
+      Solution_Outer[iVar] = 0.0;
     }
   }
 
@@ -176,9 +176,9 @@ public:
    * \brief Add a vector to the intermediate solution.
    * \param[in] val_sol - vector that has to be added component-wise
    */
-  inline void Add_IterSolution(su2double* val_sol) {
+  inline void Add_OuterSolution(su2double* val_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Solution_Iter[iVar] += val_sol[iVar];
+      Solution_Outer[iVar] += val_sol[iVar];
       }
   }
 
