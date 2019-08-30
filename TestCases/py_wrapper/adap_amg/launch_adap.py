@@ -171,24 +171,27 @@ def main():
   Sol = np.array(SU2Error.GetAdaptationData(), float)
   nVar = Sol.shape[1]
 
+  # Free memory
+  SU2Error.CleanAdaptationData()
+
   # Sort the connectivity data for AMG
   SU2Error.SetConnectivityData()
-
-  # Free memory
-  SU2Error.Clean_Result_Connectivity()
 
   # Retrieve the connectivity data
   iZone = 0
   iInst = 0
 
   if options.nDim == 2:
-    Edg = np.array(SU2Error.GetConnectivityEdg(iZone, iInst), np.uint64)
-    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.uint64)
-    Tet = np.empty(0, np.uint64)
+    Edg = np.array(SU2Error.GetConnectivityEdg(iZone, iInst), int)
+    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), int)
+    Tet = np.empty(0, int)
   else:
-    Edg = np.empty(0, np.uint64)
-    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), np.uint64)
-    Tet = np.array(SU2Error.GetConnectivityTet(iZone, iInst), np.uint64)
+    Edg = np.empty(0, int)
+    Tri = np.array(SU2Error.GetConnectivityTri(iZone, iInst), int)
+    Tet = np.array(SU2Error.GetConnectivityTet(iZone, iInst), int)
+
+  # Free memory
+  SU2Error.CleanConnectivityData()
 
   # Gather data to rank 0
   if options.with_MPI == True:

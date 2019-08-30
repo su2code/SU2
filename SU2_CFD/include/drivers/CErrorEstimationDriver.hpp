@@ -204,9 +204,14 @@ public:
   string GetMarker_All_TagBound(unsigned short val_iMarker);
 
   /*!
-   * \brief Delete the sorted solution and connectivity data.
+   * \brief Delete the sorted solution data.
    */
-  void Clean_Result_Connectivity(void);
+  void CleanAdaptationData(void);
+
+  /*!
+   * \brief Delete the sorted connectivity data.
+   */
+  void CleanConnectivityData(void);
 
   /*!
    * \brief Deallocation routine

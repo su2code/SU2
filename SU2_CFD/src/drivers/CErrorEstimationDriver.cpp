@@ -1257,9 +1257,13 @@ string CErrorEstimationDriver::GetMarker_All_TagBound(unsigned short val_iMarker
   return Marker_Tag;
 }
 
-void CErrorEstimationDriver::Clean_Result_Connectivity() {
+void CErrorEstimationDriver::CleanAdaptationData() {
 
   output->CleanResult_Parallel();
+}
+
+void CErrorEstimationDriver::CleanConnectivityData() {
+
   output->CleanConnectivity_Parallel();
 }
 
