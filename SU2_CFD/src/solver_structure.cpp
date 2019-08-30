@@ -3018,9 +3018,9 @@ void CSolver::SetSolution_Old(CGeometry *geometry) {
   }
 }
 
-void CSolver::SetSolution_Iter(CGeometry *geometry) {
+void CSolver::SetSolution_Outer(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->SetSolution(node[iPoint]->Get_IterSolution());
+    node[iPoint]->SetSolution(node[iPoint]->Get_OuterSolution());
   }
 }
 
@@ -3030,15 +3030,15 @@ void CSolver::SetSolution_Zero(CGeometry *geometry) {
   }
 }
 
-void CSolver::Set_IterSolution_Zero(CGeometry *geometry) {
+void CSolver::Set_OuterSolution_Zero(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->Set_IterSolution_Zero();
+    node[iPoint]->Set_OuterSolution_Zero();
   }
 }
 
-void CSolver::Add_IterSolution(CGeometry *geometry) {
+void CSolver::Add_OuterSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->Add_IterSolution(node[iPoint]->GetSolution());
+    node[iPoint]->Add_OuterSolution(node[iPoint]->GetSolution());
   }
 }
 

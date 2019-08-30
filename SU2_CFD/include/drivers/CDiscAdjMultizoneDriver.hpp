@@ -114,7 +114,7 @@ public:
    * \brief Summary of all routines to evaluate the adjoints in iZone.
    * \param[in] iZone - Zone in which adjoints are evaluated depending on their (preceding) seeding.
    */
-  void ComputeAdjoints(unsigned short iZone);
+  void ComputeAdjoints(unsigned short iZone, bool objective_function);
 
   /*!
    * \brief Restores solution (adjoint) values to from Solution_Old.
@@ -129,17 +129,17 @@ public:
   /*!
    * \brief Sets the current iterated solution (adjoint) values to zero.
    */
-  void SetIter_Zero(void);
+  void SetOuter_Zero(void);
 
   /*!
    * \brief Adds the current solution (adjoint) values to the iterated solution.
    */
-  void Add_IterAdjoints(void);
+  void Add_OuterAdjoints(unsigned short iZone);
 
   /*!
    * \brief Set the current solution (adjoint) values to the current iterated ones.
    */
-  void SetAdjoints_Iter(void);
+  void SetAdjoints_Outer(void);
 
   /*!
    * \brief Computing the RMS residual on driver level (since we iterate zone-wise).

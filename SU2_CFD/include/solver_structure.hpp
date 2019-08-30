@@ -538,7 +538,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetSolution_Iter(CGeometry *geometry);
+  void SetSolution_Outer(CGeometry *geometry);
 
   /*!
    * \brief Set the solution vector to zero.
@@ -547,16 +547,16 @@ public:
   void SetSolution_Zero(CGeometry *geometry);
 
   /*!
-   * \brief Add the current solution vector to Solution_Iter.
+   * \brief Add the current solution vector to Solution_Outer.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void Add_IterSolution(CGeometry *geometry);
+  void Add_OuterSolution(CGeometry *geometry);
 
   /*!
-   * \brief Set the Solution_Iter vector to zero.
+   * \brief Set the Solution_Outer vector to zero.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void Set_IterSolution_Zero(CGeometry *geometry);
+  void Set_OuterSolution_Zero(CGeometry *geometry);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
