@@ -230,7 +230,7 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     }
   }
 
-  /*--- Jacobian contributions due to grid motion ---*/
+  /*--- Corrections due to grid motion ---*/
   if (grid_movement) {
 
     /*--- Recompute conservative variables ---*/
@@ -244,9 +244,12 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     ProjVelocity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+    /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
+      /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
@@ -385,7 +388,7 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     }
   }
 
-  /*--- Jacobian contributions due to grid motion ---*/
+  /*--- Corrections due to grid motion ---*/
   if (grid_movement) {
 
     /*--- Recompute conservative variables ---*/
@@ -399,9 +402,12 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     su2double ProjVelocity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+    /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
+      /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
@@ -594,7 +600,7 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     }
   }
 
-  /*--- Jacobian contributions due to grid motion ---*/
+  /*--- Corrections due to grid motion ---*/
   if (grid_movement) {
 
     /*--- Recompute conservative variables ---*/
@@ -607,9 +613,12 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+    /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
+      /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
