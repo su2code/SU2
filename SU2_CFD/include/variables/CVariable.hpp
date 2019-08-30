@@ -62,7 +62,6 @@ using namespace std;
 class CEulerVariable;
 class CIncEulerVariable;
 class CTurbVariable;
-class CFEABoundVariable;
 class CDiscAdjVariable;
 class CDiscAdjFEABoundVariable;
 
