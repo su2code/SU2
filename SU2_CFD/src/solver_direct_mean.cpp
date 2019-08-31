@@ -4174,11 +4174,14 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       // Resize the Velocity fluctuation vector;
       VSTG_VelFluct.resize(3*LocalPoints.size());
 
-//      ofstream STGData;
-//      string sExtIter = to_string(config->GetExtIter());
-//      STGData.open("STGData_" + sExtIter + ".dat");
-//      STGData << "X, Y, Z, Ux, Uy, Uz " << endl;
-      
+#ifndef HAVE_MPI
+      cout << "Wave Numbers: " << WaveNumbers.size() << endl;
+      ofstream STGData;
+      string sExtIter = to_string(config->GetExtIter());
+      STGData.open("STGData_" + sExtIter + ".dat");
+      STGData << "X, Y, Z, Ux, Uy, Uz, UxTurb, UyTurb, UzTurb" << endl;
+#endif
+
       for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
       
         // Initialize vector and auxiliary vector of velocity fluctuations.
@@ -4311,13 +4314,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
           VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0;
         }
         
-        //cout << rank <<  " Value: " << Coord[0] << " " << ListCoordX[indx] << " " << alpha_x << " " << CoordX_Sum << '\n';
-        //if ((Coord[0] <= 1.001) && (Coord[0] >= 0.999) && (Coord[1] <= 0.001) && (Coord[1] >= -0.001) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399))
-//        if ((Coord[1] <= 0.001) && (Coord[1] >= -0.001) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399))
-//          cout << config->GetIntIter() << " " << Coord[0] << " " << AlphaX[indx] << " " <<  Uaux[1] << " " << " "<< Uaux[2] << " " << Uaux[3] << endl;
-        
-        //STGData << Coord[0] << ", " << Coord[1] <<  ", " << Coord[2] << ", " << Uaux[1] << ", "<< Uaux[2] << ", " << Uaux[3] << endl;
-        
+#ifndef HAVE_MPI
+        STGData << Coord[0] << ", " << Coord[1] <<  ", " << Coord[2] << ", " << node[LocalPoints[ii]]->GetSolution(1)/density << ", "<< node[LocalPoints[ii]]->GetSolution(2)/density << ", "<< node[LocalPoints[ii]]->GetSolution(3)/density << ", " << VelTurb[0] << ", "<< VelTurb[1] << ", " << VelTurb[2] << endl;
+#endif
         /*--- Load the primitive variables (Velocity fluctuations) ---*/
         numerics->SetPrimitive(Uaux, Uaux);
         
@@ -4334,8 +4333,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         LinSysRes.AddBlock(LocalPoints[ii], Residual);
 
       }
-      //STGData.close();
-      
+#ifndef HAVE_MPI
+      STGData.close();
+#endif
     }
     else{
       for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
