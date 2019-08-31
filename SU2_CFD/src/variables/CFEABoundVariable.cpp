@@ -79,10 +79,7 @@ void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
 
 void CFEABoundVariable::RegisterFlowTraction() {
   if (!fsi_analysis) return;
-  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++) {
-    Idx_t iVertex = iPoint;
-    if (VertexMap.GetVertexIndex(iVertex))
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterInput(FlowTraction(iVertex,iVar));
-  }
+  for (Idx_t iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(FlowTraction(iVertex,iVar));
 }
