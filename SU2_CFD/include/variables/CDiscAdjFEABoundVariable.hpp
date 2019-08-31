@@ -38,6 +38,7 @@
 #pragma once
 
 #include "CDiscAdjFEAVariable.hpp"
+#include "../../../Common/include/toolboxes/CVertexMap.hpp"
 
 /*!
  * \class CDiscAdjFEABoundVariable
@@ -49,11 +50,11 @@
 class CDiscAdjFEABoundVariable final : public CDiscAdjFEAVariable {
 private:
 
-  Mat_t FlowTraction_Sens;         /*!< \brief Adjoint of the flow tractions. */
-  Mat_t SourceTerm_DispAdjoint;    /*!< \brief Source term applied into the displacement
-                                               adjoint coming from external solvers. */
+  MatrixType FlowTraction_Sens;        /*!< \brief Adjoint of the flow tractions. */
+  MatrixType SourceTerm_DispAdjoint;   /*!< \brief Source term applied into the displacement
+                                                   adjoint coming from external solvers. */
 
-  CVertexMap VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
+  CVertexMap<unsigned> VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
   /*!
@@ -125,14 +126,14 @@ public:
    * \brief Get whether a node is on the boundary
    */
   inline bool Get_isVertex(Idx_t iPoint) const override {
-    return VertexMap.GetVertexIndex(iPoint);
+    return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
   inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
-    VertexMap.SetVertex(iPoint,isVertex);
+    VertexMap.SetIsVertex(iPoint,isVertex);
   }
 
 };

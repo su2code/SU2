@@ -43,8 +43,8 @@
 class CMeshVariable : public CVariable {
 protected:
 
-  Vec_t WallDistance;  /*!< \brief Store the wall distance in reference coordinates. */
-  Mat_t Mesh_Coord;    /*!< \brief Store the reference coordinates of the mesh. */
+  VectorType WallDistance;  /*!< \brief Store the wall distance in reference coordinates. */
+  MatrixType Mesh_Coord;    /*!< \brief Store the reference coordinates of the mesh. */
 
   /*!
    * \brief Constructor of the class.

@@ -49,26 +49,26 @@
 class CFEAVariable : public CVariable {
 protected:
 
-  Mat_t Stress;  /*!< \brief Stress tensor. */
+  MatrixType Stress;                /*!< \brief Stress tensor. */
 
-  Mat_t Residual_Ext_Body;  /*!< \brief Term of the residual due to body forces */
+  MatrixType Residual_Ext_Body;     /*!< \brief Term of the residual due to body forces */
 
-  Vec_t VonMises_Stress;    /*!< \brief Von Mises stress. */
+  VectorType VonMises_Stress;       /*!< \brief Von Mises stress. */
 
-  Mat_t Solution_Vel;         /*!< \brief Velocity of the nodes. */
-  Mat_t Solution_Vel_time_n;  /*!< \brief Velocity of the nodes at time n. */
+  MatrixType Solution_Vel;          /*!< \brief Velocity of the nodes. */
+  MatrixType Solution_Vel_time_n;   /*!< \brief Velocity of the nodes at time n. */
 
-  Mat_t Solution_Accel;         /*!< \brief Acceleration of the nodes. */
-  Mat_t Solution_Accel_time_n;  /*!< \brief Acceleration of the nodes at time n. */
+  MatrixType Solution_Accel;        /*!< \brief Acceleration of the nodes. */
+  MatrixType Solution_Accel_time_n; /*!< \brief Acceleration of the nodes at time n. */
 
-  Mat_t Solution_Pred;       /*!< \brief Predictor of the solution for FSI purposes */
-  Mat_t Solution_Pred_Old;   /*!< \brief Predictor of the solution at time n for FSI purposes */
+  MatrixType Solution_Pred;         /*!< \brief Predictor of the solution for FSI purposes */
+  MatrixType Solution_Pred_Old;     /*!< \brief Predictor of the solution at time n for FSI purposes */
 
-  Mat_t Reference_Geometry;  /*!< \brief Reference solution for optimization problems */
+  MatrixType Reference_Geometry;    /*!< \brief Reference solution for optimization problems */
 
-  Mat_t Prestretch;          /*!< \brief Prestretch geometry */
+  MatrixType Prestretch;            /*!< \brief Prestretch geometry */
 
-  Mat_t Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
+  MatrixType Solution_BGS_k;        /*!< \brief Old solution container for BGS iterations ---*/
 
   /*!
    * \brief Constructor of the class.

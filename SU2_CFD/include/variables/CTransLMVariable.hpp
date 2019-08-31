@@ -48,7 +48,7 @@
 
 class CTransLMVariable final : public CTurbVariable {
 protected:
-  Vec_t gamma_sep;
+  VectorType gamma_sep;
 
 public:
   /*!
