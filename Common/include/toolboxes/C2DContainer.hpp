@@ -500,7 +500,6 @@ template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::
 
 using su2activevector = su2vector<su2double>;
 using su2activematrix = su2matrix<su2double>;
-#ifdef CODI_REVERSE_TYPE
+
 using su2passivevector = su2vector<passivedouble>;
 using su2passivematrix = su2matrix<passivedouble>;
-#endif
