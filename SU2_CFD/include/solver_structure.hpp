@@ -756,6 +756,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4947,6 +4955,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Compute the synthetic turbulence fluctuations at the RANS/LES interface.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,

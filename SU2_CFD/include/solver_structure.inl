@@ -826,6 +826,8 @@ inline void CSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig
 
 inline void CSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) { }

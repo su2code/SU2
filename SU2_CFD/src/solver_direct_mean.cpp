@@ -4093,230 +4093,25 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   
   if (volume_stg){
-
-    su2double density, muT, turb_ke, nuL, omega, lengthTurb, wallDistance, hmax;
-    su2double epsilon, l_e, k_e;
-    su2double f_cut, k_neta, f_neta, E_k_sum, NormalizedAmplitude_sum;
-    unsigned short iMode, jDim;
-    su2double *Coord, ConvectiveTerm[3]={0.,0.,0.}, **GradPrimVar;
-    su2double R_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-    su2double S_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-    su2double a_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-    su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     
-    vector<su2double> WaveNumbersFace;
-    vector<su2double> WaveNumbers;
-    vector<su2double> DeltaWave;
-    
-    su2double CurrentTime = config->GetDelta_UnstTime() * ((config->GetExtIter() - config->GetUnst_RestartIter()) + 1);
-    
-    const su2double *PhaseMode = geometry->GetSTG_PhaseMode().data();
-    const su2double *RandUnitVec = geometry->GetSTG_RandUnitVec().data();
-    const su2double *RandUnitNormal = geometry->GetSTG_RandUnitNormal().data();
-    
-    // Load the previously calculated macro-scale velocity, e.g., maximum velocity at interface.
-    const su2double U0 = global_lengthEnergetic[2];
-    
-    // Load the STG box.
-    const su2double *STGBox = config->GetVolumeSTGBox_Values();
-    
-    const su2double Lbf = STGBox[3] - STGBox[0];
-    const su2double p1[2] = {STGBox[0], 0.0};
-    const su2double p2[2] = { (Lbf / 2.) + STGBox[0], 1.0};
-    const su2double p3[2] = {STGBox[3], 0.0};
-    
-    // Spatial distribution of the source intensity.
-    vector<su2double> ListCoordX = geometry->GetSTG_GlobalListCoordX();
-    vector<su2double> AlphaX;
-    
-    /*--- Piecewise linear function controlling the spatial distribution ---*/
-    su2double AlphaX_Sum = 0.0;
-    for(std::vector<int>::size_type ii = 0; ii != ListCoordX.size(); ii++) {
-      if (ListCoordX[ii] <= p2[0]){
-        su2double slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
-        AlphaX.push_back(slope * ListCoordX[ii] - 2.0 * STGBox[0]);
-        AlphaX_Sum += slope * ListCoordX[ii] - 2.0 * STGBox[0];
-      }
-      else{
-        su2double slope = (p3[1] - p2[1]) / (p3[0] - p2[0]);
-        AlphaX.push_back(slope * ListCoordX[ii] + 2.0 * STGBox[3]);
-        AlphaX_Sum +=slope * ListCoordX[ii] + 2.0 * STGBox[3];
-      }
-    }
-    
-    // Normalizing the spatial distribution
-    for(std::vector<int>::size_type ii = 0; ii != AlphaX.size(); ii++) {
-      AlphaX[ii] = AlphaX[ii] / AlphaX_Sum;
-    }
-    
-    /*--- Wave numbers at faces---*/
-    su2double k_min = 2.0 * PI_NUMBER / global_lengthEnergetic[0];
-    su2double k_cut = 2.0 * PI_NUMBER / global_lengthEnergetic[1];
-    su2double alpha = 0.01;
-    iMode = -1;
-    while (k_min < 1.5*k_cut){
-      iMode += 1;
-      k_min = k_min * pow(alpha + 1.0, iMode);
-      WaveNumbersFace.push_back(k_min);
-    }
-    
-    /*--- Wave numbers Eq.12 at faces---*/
-    for(vector<int>::size_type jj = 0; jj != (WaveNumbersFace.size() - 1); jj++){
-      WaveNumbers.push_back(0.5 * (WaveNumbersFace[jj] + WaveNumbersFace[jj+1]));
-      DeltaWave.push_back(WaveNumbersFace[jj+1] - WaveNumbersFace[jj]);
-    }
-    
-    /*--- Loop over the STG box. ---*/
+    // Load the points of the STG interface.
     vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
+    
+    // Initialize auxiliar array for the conservative variables.
+    su2double Uaux[5] = {0.0,0.0,0.0,0.0,0.0};
     
     if (config->GetIntIter() == 0){
       
-      // Resize the Velocity fluctuation vector;
-      VSTG_VelFluct.resize(3*LocalPoints.size());
-
-#ifndef HAVE_MPI
-      cout << "Wave Numbers: " << WaveNumbers.size() << endl;
-      ofstream STGData;
-      string sExtIter = to_string(config->GetExtIter());
-      STGData.open("STGData_" + sExtIter + ".dat");
-      STGData << "X, Y, Z, Ux, Uy, Uz, UxTurb, UyTurb, UzTurb" << endl;
-#endif
-
+      // Call the synthetic turbulence calculation during the 1st DTS internal iteration.
+      SetSynthetic_Turbulence(geometry, solver_container, config);
+      
       for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
       
-        // Initialize vector and auxiliary vector of velocity fluctuations.
-        su2double VelTurb[3]    = {0.0, 0.0, 0.0};
-        su2double VelAuxTurb[3] = {0.0, 0.0, 0.0};
-        
-        vector<su2double> E_k;
-        vector<su2double> NormalizedAmplitude;
-        
-        // Initialize auxiliar array for the conservative variables.
-        su2double Uaux[5] = {0.0,0.0,0.0,0.0,0.0};
-        
-        // Load the main quantities that will be used.
-        Coord        = geometry->node[LocalPoints[ii]]->GetCoord();
-        turb_ke      = solver_container[TURB_SOL]->node[LocalPoints[ii]]->GetSolution(0);
-        omega        = solver_container[TURB_SOL]->node[LocalPoints[ii]]->GetSolution(1);
-        lengthTurb   = sqrt(turb_ke) / (0.09 * omega);
-        density      = node[LocalPoints[ii]]->GetDensity();
-        muT          = node[LocalPoints[ii]]->GetEddyViscosity();
-        nuL          = node[LocalPoints[ii]]->GetLaminarViscosity() / density;
-        GradPrimVar  = node[LocalPoints[ii]]->GetGradient_Primitive();
-        wallDistance = geometry->node[LocalPoints[ii]]->GetWall_Distance();
-        hmax         = geometry->node[LocalPoints[ii]]->GetMaxLength();
-        epsilon      = 0.09 * pow(turb_ke, 2.0) / (muT/density) ;
-        
-        // Calculate the rate of strain tensor.
-        S_ij[0][0] = GradPrimVar[1][0];
-        S_ij[1][1] = GradPrimVar[2][1];
-        S_ij[2][2] = GradPrimVar[3][2];
-        S_ij[0][1] = 0.5 * (GradPrimVar[1][1] + GradPrimVar[2][0]);
-        S_ij[0][2] = 0.5 * (GradPrimVar[1][2] + GradPrimVar[3][0]);
-        S_ij[1][2] = 0.5 * (GradPrimVar[2][2] + GradPrimVar[3][1]);
-        S_ij[1][0] = S_ij[0][1];
-        S_ij[2][1] = S_ij[1][2];
-        S_ij[2][0] = S_ij[0][2];
-
-        // Divergence of the velocity component.
-        su2double divVel = 0.0;
-        for (iDim = 0; iDim < 3; iDim++){
-          divVel += S_ij[iDim][iDim];
-        }
-        
-        // Using rate of strain matrix, calculate Reynolds stress tensor
-        for (iDim = 0; iDim < 3; iDim++){
-          for (jDim = 0; jDim < 3; jDim++){
-            R_ij[iDim][jDim] = TWO3 * turb_ke * delta[iDim][jDim]
-            - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
-          }
-        }
-        
-        // Cholesky decomposition of the Reynolds Stress tensor
-        a_ij[0][0] = sqrt(R_ij[0][0]);
-        a_ij[1][0] = R_ij[1][0] / a_ij[0][0];
-        a_ij[1][1] = sqrt(R_ij[1][1] - pow(a_ij[1][0],2.0));
-        a_ij[2][0] = R_ij[2][0] / a_ij[0][0];
-        a_ij[2][1] = (R_ij[2][1] - a_ij[1][0] * a_ij[2][0]) / a_ij[1][1];
-        a_ij[2][2] = sqrt(R_ij[2][2] - pow(a_ij[2][0],2.0) - pow(a_ij[2][1],2.0));
-
-        // Most energy and Nyquist wave numbers
-        l_e   = min(2.0 * wallDistance, 3.0 * lengthTurb);
-        k_e   = 2.0 * PI_NUMBER / l_e; // Wave number that corresponds to the wavelength of the most energy containing mode.
-        k_cut = PI_NUMBER / max((0.3 * hmax) + (0.1 * wallDistance), hmax); // Nyquist wave number
-        
-        /*--- (kcut) and function (fcut) that will dump the spectrum at wave
-         numbers larger than kcut: Eq.11 ---*/
-        E_k_sum = 0.0;
-        for(vector<int>::size_type jj = 0; jj != WaveNumbers.size(); jj++) {
-          
-          f_cut = exp( - pow( 4.0 * max(WaveNumbers[jj] - 0.9 * k_cut, 0.0) / k_cut, 3.0) );
-          k_neta = 2.0 * PI_NUMBER / pow( pow(nuL,3.0) / epsilon , 0.25);
-          f_neta = exp(- pow(12.0 * WaveNumbers[jj] / k_neta,2.0));
-          
-          /*--- E_k is a prescribed spatial spectrum of the kinetic energy of turbulence represented
-          by a modified von Karman spectrum ---*/
-          
-          su2double E_k_aux = (pow(WaveNumbers[jj] / k_e, 4.0) / pow(1.0+2.4 * pow(WaveNumbers[jj] / k_e,2.0),17.0/6.0)) * f_cut * f_neta;
-          E_k.push_back(E_k_aux);
-          E_k_sum += E_k_aux;
-          
-        }
-        
-        NormalizedAmplitude_sum = 0.0;
-        for(vector<int>::size_type jj = 0; jj != WaveNumbers.size(); jj++) {
-          
-          // Convective term
-          ConvectiveTerm[0] = (2.0 * PI_NUMBER * (Coord[0] - U0 * CurrentTime)) / (DeltaWave[jj] * global_lengthEnergetic[0]);
-          ConvectiveTerm[1] = Coord[1];
-          ConvectiveTerm[2] = Coord[2];
-          
-          const su2double *phase_k = PhaseMode + jj;
-          const su2double *randunit_k = RandUnitVec + (jj*nDim);
-          const su2double *randnormal_k = RandUnitNormal + (jj*nDim);
-          
-          su2double dot_prod = 0.0;
-          for (iDim=0; iDim<nDim; iDim++) dot_prod += WaveNumbers[jj]*randunit_k[iDim]*ConvectiveTerm[iDim];
-          
-          su2double NormalizedAmplitude_n = (E_k[jj] * DeltaWave[jj]) / (E_k_sum * DeltaWave[jj]);
-          NormalizedAmplitude.push_back(NormalizedAmplitude_n);
-          NormalizedAmplitude_sum += NormalizedAmplitude_n;
-          
-          //cout << "Line 4095: " << E_k_sum << " " << E_k[jj] << " " << NormalizedAmplitude << " " << dot_prod <<endl;
-          for (iDim = 0; iDim < nDim; iDim++)
-            VelAuxTurb[iDim] += sqrt(NormalizedAmplitude_n) * randnormal_k[iDim] * cos(dot_prod + phase_k[0]);
-          
-        }
-        
-        //cout << E_k_sum << " " << E_k.size() << " " << NormalizedAmplitude_sum << " " << NormalizedAmplitude.size() << endl;
-        NormalizedAmplitude.clear();
-        E_k.clear();
-
-        // Calculate the auxiliary vector of velocity fluctuations.
-        for (iDim = 0; iDim < nDim; iDim++)
-          VelAuxTurb[iDim] =  2.0 * sqrt(1.5) * VelAuxTurb[iDim];
-        
-        // Now multiply it by the Cholesky decomposition.
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++)
-            VelTurb[iDim] += a_ij[iDim][jDim] * VelAuxTurb[jDim];
-        
-        // Index
-        unsigned short indx = -1;
-        for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
-          indx += 1;
-          if (ListCoordX[indx] >= (Coord[0]-1E-6) && ListCoordX[indx] <= (Coord[0]+1E-6) ) break;
-        }
-
         // Add the perturbations to the auxliar array of primitive variables
         for (iDim = 0; iDim < nDim; iDim++){
-          Uaux[iDim+1] = VelTurb[iDim] * AlphaX[indx] * U0;
-          VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0;
+          Uaux[iDim+1] = VSTG_VelFluct[ii*nDim+iDim];
         }
         
-#ifndef HAVE_MPI
-        STGData << Coord[0] << ", " << Coord[1] <<  ", " << Coord[2] << ", " << node[LocalPoints[ii]]->GetSolution(1)/density << ", "<< node[LocalPoints[ii]]->GetSolution(2)/density << ", "<< node[LocalPoints[ii]]->GetSolution(3)/density << ", " << VelTurb[0] << ", "<< VelTurb[1] << ", " << VelTurb[2] << endl;
-#endif
         /*--- Load the primitive variables (Velocity fluctuations) ---*/
         numerics->SetPrimitive(Uaux, Uaux);
         
@@ -4333,25 +4128,13 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         LinSysRes.AddBlock(LocalPoints[ii], Residual);
 
       }
-#ifndef HAVE_MPI
-      STGData.close();
-#endif
     }
     else{
       for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
         
-        Coord = geometry->node[LocalPoints[ii]]->GetCoord();
-        
-        // Initialize auxiliar array for the conservative variables.
-        su2double Uaux[5] = {0.0,0.0,0.0,0.0,0.0};
-        
-        // Load to Uaux the fluctuations calculated during the
-        // first iteration of the dual time stepping.
+        // Load to Uaux the fluctuations already calculated.
         for (iDim = 0; iDim < nDim; iDim++)
           Uaux[iDim+1] = VSTG_VelFluct[ii*nDim+iDim];
-        
-//        if ((Coord[1] <= 0.001) && (Coord[1] >= -0.001) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399))
-//          cout << config->GetIntIter() << " " << Coord[0] << "            " <<  Uaux[1] << " " << " "<< Uaux[2] << " " << Uaux[3] << endl;
         
         /*--- Load the primitive variables (Velocity fluctuations) ---*/
         numerics->SetPrimitive(Uaux, Uaux);
@@ -4368,7 +4151,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         /*--- Add the source residual to the total ---*/
         LinSysRes.AddBlock(LocalPoints[ii], Residual);
 
-        
       }
     }
   }
@@ -8519,6 +8301,234 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       break;
   }
   
+}
+
+void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+  
+  
+  su2double density, muT, turb_ke, nuL, omega, lengthTurb, wallDistance, hmax;
+  su2double epsilon, l_e, k_e;
+  su2double f_cut, k_neta, f_neta, E_k_sum, NormalizedAmplitude_sum;
+  unsigned short iMode, iDim, jDim;
+  su2double *Coord, ConvectiveTerm[3]={0.,0.,0.}, **GradPrimVar;
+  su2double R_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double S_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double a_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  
+  vector<su2double> WaveNumbersFace;
+  vector<su2double> WaveNumbers;
+  vector<su2double> DeltaWave;
+  
+  su2double CurrentTime = config->GetDelta_UnstTime() * ((config->GetExtIter() - config->GetUnst_RestartIter()) + 1);
+  
+  const su2double *PhaseMode = geometry->GetSTG_PhaseMode().data();
+  const su2double *RandUnitVec = geometry->GetSTG_RandUnitVec().data();
+  const su2double *RandUnitNormal = geometry->GetSTG_RandUnitNormal().data();
+  
+  // Load the previously calculated macro-scale velocity, e.g., maximum velocity at interface.
+  const su2double U0 = global_lengthEnergetic[2];
+  
+  // Load the STG box.
+  const su2double *STGBox = config->GetVolumeSTGBox_Values();
+  
+  const su2double Lbf = STGBox[3] - STGBox[0];
+  const su2double p1[2] = {STGBox[0], 0.0};
+  const su2double p2[2] = { (Lbf / 2.) + STGBox[0], 1.0};
+  const su2double p3[2] = {STGBox[3], 0.0};
+  
+  // Spatial distribution of the source intensity.
+  vector<su2double> ListCoordX = geometry->GetSTG_GlobalListCoordX();
+  vector<su2double> AlphaX;
+  
+  /*--- Piecewise linear function controlling the spatial distribution ---*/
+  su2double AlphaX_Sum = 0.0;
+  for(std::vector<int>::size_type ii = 0; ii != ListCoordX.size(); ii++) {
+    if (ListCoordX[ii] <= p2[0]){
+      su2double slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
+      AlphaX.push_back(slope * ListCoordX[ii] - 2.0 * STGBox[0]);
+      AlphaX_Sum += slope * ListCoordX[ii] - 2.0 * STGBox[0];
+    }
+    else{
+      su2double slope = (p3[1] - p2[1]) / (p3[0] - p2[0]);
+      AlphaX.push_back(slope * ListCoordX[ii] + 2.0 * STGBox[3]);
+      AlphaX_Sum +=slope * ListCoordX[ii] + 2.0 * STGBox[3];
+    }
+  }
+  
+  // Normalizing the spatial distribution
+  for(std::vector<int>::size_type ii = 0; ii != AlphaX.size(); ii++) {
+    AlphaX[ii] = AlphaX[ii] / AlphaX_Sum;
+  }
+  
+  /*--- Wave numbers at faces---*/
+  su2double k_min = 2.0 * PI_NUMBER / global_lengthEnergetic[0];
+  su2double k_cut = 2.0 * PI_NUMBER / global_lengthEnergetic[1];
+  su2double alpha = 0.01;
+  iMode = -1;
+  while (k_min < 1.5*k_cut){
+    iMode += 1;
+    k_min = k_min * pow(alpha + 1.0, iMode);
+    WaveNumbersFace.push_back(k_min);
+  }
+  
+  /*--- Wave numbers Eq.12 at faces---*/
+  for(vector<int>::size_type jj = 0; jj != (WaveNumbersFace.size() - 1); jj++){
+    WaveNumbers.push_back(0.5 * (WaveNumbersFace[jj] + WaveNumbersFace[jj+1]));
+    DeltaWave.push_back(WaveNumbersFace[jj+1] - WaveNumbersFace[jj]);
+  }
+  
+  /*--- Loop over the STG box. ---*/
+  vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
+  
+  // Resize the Velocity fluctuation vector;
+  VSTG_VelFluct.resize(3*LocalPoints.size());
+  
+#ifndef HAVE_MPI
+  cout << "Wave Numbers: " << WaveNumbers.size() << endl;
+  ofstream STGData;
+  string sExtIter = to_string(config->GetExtIter());
+  STGData.open("STGData_" + sExtIter + ".dat");
+  STGData << "X, Y, Z, Ux, Uy, Uz, UxTurb, UyTurb, UzTurb" << endl;
+#endif
+  
+  for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
+    
+    // Initialize vector and auxiliary vector of velocity fluctuations.
+    su2double VelTurb[3]    = {0.0, 0.0, 0.0};
+    su2double VelAuxTurb[3] = {0.0, 0.0, 0.0};
+    
+    vector<su2double> E_k;
+    vector<su2double> NormalizedAmplitude;
+        
+    // Load the main quantities that will be used.
+    Coord        = geometry->node[LocalPoints[ii]]->GetCoord();
+    turb_ke      = solver_container[TURB_SOL]->node[LocalPoints[ii]]->GetSolution(0);
+    omega        = solver_container[TURB_SOL]->node[LocalPoints[ii]]->GetSolution(1);
+    lengthTurb   = sqrt(turb_ke) / (0.09 * omega);
+    density      = node[LocalPoints[ii]]->GetDensity();
+    muT          = node[LocalPoints[ii]]->GetEddyViscosity();
+    nuL          = node[LocalPoints[ii]]->GetLaminarViscosity() / density;
+    GradPrimVar  = node[LocalPoints[ii]]->GetGradient_Primitive();
+    wallDistance = geometry->node[LocalPoints[ii]]->GetWall_Distance();
+    hmax         = geometry->node[LocalPoints[ii]]->GetMaxLength();
+    epsilon      = 0.09 * pow(turb_ke, 2.0) / (muT/density) ;
+    
+    // Calculate the rate of strain tensor.
+    S_ij[0][0] = GradPrimVar[1][0];
+    S_ij[1][1] = GradPrimVar[2][1];
+    S_ij[2][2] = GradPrimVar[3][2];
+    S_ij[0][1] = 0.5 * (GradPrimVar[1][1] + GradPrimVar[2][0]);
+    S_ij[0][2] = 0.5 * (GradPrimVar[1][2] + GradPrimVar[3][0]);
+    S_ij[1][2] = 0.5 * (GradPrimVar[2][2] + GradPrimVar[3][1]);
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+    
+    // Divergence of the velocity component.
+    su2double divVel = 0.0;
+    for (iDim = 0; iDim < 3; iDim++){
+      divVel += S_ij[iDim][iDim];
+    }
+    
+    // Using rate of strain matrix, calculate Reynolds stress tensor
+    for (iDim = 0; iDim < 3; iDim++){
+      for (jDim = 0; jDim < 3; jDim++){
+        R_ij[iDim][jDim] = TWO3 * turb_ke * delta[iDim][jDim]
+        - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
+      }
+    }
+    
+    // Cholesky decomposition of the Reynolds Stress tensor
+    a_ij[0][0] = sqrt(R_ij[0][0]);
+    a_ij[1][0] = R_ij[1][0] / a_ij[0][0];
+    a_ij[1][1] = sqrt(R_ij[1][1] - pow(a_ij[1][0],2.0));
+    a_ij[2][0] = R_ij[2][0] / a_ij[0][0];
+    a_ij[2][1] = (R_ij[2][1] - a_ij[1][0] * a_ij[2][0]) / a_ij[1][1];
+    a_ij[2][2] = sqrt(R_ij[2][2] - pow(a_ij[2][0],2.0) - pow(a_ij[2][1],2.0));
+    
+    // Most energy and Nyquist wave numbers
+    l_e   = min(2.0 * wallDistance, 3.0 * lengthTurb);
+    k_e   = 2.0 * PI_NUMBER / l_e; // Wave number that corresponds to the wavelength of the most energy containing mode.
+    k_cut = PI_NUMBER / max((0.3 * hmax) + (0.1 * wallDistance), hmax); // Nyquist wave number
+    
+    /*--- (kcut) and function (fcut) that will dump the spectrum at wave
+     numbers larger than kcut: Eq.11 ---*/
+    E_k_sum = 0.0;
+    for(vector<int>::size_type jj = 0; jj != WaveNumbers.size(); jj++) {
+      
+      f_cut = exp( - pow( 4.0 * max(WaveNumbers[jj] - 0.9 * k_cut, 0.0) / k_cut, 3.0) );
+      k_neta = 2.0 * PI_NUMBER / pow( pow(nuL,3.0) / epsilon , 0.25);
+      f_neta = exp(- pow(12.0 * WaveNumbers[jj] / k_neta,2.0));
+      
+      /*--- E_k is a prescribed spatial spectrum of the kinetic energy of turbulence represented
+       by a modified von Karman spectrum ---*/
+      
+      su2double E_k_aux = (pow(WaveNumbers[jj] / k_e, 4.0) / pow(1.0+2.4 * pow(WaveNumbers[jj] / k_e,2.0),17.0/6.0)) * f_cut * f_neta;
+      E_k.push_back(E_k_aux);
+      E_k_sum += E_k_aux;
+      
+    }
+    
+    NormalizedAmplitude_sum = 0.0;
+    for(vector<int>::size_type jj = 0; jj != WaveNumbers.size(); jj++) {
+      
+      // Convective term
+      ConvectiveTerm[0] = (2.0 * PI_NUMBER * (Coord[0] - U0 * CurrentTime)) / (DeltaWave[jj] * global_lengthEnergetic[0]);
+      ConvectiveTerm[1] = Coord[1];
+      ConvectiveTerm[2] = Coord[2];
+      
+      const su2double *phase_k = PhaseMode + jj;
+      const su2double *randunit_k = RandUnitVec + (jj*nDim);
+      const su2double *randnormal_k = RandUnitNormal + (jj*nDim);
+      
+      su2double dot_prod = 0.0;
+      for (iDim=0; iDim<nDim; iDim++) dot_prod += WaveNumbers[jj]*randunit_k[iDim]*ConvectiveTerm[iDim];
+      
+      su2double NormalizedAmplitude_n = (E_k[jj] * DeltaWave[jj]) / (E_k_sum * DeltaWave[jj]);
+      NormalizedAmplitude.push_back(NormalizedAmplitude_n);
+      NormalizedAmplitude_sum += NormalizedAmplitude_n;
+      
+      //cout << "Line 4095: " << E_k_sum << " " << E_k[jj] << " " << NormalizedAmplitude << " " << dot_prod <<endl;
+      for (iDim = 0; iDim < nDim; iDim++)
+        VelAuxTurb[iDim] += sqrt(NormalizedAmplitude_n) * randnormal_k[iDim] * cos(dot_prod + phase_k[0]);
+      
+    }
+    
+    //cout << E_k_sum << " " << E_k.size() << " " << NormalizedAmplitude_sum << " " << NormalizedAmplitude.size() << endl;
+    NormalizedAmplitude.clear();
+    E_k.clear();
+    
+    // Calculate the auxiliary vector of velocity fluctuations.
+    for (iDim = 0; iDim < nDim; iDim++)
+      VelAuxTurb[iDim] =  2.0 * sqrt(1.5) * VelAuxTurb[iDim];
+    
+    // Now multiply it by the Cholesky decomposition.
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        VelTurb[iDim] += a_ij[iDim][jDim] * VelAuxTurb[jDim];
+    
+    // Index
+    unsigned short indx = -1;
+    for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
+      indx += 1;
+      if (ListCoordX[indx] >= (Coord[0]-1E-6) && ListCoordX[indx] <= (Coord[0]+1E-6) ) break;
+    }
+    
+    // Add the perturbations to the auxliar array of primitive variables
+    for (iDim = 0; iDim < nDim; iDim++){
+      VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0;
+    }
+    
+#ifndef HAVE_MPI
+    STGData << Coord[0] << ", " << Coord[1] <<  ", " << Coord[2] << ", " << node[LocalPoints[ii]]->GetSolution(1)/density << ", "<< node[LocalPoints[ii]]->GetSolution(2)/density << ", "<< node[LocalPoints[ii]]->GetSolution(3)/density << ", " << VelTurb[0] << ", "<< VelTurb[1] << ", " << VelTurb[2] << endl;
+#endif
+  }
+  
+#ifndef HAVE_MPI
+  STGData.close();
+#endif
+
 }
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
