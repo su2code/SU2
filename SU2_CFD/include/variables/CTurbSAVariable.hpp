@@ -49,10 +49,9 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  // ToDo : This variable is also defined for CTransLMVariable
-  Vec_t gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
-  Vec_t DES_LengthScale;
-  Vec_t Vortex_Tilting;
+  VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
+  VectorType DES_LengthScale;
+  VectorType Vortex_Tilting;
 
 public:
   /*!

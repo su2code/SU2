@@ -48,33 +48,33 @@
  */
 class CDiscAdjFEAVariable : public CVariable {
 protected:
-  Mat_t Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  Mat_t Solution_Direct;
+  MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Solution_Direct;
 
-  Mat_t Dynamic_Derivative;
-  Mat_t Dynamic_Derivative_n;
-  Mat_t Dynamic_Derivative_Vel;
-  Mat_t Dynamic_Derivative_Vel_n;
-  Mat_t Dynamic_Derivative_Accel;
-  Mat_t Dynamic_Derivative_Accel_n;
+  MatrixType Dynamic_Derivative;
+  MatrixType Dynamic_Derivative_n;
+  MatrixType Dynamic_Derivative_Vel;
+  MatrixType Dynamic_Derivative_Vel_n;
+  MatrixType Dynamic_Derivative_Accel;
+  MatrixType Dynamic_Derivative_Accel_n;
 
-  Mat_t Solution_Vel;
-  Mat_t Solution_Accel;
+  MatrixType Solution_Vel;
+  MatrixType Solution_Accel;
 
-  Mat_t Solution_Vel_time_n;
-  Mat_t Solution_Accel_time_n;
+  MatrixType Solution_Vel_time_n;
+  MatrixType Solution_Accel_time_n;
 
-  Mat_t Solution_Old_Vel;
-  Mat_t Solution_Old_Accel;
+  MatrixType Solution_Old_Vel;
+  MatrixType Solution_Old_Accel;
 
-  Mat_t Solution_Direct_Vel;
-  Mat_t Solution_Direct_Accel;
+  MatrixType Solution_Direct_Vel;
+  MatrixType Solution_Direct_Accel;
 
-  Mat_t Cross_Term_Derivative;
-  Mat_t Geometry_CrossTerm_Derivative;
+  MatrixType Cross_Term_Derivative;
+  MatrixType Geometry_CrossTerm_Derivative;
 
-  Mat_t Solution_BGS;
-  Mat_t Solution_BGS_k;
+  MatrixType Solution_BGS;
+  MatrixType Solution_BGS_k;
 
   /*!
    * \brief Constructor of the class.

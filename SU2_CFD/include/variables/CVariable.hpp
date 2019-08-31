@@ -73,16 +73,14 @@ class CDiscAdjFEABoundVariable;
 class CVariable {
 protected:
   using Idx_t = unsigned long;
-  template<class T> using TVec_t = C2DContainer<Idx_t, T, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-  template<class T> using TMat_t = C2DContainer<Idx_t, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
-  using Vec_t = TVec_t<su2double>;
-  using Mat_t = TMat_t<su2double>;
+  using VectorType = C2DContainer<Idx_t, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+  using MatrixType = C2DContainer<Idx_t, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
   /*--- This contrived container is used to store matrices in a contiguous manner but still present the
    "su2double**" interface to the outside world, it will be replaced by something more efficient. ---*/
   struct VectorOfMatrix {
-    Vec_t storage;
-    TMat_t<su2double*> interface;
+    su2activevector storage;
+    su2matrix<su2double*> interface;
     Idx_t M, N;
 
     void resize(Idx_t length, Idx_t rows, Idx_t cols, su2double value) {
@@ -102,80 +100,37 @@ protected:
     su2double** operator[] (Idx_t i) { return interface[i]; }
   };
 
-  /*--- Auxilary class for derived classes that only allocate data for boundary points. ---*/
-  class CVertexMap {
-   private:
-    TVec_t<unsigned> Map;  /*!< \brief Map from range 0-(nPoint-1) to 1-nBoundPt. */
-    bool isValid = true;   /*!< \brief Set to true when it is safe to use the accessors. */
-    Idx_t nVertex = 0;     /*!< \brief Number of vertices. */
+  MatrixType Solution;       /*!< \brief Solution of the problem. */
+  MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
-   public:
-    bool GetIsValid() { return isValid; }
+  su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
 
-    Idx_t GetnVertex() { return nVertex; }
-
-    void Reset(Idx_t nPoint) { Map.resize(nPoint) = 0; nVertex = 0; isValid = true; }
-
-    void SetVertex(Idx_t iPoint, bool isVertex) {
-      /*--- Invalidate map if change is requested as that destroys it. ---*/
-      if (isVertex != bool(Map(iPoint))) {
-        isValid = false;
-        Map(iPoint) = unsigned(isVertex);
-      }
-    }
-
-    Idx_t Build() {
-      nVertex = 0; // map is 1 based, the accessors correct accordingly.
-
-      for (Idx_t iPoint = 0; iPoint < Map.size(); ++iPoint)
-        if (Map(iPoint)!=0)
-          Map(iPoint) = ++nVertex;
-
-      isValid = true;
-
-      return nVertex;
-    }
-
-    bool GetVertexIndex(Idx_t &iPoint) const {
-      assert(isValid && "Variable in invalid state.");
-      iPoint = Map(iPoint);
-      if(iPoint==0) return false; // not a vertex
-      iPoint--;    // decrement for 0 based
-      return true; // is a vertex
-    }
-  };
-
-  Mat_t Solution;       /*!< \brief Solution of the problem. */
-  Mat_t Solution_Old;   /*!< \brief Old solution of the problem R-K. */
-
-  TVec_t<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
-
-  Mat_t Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
-  Mat_t Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
-  Vec_t Delta_Time;         /*!< \brief Time step. */
+  MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
+  MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
+  VectorType Delta_Time;         /*!< \brief Time step. */
 
   VectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   VectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
-  Mat_t Limiter;        /*!< \brief Limiter of the solution of the problem. */
-  Mat_t Solution_Max;   /*!< \brief Max solution for limiter computation. */
-  Mat_t Solution_Min;   /*!< \brief Min solution for limiter computation. */
+  MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
+  MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
+  MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
-  Vec_t AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
-  Mat_t Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
+  VectorType AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
+  MatrixType Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
 
-  Vec_t Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
-  Vec_t Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
-  Vec_t Lambda;           /*!< \brief Value of the eingenvalue. */
+  VectorType Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
+  VectorType Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
+  VectorType Lambda;           /*!< \brief Value of the eingenvalue. */
 
-  Vec_t Sensor;               /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
-  Mat_t Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
+  VectorType Sensor;               /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
+  MatrixType Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
 
-  Mat_t Res_TruncError;  /*!< \brief Truncation error for multigrid cycle. */
-  Mat_t Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
-  Mat_t Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  MatrixType Res_TruncError;  /*!< \brief Truncation error for multigrid cycle. */
+  MatrixType Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
+  MatrixType Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
 
-  Mat_t Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  MatrixType Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
 
   Idx_t nPoint = {0};  /*!< \brief Number of points in the domain. */
   Idx_t nDim = {0};      /*!< \brief Number of dimension of the problem. */

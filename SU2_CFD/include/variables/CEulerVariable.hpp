@@ -47,21 +47,21 @@
  */
 class CEulerVariable : public CVariable {
 protected:
-  Vec_t Velocity2;     /*!< \brief Square of the velocity vector. */
-  Mat_t HB_Source;     /*!< \brief harmonic balance source term. */
-  Mat_t WindGust;      /*! < \brief Wind gust value */
-  Mat_t WindGustDer;   /*! < \brief Wind gust derivatives value */
+  VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
+  MatrixType HB_Source;     /*!< \brief harmonic balance source term. */
+  MatrixType WindGust;      /*! < \brief Wind gust value */
+  MatrixType WindGustDer;   /*! < \brief Wind gust derivatives value */
 
   /*--- Primitive variable definition ---*/
-  Mat_t Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Primitive;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   VectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  Mat_t Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  MatrixType Limiter_Primitive;       /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
-  Mat_t Secondary;              /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
 
-  Mat_t Solution_New;     /*!< \brief New solution container for Classical RK4. */
-  Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations. */
+  MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
+  MatrixType Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations. */
 
 public:
   /*!

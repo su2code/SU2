@@ -39,16 +39,17 @@
 #pragma once
 
 #include "CVariable.hpp"
+#include "../../../Common/include/toolboxes/CVertexMap.hpp"
 
 class CDiscAdjMeshBoundVariable final : public CVariable {
 private:
 
-  Mat_t Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
-  Mat_t Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
+  MatrixType Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
+  MatrixType Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
 
-  Mat_t Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
+  MatrixType Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
 
-  CVertexMap VertexMap;      /*!< \brief Object that controls accesses to the variables of this class. */
+  CVertexMap<unsigned> VertexMap; /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
 
@@ -114,14 +115,14 @@ public:
    * \brief Get whether a node is on the boundary
    */
   inline bool Get_isVertex(Idx_t iPoint) const override {
-    return VertexMap.GetVertexIndex(iPoint);
+    return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
   inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
-    VertexMap.SetVertex(iPoint,isVertex);
+    VertexMap.SetIsVertex(iPoint,isVertex);
   }
 
   /*!

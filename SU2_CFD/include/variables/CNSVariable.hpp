@@ -49,12 +49,12 @@ class CNSVariable final : public CEulerVariable {
 private:
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
 
-  Mat_t Vorticity;       /*!< \brief Vorticity of the fluid. */
-  Vec_t StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
-  Vec_t Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
-  Vec_t DES_LengthScale; /*!< \brief DES Length Scale. */
-  Vec_t Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
-  Vec_t Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
+  VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
+  VectorType Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 
 public:
   /*!

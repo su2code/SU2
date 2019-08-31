@@ -38,7 +38,7 @@
 #pragma once
 
 #include "CFEAVariable.hpp"
-#include <cassert>
+#include "../../../Common/include/toolboxes/CVertexMap.hpp"
 
 /*!
  * \class CFEABoundVariable
@@ -52,15 +52,15 @@
 class CFEABoundVariable final : public CFEAVariable {
 protected:
 
-  Mat_t FlowTraction;         /*!< \brief Traction from the fluid field. */
-  Mat_t FlowTraction_n;       /*!< \brief Traction from the fluid field at time n. */
+  MatrixType FlowTraction;         /*!< \brief Traction from the fluid field. */
+  MatrixType FlowTraction_n;       /*!< \brief Traction from the fluid field at time n. */
 
-  Mat_t Residual_Ext_Surf;    /*!< \brief Term of the residual due to external forces. */
-  Mat_t Residual_Ext_Surf_n;  /*!< \brief Term of the residual due to external forces at time n. */
+  MatrixType Residual_Ext_Surf;    /*!< \brief Term of the residual due to external forces. */
+  MatrixType Residual_Ext_Surf_n;  /*!< \brief Term of the residual due to external forces at time n. */
 
-  CVertexMap VertexMap;       /*!< \brief Object that controls accesses to the variables of this class. */
+  CVertexMap<unsigned> VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
 
-  bool fsi_analysis = false;  /*!< \brief If flow tractions are available. */
+  bool fsi_analysis = false;       /*!< \brief If flow tractions are available. */
 
 public:
   /*!
@@ -193,14 +193,14 @@ public:
    * \brief Get whether a node is on the boundary
    */
   inline bool Get_isVertex(Idx_t iPoint) const override {
-    return VertexMap.GetVertexIndex(iPoint);
+    return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
   inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
-    VertexMap.SetVertex(iPoint,isVertex);
+    VertexMap.SetIsVertex(iPoint,isVertex);
   }
 
 };

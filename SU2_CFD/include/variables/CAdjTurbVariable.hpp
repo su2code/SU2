@@ -48,10 +48,10 @@
 class CAdjTurbVariable final : public CVariable {
 protected:
   // ToDo: These variables were not being allocated... is this class used?
-  Mat_t dmuT_dUTvar;              /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
+  MatrixType dmuT_dUTvar;         /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
   VectorOfMatrix dRTstar_dUTvar;  /*!< \brief Sensitivity of modified turbulence residual (no boundary flux) to mean flow and turbulence vars. */
-  VectorOfMatrix dFT_dUTvar;  /*!< \brief Sensitivity of boundary flux to mean flow and turbulence vars. */
-  Mat_t EddyViscSens;         /*!< \brief Eddy Viscosity Sensitivity. */
+  VectorOfMatrix dFT_dUTvar;      /*!< \brief Sensitivity of boundary flux to mean flow and turbulence vars. */
+  MatrixType EddyViscSens;        /*!< \brief Eddy Viscosity Sensitivity. */
 
 public:
   /*!

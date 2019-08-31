@@ -47,22 +47,22 @@
  */
 class CDiscAdjVariable final : public CVariable {
 private:
-  Mat_t Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  Mat_t Solution_Direct;
-  Mat_t DualTime_Derivative;
-  Mat_t DualTime_Derivative_n;
+  MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Solution_Direct;
+  MatrixType DualTime_Derivative;
+  MatrixType DualTime_Derivative_n;
 
-  Mat_t Cross_Term_Derivative;
-  Mat_t Geometry_CrossTerm_Derivative;
-  Mat_t Geometry_CrossTerm_Derivative_Flow;
+  MatrixType Cross_Term_Derivative;
+  MatrixType Geometry_CrossTerm_Derivative;
+  MatrixType Geometry_CrossTerm_Derivative_Flow;
 
-  Mat_t Solution_Geometry;
-  Mat_t Solution_Geometry_Old;
-  Mat_t Geometry_Direct;
+  MatrixType Solution_Geometry;
+  MatrixType Solution_Geometry_Old;
+  MatrixType Geometry_Direct;
 
-  Mat_t Solution_BGS;
-  Mat_t Solution_BGS_k;
-  Mat_t Solution_Geometry_BGS_k;
+  MatrixType Solution_BGS;
+  MatrixType Solution_BGS_k;
+  MatrixType Solution_Geometry_BGS_k;
 
 public:
   /*!
