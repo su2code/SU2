@@ -125,11 +125,94 @@ public:
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  */
-class CElementProperty {
+class CProperty {
+protected:
+
+  unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
+
+public:
+
+  /*!
+   * \brief Default constructor of the class.
+   */
+  CProperty(void);
+
+   /*!
+    * \brief Constructor of the class.
+    * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
+    * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
+    * \param[in] valElectric_Prop - Index of the electric properties.
+    * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
+    * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
+  */
+  CProperty(unsigned long valMat_Prop);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CProperty(void);
+
+  /*!
+   * \brief Get the material model to use for the element.
+   */
+  virtual unsigned long GetMat_Mod(void);
+
+  /*!
+   * \brief Get index of the physical properties.
+   */
+  unsigned long GetMat_Prop(void);
+
+  /*!
+   * \brief Get index of the electric properties.
+   */
+  virtual unsigned long GetElectric_Prop(void);
+
+  /*!
+   * \brief Get index of the design variable.
+   */
+  virtual unsigned long GetDV(void);
+
+  /*!
+   * \brief Set the Design density (topology optimization variable).
+   */
+  virtual void SetDesignDensity(su2double valDensity);
+
+  /*!
+   * \brief Get the value of the Design density.
+   */
+  virtual su2double GetDesignDensity(void);
+
+  /*!
+   * \brief Set the Physical density (used to penalize element stiffness by the FEM solver).
+   */
+  virtual void SetPhysicalDensity(su2double valDensity);
+
+  /*!
+   * \brief Get the value of the Physical density.
+   */
+  virtual su2double GetPhysicalDensity(void);
+
+  /*!
+   * \brief Extract the derivative of the Design density.
+   */
+  virtual su2double GetAdjointDensity(void);
+
+  /*!
+   * \brief Register the Design density as an AD input variable.
+   */
+  virtual void RegisterDensity(void);
+};
+
+/*!
+ * \class CElementProperty
+ * \brief Main class for defining the element properties.
+ * \author R. Sanchez
+ * \version 6.2.0 "Falcon"
+ */
+class CElementProperty : public CProperty {
 protected:
 
   unsigned long iMat_Mod;               /*!< \brief Index of the material model used. */
-  unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
   unsigned long iElectric_Prop;         /*!< \brief Index of the electric properties (Em) for the structural model used. */
   unsigned long iDV;                    /*!< \brief Index of the group of design variables to which the element belongs. */
   su2double design_rho;                 /*!< \brief Value of the design density for material-based topology optimization. */
@@ -161,11 +244,6 @@ public:
    * \brief Get the material model to use for the element.
    */
   unsigned long GetMat_Mod(void);
-
-  /*!
-   * \brief Get index of the physical properties.
-   */
-  unsigned long GetMat_Prop(void);
 
   /*!
    * \brief Get index of the electric properties.
