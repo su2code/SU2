@@ -52,21 +52,19 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
   Idx_t nBoundPt = VertexMap.Build();
 
   /*--- Allocate ---*/
-  
+
   Boundary_Displacement.resize(nBoundPt,nDim) = su2double(0.0);
 }
 
 void CMeshBoundVariable::Register_BoundDisp(bool input) {
-  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++) {
-    Idx_t iVertex = iPoint;
-    
-    if (VertexMap.GetVertexIndex(iVertex)) {
-      for (Idx_t iVar = 0; iVar < nVar; iVar++) {
-        if (input)
-          AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
-        else
-          AD::RegisterOutput(Boundary_Displacement(iVertex,iVar));
-      }
-    }
+  if (input) {  
+    for (Idx_t iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
+  }
+  else {
+    for (Idx_t iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Boundary_Displacement(iVertex,iVar));
   }
 }
