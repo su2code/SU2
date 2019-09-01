@@ -47,9 +47,15 @@
 #include "../config_structure.hpp"
 #include "../geometry_structure.hpp"
 #include "CSysVector.hpp"
+#include "CPastixWrapper.hpp"
 
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
+#ifndef __INTEL_MKL__
+  #error Could not determine the MKL version
+#endif
+/*--- JIT is only available since 2019 ---*/
+#if __INTEL_MKL__ >= 2019
 #define USE_MKL
 /*---
  Lapack direct calls only seem to be created for Intel compilers, and it is not worthwhile
@@ -58,10 +64,9 @@
 #if defined(__INTEL_COMPILER) && defined(MKL_DIRECT_CALL_SEQ) && !defined(CODI_REVERSE_TYPE)
   #define USE_MKL_LAPACK
 #endif
+#else
+  #warning The current version of MKL does not support JIT gemm kernels
 #endif
-
-#ifdef HAVE_PASTIX
-#include "CPastixWrapper.hpp"
 #endif
 
 using namespace std;
