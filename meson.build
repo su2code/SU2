@@ -1,9 +1,9 @@
 project('SU2', 'c', 'cpp', 
-  version: '6.2.0', 
-	license: 'LGPL2',
-	default_options: ['buildtype=release', 
-                    'warning_level=0', 
-                    'cpp_std=c++11'])
+        version: '6.2.0', 
+        license: 'LGPL2',
+        default_options: ['buildtype=release', 
+                          'warning_level=0', 
+                          'cpp_std=c++11'])
 
 
 pymod = import('python')
@@ -16,7 +16,7 @@ default_warning_flags = ['-Wno-unused-parameter',
                          '-Wno-empty-body',
                          '-Wno-format-security',
                          '-Wno-deprecated-declarations',
-			                   '-Wno-non-virtual-dtor']
+                         '-Wno-non-virtual-dtor']
 
 # external dependencies 
 mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 
@@ -86,28 +86,18 @@ endif
 
 # blas-type dependencies
 if get_option('enable-mkl')
+
   su2_cpp_args += '-DHAVE_MKL'
-
-  # set linker options according to compiler type
-  if meson.get_compiler('cpp').get_id() == 'intel'
-
-    mkl_dep = declare_dependency(compile_args: '-mkl=sequential',
-                                 link_args: ['-lpthread','-lm','-ldl'])
-  else # gcc / clang
-
-    mkl_root = get_option('mkl_root')
-    mkl_dep = declare_dependency(include_directories: mkl_root+'/include', compile_args: '-m64',
-      link_args: ['-L'+mkl_root+'/lib/intel64','-lmkl_intel_lp64','-lmkl_sequential','-lmkl_core','-lpthread','-lm','-ldl'])
-
-  endif
-
+  mkl_root = get_option('mkl_root')
+  mkl_dep = declare_dependency(include_directories: mkl_root+'/include', compile_args: '-m64',
+    link_args: ['-L'+mkl_root+'/lib/intel64','-lmkl_intel_lp64','-lmkl_sequential','-lmkl_core','-lpthread','-lm','-ldl'])
   su2_deps += mkl_dep
 
 elif get_option('enable-openblas')
 
   su2_cpp_args += '-DHAVE_BLAS'
   su2_cpp_args += '-DHAVE_LAPACK'
-  blas_dep = dependency('openblas')
+  blas_dep = dependency(get_option('blas-name'))
   su2_deps += blas_dep
 
 endif
