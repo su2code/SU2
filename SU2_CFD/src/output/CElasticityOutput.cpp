@@ -148,14 +148,14 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
   
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL", fea_solver->GetLinSol_Residual());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetLinSol_Residual()));
   
 } 
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", FORMAT_INTEGER, "LINSOL",  "Number of iterations of the linear solver.");
-  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", FORMAT_SCIENTIFIC, "LINSOL",  "Residual of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", FORMAT_FIXED, "LINSOL",  "Residual of the linear solver.");
   
   // Residuals
 

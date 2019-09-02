@@ -71,8 +71,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     nPointDomain = geometry->GetnPointDomain();
     nElement     = geometry->GetnElem();
 
-    valResidual = 0.0;
-
     MinVolume_Ref = 0.0;
     MinVolume_Curr = 0.0;
 

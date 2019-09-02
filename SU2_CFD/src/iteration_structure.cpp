@@ -875,7 +875,7 @@ void CFluidIteration::Solve(COutput *output,
 
     }
 
-    if (multizone){
+    if (multizone && steady){
       
       Output(output, geometry, solver, config,
              config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
