@@ -71,8 +71,8 @@ typedef int cgint3_t[3];
       child = &parent->child[parent->nchild];\
       parent->nchild++;\
     } else {\
-      if (cg->mode == CG_MODE_WRITE) error1=1;\
-      else {\
+      if (cg->mode == CG_MODE_WRITE || allow_dup) error1=1;\
+      if (cg->mode != CG_MODE_WRITE || allow_dup) {\
         parent_id = parent->id;\
         child= &(parent->child[n]);\
       }\
@@ -133,6 +133,12 @@ typedef int cgint3_t[3];
 
 #define SKIP_DATA 0
 #define READ_DATA 1
+
+/* flag for parallel reading or parallel writing */
+typedef enum {
+  CGI_Read,
+  CGI_Write
+} cgi_rw;
 
 /*
  * Internal Structures:
@@ -546,6 +552,7 @@ typedef struct {            /* Elements_t node                      */
     cgsize_t range[2];      /* index of first and last element  */
     int *rind_planes;       /* No. of rind-elements                 */
     cgns_array *connect;    /* ElementConnectivity                  */
+    cgns_array *connect_offset; /* ElementStartOffset               */
     cgns_array *parelem;    /* ParentElements                       */
     cgns_array *parface;    /* ParentElementsPosition               */
     int nuser_data;         /* number of user defined data nodes    */  /* V2.1 */
@@ -944,7 +951,7 @@ typedef struct {
 /* need some of these routines exported for CGNStools */
 
 #if defined(_WIN32) && defined(BUILD_DLL)
-# define CGNSDLL _declspec(dllexport)
+# define CGNSDLL __declspec(dllexport)
 #else
 # define CGNSDLL
 #endif
@@ -988,7 +995,6 @@ CGNSDLL cgns_axisym    *cgi_get_axisym (cgns_file *cg, int B);
 CGNSDLL cgns_ziter     *cgi_get_ziter  (cgns_file *cg, int B, int Z);
 CGNSDLL cgns_zcoor     *cgi_get_zcoor  (cgns_file *cg, int B, int Z, int C);
 CGNSDLL cgns_zcoor     *cgi_get_zcoorGC(cgns_file *cg, int B, int Z);
-CGNSDLL cgns_array     *cgi_get_coord  (cgns_file *cg, int B, int Z, int C);
 CGNSDLL cgns_section   *cgi_get_section(cgns_file *cg, int B, int Z, int S);
 CGNSDLL cgns_sol       *cgi_get_sol    (cgns_file *cg, int B, int Z, int S);
 CGNSDLL cgns_array     *cgi_get_field  (cgns_file *cg, int B, int Z, int S, int F);
@@ -1041,7 +1047,7 @@ cgns_state *cgi_state_address(int local_mode, int *ier);
 cgns_converg *cgi_converg_address(int local_mode, int *ier);
 cgns_governing *cgi_governing_address(int local_mode, int *ier);
 int *cgi_diffusion_address(int local_mode, int *ier);
-cgns_array *cgi_array_address(int local_mode, int array_no, char const *array_name, int *ier);
+cgns_array *cgi_array_address(int local_mode, int allow_dup, int array_no, char const *array_name, int* have_dup, int *ier);
 cgns_model *cgi_model_address(int local_mode, char const *ModelLabel, int *ier);
 char *cgi_famname_address(int local_mode, int *ier);
 cgns_famname *cgi_multfam_address(int mode, int num, char const *name, int *ier);
@@ -1172,15 +1178,41 @@ CGNSDLL int cgi_new_node(double parent_id, char const *name, char const *label,
 	double *node_id, char const *data_type,
 	int ndim, cgsize_t const *dim_vals, void const *data);
 int cgi_new_node_partial(double parent_id, char const *name, char const *label,
-	double *node_id, char const *data_type, int ndim,
-	cgsize_t const *dim_vals, cgsize_t const *rmin, cgsize_t const *rmax,
-	void const *data);
+	double *node_id, char const *data_type, int numdim,
+	cgsize_t const *dims, cgsize_t const *s_start, cgsize_t const *s_end,
+        int m_numdim, cgsize_t const *m_dims,
+        cgsize_t const *m_start, cgsize_t const *m_end, void const *data);
 int cgi_move_node(double old_id, double node_id, double new_id, cchar_33 node_name);
 int cgi_delete_node (double parent_id, double node_id);
 
+/* general array reading and writing */
+
+int cgi_array_general_verify_range(const cgi_rw op_rw,
+    const void* rind_index, const int* rind_planes,
+    const int s_numdim, const cgsize_t *s_dimvals,
+    const cgsize_t *rmin, const cgsize_t *rmax,
+    const int m_numdim, const cgsize_t *m_dimvals,
+    const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+    cgsize_t *s_rmin, cgsize_t *s_rmax, cgsize_t *stride,
+    int *s_access_full_range, int *m_access_full_range, cgsize_t *numpt);
+int cgi_array_general_read(const cgns_array *array,
+    const void* rind_index, const int *rind_planes, const int s_numdim,
+    const cgsize_t *rmin, const cgsize_t *rmax,
+    CGNS_ENUMT(DataType_t) m_type, const int m_numdim,
+    const cgsize_t *m_dimvals, const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+    void* data);
+int cgi_array_general_write(double p_id,
+    int *p_narraylist, cgns_array **p_arraylist, const char *const arrayname,
+    const void* rind_index, const int* rind_planes,
+    CGNS_ENUMT(DataType_t) s_type, const int s_numdim,
+    const cgsize_t *s_dimvals, const cgsize_t   *rmin, const cgsize_t   *rmax,
+    CGNS_ENUMT(DataType_t) m_type, const int m_numdim,
+    const cgsize_t *m_dimvals, const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+    const void* data, int *A);
+
 /* error handling */
-CGNSDLL void cgi_error(char *format, ...);
-CGNSDLL void cgi_warning(char *format, ...);
+CGNSDLL void cgi_error(const char *format, ...);
+CGNSDLL void cgi_warning(const char *format, ...);
 CGNSDLL void cg_io_error(const char *routine_name);
 
 /* retrieve list number from list name */
@@ -1212,7 +1244,7 @@ int cgi_zone_no(cgns_base *base, char *zonename, int *zone_no);
 
 /* miscelleneous */
 int cgi_sort_names(int n, double *ids);
-int size_of(char_33 adf_type);
+int size_of(const char_33 adf_type);
 char *type_of(char_33 data_type);
 int cgi_check_strlen(char const * string);
 int cgi_check_strlen_x2(char const *string);
@@ -1234,7 +1266,7 @@ int cgi_add_czone(char_33 zonename, cgsize6_t range, cgsize6_t donor_range,
 void cgi_array_print(char *routine, cgns_array *array);
 
 cgsize_t cgi_element_data_size(CGNS_ENUMT(ElementType_t) type,
-			       cgsize_t nelems, const cgsize_t *connect);
+			       cgsize_t nelems, const cgsize_t *connect, const cgsize_t *connect_offset);
 
 /* free memory */
 void cgi_free_file(cgns_file *cg);
@@ -1282,7 +1314,6 @@ void cgi_free_bcarea(cgns_bcarea *bcarea);
 void cgi_free_cprop(cgns_cprop *cprop);
 void cgi_free_cperio(cgns_cperio *cperio);
 void cgi_free_caverage(cgns_caverage *caverage);
-void cgi_free_link(cgns_link *link);
 void cgi_free_user_data(cgns_user_data *user_data);
 void cgi_free_subreg(cgns_subreg *subreg);
 
