@@ -562,7 +562,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Only initialize when there is a Marker_Fluid_Load defined
    *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if(config->GetnMarker_Fluid_Load() > 0){
+  if((config->GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)){
 
     InitVertexTractionContainer(geometry, config);
 
@@ -785,8 +785,6 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     }
     delete [] Inlet_FlowDir;
   }
-  
-  if (nVertex!=NULL) delete [] nVertex;
 
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -7328,7 +7326,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Only initialize when there is a Marker_Fluid_Load defined
    *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if(config->GetnMarker_Fluid_Load() > 0){
+  if((config->GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)){
 
     InitVertexTractionContainer(geometry, config);
 
