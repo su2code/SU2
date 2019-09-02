@@ -6588,6 +6588,7 @@ public:
    */
   bool GetMarker_Moving_Bool(string val_marker);
 
+  /*!
    * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
