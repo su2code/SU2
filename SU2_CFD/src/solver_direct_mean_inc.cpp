@@ -3688,6 +3688,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
         
       }
     }
+    AD::SetPreaccOut(node[iPoint]->GetRmatrix(), nDim, nDim);
     AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
     AD::EndPreacc();
   }
