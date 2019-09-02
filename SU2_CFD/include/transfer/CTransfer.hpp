@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
 
 #include <cmath>
 #include <string>
@@ -49,8 +49,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
 #include "../solver_structure.hpp"
 
 using namespace std;
