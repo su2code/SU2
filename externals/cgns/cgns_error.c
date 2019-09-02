@@ -29,7 +29,7 @@ void (*cgns_error_handler)(int, char *) = 0;
 
 char cgns_error_mess[200] = "no CGNS error reported";
 
-CGNSDLL void cgi_error(char *format, ...) {
+CGNSDLL void cgi_error(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
     vsprintf(cgns_error_mess,format, arg);
@@ -38,7 +38,7 @@ CGNSDLL void cgi_error(char *format, ...) {
         (*cgns_error_handler)(1, cgns_error_mess);
 }
 
-CGNSDLL void cgi_warning(char *format, ...) {
+CGNSDLL void cgi_warning(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
     if (cgns_error_handler) {
