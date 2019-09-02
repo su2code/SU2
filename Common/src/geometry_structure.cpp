@@ -2849,7 +2849,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           RefUnitNormal_defined = false;
           iVertex = 0;
 
-          while(bound_is_straight_Global[iMarker_Global] == true &&
+          while(bound_is_straight[iMarker] == true &&
                 iVertex < nVertex[iMarker]) {
 
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
