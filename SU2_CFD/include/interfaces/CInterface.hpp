@@ -108,7 +108,7 @@ public:
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  void Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
+  void BroadcastData(CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
                                CConfig *donor_config, CConfig *target_config);
   /*!
@@ -201,7 +201,7 @@ public:
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  void Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
+  void PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
                                       CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
 
   /*!
@@ -213,7 +213,7 @@ public:
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  void Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+  void AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                                   CGeometry *donor_geometry, CGeometry *target_geometry,
                                   CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
 
