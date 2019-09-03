@@ -116,7 +116,7 @@ public:
    * \param[in] iDim - Dimension required.
    */
   inline su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {
-    return node[indexNode]->GetMesh_Coord(iDim);
+    return node->GetMesh_Coord(indexNode,iDim);
   }
 
   /*!
@@ -184,9 +184,6 @@ public:
   /*!
    * \brief Store the old displacement before a new deformation is done.
    */
-  inline void SetSolution_Old(void){
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->Set_OldSolution();
-  }
+  inline void SetSolution_Old() { node->Set_OldSolution(); }
 
 };

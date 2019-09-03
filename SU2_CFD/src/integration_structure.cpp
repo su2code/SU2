@@ -569,12 +569,13 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 }
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+
   unsigned long iPoint;
-  
+
+  solver->node->Set_Solution_time_n1();
+  solver->node->Set_Solution_time_n();
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    solver->node[iPoint]->Set_Solution_time_n1();
-    solver->node[iPoint]->Set_Solution_time_n();
-    
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
     
@@ -657,36 +658,27 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 }
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver->node[iPoint]->Set_Solution_time_n();
-    solver->node[iPoint]->SetSolution_Vel_time_n();
-    solver->node[iPoint]->SetSolution_Accel_time_n();
-    
-  }
-  
+
+  solver->node->Set_Solution_time_n();
+  solver->node->SetSolution_Vel_time_n();
+  solver->node->SetSolution_Accel_time_n();
+
   bool fsi = config->GetFSI_Simulation();
-  
+
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-  
+
   if (fsi) {
-    
+
     su2double WAitk=0.0;
-    
+
     WAitk = solver->GetWAitken_Dyn();
     solver->SetWAitken_Dyn_tn1(WAitk);
-    
+
   }
-  
-  
 }
 
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
+
   bool fsi = config->GetFSI_Simulation();
   
   /*--- Update the solution according to the integration scheme used ---*/
@@ -703,27 +695,23 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
       break;
   }
-  
+
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver_container[FEA_SOL]->node[iPoint]->Set_Solution_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
-    
-  }
-  
+
+  solver_container[FEA_SOL]->node->Set_Solution_time_n();
+  solver_container[FEA_SOL]->node->SetSolution_Vel_time_n();
+  solver_container[FEA_SOL]->node->SetSolution_Accel_time_n();
+
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-  
+
   if (fsi) {
-    
+
     su2double WAitk=0.0;
-    
+
     WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
     solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
-    
+
   }
-  
 }
 
 void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
@@ -876,8 +864,8 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       deltaURad = 0.0;
       
-      dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
-      dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
+      dispPred = fea_solver->node->GetSolution_Pred(iPoint);
+      dispPred_Old = fea_solver->node->GetSolution_Pred_Old(iPoint);
       
       for (iDim = 0; iDim < nDim; iDim++) {
         

@@ -1097,7 +1097,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 29
-    airfoilRBF.test_vals = [-13.119469, -3.766228, -11.642909, 1404500.000000] #last 4 columns
+    airfoilRBF.test_vals = [-13.119469, -3.766228, -11.642909, 1404500.0] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
     airfoilRBF.tol       = 0.00001

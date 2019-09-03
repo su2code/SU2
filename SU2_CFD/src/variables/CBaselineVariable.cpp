@@ -37,14 +37,8 @@
 
 #include "../../include/variables/CBaselineVariable.hpp"
 
-CBaselineVariable::CBaselineVariable(void) : CVariable() { }
 
-CBaselineVariable::CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
-
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution[iVar] = val_solution[iVar];
+CBaselineVariable::CBaselineVariable(Idx_t npoint, Idx_t nvar, CConfig *config)
+  : CVariable(npoint,nvar,config) {
 
 }
-
-CBaselineVariable::~CBaselineVariable(void) { }
-
