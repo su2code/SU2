@@ -98,8 +98,8 @@ CInterface::~CInterface(void) {
 }
 
 void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution,
-                                        CGeometry *donor_geometry, CGeometry *target_geometry,
-                                        CConfig *donor_config, CConfig *target_config) {
+                               CGeometry *donor_geometry, CGeometry *target_geometry,
+                               CConfig *donor_config, CConfig *target_config) {
 
 
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget; // Number of markers on the interface, donor and target side
@@ -443,8 +443,8 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 }
 
 void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                               CConfig *donor_config, CConfig *target_config,
-                                               unsigned short iMarkerInt){
+                                   CConfig *donor_config, CConfig *target_config,
+                                   unsigned short iMarkerInt){
 
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
@@ -581,8 +581,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
 
 
 void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
-                                           CGeometry *donor_geometry, CGeometry *target_geometry,
-                                           CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+                                  CGeometry *donor_geometry, CGeometry *target_geometry,
+                                  CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   unsigned short iSpan, nSpanDonor, nSpanTarget;
@@ -905,7 +905,7 @@ void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_so
 }
 
 void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                            unsigned short donorZone){
+                                             unsigned short donorZone){
 
 
   /*--- here we made the strong assumption that the mesh zone order f

@@ -43,7 +43,7 @@ CConjugateHeatInterface::CConjugateHeatInterface(void) : CInterface() {
 }
 
 CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                         CConfig *config) : CInterface(val_nVar, val_nConst, config) {
+                                                 CConfig *config) : CInterface(val_nVar, val_nConst, config) {
 
 }
 
@@ -52,8 +52,8 @@ CConjugateHeatInterface::~CConjugateHeatInterface(void) {
 }
 
 void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                                    CConfig *donor_config, unsigned long Marker_Donor,
-                                                    unsigned long Vertex_Donor, unsigned long Point_Donor) {
+                                                CConfig *donor_config, unsigned long Marker_Donor,
+                                                unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned long iPoint;
   unsigned long PointNormal;
@@ -196,8 +196,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 }
 
 void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                                     CConfig *target_config, unsigned long Marker_Target,
-                                                     unsigned long Vertex_Target, unsigned long Point_Target) {
+                                                 CConfig *target_config, unsigned long Marker_Target,
+                                                 unsigned long Vertex_Target, unsigned long Point_Target) {
 
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0,
                                             target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);

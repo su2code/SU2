@@ -43,7 +43,7 @@ CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(void) : CFlowTracti
 }
 
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                               CConfig *config) :
+                                                             CConfig *config) :
   CFlowTractionInterface(val_nVar, val_nConst, config) {
 
 }
@@ -53,8 +53,8 @@ CDiscAdjFlowTractionInterface::~CDiscAdjFlowTractionInterface(void) {
 }
 
 void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
-                                                           CGeometry *flow_geometry, CGeometry *struct_geometry,
-                                                           CConfig *flow_config, CConfig *struct_config){
+                                                          CGeometry *flow_geometry, CGeometry *struct_geometry,
+                                                          CConfig *flow_config, CConfig *struct_config){
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
@@ -66,5 +66,3 @@ void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution
   /*--- No ramp applied ---*/
   Physical_Constants[1] = 1.0;
 }
-
-

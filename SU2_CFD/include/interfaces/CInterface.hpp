@@ -109,8 +109,8 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void BroadcastData(CSolver *donor_solution, CSolver *target_solution,
-                               CGeometry *donor_geometry, CGeometry *target_geometry,
-                               CConfig *donor_config, CConfig *target_config);
+                     CGeometry *donor_geometry, CGeometry *target_geometry,
+                     CConfig *donor_config, CConfig *target_config);
   /*!
    * \brief A virtual member.
    */
@@ -202,7 +202,7 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                      CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
+                         CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
 
   /*!
    * \brief Interpolate data and scatter it into different processors, for matching meshes.
@@ -214,8 +214,8 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
-                                  CGeometry *donor_geometry, CGeometry *target_geometry,
-                                  CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
+                        CGeometry *donor_geometry, CGeometry *target_geometry,
+                        CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
 
   /*!
    * \brief Interpolate data and scatter it into different processors, for matching meshes.

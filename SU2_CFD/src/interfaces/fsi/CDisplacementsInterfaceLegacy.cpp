@@ -43,7 +43,7 @@ CDisplacementsInterfaceLegacy::CDisplacementsInterfaceLegacy(void) : CInterface(
 }
 
 CDisplacementsInterfaceLegacy::CDisplacementsInterfaceLegacy(unsigned short val_nVar,
-                                                                     unsigned short val_nConst, CConfig *config) :
+                                                             unsigned short val_nConst, CConfig *config) :
   CInterface(val_nVar, val_nConst, config) {
 
 }
@@ -54,13 +54,13 @@ CDisplacementsInterfaceLegacy::~CDisplacementsInterfaceLegacy(void) {
 
 
 void CDisplacementsInterfaceLegacy::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                              CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                              CConfig *struct_config, CConfig *flow_config) {
+                                                          CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                          CConfig *struct_config, CConfig *flow_config) {
 }
 
 void CDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
-                                                          CConfig *struct_config, unsigned long Marker_Struct,
-                                                          unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                                                      CConfig *struct_config, unsigned long Marker_Struct,
+                                                      unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   su2double *DisplacementDonor, *DisplacementDonor_Prev;
   unsigned short iVar;
@@ -75,9 +75,8 @@ void CDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_solution, 
 }
 
 void CDisplacementsInterfaceLegacy::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                                                           CConfig *flow_config, unsigned long Marker_Flow,
-                                                           unsigned long Vertex_Flow, unsigned long Point_Flow) {
+                                                       CConfig *flow_config, unsigned long Marker_Flow,
+                                                       unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
   flow_geometry->vertex[Marker_Flow][Vertex_Flow]->SetVarCoord(Target_Variable);
 }
-
