@@ -97,7 +97,7 @@ CInterface::~CInterface(void) {
 
 }
 
-void CInterface::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
+void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution,
                                         CGeometry *donor_geometry, CGeometry *target_geometry,
                                         CConfig *donor_config, CConfig *target_config) {
 
@@ -442,7 +442,7 @@ void CInterface::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *targe
 #endif
 }
 
-void CInterface::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
+void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
                                                CConfig *donor_config, CConfig *target_config,
                                                unsigned short iMarkerInt){
 
@@ -580,7 +580,7 @@ void CInterface::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeom
 }
 
 
-void CInterface::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                                            CGeometry *donor_geometry, CGeometry *target_geometry,
                                            CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side

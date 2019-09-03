@@ -3721,7 +3721,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
       for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
         for (targetZone = 0; targetZone < nZone; targetZone++) {
           if (targetZone != donorZone){
-            interface[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry[donorZone][INST_0][MESH_0], geometry[targetZone][INST_0][MESH_0],
+            interface[donorZone][targetZone]->PreprocessAverage(geometry[donorZone][INST_0][MESH_0], geometry[targetZone][INST_0][MESH_0],
                 config[donorZone], config[targetZone],
                 iMarkerInt);
           }
@@ -4147,11 +4147,11 @@ void CFluidDriver::Run() {
 
 void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-  interface_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
       config_container[donorZone], config_container[targetZone]);
   if (config_container[targetZone]->GetKind_Solver() == RANS)
-    interface_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
         config_container[donorZone], config_container[targetZone]);
 
@@ -4230,7 +4230,7 @@ void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
     for (targetZone = 0; targetZone < nZone; targetZone++) {
       if (targetZone != donorZone){
-        interface_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+        interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
             geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
             config_container[donorZone], config_container[targetZone], iMarkerInt );
       }
@@ -5197,7 +5197,7 @@ void CFSIDriver::Predict_Tractions(unsigned short donorZone, unsigned short targ
 
 void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
-  interface_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                      config_container[donorZone], config_container[targetZone]);
 
@@ -5206,7 +5206,7 @@ void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short
 void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
 
 
-  interface_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
                                                                      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                      config_container[donorZone], config_container[targetZone]);
 
@@ -7016,7 +7016,7 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
 void CDiscAdjFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
 
-  interface_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                      config_container[donorZone], config_container[targetZone]);
 
@@ -7024,7 +7024,7 @@ void CDiscAdjFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigne
 
 void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
 
-  interface_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                      config_container[donorZone], config_container[targetZone]);
 }
