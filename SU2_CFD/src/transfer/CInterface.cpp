@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer.cpp
+ * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
@@ -35,9 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/transfer/CTransfer.hpp"
+#include "../../include/transfer/CInterface.hpp"
 
-CTransfer::CTransfer(void) {
+CInterface::CInterface(void) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -52,7 +52,7 @@ CTransfer::CTransfer(void) {
 
 }
 
-CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) {
+CInterface::CInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -86,7 +86,7 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
 
 }
 
-CTransfer::~CTransfer(void) {
+CInterface::~CInterface(void) {
 
   if (Physical_Constants   != NULL) delete [] Physical_Constants;
   if (Donor_Variable       != NULL) delete [] Donor_Variable;
@@ -97,7 +97,7 @@ CTransfer::~CTransfer(void) {
 
 }
 
-void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
+void CInterface::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
                                         CGeometry *donor_geometry, CGeometry *target_geometry,
                                         CConfig *donor_config, CConfig *target_config) {
 
@@ -442,7 +442,7 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
 #endif
 }
 
-void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
+void CInterface::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
                                                CConfig *donor_config, CConfig *target_config,
                                                unsigned short iMarkerInt){
 
@@ -580,7 +580,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 }
 
 
-void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+void CInterface::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
                                            CGeometry *donor_geometry, CGeometry *target_geometry,
                                            CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
@@ -895,7 +895,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 }
 
-void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
 
 
   /*--- here we made the strong assumption that the mesh zone order
@@ -904,7 +904,7 @@ void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_sol
 
 }
 
-void CTransfer::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
+void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
                                             unsigned short donorZone){
 
 

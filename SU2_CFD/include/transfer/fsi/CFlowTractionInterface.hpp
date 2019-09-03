@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CFlowTractionInterface : public CTransfer {
+class CFlowTractionInterface : public CInterface {
 
 protected:
   bool consistent_interpolation;

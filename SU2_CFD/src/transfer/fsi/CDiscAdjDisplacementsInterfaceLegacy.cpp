@@ -38,14 +38,14 @@
 
 #include "../../../include/transfer/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
 
-CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(void) : CTransfer() {
+CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(void) : CInterface() {
 
 }
 
 CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(unsigned short val_nVar,
                                                                                      unsigned short val_nConst,
                                                                                      CConfig *config)
-  : CTransfer(val_nVar,
+  : CInterface(val_nVar,
               val_nConst,
               config) {
 

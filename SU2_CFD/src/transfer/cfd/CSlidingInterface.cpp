@@ -39,12 +39,12 @@
 #include "../../../include/transfer/cfd/CSlidingInterface.hpp"
 
 
-CSlidingInterface::CSlidingInterface(void) : CTransfer() {
+CSlidingInterface::CSlidingInterface(void) : CInterface() {
 
 }
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                       CConfig *config) : CTransfer() {
+                                                       CConfig *config) : CInterface() {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
