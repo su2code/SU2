@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/fsi/CDisplacementsInterface.hpp"
+#include "../../../include/interfaces/fsi/CDisplacementsInterface.hpp"
 
 CDisplacementsInterface::CDisplacementsInterface(unsigned short val_nVar,
                                                                  unsigned short val_nConst,

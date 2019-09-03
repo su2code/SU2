@@ -36,7 +36,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/cfd/CMixingPlaneInterface.hpp"
+#include "../../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
 
 CMixingPlaneInterface::CMixingPlaneInterface(void) : CInterface() {
 

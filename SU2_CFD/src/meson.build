@@ -75,16 +75,16 @@ su2_cfd_src += files(['solvers/CMeshSolver.cpp',
 
 su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
 
-su2_cfd_src += files(['transfer/CInterface.cpp',
-                      'transfer/cfd/CConservativeVarsInterface.cpp',
-                      'transfer/cfd/CMixingPlaneInterface.cpp',
-                      'transfer/cfd/CSlidingInterface.cpp',
-                      'transfer/cht/CConjugateHeatInterface.cpp',
-                      'transfer/fsi/CDisplacementsInterface.cpp',
-                      'transfer/fsi/CFlowTractionInterface.cpp',
-                      'transfer/fsi/CDiscAdjFlowTractionInterface.cpp',
-                      'transfer/fsi/CDisplacementsInterfaceLegacy.cpp',
-                      'transfer/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp'])
+su2_cfd_src += files(['interfaces/CInterface.cpp',
+                      'interfaces/cfd/CConservativeVarsInterface.cpp',
+                      'interfaces/cfd/CMixingPlaneInterface.cpp',
+                      'interfaces/cfd/CSlidingInterface.cpp',
+                      'interfaces/cht/CConjugateHeatInterface.cpp',
+                      'interfaces/fsi/CDisplacementsInterface.cpp',
+                      'interfaces/fsi/CFlowTractionInterface.cpp',
+                      'interfaces/fsi/CDiscAdjFlowTractionInterface.cpp',
+                      'interfaces/fsi/CDisplacementsInterfaceLegacy.cpp',
+                      'interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
