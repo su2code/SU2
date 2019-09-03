@@ -36,7 +36,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/cfd/CSlidingInterface.hpp"
+#include "../../../include/interfaces/cfd/CSlidingInterface.hpp"
 
 
 CSlidingInterface::CSlidingInterface(void) : CInterface() {

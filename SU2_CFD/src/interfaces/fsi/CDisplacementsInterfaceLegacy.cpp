@@ -36,7 +36,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/fsi/CDisplacementsInterfaceLegacy.hpp"
+#include "../../../include/interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
 
 CDisplacementsInterfaceLegacy::CDisplacementsInterfaceLegacy(void) : CInterface() {
 
