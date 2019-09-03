@@ -1,7 +1,7 @@
 project('SU2', 'c', 'cpp', 
         version: '6.2.0', 
-	license: 'LGPL2',
-	default_options: ['buildtype=release', 
+        license: 'LGPL2',
+        default_options: ['buildtype=release', 
                           'warning_level=0', 
                           'cpp_std=c++11'])
 
@@ -16,7 +16,7 @@ default_warning_flags = ['-Wno-unused-parameter',
                          '-Wno-empty-body',
                          '-Wno-format-security',
                          '-Wno-deprecated-declarations',
-			 '-Wno-non-virtual-dtor']
+			                   '-Wno-non-virtual-dtor']
 
 # external dependencies 
 mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 
@@ -33,6 +33,11 @@ if get_option('enable-cgns')
   subdir('externals/cgns')
   su2_deps     += cgns_dep
   su2_cpp_args += '-DHAVE_CGNS'
+endif
+
+# Check for non-debug build
+if get_option('buildtype')!='debug'
+  su2_cpp_args += '-DNDEBUG'
 endif
 
 # check if MPI dependencies are found and add them

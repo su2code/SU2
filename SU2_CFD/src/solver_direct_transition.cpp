@@ -44,7 +44,7 @@ CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  su2double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey;
+  su2double tu_Inf, dull_val, rey;
   ifstream restart_file;
   char *cstr;
   string text_line;
@@ -59,8 +59,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nDim = geometry->GetnDim();
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-  
-  node = new CVariable*[geometry->GetnPoint()];
   
   /*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
   nVar = 2;
@@ -128,8 +126,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
   
   /*--- Read farfield conditions from config ---*/
-  Density_Inf       = config->GetDensity_FreeStreamND();
-  Viscosity_Inf     = config->GetViscosity_FreeStreamND();
   Intermittency_Inf = config->GetIntermittency_FreeStream();
   tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
   
@@ -143,25 +139,12 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 //  REth_Inf *= mach/rey;
   cout << "REth_Inf = " << REth_Inf << ", rey: "<< rey << " -AA" << endl;
-  
-  /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
-  Factor_nu_Inf = config->GetNuFactor_FreeStream();
-  nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
     
   /*--- Restart the solution from file information ---*/
-  if (!restart) {
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      // TODO: Erase this bubble of specially initialized points -AA
-//      if (iPoint == 9745||iPoint == 9746||iPoint == 9608||iPoint == 9609) {
-//        node[iPoint] = new CTransLMVariable(nu_tilde_Inf, 0.0, 1100.0, nDim, nVar, config);
-//      } else {
-        node[iPoint] = new CTransLMVariable(nu_tilde_Inf, Intermittency_Inf, REth_Inf, nDim, nVar, config);
- //     }
-    }
-    }
+  if (!restart) node = new CTransLMVariable(Intermittency_Inf, REth_Inf, nPoint, nDim, nVar, config);
 
-  }
-  else {
+  } else { /*--- Coarse levels ---*/
+    
     cout << "No LM restart yet!!" << endl; // TODO, Aniket
     int j;
     cin >> j;
@@ -173,12 +156,15 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
       SU2_MPI::Error("There is no turbulent restart file.", CURRENT_FUNCTION);
     }
     
+    node = new CTurbSAVariable(0.0, 0.0, nPoint, nDim, nVar, config);
+    
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       getline(restart_file, text_line);
       istringstream point_line(text_line);
       if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
       if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-      node[iPoint] = new CTurbSAVariable(Solution[0], 0, nDim, nVar, config);
+      node->SetSolution(iPoint,0,Solution[0]);
+      node->SetSolution_Old(iPoint,0,Solution[0]);
     }
     restart_file.close();
   }
@@ -204,7 +190,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Correction for separation-induced transition, Replace intermittency with gamma_eff ---*/
   for (unsigned int iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-    node[iPoint]->SetGammaEff();
+    node->SetGammaEff(iPoint);
 }
 
 void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -228,7 +214,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta_flow = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta_flow = Vol / (solver_container[FLOW_SOL]->node->GetDelta_Time(iPoint));
     Delta = Delta_flow;
     Jacobian.AddVal2Diag(iPoint, Delta);
     
@@ -262,7 +248,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++)
-      node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      node->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
   }
   
   /*--- MPI solution ---*/
@@ -288,13 +274,13 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
     /*--- Conservative variables w/o reconstruction ---*/
-    U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    U_j = solver_container[FLOW_SOL]->node[jPoint]->GetSolution();
+    U_i = solver_container[FLOW_SOL]->node->GetSolution(iPoint);
+    U_j = solver_container[FLOW_SOL]->node->GetSolution(jPoint);
     numerics->SetConservative(U_i, U_j);
 
     /*--- Transition variables w/o reconstruction ---*/
-    trans_var_i = node[iPoint]->GetSolution();
-    trans_var_j = node[jPoint]->GetSolution();
+    trans_var_i = node->GetSolution(iPoint);
+    trans_var_j = node->GetSolution(jPoint);
     numerics->SetTransVar(trans_var_i, trans_var_j);
 
     /*--- Add and subtract Residual ---*/
@@ -330,22 +316,22 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Conservative variables w/o reconstruction ---*/
-    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
-                            solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
+    numerics->SetConservative(solver_container[FLOW_SOL]->node->GetSolution(iPoint),
+                              solver_container[FLOW_SOL]->node->GetSolution(jPoint));
     
     /*--- Laminar Viscosity ---*/
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node->GetLaminarViscosity(iPoint),
+                                  solver_container[FLOW_SOL]->node->GetLaminarViscosity(jPoint));
     /*--- Eddy Viscosity ---*/
-    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                             solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
+    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node->GetEddyViscosity(iPoint),
+                               solver_container[FLOW_SOL]->node->GetEddyViscosity(jPoint));
     
     /*--- Transition variables w/o reconstruction, and its gradients ---*/
-    numerics->SetTransVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-    numerics->SetTransVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+    numerics->SetTransVar(node->GetSolution(iPoint), node->GetSolution(jPoint));
+    numerics->SetTransVarGradient(node->GetGradient(iPoint), node->GetGradient(jPoint));
     
-    numerics->SetConsVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient(),
-                               solver_container[FLOW_SOL]->node[jPoint]->GetGradient());
+    numerics->SetConsVarGradient(solver_container[FLOW_SOL]->node->GetGradient(iPoint),
+                                 solver_container[FLOW_SOL]->node->GetGradient(jPoint));
     
     
     /*--- Compute residual, and Jacobians ---*/
@@ -375,21 +361,21 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
+    numerics->SetConservative(solver_container[FLOW_SOL]->node->GetSolution(iPoint), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
+    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node->GetGradient_Primitive(iPoint), NULL);
     
     /*--- Laminar and eddy viscosity ---*/
     
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
-    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),0.0);
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node->GetLaminarViscosity(iPoint), 0.0);
+    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node->GetEddyViscosity(iPoint),0.0);
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
     
-    numerics->SetTransVar(node[iPoint]->GetSolution(), NULL);
-    // numerics->SetTransVarGradient(node[iPoint]->GetGradient(), NULL);  // Is this needed??
+    numerics->SetTransVar(node->GetSolution(iPoint), NULL);
+    // numerics->SetTransVarGradient(node->GetGradient(iPoint), NULL);  // Is this needed??
     
     /*--- Set volume ---*/
     
@@ -405,7 +391,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*-- Store gamma_sep in variable class --*/
     
-    node[iPoint]->SetGammaSep(gamma_sep);
+    node->SetGammaSep(iPoint,gamma_sep);
 
     /*--- Subtract residual and the Jacobian ---*/
     
@@ -444,14 +430,14 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set both interior and exterior point to current value ---*/
       for (iVar=0; iVar < nVar; iVar++) {
-        U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-        U_wall[iVar]   = node[iPoint]->GetSolution(iVar);   
+        U_domain[iVar] = node->GetSolution(iPoint,iVar);
+        U_wall[iVar]   = node->GetSolution(iPoint,iVar);   
       }
 
       /*--- Set various quantities in the solver class ---*/
       numerics->SetNormal(Normal);
       numerics->SetTransVar(U_domain,U_wall);
-      U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+      U_i = solver_container[FLOW_SOL]->node->GetSolution(iPoint);
       numerics->SetConservative(U_i, U_i);
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -480,7 +466,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      /*--- Impose boundary values (Dirichlet) ---*/
 //      Solution[0] = 0.0;
 //      Solution[1] = 0.0;
-//      node[iPoint]->SetSolution_Old(Solution);
+//      node->SetSolution_Old(iPoint,Solution);
 //      LinSysRes.SetBlock_Zero(iPoint);
 //
 //      /*--- includes 1 in the diagonal ---*/
@@ -513,7 +499,7 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Impose boundary values (Dirichlet) ---*/
       Solution[0] = Intermittency_Inf;
       Solution[1] = REth_Inf;
-      node[iPoint]->SetSolution_Old(Solution);
+      node->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- includes 1 in the diagonal ---*/

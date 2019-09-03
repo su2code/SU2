@@ -172,9 +172,8 @@ public:
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
   
-  CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
-  CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
-  
+  CVariable* node;  /*!< \brief Vector which the define the variables for each problem. */
+
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   /*!
@@ -262,9 +261,8 @@ public:
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -4803,6 +4801,8 @@ protected:
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
+  CEulerVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
             ***SpanTotalFlux,
@@ -6510,12 +6510,6 @@ public:
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -7119,6 +7113,8 @@ protected:
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
+
+  CIncEulerVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /* Sliding meshes variables */
 
@@ -8140,12 +8136,6 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Load a solution from a restart file.
@@ -9278,7 +9268,9 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
-  
+
+  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
@@ -12198,12 +12190,6 @@ public:
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -12481,7 +12467,9 @@ private:
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
-  
+
+  CDiscAdjVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
 public:
   
   /*!
@@ -12730,11 +12718,6 @@ public:
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -12788,6 +12771,8 @@ private:
   su2double *DV_Val;            /*!< \brief Value of the design variables. */
   su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
   su2double *Total_Sens_DV;
+
+  CDiscAdjFEABoundVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
 public:
   
@@ -13027,12 +13012,6 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Prepare the solver for a new recording.

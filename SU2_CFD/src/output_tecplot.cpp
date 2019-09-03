@@ -1093,16 +1093,17 @@ private:
   vector<unsigned long> m_node_range;
 };
 
+#ifdef HAVE_TECIO
 int64_t GetHaloNodeNumber(unsigned long global_node_number, unsigned long last_local_node, vector<unsigned long> const &halo_node_list)
 {
   vector<unsigned long>::const_iterator it = lower_bound(halo_node_list.begin(), halo_node_list.end(), global_node_number);
   assert(it != halo_node_list.end());
   assert(*it == global_node_number);
-  /* When C++11 is universally available, replace the following mouthful with "auto" */
-  iterator_traits<vector<unsigned long>::const_iterator>::difference_type offset = distance(halo_node_list.begin(), it);
+  auto offset = distance(halo_node_list.begin(), it);
   assert(offset >= 0);
   return (int64_t)(last_local_node + offset + 1);
 }
+#endif
 
 } /* namespace */
 
