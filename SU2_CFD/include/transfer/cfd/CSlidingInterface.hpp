@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CSlidingInterface : public CTransfer {
+class CSlidingInterface : public CInterface {
 
 protected:
 

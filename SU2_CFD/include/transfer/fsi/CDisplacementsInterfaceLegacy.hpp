@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CDisplacementsInterfaceLegacy : public CTransfer {
+class CDisplacementsInterfaceLegacy : public CInterface {
 
 protected:
 

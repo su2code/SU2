@@ -38,12 +38,12 @@
 
 #include "../../../include/transfer/cht/CConjugateHeatInterface.hpp"
 
-CConjugateHeatInterface::CConjugateHeatInterface(void) : CTransfer() {
+CConjugateHeatInterface::CConjugateHeatInterface(void) : CInterface() {
 
 }
 
 CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                         CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+                                                         CConfig *config) : CInterface(val_nVar, val_nConst, config) {
 
 }
 

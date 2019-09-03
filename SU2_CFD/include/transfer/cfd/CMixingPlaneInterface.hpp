@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CMixingPlaneInterface : public CTransfer {
+class CMixingPlaneInterface : public CInterface {
 
 public:
 

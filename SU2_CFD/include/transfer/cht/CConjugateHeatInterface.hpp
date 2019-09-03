@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CConjugateHeatInterface : public CTransfer {
+class CConjugateHeatInterface : public CInterface {
 
 protected:
 

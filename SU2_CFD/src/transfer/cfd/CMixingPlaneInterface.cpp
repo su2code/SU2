@@ -38,7 +38,7 @@
 
 #include "../../../include/transfer/cfd/CMixingPlaneInterface.hpp"
 
-CMixingPlaneInterface::CMixingPlaneInterface(void) : CTransfer() {
+CMixingPlaneInterface::CMixingPlaneInterface(void) : CInterface() {
 
 }
 

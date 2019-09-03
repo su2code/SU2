@@ -94,7 +94,7 @@ CDriver::CDriver(char* confFile,
     
     /*--- Allocate transfer and interpolation container --- */
     
-    transfer_container[iZone]     = new CTransfer*[nZone];
+    transfer_container[iZone]     = new CInterface*[nZone];
     interpolator_container[iZone] = new CInterpolator*[nZone];
     
     for (jZone = 0; jZone < nZone; jZone++){
@@ -296,7 +296,7 @@ void CDriver::SetContainers_Null(){
   grid_movement                  = new CVolumetricMovement**[nZone];
   FFDBox                         = new CFreeFormDefBox**[nZone];
   interpolator_container         = new CInterpolator**[nZone];
-  transfer_container             = new CTransfer**[nZone];
+  transfer_container             = new CInterface**[nZone];
   transfer_types                 = new unsigned short*[nZone];
   nInst                          = new unsigned short[nZone];
   driver_config                  = NULL;
@@ -415,7 +415,7 @@ void CDriver::Postprocessing() {
       }
     }
     delete [] transfer_container;
-    if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
+    if (rank == MASTER_NODE) cout << "Deleted CInterface container." << endl;
   }
   
   if (transfer_types != NULL) {
@@ -3207,7 +3207,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 }
 
 void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGeometry**** geometry,
-                                      unsigned short** transfer_types, CTransfer ***&transfer, CInterpolator ***&interpolation) {
+                                      unsigned short** transfer_types, CInterface ***&transfer, CInterpolator ***&interpolation) {
 
   unsigned short donorZone, targetZone;
   unsigned short nVar, nVarTransfer;
@@ -3628,7 +3628,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
 }
 
 
-void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver, CTransfer*** transfer){
+void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver, CInterface*** transfer){
 
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;

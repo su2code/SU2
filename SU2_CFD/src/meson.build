@@ -75,7 +75,7 @@ su2_cfd_src += files(['solvers/CMeshSolver.cpp',
 
 su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
 
-su2_cfd_src += files(['transfer/CTransfer.cpp',
+su2_cfd_src += files(['transfer/CInterface.cpp',
                       'transfer/cfd/CConservativeVarsInterface.cpp',
                       'transfer/cfd/CMixingPlaneInterface.cpp',
                       'transfer/cfd/CSlidingInterface.cpp',

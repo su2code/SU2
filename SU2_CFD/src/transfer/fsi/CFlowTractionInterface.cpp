@@ -38,12 +38,12 @@
 
 #include "../../../include/transfer/fsi/CFlowTractionInterface.hpp"
 
-CFlowTractionInterface::CFlowTractionInterface(void) : CTransfer() {
+CFlowTractionInterface::CFlowTractionInterface(void) : CInterface() {
 
 }
 
 CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) :
-  CTransfer(val_nVar, val_nConst, config) {
+  CInterface(val_nVar, val_nConst, config) {
 
 }
 

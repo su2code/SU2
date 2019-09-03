@@ -45,7 +45,7 @@
 #include "../output_structure.hpp"
 #include "../numerics_structure.hpp"
 /*--- Transfer includes ---*/
-#include "../transfer/CTransfer.hpp"
+#include "../transfer/CInterface.hpp"
 #include "../transfer/cfd/CConservativeVarsInterface.hpp"
 #include "../transfer/cfd/CMixingPlaneInterface.hpp"
 #include "../transfer/cfd/CSlidingInterface.hpp"
@@ -116,7 +116,7 @@ protected:
   CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
-  CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
+  CInterface ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
   su2double PyWrapVarCoord[3],                  /*!< \brief This is used to store the VarCoord of each vertex. */
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
@@ -224,7 +224,7 @@ protected:
   /*!
    * \brief Definition and allocation of all interface classes.
    */
-  void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry, unsigned short **transfer_types, CTransfer ***&transfer, CInterpolator ***&interpolation);
+  void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry, unsigned short **transfer_types, CInterface ***&transfer, CInterpolator ***&interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -268,7 +268,7 @@ protected:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver, CTransfer*** transfer);
+  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver, CInterface*** transfer);
 
   
   void Output_Preprocessing(CConfig **config, COutput *&output);

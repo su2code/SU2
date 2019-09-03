@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CConservativeVarsInterface : public CTransfer {
+class CConservativeVarsInterface : public CInterface {
 
 protected:
 

@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer.hpp
+ * \file CInterface.hpp
  * \brief Declarations and inlines of the transfer structure.
  *        The subroutines and functions are in the physics folders.
  * \author R. Sanchez
@@ -56,13 +56,13 @@
 using namespace std;
 
 /*!
- * \class CTransfer
+ * \class CInterface
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  */
 
-class CTransfer {
+class CInterface {
 protected:
 
   int rank,  /*!< \brief MPI Rank. */
@@ -84,7 +84,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer(void);
+  CInterface(void);
 
   /*!
    * \overload
@@ -92,12 +92,12 @@ public:
    * \param[in] val_nConst - Number of physical constants that need to be taken into account.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer(void);
+  virtual ~CInterface(void);
 
   /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
