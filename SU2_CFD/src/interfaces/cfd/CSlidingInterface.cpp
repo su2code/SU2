@@ -44,7 +44,7 @@ CSlidingInterface::CSlidingInterface(void) : CInterface() {
 }
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                       CConfig *config) : CInterface() {
+                                     CConfig *config) : CInterface() {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -81,14 +81,14 @@ CSlidingInterface::~CSlidingInterface(void) {
 
 
 void CSlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                                                       CGeometry *donor_geometry, CGeometry *target_geometry,
-                                                       CConfig *donor_config, CConfig *target_config) {
+                                              CGeometry *donor_geometry, CGeometry *target_geometry,
+                                              CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                                   CConfig *donor_config, unsigned long Marker_Donor,
-                                                   unsigned long Vertex_Donor, unsigned long Point_Donor) {
+                                          CConfig *donor_config, unsigned long Marker_Donor,
+                                          unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short iVar, nDonorVar;
   nDonorVar = donor_solution->GetnPrimVar();
@@ -112,7 +112,7 @@ void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *do
 }
 
 void CSlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
-                                                           unsigned long Vertex_Target, unsigned short nDonorPoints) {
+                                                  unsigned long Vertex_Target, unsigned short nDonorPoints) {
 
   target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, nDonorPoints); // This is to allocate
   target_solution->SetSlidingStateStructure(Marker_Target, Vertex_Target);
@@ -121,7 +121,7 @@ void CSlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsi
 }
 
 void CSlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
-                                                        su2double donorCoeff){
+                                               su2double donorCoeff){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
 
@@ -129,8 +129,8 @@ void CSlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2doubl
 }
 
 void CSlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                                    CConfig *target_config, unsigned long Marker_Target,
-                                                    unsigned long Vertex_Target, unsigned long Point_Target) {
+                                           CConfig *target_config, unsigned long Marker_Target,
+                                           unsigned long Vertex_Target, unsigned long Point_Target) {
 
   unsigned short iVar, iDonorVertex, nTargetVar;
   nTargetVar = target_solution->GetnPrimVar();

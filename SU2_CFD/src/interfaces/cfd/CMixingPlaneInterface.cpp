@@ -43,7 +43,7 @@ CMixingPlaneInterface::CMixingPlaneInterface(void) : CInterface() {
 }
 
 CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                               CConfig *donor_config, CConfig *target_config){
+                                             CConfig *donor_config, CConfig *target_config){
   unsigned short iVar;
   nVar = val_nVar;
 
@@ -79,8 +79,8 @@ void CMixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *ta
 }
 
 void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                                       CConfig *donor_config, unsigned long Marker_Donor,
-                                                       unsigned long iSpan, unsigned long rank) {
+                                              CConfig *donor_config, unsigned long Marker_Donor,
+                                              unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
   bool turbulent = (donor_config->GetKind_Turb_Model() != NONE);
@@ -114,8 +114,8 @@ void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry
 
 
 void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                                        CConfig *target_config, unsigned long Marker_Target,
-                                                        unsigned long iSpan, unsigned long rank) {
+                                               CConfig *target_config, unsigned long Marker_Target,
+                                               unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
   bool turbulent = (target_config->GetKind_Turb_Model() != NONE);
@@ -139,7 +139,7 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
 }
 
 void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                                      unsigned short donorZone){
+                                             unsigned short donorZone){
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
@@ -163,7 +163,7 @@ void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *t
 }
 
 void CMixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                                              unsigned short donorZone){
+                                                     unsigned short donorZone){
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){

@@ -43,11 +43,11 @@ CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(void)
 }
 
 CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(unsigned short val_nVar,
-                                                                                     unsigned short val_nConst,
-                                                                                     CConfig *config)
+                                                                           unsigned short val_nConst,
+                                                                           CConfig *config)
   : CInterface(val_nVar,
-              val_nConst,
-              config) {
+               val_nConst,
+               config) {
 
 }
 
@@ -57,19 +57,19 @@ CDiscAdjDisplacementsInterfaceLegacy::~CDiscAdjDisplacementsInterfaceLegacy(void
 
 
 void CDiscAdjDisplacementsInterfaceLegacy::GetPhysical_Constants(CSolver *struct_solution,
-                                                                      CSolver *flow_solution,
-                                                                      CGeometry *struct_geometry,
-                                                                      CGeometry *flow_geometry,
-                                                                      CConfig *struct_config,
-                                                                      CConfig *flow_config) {
+                                                                 CSolver *flow_solution,
+                                                                 CGeometry *struct_geometry,
+                                                                 CGeometry *flow_geometry,
+                                                                 CConfig *struct_config,
+                                                                 CConfig *flow_config) {
 }
 
 void CDiscAdjDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_solution,
-                                                                  CGeometry *struct_geometry,
-                                                                  CConfig *struct_config,
-                                                                  unsigned long Marker_Struct,
-                                                                  unsigned long Vertex_Struct,
-                                                                  unsigned long Point_Struct) {
+                                                             CGeometry *struct_geometry,
+                                                             CConfig *struct_config,
+                                                             unsigned long Marker_Struct,
+                                                             unsigned long Vertex_Struct,
+                                                             unsigned long Point_Struct) {
 
 
   su2double *Coord_Struct, *Displacement_Struct;
@@ -85,11 +85,11 @@ void CDiscAdjDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_sol
 }
 
 void CDiscAdjDisplacementsInterfaceLegacy::SetTarget_Variable(CSolver *flow_solution,
-                                                                   CGeometry *flow_geometry,
-                                                                   CConfig *flow_config,
-                                                                   unsigned long Marker_Flow,
-                                                                   unsigned long Vertex_Flow,
-                                                                   unsigned long Point_Flow) {
+                                                              CGeometry *flow_geometry,
+                                                              CConfig *flow_config,
+                                                              unsigned long Marker_Flow,
+                                                              unsigned long Vertex_Flow,
+                                                              unsigned long Point_Flow) {
 
   su2double *Coord, VarCoord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar;

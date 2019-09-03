@@ -94,11 +94,11 @@ CDriver::CDriver(char* confFile,
     
     /*--- Allocate transfer and interpolation container --- */
     
-    interface_container[iZone]     = new CInterface*[nZone];
+    interface_container[iZone]    = new CInterface*[nZone];
     interpolator_container[iZone] = new CInterpolator*[nZone];
     
     for (jZone = 0; jZone < nZone; jZone++){
-      interface_container[iZone][jZone]             = NULL;
+      interface_container[iZone][jZone]            = NULL;
       interpolator_container[iZone][jZone]         = NULL;
     }
     
@@ -312,8 +312,8 @@ void CDriver::SetContainers_Null(){
     grid_movement[iZone]                  = NULL;
     FFDBox[iZone]                         = NULL;
     interpolator_container[iZone]         = NULL;
-    interface_container[iZone]             = NULL;
-    interface_types[iZone]                 = new unsigned short[nZone];
+    interface_container[iZone]            = NULL;
+    interface_types[iZone]                = new unsigned short[nZone];
     nInst[iZone]                          = 1;
   }
 
@@ -3233,7 +3233,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
   /*--- Coupling between zones ---*/
   // There's a limit here, the interface boundary must connect only 2 zones
 
-  /*--- Loops over all target and donor zones to find which ones are connected through an interface boundary (fsi or sliding mesh) ---*/
+  /*--- Loops over all target and donor zones to find which ones are connected through
+   *--- an interface boundary (fsi or sliding mesh) ---*/
   for (targetZone = 0; targetZone < nZone; targetZone++) {
 
     for (donorZone = 0; donorZone < nZone; donorZone++) {
@@ -3248,7 +3249,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
       nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
 
-      /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to determine donor and target marker tag ---*/
+      /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to
+       *--- determine donor and target marker tag ---*/
       for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
         markDonor  = -1;
@@ -3287,7 +3289,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       Donor_check  = -1;
       Target_check = -1;
 
-        /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+        /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because
+         * of the partition or because the zone does not include it ---*/
 
         SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
@@ -3393,14 +3396,16 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
                 because CFlowTractionInterface relies on the information in config to be correct. ---*/
           if ( conservative_interp && targetZone == 0 && structural_target )
-            SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, somehow this has not happened.",CURRENT_FUNCTION);
+            SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, "
+                           "somehow this has not happened.",CURRENT_FUNCTION);
         
         switch (config[donorZone]->GetKindInterpolation()) {
 
           case NEAREST_NEIGHBOR:
             if ( conservative_interp && targetZone > 0 && structural_target ) {
               interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                               "from opposite mesh." << endl;
             }
             else {
             interpolation[donorZone][targetZone] = new CNearestNeighbor(geometry, config, donorZone, targetZone);
@@ -3411,7 +3416,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           case ISOPARAMETRIC:
             if ( conservative_interp && targetZone > 0 && structural_target ) {
               interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                               "from opposite mesh." << endl;
             }
             else {
             interpolation[donorZone][targetZone] = new CIsoparametric(geometry, config, donorZone, targetZone);
@@ -3428,10 +3434,12 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           case RADIAL_BASIS_FUNCTION:
             if ( conservative_interp && targetZone > 0 && structural_target ) {
                 interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                                 "from opposite mesh." << endl;
               }
               else {
-                interpolation[donorZone][targetZone] = new CRadialBasisFunction(geometry, config, donorZone, targetZone);
+                interpolation[donorZone][targetZone] = new CRadialBasisFunction(geometry, config,
+                                                                                donorZone, targetZone);
                 if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
               }
             break;
@@ -3457,9 +3465,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
         else{
           interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
-        nVarTransfer = 0;
-        interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+          nVarTransfer = 0;
+          interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+          if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
         }
       }
       else if (fluid_donor && structural_target && discrete_adjoint) {
@@ -3472,7 +3480,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       else if (structural_donor && fluid_target && discrete_adjoint){
         interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
         nVarTransfer = 0;
-        interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+        interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer,
+                                                                                    config[donorZone]);
         if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
       }
       else if (fluid_donor && fluid_target) {
@@ -3522,8 +3531,10 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         interface_types[donorZone][targetZone] = MIXING_PLANE;
         nVarTransfer = 0;
         nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-        interface[donorZone][targetZone] = new CMixingPlaneInterface(nVar, nVarTransfer, config[donorZone], config[targetZone]);
-        if (rank == MASTER_NODE) cout << "Set mixing-plane interface from donor zone "<< donorZone << " to target zone " << targetZone <<"."<<endl;
+        interface[donorZone][targetZone] = new CMixingPlaneInterface(nVar, nVarTransfer,
+                                                                     config[donorZone], config[targetZone]);
+        if (rank == MASTER_NODE) cout << "Set mixing-plane interface from donor zone "<< donorZone
+                                      << " to target zone " << targetZone <<"."<<endl;
       }
 
     }

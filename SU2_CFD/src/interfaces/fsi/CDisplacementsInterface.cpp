@@ -38,8 +38,8 @@
 #include "../../../include/interfaces/fsi/CDisplacementsInterface.hpp"
 
 CDisplacementsInterface::CDisplacementsInterface(unsigned short val_nVar,
-                                                                 unsigned short val_nConst,
-                                                                 CConfig *config) :
+                                                 unsigned short val_nConst,
+                                                 CConfig *config) :
   CInterface(val_nVar, val_nConst, config) {
 
 }
@@ -50,13 +50,13 @@ CDisplacementsInterface::~CDisplacementsInterface(void) {
 
 
 void CDisplacementsInterface::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                            CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                            CConfig *struct_config, CConfig *flow_config) {
+                                                    CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                    CConfig *struct_config, CConfig *flow_config) {
 }
 
 void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
-                                                        CConfig *struct_config, unsigned long Marker_Struct,
-                                                        unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                                                CConfig *struct_config, unsigned long Marker_Struct,
+                                                unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   su2double *DisplacementDonor;
   unsigned short iVar;
@@ -70,8 +70,8 @@ void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeome
 }
 
 void CDisplacementsInterface::SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
-                                                         CConfig *flow_config, unsigned long Marker_Flow,
-                                                         unsigned long Vertex_Flow, unsigned long Point_Mesh) {
+                                                 CConfig *flow_config, unsigned long Marker_Flow,
+                                                 unsigned long Vertex_Flow, unsigned long Point_Mesh) {
 
   /*--- Impose the boundary displacements ---*/
 
