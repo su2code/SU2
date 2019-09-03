@@ -66,6 +66,7 @@ lib_sources = \
   ../include/geometry_structure.inl \
   ../include/CMultiGridQueue.hpp \
   ../include/CMeshReaderFVM.hpp \
+  ../include/CSU2ASCIIMeshReaderFVM.hpp \
   ../include/CCGNSMeshReaderFVM.hpp \
   ../include/CRectangularMeshReaderFVM.hpp \
   ../include/CBoxMeshReaderFVM.hpp \
@@ -127,6 +128,7 @@ lib_sources = \
   ../src/geometry_structure.cpp \
   ../src/CMultiGridQueue.cpp \
   ../src/CMeshReaderFVM.cpp \
+  ../src/CSU2ASCIIMeshReaderFVM.cpp \
   ../src/CCGNSMeshReaderFVM.cpp \
   ../src/CRectangularMeshReaderFVM.cpp \
   ../src/CBoxMeshReaderFVM.cpp \
