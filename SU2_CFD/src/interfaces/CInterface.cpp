@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/transfer/CInterface.hpp"
+#include "../../include/interfaces/CInterface.hpp"
 
 CInterface::CInterface(void) {
 
