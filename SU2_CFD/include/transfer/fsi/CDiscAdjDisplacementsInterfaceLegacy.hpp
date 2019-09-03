@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_StructuralDisplacements_DiscAdj.hpp
+ * \file CDiscAdjDisplacementsInterfaceLegacy.hpp
  * \brief Declaration and inlines of the class to transfer structural displacements
  *        from a structural zone into a fluid zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_StructuralDisplacements_DiscAdj : public CTransfer {
+class CDiscAdjDisplacementsInterfaceLegacy : public CTransfer {
 
 protected:
 
@@ -49,19 +49,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_StructuralDisplacements_DiscAdj(void);
+  CDiscAdjDisplacementsInterfaceLegacy(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_StructuralDisplacements_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CDiscAdjDisplacementsInterfaceLegacy(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_StructuralDisplacements_DiscAdj(void);
+  virtual ~CDiscAdjDisplacementsInterfaceLegacy(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

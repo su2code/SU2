@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_StructuralDisplacements.hpp
+ * \file CDisplacementsInterfaceLegacy.hpp
  * \brief Declaration and inlines of the class to transfer structural displacements
  *        from a structural zone into a fluid zone.
  * \author Ruben Sanchez
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_StructuralDisplacements : public CTransfer {
+class CDisplacementsInterfaceLegacy : public CTransfer {
 
 protected:
 
@@ -49,19 +49,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_StructuralDisplacements(void);
+  CDisplacementsInterfaceLegacy(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_StructuralDisplacements(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CDisplacementsInterfaceLegacy(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_StructuralDisplacements(void);
+  virtual ~CDisplacementsInterfaceLegacy(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

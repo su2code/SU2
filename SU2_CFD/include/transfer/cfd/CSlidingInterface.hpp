@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_SlidingInterface.hpp
+ * \file CSlidingInterface.hpp
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_SlidingInterface : public CTransfer {
+class CSlidingInterface : public CTransfer {
 
 protected:
 
@@ -49,19 +49,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_SlidingInterface(void);
+  CSlidingInterface(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_SlidingInterface(void);
+  virtual ~CSlidingInterface(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

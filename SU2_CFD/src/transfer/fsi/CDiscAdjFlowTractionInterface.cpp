@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_FlowTraction_DiscAdj.cpp
+ * \file CDiscAdjFlowTractionInterface.cpp
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
@@ -36,23 +36,23 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_FlowTraction_DiscAdj.hpp"
+#include "../../../include/transfer/fsi/CDiscAdjFlowTractionInterface.hpp"
 
-CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(void) : CTransfer_FlowTraction() {
+CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(void) : CFlowTractionInterface() {
 
 }
 
-CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(unsigned short val_nVar, unsigned short val_nConst,
+CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
                                                                CConfig *config) :
-  CTransfer_FlowTraction(val_nVar, val_nConst, config) {
+  CFlowTractionInterface(val_nVar, val_nConst, config) {
 
 }
 
-CTransfer_FlowTraction_DiscAdj::~CTransfer_FlowTraction_DiscAdj(void) {
+CDiscAdjFlowTractionInterface::~CDiscAdjFlowTractionInterface(void) {
 
 }
 
-void CTransfer_FlowTraction_DiscAdj::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
+void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
                                                            CGeometry *flow_geometry, CGeometry *struct_geometry,
                                                            CConfig *flow_config, CConfig *struct_config){
 

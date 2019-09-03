@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_StructuralDisplacements.cpp
+ * \file CDisplacementsInterfaceLegacy.cpp
  * \brief Declaration and inlines of the class to transfer structural displacements
  *        from a structural zone into a fluid zone.
  * \author Ruben Sanchez
@@ -36,29 +36,29 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_StructuralDisplacements.hpp"
+#include "../../../include/transfer/fsi/CDisplacementsInterfaceLegacy.hpp"
 
-CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(void) : CTransfer() {
+CDisplacementsInterfaceLegacy::CDisplacementsInterfaceLegacy(void) : CTransfer() {
 
 }
 
-CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(unsigned short val_nVar,
+CDisplacementsInterfaceLegacy::CDisplacementsInterfaceLegacy(unsigned short val_nVar,
                                                                      unsigned short val_nConst, CConfig *config) :
   CTransfer(val_nVar, val_nConst, config) {
 
 }
 
-CTransfer_StructuralDisplacements::~CTransfer_StructuralDisplacements(void) {
+CDisplacementsInterfaceLegacy::~CDisplacementsInterfaceLegacy(void) {
 
 }
 
 
-void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
+void CDisplacementsInterfaceLegacy::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
                                                               CGeometry *struct_geometry, CGeometry *flow_geometry,
                                                               CConfig *struct_config, CConfig *flow_config) {
 }
 
-void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
+void CDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
                                                           CConfig *struct_config, unsigned long Marker_Struct,
                                                           unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
@@ -74,7 +74,7 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
     Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 }
 
-void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
+void CDisplacementsInterfaceLegacy::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
                                                            CConfig *flow_config, unsigned long Marker_Flow,
                                                            unsigned long Vertex_Flow, unsigned long Point_Flow) {
 

@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_FlowTraction.cpp
+ * \file CFlowTractionInterface.cpp
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
@@ -36,22 +36,22 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_FlowTraction.hpp"
+#include "../../../include/transfer/fsi/CFlowTractionInterface.hpp"
 
-CTransfer_FlowTraction::CTransfer_FlowTraction(void) : CTransfer() {
+CFlowTractionInterface::CFlowTractionInterface(void) : CTransfer() {
 
 }
 
-CTransfer_FlowTraction::CTransfer_FlowTraction(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) :
+CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) :
   CTransfer(val_nVar, val_nConst, config) {
 
 }
 
-CTransfer_FlowTraction::~CTransfer_FlowTraction(void) {
+CFlowTractionInterface::~CFlowTractionInterface(void) {
 
 }
 
-void CTransfer_FlowTraction::Preprocess(CConfig *flow_config) {
+void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
 
   /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
         and integrate on the structural side rather than directly transferring forces. ---*/
@@ -78,7 +78,7 @@ void CTransfer_FlowTraction::Preprocess(CConfig *flow_config) {
   Physical_Constants[0] = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
 }
 
-void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
+void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
                                                    CGeometry *flow_geometry, CGeometry *struct_geometry,
                                                    CConfig *flow_config, CConfig *struct_config) {
 
@@ -118,7 +118,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
 }
 
-void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
+void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
                                                CConfig *flow_config, unsigned long Marker_Flow,
                                                unsigned long Vertex_Flow, unsigned long Point_Struct) {
 
@@ -206,7 +206,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 }
 
-void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
+void CFlowTractionInterface::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
                                                 CConfig *fea_config, unsigned long Marker_Struct,
                                                 unsigned long Vertex_Struct, unsigned long Point_Struct) {
 

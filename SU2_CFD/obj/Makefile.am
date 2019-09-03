@@ -109,15 +109,15 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/transfer/CTransfer.cpp \
-  ../src/transfer/physics/CTransfer_BoundaryDisplacements.cpp \
-  ../src/transfer/physics/CTransfer_ConjugateHeatVars.cpp \
-  ../src/transfer/physics/CTransfer_ConservativeVars.cpp \
-  ../src/transfer/physics/CTransfer_FlowTraction.cpp \
-  ../src/transfer/physics/CTransfer_FlowTraction_DiscAdj.cpp \
-  ../src/transfer/physics/CTransfer_MixingPlaneInterface.cpp \
-  ../src/transfer/physics/CTransfer_SlidingInterface.cpp \
-  ../src/transfer/physics/CTransfer_StructuralDisplacements.cpp \
-  ../src/transfer/physics/CTransfer_StructuralDisplacements_DiscAdj.cpp \
+  ../src/transfer/cfd/CConservativeVarsInterface.cpp \
+  ../src/transfer/cfd/CMixingPlaneInterface.cpp \
+  ../src/transfer/cfd/CSlidingInterface.cpp \
+  ../src/transfer/cht/CConjugateHeatInterface.cpp \
+  ../src/transfer/fsi/CDisplacementsInterface.cpp \
+  ../src/transfer/fsi/CFlowTractionInterface.cpp \
+  ../src/transfer/fsi/CDiscAdjFlowTractionInterface.cpp \
+  ../src/transfer/fsi/CDisplacementsInterfaceLegacy.cpp \
+  ../src/transfer/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \

@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_MixingPlaneInterface.cpp
+ * \file CMixingPlaneInterface.cpp
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
@@ -40,26 +40,26 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_MixingPlaneInterface : public CTransfer {
+class CMixingPlaneInterface : public CTransfer {
 
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_MixingPlaneInterface(void);
+  CMixingPlaneInterface(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config);
+  CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_MixingPlaneInterface(void);
+  virtual ~CMixingPlaneInterface(void);
 
 
   /*!
