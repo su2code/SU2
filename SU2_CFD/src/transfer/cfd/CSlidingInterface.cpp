@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_SlidingInterface.cpp
+ * \file CSlidingInterface.cpp
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
@@ -36,14 +36,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_SlidingInterface.hpp"
+#include "../../../include/transfer/cfd/CSlidingInterface.hpp"
 
 
-CTransfer_SlidingInterface::CTransfer_SlidingInterface(void) : CTransfer() {
+CSlidingInterface::CSlidingInterface(void) : CTransfer() {
 
 }
 
-CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
+CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
                                                        CConfig *config) : CTransfer() {
 
   rank = SU2_MPI::GetRank();
@@ -75,18 +75,18 @@ CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, 
 
 }
 
-CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
+CSlidingInterface::~CSlidingInterface(void) {
 
 }
 
 
-void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+void CSlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                                                        CGeometry *donor_geometry, CGeometry *target_geometry,
                                                        CConfig *donor_config, CConfig *target_config) {
 
 }
 
-void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                                    CConfig *donor_config, unsigned long Marker_Donor,
                                                    unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
@@ -111,7 +111,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   }
 }
 
-void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+void CSlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
                                                            unsigned long Vertex_Target, unsigned short nDonorPoints) {
 
   target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, nDonorPoints); // This is to allocate
@@ -120,7 +120,7 @@ void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solut
 
 }
 
-void CTransfer_SlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+void CSlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
                                                         su2double donorCoeff){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
@@ -128,7 +128,7 @@ void CTransfer_SlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex,
   Target_Variable[nVar] = donorCoeff;
 }
 
-void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+void CSlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                                     CConfig *target_config, unsigned long Marker_Target,
                                                     unsigned long Vertex_Target, unsigned long Point_Target) {
 

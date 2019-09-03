@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_FlowTraction.hpp
+ * \file CFlowTractionInterface.hpp
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author Ruben Sanchez
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_FlowTraction : public CTransfer {
+class CFlowTractionInterface : public CTransfer {
 
 protected:
   bool consistent_interpolation;
@@ -56,19 +56,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_FlowTraction(void);
+  CFlowTractionInterface(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_FlowTraction(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_FlowTraction(void);
+  virtual ~CFlowTractionInterface(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

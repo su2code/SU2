@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_ConservativeVars.cpp
+ * \file CConservativeVarsInterface.cpp
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another one.
  * \author Ruben Sanchez
@@ -36,28 +36,28 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_ConservativeVars.hpp"
+#include "../../../include/transfer/cfd/CConservativeVarsInterface.hpp"
 
-CTransfer_ConservativeVars::CTransfer_ConservativeVars(void) : CTransfer() {
+CConservativeVarsInterface::CConservativeVarsInterface(void) : CTransfer() {
 
 }
 
-CTransfer_ConservativeVars::CTransfer_ConservativeVars(unsigned short val_nVar, unsigned short val_nConst,
+CConservativeVarsInterface::CConservativeVarsInterface(unsigned short val_nVar, unsigned short val_nConst,
                                                        CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
 
 }
 
-CTransfer_ConservativeVars::~CTransfer_ConservativeVars(void) {
+CConservativeVarsInterface::~CConservativeVarsInterface(void) {
 
 }
 
 
-void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+void CConservativeVarsInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                                                        CGeometry *donor_geometry, CGeometry *target_geometry,
                                                        CConfig *donor_config, CConfig *target_config) {
 }
 
-void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+void CConservativeVarsInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                                    CConfig *donor_config, unsigned long Marker_Donor,
                                                    unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
@@ -71,7 +71,7 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
     Donor_Variable[iVar] = Solution[iVar];
 }
 
-void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+void CConservativeVarsInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                                     CConfig *target_config, unsigned long Marker_Target,
                                                     unsigned long Vertex_Target, unsigned long Point_Target) {
 

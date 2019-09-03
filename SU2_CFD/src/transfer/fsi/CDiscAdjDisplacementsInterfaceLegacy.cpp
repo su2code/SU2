@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_StructuralDisplacements_DiscAdj.cpp
+ * \file CDiscAdjDisplacementsInterfaceLegacy.cpp
  * \brief Declaration and inlines of the class to transfer structural displacements
  *        from a structural zone into a fluid zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
@@ -36,13 +36,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_StructuralDisplacements_DiscAdj.hpp"
+#include "../../../include/transfer/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
 
-CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_DiscAdj(void) : CTransfer() {
+CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(void) : CTransfer() {
 
 }
 
-CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_DiscAdj(unsigned short val_nVar,
+CDiscAdjDisplacementsInterfaceLegacy::CDiscAdjDisplacementsInterfaceLegacy(unsigned short val_nVar,
                                                                                      unsigned short val_nConst,
                                                                                      CConfig *config)
   : CTransfer(val_nVar,
@@ -51,12 +51,12 @@ CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_Dis
 
 }
 
-CTransfer_StructuralDisplacements_DiscAdj::~CTransfer_StructuralDisplacements_DiscAdj(void) {
+CDiscAdjDisplacementsInterfaceLegacy::~CDiscAdjDisplacementsInterfaceLegacy(void) {
 
 }
 
 
-void CTransfer_StructuralDisplacements_DiscAdj::GetPhysical_Constants(CSolver *struct_solution,
+void CDiscAdjDisplacementsInterfaceLegacy::GetPhysical_Constants(CSolver *struct_solution,
                                                                       CSolver *flow_solution,
                                                                       CGeometry *struct_geometry,
                                                                       CGeometry *flow_geometry,
@@ -64,7 +64,7 @@ void CTransfer_StructuralDisplacements_DiscAdj::GetPhysical_Constants(CSolver *s
                                                                       CConfig *flow_config) {
 }
 
-void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struct_solution,
+void CDiscAdjDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_solution,
                                                                   CGeometry *struct_geometry,
                                                                   CConfig *struct_config,
                                                                   unsigned long Marker_Struct,
@@ -84,7 +84,7 @@ void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struc
     Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
 }
 
-void CTransfer_StructuralDisplacements_DiscAdj::SetTarget_Variable(CSolver *flow_solution,
+void CDiscAdjDisplacementsInterfaceLegacy::SetTarget_Variable(CSolver *flow_solution,
                                                                    CGeometry *flow_geometry,
                                                                    CConfig *flow_config,
                                                                    unsigned long Marker_Flow,

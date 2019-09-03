@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_ConjugateHeatVars.cpp
+ * \file CConjugateHeatInterface.cpp
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
@@ -36,22 +36,22 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_ConjugateHeatVars.hpp"
+#include "../../../include/transfer/cht/CConjugateHeatInterface.hpp"
 
-CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(void) : CTransfer() {
+CConjugateHeatInterface::CConjugateHeatInterface(void) : CTransfer() {
 
 }
 
-CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst,
+CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst,
                                                          CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
 
 }
 
-CTransfer_ConjugateHeatVars::~CTransfer_ConjugateHeatVars(void) {
+CConjugateHeatInterface::~CConjugateHeatInterface(void) {
 
 }
 
-void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                                     CConfig *donor_config, unsigned long Marker_Donor,
                                                     unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
@@ -195,7 +195,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   delete [] Edge_Vector;
 }
 
-void CTransfer_ConjugateHeatVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                                      CConfig *target_config, unsigned long Marker_Target,
                                                      unsigned long Vertex_Target, unsigned long Point_Target) {
 

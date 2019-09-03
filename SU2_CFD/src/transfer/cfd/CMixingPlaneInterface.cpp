@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_MixingPlaneInterface.cpp
+ * \file CMixingPlaneInterface.cpp
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
@@ -36,13 +36,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_MixingPlaneInterface.hpp"
+#include "../../../include/transfer/cfd/CMixingPlaneInterface.hpp"
 
-CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer() {
+CMixingPlaneInterface::CMixingPlaneInterface(void) : CTransfer() {
 
 }
 
-CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst,
+CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst,
                                                                CConfig *donor_config, CConfig *target_config){
   unsigned short iVar;
   nVar = val_nVar;
@@ -56,12 +56,12 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
   }
 }
 
-CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
+CMixingPlaneInterface::~CMixingPlaneInterface(void) {
 }
 
 
 
-void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config){
+void CMixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config){
 
   unsigned short iSpan;
   nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
@@ -78,7 +78,7 @@ void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CC
 
 }
 
-void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                                        CConfig *donor_config, unsigned long Marker_Donor,
                                                        unsigned long iSpan, unsigned long rank) {
 
@@ -113,7 +113,7 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 }
 
 
-void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                                         CConfig *target_config, unsigned long Marker_Target,
                                                         unsigned long iSpan, unsigned long rank) {
 
@@ -138,7 +138,7 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 }
 
-void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
+void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
                                                       unsigned short donorZone){
   unsigned short iSpan;
 
@@ -162,7 +162,7 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
   }
 }
 
-void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
+void CMixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
                                                               unsigned short donorZone){
   unsigned short iSpan;
 

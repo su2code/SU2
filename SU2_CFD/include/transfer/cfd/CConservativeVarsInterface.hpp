@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_ConservativeVars.hpp
+ * \file CConservativeVarsInterface.hpp
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another one.
  * \author Ruben Sanchez
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_ConservativeVars : public CTransfer {
+class CConservativeVarsInterface : public CTransfer {
 
 protected:
 
@@ -49,19 +49,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_ConservativeVars(void);
+  CConservativeVarsInterface(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_ConservativeVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CConservativeVarsInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_ConservativeVars(void);
+  virtual ~CConservativeVarsInterface(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

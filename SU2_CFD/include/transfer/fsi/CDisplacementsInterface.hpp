@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_BoundaryDisplacements.hpp
+ * \file CDisplacementsInterface.hpp
  * \brief Declaration and inlines of the class to transfer boundary displacements
  *        from a structural zone into a fluid zone.
  * \author Ruben Sanchez
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_BoundaryDisplacements : public CTransfer {
+class CDisplacementsInterface : public CTransfer {
 
 protected:
 
@@ -51,12 +51,12 @@ public:
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_BoundaryDisplacements(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CDisplacementsInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_BoundaryDisplacements(void);
+  virtual ~CDisplacementsInterface(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

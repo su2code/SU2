@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_FlowTraction_DiscAdj.hpp
+ * \file CDiscAdjFlowTractionInterface.hpp
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "CTransfer_FlowTraction.hpp"
+#include "CFlowTractionInterface.hpp"
 
-class CTransfer_FlowTraction_DiscAdj : public CTransfer_FlowTraction {
+class CDiscAdjFlowTractionInterface : public CFlowTractionInterface {
 
 protected:
 
@@ -49,19 +49,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_FlowTraction_DiscAdj(void);
+  CDiscAdjFlowTractionInterface(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_FlowTraction_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_FlowTraction_DiscAdj(void);
+  virtual ~CDiscAdjFlowTractionInterface(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

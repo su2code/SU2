@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_ConjugateHeatVars.hpp
+ * \file CConjugateHeatInterface.hpp
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
@@ -40,7 +40,7 @@
 
 #include "../CTransfer.hpp"
 
-class CTransfer_ConjugateHeatVars : public CTransfer {
+class CConjugateHeatInterface : public CTransfer {
 
 protected:
 
@@ -49,19 +49,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_ConjugateHeatVars(void);
+  CConjugateHeatInterface(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_ConjugateHeatVars(void);
+  virtual ~CConjugateHeatInterface(void);
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
