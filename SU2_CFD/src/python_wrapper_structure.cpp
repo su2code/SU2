@@ -1070,10 +1070,10 @@ vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned 
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
   if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC){
-    Velocity[0] = solver->node[iPoint]->GetSolution_Vel(iPoint, 0);
-    Velocity[1] = solver->node[iPoint]->GetSolution_Vel(iPoint, 1);
+    Velocity[0] = solver->node->GetSolution_Vel(iPoint, 0);
+    Velocity[1] = solver->node->GetSolution_Vel(iPoint, 1);
     if (geometry->GetnDim() == 3)
-      Velocity[2] = solver->node[iPoint]->GetSolution_Vel(iPoint, 2);
+      Velocity[2] = solver->node->GetSolution_Vel(iPoint, 2);
     else
       Velocity[2] = 0.0;
   }
