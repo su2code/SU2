@@ -166,8 +166,8 @@ const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CG
 const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
-const int CGNS_CONN_SIZE   = 10; /*!< \brief Size of the connectivity array that is allocated for each element that we read from a CGNS file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
-const int CGNS_SKIP_SIZE   = 2;  /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
+const int SU2_CONN_SIZE   = 10; /*!< \brief Size of the connectivity array that is allocated for each element that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
+const int SU2_CONN_SKIP   = 2;  /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
 
 /*!
  * \brief Boolean answers
