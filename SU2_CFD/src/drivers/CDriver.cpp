@@ -817,6 +817,14 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
   geometry[MESH_0]->Check_Periodicity(config);
   
+  /*--- Compute mesh quality statistics on the fine grid. ---*/
+  
+  if (!fea) {
+    if (rank == MASTER_NODE)
+      cout << "Computing mesh quality statistics for the dual control volumes." << endl;
+    geometry[MESH_0]->ComputeMeshQualityStatistics(config);
+  }
+  
   geometry[MESH_0]->SetMGLevel(MESH_0);
   if ((config->GetnMGLevels() != 0) && (rank == MASTER_NODE))
     cout << "Setting the multigrid structure." << endl;
