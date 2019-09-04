@@ -3804,10 +3804,11 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
-  starting_node = NULL;
-  ending_node   = NULL;
-  nPoint_Linear = NULL;
-  npoint_procs = NULL;
+  beg_node = NULL;
+  end_node = NULL;
+
+  nPointLinear     = NULL;
+  nPointCumulative = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -8273,7 +8274,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   /*--- Store the local nodes in the geometry structure ---*/
   node = new CPoint*[nPoint];
   for(iPoint = 0; iPoint < nPoint; iPoint++) {
-    GlobalIndex = starting_node[rank]+iPoint;
+    GlobalIndex = beg_node[rank]+iPoint;
     if(nDim == 2) node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], GlobalIndex, config);
     else node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], PoiAdap[iPoint][2], GlobalIndex, config);
 
@@ -8298,7 +8299,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
 
       for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
                 
-        local_index = TriAdap[iElem][i]-starting_node[rank];
+        local_index = TriAdap[iElem][i]-beg_node[rank];
         
         if ((local_index >= 0) && (local_index < (long)nPoint)) {
           
@@ -8319,7 +8320,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
 
       for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
                 
-        local_index = TetAdap[iElem][i]-starting_node[rank];
+        local_index = TetAdap[iElem][i]-beg_node[rank];
         
         if ((local_index >= 0) && (local_index < (long)nPoint)) {
           
