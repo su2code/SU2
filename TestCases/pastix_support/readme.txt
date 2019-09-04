@@ -7,7 +7,10 @@
 %
 % 1 - Download
 % Get PaStiX 5.2.3 from https://gforge.inria.fr/frs/?group_id=186
-% Get Scotch 6.0.8 from https://gforge.inria.fr/projects/scotch
+% Get Scotch 6.0.6 from https://gforge.inria.fr/projects/scotch
+% Note: These two versions were tested on a number of platforms, some
+% issues were encountered with more recent version of Scotch, and PaStiX
+% 6.0.X is not compatible with SU2 as it does not support MPI yet.
 %
 % 2 - Build Scotch
 % Extract the tarball downloaded in 1 into "externals"
@@ -27,7 +30,9 @@
 %  ii  - Uncomment the lines for "VERSIONSMP  = _nosmp",
 %        SU2 does not currently support MPI+Threads.
 %  iii - Set SCOTCH_HOME as SCOTCH_HOME ?= ${PWD}/../../scotch/
-%  iv  - Optionally look at the BLAS section (required by "make examples")
+%  iv  - Comment out the lines for "Hardware Locality", this is only
+%        important for an MPI+Threads build.
+%  v   - Optionally look at the BLAS section (required by "make examples")
 % make all
 %
 % 4 - Build SU2
@@ -53,14 +58,13 @@
 %   ii  - The name is right but meson cannot find it. Set env variable
 %     PKG_CONFIG_PATH=$PKG_CONFIG_PATH:"directory with someblas.pc file"
 % - MKL is not in its standard directory (/opt/intel/mkl), use option
-%   -Dmkl_root="non standard directory" in call to meson.py.
-% - hwloc is not installed in default system directories, either:
-%   i   - Install it, sudo apt-get install hwloc libhwloc-dev
-%   ii  - Ask your systems admin to do it
-%   iii - Build from source, define HWLOC_HOME in config.in for PaStiX,
-%     before SU2 build: export LIBRARY_PATH=$LIBRARY_PATH:"HWLOC_HOME"/lib
+%   -Dmkl_root="non standard directory" in call to meson.py (headers are
+%   expected in "include" and libraries in "lib/intel64").
 %
 % 6 - Tested platforms
 % - Ubuntu 18.04, gcc 7.4, ompi 3.1.4, mkl 2017, openblas 0.2.20 and 0.3.2.dev
 % - Ubuntu 16.04, gcc 5.4, ompi 3.1.4, mkl 2017 and 2019
+% - CentOS 7.6.1810, gcc 5.4, ompi 3.1.4, mkl 2017
+% - CentOS 7.6.1810, icc 17, impi 2018, mkl 2017
+% - CentOS 7.6.1810, icc 19, impi 2018, mkl 2019
 
