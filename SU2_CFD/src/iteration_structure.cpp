@@ -568,10 +568,10 @@ void CFluidIteration::Preprocess(COutput *output,
     SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
   }
 
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
-    output->SetCFL_Number(solver, config, val_iZone);
-  }
+//  /*--- Evaluate the new CFL number (adaptive). ---*/
+//  if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
+//    output->SetCFL_Number(solver, config, val_iZone);
+//  }
 
 }
 
@@ -1286,10 +1286,10 @@ void CHeatIteration::Preprocess(COutput *output,
 
   unsigned long OuterIter = config[val_iZone]->GetOuterIter();
 
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
-    output->SetCFL_Number(solver, config, val_iZone);
-  }
+//  /*--- Evaluate the new CFL number (adaptive). ---*/
+//  if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
+//    output->SetCFL_Number(solver, config, val_iZone);
+//  }
 
 }
 

@@ -903,6 +903,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
+  /* Store the initial CFL number for all grid points. */
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double CFL = config->GetCFL(MGLevel);
+    node[iPoint]->SetLocalCFL(CFL);
+  }
+  
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -3125,7 +3132,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
   
@@ -3213,7 +3220,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Local_Delta_Time = node[iPoint]->GetLocalCFL()*Vol / node[iPoint]->GetMax_Lambda_Inv();
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
@@ -5191,12 +5198,15 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   SetIterLinSolver(IterLinSol);
   
+  su2double underRelaxation = ComputeUnderRelaxationFactor(config);
+  
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      underRelaxation = node[iPoint]->GetUnderRelaxation();
       for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, underRelaxation*LinSysSol[iPoint*nVar+iVar]);
       }
     }
   }
@@ -5218,6 +5228,113 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- For verification cases, compute the global error metrics. ---*/
   
   ComputeVerificationError(geometry, config);
+  
+}
+
+su2double CEulerSolver::ComputeUnderRelaxationFactor(CConfig *config) {
+  
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  
+  su2double underRelaxation = 1.0;
+  su2double localUnderRelaxation = 1.0;
+  const su2double percentChange = 0.30;// config->GetUnderRelaxationPercentChange();
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    localUnderRelaxation = 1.0;
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+
+      /* We impose a limit on the maximum percentage that the
+       density and energy can change over a nonlinear iteration. */
+
+
+      if ((iVar == 0) || (iVar == nVar-1)) {
+        
+        const unsigned long index = iPoint*nVar + iVar;
+
+
+        su2double ratio = fabs(LinSysSol[index])/node[iPoint]->GetSolution(iVar);
+
+        if (ratio > percentChange) {
+          underRelaxation = min(percentChange/ratio, underRelaxation);
+          localUnderRelaxation = min(percentChange/ratio, localUnderRelaxation);
+        }
+        
+      }
+      
+    }
+    
+    node[iPoint]->SetUnderRelaxation(localUnderRelaxation);
+    
+  }
+  
+  /* Reduce to obtain the global minimum relaxation factor. */
+
+  localUnderRelaxation = underRelaxation;
+  SU2_MPI::Allreduce(&localUnderRelaxation, &underRelaxation,
+                     1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  
+  /* Adapt the CFL number based on the under-relaxation parameter. */
+  
+  if (config->GetCFL_Adapt()) {
+    
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    su2double CFLFactor = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, MGFactor[100];
+    unsigned short iMesh;
+
+    /*--- Compute MG factor ---*/
+    
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+      else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+    }
+    
+    /*--- If we use a small under-relaxation parameter for stability,
+     then we should reduce the CFL before the next iteration. If we
+     are able to add the entire nonlinear update (under-relaxation = 1)
+     then we can increase the CFL number for the next iteration. ---*/
+    
+     underRelaxation = node[iPoint]->GetUnderRelaxation();
+
+    if (underRelaxation < 0.1) {
+      CFLFactor = config->GetCFL_AdaptParam(0);
+      node[iPoint]->SetUnderRelaxation(0.0);
+    } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+      CFLFactor = 1.0;
+    } else {
+      CFLFactor = config->GetCFL_AdaptParam(1);
+    }
+    
+    CFLMin = config->GetCFL_AdaptParam(2);
+    CFLMax = config->GetCFL_AdaptParam(3);
+    
+    //CFL = config->GetCFL(MGLevel);
+      CFL = node[iPoint]->GetLocalCFL();
+    
+    if ((CFL <= CFLMin)) {
+      CFL = CFLMin;
+      CFLFactor = 1.001*MGFactor[MGLevel];
+    }
+    else if ((CFL >= CFLMax)) {
+      CFL = CFLMax;
+      CFLFactor = 0.999*MGFactor[MGLevel];
+    }
+      
+    CFL *= CFLFactor;
+      
+      node[iPoint]->SetLocalCFL(CFL);
+      node[iPoint]->SetLocalCFLFactor(CFL);
+
+      //config->SetCFL(MGLevel, CFL);
+    //if (rank==MASTER_NODE) cout << " CFL: " << CFL << " omega: " << underRelaxation << endl;
+
+  }
+
+  }
+  
+  return underRelaxation;
   
 }
 
@@ -14974,6 +15091,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
+  /* Store the initial CFL number for all grid points. */
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double CFL = config->GetCFL(MGLevel);
+    node[iPoint]->SetLocalCFL(CFL);
+  }
+  
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -15238,7 +15362,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
   
@@ -15358,8 +15482,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      Local_Delta_Time = node[iPoint]->GetLocalCFL()*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Local_Delta_Time_Visc = node[iPoint]->GetLocalCFL()*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);

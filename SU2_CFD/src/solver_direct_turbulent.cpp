@@ -369,7 +369,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetLocalCFLFactor()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
     Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -408,7 +408,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+          node[iPoint]->AddClippedSolution(0, solver_container[FLOW_SOL]->node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
         }
         
         break;

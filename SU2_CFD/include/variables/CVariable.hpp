@@ -81,6 +81,10 @@ protected:
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
   *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  su2double UnderRelaxation;  /*!< \brief Value of the under-relxation parameter local to the control volume. */
+  su2double LocalCFL;  /*!< \brief Value of the CFL number local to the control volume. */
+  su2double LocalCFLFactor;  /*!< \brief Value of the factor to increase/decrease the CFL number local to the control volume. */
+
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
@@ -472,6 +476,42 @@ public:
       val_residual[iVar] = Residual_Sum[iVar];
   }
 
+  /*!
+   * \brief Set the value of the under-relaxation parameter for the current control volume (CV).
+   * \param[in] val_under_relaxation - the input value of the under-relaxation parameter for this CV.
+   */
+  inline void SetUnderRelaxation(su2double val_under_relaxation) { UnderRelaxation = val_under_relaxation; }
+  
+  /*!
+   * \brief Get the value of the under-relaxation parameter for the current control volume (CV).
+   * \return Value of the under-relaxation parameter for this CV.
+   */
+  inline su2double GetUnderRelaxation(void) { return UnderRelaxation; }
+  
+  /*!
+   * \brief Set the value of the local CFL number for the current control volume (CV).
+   * \param[in] val_cfl - the input value of the local CFL number for this CV.
+   */
+  inline void SetLocalCFL(su2double val_cfl) { LocalCFL = val_cfl; }
+  
+  /*!
+   * \brief Get the value of the local CFL number for the current control volume (CV).
+   * \return Value of the local CFL number for this CV.
+   */
+  inline su2double GetLocalCFL(void) { return LocalCFL; }
+  
+  /*!
+   * \brief Set the value of the factor to increase/decrease the local CFL number for the current control volume (CV).
+   * \param[in] val_cfl_factor - the input value of the factor to increase/decrease the local CFL number for this CV.
+   */
+  inline void SetLocalCFLFactor(su2double val_cfl_factor) { LocalCFLFactor = val_cfl_factor; }
+  
+  /*!
+   * \brief Get the value of the factor to increase/decrease the local CFL number for the current control volume (CV).
+   * \return Value of the factor to increase/decrease the local CFL number for this CV.
+   */
+  inline su2double GetLocalCFLFactor(void) { return LocalCFLFactor; }
+  
   /*!
    * \brief Set auxiliar variables, we are looking for the gradient of that variable.
    * \param[in] val_auxvar - Value of the auxiliar variable.

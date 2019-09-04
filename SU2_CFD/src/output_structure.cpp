@@ -12995,6 +12995,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       }
     }
     
+    nVar_Par +=1;
+    Variable_Names.push_back("Local_CFL");
+    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13305,6 +13308,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           }
         }
         
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLocalCFL(); iVar++;
+
       }
       
       /*--- Increment the point counter, as there may have been halos we
