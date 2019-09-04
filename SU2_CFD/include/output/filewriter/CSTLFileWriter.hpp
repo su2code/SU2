@@ -46,7 +46,7 @@ public:
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
-   */  
+   */
   CSTLFileWriter(vector<string> fields, unsigned short nDim);
 
   /*!
@@ -60,6 +60,6 @@ public:
    * \param[in] - The parallel sorted data to write
    */
   void Write_Data(string filename, CParallelDataSorter* data_sorter);
-  
+
 };
 
