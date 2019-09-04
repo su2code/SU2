@@ -15594,72 +15594,60 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     const unsigned long GlobalIndex_i = node[iPoint]->GetGlobalIndex();
     const unsigned long GlobalIndex_j = node[iPoint]->GetGlobalIndex();
     
-    const su2double *Normal = edge[iEdge]->GetNormal();
-    
-    /*--- Face area (norm of the normal vector) ---*/
-    
-    su2double Area = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
-    
-    /*--- Aspect ratio is the ratio between the largest and smallest
-     faces making up the boundary of the dual CV and is a
-     measure of the aspect ratio of the dual control volume. Smaller
-     is better (closer to isotropic). ----*/
-    
-    if (node[iPoint]->GetDomain()) {
-      if (Area < Area_Min[iPoint]) Area_Min[iPoint] = Area;
-      if (Area > Area_Max[iPoint]) Area_Max[iPoint] = Area;
-    }
-    
-    if (node[jPoint]->GetDomain()) {
-      if (Area < Area_Min[jPoint]) Area_Min[jPoint] = Area;
-      if (Area > Area_Max[jPoint]) Area_Max[jPoint] = Area;
-    }
-    
-    if (Area == 0.0) {
-      char buf[200];
-      SPRINTF(buf, "Zero-area CV face found for edge (%lu,%lu).",
-              GlobalIndex_i, GlobalIndex_j);
-      SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-    }
-    
-    /*-- Unit normal for the current edge. Recall that this normal
-     is computed by summing the normals or adjacent faces along
+    /*-- Area normal for the current edge. Recall that this normal
+     is computed by summing the normals of adjacent faces along
      the edge between iPoint & jPoint. ---*/
     
-    vector<su2double> UnitNormal(nDim);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      UnitNormal[iDim] = Normal[iDim]/Area;
+    const su2double *Normal = edge[iEdge]->GetNormal();
     
     /*--- Get the coordinates for point i & j. ---*/
     
     const su2double *Coord_i = node[iPoint]->GetCoord();
     const su2double *Coord_j = node[jPoint]->GetCoord();
+
+    /*--- Compute the vector pointing from iPoint to jPoint and
+     its distance. We also compute face area (norm of the normal vector). ---*/
     
-    /*--- Compute vector pointing from iPoint to jPoint and the distance. ---*/
-    
-    su2double dist_ij = 0.0;
-    vector<su2double> Edge_Vector(nDim);
+    su2double distance = 0.0;
+    su2double area     = 0.0;
+    vector<su2double> edgeVector(nDim);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-      dist_ij += Edge_Vector[iDim]*Edge_Vector[iDim];
+      edgeVector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+      distance        += edgeVector[iDim]*edgeVector[iDim];
+      area            += Normal[iDim]*Normal[iDim];
     }
-    dist_ij = sqrt(dist_ij);
+    distance = sqrt(distance);
+    area     = sqrt(area);
+
+    /*--- Aspect ratio is the ratio between the largest and smallest
+     faces making up the boundary of the dual CV and is a measure
+     of the aspect ratio of the dual control volume. Smaller
+     is better (closer to isotropic). ----*/
     
-    /*-- Normalize the edge vector. ---*/
+    if (node[iPoint]->GetDomain()) {
+      Area_Min[iPoint] = min(Area_Min[iPoint], area);
+      Area_Max[iPoint] = max(Area_Max[iPoint], area);
+    }
     
-    vector<su2double> Unit_Edge_Vector(nDim);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Unit_Edge_Vector[iDim] = Edge_Vector[iDim]/dist_ij;
+    if (node[jPoint]->GetDomain()) {
+      Area_Min[jPoint] = min(Area_Min[jPoint], area);
+      Area_Max[jPoint] = max(Area_Max[jPoint], area);
+    }
     
+    if (area <= 0.0) {
+      char buf[200];
+      SPRINTF(buf, "Zero-area CV face found for edge (%lu,%lu).",
+              GlobalIndex_i, GlobalIndex_j);
+      SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+    }
+
     /*--- Compute the angle between the unit normal associated
      with the edge and the unit vector pointing from iPoint to jPoint. ---*/
     
-    su2double dot_prod = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      dot_prod += UnitNormal[iDim]*Unit_Edge_Vector[iDim];
+    su2double dotProduct = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      dotProduct += (Normal[iDim]/area)*(edgeVector[iDim]/distance);
+    }
     
     /*--- The definition of orthogonality is an area-weighted average of
      90 degrees minus the angle between the face area unit normal and
@@ -15669,23 +15657,23 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
      are close to 90 degress, poor values are typically below 20 degress. ---*/
     
     if (node[iPoint]->GetDomain()) {
-      Orthogonality[iPoint] += Area*(90.0 - acos(dot_prod)*180.0/PI_NUMBER);
-      SurfaceArea[iPoint]   += Area;
+      Orthogonality[iPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
+      SurfaceArea[iPoint]   += area;
     }
     if (node[jPoint]->GetDomain()) {
-      Orthogonality[jPoint] += Area*(90.0 - acos(dot_prod)*180.0/PI_NUMBER);
-      SurfaceArea[jPoint]   += Area;
+      Orthogonality[jPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
+      SurfaceArea[jPoint]   += area;
     }
     
     /*--- Error check for zero volume of the dual CVs. ---*/
     
-    if (node[iPoint]->GetVolume() == 0.0) {
+    if (node[iPoint]->GetVolume() <= 0.0) {
       char buf[200];
       SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_i);
       SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
     }
     
-    if (node[jPoint]->GetVolume() == 0.0) {
+    if (node[jPoint]->GetVolume() <= 0.0) {
       char buf[200];
       SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_j);
       SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -15707,15 +15695,15 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
           
           /*--- Face area (norm of the normal vector) ---*/
           
-          su2double Area = 0.0;
+          su2double area = 0.0;
           for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+            area += Normal[iDim]*Normal[iDim];
+          area = sqrt(area);
           
           /*--- Check to store the area as the min or max for i or j. ---*/
           
-          if (Area < Area_Min[iPoint]) Area_Min[iPoint] = Area;
-          if (Area > Area_Max[iPoint]) Area_Max[iPoint] = Area;
+          Area_Min[iPoint] = min(Area_Min[iPoint], area);
+          Area_Max[iPoint] = max(Area_Max[iPoint], area);
           
         }
       }
@@ -15784,105 +15772,90 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
           Coord_FacejPoint[iDim]  = node[face_jPoint]->GetCoord(iDim);
         }
         
+        /*--- Access the sub-volume of the element separately in 2D or 3D. ---*/
+        
         su2double Volume_i, Volume_j;
         switch (nDim) {
           case 2:
             
-            /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
-            
             Volume_i = edge[iEdge]->GetVolume(Coord_FaceiPoint.data(),
                                               Coord_Edge_CG.data(),
                                               Coord_Elem_CG.data());
-            if (node[face_iPoint]->GetDomain()) {
-              if (Volume_i < SubVolume_Min[face_iPoint])
-                SubVolume_Min[face_iPoint] = Volume_i;
-              if (Volume_i > SubVolume_Max[face_iPoint])
-                SubVolume_Max[face_iPoint] = Volume_i;
-            }
-            
-            /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
-            
+
             Volume_j = edge[iEdge]->GetVolume(Coord_FacejPoint.data(),
                                               Coord_Edge_CG.data(),
                                               Coord_Elem_CG.data());
-            if (node[face_jPoint]->GetDomain()) {
-              if (Volume_j < SubVolume_Min[face_jPoint])
-                SubVolume_Min[face_jPoint] = Volume_j;
-              if (Volume_j > SubVolume_Max[face_jPoint])
-                SubVolume_Max[face_jPoint] = Volume_j;
-            }
-            
+
             break;
           case 3:
             
-            /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
-            
             Volume_i = edge[iEdge]->GetVolume(Coord_FaceiPoint.data(),
                                               Coord_Edge_CG.data(),
                                               Coord_FaceElem_CG.data(),
                                               Coord_Elem_CG.data());
-            if (node[face_iPoint]->GetDomain()) {
-              if (Volume_i < SubVolume_Min[face_iPoint])
-                SubVolume_Min[face_iPoint] = Volume_i;
-              if (Volume_i > SubVolume_Max[face_iPoint])
-                SubVolume_Max[face_iPoint] = Volume_i;
-            }
-            
-            /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
             
             Volume_j = edge[iEdge]->GetVolume(Coord_FacejPoint.data(),
                                               Coord_Edge_CG.data(),
                                               Coord_FaceElem_CG.data(),
                                               Coord_Elem_CG.data());
-            if (node[face_jPoint]->GetDomain()) {
-              if (Volume_j < SubVolume_Min[face_jPoint])
-                SubVolume_Min[face_jPoint] = Volume_j;
-              if (Volume_j > SubVolume_Max[face_jPoint])
-                SubVolume_Max[face_jPoint] = Volume_j;
-            }
-            
+
             break;
         }
+        
+        /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
+
+        if (node[face_iPoint]->GetDomain()) {
+          SubVolume_Min[face_iPoint] = min(SubVolume_Min[face_iPoint], Volume_i);
+          SubVolume_Max[face_iPoint] = max(SubVolume_Max[face_iPoint], Volume_i);
+        }
+        
+        /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
+
+        if (node[face_jPoint]->GetDomain()) {
+          SubVolume_Min[face_jPoint] = min(SubVolume_Min[face_jPoint], Volume_j);
+          SubVolume_Max[face_jPoint] = max(SubVolume_Max[face_jPoint], Volume_j);
+        }
+        
       }
     }
   
   /*--- Compute the metrics with a final loop over the vertices. Also
    compute the local min and max values here for reporting. ---*/
   
-  su2double ortho_min = 1.e6, ar_min = 1.e6, vr_min = 1.e6;
-  su2double ortho_max = 0.0,  ar_max = 0.0,  vr_max = 0.0;
+  su2double orthoMin = 1.e6, arMin = 1.e6, vrMin = 1.e6;
+  su2double orthoMax = 0.0,  arMax = 0.0,  vrMax = 0.0;
   for (unsigned long iPoint= 0; iPoint < nPointDomain; iPoint++) {
     Orthogonality[iPoint] = Orthogonality[iPoint]/SurfaceArea[iPoint];
-    if (Orthogonality[iPoint] > ortho_max) ortho_max = Orthogonality[iPoint];
-    if (Orthogonality[iPoint] < ortho_min) ortho_min = Orthogonality[iPoint];
-    
+    orthoMin = min(Orthogonality[iPoint], orthoMin);
+    orthoMax = max(Orthogonality[iPoint], orthoMax);
+
     Aspect_Ratio[iPoint] = Area_Max[iPoint]/Area_Min[iPoint];
-    if (Aspect_Ratio[iPoint] > ar_max) ar_max = Aspect_Ratio[iPoint];
-    if (Aspect_Ratio[iPoint] < ar_min) ar_min = Aspect_Ratio[iPoint];
+    arMin = min(Aspect_Ratio[iPoint], arMin);
+    arMax = max(Aspect_Ratio[iPoint], arMax);
     
     Volume_Ratio[iPoint] = SubVolume_Max[iPoint]/SubVolume_Min[iPoint];
-    if (Volume_Ratio[iPoint] > vr_max) vr_max = Volume_Ratio[iPoint];
-    if (Volume_Ratio[iPoint] < vr_min) vr_min = Volume_Ratio[iPoint];
+    vrMin = min(Volume_Ratio[iPoint], vrMin);
+    vrMax = max(Volume_Ratio[iPoint], vrMax);
   }
   
   /*--- Reduction to find the min and max values globally. ---*/
   
-  su2double Global_AR_Min, Global_AR_Max;
-  SU2_MPI::Allreduce(&ar_min, &Global_AR_Min, 1,
+  su2double Global_Ortho_Min, Global_Ortho_Max;
+  SU2_MPI::Allreduce(&orthoMin, &Global_Ortho_Min, 1,
                      MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&ar_max, &Global_AR_Max, 1,
+  SU2_MPI::Allreduce(&orthoMax, &Global_Ortho_Max, 1,
+                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  
+  su2double Global_AR_Min, Global_AR_Max;
+  SU2_MPI::Allreduce(&arMin, &Global_AR_Min, 1,
+                     MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&arMax, &Global_AR_Max, 1,
                      MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   
   su2double Global_VR_Min, Global_VR_Max;
-  SU2_MPI::Allreduce(&vr_min, &Global_VR_Min, 1,
+  SU2_MPI::Allreduce(&vrMin, &Global_VR_Min, 1,
                      MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&vr_max, &Global_VR_Max, 1,
-                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  
-  su2double Global_Ortho_Min, Global_Ortho_Max;
-  SU2_MPI::Allreduce(&ortho_min, &Global_Ortho_Min, 1,
-                     MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&ortho_max, &Global_Ortho_Max, 1,
+  SU2_MPI::Allreduce(&vrMax, &Global_VR_Max, 1,
                      MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   
   /*--- Print the summary to the console for the user. ---*/
