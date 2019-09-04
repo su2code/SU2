@@ -1449,15 +1449,9 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     config_container[val_iZone]->SetiInst(iInst);
 
     /*--- Definition of the geometry class to store the primal grid in the
-   partitioning process. ---*/
+     partitioning process. ---*/
 
     CGeometry *geometry_aux = NULL;
-
-    /*--- For the FEM solver with time-accurate local time-stepping, use
-     a dummy solver class to retrieve the initial flow state. ---*/
-
-    CSolver *solver_aux = NULL;
-    if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[val_iZone], nDim, MESH_0);
 
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
@@ -1466,8 +1460,7 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
 
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-    if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[val_iZone]);
-    else              geometry_aux->SetColorGrid_Parallel(config_container[val_iZone]);
+    geometry_aux->SetColorGrid_Parallel(config_container[val_iZone]);
 
     /*--- Re-allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
@@ -1478,31 +1471,13 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
 
     geometry_container[val_iZone][iInst] = new CGeometry*[config_container[val_iZone]->GetnMGLevels()+1];
 
-    if( fem_solver ) {
-      switch( config_container[val_iZone]->GetKind_FEM_Flow() ) {
-        case DG: {
-          geometry_container[val_iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[val_iZone]);
-          break;
-        }
-
-        default: {
-          SU2_MPI::Error("Unknown FEM flow solver.", CURRENT_FUNCTION);
-          break;
-        }
-      }
-    }
-    else {
-
-      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
       
-      geometry_container[val_iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[val_iZone]);
-
-    }
+    geometry_container[val_iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[val_iZone]);
 
     /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
     delete geometry_aux;
-    if (solver_aux != NULL) delete solver_aux;
 
     /*--- Add the Send/Receive boundaries ---*/
     geometry_container[val_iZone][iInst][MESH_0]->SetSendReceive(config_container[val_iZone]);

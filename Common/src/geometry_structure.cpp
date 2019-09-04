@@ -8223,7 +8223,8 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   unsigned long node_count = 0;
   unsigned long local_element_count = 0;
 
-  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0; Global_nElemDomain = 0;
+  Global_nPoint  = 0; Global_nPointDomain   = 0;
+  Global_nElem   = 0; Global_nElemDomain    = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -8350,22 +8351,59 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
    global index. ---*/
   elem = new CPrimalGrid*[nElem];
   local_element_count = 0;
-  for(iElem = 0; iElem < nelem_triangle; iElem++){
-    Global_to_Local_Elem[TriAdap[iElem][4]] = local_element_count;
-    elem[local_element_count] = new CTriangle(TriAdap[iElem][0],
-                                              TriAdap[iElem][1],
-                                              TriAdap[iElem][2], 2);
-    local_element_count++;
+  /*--- 2D ---*/
+  if(nDim == 2) {
+    for(iElem = 0; iElem < nelem_triangle; iElem++){
+      Global_to_Local_Elem[TriAdap[iElem][4]] = local_element_count;
+      elem[local_element_count] = new CTriangle(TriAdap[iElem][0],
+                                                TriAdap[iElem][1],
+                                                TriAdap[iElem][2], 2);
+      local_element_count++;
+      nelem_triangle++;
 
+    }
   }
-  for(iElem = 0; iElem < nelem_tetra; iElem++){
-    Global_to_Local_Elem[TetAdap[iElem][5]] = local_element_count;
-    elem[local_element_count] = new CTetrahedron(TetAdap[iElem][0],
-                                                 TetAdap[iElem][1],
-                                                 TetAdap[iElem][2],
-                                                 TetAdap[iElem][3]);
-    local_element_count++;
+  /*--- 3D ---*/
+  else {
+    for(iElem = 0; iElem < nelem_tetra; iElem++){
+      Global_to_Local_Elem[TetAdap[iElem][5]] = local_element_count;
+      elem[local_element_count] = new CTetrahedron(TetAdap[iElem][0],
+                                                   TetAdap[iElem][1],
+                                                   TetAdap[iElem][2],
+                                                   TetAdap[iElem][3]);
+      local_element_count++;
+      nelem_tetra++;
+    }
   }
+
+  /*--- Reduce the global counts of all element types. ---*/
+#ifdef HAVE_MPI
+  unsigned long Local_nElemTri     = nelem_triangle;
+  unsigned long Local_nElemQuad    = nelem_quad;
+  unsigned long Local_nElemTet     = nelem_tetra;
+  unsigned long Local_nElemHex     = nelem_hexa;
+  unsigned long Local_nElemPrism   = nelem_prism;
+  unsigned long Local_nElemPyramid = nelem_pyramid;
+  SU2_MPI::Allreduce(&Local_nElemTri,     &Global_nelem_triangle,  1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemQuad,    &Global_nelem_quad,      1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemTet,     &Global_nelem_tetra,     1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemHex,     &Global_nelem_hexa,      1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemPrism,   &Global_nelem_prism,     1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid,   1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nelem_triangle = nelem_triangle;
+  Global_nelem_quad     = nelem_quad;
+  Global_nelem_tetra    = nelem_tetra;
+  Global_nelem_hexa     = nelem_hexa;
+  Global_nelem_prism    = nelem_prism;
+  Global_nelem_pyramid  = nelem_pyramid;
+#endif
   
 }
 
