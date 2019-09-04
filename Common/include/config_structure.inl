@@ -1665,6 +1665,8 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 
+inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
+
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
 
 inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
