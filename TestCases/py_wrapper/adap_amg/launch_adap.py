@@ -81,9 +81,11 @@ def main():
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
+    size = comm.Get_size()
   else:
     comm = 0 
     rank = 0
+    size = 1
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
@@ -271,23 +273,59 @@ def main():
       su2amg.write_mesh(current_mesh, current_solution, mesh_new)
 
       if options.nDim == 2:
-        SolAdap = mesh_new['solution'].tolist()
-        PoiAdap = mesh_new['xy'].tolist()
-        EdgAdap = mesh_new['Edges'].tolist()
-        TriAdap = mesh_new['Triangles'].tolist()
-        TetAdap = [[]]
+        sendSolAdap = mesh_new['solution']
+        sendPoiAdap = mesh_new['xy']
+        sendEdgAdap = mesh_new['Edges']
+        sendTriAdap = mesh_new['Triangles']
+        sendTetAdap = [[]]
       else:
-        SolAdap = mesh_new['solution'].tolist()
-        EdgAdap = [[]]
-        PoiAdap = mesh_new['xyz'].tolist()
-        TriAdap = mesh_new['Triangles'].tolist()
-        TetAdap = mesh_new['Tetrahedra'].tolist()
+        sendSolAdap = mesh_new['solution']
+        sendPoiAdap = mesh_new['xyz']
+        sendEdgAdap = [[]]
+        sendTriAdap = mesh_new['Triangles']
+        sendTetAdap = mesh_new['Tetrahedra']
 
       del [mesh, mesh_new]
 
-      SU2Driver.Adapted_Input_Preprocessing(comm, options.filename,
-                                            SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap,
-                                            iZone, options.nZone)
+    else:
+      sendPoiAdap = np.empty(0)
+
+    # Compute beginning and ending nodes for linear partitions
+    if rank == 0:
+      print("Preparing offsets for linear partition of nodes.")
+    nPointGlobal = np.zeros(1, int)
+    sendCounts   = np.array(len(sendPoiAdap))
+
+    comm.Allreduce(sendCounts, nPointGlobal, op=MPI.SUM)
+
+    quotient     = int(nPointGlobal/size)
+    remainder    = int(nPointGlobal%size)
+    nPointLinear = quotient + int(rank < remainder)
+    beg_node     = np.zeros((size,), int)
+    end_node     = np.zeros((size,), int)
+    end_node[0]  = quotient + int(0 < remainder)
+    for i in range(1, size):
+      beg_node[i] = end_node[i-1]
+      end_node[i] = beg_node[i] + quotient + int(i < remainder)
+
+    # Linearly partition nodes
+    if rank == 0:
+      print("Communicating linearly partitioned nodes.")
+      SolAdap = sendSolAdap[beg_node[0]:end_node[0],:]
+      PoiAdap = sendPoiAdap[beg_node[0]:end_node[0],:]
+      for i in range(1,size):
+        comm.send(sendSolAdap[beg_node[i]:end_node[i],:], dest=i)
+        comm.send(sendPoiAdap[beg_node[i]:end_node[i],:], dest=i)
+
+      del [sendSolAdap, sendPoiAdap]
+
+    else:
+      SolAdap = comm.recv(source=0)
+      PoiAdap = comm.recv(source=0)
+
+    SU2Driver.Adapted_Input_Preprocessing(comm, options.filename,
+                                          SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap,
+                                          iZone, options.nZone)
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
