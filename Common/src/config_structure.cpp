@@ -290,48 +290,88 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
       mesh_file.close();
       break;
+      
     }
-
+      
     case CGNS: {
-
+      
 #ifdef HAVE_CGNS
-
+      
       /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
-      int fn, nbases, file_type;
-
+      
+      int fn, nbases = 0, nzones = 0, file_type;
+      int cell_dim = 0, phys_dim = 0;
+      char basename[CGNS_STRING_SIZE];
+      
       /*--- Check whether the supplied file is truly a CGNS file. ---*/
-      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK )
-        SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file"),
+      
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+        SU2_MPI::Error(val_mesh_filename +
+                       string(" was not found or is not a properly formatted CGNS file.\n") +
+                       string("Note that SU2 expects unstructured CGNS files in ADF data format."),
                        CURRENT_FUNCTION);
-
+      }
+      
       /*--- Open the CGNS file for reading. The value of fn returned
-            is the specific index number for this file and will be
-            repeatedly used in the function calls. ---*/
-      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
-
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+      
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+      
       /*--- Get the number of databases. This is the highest node
-            in the CGNS heirarchy. ---*/
-      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
-
+       in the CGNS heirarchy. ---*/
+      
+      if (cg_nbases(fn, &nbases)) cg_error_exit();
+      
       /*--- Check if there is more than one database. Throw an
-            error if there is because this reader can currently
-            only handle one database. ---*/
-      if ( nbases > 1 )
-        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database.",
+       error if there is because this reader can currently
+       only handle one database. ---*/
+      
+      if ( nbases > 1 ) {
+        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
                        CURRENT_FUNCTION);
+      }
+      
+      /*--- Read the databases. Note that the indexing starts at 1. ---*/
+      
+      for ( int i = 1; i <= nbases; i++ ) {
+        
+        if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+        
+        /*--- Get the number of zones for this base. ---*/
+        
+        if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+        
+      }
 
-      /*--- Determine the number of zones present in the first base.
-            Note that the indexing starts at 1 in CGNS. Afterwards
-            close the file again. ---*/
-      if(cg_nzones(fn, 1, &nZone) != CG_OK) cg_error_exit();
-      if (cg_close(fn) != CG_OK) cg_error_exit();
+      /*--- Close the CGNS file. ---*/
+
+      if ( cg_close(fn) ) cg_error_exit();
+      
+      /*--- Set the number of zones as read from the CGNS file ---*/
+      
+      nZone = nzones;
+      
+#else
+      SU2_MPI::Error(string(" SU2 built without CGNS support. \n") +
+                     string(" To use CGNS, build SU2 accordingly."),
+                     CURRENT_FUNCTION);
 #endif
-
+      
+      break;
+    }
+    case RECTANGLE: {
+      nZone = 1;
+      break;
+    }
+    case BOX: {
+      nZone = 1;
       break;
     }
   }
 
   return (unsigned short) nZone;
+  
 }
 
 unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
@@ -392,7 +432,9 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
       /*--- Check whether the supplied file is truly a CGNS file. ---*/
       if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-        SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
+        SU2_MPI::Error(val_mesh_filename +
+                       string(" was not found or is not a properly formatted CGNS file.\n") +
+                       string("Note that SU2 expects unstructured CGNS files in ADF data format."),
                        CURRENT_FUNCTION);
       }
 
@@ -419,8 +461,21 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
       /*--- Set the problem dimension as read from the CGNS file ---*/
       nDim = cell_dim;
+      
+#else
+      SU2_MPI::Error(string(" SU2 built without CGNS support. \n") +
+                     string(" To use CGNS, build SU2 accordingly."),
+                     CURRENT_FUNCTION);
 #endif
-
+      
+      break;
+    }
+    case RECTANGLE: {
+      nDim = 2;
+      break;
+    }
+    case BOX: {
+      nDim = 3;
       break;
     }
   }
@@ -602,6 +657,7 @@ void CConfig::SetPointersNull(void) {
   /*--- Moving mesh pointers ---*/
   
   nKind_SurfaceMovement = 0;
+  Kind_SurfaceMovement = NULL;
   LocationStations   = NULL;
   Motion_Origin     = NULL;   
   Translation_Rate       = NULL;  
@@ -721,7 +777,9 @@ void CConfig::SetPointersNull(void) {
   nSpanMaxAllZones = 1;
 
   Wrt_InletFile = false;
-  
+ 
+  Restart_Bandwidth_Agg = 0.0;
+ 
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -1658,6 +1716,18 @@ void CConfig::SetConfig_Options() {
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  
+  /* DESCRIPTION: List of the number of grid points in the RECTANGLE or BOX grid in the x,y,z directions. (default: (33,33,33) ). */
+  addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
+  
+  /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
+  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
+  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
+  
+  /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
+  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
+  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
+  
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
@@ -3615,8 +3685,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  FinestMesh = MESH_0;
   if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
-  else FinestMesh = MESH_0;
   
   if ((Kind_Solver == NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
@@ -4342,6 +4412,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
   }
   
+
+  /* Set a default for the size of the RECTANGLE / BOX grid sizes. */
+  
+  if (nMesh_Box_Size == 0) {
+    nMesh_Box_Size = 3;
+    Mesh_Box_Size = new short [nMesh_Box_Size];
+    Mesh_Box_Size[0] = 33;
+    Mesh_Box_Size[1] = 33;
+    Mesh_Box_Size[2] = 33;
+  } else if (nMesh_Box_Size != 3) {
+    SU2_MPI::Error(string("MESH_BOX_SIZE specified without 3 values.\n"),
+                   CURRENT_FUNCTION);
+  }
+
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
@@ -4414,6 +4498,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     RampOutletPressure = false;
     RampRotatingFrame = false;
+
   }
   
 }
@@ -6986,10 +7071,8 @@ CConfig::~CConfig(void) {
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
-  if (GetGrid_Movement() && Aeroelastic_Simulation) {
-    if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
-    if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
-  }
+  if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
+  if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
   
  /*--- Free memory for airfoil sections ---*/
 
@@ -7424,6 +7507,7 @@ CConfig::~CConfig(void) {
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
   if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
 
+  if (Kind_SurfaceMovement != NULL) delete [] Kind_SurfaceMovement;
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
