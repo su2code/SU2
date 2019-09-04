@@ -5784,9 +5784,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double Volume_nM1, Volume_nP1, TimeStep;
   su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
   
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  bool energy           = config->GetEnergy_Equation();
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool energy   = config->GetEnergy_Equation();
   
   /*--- Store the physical time step ---*/
   
