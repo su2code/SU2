@@ -12995,6 +12995,15 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       }
     }
     
+    if (config->GetWrt_MeshQuality()) {
+      nVar_Par +=1;
+      Variable_Names.push_back("Orthogonality");
+      nVar_Par +=1;
+      Variable_Names.push_back("Aspect_Ratio");
+      nVar_Par +=1;
+      Variable_Names.push_back("Volume_Ratio");
+    }
+    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13303,6 +13312,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Local_Data[jPoint][iVar] = Solution[3]/Solution[0] - Grid_Vel[2];
             iVar++;
           }
+        }
+        
+        /*--- Output the mesh quality metrics. ---*/
+        
+        if (config->GetWrt_MeshQuality()) {
+          Local_Data[jPoint][iVar] = geometry->Orthogonality[iPoint]; iVar++;
+          Local_Data[jPoint][iVar] = geometry->Aspect_Ratio[iPoint];  iVar++;
+          Local_Data[jPoint][iVar] = geometry->Volume_Ratio[iPoint];  iVar++;
         }
         
       }
@@ -13622,6 +13639,15 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       }
     }
     
+    if (config->GetWrt_MeshQuality()) {
+      nVar_Par +=1;
+      Variable_Names.push_back("Orthogonality");
+      nVar_Par +=1;
+      Variable_Names.push_back("Aspect_Ratio");
+      nVar_Par +=1;
+      Variable_Names.push_back("Volume_Ratio");
+    }
+    
     /*--- New variables get registered here before the end of the loop. ---*/
 
   }
@@ -13921,9 +13947,17 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           }
         }
         
+        /*--- Output the mesh quality metrics. ---*/
+        
+        if (config->GetWrt_MeshQuality()) {
+          Local_Data[jPoint][iVar] = geometry->Orthogonality[iPoint]; iVar++;
+          Local_Data[jPoint][iVar] = geometry->Aspect_Ratio[iPoint];  iVar++;
+          Local_Data[jPoint][iVar] = geometry->Volume_Ratio[iPoint];  iVar++;
+        }
+        
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
-
+        
       }
 
       /*--- Increment the point counter, as there may have been halos we
