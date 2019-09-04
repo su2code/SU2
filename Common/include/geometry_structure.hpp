@@ -925,19 +925,19 @@ public:
 	 */	
 	virtual void SetCoord(CGeometry *geometry);
 
-        /*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-         * \param[in] val_marker - Index of the boundary marker.
-	 */
-        virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+  /*! 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   */
+  virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
 
-        /*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-         * \param[in] val_marker - Index of the boundary marker.
-	 */
-        virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
+  /*! 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   */
+  virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1679,6 +1679,12 @@ public:
    * \return Multigrid index for current geometry object.
    */
   unsigned short GetMGLevel(void);
+
+  /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void UpdateBoundaries(CConfig *config);
 
   /*!
    * \brief A virtual member.

@@ -51,7 +51,6 @@ protected:
   MatrixType Primitive;              /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   VectorOfMatrix Gradient_Primitive; /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   MatrixType Limiter_Primitive;      /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-  MatrixType Solution_BGS_k;         /*!< \brief Old solution container for BGS iterations. */
   VectorType Density_Old;            /*!< \brief Old density for variable density turbulent flows (SST). */
 
 public:
@@ -324,16 +323,5 @@ public:
    * \return Value of the specific heat at constant V of the flow.
    */
   inline su2double GetSpecificHeatCv(Idx_t iPoint) const final { return Primitive(iPoint, nDim+8); }
-
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k() final;
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const final { return Solution_BGS_k(iPoint,iDim); }
 
 };

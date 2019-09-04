@@ -1123,6 +1123,10 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
   sigma_k2  = constants[1];
   sigma_om2 = constants[3];
   
+  F1_i = 0.0; F1_j = 0.0;
+  diff_kine = 0.0;
+  diff_omega = 0.0;
+  
 }
 
 CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {

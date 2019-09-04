@@ -46,9 +46,11 @@
 #include <cmath>
 
 #include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "../../SU2_CFD/include/output_structure.hpp"
+#include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
+#include "../../SU2_CFD/include/solver_structure.hpp"
 
 using namespace std;
 
@@ -81,3 +83,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
  */
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file);
+
+/*!
+ * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
+ *  on the surface and in the volume to a file.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] val_nZone - Number of Zones.
+ */
+
+void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);

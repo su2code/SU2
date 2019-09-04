@@ -42,9 +42,8 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx
   : CVariable(npoint, ndim, nvar, config) {
 
   bool low_fidelity = false;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool multizone = config->GetMultizone_Problem();
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Initialization of heat variable ---*/
 
@@ -74,10 +73,10 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 
-  if (multizone) Solution_BGS_k.resize(nPoint,1) = heat;
-
   Max_Lambda_Inv.resize(nPoint);
   Max_Lambda_Visc.resize(nPoint);
   Delta_Time.resize(nPoint);
 
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }

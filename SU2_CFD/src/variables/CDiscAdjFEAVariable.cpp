@@ -56,8 +56,10 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
     Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
     
     Solution_BGS.resize(nPoint,nDim) = su2double(0.0);
-    Solution_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 
   /*--- Nothing else to allocate ---*/
   if (!unsteady) return;
@@ -90,8 +92,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   }
 
 }
-
-void CDiscAdjFEAVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution_BGS; }
 
 void CDiscAdjFEAVariable::Set_OldSolution_Vel() { Solution_Old_Vel = Solution_Vel; }
 

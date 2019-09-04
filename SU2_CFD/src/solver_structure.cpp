@@ -101,6 +101,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
+  valResidual = 0.0;
+  
 
   /*--- Inlet profile data structures. ---*/
 
@@ -132,6 +134,9 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   VertexTraction = NULL;
   VertexTractionAdjoint = NULL;
 
+  
+  nPrimVarGrad = 0;
+  nPrimVar     = 0;
   
 }
 
@@ -1885,7 +1890,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_FEA:
-      if (config->GetDynamic_Analysis() == DYNAMIC)
+      if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
@@ -2021,7 +2026,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = node->GetSolution(iPoint, iVar);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 bufDSend[buf_offset+nVar+iVar]   = node->GetSolution_Vel(iPoint, iVar);
                 bufDSend[buf_offset+nVar*2+iVar] = node->GetSolution_Accel(iPoint, iVar);
               }
@@ -2183,7 +2188,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               node->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 node->SetSolution_Vel(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
                 node->SetSolution_Accel(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
@@ -2357,9 +2362,9 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
-      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
-    }
+//    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
+//      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+//    }
 
     SetRes_BGS(iVar, max(EPS*EPS, sqrt(GetRes_BGS(iVar)/geometry->GetnPoint())));
 
@@ -2388,11 +2393,11 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+//    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
 
-      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
+//      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
 
-    }
+//    }
 
     SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
 
@@ -3677,7 +3682,7 @@ void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nV
   
 }
 
-void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {
+void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long TimeIter) {
   
   /*--- Variables used for Aeroelastic case ---*/
   
@@ -3719,7 +3724,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             su2double Omega, dt, psi;
             dt = config->GetDelta_UnstTimeND();
             Omega  = (config->GetRotation_Rate(2)/config->GetOmega_Ref());
-            psi = Omega*(dt*ExtIter);
+            psi = Omega*(dt*TimeIter);
             
             /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
             if (Monitoring_Tag == "Airfoil1") {
@@ -3749,7 +3754,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
       }
       
       /*--- Compute the new surface node locations ---*/
-      surface_movement->AeroelasticDeform(geometry, config, ExtIter, iMarker, iMarker_Monitoring, structural_solution);
+      surface_movement->AeroelasticDeform(geometry, config, TimeIter, iMarker, iMarker_Monitoring, structural_solution);
       
     }
     
@@ -3967,7 +3972,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   ifstream restart_file_n;
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  string filename = config->GetSolution_FlowFileName();
+  string filename = config->GetSolution_FileName();
   string filename_n;
 
   /*--- Auxiliary vector for storing the coordinates ---*/
@@ -3983,15 +3988,15 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   /*--- First, we load the restart file for time n ---*/
 
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
 
   /*--- Open the restart file, throw an error if this fails. ---*/
 
@@ -4055,14 +4060,14 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+  if (config->GetTime_Marching() == DT_STEPPING_2ND) {
 
     ifstream restart_file_n1;
     string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
 
     /*--- Open the restart file, throw an error if this fails. ---*/
 
@@ -4141,7 +4146,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   unsigned short iVar;
   long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
   int counter = 0;
-  config->fields.clear();
+  fields.clear();
 
   Restart_Vars = new int[5];
 
@@ -4239,14 +4244,14 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   getline (restart_file, text_line);
   stringstream ss(text_line);
   while (ss >> Tag) {
-    config->fields.push_back(Tag);
+    fields.push_back(Tag);
     if (ss.peek() == ',') ss.ignore();
   }
 
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
 
-  Restart_Vars[1] = (int)config->fields.size() - 1;
+  Restart_Vars[1] = (int)fields.size() - 1;
 
   /*--- Allocate memory for the restart data. ---*/
 
@@ -4292,7 +4297,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   strcpy(fname, val_filename.c_str());
   int nRestart_Vars = 5, nFields;
   Restart_Vars = new int[5];
-  config->fields.clear();
+  fields.clear();
 
 #ifndef HAVE_MPI
 
@@ -4334,13 +4339,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    needed for when we read the strings later. We pad the beginning of the
    variable string vector with the Point_ID tag that wasn't written. ---*/
 
-  config->fields.push_back("Point_ID");
+  fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
     ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
     if (ret != (unsigned long)CGNS_STRING_SIZE) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
-    config->fields.push_back(str_buf);
+    fields.push_back(str_buf);
   }
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
@@ -4425,7 +4430,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
 
-  config->fields.push_back("Point_ID");
+  fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
     index = iVar*CGNS_STRING_SIZE;
     field_buf.append("\"");
@@ -4434,7 +4439,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
     }
     field_buf.append(str_buf);
     field_buf.append("\"");
-    config->fields.push_back(field_buf.c_str());
+    fields.push_back(field_buf.c_str());
     field_buf.clear();
   }
 
@@ -4506,7 +4511,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
  su2double dCMy_dCL_ = config->GetdCMy_dCL();
  su2double dCMz_dCL_ = config->GetdCMz_dCL();
   string::size_type position;
-	unsigned long ExtIter_ = 0;
+	unsigned long InnerIter_ = 0;
 	ifstream restart_file;
 	bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
 
@@ -4654,7 +4659,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Store intermediate vals from file I/O in correct variables. ---*/
 
-		ExtIter_  = Restart_Iter;
+		InnerIter_  = Restart_Iter;
 		AoA_      = Restart_Meta[0];
 		AoS_      = Restart_Meta[1];
 		BCThrust_ = Restart_Meta[2];
@@ -4777,7 +4782,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 				position = text_line.find ("EXT_ITER=",0);
 				if (position != string::npos) {
-					text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+					text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
 				}
 
 				/*--- Angle of attack ---*/
@@ -4989,7 +4994,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 	/*--- External iteration ---*/
 
   if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
-    config->SetExtIter_OffSet(ExtIter_);
+    config->SetExtIter_OffSet(InnerIter_);
 
 }
 
@@ -5127,9 +5132,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
   su2double Area_Children, Area_Parent, *Coord, dist, min_dist;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -5150,12 +5155,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone);
+    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ".dat");
 
   /*--- Modify file name for an unsteady restart ---*/
 
   if (dual_time || time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter);
+    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
   /*--- Open the file and check for problems. If a file can not be found,
    then a warning will be printed, but the calculation will continue
@@ -5588,6 +5593,39 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
   }
 }
 
+void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    SetRes_BGS(iVar,0.0);
+    SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      residual = node->GetSolution(iPoint,iVar) - node->Get_BGSSolution_k(iPoint,iVar);
+      AddRes_BGS(iVar,residual*residual);
+      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
+  }
+
+  SetResidual_BGS(geometry, config);
+
+}
+
+
+void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  node->Set_BGSSolution_k();
+}
+
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
@@ -5612,18 +5650,14 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   dynamic_grid = config->GetDynamic_Grid();
 }
 
-CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
-
-  nPoint = geometry->GetnPoint();
-
-  config->fields = field_names;
-
-  Solution = new su2double[nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names) {
 
   /*--- Define geometry constants in the solver structure ---*/
 
+  nPoint = geometry->GetnPoint();
   nDim = geometry->GetnDim();
+  nVar = val_nvar;
+  fields = field_names;
 
   /*--- Allocate the node variables ---*/
 
@@ -5637,12 +5671,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
-  string Tag, text_line, AdjExt, UnstExt;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
+  string Tag, text_line;
 
   ifstream restart_file;
   string filename;
@@ -5652,26 +5681,13 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst());
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  
+  filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
   /*--- Read only the number of variables in the restart file. ---*/
 
@@ -5716,13 +5732,22 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Close the file. ---*/
 
     fclose(fhw);
+    
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
 
+    nVar = var_buf[1];
 #else
 
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
     int ierr;
+    MPI_Offset disp;
+    unsigned short iVar;
+    unsigned long index, iChar;
+    string field_buf;
+    char str_buf[CGNS_STRING_SIZE];
     
     /*--- All ranks open the file using MPI. ---*/
 
@@ -5756,17 +5781,48 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
-    /*--- All ranks close the file after writing. ---*/
-    
-    MPI_File_close(&fhw);
 
-#endif
 
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
     nVar = var_buf[1];
-
+    
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+  
+    char *mpi_str_buf = new char[nVar*CGNS_STRING_SIZE];
+    if (rank == MASTER_NODE) {
+      disp = nVar_Buf*sizeof(int);
+      MPI_File_read_at(fhw, disp, mpi_str_buf, nVar*CGNS_STRING_SIZE,
+                       MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+    
+    /*--- Broadcast the string names of the variables. ---*/
+  
+    SU2_MPI::Bcast(mpi_str_buf, nVar*CGNS_STRING_SIZE, MPI_CHAR,
+                   MASTER_NODE, MPI_COMM_WORLD);
+    
+    fields.push_back("Point_ID");
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      index = iVar*CGNS_STRING_SIZE;
+      field_buf.append("\"");
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
+        str_buf[iChar] = mpi_str_buf[index + iChar];
+      }
+      field_buf.append(str_buf);
+      field_buf.append("\"");
+      fields.push_back(field_buf.c_str());
+      field_buf.clear();
+    }
+    
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+    
+#endif
   } else {
 
     /*--- First, check that this is not a binary restart file. ---*/
@@ -5863,8 +5919,9 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     getline (restart_file, text_line);
 
     stringstream ss(text_line);
+    fields.clear();
     while (ss >> Tag) {
-      config->fields.push_back(Tag);
+      fields.push_back(Tag);
       if (ss.peek() == ',') ss.ignore();
     }
 
@@ -5875,11 +5932,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
-    nVar = config->fields.size() - 1;
-
-    /*--- Clear the fields vector since we'll read it again. ---*/
-
-    config->fields.clear();
+    nVar = fields.size() - 1;
 
   }
 
@@ -5891,14 +5944,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   string filename;
   unsigned long index;
-  string UnstExt, text_line, AdjExt;
-  ifstream solution_file;
   unsigned short iDim, iVar;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
   unsigned short iInst = config->GetiInst();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
@@ -5916,27 +5963,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1 )
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst());
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  filename = config->GetFilename(filename, ".dat", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
@@ -6049,36 +6080,20 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   /*--- Restart the solution from file information ---*/
   string filename;
   unsigned long index;
-  string UnstExt, text_line, AdjExt;
-  ifstream solution_file;
   unsigned short iVar;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  filename = config->GetFilename(filename, ".dat", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
@@ -6193,19 +6208,19 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
   string Tag, text_line, AdjExt, UnstExt;
-  unsigned long iExtIter = config->GetExtIter();
+  unsigned long TimeIter = config->GetTimeIter();
 
   ifstream restart_file;
   string filename;
 
   /*--- Retrieve filename from config ---*/
 
-  filename = config->GetSolution_FlowFileName();
+  filename = config->GetSolution_FileName();
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
-  if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  if (config->GetTime_Domain()) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(TimeIter), ".dat");
   }
 
   /*--- Read only the number of variables in the restart file. ---*/
@@ -6419,13 +6434,10 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short iVar;
   unsigned long index;
 
-  string UnstExt, text_line;
-  ifstream restart_file;
+  string restart_filename = config->GetSolution_FileName();
 
-  string restart_filename = config->GetSolution_FlowFileName();
-
-  if (config->GetWrt_Unsteady()) {
-    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter));
+  if (config->GetTime_Domain()) {
+    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), ".dat");
   }
 
   int counter = 0;

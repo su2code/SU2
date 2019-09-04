@@ -47,7 +47,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   bool prestretch_fem     = config->GetPrestretch();  // Structure is prestretched
   bool discrete_adjoint   = config->GetDiscrete_Adjoint();
   bool refgeom            = config->GetRefGeom(); // Reference geometry needs to be stored
-  bool dynamic_analysis   = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic_analysis   = config->GetTime_Domain();
   bool fsi_analysis       = (config->GetnMarker_Fluid_Load() > 0);
 
   VonMises_Stress.resize(nPoint) = su2double(0.0);
@@ -77,7 +77,6 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
-    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
@@ -94,10 +93,10 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   if (refgeom) Reference_Geometry.resize(nPoint,nVar);
 
   if (prestretch_fem)  Prestretch.resize(nPoint,nVar);
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
-
-void CFEAVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
 
 void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }
 

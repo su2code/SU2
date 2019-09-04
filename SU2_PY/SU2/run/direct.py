@@ -90,9 +90,9 @@ def direct ( config ):
     multizone_cases = su2io.get_multizone(konfig)
 
     # merge
-    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
+    konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
-        konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
+        konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     su2merge(konfig)
     
     # filenames
@@ -114,7 +114,7 @@ def direct ( config ):
     # info out
     info = su2io.State()
     info.FUNCTIONS.update( aerodynamics )
-    info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
+    info.FILES.DIRECT = konfig['RESTART_FILENAME']
     if 'EQUIV_AREA' in special_cases:
         info.FILES.WEIGHT_NF = 'WeightNF.dat'
     if 'INV_DESIGN_CP' in special_cases:

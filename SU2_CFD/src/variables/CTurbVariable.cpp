@@ -43,7 +43,7 @@ CTurbVariable::CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *conf
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
   }
 

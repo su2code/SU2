@@ -211,7 +211,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
   unsigned long iPoint;
   unsigned short iDim;
   su2double Sensitivity, eps;
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   /*--- Extract the sensitivities ---*/
   ExtractAdjoint_Solution(geometry, config);
@@ -249,6 +249,8 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
 
 void CDiscAdjMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
+  // ToDo: Can this be made generic to use the CSolver impl
+
   unsigned short iVar;
   unsigned long iPoint;
   su2double residual;
@@ -265,10 +267,10 @@ void CDiscAdjMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig 
     /*--- Only for the boundary vertices ---*/
     if (node->Get_isVertex(iPoint)){
       for (iVar = 0; iVar < nVar; iVar++){
-          /*--- Compute only for the sensitivities of the boundary displacements ---*/
-          residual = node->GetBoundDisp_Sens(iPoint,iVar) - node->Get_BGSSolution_k(iPoint,iVar);
-          AddRes_BGS(iVar,residual*residual);
-          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        /*--- Compute only for the sensitivities of the boundary displacements ---*/
+        residual = node->GetBoundDisp_Sens(iPoint,iVar) - node->Get_BGSSolution_k(iPoint,iVar);
+        AddRes_BGS(iVar,residual*residual);
+        AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
     }
   }

@@ -74,7 +74,6 @@ protected:
   MatrixType Geometry_CrossTerm_Derivative;
 
   MatrixType Solution_BGS;
-  MatrixType Solution_BGS_k;
 
   /*!
    * \brief Constructor of the class.
@@ -286,20 +285,9 @@ public:
   inline void Set_BGSSolution(Idx_t iPoint, Idx_t iDim, su2double val_solution) final { Solution_BGS(iPoint,iDim) = val_solution; }
 
   /*!
-   * \brief Set the value of the adjoint solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k() final;
-
-  /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
   inline su2double Get_BGSSolution(Idx_t iPoint, Idx_t iDim) const final { return Solution_BGS(iPoint,iDim); }
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const final { return Solution_BGS_k(iPoint,iDim); }
 
 };

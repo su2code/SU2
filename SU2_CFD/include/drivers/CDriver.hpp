@@ -42,7 +42,7 @@
 #include "../iteration_structure.hpp"
 #include "../solver_structure.hpp"
 #include "../integration_structure.hpp"
-#include "../output_structure.hpp"
+
 #include "../numerics_structure.hpp"
 /*--- Transfer includes ---*/
 #include "../interfaces/CInterface.hpp"
@@ -62,6 +62,20 @@
 #include "../../../Common/include/grid_movement_structure.hpp"
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
+
+#include "../output/COutputLegacy.hpp"
+
+#include "../output/COutput.hpp"
+#include "../output/CDriverOutput.hpp"
+#include "../output/CElasticityOutput.hpp"
+#include "../output/CAdjElasticityOutput.hpp"
+#include "../output/CFlowCompOutput.hpp"
+#include "../output/CAdjFlowOutput.hpp"
+#include "../output/CFlowCompFEMOutput.hpp"
+#include "../output/CFlowIncOutput.hpp"
+#include "../output/CAdjFlowIncOutput.hpp"
+#include "../output/CHeatOutput.hpp"
+#include "../output/CAdjHeatOutput.hpp"
 
 using namespace std;
 
@@ -90,7 +104,7 @@ protected:
   su2double MpointsDomain;                        /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-  unsigned long ExtIter;                        /*!< \brief External iteration.*/
+  unsigned long TimeIter;                        /*!< \brief External iteration.*/
   ofstream **ConvHist_file;                       /*!< \brief Convergence history file.*/
   ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
@@ -105,13 +119,14 @@ protected:
        fsi,                                     /*!< \brief FSI simulation flag.*/
        fem_solver;                              /*!< \brief FEM fluid solver simulation flag. */
   CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
-  COutput *output;                              /*!< \brief Pointer to the COutput class. */
+  COutput **output_container;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ****geometry_container;              /*!< \brief Geometrical definition of the problem. */
   CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
   CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
+  COutput *driver_output;                 /*!< \brief Definition of the driver output. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
@@ -263,6 +278,11 @@ protected:
   void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
+   * \brief Preprocess the output container.
+   */
+  void Output_Preprocessing(CConfig **config, CConfig *driver_config, COutput **&output_container, COutput *&driver_output);
+
+  /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
   void StaticMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSurfaceMovement *surface_movement);
@@ -274,35 +294,33 @@ protected:
                                     CInterface*** interface);
 
   
-  void Output_Preprocessing(CConfig **config, COutput *&output);
-
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
@@ -310,7 +328,7 @@ protected:
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
+  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member.
@@ -318,29 +336,29 @@ protected:
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
+  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
   
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
-  virtual void Run_GaussSeidel(){};
+  virtual void Run_GaussSeidel(){}
 
   /*!
    * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
    */
-  virtual void Run_Jacobi(){};
+  virtual void Run_Jacobi(){}
   
   /*!
    * \brief A virtual member.
    */
-  virtual void Update() {};
+  virtual void Update() {}
   
 public:
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  virtual void StartSolver();
+  virtual void StartSolver() {}
   
   /*!
    * \brief Deallocation routine
@@ -355,42 +373,42 @@ public:
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  void PreprocessExtIter(unsigned long ExtIter);
+  virtual void Preprocess(unsigned long TimeIter){ }
 
   /*!
    * \brief Monitor the computation.
    */
-  virtual bool Monitor(unsigned long ExtIter);
+  virtual bool Monitor(unsigned long TimeIter){ return false; }
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long ExtIter);
+  virtual void Output(unsigned long TimeIter){ }
 
   /*!
    * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
    */
-  virtual void DynamicMeshUpdate(unsigned long ExtIter) { };
+  virtual void DynamicMeshUpdate(unsigned long TimeIter) { }
 
   /*!
    * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
    */
-  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) { };
+  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) { }
 
   /*!
    * \brief Perform a static mesh deformation, without considering grid velocity.
    */
-  virtual void StaticMeshUpdate() { };
+  virtual void StaticMeshUpdate() { }
 
   /*!
    * \brief Perform a mesh deformation as initial condition.
    */
-  virtual void SetInitialMesh() { };
+  virtual void SetInitialMesh() { }
 
   /*!
    * \brief Process the boundary conditions and update the multigrid structure.
    */
-  virtual void BoundaryConditionsUpdate() { };
+  virtual void BoundaryConditionsUpdate() { }
 
   /*!
    * \brief Get the total drag.
@@ -466,13 +484,13 @@ public:
    * \brief Get the number of external iterations.
    * \return Number of external iterations.
    */
-  unsigned long GetnExtIter();
+  unsigned long GetnTimeIter();
 
   /*!
    * \brief Get the current external iteration.
    * \return Current external iteration.
    */
-  unsigned long GetExtIter();
+  unsigned long GetTime_Iter();
 
   /*!
    * \brief Get the unsteady time step.
@@ -852,6 +870,10 @@ public:
  * \author T. Economon, G. Gori
  */
 class CFluidDriver : public CDriver {
+
+protected:
+   unsigned long Max_Iter;
+
 public:
   
   /*!
@@ -869,6 +891,11 @@ public:
    * \brief Destructor of the class.
    */
   ~CFluidDriver(void);
+  
+  /*!
+   * \brief Launch the computation for all zones and all physics.
+   */
+  void StartSolver();
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
@@ -879,11 +906,26 @@ public:
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
+  
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output(unsigned long InnerIter);
+  
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
+  
+  /*!
+   * \brief Perform some pre-processing before an iteration of the physics.
+   */
+  void Preprocess(unsigned long Iter);  
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
-  void DynamicMeshUpdate(unsigned long ExtIter);
+  void DynamicMeshUpdate(unsigned long TimeIter);
 
   /*!
    * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
@@ -948,6 +990,9 @@ public:
  * \author S. Vitale
  */
 class CTurbomachineryDriver : public CFluidDriver {
+private:
+  COutputLegacy* output_legacy;
+  
 public:
 
   /*!
@@ -986,7 +1031,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  bool Monitor(unsigned long TimeIter);
 
 
 
@@ -997,10 +1042,10 @@ public:
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  */
-class CHBDriver : public CDriver {
+class CHBDriver : public CFluidDriver {
 
 private:
-
+  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double **D; /*!< \brief Harmonic Balance operator. */
 
@@ -1159,7 +1204,7 @@ public:
   /*!
    * \brief Overload, does nothing but avoids dynamic mesh updates in FSI problems before the iteration
    */
-  void DynamicMeshUpdate(unsigned long ExtIter);
+  void DynamicMeshUpdate(unsigned long TimeIter);
 
 };
 
@@ -1170,7 +1215,8 @@ public:
  * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFSIDriver : public CDriver {
-
+  
+  COutputLegacy* output_legacy;
   CIteration** direct_iteration;
   unsigned short RecordingState;
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
@@ -1411,7 +1457,7 @@ public:
   /*!
    * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
    */
-  void DynamicMeshUpdate(unsigned long ExtIter);
+  void DynamicMeshUpdate(unsigned long TimeIter);
 
   /*!
    * \brief Transfer the displacements computed on the structural solver into the fluid solver.

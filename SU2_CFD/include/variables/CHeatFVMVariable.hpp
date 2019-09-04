@@ -48,7 +48,6 @@
 class CHeatFVMVariable final : public CVariable {
 protected:
   MatrixType Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  MatrixType Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
 
 public:
   /*!

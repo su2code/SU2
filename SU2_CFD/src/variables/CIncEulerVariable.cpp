@@ -41,18 +41,10 @@
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, Idx_t npoint,
                                      Idx_t ndim, Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
-  bool dual_time    = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                      (config->GetTime_Marching() == DT_STEPPING_2ND);
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
-  bool fsi          = config->GetFSI_Simulation();
-  bool multizone    = config->GetMultizone_Problem();
-
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
@@ -117,8 +109,9 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
 
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
-
-  if (fsi || multizone) Solution_BGS_k = Solution;
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 
   Density_Old.resize(nPoint) = su2double(0.0);
   Velocity2.resize(nPoint) = su2double(0.0);
@@ -197,5 +190,3 @@ bool CIncEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
   return physical;
 
 }
-
-void CIncEulerVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }

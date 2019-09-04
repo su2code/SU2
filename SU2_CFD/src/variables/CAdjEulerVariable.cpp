@@ -41,8 +41,8 @@
 CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie, Idx_t npoint, Idx_t ndim,
                                      Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                   (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
 
   /*--- Allocate residual structures ---*/
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
@@ -93,8 +93,11 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   IntBoundary_Jump.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Allocate space for the harmonic balance source terms ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+  if (config->GetTime_Marching() == HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 
   Sensor.resize(nPoint);
 
