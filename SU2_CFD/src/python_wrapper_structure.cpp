@@ -862,6 +862,33 @@ map<string, string> CDriver::GetAllBoundaryMarkersType(){
   return allBoundariesTypeMap;
 }
 
+void CDriver::ResetConvergence() {
+
+  for(iZone = 0; iZone < nZone; iZone++) {
+    switch (config_container[iZone]->GetKind_Solver()) {
+
+    case EULER: case NAVIER_STOKES: case RANS:
+    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+      integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+      if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
+      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
+      break;
+
+    case FEM_ELASTICITY:
+      integration_container[iZone][INST_0][FEA_SOL]->SetConvergence(false);
+      break;
+
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      integration_container[iZone][INST_0][ADJFLOW_SOL]->SetConvergence(false);
+      if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) )
+        integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
+      break;
+    }
+  }
+
+}
+
 void CFluidDriver::StaticMeshUpdate() {
 
   int rank = MASTER_NODE;

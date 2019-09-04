@@ -25,6 +25,7 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'fem_cgns_elements.cpp',
            'CMultiGridQueue.cpp',
            'CMeshReaderFVM.cpp',
+           'CSU2ASCIIMeshReaderFVM.cpp',
            'CBoxMeshReaderFVM.cpp',
            'CCGNSMeshReaderFVM.cpp',
            'CRectangularMeshReaderFVM.cpp'])

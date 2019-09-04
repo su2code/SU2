@@ -1679,11 +1679,11 @@ void CConfig::SetConfig_Options() {
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
   
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
-  vector<su2double> default_mesh_box_length(3,1.0);
+  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
   addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
   
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
-  vector<su2double> default_mesh_box_offset(3,0.0);
+  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
   addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
   
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
@@ -4425,7 +4425,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error(string("MESH_BOX_SIZE specified without 3 values.\n"),
                    CURRENT_FUNCTION);
   }
-  
+
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
@@ -4498,6 +4498,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     RampOutletPressure = false;
     RampRotatingFrame = false;
+
   }
   
 }
