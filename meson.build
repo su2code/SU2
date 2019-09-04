@@ -80,7 +80,7 @@ if get_option('enable-pastix')
   pastix_dep  = declare_dependency(include_directories: pastix_root,
                                    link_args: [ '-L../'+pastix_root, '-L../'+scotch_root,
                                    '-lpastix', '-lscotch', '-lptscotch', '-lptscotcherr',
-                                   '-lgfortran', '-lm', '-lrt', '-lhwloc', '-lpthread'])
+                                   '-lm', '-lrt', '-lpthread'])
   su2_deps += pastix_dep
 endif
 
