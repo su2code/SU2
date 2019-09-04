@@ -1,7 +1,7 @@
 /*!
- * \file CTransfer_BoundaryDisplacements.hpp
- * \brief Declaration and inlines of the class to transfer boundary displacements
- *        from a structural zone into a fluid zone.
+ * \file CDiscAdjDisplacementsInterfaceLegacy.hpp
+ * \brief Declaration and inlines of the class to transfer structural displacements
+ *        from a structural zone into a fluid zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -38,9 +38,9 @@
 
 #pragma once
 
-#include "../CTransfer.hpp"
+#include "../CInterface.hpp"
 
-class CTransfer_BoundaryDisplacements : public CTransfer {
+class CDiscAdjDisplacementsInterfaceLegacy : public CInterface {
 
 protected:
 
@@ -48,15 +48,20 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CDiscAdjDisplacementsInterfaceLegacy(void);
+
+  /*!
+   * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_BoundaryDisplacements(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CDiscAdjDisplacementsInterfaceLegacy(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_BoundaryDisplacements(void);
+  virtual ~CDiscAdjDisplacementsInterfaceLegacy(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.
@@ -68,8 +73,8 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                 CGeometry *donor_geometry, CGeometry *target_geometry,
-                 CConfig *donor_config, CConfig *target_config);
+                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config);
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -80,7 +85,7 @@ public:
    * \param[in] Vertex_Donor - Index of the donor vertex.
    */
   void GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-               unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct);
+                         unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct);
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -91,8 +96,9 @@ public:
    * \param[in] Vertex_Target - Index of the target vertex.
    * \param[in] Point_Target - Index of the target point.
    */
-  void SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
-              CConfig *flow_config, unsigned long Marker_Flow,
-              unsigned long Vertex_Flow, unsigned long Point_Mesh);
+  void SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
+                          CConfig *flow_config, unsigned long Marker_Flow,
+                          unsigned long Vertex_Flow, unsigned long Point_Flow);
 
 };
+
