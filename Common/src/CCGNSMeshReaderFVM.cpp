@@ -154,10 +154,6 @@ void CCGNSMeshReaderFVM::ReadCGNSDatabaseMetadata() {
   /*--- Set the number of dimensions baed on cell_dim. ---*/
   
   dimension = (unsigned short)cell_dim;
-  if (rank == MASTER_NODE) {
-    if (dimension == 2) cout << "Two dimensional problem." << endl;
-    if (dimension == 3) cout << "Three dimensional problem." << endl;
-  }
   
 }
 
@@ -175,12 +171,13 @@ void CCGNSMeshReaderFVM::ReadCGNSZoneMetadata() {
     cout <<  nzones << " total zone(s)." << endl;
   }
   
-  /*--- Check if there is more than one zone. Throw an
-   error if the number of zones does not match the expected number. ---*/
+  /*--- Check if there is more than one zone. Until we enable it, we
+   will require a single zone CGNS file. Multizone problems can still
+   be run with CGNS by using separate CGNS files for each zone. ---*/
   
-  if (nzones != nZones) {
-    SU2_MPI::Error("Mismatch in the number of zones (nzones != val_nZone)",
-                   CURRENT_FUNCTION);
+  if ( nzones > 1 ) {
+    SU2_MPI::Error(string("CGNS reader currently expects only 1 zone per CGNS file.") +
+                   string("Multizone problems can be run with separate CGNS files for each zone."), CURRENT_FUNCTION);
   }
   
   /*--- Read the basic information for this zone, including
@@ -567,7 +564,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   
   /*--- These are internal elems. Allocate memory on each proc. ---*/
   
-  vector<cgsize_t> connElemTemp(nElems[val_section]*CGNS_CONN_SIZE,0);
+  vector<cgsize_t> connElemTemp(nElems[val_section]*SU2_CONN_SIZE,0);
   
   /*--- Copy the connectivity into the larger array with a standard
    format per element: [globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. ---*/
@@ -575,9 +572,9 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   counterCGNS = 0;
   for (iElem = 0; iElem < nElems[val_section]; iElem++) {
     
-    /*--- Store the conn in chunks of CGNS_CONN_SIZE for simplicity. ---*/
+    /*--- Store the conn in chunks of SU2_CONN_SIZE for simplicity. ---*/
     
-    unsigned long nn = iElem*CGNS_CONN_SIZE;
+    unsigned long nn = iElem*SU2_CONN_SIZE;
     
     /*--- First, store the global element ID and the VTK type. ---*/
     
@@ -628,7 +625,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
       
       /*--- Get the index of the current point. ---*/
       
-      iPoint = connElemTemp[iElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + iNode];
+      iPoint = connElemTemp[iElem*SU2_CONN_SIZE + SU2_CONN_SKIP + iNode];
       
       /*--- Search for the processor that owns this point. ---*/
       
@@ -676,7 +673,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    + 2 extra values for the ID and VTK. ---*/
   
   unsigned long *connSend = NULL, iSend = 0;
-  unsigned long sendSize = (unsigned long)CGNS_CONN_SIZE*nElem_Send[size];
+  unsigned long sendSize = (unsigned long)SU2_CONN_SIZE*nElem_Send[size];
   connSend = new unsigned long[sendSize];
   for (iSend = 0; iSend < sendSize; iSend++)
     connSend[iSend] = 0;
@@ -686,7 +683,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   
   vector<unsigned long> index(size);
   for (iProcessor = 0; iProcessor < size; iProcessor++)
-    index[iProcessor] = CGNS_CONN_SIZE*nElem_Send[iProcessor];
+    index[iProcessor] = SU2_CONN_SIZE*nElem_Send[iProcessor];
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
@@ -696,7 +693,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
       
       /*--- Get the index of the current point. ---*/
       
-      iPoint = connElemTemp[iElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + iNode];
+      iPoint = connElemTemp[iElem*SU2_CONN_SIZE + SU2_CONN_SKIP + iNode];
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -712,13 +709,13 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
         /*--- Load the VTK type first into the conn array,
          then the connectivity vals, and last, the global ID. ---*/
         
-        for (jNode = 0; jNode < CGNS_CONN_SIZE; jNode++) {
-          connSend[nn] = connElemTemp[iElem*CGNS_CONN_SIZE + jNode]; nn++;
+        for (jNode = 0; jNode < SU2_CONN_SIZE; jNode++) {
+          connSend[nn] = connElemTemp[iElem*SU2_CONN_SIZE + jNode]; nn++;
         }
         
         /*--- Increment the index by the message length ---*/
         
-        index[iProcessor] += CGNS_CONN_SIZE;
+        index[iProcessor] += SU2_CONN_SIZE;
         
       }
       
@@ -740,7 +737,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    directly copy our own data later. ---*/
   
   unsigned long *connRecv = NULL, iRecv = 0;
-  unsigned long recvSize = (unsigned long)CGNS_CONN_SIZE*nElem_Recv[size];
+  unsigned long recvSize = (unsigned long)SU2_CONN_SIZE*nElem_Recv[size];
   connRecv = new unsigned long[recvSize];
   for (iRecv = 0; iRecv < recvSize; iRecv++)
     connRecv[iRecv] = 0;
@@ -761,13 +758,13 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
                    connRecv, nElem_Recv, connRecvReq,
-                   CGNS_CONN_SIZE, COMM_TYPE_UNSIGNED_LONG);
+                   SU2_CONN_SIZE, COMM_TYPE_UNSIGNED_LONG);
   
   /*--- Copy the current rank's data into the recv buffer directly. ---*/
   
-  iRecv = CGNS_CONN_SIZE*nElem_Recv[rank];
-  unsigned long myStart = CGNS_CONN_SIZE*nElem_Send[rank];
-  unsigned long myFinal = CGNS_CONN_SIZE*nElem_Send[rank+1];
+  iRecv = SU2_CONN_SIZE*nElem_Recv[rank];
+  unsigned long myStart = SU2_CONN_SIZE*nElem_Send[rank];
+  unsigned long myFinal = SU2_CONN_SIZE*nElem_Send[rank+1];
   for (iSend = myStart; iSend < myFinal; iSend++) {
     connRecv[iRecv] = connSend[iSend];
     iRecv++;
@@ -782,11 +779,11 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    for this section, then write the recv'd values. ---*/
   
   if (nElem_Recv[size] > 0) {
-    connElems[val_section].resize(nElem_Recv[size]*CGNS_CONN_SIZE,0);
+    connElems[val_section].resize(nElem_Recv[size]*SU2_CONN_SIZE,0);
     unsigned long count = 0;
     for (iElem = 0; iElem < (unsigned long)nElem_Recv[size]; iElem++) {
-      for (iNode = 0; iNode < CGNS_CONN_SIZE; iNode++) {
-        unsigned long nn = iElem*CGNS_CONN_SIZE+iNode;
+      for (iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
+        unsigned long nn = iElem*SU2_CONN_SIZE+iNode;
         connElems[val_section][count] = (cgsize_t)connRecv[nn];
         count++;
       }
@@ -841,7 +838,7 @@ void CCGNSMeshReaderFVM::ReadCGNSSurfaceSection(int val_section) {
     /*--- Allocate some memory for the handling the connectivity
      and auxiliary data that we are need to communicate. ---*/
     
-    vector<cgsize_t> connElemCGNS(nElems[val_section]*CGNS_CONN_SIZE,0);
+    vector<cgsize_t> connElemCGNS(nElems[val_section]*SU2_CONN_SIZE,0);
     vector<unsigned short> elemTypes(nElems[val_section],0);
     vector<unsigned short> nPoinPerElem(nElems[val_section],0);
     vector<unsigned long>  elemGlobalID(nElems[val_section],0);
@@ -906,7 +903,7 @@ void CCGNSMeshReaderFVM::ReadCGNSSurfaceSection(int val_section) {
     /*--- Allocate the memory for the data structure used to carry
      the connectivity for this section. ---*/
     
-    connElems[val_section].resize(nElems[val_section]*CGNS_CONN_SIZE,0);
+    connElems[val_section].resize(nElems[val_section]*SU2_CONN_SIZE,0);
     
     unsigned long counterCGNS = 0;
     for (iElem = 0; iElem < nElems[val_section]; iElem++) {
@@ -937,10 +934,10 @@ void CCGNSMeshReaderFVM::ReadCGNSSurfaceSection(int val_section) {
        format as the interior elements. Note that we subtract 1 to
        move from the CGNS 1-based indexing to SU2's zero-based. ---*/
       
-      connElems[val_section][iElem*CGNS_CONN_SIZE+0] = 0;
-      connElems[val_section][iElem*CGNS_CONN_SIZE+1] = vtk_type;
+      connElems[val_section][iElem*SU2_CONN_SIZE+0] = 0;
+      connElems[val_section][iElem*SU2_CONN_SIZE+1] = vtk_type;
       for (iNode = 0; iNode < (unsigned long)npe; iNode++) {
-        unsigned long nn = iElem*CGNS_CONN_SIZE+CGNS_SKIP_SIZE+iNode;
+        unsigned long nn = iElem*SU2_CONN_SIZE+SU2_CONN_SKIP+iNode;
         connElems[val_section][nn] = connElemTemp[counterCGNS] - 1;
         counterCGNS++;
       }
@@ -970,13 +967,13 @@ void CCGNSMeshReaderFVM::ReformatCGNSVolumeConnectivity() {
   
   /* Put our CGNS data into the class data structures for the mesh reader */
   
-  localVolumeElementConnectivity.resize(numberOfLocalElements*CGNS_CONN_SIZE);
+  localVolumeElementConnectivity.resize(numberOfLocalElements*SU2_CONN_SIZE);
   unsigned long count = 0;
   for (int s = 0; s < nSections; s++) {
     if (isInterior[s]) {
       for (unsigned long iElem = 0; iElem < nElems[s]; iElem++) {
-        for (unsigned long iNode = 0; iNode < CGNS_CONN_SIZE; iNode++) {
-          unsigned long nn = iElem*CGNS_CONN_SIZE+iNode;
+        for (unsigned long iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
+          unsigned long nn = iElem*SU2_CONN_SIZE+iNode;
           localVolumeElementConnectivity[count] = (unsigned long)connElems[s][nn];
           count++;
         }
@@ -1010,11 +1007,11 @@ void CCGNSMeshReaderFVM::ReformatCGNSSurfaceConnectivity() {
       /*--- The master node alone stores the connectivity. ---*/
       
       if (rank == MASTER_NODE) {
-        surfaceElementConnectivity[markerCount].resize(nElems[s]*CGNS_CONN_SIZE);
+        surfaceElementConnectivity[markerCount].resize(nElems[s]*SU2_CONN_SIZE);
         elementCount = 0;
         for (unsigned long iElem = 0; iElem < nElems[s]; iElem++) {
-          for (unsigned long iNode = 0; iNode < CGNS_CONN_SIZE; iNode++) {
-            unsigned long nn = iElem*CGNS_CONN_SIZE+iNode;
+          for (unsigned long iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
+            unsigned long nn = iElem*SU2_CONN_SIZE+iNode;
             surfaceElementConnectivity[markerCount][elementCount] = (unsigned long)connElems[s][nn];
             elementCount++;
           }
