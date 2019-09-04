@@ -338,7 +338,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void ResetConvergence() { };
+  virtual void ResetConvergence();
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
