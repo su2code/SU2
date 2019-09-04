@@ -57,6 +57,10 @@ CVariable::CVariable(void) {
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
 
+  /* Under-relaxation parameters. */
+  UnderRelaxation = 1.0;
+  LocalCFLFactor  = 1.0;
+
 }
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {

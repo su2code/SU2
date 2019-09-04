@@ -1292,6 +1292,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double ComputeUnderRelaxationFactor(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -5425,6 +5431,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double ComputeUnderRelaxationFactor(CConfig *config);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
