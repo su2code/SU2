@@ -120,7 +120,7 @@ public:
    * \returns Number of surface elements for a marker.
    */
   inline unsigned long GetNumberOfSurfaceElementsForMarker(int val_iMarker) {
-    return (unsigned long)surfaceElementConnectivity[val_iMarker].size()/CGNS_CONN_SIZE;
+    return (unsigned long)surfaceElementConnectivity[val_iMarker].size()/SU2_CONN_SIZE;
   }
   
   /*!
