@@ -68,8 +68,6 @@ protected:
 
   MatrixType Prestretch;            /*!< \brief Prestretch geometry */
 
-  MatrixType Solution_BGS_k;        /*!< \brief Old solution container for BGS iterations ---*/
-
   /*!
    * \brief Constructor of the class.
    * \note This class is not supposed to be instantiated, it is only a building block for CFEABoundVariable
@@ -487,16 +485,5 @@ public:
 	  for (Idx_t iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n(iPoint,iVar));
   }
-
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k() final;
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iVar) const final { return Solution_BGS_k(iPoint,iVar); }
 
 };

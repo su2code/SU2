@@ -82,7 +82,7 @@ CSU2ASCIIMeshReaderFVM::~CSU2ASCIIMeshReaderFVM(void) { }
 
 void CSU2ASCIIMeshReaderFVM::ReadMetadata() {
   
-  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
   bool multizone_file = config->GetMultizone_Mesh();
   
   /*--- Open grid file ---*/

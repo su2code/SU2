@@ -132,6 +132,8 @@ protected:
 
   MatrixType Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
 
+  MatrixType Solution_BGS_k;
+
   Idx_t nPoint = {0};  /*!< \brief Number of points in the domain. */
   Idx_t nDim = {0};      /*!< \brief Number of dimension of the problem. */
   Idx_t nVar = {0};        /*!< \brief Number of variables of the problem. */
@@ -139,7 +141,7 @@ protected:
   Idx_t nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
   Idx_t nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
   Idx_t nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
-
+  
 public:
 
   /*--- Disable default construction copy and assignment. ---*/
@@ -722,6 +724,14 @@ public:
    * \return Value of the Rmatrix entry.
    */
   inline su2double GetRmatrix(Idx_t iPoint, Idx_t iDim, Idx_t jDim) const { return Rmatrix(iPoint,iDim,jDim); }
+
+  /*!
+   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \return Value of the Rmatrix entry.
+   */
+  inline su2double **GetRmatrix(Idx_t iPoint) { return Rmatrix[iPoint]; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -2050,27 +2060,30 @@ public:
   inline virtual void Set_BGSSolution(Idx_t iPoint, Idx_t iDim, su2double solution) {}
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline virtual void Set_BGSSolution_k() {}
+  virtual void Set_BGSSolution_k();
+  
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  inline void Set_BGSSolution_k(Idx_t iPoint, Idx_t iVar, su2double val_var) {
+    Solution_BGS_k(iPoint,iVar) = val_var;
+  }
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  inline virtual su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iVar) const {
+    return Solution_BGS_k(iPoint,iVar);
+  }
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] solution - old adjoint solution for coordinate iDim
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
    */
-  inline virtual su2double Get_BGSSolution(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution_Geometry(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
+  inline virtual su2double Get_BGSSolution(Idx_t iPoint, Idx_t iDim) const {return 0.0;}
 
   /*!
    * \brief  A virtual member. Set the contribution of crossed terms into the derivative.

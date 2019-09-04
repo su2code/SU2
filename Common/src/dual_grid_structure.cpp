@@ -59,7 +59,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetUnsteady_Simulation() == NO) { 
+  if (config->GetTime_Marching() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -133,7 +133,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     /*--- Structures for storing old node coordinates for computing grid 
     velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
-    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
+    if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -146,6 +146,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   /*--- Intialize the value of the periodic volume. ---*/
   Periodic_Volume = 0.0;
   
+  /*--- Init walldistance ---*/
+  
+  Wall_Distance = 0.0;
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
@@ -164,7 +167,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetUnsteady_Simulation() == NO) { 
+  if (config->GetTime_Marching() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -237,7 +240,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
     /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
-    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
+    if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -272,7 +275,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   GridVel = NULL;  GridVel_Grad = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-  if ( config->GetUnsteady_Simulation() == NO ) { 
+  if ( config->GetTime_Marching() == NO ) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -347,7 +350,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
     /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
-    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
+    if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];

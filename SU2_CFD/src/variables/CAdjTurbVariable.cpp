@@ -52,5 +52,7 @@ CAdjTurbVariable::CAdjTurbVariable(su2double psinu_inf, Idx_t npoint, Idx_t ndim
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
   Limiter.resize(nPoint,nVar) = su2double(0.0);
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }

@@ -784,7 +784,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case COORDINATES_OLD:
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         COUNT_PER_POINT  = nDim*2;
       else
         COUNT_PER_POINT  = nDim;
@@ -865,7 +865,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+iDim] = vector[iDim];
             }
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+            if (config->GetTime_Marching() == DT_STEPPING_2ND) {
               vector = node[iPoint]->GetCoord_n1();
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+nDim+iDim] = vector[iDim];
@@ -964,7 +964,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
             break;
           case COORDINATES_OLD:
             node[iPoint]->SetCoord_n(&bufDRecv[buf_offset]);
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            if (config->GetTime_Marching() == DT_STEPPING_2ND)
               node[iPoint]->SetCoord_n1(&bufDRecv[buf_offset+nDim]);
             break;
           case MAX_LENGTH:
@@ -3563,6 +3563,42 @@ void CGeometry::SetElemVolume(CConfig *config)
   }
 }
 
+void CGeometry::UpdateBoundaries(CConfig *config){
+  
+  unsigned short iMarker;
+  unsigned long iElem_Surface, iNode_Surface, Point_Surface;
+  
+  for (iMarker = 0; iMarker <config->GetnMarker_All(); iMarker++){
+    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
+      for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
+        
+        Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
+        
+        node[Point_Surface]->SetPhysicalBoundary(false);
+        node[Point_Surface]->SetSolidBoundary(false);
+        
+        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPhysicalBoundary(true);
+        
+        if (config->GetSolid_Wall(iMarker))
+          node[Point_Surface]->SetSolidBoundary(true);
+      }
+    }
+  }
+  
+  /*--- Update the normal neighbors ---*/
+  
+  FindNormal_Neighbor(config);
+  
+  /*--- Compute wall distance ---- */
+  
+  ComputeWall_Distance(config);
+    
+}
+
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   
   size = SU2_MPI::GetSize();
@@ -3743,7 +3779,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
     string str = "boundary.dat";
 
-    str = config->GetMultizone_FileName(str, val_iZone);
+    str = config->GetMultizone_FileName(str, val_iZone, ".dat");
 
     /*--- Open .su2 grid file ---*/
     
@@ -5820,7 +5856,7 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
   SU2_MPI::Bcast(&nMarker_Global, 1, MPI_UNSIGNED_LONG,
                  MASTER_NODE, MPI_COMM_WORLD);
 
-  char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE];
+  char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE]();
   if (rank == MASTER_NODE) {
     for (iMarker = 0; iMarker < nMarker_Global; iMarker++) {
       SPRINTF(&mpi_str_buf[iMarker*MAX_STRING_SIZE], "%s",
@@ -7854,7 +7890,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
       
       /*--- Update config file lists in order to store the boundary
        information for this marker in the correct place. ---*/
-      
+  
       Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
       config->SetMarker_All_TagBound(iMarker, Marker_Tag);
       config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
@@ -7866,13 +7902,15 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
       config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
+      config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_SendRecv(iMarker, NONE);
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
-      
+       
     }
   }
   
@@ -13163,9 +13201,9 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
                    + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
       
@@ -13359,28 +13397,28 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   
   /*--- Time-average any unsteady surface sensitivities ---*/
   
-  unsigned long iExtIter, nExtIter;
+  unsigned long iTimeIter, nTimeIter;
   su2double delta_T, total_T;
-  if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    nExtIter = config->GetUnst_AdjointIter();
-    delta_T  = config->GetDelta_UnstTime();
-    total_T  = (su2double)nExtIter*delta_T;
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() && config->GetTime_Domain()) {
+    nTimeIter = config->GetUnst_AdjointIter();
+    delta_T  = config->GetTime_Step();
+    total_T  = (su2double)nTimeIter*delta_T;
+  } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
     
     su2double period = config->GetHarmonicBalance_Period();
-    nExtIter  = config->GetnTimeInstances();
-    delta_T   = period/(su2double)nExtIter;
+    nTimeIter  = config->GetnTimeInstances();
+    delta_T   = period/(su2double)nTimeIter;
     total_T   = period;
     
   } else {
-    nExtIter = 1;
+    nTimeIter = 1;
     delta_T  = 1.0;
     total_T  = 1.0;
   }
   
-  for (iExtIter = 0; iExtIter < nExtIter; iExtIter++) {
+  for (iTimeIter = 0; iTimeIter < nTimeIter; iTimeIter++) {
     
     /*--- Prepare to read surface sensitivity files (CSV) ---*/
     
@@ -13392,16 +13430,16 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/
-    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+    if (config->GetTime_Marching() == HARMONIC_BALANCE)
+    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
 
-    if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-        (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
-      if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+    if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
+        (config->GetTime_Marching() == HARMONIC_BALANCE)) {
+      if ((SU2_TYPE::Int(iTimeIter) >= 0)    && (SU2_TYPE::Int(iTimeIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iTimeIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 10)   && (SU2_TYPE::Int(iTimeIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iTimeIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 100)  && (SU2_TYPE::Int(iTimeIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iTimeIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 1000) && (SU2_TYPE::Int(iTimeIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iTimeIter));
+      if (SU2_TYPE::Int(iTimeIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
     }
     else
       SPRINTF (buffer, ".csv");
@@ -13416,14 +13454,27 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     
     /*--- Read extra inofmration ---*/
     
-    getline(Surface_file, text_line);
-    text_line.erase (0,9);
-    su2double AoASens = atof(text_line.c_str());
-    config->SetAoA_Sens(AoASens);
+//    getline(Surface_file, text_line);
+//    text_line.erase (0,9);
+//    su2double AoASens = atof(text_line.c_str());
+//    config->SetAoA_Sens(AoASens);
     
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
+    
+    vector<string> split_line;
+    
+    char delimiter = ',';
+    split_line = PrintingToolbox::split(text_line, delimiter);
+    
+    std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
+    
+    if (it == split_line.end()){
+      SU2_MPI::Error("Surface sensitivity not found in file.", CURRENT_FUNCTION);
+    }
+    
+    int sens_index = std::distance(split_line.begin(), it);
     
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
@@ -13431,7 +13482,10 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
         if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
-      point_line >> iPoint >> Sensitivity;
+      point_line >> iPoint;
+      
+      for (int i = 1; i <= sens_index; i++)
+        point_line >> Sensitivity;
       
       if (PointInDomain[iPoint]) {
         
@@ -13477,21 +13531,21 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
                (Kind_Solver == ADJ_NAVIER_STOKES)       ||
                (Kind_Solver == ADJ_RANS));
   su2double Sens, dull_val, AoASens;
-  unsigned short nExtIter, iDim;
+  unsigned short nTimeIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
   int counter = 0;
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()) {
-    nExtIter = config->GetnExtIter();
+  if (config->GetTime_Domain()) {
+    nTimeIter = config->GetnTime_Iter();
   }else {
-    nExtIter = 1;
+    nTimeIter = 1;
   }
  
   if (rank == MASTER_NODE)
-    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
+    cout << "Reading in sensitivity at iteration " << nTimeIter-1 << "."<< endl;
   
   unsigned short skipVar = nDim, skipMult = 1;
 
@@ -13523,14 +13577,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   filename = config->GetSolution_AdjFileName();
 
   filename = config->GetObjFunc_Extension(filename);
-
-  if (config->GetUnsteady_Simulation()) {
-    filename = config->GetUnsteady_FileName(filename, nExtIter-1);
-  }
-
-	if (config->GetnZone() > 1){
-		filename = config->GetMultizone_FileName(filename, config->GetiZone());
-	}
+  
+  filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
   if (config->GetRead_Binary_Restart()) {
 
@@ -16979,9 +17027,9 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
                    +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
       
@@ -17291,6 +17339,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   
   nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
+  config->SetnSpanWiseSections(0);
 }
 
 CDummyGeometry::~CDummyGeometry(){}

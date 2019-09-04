@@ -41,8 +41,8 @@
 CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
   
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                   (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
 
   bool fsi = config->GetFSI_Simulation();
 
@@ -70,11 +70,11 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndi
     Geometry_CrossTerm_Derivative_Flow.resize(nPoint,nDim) = su2double(0.0);
     
     Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
-    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
+
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }
-
-void CDiscAdjVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution_BGS; }

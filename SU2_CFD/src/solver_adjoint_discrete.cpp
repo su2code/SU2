@@ -150,9 +150,9 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  bool time_n_needed  = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config->GetTime_Marching() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -243,8 +243,8 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
-  bool time_n1_needed = (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
-  bool time_n_needed  = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || time_n1_needed;
+  bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
   bool input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
@@ -418,13 +418,13 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
+  unsigned long TimeIter = config->GetTimeIter();
   su2double seeding = 1.0;
 
   if (time_stepping) {
-    if (ExtIter < IterAvg_Obj) {
+    if (TimeIter < IterAvg_Obj) {
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
     else {
@@ -441,10 +441,10 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_n_needed  = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config->GetTime_Marching() == DT_STEPPING_2ND));
 
-  bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -708,8 +708,8 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
-      config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
+      config->GetTime_Marching() == DT_STEPPING_2ND);
   bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
@@ -775,7 +775,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Coord = geometry->node[iPoint]->GetCoord();
@@ -890,8 +890,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  bool dual_time_1st = (config_container->GetUnsteady_Simulation() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config_container->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   su2double *solution_n, *solution_n1;
   unsigned long iPoint;
@@ -913,9 +913,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine, counter;
   su2double Area_Children, Area_Parent, *Solution_Fine;
-  ifstream restart_file;
-  string restart_filename, filename, text_line;
-  
+  string restart_filename, filename;
+
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
@@ -923,10 +922,13 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
+  
+  restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+  
 
   /*--- Read and store the restart metadata. ---*/
 
-  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
+//  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -1044,12 +1046,11 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   /*--- Set the residuals ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-          residual = snode->Get_BGSSolution(iPoint,iVar) - snode->Get_BGSSolution_k(iPoint,iVar);
-
-          AddRes_BGS(iVar,residual*residual);
-          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-      }
+    for (iVar = 0; iVar < nVar; iVar++){
+      residual = snode->Get_BGSSolution(iPoint,iVar) - snode->Get_BGSSolution_k(iPoint,iVar);
+      AddRes_BGS(iVar,residual*residual);
+      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
   }
 
   SetResidual_BGS(geometry, config);

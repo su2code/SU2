@@ -61,7 +61,6 @@ protected:
   MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
-  MatrixType Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations. */
 
 public:
   /*!
@@ -431,14 +430,4 @@ public:
       WindGustDer(iPoint,iDim) = val_WindGustDer[iDim];
   }
 
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k() final;
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iVar) const final { return Solution_BGS_k(iPoint,iVar); }
 };

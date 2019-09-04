@@ -61,7 +61,6 @@ private:
   MatrixType Geometry_Direct;
 
   MatrixType Solution_BGS;
-  MatrixType Solution_BGS_k;
   MatrixType Solution_Geometry_BGS_k;
 
 public:
@@ -209,29 +208,10 @@ public:
   }
 
   /*!
-   * \brief Set the value of the adjoint solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k() override;
-
-  /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
   inline su2double Get_BGSSolution(Idx_t iPoint, Idx_t iDim) const override { return Solution_BGS(iPoint,iDim);}
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const override { return Solution_BGS_k(iPoint,iDim);}
-
-  /*!
-   * \brief Get the value of the adjoint geometry solution in the previous BGS subiteration.
-   * \param[out] val_solution - geometrical adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_Geometry(Idx_t iPoint, Idx_t iDim) const override {
-    return Solution_Geometry_BGS_k(iPoint,iDim);
-  }
 
   /*!
    * \brief Set the contribution of crossed terms into the derivative.

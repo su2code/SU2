@@ -43,7 +43,7 @@
 #include <ctime>
 
 #include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output_structure.hpp"
+#include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 

@@ -51,6 +51,8 @@ CVariable::CVariable(Idx_t npoint, Idx_t nvar, CConfig *config) {
    in the simulation ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 
+  if (config->GetMultizone_Problem())
+    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
 CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
@@ -70,11 +72,11 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
 
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  if (config->GetUnsteady_Simulation() != NO) {
+  if (config->GetTime_Marching() != NO) {
     Solution_time_n.resize(nPoint,nVar);
     Solution_time_n1.resize(nPoint,nVar);
   }
-  else if (config->GetDynamic_Analysis() == DYNAMIC) {
+  else if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
@@ -87,7 +89,9 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
   }
 
   Non_Physical.resize(nPoint) = false;
-
+  
+  if (config->GetMultizone_Problem())
+    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
 void CVariable::Set_OldSolution() { Solution_Old = Solution; }
@@ -97,6 +101,8 @@ void CVariable::Set_Solution() { Solution = Solution_Old; }
 void CVariable::Set_Solution_time_n() { Solution_time_n = Solution; }
 
 void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
+
+void CVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
 
 void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
 

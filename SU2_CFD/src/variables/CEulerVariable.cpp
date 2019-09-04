@@ -41,12 +41,10 @@
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, Idx_t npoint,
                                Idx_t ndim, Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                   (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
   bool viscous   = config->GetViscous();
   bool windgust  = config->GetWind_Gust();
-  bool fsi       = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
@@ -108,7 +106,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+  if (config->GetTime_Marching() == HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
@@ -127,8 +125,9 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
         We need P, and rho for running the adjoint problem ---*/
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-
-  if (fsi || multizone) Solution_BGS_k = Solution;
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 
   Velocity2.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
@@ -200,5 +199,3 @@ void CEulerVariable::SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel) {
 }
 
 void CEulerVariable::SetSolution_New() { Solution_New = Solution; }
-
-void CEulerVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }

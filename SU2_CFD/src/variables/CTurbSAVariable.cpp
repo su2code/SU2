@@ -45,6 +45,15 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, Idx_
 
   muT.resize(nPoint) = val_muT;
 
+  /*--- Allocate and initialize solution for the dual time strategy ---*/
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+
+  if (dual_time) {
+    Solution_time_n  = Solution;
+    Solution_time_n1 = Solution;
+  }
+
   gamma_BC.resize(nPoint);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
