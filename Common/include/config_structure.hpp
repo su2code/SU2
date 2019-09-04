@@ -758,6 +758,7 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
@@ -3231,6 +3232,12 @@ public:
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
   bool GetWrt_Performance(void);
+  
+  /*!
+   * \brief Get information about writing the mesh quality metrics to the visualization files.
+   * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
+   */
+  bool GetWrt_MeshQuality(void);
   
   /*!
    * \brief Get information about writing a template inlet profile file.

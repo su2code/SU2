@@ -1793,6 +1793,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
+  /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
+  addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
