@@ -5,16 +5,17 @@ pkg_sources  = \
     cgns_header.h \
     cgns_io.h \
     cgnstypes.h \
+    cgnsconfig.h \
     fortran_macros.h \
     adf/ADF.h \
     adf/ADF_fbind.h \
     adf/ADF_internals.h \
-	cgns_error.c \
-	cgns_internals.c \
-	cgns_io.c \
-	cgnslib.c \
+    cgns_error.c \
+    cgns_internals.c \
+    cgns_io.c \
+    cgnslib.c \
     adf/ADF_interface.c \
-	adf/ADF_internals.c
+    adf/ADF_internals.c
 
 
 ######################################################################
