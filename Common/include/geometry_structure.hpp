@@ -65,6 +65,7 @@ extern "C" {
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"
 #include "fem_standard_element.hpp"
+#include "CMeshReaderFVM.hpp"
 
 using namespace std;
 
@@ -340,7 +341,7 @@ public:
   su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
   su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
 
-  unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
+  unsigned short nCommLevel;    /*!< \brief Number of non-blocking communication levels. */
   
   short *Marker_All_SendRecv;
   
@@ -356,18 +357,18 @@ public:
   unsigned long *nNewElem_Bound;      /*!< \brief Number of new periodic elements of the boundary. */
   
   /*--- Partitioning-specific variables ---*/
-  map<unsigned long,unsigned long> Global_to_Local_Elem;
-  unsigned long xadj_size;
-  unsigned long adjacency_size;
-  unsigned long *starting_node;
-  unsigned long *ending_node;
-  unsigned long *npoint_procs;
-  unsigned long *nPoint_Linear;
+  
+  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unsigned long *beg_node; /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
+  unsigned long *end_node; /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
+  unsigned long *nPointLinear;     /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
+  unsigned long *nPointCumulative; /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
+  
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   vector< vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
-  idx_t * adjacency;
-  idx_t * xadj;
+  idx_t *adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
+  idx_t *xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
 #endif
 #endif
   
@@ -1925,7 +1926,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SortAdjacency(CConfig *config);
-
+  
   /*!
    * \brief Set the send receive boundaries of the grid.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1954,13 +1955,12 @@ public:
    */
   long GetGlobal_to_Local_Point(unsigned long val_ipoint);
   
-	/*!
-	 * \brief Get the local marker that correspond with the global marker.
-	 * \param[in] val_ipoint - Global marker.
-	 * \returns Local marker that correspond with the global index.
-	 */
-	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
-
+  /*!
+   * \brief Get the local marker that correspond with the global marker.
+   * \param[in] val_ipoint - Global marker.
+   * \returns Local marker that correspond with the global index.
+   */
+  unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
   /*!
    * \brief Reads the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
@@ -1992,7 +1992,37 @@ public:
    */
   void Read_CGNS_Format_Parallel_FEM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
-    /*!
+  /*!
+   * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedPoints(CConfig        *config,
+                                     CMeshReaderFVM *mesh);
+  
+  /*!
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedVolumeElements(CConfig        *config,
+                                             CMeshReaderFVM *mesh);
+  
+  /*!
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadUnpartitionedSurfaceElements(CConfig        *config,
+                                        CMeshReaderFVM *mesh);
+  
+  /*!
+   * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph partitioning in parallel.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareAdjacency(CConfig *config);
+  
+  /*!
    * \brief Loads the geometry of the adapted grid from the python interface and
    *        adjust the boundary conditions with the configuration file in
    *        parallel (for parmetis).
@@ -2007,7 +2037,7 @@ public:
                                       vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                       CConfig *config, unsigned short val_iZone);
 
-  /*!
+  /*! 
    * \brief Find repeated nodes between two elements to identify the common face.
    * \param[in] first_elem - Identification of the first element.
    * \param[in] second_elem - Identification of the second element.
@@ -2172,12 +2202,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void Check_BoundElem_Orientation(CConfig *config);
-
-  /*! 
-   * \brief Set the domains for grid grid partitioning using METIS.
-   * \param[in] config - Definition of the particular problem.     
-   */
-  void SetColorGrid(CConfig *config);
   
   /*!
    * \brief Set the domains for grid grid partitioning using ParMETIS.
