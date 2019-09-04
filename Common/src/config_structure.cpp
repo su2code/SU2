@@ -2320,10 +2320,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
-  
-  /* DESCRIPTION: Flag for Volume Synthetic Turbulence */
-  addBoolOption("VOLUME_STG", VolumeSTG, false);
-  
+
+  /* DESCRIPTION: Specify the Synthetic Turbulence Model */
+  addEnumOption("SYNTHETIC_TURBULENCE", Kind_SyntheticTurbulence, SyntheticTurbulence_Map, NO_SYNTHETICTURBULENCE);
+
   /* DESCRIPTION: Num Constant */
   addUnsignedLongOption("NUMBER_FOURIER_MODES", NumberModes, 100);
   

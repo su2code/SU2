@@ -4331,6 +4331,14 @@ public:
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetKSinkTerm(CSolver** solver, CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -9923,6 +9931,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the TKE sink term for the volume STG implementation
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetKSinkTerm(CSolver** solver, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

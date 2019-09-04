@@ -11389,7 +11389,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
 void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
 
-  unsigned long iPoint;
+  unsigned short iMarker;
+  unsigned long iPoint, iVertex;
   unsigned long NModes = config->GetNumberModes();
   
 #ifdef HAVE_MPI
@@ -11403,22 +11404,55 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   unsigned long nSTGPts = 0;
   vector<su2double> STG_ListCoordX;
   
-  //Go over the whole mesh and identify the points within the STG box
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    
-    bool boundary_i = node[iPoint]->GetPhysicalBoundary();
-    // Check if the point is inside the domain and if it is not a boundary.
-    if( node[iPoint]->GetDomain() && !boundary_i ){
-      su2double *Coord = node[iPoint]->GetCoord();
+  switch (config->GetKind_SyntheticTurbulence()) {
+    case INLET_STG:
+     // Go over the boundaries and identify the points within the inlet.
       
-      if (Coord[0] >= STGBox[0] && Coord[0] <= STGBox[3] &&
-          Coord[1] >= STGBox[1] && Coord[1] <= STGBox[4] &&
-          Coord[2] >= STGBox[2] && Coord[2] <= STGBox[5] ){
-        nSTGPts++;
-        STG_LocalPoint.push_back(iPoint);
-        STG_ListCoordX.push_back(Coord[0]);
+      // First loop over the markers and find the inlet flow BC.
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        
+        if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+          
+          // Loop over the vertices of the BC.
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint  = vertex[iMarker][iVertex]->GetNode();
+        
+            /*--- Only communicate owned nodes to avoid duplicates. ---*/
+            if (node[iPoint]->GetDomain()){
+              su2double *Coord = node[iPoint]->GetCoord();
+              STG_LocalPoint.push_back(iPoint);
+              STG_ListCoordX.push_back(Coord[0]);
+              nSTGPts++;
+            }
+          }
+        }
       }
-    }
+      
+      break;
+    
+    case VOLUME_STG:
+      //Go over the whole mesh and identify the points within the STG box
+      for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+        
+        bool boundary_i = node[iPoint]->GetPhysicalBoundary();
+        // Check if the point is inside the domain and if it is not a boundary.
+        if( node[iPoint]->GetDomain() && !boundary_i ){
+          su2double *Coord = node[iPoint]->GetCoord();
+          
+          if (Coord[0] >= STGBox[0] && Coord[0] <= STGBox[3] &&
+              Coord[1] >= STGBox[1] && Coord[1] <= STGBox[4] &&
+              Coord[2] >= STGBox[2] && Coord[2] <= STGBox[5] ){
+            nSTGPts++;
+            STG_LocalPoint.push_back(iPoint);
+            STG_ListCoordX.push_back(Coord[0]);
+          }
+        }
+      }
+      break;
+      
+    default:
+      break;
   }
   
   // Remove sort and remove duplicates based in lower and upper bounds limits.

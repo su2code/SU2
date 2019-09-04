@@ -1986,6 +1986,8 @@ inline unsigned long CConfig::GetWrt_Surf_Freq_DualTime(void) { return Wrt_Surf_
 
 inline unsigned short CConfig::GetKind_HybridRANSLES(void) {return Kind_HybridRANSLES; }
 
+inline unsigned short CConfig::GetKind_SyntheticTurbulence(void) {return Kind_SyntheticTurbulence; }
+
 inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss; }
 
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
@@ -2074,6 +2076,3 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
 inline su2double *CConfig::GetVolumeSTGBox_Values(void) { return VolumeSTGBox_Values; }
-
-inline bool CConfig::GetVolumeSTG(void) { return VolumeSTG; }
-

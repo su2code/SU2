@@ -878,6 +878,18 @@ static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<stri
 ("SST_EDDES", SST_EDDES)
 ("SST_IDDES", SST_IDDES);
 
+/*!
+ * \brief types of synthetic turbulence models
+ */
+enum ENUM_SYNTHETICTURBULENCE {
+  NO_SYNTHETICTURBULENCE = 0, /*!< \brief No synthetic turbulence model. */
+  INLET_STG   = 1, /*!< \brief Synthetic Turbulence on the inlet marker. */
+  VOLUME_STG  = 2,  /*!< \brief Volume STG using a body force. */
+};
+static const map<string, ENUM_SYNTHETICTURBULENCE> SyntheticTurbulence_Map = CCreateMap<string, ENUM_SYNTHETICTURBULENCE>
+("NONE", NO_SYNTHETICTURBULENCE)
+("INLET_STG", INLET_STG)
+("VOLUME_STG", VOLUME_STG);
 
 /*!
  * \brief types of Roe Low Dissipation Schemes

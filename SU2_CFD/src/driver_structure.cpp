@@ -174,7 +174,7 @@ CDriver::CDriver(char* confFile,
       }
       
       if ((config_container[iZone]->GetKind_Solver() == RANS) &&
-          (config_container[iZone]->GetVolumeSTG())) {
+          (config_container[iZone]->GetKind_SyntheticTurbulence() != NO_SYNTHETICTURBULENCE)) {
         
         if (rank == MASTER_NODE)
           cout << "Preprocessing the synthetic turbulence." << endl;
@@ -2344,7 +2344,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       
-      if ((config->GetBody_Force() == YES) && (config->GetVolumeSTG() == NO))
+      if (config->GetBody_Force() == YES)
         if (incompressible) numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
         else numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBodyForce(nDim, nVar_Flow, config);
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ))
@@ -2358,7 +2358,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
       else if (config->GetWind_Gust() == YES)
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceWindGust(nDim, nVar_Flow, config);
-      else if (config->GetVolumeSTG() == YES)
+      else if (config->GetKind_SyntheticTurbulence() == VOLUME_STG)
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceVolumeSTG(nDim, nVar_Flow, config);
 
       else

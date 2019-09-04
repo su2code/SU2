@@ -1006,6 +1006,7 @@ private:
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
+  unsigned short Kind_SyntheticTurbulence; /*!< \brief Kind of Synthetic Turbulence. */
   su2double MinLowDissipation;   /*!< \brief Min low dissipation constant for DDES simulations. */
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
@@ -1106,7 +1107,6 @@ private:
   
   su2double *default_stg_val;    /*!< \brief Default coordinates of the STG volume box for the COption class. */
   su2double *VolumeSTGBox_Values;/*!< \brief STG coordinates of the volume box array. */
-  bool VolumeSTG;                /*!< \brief Using volumetric STG for zonal hybrid RANS/IDDES. */
   unsigned long NumberModes;     /*!< \brief Number of Fourier Modes. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -8953,6 +8953,12 @@ public:
   unsigned short GetKind_HybridRANSLES(void);
 
   /*!
+   * \brief Get the Kind of Synthetic Turbulence.
+   * \return Value of the STG approach.
+   */
+  unsigned short GetKind_SyntheticTurbulence(void);
+
+  /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
    * \return Value of Low dissipation approach.
    */
@@ -9164,12 +9170,6 @@ public:
    */
   su2double *GetVolumeSTGBox_Values(void);
   
-  /*!
-   * \brief Check if Volume Synthetic Turbulence is used.
-   * \return YES if the Volume STG is used.
-   */
-  bool GetVolumeSTG(void);
-
 };
 
 #include "config_structure.inl"
