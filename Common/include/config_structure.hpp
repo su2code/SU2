@@ -1084,8 +1084,12 @@ private:
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
-  
-  
+
+  unsigned long pastix_fact_freq; /*!< \brief (Re-)Factorization frequency for PaStiX */
+  unsigned short pastix_verb_lvl; /*!< \brief Verbosity level for PaStiX */
+  unsigned short pastix_fill_lvl; /*!< \brief Fill level for PaStiX ILU */
+
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9172,6 +9176,24 @@ public:
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
+
+  /*!
+   * \brief Get the desired factorization frequency for PaStiX
+   * \return Number of calls to 'Build' that trigger re-factorization.
+   */
+  unsigned long GetPastixFactFreq(void);
+
+  /*!
+   * \brief Get the desired level of verbosity for PaStiX
+   * \return 0 - Quiet, 1 - During factorization and cleanup, 2 - Even more detail.
+   */
+  unsigned short GetPastixVerbLvl(void);
+
+  /*!
+   * \brief Get the desired level of fill for the PaStiX ILU
+   * \return Level of fill.
+   */
+  unsigned short GetPastixFillLvl(void);
 
 };
 
