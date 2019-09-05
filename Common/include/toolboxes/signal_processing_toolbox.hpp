@@ -5,7 +5,7 @@
 
 namespace Signal_Processing {
   
-  su2double Average(std::vector<su2double> &data);
+  su2double Average(const std::vector<su2double> &data);
   
   class RunningAverage
   {
@@ -25,11 +25,11 @@ namespace Signal_Processing {
       return val;
     }
   
-    su2double Get(){
+    su2double Get() const{
       return val;
     }
   
-    unsigned long Count(){
+    unsigned long Count() const{
       return count;
     }
   
