@@ -863,6 +863,18 @@ def main():
     ddes_flatplate.new_output = True
     test_list.append(ddes_flatplate)    
 
+    # unsteady pitching NACA0015, SA
+    unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
+    unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
+    unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
+    unst_inc_turb_naca0015_sa.test_iter = 1
+    unst_inc_turb_naca0015_sa.test_vals = [-3.734989, -7.016510, 1.176112, 0.282917] #last 4 columns
+    unst_inc_turb_naca0015_sa.su2_exec  = "SU2_CFD"
+    unst_inc_turb_naca0015_sa.timeout   = 1600
+    unst_inc_turb_naca0015_sa.tol       = 0.00001
+    unst_inc_turb_naca0015_sa.unsteady  = True
+    test_list.append(unst_inc_turb_naca0015_sa)
+
     ######################################
     ### NICFD                          ###
     ######################################
