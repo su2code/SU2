@@ -520,7 +520,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);      
     } 
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);      
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(config, geometry, &(Node_Flow->GetGradient_Primitive(iPoint)[1])));      
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));      
   }
   
 }
@@ -643,33 +643,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("COMBO", flow_solver->GetTotal_ComboObj());
   
 }
-
-su2double CFlowCompOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, su2double** Grad_Vel){
-  
-  unsigned short iDim, jDim;
-  su2double Omega[3][3]  = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Strain[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      Strain[iDim][jDim] = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-      Omega[iDim][jDim]  = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
-    }
-  }
-  
-  su2double OmegaMag = 0.0, StrainMag = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-      OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-    }
-  }
-  StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
-  
-  su2double Q = 0.5*(OmegaMag - StrainMag);
-  
-  return Q;
-}
-
 
 bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
   
