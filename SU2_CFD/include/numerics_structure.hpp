@@ -5264,6 +5264,42 @@ public:
 };
 
 /*!
+ * \class CSourceIncRotatingFrame_Flow
+ * \brief Class for a rotating frame source term.
+ * \ingroup SourceDiscr
+ */
+class CSourceIncRotatingFrame_Flow : public CNumerics {
+
+private:
+  su2double Omega[3];  /*!< \brief Angular velocity */
+  bool implicit; /*!< \brief Implicit calculation. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceIncRotatingFrame_Flow(void);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
+};
+
+/*!
  * \class CSourceBoussinesq
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr

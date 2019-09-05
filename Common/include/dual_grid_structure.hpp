@@ -567,12 +567,12 @@ public:
 	su2double* GetCoord_p1(void);
   
 	/*! 
-	 * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
+	 * \brief Set the coordinates of the control volume at time n.
 	 */
 	void SetCoord_n(void);
 	
 	/*! 
-	 * \brief Set the coordinates of the control volume at time n-1 to the ones in <i>Coord_n</i>.
+	 * \brief Set the coordinates of the control volume at time n-1.
 	 */
 	void SetCoord_n1(void);
 
@@ -685,8 +685,8 @@ public:
 	 * \return Grid velocity at the point.
 	 */	
 	su2double *GetGridVel(void);
-
-	/*!
+  
+  /*!
 	 * \brief Get the value of the grid velocity gradient at the point.
 	 * \return Grid velocity gradient at the point.
 	 */
@@ -706,7 +706,7 @@ public:
 	/*!
 	 * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
 	 * \param[in] val_coord_old - Value of the coordinates.
-	 */
+	 */	
 	void SetCoord_Old(su2double *val_coord_old);
 
 	/*!
@@ -718,17 +718,17 @@ public:
 	 * \brief Set the value of the grid velocity at the point.
 	 * \param[in] val_dim - Index of the coordinate.
 	 * \param[in] val_gridvel - Value of the grid velocity.
-	 */
+	 */	
 	void SetGridVel(unsigned short val_dim, su2double val_gridvel);
 	
-	/*!
+	/*! 
 	 * \overload
 	 * \brief Set the value of the grid velocity at the point.
 	 * \param[in] val_gridvel - Value of the grid velocity.
-	 */
+	 */	
 	void SetGridVel(su2double *val_gridvel);
-
-	/*!
+  
+  /*!
 	 * \brief Set the gradient of the grid velocity.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_dim - Index of the dimension.
