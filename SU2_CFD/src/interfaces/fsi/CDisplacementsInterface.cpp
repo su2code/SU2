@@ -1,5 +1,5 @@
 /*!
- * \file CTransfer_BoundaryDisplacements.cpp
+ * \file CDisplacementsInterface.cpp
  * \brief Main subroutines for transferring boundary displacements.
  * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
@@ -35,28 +35,28 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/transfer/physics/CTransfer_BoundaryDisplacements.hpp"
+#include "../../../include/interfaces/fsi/CDisplacementsInterface.hpp"
 
-CTransfer_BoundaryDisplacements::CTransfer_BoundaryDisplacements(unsigned short val_nVar,
-                                                                 unsigned short val_nConst,
-                                                                 CConfig *config) :
-                                                                 CTransfer(val_nVar, val_nConst, config) {
-
-}
-
-CTransfer_BoundaryDisplacements::~CTransfer_BoundaryDisplacements(void) {
+CDisplacementsInterface::CDisplacementsInterface(unsigned short val_nVar,
+                                                 unsigned short val_nConst,
+                                                 CConfig *config) :
+  CInterface(val_nVar, val_nConst, config) {
 
 }
 
+CDisplacementsInterface::~CDisplacementsInterface(void) {
 
-void CTransfer_BoundaryDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                              CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                              CConfig *struct_config, CConfig *flow_config) {
 }
 
-void CTransfer_BoundaryDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
-                                                        CConfig *struct_config, unsigned long Marker_Struct,
-                                                        unsigned long Vertex_Struct, unsigned long Point_Struct) {
+
+void CDisplacementsInterface::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
+                                                    CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                    CConfig *struct_config, CConfig *flow_config) {
+}
+
+void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
+                                                CConfig *struct_config, unsigned long Marker_Struct,
+                                                unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   su2double *DisplacementDonor;
   unsigned short iVar;
@@ -69,9 +69,9 @@ void CTransfer_BoundaryDisplacements::GetDonor_Variable(CSolver *struct_solution
 
 }
 
-void CTransfer_BoundaryDisplacements::SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
-                               CConfig *flow_config, unsigned long Marker_Flow,
-                               unsigned long Vertex_Flow, unsigned long Point_Mesh) {
+void CDisplacementsInterface::SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
+                                                 CConfig *flow_config, unsigned long Marker_Flow,
+                                                 unsigned long Vertex_Flow, unsigned long Point_Mesh) {
 
   /*--- Impose the boundary displacements ---*/
 

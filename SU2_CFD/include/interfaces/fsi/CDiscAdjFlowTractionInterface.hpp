@@ -1,8 +1,8 @@
 /*!
- * \file definition_structure.hpp
- * \brief Headers of the main subroutines used by SU2_CFD.
- *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CDiscAdjFlowTractionInterface.hpp
+ * \brief Declaration and inlines of the class to transfer flow tractions
+ *        from a fluid zone into a structural zone in a discrete adjoint simulation.
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -38,37 +38,42 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "CFlowTractionInterface.hpp"
 
-#include <ctime>
+class CDiscAdjFlowTractionInterface : public CFlowTractionInterface {
 
-#include "../../Common/include/gauss_structure.hpp"
-#include "../../Common/include/element_structure.hpp"
-#include "drivers/CDriver.hpp"
-#include "iteration_structure.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
+protected:
 
+public:
 
+  /*!
+   * \brief Constructor of the class.
+   */
+  CDiscAdjFlowTractionInterface(void);
 
-using namespace std;
+  /*!
+   * \overload
+   * \param[in] val_nVar - Number of variables that need to be transferred.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
-/*!
- * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void Partition_Analysis(CGeometry *geometry, CConfig *config);
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFlowTractionInterface(void);
 
-/*!
- * \brief Performs an analysis of the mesh partitions for distributed memory calculations for the FEM solver.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config);
+  /*!
+   * \brief Retrieve some constants needed for the calculations.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config);
+
+};
