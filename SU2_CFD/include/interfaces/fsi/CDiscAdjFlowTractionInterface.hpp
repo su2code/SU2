@@ -1,8 +1,8 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CDiscAdjFlowTractionInterface.hpp
+ * \brief Declaration and inlines of the class to transfer flow tractions
+ *        from a fluid zone into a structural zone in a discrete adjoint simulation.
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -38,27 +38,42 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "CLI11.hpp"
+#include "CFlowTractionInterface.hpp"
 
-#include <ctime>
+class CDiscAdjFlowTractionInterface : public CFlowTractionInterface {
 
-#include "drivers/CDriver.hpp"
-#include "drivers/CSinglezoneDriver.hpp"
-#include "drivers/CMultizoneDriver.hpp"
-#include "drivers/CDiscAdjSinglezoneDriver.hpp"
-#include "drivers/CDummyDriver.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output/COutput.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
-#include "../include/interfaces/CInterface.hpp"
+protected:
 
-using namespace std;
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CDiscAdjFlowTractionInterface(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nVar - Number of variables that need to be transferred.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFlowTractionInterface(void);
+
+  /*!
+   * \brief Retrieve some constants needed for the calculations.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config);
+
+};
