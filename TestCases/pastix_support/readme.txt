@@ -65,6 +65,6 @@
 % - Ubuntu 18.04, gcc 7.4, ompi 3.1.4, mkl 2017, openblas 0.2.20 and 0.3.2.dev
 % - Ubuntu 16.04, gcc 5.4, ompi 3.1.4, mkl 2017 and 2019
 % - CentOS 7.6.1810, gcc 5.4, ompi 3.1.4, mkl 2017
-% - CentOS 7.6.1810, icc 17, impi 2018, mkl 2017
-% - CentOS 7.6.1810, icc 19, impi 2018, mkl 2019
+% - CentOS 7.6.1810, gcc 5.4, impi 2018, mkl 2019
+% - CentOS 7.6.1810, gcc 8.2, impi 2018, mkl 2019
 
