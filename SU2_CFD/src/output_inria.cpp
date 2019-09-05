@@ -872,17 +872,19 @@ vector<vector<unsigned long> > COutput::GetConnEdg(CConfig *config, CGeometry *g
   vector<vector<unsigned long> > Edg;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-      CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
-      if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
-        switch ( bnd->GetVTK_Type() ) {
-          case LINE:
-            const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
-            const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
-            const unsigned long ref  = iMarker+2;
-            const vector<unsigned long> tmp = {idx0, idx1, ref};
-            Edg.push_back(tmp);
-            break;
+    if(config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+      const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
+      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
+        if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+          switch ( bnd->GetVTK_Type() ) {
+            case LINE:
+              const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
+              const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+              const vector<unsigned long> tmp = {idx0, idx1, ref+2};
+              Edg.push_back(tmp);
+              break;
+          }
         }
       }
     }
@@ -911,18 +913,20 @@ vector<vector<unsigned long> > COutput::GetConnTri(CConfig *config, CGeometry *g
   else {
 
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-        CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
-        if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
-          switch ( bnd->GetVTK_Type() ) {
-            case TRIANGLE:
-              const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
-              const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
-              const unsigned long idx2 = geometry->node[bnd->GetNode(2)]->GetGlobalIndex()+1;
-              const unsigned long ref  = iMarker+2;
-              const vector<unsigned long> tmp = {idx0, idx1, idx2, ref};
-              Tri.push_back(tmp);
-              break;
+      if(config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
+        for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+          CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
+          if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+            switch ( bnd->GetVTK_Type() ) {
+              case TRIANGLE:
+                const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
+                const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+                const unsigned long idx2 = geometry->node[bnd->GetNode(2)]->GetGlobalIndex()+1;
+                const vector<unsigned long> tmp = {idx0, idx1, idx2, ref+2};
+                Tri.push_back(tmp);
+                break;
+            }
           }
         }
       }
