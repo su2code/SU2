@@ -130,8 +130,9 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
  
   SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
  
-  if (multiZone)
+  if (multiZone) {
     SetHistoryOutputValue("BGS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
+  }
     
   SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
  

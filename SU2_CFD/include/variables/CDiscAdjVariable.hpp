@@ -158,28 +158,46 @@ public:
   }
 
   /*!
-   * \brief Get the intermediate value of a solution update.
-   * \return Pointer to the Solution_Iter array.
+   * \brief Get the external contribution to a solution.
+   * \return Pointer to the External array.
    */
-  inline su2double* Get_OuterSolution(void) { return Solution_Outer; }
+  inline su2double* Get_External(void) { return External; }
 
   /*!
-   * \brief Set the intermediate value of a solution update to zero.
+   * \brief Set external contributions to zero.
    */
-  inline void Set_OuterSolution_Zero(void) {
+  inline void Set_External_Zero(void) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Solution_Outer[iVar] = 0.0;
+      External[iVar] = 0.0;
     }
   }
 
   /*!
-   * \brief Add a vector to the intermediate solution.
+   * \brief Add a value to the External vector.
    * \param[in] val_sol - vector that has to be added component-wise
    */
-  inline void Add_OuterSolution(su2double* val_sol) {
+  inline void Add_External(su2double* val_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Solution_Outer[iVar] += val_sol[iVar];
+        External[iVar] += val_sol[iVar];
       }
+  }
+
+  /*!
+   * \brief Add a valaue to the old External vector.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  inline void Add_ExternalOld(su2double *val_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      External_Old[iVar] = External_Old[iVar] + val_sol[iVar];
+    }
+  }
+
+  /*!
+   * \brief Set old External to the value of the current variables.
+   */
+  inline void Set_OldExternal() {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      External_Old[iVar] = External[iVar];
   }
 
   /*!

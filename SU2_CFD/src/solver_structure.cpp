@@ -2450,32 +2450,6 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 #endif
 
 }
-void CSolver::SetResidual_Solution(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual, *Solution_Old, *Solution;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar,0.0);
-      SetRes_Max(iVar,0.0,0);
-  }
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    Solution      = node[iPoint]->GetSolution();
-    Solution_Old  = node[iPoint]->GetSolution_Old();
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      residual = Solution[iVar] - Solution_Old[iVar];
-
-      AddRes_RMS(iVar,residual*residual);
-      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-    }
-  }
-
-  SetResidual_RMS(geometry, config);
-}
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
   
@@ -3012,33 +2986,45 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetSolution_Old(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->SetSolution(node[iPoint]->GetSolution_Old());
-  }
-}
-
-void CSolver::SetSolution_Outer(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->SetSolution(node[iPoint]->Get_OuterSolution());
-  }
-}
-
 void CSolver::SetSolution_Zero(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     node[iPoint]->SetSolutionZero();
   }
 }
 
-void CSolver::Set_OuterSolution_Zero(CGeometry *geometry) {
+void CSolver::SetSolution_Old(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->Set_OuterSolution_Zero();
+    node[iPoint]->SetSolution(node[iPoint]->GetSolution_Old());
   }
 }
 
-void CSolver::Add_OuterSolution(CGeometry *geometry) {
+void CSolver::AddSolution_ExternalOld(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    node[iPoint]->Add_OuterSolution(node[iPoint]->GetSolution());
+    node[iPoint]->AddSolution(node[iPoint]->GetSolution_ExternalOld());
+  }
+}
+
+void CSolver::SetExternal_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Set_External_Zero();
+  }
+}
+
+void CSolver::AddExternal_Solution(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Add_External(node[iPoint]->GetSolution());
+  }
+}
+
+void CSolver::AddExternalOld_Solution(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Add_ExternalOld(node[iPoint]->GetSolution());
+  }
+}
+
+void CSolver::Set_OldExternal(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Set_OldExternal();
   }
 }
 

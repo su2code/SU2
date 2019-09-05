@@ -114,35 +114,45 @@ public:
    * \brief Summary of all routines to evaluate the adjoints in iZone.
    * \param[in] iZone - Zone in which adjoints are evaluated depending on their (preceding) seeding.
    */
-  void ComputeAdjoints(unsigned short iZone, bool objective_function);
+  void ComputeAdjoints(unsigned short iZone);
 
   /*!
-   * \brief Restores solution (adjoint) values to from Solution_Old.
+   * \brief Add External_Old vector to Solution.
+   * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void SetAdjoints_Old(unsigned short iZone);
+  void AddSolution_ExternalOld(unsigned short iZone);
 
   /*!
-   * \brief Saves the current solution (adjoint) values to Solution_Old.
+   * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
+   * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void Set_OldAdjoints(unsigned short iZone);
+  void Set_BGSSolution(unsigned short iZone);
 
   /*!
-   * \brief Sets the current iterated solution (adjoint) values to zero.
+   * \brief Sets External to zero.
    */
-  void SetOuter_Zero(void);
+  void SetExternal_Zero(void);
 
   /*!
-   * \brief Adds the current solution (adjoint) values to the iterated solution.
+   * \brief Add Solution vector to External.
+   * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void Add_OuterAdjoints(unsigned short iZone);
+  void AddExternal_Solution(unsigned short iZone);
+
+  /*!
+   * \brief Add Solution vector to External_Old.
+   * \param[in] iZone - Zone where data between solvers is transferred.
+   */
+  void AddExternalOld_Solution(unsigned short iZone);
 
   /*!
    * \brief Set the current solution (adjoint) values to the current iterated ones.
    */
-  void SetAdjoints_Outer(void);
+  void Set_OldExternal(void);
 
   /*!
-   * \brief Computing the RMS residual on driver level (since we iterate zone-wise).
+   * \brief Compute BGS residuals.
+   * \param[in] iZone - Zone where solver residuals are computed.
    */
-  void SetResidual_RMS(void);
+  void SetResidual_BGS(unsigned short iZone);
 };
