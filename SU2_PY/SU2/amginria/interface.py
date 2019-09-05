@@ -90,7 +90,7 @@ def amg_call_python(mesh, config):
     mesh['Edges']     = mesh['Edges'].tolist()    
 
     if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].flatten().tolist()
-    # if 'metric' in mesh: mesh['metric'] = mesh['metric'].flatten().tolist()
+    if 'metric' in mesh: mesh['metric'] = mesh['metric'].flatten().tolist()
     
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
