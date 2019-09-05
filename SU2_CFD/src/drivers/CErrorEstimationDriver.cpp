@@ -379,74 +379,74 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config, CGeomet
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
       /*--- Compute elements surrounding points, points surrounding points ---*/
-
+  
       if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
       geometry[iZone][iInst][MESH_0]->SetPoint_Connectivity();
-
+      
       /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
-
-      // if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      // geometry[iZone][iInst][MESH_0]->SetRCM_Ordering(config[iZone]);
-
+      
+      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      geometry[iZone][iInst][MESH_0]->SetRCM_Ordering(config[iZone]);
+      
       /*--- recompute elements surrounding points, points surrounding points ---*/
-
+      
       if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
       geometry[iZone][iInst][MESH_0]->SetPoint_Connectivity();
-
+      
       /*--- Compute elements surrounding elements ---*/
-
+      
       if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
       geometry[iZone][iInst][MESH_0]->SetElement_Connectivity();
-
+      
       /*--- Check the orientation before computing geometrical quantities ---*/
-
+      
       geometry[iZone][iInst][MESH_0]->SetBoundVolume();
       if (config[iZone]->GetReorientElements()) {
         if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
         geometry[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config[iZone]);
         geometry[iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
       }
-
+      
       /*--- Create the edge structure ---*/
-
+      
       if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
       geometry[iZone][iInst][MESH_0]->SetEdges();
       geometry[iZone][iInst][MESH_0]->SetVertex(config[iZone]);
-
+      
       /*--- Compute cell center of gravity ---*/
-
+      
       if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
       geometry[iZone][iInst][MESH_0]->SetCoord_CG();
-
+      
       /*--- Create the control volume structures ---*/
-
+      
       if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
       geometry[iZone][iInst][MESH_0]->SetControlVolume(config[iZone], ALLOCATE);
       geometry[iZone][iInst][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
-
+      
       /*--- Visualize a dual control volume if requested ---*/
-
+      
       if ((config[iZone]->GetVisualize_CV() >= 0) &&
           (config[iZone]->GetVisualize_CV() < (long)geometry[iZone][iInst][MESH_0]->GetnPointDomain()))
         geometry[iZone][iInst][MESH_0]->VisualizeControlVolume(config[iZone], UPDATE);
-
+      
       /*--- Identify closest normal neighbor ---*/
-
+      
       if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
       geometry[iZone][iInst][MESH_0]->FindNormal_Neighbor(config[iZone]);
-
+      
       /*--- Store the global to local mapping. ---*/
-
+      
       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
       geometry[iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
-
+      
       /*--- Compute the surface curvature ---*/
-
+      
       if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
       geometry[iZone][iInst][MESH_0]->ComputeSurf_Curvature(config[iZone]);
-
+      
       /*--- Check for periodicity and disable MG if necessary. ---*/
-
+      
       if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
       geometry[iZone][iInst][MESH_0]->Check_Periodicity(config[iZone]);
 

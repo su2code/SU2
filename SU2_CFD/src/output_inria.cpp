@@ -591,122 +591,64 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	}
 	
 	
-	/* --- Boundary elements ---*/
-	
-	/*--- Get surface points ---*/
-	
-	nPointSurface = 0;
-	PointSurface = new unsigned long[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    if (geometry->node[iPoint]->GetBoundary()) {
-      PointSurface[nPointSurface] = iPoint;
-      nPointSurface++;
-    }
-	}
-	
-	/*--- Count elements ---*/
-	
-	nLin = nTri = nQua = 0;
-	
-	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-			bnd = geometry->bound[iMarker][iElem];
-			switch ( bnd->GetVTK_Type() ) {
-				case LINE:          nLin++; break;
-				case TRIANGLE:      nTri++; break;
-				case QUADRILATERAL: nQua++; break;
-			}
-		}
-	}
-	
+	/* --- Boundary elements ---*/	
 	
 	/*--- Write edges ---*/
 	
-	if ( nLin > 0 ) {
+	if ( nParallel_Line > 0 ) {
 		
-		GmfSetKwd(OutMsh, GmfEdges, nLin);
-		
-		cptElem = 0;
-		
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-				
-				bnd = geometry->bound[iMarker][iElem];
-				
-				if ( bnd->GetVTK_Type() != LINE ) 
-					continue;
-				
-				cptElem++;
+		GmfSetKwd(OutMsh, GmfEdges, nParallel_Line);
 
-				
-				GmfSetLin(OutMsh, GmfEdges, bnd->GetNode(0)+1, bnd->GetNode(1)+1, iMarker+2); 	
-			}
-		}
-	
-		if ( cptElem != nLin ) {
-			cout << "  !! Error Inria output:  Inconsistent number of edges\n" << endl;
-			exit(EXIT_FAILURE);
-		}
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if(config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
+        for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+          CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
+          if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+            switch ( bnd->GetVTK_Type() ) {
+              case LINE:
+                const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
+                const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+                GmfSetLin(OutMsh, GmfEdges,idx0,idx1,ref+2); 
+                break;
+            }
+          }
+        }
+      }
+    }
 		
 	}
 	
 	/*--- Write triangles ---*/
 	
-	if ( nTri > 0 ) {
+	if ( nParallel_BoundTria > 0 ) {
 		
 		GmfSetKwd(OutMsh, GmfTriangles, nTri);
-		
-		cptElem = 0;
-		
+				
 		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-				
-				bnd = geometry->bound[iMarker][iElem];
-				
-				if ( bnd->GetVTK_Type() != TRIANGLE ) 
-					continue;
-				
-				cptElem++;
-				
-				GmfSetLin(OutMsh, GmfTriangles, bnd->GetNode(0)+1, bnd->GetNode(1)+1, 
-                                        bnd->GetNode(2)+1, iMarker+2); 	
-			}
-		}
-	
-		if ( cptElem != nTri ) {
-			cout << "  !! Error Inria output:  Inconsistent number of triangles\n" << endl;
-			exit(EXIT_FAILURE);
-		}
+      if(config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
+        for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+          CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
+          if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+            switch ( bnd->GetVTK_Type() ) {
+              case TRIANGLE:
+                const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
+                const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+                const unsigned long idx2 = geometry->node[bnd->GetNode(2)]->GetGlobalIndex()+1;
+                GmfSetLin(OutMsh, GmfTriangles,idx0,idx1,idx2,ref+2); 
+                break;
+            }
+          }
+        }
+      }
+    }
 		
 	}
 	
 	/*--- Write quadrilaterals ---*/
 	
-	if ( nQua > 0 ) {
-		
-		GmfSetKwd(OutMsh, GmfQuadrilaterals, nQua);
-		
-		cptElem = 0;
-		
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-				
-				bnd = geometry->bound[iMarker][iElem];
-				
-				if ( bnd->GetVTK_Type() != QUADRILATERAL ) 
-					continue;
-				
-				cptElem++;
-				
-				GmfSetLin(OutMsh, GmfQuadrilaterals, PointSurface[bnd->GetNode(0)]+1, PointSurface[bnd->GetNode(1)]+1, 
-                                             PointSurface[bnd->GetNode(2)]+1, PointSurface[bnd->GetNode(3)]+1, iMarker+2); 	
-			}
-		}
-	
-		if ( cptElem != nQua ) {
-			cout << "  !! Error Inria output:  Inconsistent number of quadrilaterals\n" << endl;
-			exit(EXIT_FAILURE);
-		}
+	if ( nParallel_BoundQuad > 0 ) {
 		
 	}
 	
@@ -849,14 +791,6 @@ void COutput::SetConnectivity_Parallel(CGeometry ****geometry,
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   , true);
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        , true);
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      , true);
-
-      /*--- Sort surface grid connectivity. ---*/
-          
-      // if (rank == MASTER_NODE) cout <<"Sorting surface grid connectivity." << endl;
-        
-      // SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], LINE         );
-      // SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
-      // SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
 
     }
 

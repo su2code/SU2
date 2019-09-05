@@ -86,11 +86,12 @@ def amg_call_python(mesh, config):
     if 'xy' in mesh:    mesh['xy']  = mesh['xy'].tolist()
     if 'xyz' in mesh:   mesh['xyz'] = mesh['xyz'].tolist()
     
-    mesh['Triangles'] = mesh['Triangles'].tolist()
-    mesh['Edges']     = mesh['Edges'].tolist()    
+    if 'Edges' in mesh:      mesh['Edges']      = mesh['Edges'].tolist() 
+    if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
+    if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
 
-    if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].flatten().tolist()
-    if 'metric' in mesh: mesh['metric'] = mesh['metric'].flatten().tolist()
+    if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].tolist()
+    if 'metric' in mesh: mesh['metric'] = mesh['metric'].tolist()
     
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
@@ -261,9 +262,11 @@ def create_sensor(solution, sensor):
 
         iGoal  = solution['id_solution_tag']['Aniso_Metric[0]']
         if Dim == 2:
-            sensor = np.array(Sol[:,iGoal:iGoal+3])
+            sensor = Sol[:,iGoal:iGoal+3]
+            sensor = np.array(sensor).reshape((len(sensor),3))
         elif Dim == 3:
-            sensor = np.array(Sol[:,iGoal:iGoal+6])
+            sensor = Sol[:,iGoal:iGoal+6]
+            sensor = np.array(sensor).reshape((len(sensor),6))
         sensor_header = ["Goal"]
                 
     else :

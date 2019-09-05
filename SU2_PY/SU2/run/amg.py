@@ -141,6 +141,7 @@ def amg ( config , kind='' ):
             
             config_cfd.CONV_FILENAME         = "ini_history"
             config_cfd.RESTART_FLOW_FILENAME = current_solution
+            config_cfd.ERROR_ESTIMATE         = 'NO'
             config_cfd.MATH_PROBLEM           = 'DIRECT'
             
             SU2_CFD(config_cfd)
@@ -210,10 +211,10 @@ def amg ( config , kind='' ):
     config_amg['hmax']        = float(config['ADAP_HMAX'])
     config_amg['hmin']        = float(config['ADAP_HMIN'])
     config_amg['mesh_in']     = 'current.meshb'
-    config_amg['mesh_out']    = 'current.new.meshb'
-    config_amg['metric_in']   = ''
-    config_amg['sol_in']      = 'current_sensor.solb'
-    config_amg['sol_itp_in']  = 'current.solb'
+    # config_amg['mesh_out']    = 'current.new.meshb'
+    # config_amg['metric_in']   = ''
+    # config_amg['sol_in']      = 'current_sensor.solb'
+    # config_amg['sol_itp_in']  = 'current.solb'
     config_amg['adap_source'] = ''
     
     if 'ADAP_BACK' in config:
@@ -332,7 +333,6 @@ def amg ( config , kind='' ):
                     metric_wrap = su2amg.create_sensor(mesh, adap_sensor)
                     
                     mesh['metric'] = metric_wrap['solution']
-                    mesh.pop('sensor', None)
 
                     sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
                     sys.stdout.flush()
@@ -402,6 +402,7 @@ def amg ( config , kind='' ):
                 config_cfd.CONV_FILENAME          = "ite%d_history" % global_iter
                 config_cfd.SOLUTION_FLOW_FILENAME = current_solution_ini
                 config_cfd.RESTART_FLOW_FILENAME  = current_solution
+                config_cfd.ERROR_ESTIMATE         = 'NO'
                 config_cfd.MATH_PROBLEM           = 'DIRECT'
                 config_cfd.RESTART_SOL            = 'YES'
                 
