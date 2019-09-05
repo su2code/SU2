@@ -258,8 +258,8 @@ void CDiscAdjMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig 
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
+    SetRes_BGS(iVar,0.0);
+    SetRes_Max_BGS(iVar,0.0,0);
   }
 
   /*--- Set the residuals ---*/
