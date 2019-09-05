@@ -1324,6 +1324,42 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 
 }
 
+template<class ScalarType>
+void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
+                                                       unsigned short kind_fact, bool transposed) {
+#ifdef HAVE_PASTIX
+  pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
+  pastix_wrapper.Factorize(geometry, config, kind_fact, transposed);
+#else
+  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
+#endif
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                         CGeometry *geometry, CConfig *config) {
+#ifdef HAVE_PASTIX
+  pastix_wrapper.Solve(vec,prod);
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+#else
+  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
+#endif
+}
+
+#ifdef CODI_REVERSE_TYPE
+template<>
+void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
+                                                      unsigned short kind_fact, bool transposed) {
+  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
+}
+template<>
+void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2double> & vec, CSysVector<su2double> & prod,
+                                                        CGeometry *geometry, CConfig *config) {
+  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
+}
+#endif
+
 /*--- Explicit instantiations ---*/
 template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);

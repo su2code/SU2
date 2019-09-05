@@ -1721,7 +1721,9 @@ enum ENUM_LINEAR_SOLVER {
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
   RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER = 8,  /*!< \brief Iterative smoother. */
+  SMOOTHER = 8,    /*!< \brief Iterative smoother. */
+  PASTIX_LDLT = 9, /*!< \brief PaStiX LDLT (complete) factorization. */
+  PASTIX_LU = 10,  /*!< \brief PaStiX LU (complete) factorization. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1731,7 +1733,9 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
 ("RESTARTED_FGMRES", RESTARTED_FGMRES)
-("SMOOTHER", SMOOTHER);
+("SMOOTHER", SMOOTHER)
+("PASTIX_LDLT", PASTIX_LDLT)
+("PASTIX_LU", PASTIX_LU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1783,13 +1787,19 @@ enum ENUM_LINEAR_SOLVER_PREC {
   JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
   LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
   LINELET = 3,  /*!< \brief Line implicit preconditioner. */
-  ILU = 4       /*!< \brief ILU(0) preconditioner. */
+  ILU = 4,      /*!< \brief ILU(k) preconditioner. */
+  PASTIX_ILU= 5,  /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_LU_P= 6,  /*!< \brief PaStiX LU as preconditioner. */
+  PASTIX_LDLT_P= 7, /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU", ILU);
+("ILU", ILU)
+("PASTIX_ILU", PASTIX_ILU)
+("PASTIX_LU", PASTIX_LU_P)
+("PASTIX_LDLT", PASTIX_LDLT_P);
 
 /*!
  * \brief types of analytic definitions for various geometries
