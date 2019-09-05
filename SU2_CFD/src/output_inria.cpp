@@ -850,6 +850,14 @@ void COutput::SetConnectivity_Parallel(CGeometry ****geometry,
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        , true);
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      , true);
 
+      /*--- Sort surface grid connectivity. ---*/
+          
+      if (rank == MASTER_NODE) cout <<"Sorting surface grid connectivity." << endl;
+        
+      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], LINE         );
+      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
+      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
+
     }
 
   }
