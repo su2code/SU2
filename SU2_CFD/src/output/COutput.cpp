@@ -388,7 +388,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
           cout << "Writing CSV file." << endl;     
       }
          
-      filewriter = new CCSVFileWriter(volumeFieldNames, nDim);
+      filewriter = new CSU2FileWriter(volumeFieldNames, nDim);
           
       break;
     

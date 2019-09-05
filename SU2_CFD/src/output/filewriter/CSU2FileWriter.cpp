@@ -4,7 +4,7 @@
 
 
 CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, ".dat", nDim){}
+  CFileWriter(fields, ".csv", nDim){}
 
 
 CSU2FileWriter::~CSU2FileWriter(){
@@ -39,8 +39,8 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
     restart_file.precision(15);
     restart_file << "\"PointID\"";
     for (iVar = 0; iVar < fieldnames.size()-1; iVar++)
-      restart_file << "\t\"" << fieldnames[iVar] << "\"";
-    restart_file << "\t\"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
+      restart_file << ", \"" << fieldnames[iVar] << "\"";
+    restart_file << ", \"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
     restart_file.close();
   }
   
@@ -66,15 +66,15 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
         
         /*--- Write global index. (note outer loop over procs) ---*/
         
-        restart_file << Global_Index << "\t";
+        restart_file << Global_Index << ", ";
         myPoint++;
         
         /*--- Loop over the variables and write the values to file ---*/
         
-        for (iVar = 0; iVar < fieldnames.size(); iVar++) {
-          restart_file << scientific << data_sorter->GetData(iVar, iPoint) << "\t";
+        for (iVar = 0; iVar < fieldnames.size()-1; iVar++) {
+          restart_file << scientific << data_sorter->GetData(iVar, iPoint) << ", ";
         }
-        restart_file << "\n";
+        restart_file << scientific << data_sorter->GetData(fieldnames.size()-1, iPoint) << "\n";        
       }
       
     }
