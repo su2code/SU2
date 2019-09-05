@@ -1682,12 +1682,12 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] < Tmin) { 
-    std::cout << "Mutation Tmin"  << std::endl<< std::endl<< std::endl<< std::endl;
+    //std::cout << "Mutation Tmin"  << std::endl<< std::endl<< std::endl<< std::endl;
     V[T_INDEX] = Tmin; 
     nonPhys = true;
     errT    = true;
   } else if (V[T_INDEX] > Tmax){ 
-    std::cout << "Mutation Tmax"  << std::endl<< std::endl<< std::endl<< std::endl;
+    //std::cout << "Mutation Tmax"  << std::endl<< std::endl<< std::endl<< std::endl;
     V[T_INDEX] = Tmax;
     nonPhys = true;
     errT    = true;
@@ -1710,7 +1710,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     rhoEve_max += U[iSpecies]*CalcEve(config, V_Tvemax, iSpecies); 
   }
   if (rhoEve < rhoEve_min) { 
-    std::cout << "Mutation Eve min"  << std::endl<< std::endl<< std::endl<< std::endl;
+    //std::cout << "Mutation Eve min"  << std::endl<< std::endl<< std::endl<< std::endl;
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemin;
@@ -1858,7 +1858,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     V[P_INDEX] += U[nSpecies-1] * Ru/Ms[nSpecies-1] * V[TVE_INDEX];
 
   if (V[P_INDEX] < 0.0) { 
-    std::cout << "Mutation P"  << std::endl<< std::endl<< std::endl<< std::endl;
+    //std::cout << "Mutation P"  << std::endl<< std::endl<< std::endl<< std::endl;
     V[P_INDEX] = 1E-20;
     nonPhys = true;
   }
@@ -1912,7 +1912,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
 
   if (V[A_INDEX] < 0.0) { 
-    std::cout << "Mutation a"  << std::endl<< std::endl<< std::endl<< std::endl;
+    //std::cout << "Mutation a"  << std::endl<< std::endl<< std::endl<< std::endl;
     nonPhys = true;
     V[A_INDEX] = EPS;
   }
@@ -2612,7 +2612,7 @@ void CTNE2NSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) { //Cat
 void CTNE2NSVariable::SetTransportCoefficients_WBE(CConfig *config) { //Cat
 
 
-su2double *cs,  LaminarViscosity;
+su2double *cs;
 su2double rho, T, Tve;
 unsigned short iSpecies;
 

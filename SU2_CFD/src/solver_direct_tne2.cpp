@@ -193,6 +193,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   reactive->InitializeMixture(config);
 
+
+
 //  std::cout << "Mutation: reactive"  << std::endl;
   
   
@@ -4411,6 +4413,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   config->SetDensity_FreeStream(Density_FreeStream);
 
+  
+  Gamma     = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
   Gamma = config->GetGamma();
 
   Cvtr     = reactive->Get_CvTraRotSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
@@ -4512,9 +4516,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
     if (reynolds_init) {
 
-      /*--- First, check if there is mesh motion. If yes, use the Mach
-         number relative to the body to initialize the flow. ---*/
-
       if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
       else Velocity_Reynolds = ModVel_FreeStream;
 
@@ -4523,10 +4524,17 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
             from the dimensional version of Sutherland's law or the constant
             viscosity, depending on the input option.---*/
 
+      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
+      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
+      
       Energy_FreeStream = (Energies[0] + 0.5*ModVel_FreeStream *ModVel_FreeStream);
       Energy_Ref= 1.0;
       Energy_FreeStreamND = Energy_FreeStream/Energy_Ref;
-
+      //std::cout << "Mutation 1" << std::endl<< std::endl<< std::endl;
+      config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetPressure_FreeStream(Pressure_FreeStream);
+      config->SetDensity_FreeStream(Density_FreeStream);
 
     }
 
@@ -6262,6 +6270,8 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {  //Mach_Exit >= 1.0
+
+        //std::cout << "Mutation SUPERSONIC OUTLET ="  << std::endl << std::endl<< std::endl ;
 
         /*--- Supersonic exit flow: there are no incoming characteristics,
          so no boundary condition is necessary. Set outlet state to current

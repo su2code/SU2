@@ -132,38 +132,34 @@ su2double* CReactiveMutation::Get_CpVibElSpecies(su2double* cs, su2double rho, s
 
 su2double CReactiveMutation::Get_Gamma(su2double *cs, su2double rho, su2double T, su2double Tve){
 
-  su2double Cp, Cv, *Cp_trs, *Cp_ves, Cvtr, Cvve, Cptr, Cpve;
+  su2double Cv, sum;
 
-  vector<su2double> Cv_trs, Cv_ves;
+  vector<su2double> Cv_trs, Cv_ves, Cvs;
 
-  Cp_trs = Get_CpTraRotSpecies(cs, rho, T, Tve);
-  Cp_ves = Get_CpVibElSpecies(cs, rho, T, Tve);
+  Cvs.resize(nSpecies);
+
+  //std::cout << setprecision(6)<< "Mutation: 1" << std::endl << std::endl;
+
+  //Cp_trs = Get_CpTraRotSpecies(cs, rho, T, Tve);
+  //Cp_ves = Get_CpVibElSpecies(cs, rho, T, Tve);
   Cv_trs = Get_CvTraRotSpecies(cs, rho, T, Tve);
   Cv_ves = Get_CvVibElSpecies(cs, rho, T, Tve);
+
+  //std::cout << setprecision(6)<< "Mutation: 2" << std::endl << std::endl;
+
     
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Cptr += cs[iSpecies] * Cp_trs[iSpecies];
-    Cpve += cs[iSpecies] * Cp_ves[iSpecies];
-    Cvtr += cs[iSpecies] * Cv_trs[iSpecies];
-    Cvve += cs[iSpecies] * Cv_ves[iSpecies];
-    
 
-    //std::cout << setprecision(6)<< "Mutation: Cp_trs[iSpecies]=" << Cp_trs[iSpecies] << "Cp_ves[iSpecies]=" <<  Cp_ves[iSpecies]<<  std::endl <<  std::endl;
+    Cvs[iSpecies] = Cv_trs[iSpecies] + Cv_ves[iSpecies];
+    Cv            += cs[iSpecies]*Cvs[iSpecies];
+    sum           += cs[iSpecies]/Ms[iSpecies];
 
-    //std::cout << setprecision(6)<< "Mutation: Cv_trs[iSpecies]=" << Cv_trs[iSpecies] << "Cv_ves[iSpecies]=" <<  Cv_ves[iSpecies]<<  std::endl <<  std::endl;
   }
 
-  Cp = Cptr + Cpve;
-  Cv = Cvtr + Cvve;
-  
+  //gamma = 1.4; //Cp/Cv;
 
-  //std::cout << setprecision(6)<< "Mutation: Cp=" << Cp <<  std::endl;
-  //std::cout << setprecision(6)<< "Mutation: Cv=" << Cv <<  std::endl;
-
-  gamma = 1.4; //Cp/Cv;
-
-  //std::cout << setprecision(6)<< "Mutation: gamma=" << gamma <<  std::endl;
+  gamma = 1 + (8.314*1000/Cv)*sum  ; //Cp/Cv;
 
   return gamma;
 }
