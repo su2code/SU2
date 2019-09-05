@@ -13464,7 +13464,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sa  = (config->GetKind_Turb_Model() == SA)   || (config->GetKind_Turb_Model() == SA_NEG)  ||
              (config->GetKind_Turb_Model() == SA_E) || (config->GetKind_Turb_Model() == SA_COMP) ||
              (config->GetKind_Turb_Model() == SA_E_COMP);
-  bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   unsigned short Kind_Solver = config->GetKind_Solver();
   bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
