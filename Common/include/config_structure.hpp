@@ -779,6 +779,7 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
@@ -1095,8 +1096,12 @@ private:
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
-  
-  
+
+  unsigned long pastix_fact_freq; /*!< \brief (Re-)Factorization frequency for PaStiX */
+  unsigned short pastix_verb_lvl; /*!< \brief Verbosity level for PaStiX */
+  unsigned short pastix_fill_lvl; /*!< \brief Fill level for PaStiX ILU */
+
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -3270,6 +3275,12 @@ public:
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
   bool GetWrt_Performance(void);
+  
+  /*!
+   * \brief Get information about writing the mesh quality metrics to the visualization files.
+   * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
+   */
+  bool GetWrt_MeshQuality(void);
   
   /*!
    * \brief Get information about writing a template inlet profile file.
@@ -9255,6 +9266,24 @@ public:
    * \return Offset from 0.0 the analytic RECTANGLE or BOX grid in the specified coordinate direction.
    */
   su2double GetMeshBoxOffset(unsigned short val_iDim);
+
+  /*!
+   * \brief Get the desired factorization frequency for PaStiX
+   * \return Number of calls to 'Build' that trigger re-factorization.
+   */
+  unsigned long GetPastixFactFreq(void);
+
+  /*!
+   * \brief Get the desired level of verbosity for PaStiX
+   * \return 0 - Quiet, 1 - During factorization and cleanup, 2 - Even more detail.
+   */
+  unsigned short GetPastixVerbLvl(void);
+
+  /*!
+   * \brief Get the desired level of fill for the PaStiX ILU
+   * \return Level of fill.
+   */
+  unsigned short GetPastixFillLvl(void);
 
 };
 
