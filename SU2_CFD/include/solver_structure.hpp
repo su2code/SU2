@@ -534,29 +534,41 @@ public:
   void SetSolution_Old(CGeometry *geometry);
   
   /*!
-   * \brief Set the solution vector to iterated (summed-up) solution.
+   * \brief Add External_Old to Solution vector.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetSolution_Outer(CGeometry *geometry);
+  void AddSolution_ExternalOld(CGeometry *geometry);
 
   /*!
-   * \brief Set the solution vector to zero.
+   * \brief Set the Solution vector to zero.
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void SetSolution_Zero(CGeometry *geometry);
 
   /*!
-   * \brief Add the current solution vector to Solution_Outer.
+   * \brief Set the External vector to zero.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void Add_OuterSolution(CGeometry *geometry);
+  void SetExternal_Zero(CGeometry *geometry);
 
   /*!
-   * \brief Set the Solution_Outer vector to zero.
+   * \brief Add the current Solution vector to External.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void Set_OuterSolution_Zero(CGeometry *geometry);
+  void AddExternal_Solution(CGeometry *geometry);
+
+  /*!
+   * \brief Add the current Solution vector to External_Old.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void AddExternalOld_Solution(CGeometry *geometry);
+
+  /*!
+   * \brief Set External_Old to External.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Set_OldExternal(CGeometry *geometry);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.

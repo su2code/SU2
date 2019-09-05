@@ -555,18 +555,17 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the residuals ---*/
 
-  if(!config->GetMultiphysicsDiscrete_Adjoint()) {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-            residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
 
-            AddRes_RMS(iVar,residual*residual);
-            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-        }
-    }
-
-    SetResidual_RMS(geometry, config);         
+          AddRes_RMS(iVar,residual*residual);
+          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
   }
+
+  SetResidual_RMS(geometry, config);
+
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
@@ -775,7 +774,12 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      Solution[iVar] = node[iPoint]->GetSolution(iVar);
+      if(config->GetMultiphysicsDiscrete_Adjoint()) {
+        Solution[iVar] = node[iPoint]->Get_BGSSolution_k(iVar);
+      }
+      else {
+        Solution[iVar] = node[iPoint]->GetSolution(iVar);
+      }
     }
     if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++) {
