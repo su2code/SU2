@@ -277,11 +277,11 @@ def main():
         sendPoiAdap = mesh_new['xy']
         sendEdgAdap = mesh_new['Edges']
         sendTriAdap = mesh_new['Triangles']
-        sendTetAdap = [[]]
+        sendTetAdap = np.empty((0,0), int)
       else:
         sendSolAdap = mesh_new['solution']
         sendPoiAdap = mesh_new['xyz']
-        sendEdgAdap = [[]]
+        sendEdgAdap = np.empty((0,0), int)
         sendTriAdap = mesh_new['Triangles']
         sendTetAdap = mesh_new['Tetrahedra']
 
@@ -294,7 +294,7 @@ def main():
     if rank == 0:
       print("Preparing offsets for linear partition of nodes.")
     nPointGlobal = np.zeros(1, int)
-    sendCounts   = np.array(len(sendPoiAdap))
+    sendCounts   = np.array(len(sendPoiAdap), int)
 
     comm.Allreduce(sendCounts, nPointGlobal, op=MPI.SUM)
 
@@ -322,6 +322,104 @@ def main():
     else:
       SolAdap = comm.recv(source=0)
       PoiAdap = comm.recv(source=0)
+
+    # Partition elements based on node partitions
+    if rank == 0:
+      print("Preparing element partitions.")
+      indEdg = []
+      indTri = []
+      indTet = []
+
+      nEdg = np.zeros(size, int)
+      nTri = np.zeros(size, int)
+      nTet = np.zeros(size, int)
+
+      for i in range(0, size):
+        if len(sendEdgAdap) > 0:
+          for j in range(0, len(sendEdgAdap)):
+            for k in range(0, 2):
+              if sendEdgAdap[j,k] >= beg_node[i] and sendEdgAdap[j,k] < end_node[i]:
+                indEdg.append(j)
+                nEdg[i] = nEdg[i] + 1
+                break
+
+        if len(sendTriAdap) > 0:
+          for j in range(0, len(sendTriAdap)):
+            for k in range(0, 3):
+              if sendTriAdap[j,k] >= beg_node[i] and sendTriAdap[j,k] < end_node[i]:
+                indTri.append(j)
+                nTri[i] = nTri[i] + 1
+                break
+
+        if len(sendTetAdap) > 0:
+          for j in range(0, len(sendTetAdap)):
+            for k in range(0, 4):
+              if sendTetAdap[j,k] >= beg_node[i] and sendTetAdap[j,k] < end_node[i]:
+                indTet.append(j)
+                nTet[i] = nTet[i] + 1
+                break
+
+      print("Communicating partitioned elements.")
+      if(nEdg[0] > 0):
+        EdgAdap = np.array([sendEdgAdap[j,:].tolist() for j in indEdg[:nEdg[0]]])
+      else:
+        EdgAdap = np.empty((0,0), int)
+
+      if(nTri[0] > 0):
+        TriAdap = np.array([sendTriAdap[j,:].tolist() for j in indTri[:nTri[0]]])
+      else:
+        TriAdap = np.empty((0,0), int)
+
+      if(nTet[0] > 0):
+        TetAdap = np.array([sendTetAdap[j,:].tolist() for j in indTet[:nTet[0]]])
+      else:
+        TetAdap = np.empty((0,0), int)
+
+      nEdgOff = nEdg[0]
+      nTriOff = nTri[0]
+      nTetOff = nTet[0]
+
+      for i in range(1,size):
+        comm.send(nEdg[i], dest=i, tag=0)
+        comm.send(nTri[i], dest=i, tag=1)
+        comm.send(nTet[i], dest=i, tag=2)
+
+        if(nEdg[i] > 0):
+          sendBuf = np.array([sendEdgAdap[j,:].tolist() for j in indEdg[nEdgOff:nEdgOff+nEdg[i]]])
+          comm.send(sendBuf, dest=i, tag=3)
+          nEdgOff = nEdgOff + nEdg[i]
+
+        if(nTri[i] > 0):
+          sendBuf = np.array([sendTriAdap[j,:].tolist() for j in indTri[nTriOff:nTriOff+nTri[i]]])
+          comm.send(sendBuf, dest=i, tag=4)
+          nTriOff = nTriOff + nTri[i]
+
+        if(nTet[i] > 0):
+          sendBuf = np.array([sendTetAdap[j,:].tolist() for j in indTet[nTetOff:nTetOff+nTet[i]]])
+          comm.send(sendBuf, dest=i, tag=5)
+          nTetOff = nTetOff + nTet[i]
+
+      del [sendEdgAdap, sendTriAdap, sendTetAdap]
+
+    else:
+      nEdg = comm.recv(source=0, tag=0)
+      nTri = comm.recv(source=0, tag=1)
+      nTet = comm.recv(source=0, tag=2)
+
+      if(nEdg > 0):
+        EdgAdap = comm.recv(source=0, tag=3)
+      else:
+        EdgAdap = np.empty((0,0), int)
+
+      if(nTri > 0):
+        TriAdap = comm.recv(source=0, tag=4)
+      else:
+        TriAdap = np.empty((0,0), int)
+
+      if(nTet > 0):
+        TetAdap = comm.recv(source=0, tag=5)
+      else:
+        TetAdap = np.empty((0,0), int)
 
     SU2Driver.Adapted_Input_Preprocessing(comm, options.filename,
                                           SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap,
