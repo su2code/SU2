@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - pcarruscag@gmail.com
   
 branches:
     only:
-        - contiguous_cvariable_ctransfer
+        - merge_cvariable_output
 
 virtualenv:
   system_site_packages: true
