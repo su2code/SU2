@@ -1,8 +1,8 @@
 /*!
- * \file definition_structure.hpp
- * \brief Headers of the main subroutines used by SU2_CFD.
- *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CDiscAdjFlowTractionInterface.cpp
+ * \brief Declaration and inlines of the class to transfer flow tractions
+ *        from a fluid zone into a structural zone in a discrete adjoint simulation.
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -36,39 +36,33 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 
-#include "../../Common/include/mpi_structure.hpp"
+CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(void) : CFlowTractionInterface() {
 
-#include <ctime>
+}
 
-#include "../../Common/include/gauss_structure.hpp"
-#include "../../Common/include/element_structure.hpp"
-#include "drivers/CDriver.hpp"
-#include "iteration_structure.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
+CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
+                                                             CConfig *config) :
+  CFlowTractionInterface(val_nVar, val_nConst, config) {
 
+}
 
+CDiscAdjFlowTractionInterface::~CDiscAdjFlowTractionInterface(void) {
 
-using namespace std;
+}
 
-/*!
- * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void Partition_Analysis(CGeometry *geometry, CConfig *config);
+void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
+                                                          CGeometry *flow_geometry, CGeometry *struct_geometry,
+                                                          CConfig *flow_config, CConfig *struct_config){
 
-/*!
- * \brief Performs an analysis of the mesh partitions for distributed memory calculations for the FEM solver.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config);
+  /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
+
+  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
+    struct_solution->node[iPoint]->Clear_FlowTraction();
+
+  Preprocess(flow_config);
+
+  /*--- No ramp applied ---*/
+  Physical_Constants[1] = 1.0;
+}
