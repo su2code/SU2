@@ -592,7 +592,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
-        if (jZone != iZone && transfer_container[iZone][jZone] != NULL){
+        if (jZone != iZone && interface_container[iZone][jZone] != NULL){
           DeformMesh = Transfer_Data(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
