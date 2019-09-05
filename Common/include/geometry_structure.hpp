@@ -414,6 +414,10 @@ public:
   SU2_MPI::Request *req_PeriodicSend;       /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
   
+  vector<su2double> Orthogonality;          /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
+  vector<su2double> Aspect_Ratio;           /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
+  vector<su2double> Volume_Ratio;           /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -1681,6 +1685,13 @@ public:
    * \param[in] config - Problem configuration.
    */
   void UpdateBoundaries(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void ComputeMeshQualityStatistics(CConfig *config);
+
 };
 
 /*!
@@ -1951,7 +1962,6 @@ public:
 	 * \returns Local marker that correspond with the global index.
 	 */
 	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
-  
   /*!
    * \brief Reads the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
@@ -1961,18 +1971,7 @@ public:
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-
-  /*!
-   * \brief Reads the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+  void Read_Mesh_FVM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
    * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
@@ -2296,10 +2295,10 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
 
 	/*! 
-	 * \brief Compute some parameters about the grid quality.
-	 * \param[out] statistics - Information about the grid quality, statistics[0] = (r/R)_min, statistics[1] = (r/R)_ave.		 
-	 */	
-	void GetQualityStatistics(su2double *statistics);
+   * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
+   * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeMeshQualityStatistics(CConfig *config);
 
 	/*!
 	 * \brief Find and store all vertices on a sharp corner in the geometry.

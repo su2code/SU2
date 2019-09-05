@@ -1704,11 +1704,11 @@ void CConfig::SetConfig_Options() {
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
   
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
-  array<su2double, 3> default_mesh_box_length = {1.0, 1.0, 1.0};
+  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
   addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
   
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
-  array<su2double, 3> default_mesh_box_offset = {0.0, 0.0, 0.0};
+  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
   addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
   
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
@@ -1797,6 +1797,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
+  /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
+  addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
@@ -4326,10 +4328,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Grid motion is not yet supported with the incompressible solver. ---*/
+  /*--- Rotating frame is not yet supported with the incompressible solver. ---*/
 
-  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (GetGrid_Movement())) {
-    SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_GridMovement == ROTATING_FRAME)) {
+    SU2_MPI::Error("Support for rotating frame simulation not yet implemented for incompressible flows.", CURRENT_FUNCTION);
   }
 
   /*--- Assert that there are two markers being analyzed if the
@@ -4439,6 +4441,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
   }
   
+
   /* Set a default for the size of the RECTANGLE / BOX grid sizes. */
   
   if (nMesh_Box_Size == 0) {

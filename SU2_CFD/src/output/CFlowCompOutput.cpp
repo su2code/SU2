@@ -203,7 +203,8 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
    
 
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", FORMAT_FIXED, "LINSOL", "Residual of the linear solver.");
  
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
@@ -242,6 +243,13 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+  
+  if (config->GetDeform_Mesh()){
+    AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", FORMAT_SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
+    AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", FORMAT_SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
+    AddHistoryOutput("DEFORM_ITER", "DeformIter", FORMAT_INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
+    AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", FORMAT_FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");    
+  }
   
   /*--- Add analyze surface history fields --- */
   
@@ -432,8 +440,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure());
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature());
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2())/Node_Flow->GetSoundSpeed());
-  su2double factor = 1.0/(0.5*config->GetDensity_Ref()*config->GetVelocity_Ref()*config->GetVelocity_Ref());
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - config->GetPressure_Ref())/factor);
+  su2double VelMag = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    VelMag += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);    
+  }
+  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag); 
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - solver[FLOW_SOL]->GetPressure_Inf())*factor);
   
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity());
@@ -530,11 +542,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
-  
-  SetHistoryOutputValue("TIME_ITER",  curTimeIter);  
-  SetHistoryOutputValue("INNER_ITER", curInnerIter);
-  SetHistoryOutputValue("OUTER_ITER", curOuterIter); 
-
+  CSolver* mesh_solver = solver[MESH_SOL];
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
@@ -606,9 +614,18 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
   SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
   
-  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
- 
+  
+  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
+  
+  if (config->GetDeform_Mesh()){
+    SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
+    SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
+    SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetLinSol_Residual()));    
+  }
+  
   /*--- Set the analyse surface history values --- */
   
   SetAnalyzeSurface(flow_solver, geometry, config, false);

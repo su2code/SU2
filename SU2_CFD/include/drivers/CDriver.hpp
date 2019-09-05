@@ -44,8 +44,17 @@
 #include "../integration_structure.hpp"
 
 #include "../numerics_structure.hpp"
-#include "../transfer/CTransfer.hpp"
-#include "../transfer/physics/CTransfer_BoundaryDisplacements.hpp"
+/*--- Transfer includes ---*/
+#include "../interfaces/CInterface.hpp"
+#include "../interfaces/cfd/CConservativeVarsInterface.hpp"
+#include "../interfaces/cfd/CMixingPlaneInterface.hpp"
+#include "../interfaces/cfd/CSlidingInterface.hpp"
+#include "../interfaces/cht/CConjugateHeatInterface.hpp"
+#include "../interfaces/fsi/CDisplacementsInterface.hpp"
+#include "../interfaces/fsi/CFlowTractionInterface.hpp"
+#include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
+#include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
+#include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
 #include "../numerics/CFEAMeshElasticity.hpp"
 #include "../solvers/CDiscAdjMeshSolver.hpp"
 #include "../solvers/CMeshSolver.hpp"
@@ -104,7 +113,7 @@ protected:
                 nDim,                           /*!< \brief Number of dimensions.*/
                 iInst,                          /*!< \brief Iterator on instance levels.*/
                 *nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
-                **transfer_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
+                **interface_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi,                                     /*!< \brief FSI simulation flag.*/
@@ -122,7 +131,7 @@ protected:
   CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
-  CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
+  CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
   su2double PyWrapVarCoord[3],                  /*!< \brief This is used to store the VarCoord of each vertex. */
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
@@ -230,7 +239,9 @@ protected:
   /*!
    * \brief Definition and allocation of all interface classes.
    */
-  void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry, unsigned short **transfer_types, CTransfer ***&transfer, CInterpolator ***&interpolation);
+  void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry,
+                               unsigned short **interface_types, CInterface ***&interface,
+                               CInterpolator ***&interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -279,7 +290,8 @@ protected:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver, CTransfer*** transfer);
+  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+                                    CInterface*** interface);
 
   
   /*!
