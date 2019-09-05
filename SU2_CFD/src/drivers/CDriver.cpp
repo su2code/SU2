@@ -276,7 +276,7 @@ void CDriver::SetContainers_Null(){
 
   ConvHist_file                  = NULL;
   iteration_container            = NULL;
-  output_container                         = NULL;
+  output_container               = NULL;
   integration_container          = NULL;
   geometry_container             = NULL;
   solver_container               = NULL;
@@ -304,8 +304,8 @@ void CDriver::SetContainers_Null(){
   FFDBox                         = new CFreeFormDefBox**[nZone];
   interpolator_container         = new CInterpolator**[nZone];
   interface_container            = new CInterface**[nZone];
-  output_container               = new COutput*[nZone];
   interface_types                = new unsigned short*[nZone];
+  output_container               = new COutput*[nZone];
   nInst                          = new unsigned short[nZone];
   driver_config                  = NULL;
   driver_output                  = NULL;
@@ -322,8 +322,8 @@ void CDriver::SetContainers_Null(){
     FFDBox[iZone]                         = NULL;
     interpolator_container[iZone]         = NULL;
     interface_container[iZone]            = NULL;
-    output_container[iZone]               = NULL;
     interface_types[iZone]                = new unsigned short[nZone];
+    output_container[iZone]               = NULL;
     nInst[iZone]                          = 1;
   }
   
@@ -2229,7 +2229,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ))
         numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       else if (config->GetRotating_Frame() == YES)
-        numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
+        if (incompressible) numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncRotatingFrame_Flow(nDim, nVar_Flow, config);
+        else numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
       else if (config->GetAxisymmetric() == YES)
         if (incompressible) numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncAxisymmetric_Flow(nDim, nVar_Flow, config);
       else numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
@@ -3932,7 +3933,7 @@ void CFluidDriver::StartSolver(){
 
      /*--- Perform a dynamic mesh update if required. ---*/
 
-      if (!fem_solver) {
+      if (!fem_solver && !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
         DynamicMeshUpdate(Iter);
       }
 
