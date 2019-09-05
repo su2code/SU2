@@ -718,6 +718,14 @@ public:
   inline su2double GetRmatrix(unsigned short val_iDim, unsigned short val_jDim) {return Rmatrix[val_iDim][val_jDim]; }
 
   /*!
+   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \return Value of the Rmatrix entry.
+   */
+  inline su2double **GetRmatrix(void) {return Rmatrix; }
+
+  /*!
    * \brief Set the value of the limiter.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.

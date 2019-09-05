@@ -103,6 +103,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
+  valResidual = 0.0;
+  
 
   /*--- Inlet profile data structures. ---*/
 
@@ -5433,8 +5435,12 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
   // Check whether the problem is viscous
   bool viscous_flow = ((config->GetKind_Solver() == NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
                        (config->GetKind_Solver() == RANS) ||
+                       (config->GetKind_Solver() == INC_RANS) ||
                        (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
                        (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   // Parameters for the calculations

@@ -5193,6 +5193,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   SetIterLinSolver(IterLinSol);
   
+  /*--- Set the residual --- */
+  
+  valResidual = System.GetResidual();
+  
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
@@ -5400,6 +5404,7 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
         }
       }
     }
+    AD::SetPreaccOut(node[iPoint]->GetRmatrix(), nDim, nDim);
     AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
     AD::EndPreacc();
   }
