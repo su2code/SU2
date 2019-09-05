@@ -1,8 +1,8 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CDiscAdjFlowTractionInterface.cpp
+ * \brief Declaration and inlines of the class to transfer flow tractions
+ *        from a fluid zone into a structural zone in a discrete adjoint simulation.
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -36,29 +36,33 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "CLI11.hpp"
+CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(void) : CFlowTractionInterface() {
 
-#include <ctime>
+}
 
-#include "drivers/CDriver.hpp"
-#include "drivers/CSinglezoneDriver.hpp"
-#include "drivers/CMultizoneDriver.hpp"
-#include "drivers/CDiscAdjSinglezoneDriver.hpp"
-#include "drivers/CDummyDriver.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output/COutput.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
-#include "../include/interfaces/CInterface.hpp"
+CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
+                                                             CConfig *config) :
+  CFlowTractionInterface(val_nVar, val_nConst, config) {
 
-using namespace std;
+}
+
+CDiscAdjFlowTractionInterface::~CDiscAdjFlowTractionInterface(void) {
+
+}
+
+void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
+                                                          CGeometry *flow_geometry, CGeometry *struct_geometry,
+                                                          CConfig *flow_config, CConfig *struct_config){
+
+  /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
+
+  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
+    struct_solution->node[iPoint]->Clear_FlowTraction();
+
+  Preprocess(flow_config);
+
+  /*--- No ramp applied ---*/
+  Physical_Constants[1] = 1.0;
+}
