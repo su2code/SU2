@@ -230,19 +230,21 @@ def main():
       mesh = dict()
 
       mesh['dimension']  = options.nDim
-      mesh['Edges']      = recvEdgBuf
-      mesh['Triangles']  = recvTriBuf
-      mesh['Tetrahedra'] = recvTetBuf
+      mesh['Edges']      = recvEdgBuf.tolist()
+      mesh['Triangles']  = recvTriBuf.tolist()
+      mesh['Tetrahedra'] = recvTetBuf.tolist()
       mesh['Corners']    = []
 
-      mesh['solution']   = recvSolBuf[:,options.nDim:]
+      mesh['solution']   = recvSolBuf[:,options.nDim:].tolist()
 
       if options.nDim == 2:
-        mesh['xy']       = recvSolBuf[:,0:2]
-        mesh['metric']   = recvSolBuf[:,-3:]
+        mesh['xy']       = recvSolBuf[:,0:2].tolist()
+        mesh['metric']   = recvSolBuf[:,-3:].tolist()
+        del mesh['Tetrahedra']
       else:
-        mesh['xyz']      = recvSolBuf[:,0:3]
-        mesh['metric']   = recvSolBuf[:,-6:]
+        mesh['xyz']      = recvSolBuf[:,0:3].tolist()
+        mesh['metric']   = recvSolBuf[:,-6:].tolist()
+        del mesh['Edges']
 
       # Get markers
       nMarker_All = SU2Error.GetnMarker_All()
@@ -256,7 +258,7 @@ def main():
       remesh_options['gradation']   = 1.8
       remesh_options['hmax']        = 10.0
       remesh_options['hmin']        = 1.0e-8
-      remesh_options['target']      = 2500
+      remesh_options['target']      = 10000
       remesh_options['logfile']     = "amg.log"
 
       # Run pyAMG
@@ -339,7 +341,7 @@ def main():
           for j in range(0, len(sendEdgAdap)):
             for k in range(0, 2):
               if sendEdgAdap[j,k] >= beg_node[i] and sendEdgAdap[j,k] < end_node[i]:
-                indEdg.append(j)
+                indEdg.append(int(j))
                 nEdg[i] = nEdg[i] + 1
                 break
 
@@ -347,7 +349,7 @@ def main():
           for j in range(0, len(sendTriAdap)):
             for k in range(0, 3):
               if sendTriAdap[j,k] >= beg_node[i] and sendTriAdap[j,k] < end_node[i]:
-                indTri.append(j)
+                indTri.append(int(j))
                 nTri[i] = nTri[i] + 1
                 break
 
@@ -355,23 +357,28 @@ def main():
           for j in range(0, len(sendTetAdap)):
             for k in range(0, 4):
               if sendTetAdap[j,k] >= beg_node[i] and sendTetAdap[j,k] < end_node[i]:
-                indTet.append(j)
+                indTet.append(int(j))
                 nTet[i] = nTet[i] + 1
                 break
 
+      # We need totals for global indices, which will be edg then tri then tet
+      nEdgTot = np.sum(nEdg)
+      nTriTot = np.sum(nTri)
+      nTetTot = np.sum(nTet)
+
       print("Communicating partitioned elements.")
       if(nEdg[0] > 0):
-        EdgAdap = np.array([sendEdgAdap[j,:].tolist() for j in indEdg[:nEdg[0]]])
+        EdgAdap = np.array([sendEdgAdap[j,:] + [j] for j in indEdg[:nEdg[0]]])
       else:
         EdgAdap = np.empty((0,0), int)
 
       if(nTri[0] > 0):
-        TriAdap = np.array([sendTriAdap[j,:].tolist() for j in indTri[:nTri[0]]])
+        TriAdap = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[:nTri[0]]])
       else:
         TriAdap = np.empty((0,0), int)
 
       if(nTet[0] > 0):
-        TetAdap = np.array([sendTetAdap[j,:].tolist() for j in indTet[:nTet[0]]])
+        TetAdap = np.array([sendTetAdap[j,:].tolist() + [j+nEgdTot+nTriTot] for j in indTet[:nTet[0]]])
       else:
         TetAdap = np.empty((0,0), int)
 
@@ -385,17 +392,17 @@ def main():
         comm.send(nTet[i], dest=i, tag=2)
 
         if(nEdg[i] > 0):
-          sendBuf = np.array([sendEdgAdap[j,:].tolist() for j in indEdg[nEdgOff:nEdgOff+nEdg[i]]])
+          sendBuf = np.array([sendEdgAdap[j,:].tolist() + [j] for j in indEdg[nEdgOff:nEdgOff+nEdg[i]]])
           comm.send(sendBuf, dest=i, tag=3)
           nEdgOff = nEdgOff + nEdg[i]
 
         if(nTri[i] > 0):
-          sendBuf = np.array([sendTriAdap[j,:].tolist() for j in indTri[nTriOff:nTriOff+nTri[i]]])
+          sendBuf = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[nTriOff:nTriOff+nTri[i]]])
           comm.send(sendBuf, dest=i, tag=4)
           nTriOff = nTriOff + nTri[i]
 
         if(nTet[i] > 0):
-          sendBuf = np.array([sendTetAdap[j,:].tolist() for j in indTet[nTetOff:nTetOff+nTet[i]]])
+          sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nEdgTot+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
           comm.send(sendBuf, dest=i, tag=5)
           nTetOff = nTetOff + nTet[i]
 
