@@ -4745,7 +4745,7 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   filename         = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)

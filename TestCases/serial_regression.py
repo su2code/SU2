@@ -868,7 +868,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [-3.734989, -7.016510, 1.176112, 0.282917] #last 4 columns
+    unst_inc_turb_naca0015_sa.test_vals = [ -2.994996, -6.865786, 1.434864, 0.416627] #last 4 columns
     unst_inc_turb_naca0015_sa.su2_exec  = "SU2_CFD"
     unst_inc_turb_naca0015_sa.timeout   = 1600
     unst_inc_turb_naca0015_sa.tol       = 0.00001
@@ -1157,7 +1157,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.316390, -4.968266, 4.1223e-08, 47, 111] #last 5 columns
+    stat_fsi.test_vals = [-3.316390, -4.968266, 4.1223e-08, 47] #last 5 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.multizone = True
@@ -1169,7 +1169,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [ -3.384533, -5.026176, 4.1231e-08, 47, 148] #last 5 columns
+    stat_fsi_restart.test_vals = [ -3.384533, -5.026176, 4.1231e-08, 47] #last 5 columns
     stat_fsi_restart.multizone = True
     stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
@@ -1181,7 +1181,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [ -4.413915, -4.837076, 4.7367e-08, 59, 33] #last 5 columns
+    dyn_fsi.test_vals = [ -4.413915, -4.837076, 4.7367e-08, 59] #last 5 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "SU2_CFD"

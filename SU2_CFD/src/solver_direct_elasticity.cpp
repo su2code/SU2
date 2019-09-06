@@ -4331,7 +4331,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
+  filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- Read all lines in the restart file ---*/
 

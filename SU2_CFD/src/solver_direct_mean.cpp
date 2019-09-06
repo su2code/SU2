@@ -194,7 +194,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
-  string filename_ = config->GetSolution_FileName();
+  string filename_ = "flow";
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -204,10 +204,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
-
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
     if (dual_time) {
@@ -215,7 +211,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       else if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -223,12 +218,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
+    
+    filename_ = config->GetFilename(filename_, "meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
 
-//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
 
   }
 
@@ -12731,7 +12727,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool steady_restart = config->GetSteadyRestart();
   bool turbulent     = (config->GetKind_Turb_Model() != NONE);
 
-  string  restart_filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
+  string  restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -14134,7 +14130,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool low_mach_prec = config->Low_Mach_Preconditioning();
   
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = config->GetSolution_FileName();
+  string filename_ = "flow";
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = (config->GetKind_Turb_Model() != NONE);
@@ -14147,10 +14143,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
-
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
     if (dual_time) {
@@ -14158,7 +14150,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       else if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -14166,12 +14157,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
+    
+    filename_ = config->GetFilename(filename_, "meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
 
-//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
