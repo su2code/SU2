@@ -39,8 +39,8 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
     restart_file.precision(15);
     restart_file << "\"PointID\"";
     for (iVar = 0; iVar < fieldnames.size()-1; iVar++)
-      restart_file << ", \"" << fieldnames[iVar] << "\"";
-    restart_file << ", \"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
+      restart_file << ",\"" << fieldnames[iVar] << "\"";
+    restart_file << ",\"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
     restart_file.close();
   }
   
