@@ -112,8 +112,10 @@ namespace AD{
   
   /*!
    * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
+   * \param[in] enter - Position where we start evaluating the tape.
+   * \param[in] leave- Position where we stop evaluating the tape.
    */
-  void ComputeAdjoint(unsigned short entry, unsigned short exit);
+  void ComputeAdjoint(unsigned short enter, unsigned short leave);
 
   /*!
    * \brief Reset the tape structure to be ready for a new recording.
@@ -243,7 +245,7 @@ namespace AD{
    * \param[in] data - where the information will be extracted from.
    * \param[in] index - where obtained gradient data will be stored.
    */
-  void Set_AdjIndex(int &index, su2double &data);
+  void SetAdjIndex(int &index, const su2double &data);
 
   /*!
    * \brief Pushes back the current tape position to the tape position's vector.

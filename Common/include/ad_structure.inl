@@ -116,7 +116,7 @@ namespace AD{
     }    
   }
 
-  inline void Set_AdjIndex(int &index, su2double &data) {
+  inline void SetAdjIndex(int &index, const su2double &data) {
     index = data.getGradientData();
   }
 
@@ -287,9 +287,9 @@ namespace AD{
 
   inline void ComputeAdjoint() {}
 
-  inline void ComputeAdjoint(unsigned short entry, unsigned short exit) {}
+  inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
 
-  inline void Set_AdjIndex(int &index, su2double &data) {}
+  inline void SetAdjIndex(int &index, const su2double &data) {}
 
   inline void SetDerivative(int index, const double val) {}
 
