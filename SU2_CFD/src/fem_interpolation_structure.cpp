@@ -2144,7 +2144,7 @@ void CFEMInterpolationSol::HighOrderContainmentSearch(
   // Definition of the maximum number of iterations in the Newton solver
   // and the tolerance level. */
   const unsigned short maxIt = 50;
-  const su2double tolNewton  = 1.e-10;
+  const su2double tolNewton  = 1.e-9;
   
   /*--------------------------------------------------------------------------*/
   /* Step 1: Create an initial guess for the parametric coordinates from      */
