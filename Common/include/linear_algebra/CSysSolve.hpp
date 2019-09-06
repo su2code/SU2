@@ -227,7 +227,7 @@ public:
    */
   unsigned long CG_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                              PrecondType & precond, ScalarType tol, unsigned long m,
-                             ScalarType *residual, bool monitoring, CConfig *config, bool TapeActive);
+                             ScalarType *residual, bool monitoring, CConfig *config);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -243,7 +243,7 @@ public:
    */
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                  PrecondType & precond, ScalarType tol, unsigned long m,
-                                 ScalarType *residual, bool monitoring, CConfig *config, bool TapeActive);
+                                 ScalarType *residual, bool monitoring, CConfig *config);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -259,7 +259,7 @@ public:
    */
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                   PrecondType & precond, ScalarType tol, unsigned long m,
-                                  ScalarType *residual, bool monitoring, CConfig *config, bool TapeActive);
+                                  ScalarType *residual, bool monitoring, CConfig *config);
 
   /*!
    * \brief Generic smoother (modified Richardson iteration with preconditioner)
