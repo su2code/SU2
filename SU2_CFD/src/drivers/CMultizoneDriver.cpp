@@ -399,13 +399,6 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 }
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Update the residual for the all the zones ---*/
   
