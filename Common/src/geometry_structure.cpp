@@ -8351,6 +8351,10 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   
   SortAdjacency(config);
 
+   /*--- Reset the global to local element mapping. ---*/
+  
+  Global_to_Local_Elem.clear();
+
   /*--- Store the elements in the geometry structure. Here we assume
    that an initial partitioning performed in the python wrapper has
    assigned elements to processors that own at least one of its nodes.
@@ -8366,7 +8370,6 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
                                                 TriAdap[iElem][1],
                                                 TriAdap[iElem][2], 2);
       local_element_count++;
-      nelem_triangle++;
 
     }
   }
@@ -8379,7 +8382,6 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
                                                    TetAdap[iElem][2],
                                                    TetAdap[iElem][3]);
       local_element_count++;
-      nelem_tetra++;
     }
   }
 
