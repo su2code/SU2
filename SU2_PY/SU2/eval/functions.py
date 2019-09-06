@@ -110,7 +110,7 @@ def function( func_name, config, state=None ):
             geometry( func_name, config, state )
             
         else:
-            raise Exception('unknown function name, %s' % func_name)
+            raise Exception('unknown function name, %s. Please check config_template.cfg for updated list of function names' % func_name)
         
     #: if not redundant
 

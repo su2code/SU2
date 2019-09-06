@@ -198,7 +198,7 @@ class State(ordered_bunch):
                 link.extend(value)
             elif 'MULTIPOINT' in key:
                 # multipoint files
-		value = expand_zones(value,config)
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 for elem in value:
 		    if elem:
