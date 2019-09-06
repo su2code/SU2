@@ -108,7 +108,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   unsigned long iPoint;
   unsigned short iVar, jVar, iDim, jDim;
-  unsigned short iTerm, iKind;
+  unsigned short iTerm;
 
   bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -2135,12 +2135,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   unsigned short iVar;
   unsigned long iPoint, total_index;
   
-  bool first_iter = (config->GetInnerIter() == 0);
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  
-  su2double solNorm = 0.0, solNorm_recv = 0.0;
-  
+    
   if (disc_adj_fem) {
 
     if (nonlinear_analysis) {

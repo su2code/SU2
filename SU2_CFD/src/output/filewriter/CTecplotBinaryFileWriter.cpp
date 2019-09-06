@@ -5,7 +5,7 @@
 #include <set>
 
 CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
-  time_iter(time_iter), timestep(timestep), CFileWriter(fields, ".szplt", nDim){}
+  CFileWriter(fields, ".szplt", nDim), time_iter(time_iter), timestep(timestep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
