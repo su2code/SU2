@@ -294,7 +294,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)

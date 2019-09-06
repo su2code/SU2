@@ -101,4 +101,11 @@ public:
    */
   su2double GetQ_Criterion(su2double** VelocityGradient) const;
   
+  /*!
+   * \brief Write information to meta data file
+   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] solver - The container holding all solution data.
+   */
+  void WriteMetaData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 };
