@@ -103,28 +103,6 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   Bandwidth = file_size/(1.0e6)/UsedTime;
   
-  /*--- Write the metadata (master rank alone) ----*/
-
-//  if (rank == MASTER_NODE) {
-//    if (dual_time)
-//      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-//    else
-//      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-//    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-//    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-//    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-//    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-//    restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
-//    restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
-//    restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
-
-//    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
-//          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-//          config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
-//      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-//    }
-//  }
-
   /*--- All processors close the file. ---*/
 
   restart_file.close();

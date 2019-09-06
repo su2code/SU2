@@ -4520,343 +4520,96 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 	unsigned long InnerIter_ = 0;
 	ifstream restart_file;
 	bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-
-	if (config->GetRead_Binary_Restart()) {
-
-		char fname[100];
-		strcpy(fname, val_filename.c_str());
-		int nVar_Buf = 5;
-		int var_buf[5];
-		int Restart_Iter = 0;
-		passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-		su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-
-#ifndef HAVE_MPI
-
-		/*--- Serial binary input. ---*/
-
-		FILE *fhw;
-		fhw = fopen(fname,"rb");
-    size_t ret;
-
-		/*--- Error check for opening the file. ---*/
-
-		if (!fhw) {
-      SU2_MPI::Error(string("Unable to open restart file ") + string(fname), CURRENT_FUNCTION);
-		}
-
-		/*--- First, read the number of variables and points. ---*/
-
-		ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
-    if (ret != (unsigned long)nVar_Buf) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  
+  /*--- Carry on with ASCII metadata reading. ---*/
+  
+  restart_file.open(val_filename.data(), ios::in);
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE) {
+      cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
+      cout << " Computation will continue without updating metadata parameters." << endl;
     }
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (var_buf[0] != 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
-    }
-
-    /*--- Compute (negative) displacements and grab the metadata. ---*/
-
-    ret = sizeof(int) + 8*sizeof(passivedouble);
-    fseek(fhw,-ret, SEEK_END);
-
-    /*--- Read the external iteration. ---*/
-
-    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-
-    /*--- Read the metadata. ---*/
-
-    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
-    if (ret != 8) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-
-    for (unsigned short iVar = 0; iVar < 8; iVar++)
-      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
-
-    /*--- Close the file. ---*/
-
-    fclose(fhw);
-
-#else
-
-		/*--- Parallel binary input using MPI I/O. ---*/
-
-		MPI_File fhw;
-		MPI_Offset disp;
-    int ierr;
-
-		/*--- All ranks open the file using MPI. ---*/
-
-		ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
-
-		/*--- Error check opening the file. ---*/
-
-		if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-		}
-
-		/*--- First, read the number of variables and points (i.e., cols and rows),
-     which we will need in order to read the file later. Also, read the
-     variable string names here. Only the master rank reads the header. ---*/
-
-		if (rank == MASTER_NODE)
-			MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
-
-		/*--- Broadcast the number of variables to all procs and store clearly. ---*/
-
-		SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (var_buf[0] != 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
-    }
-
-    /*--- Access the metadata. ---*/
-
-		if (rank == MASTER_NODE) {
-
-      /*--- External iteration. ---*/
-
-      disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[1]*var_buf[2]*sizeof(passivedouble));
-      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
-
-			/*--- Additional doubles for AoA, AoS, etc. ---*/
-
-      disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[1]*var_buf[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
-
-		}
-
-		/*--- Communicate metadata. ---*/
-
-		SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-		/*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
-              doesn't work with passive data)---*/
-
-		for (unsigned short iVar = 0; iVar < 8; iVar++)
-			Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
-
-		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
-		/*--- All ranks close the file after writing. ---*/
-
-		MPI_File_close(&fhw);
-
-#endif
-
-		/*--- Store intermediate vals from file I/O in correct variables. ---*/
-
-		InnerIter_  = Restart_Iter;
-		AoA_      = Restart_Meta[0];
-		AoS_      = Restart_Meta[1];
-		BCThrust_ = Restart_Meta[2];
-		dCD_dCL_  = Restart_Meta[3];
-  dCMx_dCL_  = Restart_Meta[4];
-  dCMy_dCL_  = Restart_Meta[5];
-  dCMz_dCL_  = Restart_Meta[6];
-
-	} else {
-
-    /*--- First, check that this is not a binary restart file. ---*/
-
-    char fname[100];
-    strcpy(fname, val_filename.c_str());
-    int magic_number;
-
-#ifndef HAVE_MPI
-
-    /*--- Serial binary input. ---*/
-
-    FILE *fhw;
-    fhw = fopen(fname,"rb");
-    size_t ret;
-
-    /*--- Error check for opening the file. ---*/
-
-    if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-    }
-
-    /*--- Attempt to read the first int, which should be our magic number. ---*/
-
-    ret = fread(&magic_number, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (magic_number == 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
-    }
-
-    fclose(fhw);
-
-#else
-
-    /*--- Parallel binary input using MPI I/O. ---*/
-
-    MPI_File fhw;
-    int ierr;
-
-    /*--- All ranks open the file using MPI. ---*/
-
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
-
-    /*--- Error check opening the file. ---*/
-
-    if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-    }
-
-    /*--- Have the master attempt to read the magic number. ---*/
-
-    if (rank == MASTER_NODE)
-      MPI_File_read(fhw, &magic_number, 1, MPI_INT, MPI_STATUS_IGNORE);
-
-    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
-
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (magic_number == 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+  } else {
+    
+    string text_line;
+    
+    /*--- Space for extra info (if any) ---*/
+    
+    while (getline (restart_file, text_line)) {
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
+      }
+      
+      /*--- Angle of attack ---*/
+      
+      position = text_line.find ("AOA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+      }
+      
+      /*--- Sideslip angle ---*/
+      
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+      }
+      
+      /*--- BCThrust angle ---*/
+      
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+      }
+      
+      if (adjoint_run) {
+        
+        if (config->GetEval_dOF_dCX() == true) {
+          
+          /*--- dCD_dCL coefficient ---*/
+          
+          position = text_line.find ("DCD_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          }
+          
+          /*--- dCMx_dCL coefficient ---*/
+          
+          position = text_line.find ("DCMX_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+          }
+          
+          /*--- dCMy_dCL coefficient ---*/
+          
+          position = text_line.find ("DCMY_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+          }
+          
+          /*--- dCMz_dCL coefficient ---*/
+          
+          position = text_line.find ("DCMZ_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+          }
+          
+        }
+        
+      }
+      
     }
     
-    MPI_File_close(&fhw);
     
-#endif
-
-    /*--- Carry on with ASCII metadata reading. ---*/
-
-		restart_file.open(val_filename.data(), ios::in);
-		if (restart_file.fail()) {
-			if (rank == MASTER_NODE) {
-				cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
-				cout << " Computation will continue without updating metadata parameters." << endl;
-			}
-		} else {
-
-			unsigned long iPoint_Global = 0;
-			string text_line;
-
-			/*--- The first line is the header (General description) ---*/
-
-			getline (restart_file, text_line);
-
-			/*--- Space for the solution ---*/
-
-			for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-				getline (restart_file, text_line);
-
-			}
-
-			/*--- Space for extra info (if any) ---*/
-
-			while (getline (restart_file, text_line)) {
-
-				/*--- External iteration ---*/
-
-				position = text_line.find ("EXT_ITER=",0);
-				if (position != string::npos) {
-					text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
-				}
-
-				/*--- Angle of attack ---*/
-
-				position = text_line.find ("AOA=",0);
-				if (position != string::npos) {
-					text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-				}
-
-				/*--- Sideslip angle ---*/
-
-				position = text_line.find ("SIDESLIP_ANGLE=",0);
-				if (position != string::npos) {
-					text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-				}
-
-				/*--- BCThrust angle ---*/
-
-				position = text_line.find ("INITIAL_BCTHRUST=",0);
-				if (position != string::npos) {
-					text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-				}
-
-				if (adjoint_run) {
-
-					if (config->GetEval_dOF_dCX() == true) {
-
-						/*--- dCD_dCL coefficient ---*/
-
-       position = text_line.find ("DCD_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-       }
-       
-       /*--- dCMx_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMX_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
-       }
-       
-       /*--- dCMy_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMY_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
-       }
-       
-       /*--- dCMz_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMZ_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
-       }
-       
-					}
-
-				}
-
-			}
-
-
-			/*--- Close the restart meta file. ---*/
-
-			restart_file.close();
-
-		}
-	}
+    /*--- Close the restart meta file. ---*/
+    
+    restart_file.close();
+    
+  }
+  
 
 	/*--- Load the metadata. ---*/
 
