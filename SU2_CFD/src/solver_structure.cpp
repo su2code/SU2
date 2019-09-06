@@ -49,6 +49,7 @@
 #include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+#include "../include/toolboxes/printing_toolbox.hpp"
 
 
 CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
@@ -4158,6 +4159,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- First, check that this is not a binary restart file. ---*/
 
   char fname[100];
+  val_filename += ".csv";
   strcpy(fname, val_filename.c_str());
   int magic_number;
 
@@ -4247,11 +4249,9 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- Identify the number of fields (and names) in the restart file ---*/
 
   getline (restart_file, text_line);
-  stringstream ss(text_line);
-  while (ss >> Tag) {
-    fields.push_back(Tag);
-    if (ss.peek() == ',') ss.ignore();
-  }
+  
+  char delimiter = ',';
+  fields = PrintingToolbox::split(text_line, delimiter);
 
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
@@ -4267,8 +4267,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -4279,12 +4279,12 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
       /*--- The PointID is not stored --*/
 
-      point_line >> index;
+      index = PrintingToolbox::stoi(point_line[0]);
 
       /*--- Store the solution (starting with node coordinates) --*/
 
       for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
-        point_line >> Restart_Data[counter*Restart_Vars[1] + iVar];
+        Restart_Data[counter*Restart_Vars[1] + iVar] = PrintingToolbox::stod(point_line[iVar+1]);
 
       /*--- Increment our local point counter. ---*/
 
@@ -4299,6 +4299,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   unsigned short iVar;
+  val_filename += ".dat";  
   strcpy(fname, val_filename.c_str());
   int nRestart_Vars = 5, nFields;
   Restart_Vars = new int[5];
@@ -6006,7 +6007,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     filename = config->GetSolution_FileName();
   }
 
-  filename = config->GetFilename(filename, ".dat", val_iter);
+  filename = config->GetFilename(filename, "", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
@@ -6132,7 +6133,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  filename = config->GetFilename(filename, ".dat", val_iter);
+  filename = config->GetFilename(filename, "", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
@@ -6476,7 +6477,7 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   string restart_filename = config->GetSolution_FileName();
 
   if (config->GetTime_Domain()) {
-    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), ".dat");
+    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), "");
   }
 
   int counter = 0;
