@@ -2582,13 +2582,13 @@ public:
    * \brief Saving the adjoint vector position with respect to the solution variables.
    * \param[in] input - input or output variables.
    */
-  inline void Set_AdjIndices(bool input) {
+  inline void SetAdjIndices(bool input) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       if (input) {
-        AD::Set_AdjIndex(Input_AdjIndices[iVar], Solution[iVar]);
+        AD::SetAdjIndex(Input_AdjIndices[iVar], Solution[iVar]);
       }
       else {
-        AD::Set_AdjIndex(Output_AdjIndices[iVar], Solution[iVar]);
+        AD::SetAdjIndex(Output_AdjIndices[iVar], Solution[iVar]);
       }
     }
   }

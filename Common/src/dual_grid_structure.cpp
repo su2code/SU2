@@ -449,10 +449,10 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 void CPoint::Set_AdjIndices(bool input) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     if(input) {
-      AD::Set_AdjIndex(Input_AdjIndices[iDim], Coord[iDim]);
+      AD::SetAdjIndex(Input_AdjIndices[iDim], Coord[iDim]);
     }
     else {
-      AD::Set_AdjIndex(Output_AdjIndices[iDim], Coord[iDim]);
+      AD::SetAdjIndex(Output_AdjIndices[iDim], Coord[iDim]);
     }
   }
 }
