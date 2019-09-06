@@ -4278,7 +4278,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
       /*--- Store the solution (starting with node coordinates) --*/
 
       for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
-        Restart_Data[counter*Restart_Vars[1] + iVar] = PrintingToolbox::stod(point_line[iVar+1]);
+        Restart_Data[counter*Restart_Vars[1] + iVar] = SU2_TYPE::GetValue(PrintingToolbox::stod(point_line[iVar+1]));
 
       /*--- Increment our local point counter. ---*/
 
