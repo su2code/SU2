@@ -46,14 +46,14 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
   RecordingState = NONE;
 
-  direct_nInst        = new unsigned short[nZone];
-  nInnerIter_Adjoint  = new unsigned short[nZone];
+  direct_nInst  = new unsigned short[nZone];
+  nInnerIter    = new unsigned short[nZone];
 
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    direct_nInst[iZone]       = 1;
-    nInnerIter_Adjoint[iZone] = config_container[iZone]->GetnInner_Iter_Adjoint();
+    direct_nInst[iZone] = 1;
+    nInnerIter[iZone]   = config_container[iZone]->GetnInner_Iter();
   }
 
   direct_iteration = new CIteration**[nZone];
@@ -378,7 +378,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
-      for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter_Adjoint[iZone]; iInnerIter++) {
+      for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
         /*--- Evaluate the tape section belonging to solvers in iZone. ---*/
 
