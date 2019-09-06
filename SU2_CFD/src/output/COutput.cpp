@@ -361,6 +361,10 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
   
   volumeDataSorter->SortOutputData();
   
+  if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){
+    WriteMetaData(config, geometry, solver_container);
+  }
+  
 }
 
 
