@@ -209,7 +209,7 @@ void CSysSolve<ScalarType>::WriteHistory(const int & iter, const ScalarType & re
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                   CMatrixVectorProduct<ScalarType> & mat_vec, CPreconditioner<ScalarType> & precond,
-                                                  ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config, bool TapeActive) {
+                                                  ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
 
   int rank = SU2_MPI::GetRank();
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -242,7 +242,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     norm_r = r.norm();
     norm0  = b.norm();
-    if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive ) {
+    if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
@@ -342,7 +342,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                       CMatrixVectorProduct<ScalarType> & mat_vec, CPreconditioner<ScalarType> & precond,
-                                                      ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config, bool TapeActive) {
+                                                      ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
 	
   int rank = SU2_MPI::GetRank();
 
@@ -391,7 +391,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType beta = W[0].norm();
   
-  if ( ((beta < tol*norm0) || (beta < eps)) && !TapeActive) {
+  if ((beta < tol*norm0) || (beta < eps)) {
     
     /*---  System is already solved ---*/
 
@@ -498,7 +498,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                        CMatrixVectorProduct<ScalarType> & mat_vec, CPreconditioner<ScalarType> & precond,
-                                                       ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config, bool TapeActive) {
+                                                       ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
   
   int rank = SU2_MPI::GetRank();
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -533,7 +533,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     norm_r = r.norm();
     norm0  = b.norm();
-    if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive) {
+    if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
       return 0;
     }
@@ -889,13 +889,13 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
 
   switch (KindSolver) {
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
       break;
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
@@ -903,7 +903,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, config, TapeActive);
+        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, config);
         if ( Residual < SolverTol*Norm0 ) break;
       }
       break;
@@ -1017,13 +1017,13 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   switch(KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, config, TapeActive);
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, config, TapeActive);
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
@@ -1031,7 +1031,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput, config, TapeActive);
+        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput, config);
         if ( Residual < SolverTol*Norm0 ) break;
       }
       break;

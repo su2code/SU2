@@ -138,8 +138,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
-  bool TapeActive = AD::TapeActive();
-
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
@@ -255,7 +253,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
           Tot_Iter = 0; MaxIter = RestartIter;
 
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, config, TapeActive);
+          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, config);
 
           if ((rank == MASTER_NODE) && Screen_Output) {
             cout << "\n# FGMRES (with restart) residual history" << endl;
@@ -270,7 +268,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (IterLinSol + RestartIter > Smoothing_Iter)
               MaxIter = Smoothing_Iter - IterLinSol;
 
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config, TapeActive);
+            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -290,7 +288,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case FGMRES:
 
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config, TapeActive);
+          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
@@ -298,14 +296,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case BCGSTAB:
 
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config, TapeActive);
+          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
 
         case CONJUGATE_GRADIENT:
 
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config, TapeActive);
+          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
