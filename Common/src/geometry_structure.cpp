@@ -8254,13 +8254,13 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
     nelem_edge_bound = EdgAdap.size();
     nelem_triangle   = TriAdap.size();
     nelem_tetra      = 0;
-    nElem            = nelem_edge_bound + nelem_triangle;
+    nElem            = nelem_triangle;
   }
   else{
     nelem_edge_bound     = 0;
     nelem_triangle_bound = TriAdap.size();
     nelem_tetra          = TetAdap.size();
-    nElem                = nelem_triangle_bound + nelem_tetra;
+    nElem                = nelem_tetra;
   }
 
 #ifdef HAVE_MPI
