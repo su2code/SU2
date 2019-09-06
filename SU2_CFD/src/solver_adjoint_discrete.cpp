@@ -276,7 +276,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if(config->GetMultiphysicsDiscrete_Adjoint()) {
       direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
-      direct_solver->node[iPoint]->Set_AdjIndices(input);
+      direct_solver->node[iPoint]->SetAdjIndices(input);
     }
     else {
       direct_solver->node[iPoint]->RegisterSolution(input);   
@@ -402,7 +402,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if(config->GetMultiphysicsDiscrete_Adjoint()) {
       direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
-      direct_solver->node[iPoint]->Set_AdjIndices(input);
+      direct_solver->node[iPoint]->SetAdjIndices(input);
     }
     else {
       direct_solver->node[iPoint]->RegisterSolution(input);   
