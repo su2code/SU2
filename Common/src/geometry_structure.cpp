@@ -3810,6 +3810,13 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
   nPointLinear     = NULL;
   nPointCumulative = NULL;
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  adjacency = NULL;
+  xadj      = NULL;
+#endif
+#endif
+
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
