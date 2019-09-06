@@ -1598,6 +1598,9 @@ private:
   vector<su2double> dsLagBasisFaceIntegration; /*!< \brief s-derivatives of the face Lagrangian basis functions
                                                            in the integration points. */
 
+  vector<su2double> matVandermondeFaceInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the face DOFs
+                                                               for this standard element. */
+
   vector<su2double> drLagBasisElemIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the
                                                            integration points of the element adjacent to the face. */
   vector<su2double> dsLagBasisElemIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the
@@ -1659,6 +1662,19 @@ public:
   * \return The current object, after the member variables were assigned the correct value.
   */
   CFEMStandardBoundaryFace& operator=(const CFEMStandardBoundaryFace &other);
+
+  /*!
+  * \brief Function, which computes the face Lagrangian basis functions and its
+           derivatives for the given parametric coordinates.
+  * \param[in]  parCoor   - Parametric coordinates for which the basis functions
+                            and derivatives must be computed.
+  * \param[out] lagBasis  - The values of the Lagrangian basis functions in parCoor.
+  * \param[out] dLagBasis - The values of the derivatives of the basis functions
+                            in parCoor.
+  */
+  void FaceBasisFunctionsAndDerivativesInPoint(const su2double                 *parCoor,
+                                               vector<su2double>               &lagBasis,
+                                               vector<vector<su2double> >      &dLagBasis);
 
   /*!
   * \brief Function, which makes available the r-derivatives of the element
@@ -1763,6 +1779,21 @@ public:
   * \return  The pointer to the local connectivity of the linear subfaces.
   */
   const unsigned short *GetSubFaceConn(void) const;
+  
+
+  /*!
+  * \brief Function, which makes available the r-location of the DOFs as a
+           const pointer to the std::vector.
+  * \return  The address of the std::vector, which stores the r-location of the DOFs.
+  */
+  const vector<su2double>* GetRDOFsFace(void) const;
+
+   /*!
+  * \brief Function, which makes available the s-location of the DOFs as a
+           const pointer to the std::vector.
+  * \return  The address of the std::vector, which stores the s-location of the DOFs.
+  */
+  const vector<su2double>* GetSDOFsFace(void) const;
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.

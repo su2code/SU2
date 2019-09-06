@@ -1168,6 +1168,10 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  bool interpolate_solution;              /*!< \brief Determines if solution interpolation is taking place */
+  string Target_Mesh_FileName;            /*!< \brief File name of target mesh for interpolation */
+  string Interpolated_Restart_FileName;   /*!< \brief File name of interpolated solution that is ouput */
+
   string GasModel;        /*!< \brief Gas Model. */
   string TransportModel;
   bool MUTATION_PP;             /*!< \brief Determines if Mutation++ is to be used  */ 
@@ -5525,6 +5529,11 @@ public:
   bool GetRestart(void);
 
   /*!
+   * \brief Sets restart information
+   */
+  void SetRestart(bool val_restart);
+
+  /*!
    * \brief Flag for whether binary SU2 native restart files are written.
    * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
    */
@@ -5591,6 +5600,10 @@ public:
    */
   string GetMesh_FileName(void);
   
+  /*!
+   * \brief set name of the input grid.
+   */
+  void SetMesh_FileName(string val_filename);
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
@@ -9463,6 +9476,12 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+
+  /*!
+   * \brief Get name of the target grid.
+   * \return File name of the target grid.
+   */
+  string GetTarget_Mesh_FileName(void);
 };
 
 #include "config_structure.inl"

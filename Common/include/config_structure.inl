@@ -1427,6 +1427,8 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
+inline void CConfig::SetRestart(bool val_restart) { Restart = val_restart; }
+
 inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
 
 inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
@@ -1571,6 +1573,8 @@ inline unsigned short CConfig::GetnMarker_HeatFlux(void) { return nMarker_HeatFl
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
+
+inline void CConfig::SetMesh_FileName(string val_filename) { Mesh_FileName = val_filename; }
 
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
@@ -2188,3 +2192,5 @@ inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
+
+inline string CConfig::GetTarget_Mesh_FileName(void) { return Target_Mesh_FileName; }

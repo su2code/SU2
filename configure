@@ -631,6 +631,8 @@ BUILD_PY_FALSE
 BUILD_PY_TRUE
 BUILD_GEO_FALSE
 BUILD_GEO_TRUE
+BUILD_INTERP_FALSE
+BUILD_INTERP_TRUE
 BUILD_SOL_FALSE
 BUILD_SOL_TRUE
 BUILD_DEF_FALSE
@@ -808,6 +810,7 @@ enable_DOT
 enable_MSH
 enable_DEF
 enable_SOL
+enable_INTERP
 enable_GEO
 enable_PY_WRAPPER
 enable_normal
@@ -1470,6 +1473,7 @@ Optional Features:
   --disable-MSH           build the SU2_MSH executable (default = yes)
   --disable-DEF           build the SU2_DEF executable (default = yes)
   --disable-SOL           build the SU2_SOL executable (default = yes)
+  --disable-INTERP        build the SU2_INTERP executable (default = yes)
   --disable-GEO           build the SU2_GEO executable (default = yes)
   --enable-PY_WRAPPER     wrap the SU2 code with Python (default = no)
   --disable-normal        build executables with normal datatype (default =
@@ -5877,6 +5881,13 @@ else
   build_SOL="yes"
 fi
 
+# Check whether --enable-INTERP was given.
+if test "${enable_INTERP+set}" = set; then :
+  enableval=$enable_INTERP; build_INTERP=$enableval
+else
+  build_INTERP="yes"
+fi
+
 # Check whether --enable-GEO was given.
 if test "${enable_GEO+set}" = set; then :
   enableval=$enable_GEO; build_GEO=$enableval
@@ -6595,6 +6606,7 @@ then
   build_MSH=no
   build_DEF=no
   build_SOL=no
+  build_INTERP=no
   build_GEO=no
   build_PY=no
   build_PY_WRAPPER=no
@@ -6646,6 +6658,14 @@ else
   BUILD_SOL_FALSE=
 fi
 
+ if test $build_INTERP != "no"; then
+  BUILD_INTERP_TRUE=
+  BUILD_INTERP_FALSE='#'
+else
+  BUILD_INTERP_TRUE='#'
+  BUILD_INTERP_FALSE=
+fi
+
  if test $build_GEO != "no"; then
   BUILD_GEO_TRUE=
   BUILD_GEO_FALSE='#'
@@ -6673,7 +6693,7 @@ fi
 
 ###########################
 
-ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DOT/obj/Makefile SU2_MSH/obj/Makefile SU2_DEF/obj/Makefile SU2_SOL/obj/Makefile SU2_GEO/obj/Makefile SU2_PY/Makefile SU2_PY/pySU2/Makefile"
+ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DOT/obj/Makefile SU2_MSH/obj/Makefile SU2_DEF/obj/Makefile SU2_SOL/obj/Makefile SU2_INTERP/obj/Makefile SU2_GEO/obj/Makefile SU2_PY/Makefile SU2_PY/pySU2/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6906,6 +6926,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_SOL_TRUE}" && test -z "${BUILD_SOL_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_SOL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_INTERP_TRUE}" && test -z "${BUILD_INTERP_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_INTERP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_GEO_TRUE}" && test -z "${BUILD_GEO_FALSE}"; then
@@ -7506,6 +7530,7 @@ do
     "SU2_MSH/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_MSH/obj/Makefile" ;;
     "SU2_DEF/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_DEF/obj/Makefile" ;;
     "SU2_SOL/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_SOL/obj/Makefile" ;;
+    "SU2_INTERP/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_INTERP/obj/Makefile" ;;
     "SU2_GEO/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_GEO/obj/Makefile" ;;
     "SU2_PY/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_PY/Makefile" ;;
     "SU2_PY/pySU2/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_PY/pySU2/Makefile" ;;
@@ -8145,6 +8170,7 @@ Build Configuration Summary:
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
+    Build SU2_INTERP:     $build_INTERP
     Build SU2_GEO:        $build_GEO
     Build Py Wrapper:     $build_PY_WRAPPER
 
@@ -8230,6 +8256,7 @@ Build Configuration Summary:
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
+    Build SU2_INTERP:     $build_INTERP
     Build SU2_GEO:        $build_GEO
     Build Py Wrapper:     $build_PY_WRAPPER
 
