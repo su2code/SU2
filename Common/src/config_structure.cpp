@@ -2209,8 +2209,6 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("OUTER_ITER", nOuterIter, 1);
   /* DESCRIPTION: Number of inner iterations in each multizone block. */
   addUnsignedLongOption("INNER_ITER", nInnerIter, 1);
-  /* DESCRIPTION: Number of adjoint inner iterations in each multizone block. */
-  addUnsignedLongOption("INNER_ITER_ADJOINT", nInnerIter_Adjoint, 1);
   /* DESCRIPTION: Number of time steps solved in the multizone problem. */
   addUnsignedLongOption("TIME_ITER", nTimeIter, 1);
   /* DESCRIPTION: Number of iterations in each single-zone block. */
@@ -6208,12 +6206,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
-    if (DiscreteAdjoint) {
-      cout << "Maximum number of adjoint solver subiterations: " << nInnerIter_Adjoint <<"."<< endl;
-    }
-    else {
-      cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
-    }
+    cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
+
     cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
     cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
     

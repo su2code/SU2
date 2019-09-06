@@ -2000,8 +2000,6 @@ inline bool CConfig::GetTime_Domain(void) { return Time_Domain; }
 
 inline unsigned long CConfig::GetnInner_Iter(void) { return nInnerIter; }
 
-inline unsigned long CConfig::GetnInner_Iter_Adjoint(void) { return nInnerIter_Adjoint; }
-
 inline unsigned long CConfig::GetnOuter_Iter(void) { return nOuterIter; }
 
 inline unsigned long CConfig::GetnTime_Iter(void) { return nTimeIter; }
