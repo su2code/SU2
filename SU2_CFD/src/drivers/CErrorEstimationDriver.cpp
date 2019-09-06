@@ -971,69 +971,94 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     var->SetAnisoMetr(2, MetrNew[2]);
   }
 
-  su2double localComplexity  = 0., 
-            globalComplexity = 0.;
-  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
+  //--- loop to enforce size and complexity constraints
+  vector<bool> tagged(nPointDomain, false);
+  for (unsigned short iConstr = 0; iConstr < 50; ++iConstr) {
+    su2double localComplexity  = 0., 
+              globalComplexity = 0.,
+              localTaggedComplexity  = 0.,
+              globalTaggedComplexity = 0.;
+    for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      CVariable *var = solver_flow->node[iPoint];
 
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
-    const su2double d = pow(a-c,2.) + 4.*b*b;
+      const su2double a = var->GetAnisoMetr(0);
+      const su2double b = var->GetAnisoMetr(1);
+      const su2double c = var->GetAnisoMetr(2);
+      const su2double d = pow(a-c,2.) + 4.*b*b;
 
-    const su2double Lam1 = (a+c+sqrt(d))/2.;
-    const su2double Lam2 = (a+c-sqrt(d))/2.;
+      su2double Lam1 = (a+c+sqrt(d))/2.;
+      su2double Lam2 = (a+c-sqrt(d))/2.;
 
-    const su2double Vol = geometry->node[iPoint]->GetVolume();
+      const su2double Vol = geometry->node[iPoint]->GetVolume();
 
-    localComplexity += sqrt(abs(Lam1*Lam2))*Vol;
-  }
+      if(tagged[iPoint]) {
+        localTaggedComplexity += sqrt(abs(Lam1*Lam2))*Vol;
+      }
+      else {
+        localComplexity += sqrt(abs(Lam1*Lam2))*Vol;
+      }
+    }
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&localComplexity, &globalComplexity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localTaggedComplexity, &globalTaggedComplexity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   globalComplexity = localComplexity;
+  globalTaggedComplexity = localTaggedComplexity;
 #endif
 
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      if(!tagged[iPoint]) {
+        CVariable *var = solver_flow->node[iPoint];
 
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
-    const su2double d = pow(a-c,2.) + 4.*b*b;
+        const su2double a = var->GetAnisoMetr(0);
+        const su2double b = var->GetAnisoMetr(1);
+        const su2double c = var->GetAnisoMetr(2);
+        const su2double d = pow(a-c,2.) + 4.*b*b;
 
-    const su2double Lam1 = (a+c+sqrt(d))/2.;
-    const su2double Lam2 = (a+c-sqrt(d))/2.;
+        su2double Lam1 = (a+c+sqrt(d))/2.;
+        su2double Lam2 = (a+c-sqrt(d))/2.;
 
-    const su2double factor = pow(outNPoint/(globalComplexity), 2./nDim);
+        const su2double outComplexity = outNPoint - globalTaggedComplexity;
+        const su2double factor = pow(outComplexity/(globalComplexity), 2./nDim);
 
-    su2double RuH[2][2] = {{b, b},
-                           {Lam1-a, Lam2-a}};
+        su2double RuH[2][2] = {{b, b},
+                               {Lam1-a, Lam2-a}};
 
-    if(abs(b) < 1.0e-16){
-      RuH[0][0] = 1.0; RuH[0][1] = 0.0;
-      RuH[1][0] = 0.0; RuH[1][1] = 1.0;
+        if(abs(b) < 1.0e-16){
+          RuH[0][0] = 1.0; RuH[0][1] = 0.0;
+          RuH[1][0] = 0.0; RuH[1][1] = 1.0;
+        }
+
+        const su2double RuU[2][2] = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
+                                     {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
+
+        // const su2double Lam1new = factor*Lam1;
+        // const su2double Lam2new = factor*Lam2;
+        if( (abs(factor*Lam1) < 1./(hmax*hmax)) || (abs(factor*Lam1) > 1./(hmin*hmin)) || 
+            (abs(factor*Lam2) < 1./(hmax*hmax)) || (abs(factor*Lam2) > 1./(hmin*hmin)) ) {
+          tagged[iPoint] = true;
+          Lam1 = min(max(abs(factor*Lam1), 1./(hmax*hmax)), 1./(hmin*hmin));
+          Lam2 = min(max(abs(factor*Lam2), 1./(hmax*hmax)), 1./(hmin*hmin));
+        }
+        else {
+          Lam1 = factor*Lam1;
+          Lam2 = factor*Lam2;
+        }
+
+        const su2double LamRuU[2][2] = {{abs(Lam1)*RuU[0][0],abs(Lam1)*RuU[1][0]},
+                                        {abs(Lam2)*RuU[0][1],abs(Lam2)*RuU[1][1]}};
+
+        const su2double MetrNew[3]   = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0], 
+                                        RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1], 
+                                        RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]};
+
+        var->SetAnisoMetr(0, MetrNew[0]);
+        var->SetAnisoMetr(1, MetrNew[1]);
+        var->SetAnisoMetr(2, MetrNew[2]);
+      }
     }
 
-    const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
-                                    {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
-
-    // const su2double Lam1new = factor*Lam1;
-    // const su2double Lam2new = factor*Lam2;
-    const su2double Lam1new = min(max(abs(factor*Lam1), 1./(hmax*hmax)), 1./(hmin*hmin));
-    const su2double Lam2new = min(max(abs(factor*Lam2), 1./(hmax*hmax)), 1./(hmin*hmin));
-
-    const su2double LamRuU[2][2] = {{abs(Lam1new)*RuU[0][0],abs(Lam1new)*RuU[1][0]},
-                                    {abs(Lam2new)*RuU[0][1],abs(Lam2new)*RuU[1][1]}};
-
-    const su2double MetrNew[3]   = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0], 
-                                    RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1], 
-                                    RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]};
-
-    var->SetAnisoMetr(0, MetrNew[0]);
-    var->SetAnisoMetr(1, MetrNew[1]);
-    var->SetAnisoMetr(2, MetrNew[2]);
   }
 }
 
