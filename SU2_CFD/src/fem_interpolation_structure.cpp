@@ -7,7 +7,7 @@
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
  * with selected contributions from the open-source community.
- *
+ *f
  * The main research teams contributing to the current release are:
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
@@ -289,6 +289,7 @@ void CFEMInterpolationDriver::Postprocessing() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
       Solver_Deletion(input_solver_container[iZone],
                             input_config_container[iZone],
                             iInst);
@@ -296,6 +297,7 @@ void CFEMInterpolationDriver::Postprocessing() {
                             output_config_container[iZone],
                             iInst);
     }
+
     delete [] input_solver_container[iZone];
     delete [] output_solver_container[iZone];
   }
@@ -303,6 +305,7 @@ void CFEMInterpolationDriver::Postprocessing() {
   delete [] output_solver_container;
   if (rank == MASTER_NODE) cout << "Deleted CSolver containers." << endl;
 
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     if (input_geometry_container[iZone] != NULL) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -335,7 +338,6 @@ void CFEMInterpolationDriver::Postprocessing() {
     }
     delete [] input_config_container;
   }
-
   if (output_config_container!= NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (output_config_container[iZone] != NULL) {
@@ -344,27 +346,25 @@ void CFEMInterpolationDriver::Postprocessing() {
     }
     delete [] output_config_container;
   }
-
+  
   if (rank == MASTER_NODE) cout << "Deleted CConfig containers." << endl;
 
   if (nInst != NULL) delete [] nInst;
   if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
 
-
-
+  
   // if (input_grid != NULL) delete [] input_grid;
   // if (output_grid != NULL) delete [] output_grid;
   // if (input_solution != NULL) delete [] input_solution;
   // if (output_solution != NULL) delete [] output_solution;
   // if (rank == MASTER_NODE) cout << "Deleted interpolation containers." << endl;
 
-  
+     
   /*--- Deallocate output container ---*/
   if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
-
 
 }
 
@@ -640,7 +640,8 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
-  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+  tne2_euler, tne2_ns;
   
   /*--- Count the number of DOFs per solution point. ---*/
   
@@ -648,18 +649,22 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
   
   /*--- Initialize some useful booleans ---*/
 
-  euler            = false;  ns              = false;  turbulent     = false;
-  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
-  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
-  neg_spalart_allmaras = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  heat_fvm         = false;  disc_adj_heat    = false;
-  transition       = false;  fem_transition   = false;
-  template_solver  = false;
-  fem_dg_flow      = false;  fem_dg_shock_persson = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  euler                 = false; ns              = false;        turbulent     = false;
+  fem_euler             = false; fem_ns          = false;        fem_turbulent = false;
+  adj_euler             = false; adj_ns          = false;        adj_turb      = false;
+  spalart_allmaras      = false; menter_sst      = false;        disc_adj_turb = false;
+  neg_spalart_allmaras  = false;
+  disc_adj              = false;
+  fem                   = false; disc_adj_fem    = false;
+  heat_fvm              = false; disc_adj_heat   = false;
+  transition            = false; fem_transition  = false;
+  template_solver       = false;
+
+  fem_dg_flow           = false; fem_dg_shock_persson  = false;
+  e_spalart_allmaras    = false; comp_spalart_allmaras = false;   e_comp_spalart_allmaras = false;
+  
+  tne2_euler            = false; tne2_ns = false;                 
+  
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -669,7 +674,9 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
+    case TNE2_EULER: tne2_euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
@@ -740,6 +747,13 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
     }
     DOFsPerPoint += solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
   }
+  if (tne2_euler) {
+      if (compressible) {
+        solver_container[val_iInst][MESH_0][TNE2_SOL] = new CTNE2EulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+        solver_container[val_iInst][MESH_0][TNE2_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
+      }
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][TNE2_SOL]->GetnVar();
+  }
   if (ns) {
     if (compressible) {
       solver_container[val_iInst][MESH_0][FLOW_SOL] = new CNSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
@@ -749,6 +763,12 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
     }
     DOFsPerPoint += solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
   }
+  if (tne2_ns) {
+      if (compressible) {
+        solver_container[val_iInst][MESH_0][TNE2_SOL] = new CTNE2NSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      }
+      DOFsPerPoint += solver_container[val_iInst][MESH_0][TNE2_SOL]->GetnVar();
+    }
   if (turbulent) {
     if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
       solver_container[val_iInst][MESH_0][TURB_SOL] = new CTurbSASolver(geometry[val_iInst][MESH_0], config, MESH_0, solver_container[val_iInst][MESH_0][FLOW_SOL]->GetFluidModel() );
@@ -861,19 +881,21 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   heat_fvm, fem, fem_euler, fem_ns, fem_dg_flow,
-  template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
+  template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat,
+  tne2_euler, tne2_ns;
   int val_iter = 0;
 
   /*--- Initialize some useful booleans ---*/
 
-  euler            = false;  ns           = false;  turbulent   = false;
-  adj_euler        = false;  adj_ns       = false;  adj_turb    = false;
-  fem_euler        = false;  fem_ns       = false;  fem_dg_flow = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  disc_adj_turb    = false;
-  heat_fvm         = false;  disc_adj_heat    = false;
-  template_solver  = false;
+  euler            = false;  ns            = false;  turbulent   = false;
+  adj_euler        = false;  adj_ns        = false;  adj_turb    = false;
+  fem_euler        = false;  fem_ns        = false;  fem_dg_flow = false;
+  disc_adj         = false; 
+  fem              = false;  disc_adj_fem  = false;
+  disc_adj_turb    = false; 
+  heat_fvm         = false;  disc_adj_heat = false;
+  template_solver  = false; 
+  tne2_euler       = false;  tne2_ns       = false;
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
@@ -906,7 +928,9 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
+    case TNE2_EULER: tne2_euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
@@ -940,6 +964,9 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
   if (restart || restart_flow) {
     if (euler || ns) {
       solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (tne2_euler || tne2_ns) {
+      solver_container[val_iInst][MESH_0][TNE2_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (turbulent) {
       solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
@@ -1046,7 +1073,8 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
-  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+  tne2_euler, tne2_ns;
   
   /*--- Count the number of DOFs per solution point. ---*/
   
@@ -1066,6 +1094,7 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
   template_solver  = false;
   fem_dg_flow      = false;  fem_dg_shock_persson = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  tne2_euler           = false;  tne2_ns               = false;
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1075,7 +1104,9 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
+    case TNE2_EULER: tne2_euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
@@ -1135,12 +1166,22 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
       solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
   }
+  if (tne2_euler) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][TNE2_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
   if (ns) {
     if (compressible) {
       solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
     if (incompressible) {
       solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+  if (tne2_ns) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][TNE2_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
   }
   if (turbulent) {
@@ -1184,27 +1225,32 @@ void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
   heat_fvm, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_fem, disc_adj_heat,
-  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+  tne2_euler, tne2_ns;
 
   /*--- Initialize some useful booleans ---*/
   
-  euler            = false;  ns              = false;  turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
-  neg_spalart_allmaras = false;
-  disc_adj        = false;
-  fem              = false;  disc_adj_fem    = false;
-  heat_fvm        = false;   disc_adj_heat   = false;
-  transition       = false;
-  template_solver  = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  euler                = false;  ns                    = false;  turbulent     = false;
+  adj_euler            = false;  adj_ns                = false;  adj_turb      = false;
+  spalart_allmaras     = false;  menter_sst            = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;      
+  disc_adj             = false;      
+  fem                  = false;  disc_adj_fem          = false;
+  heat_fvm             = false;  disc_adj_heat         = false;
+  transition           = false;      
+  template_solver      = false;
+  e_spalart_allmaras   = false;  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  tne2_euler           = false;  tne2_ns               = false;
 
   /*--- Assign booleans ---*/
+
   
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
+    case TNE2_EULER: tne2_euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : euler = true; break;
     case FEM_NAVIER_STOKES:
@@ -1224,7 +1270,6 @@ void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
     case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
-  
   /*--- Assign turbulence model booleans ---*/
   
   if (turbulent){
@@ -1270,6 +1315,13 @@ void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
     delete solver_container[val_iInst][MESH_0][FLOW_SOL];
   }
 
+ 
+  if (tne2_euler || tne2_ns) {
+        
+      delete solver_container[val_iInst][MESH_0][TNE2_SOL];
+ }
+
+ 
   if (turbulent) {
     if (spalart_allmaras || neg_spalart_allmaras || menter_sst || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
       delete solver_container[val_iInst][MESH_0][TURB_SOL];
@@ -1307,6 +1359,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   unsigned short iZone, iVar;
   unsigned short nVar_Template = 0,
                  nVar_Flow     = 0,
+                 nVar_TNE2     = 0,
                  nVar_Trans    = 0,
                  nVar_Turb     = 0,
                  nVar_Adj_Flow = 0,
@@ -1322,20 +1375,22 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
-  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+  tne2_euler, tne2_ns;
   
-  euler            = false;  ns              = false;  turbulent     = false;
-  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
-  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  euler                = false;  ns                    = false;  turbulent     = false;
+  fem_euler            = false;  fem_ns                = false;  fem_turbulent = false;
+  adj_euler            = false;  adj_ns                = false;  adj_turb      = false;
+  spalart_allmaras     = false;  menter_sst            = false;  disc_adj_turb = false;
   neg_spalart_allmaras = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  heat_fvm         = false;  disc_adj_heat    = false;
-  transition       = false;  fem_transition   = false;
-  template_solver  = false;
-  fem_dg_flow      = false;  fem_dg_shock_persson = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  disc_adj             = false;
+  fem                  = false;  disc_adj_fem          = false;
+  heat_fvm             = false;  disc_adj_heat         = false;
+  transition           = false;  fem_transition        = false;
+  template_solver      = false;
+  fem_dg_flow          = false;  fem_dg_shock_persson  = false;
+  e_spalart_allmaras   = false;  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  tne2_euler           = false;  tne2_ns               = false;
   
   // Allocate memory for the solution.
   unsigned long nDOFsTot = 0;
@@ -1350,7 +1405,9 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
     switch (config[iZone]->GetKind_Solver()) {
       case TEMPLATE_SOLVER: template_solver = true; break;
       case EULER : euler = true; break;
+      case TNE2_EULER: tne2_euler = true; break;
       case NAVIER_STOKES: ns = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case TNE2_NAVIER_STOKES: tne2_ns = true; break;
       case RANS : ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
       case FEM_EULER : fem_euler = true; break;
       case FEM_NAVIER_STOKES: fem_ns = true; break;
@@ -1389,6 +1446,11 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
       nVar      = nVar_Flow;
     }
+
+    if (tne2_euler) {
+       nVar_TNE2 = solution[iZone][INST_0][MESH_0][TNE2_SOL]->GetnVar();
+       nVar      = nVar_TNE2;
+    }
     
     if(ns){
       nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
@@ -1400,7 +1462,12 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       }
       nVar = nVar_Flow + nVar_Turb + nVar_Trans;
     }
-    
+
+    if (tne2_ns) {
+         nVar_TNE2 = solution[iZone][INST_0][MESH_0][TNE2_SOL]->GetnVar();
+         nVar      = nVar_TNE2;
+    }
+
     if(fem_ns){
       nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
       if(turbulent){
@@ -1450,6 +1517,12 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       if(euler || fem_euler || ns || fem_ns){
         for(iVar = 0; iVar < nVar_Flow; iVar++){
           mSolDOFs[iDOF][iVar] = solution[iZone][INST_0][MESH_0][FLOW_SOL]->node[jDOF]->GetSolution(iVar);
+        }
+      }
+
+      if(tne2_euler || tne2_ns){
+        for(iVar = 0; iVar < nVar_TNE2; iVar++){
+          mSolDOFs[iDOF][iVar] = solution[iZone][INST_0][MESH_0][TNE2_SOL]->node[jDOF]->GetSolution(iVar);
         }
       }
 
@@ -1540,14 +1613,12 @@ void CFEMInterpolationSol::InterpolateSolution(
     const CFEMInterpolationGridZone *inputGridZone  = inputGrid->GetGridZone(zone);
     const CFEMInterpolationGridZone *outputGridZone = outputGrid->GetGridZone(zone);
 
-    cout << "----0----" << endl;
     
     // Apply a correction to the coordinates when curved boundaries
     // are present.
     vector<su2double> coorInterpolZone;
     ApplyCurvatureCorrection(config[zone], zone, nDim, inputGridZone, outputGridZone,
                              coorInterpol[zone], coorInterpolZone);
-    cout << "----0.5----" << endl;
     // Define the vectors of the standard elements and the vector to store the
     // standard element for the volume elements.
     vector<CFEMStandardElement> standardElementsGrid;
@@ -1558,8 +1629,6 @@ void CFEMInterpolationSol::InterpolateSolution(
     // do not fall within the grid (typically due to a different discrete
     // representation of the boundary of the domain).
 
-    cout << "----1----" << endl;
-
     vector<unsigned long> pointsForMinDistance;
     VolumeInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
                                 inputGridZone, inputSol,
@@ -1567,8 +1636,6 @@ void CFEMInterpolationSol::InterpolateSolution(
                                 solFormatInput, pointsForMinDistance,
                                 standardElementsGrid, standardElementsSol,
                                 indInStandardElements);
-//
-    cout << "----2----" << endl;
     
     // Carry out a surface interpolation, via a minimum distance search,
     // for the points that could not be interpolated via the regular volume
@@ -1587,13 +1654,11 @@ void CFEMInterpolationSol::InterpolateSolution(
                                    standardElementsSol, indInStandardElements);
     }
 
-    cout << "----3----" << endl;
     
     // Update the zone offset for the input and output solution.
     zoneOffsetInputSol  += inputGridZone->GetNSolDOFs(solFormatInput);
     zoneOffsetOutputSol += coorInterpol[zone].size()/nDim;
 
-    cout << "----4----" << endl;
   }
 }
 
@@ -1669,6 +1734,14 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
     // for efficiency reasons.
     vector<CBBoxTargetClass> BBoxTargets(200);
     vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
+
+
+    /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    ---------The next block of code was raising an error (in CFEMStandardElementBase::MatMulRowMajor) difficult to track. For now, the ApplyCurvatureCorrection -------
+    to curved boundaries routine gets deactivated ---------------------------------------------------------------------------------------------------------------------
+    -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    ----------------------------------------------------------------------------------------------------------------------------------------------------------------- */
     
     // Loop over the DOFs to be corrected.
     //for(unsigned long l=0; l<nDOFs; ++l)
@@ -1952,7 +2025,6 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
   /*---         order elements.                                            ---*/
   /*--------------------------------------------------------------------------*/
 
-  cout << "----v1----" << endl;
   
   // Write a message that the volume ADT is built for this zone.
   cout << "Grid zone " << zoneID+1 << ": Building ADT of the volume grid...."
@@ -2101,7 +2173,6 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
         cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
         << nDOFsInterpol << " DOFs interpolated." << endl << flush;
 
-        cout << "----v2----" << endl;
       
       // Set a pointer to the coordinates to be searched.
       const su2double *coor = coorCorrected.data() + l*nDim;
@@ -2112,20 +2183,19 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
       int            rank;
       su2double      parCoor[3], weightsInterpol[8];
 
-      cout << "----v3----" << endl;
       if( volumeADT.DetermineContainingElement(coor, subElem, parElem, rank,
                                                parCoor, weightsInterpol,
                                                frontLeaves, frontLeavesNew) )
       {
 
-        cout << "----v4----" << endl;
+        
         // Subelement found that contains the exchange location. However,
         // what is needed is the location in the high order parent element.
         // Determine this.
         HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
                                    &standardElementsGrid[indInStandardElements[parElem]],
                                    &volElems[parElem], coorGrid, parCoor);
-        cout << "----v5----" << endl;
+       
         
         // Carry out the actual interpolation.
         const unsigned short ind = indInStandardElements[parElem];
@@ -2133,7 +2203,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
         
         SolInterpolate(&standardElementsSol[ind], inputSol, zoneOffsetInputSol,
                        &volElems[parElem], solFormatInput, parCoor, mSolDOFs[ll]);
-        cout << "----v6----" << endl;
+        
       }
       else
       {
@@ -2641,6 +2711,7 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
   unsigned short iZone, iVar;
   unsigned short nVar_Template = 0,
   nVar_Flow     = 0,
+  nVar_TNE2     = 0,
   nVar_Trans    = 0,
   nVar_Turb     = 0,
   nVar_Adj_Flow = 0,
@@ -2656,20 +2727,22 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
-  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+  tne2_euler, tne2_ns;
   
-  euler            = false;  ns              = false;  turbulent     = false;
-  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
-  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
-  neg_spalart_allmaras = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  heat_fvm         = false;  disc_adj_heat    = false;
-  transition       = false;  fem_transition   = false;
-  template_solver  = false;
-  fem_dg_flow      = false;  fem_dg_shock_persson = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  euler                = false;  ns                    = false;  turbulent     = false;
+  fem_euler            = false;  fem_ns                = false;  fem_turbulent = false;
+  adj_euler            = false;  adj_ns                = false;  adj_turb      = false;
+  spalart_allmaras     = false;  menter_sst            = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;      
+  disc_adj             = false;      
+  fem                  = false;  disc_adj_fem          = false;
+  heat_fvm             = false;  disc_adj_heat         = false;
+  transition           = false;  fem_transition        = false;
+  template_solver      = false; 
+  fem_dg_flow          = false;  fem_dg_shock_persson  = false;
+  e_spalart_allmaras   = false;  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  tne2_euler           = false;  tne2_ns               = false;
   
   unsigned long offsetDOFs = 0;
   for(iZone = 0; iZone < nZone; iZone++){
@@ -2677,7 +2750,9 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
     switch (config[iZone]->GetKind_Solver()) {
       case TEMPLATE_SOLVER: template_solver = true; break;
       case EULER : euler = true; break;
+      case TNE2_EULER: tne2_euler = true; break;
       case NAVIER_STOKES: ns = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case TNE2_NAVIER_STOKES: tne2_ns = true; break;
       case RANS : ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
       case FEM_EULER : fem_euler = true; break;
       case FEM_NAVIER_STOKES: fem_ns = true; break;
@@ -2724,6 +2799,10 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
         nVar_Trans = solution[iZone][INST_0][MESH_0][TRANS_SOL]->GetnVar();
       }
     }
+
+    if (tne2_euler || tne2_ns) {
+       nVar_TNE2 = solution[iZone][INST_0][MESH_0][TNE2_SOL]->GetnVar();
+    }
     
     if(fem_ns){
       nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
@@ -2768,6 +2847,12 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
       if(euler || fem_euler || ns || fem_ns){
         for(iVar = 0; iVar < nVar_Flow; iVar++){
            solution[iZone][INST_0][MESH_0][FLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+
+      if(tne2_euler || tne2_ns){
+        for(iVar = 0; iVar < nVar_TNE2; iVar++){
+           solution[iZone][INST_0][MESH_0][TNE2_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
       

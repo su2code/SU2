@@ -9209,6 +9209,8 @@ protected:
 
   CFluidModel  *FluidModel;         /*!< \brief fluid model used in the solver */
   CReactive    *reactive;           /*!< \brief mixture model used in the solver */
+
+
   
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,

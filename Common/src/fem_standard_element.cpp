@@ -1023,16 +1023,6 @@ void CFEMStandardElementBase::MatMulRowMajor(const unsigned short nDOFs,
   const unsigned int dimB = nDOFs*nDOFs;
 
 
-  cout <<endl << "---- A.size()=" << A.size()<< endl;
-  cout << "---- dimA=" << dimA<< endl<< endl;
-
-  cout << "---- B.size()=" << B.size()<< endl;
-  cout << "---- dimB=" << dimB<< endl<< endl;
-
-  cout << "---- C.size()=" << C.size()<< endl;
-  cout << "---- dimA=" << dimA<< endl<< endl;
-
-
   if(A.size() != dimA || B.size() != dimB || C.size() != dimA)
     SU2_MPI::Error("Unexpected size of the matrices", CURRENT_FUNCTION);
 

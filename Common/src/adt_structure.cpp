@@ -905,15 +905,12 @@ bool CADTElemClass::DetermineContainingElement(
                     vector<unsigned long> &frontLeaves,
                     vector<unsigned long> &frontLeavesNew) {
 
-  cout << "----v3.1----" << endl;
-
+  
   /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
      it only contains the root leaf. Make sure to wipe out any data from a
      previous search. */
   frontLeaves.clear();
   frontLeaves.push_back(0);
-
-  cout << "----v3.2----" << endl;
 
   /* Infinite loop of the tree traversal. */
   for(;;) {
@@ -921,45 +918,38 @@ bool CADTElemClass::DetermineContainingElement(
     /* Initialize the new front, i.e. the front for the next round, to empty. */
     frontLeavesNew.clear();
 
-    cout << "----v3.3----" << endl;
-
+  
     /* Loop over the leaves of the current front. */
     for(unsigned long i=0; i<frontLeaves.size(); ++i) {
 
-      cout << "----v3.4----" << endl;
-
+  
       /* Store the current leaf a bit easier in ll and loop over its children. */
       const unsigned long ll = frontLeaves[i];
       for(unsigned short mm=0; mm<2; ++mm) {
 
-        cout << "----v3.5----" << endl;
-
+  
         /* Determine whether this child contains a node or a leaf
            of the next level of the ADT. */
         unsigned long kk = leaves[ll].children[mm];
         if( leaves[ll].childrenAreTerminal[mm] ) {
 
-          cout << "----v3.6----" << endl;
-
+  
           /* Child contains a bounding box. Check if the coordinate is
              inside the bounding box. */
           const su2double *coorBBMin = BBoxCoor.data() + nDimADT*kk;
           const su2double *coorBBMax = coorBBMin + nDim;
 
-          cout << "----v3.7----" << endl;
-
+  
           bool coorIsInside = true;
           for(unsigned short k=0; k<nDim; ++k) {
             if(coor[k] < coorBBMin[k]) coorIsInside = false;
             if(coor[k] > coorBBMax[k]) coorIsInside = false;
           }
 
-          cout << "----v3.8----" << endl;
-
+  
           if( coorIsInside ) {
 
-            cout << "----v3.9----" << endl;
-
+  
             /* Coordinate is inside the bounding box. Check if it
                is also inside the corresponding element. If so,
                set the required information and return true. */
@@ -967,7 +957,6 @@ bool CADTElemClass::DetermineContainingElement(
               markerID = localMarkers[kk];
               elemID   = localElemIDs[kk];
               rankID   = ranksOfElems[kk];
-              cout << "----v3.10----" << endl;
               return true;
             }
           }
@@ -998,8 +987,7 @@ bool CADTElemClass::DetermineContainingElement(
     if(frontLeaves.size() == 0) break;
   }
 
-  cout << "----v3.2----" << endl;
-
+ 
   /* If this point is reached, no element is found that contains the coordinate
      and false must be returned. */
   return false;

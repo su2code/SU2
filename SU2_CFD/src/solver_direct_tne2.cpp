@@ -202,7 +202,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   /*--- Set the gamma value ---*/
   //Gamma = 0.0; //Cat vai ser p apagar
   //Gamma_Minus_One = 0.0;
-Gamma = config->GetGamma();
+  Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   /*--- Define geometric constants in the solver structure ---*/
   nMarker      = config->GetnMarker_All();
@@ -784,6 +784,7 @@ Gamma = config->GetGamma();
 CTNE2EulerSolver::~CTNE2EulerSolver(void) {
   unsigned short iVar, iMarker;
 
+ 
   /*--- Array deallocation ---*/
   if (CD_Inv != NULL)           delete [] CD_Inv;
   if (CL_Inv != NULL)           delete [] CL_Inv;
@@ -804,6 +805,7 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
   if (Surface_CMx_Inv != NULL)  delete [] Surface_CMx_Inv;
   if (Surface_CMy_Inv != NULL)  delete [] Surface_CMy_Inv;
   if (Surface_CMz_Inv != NULL)  delete [] Surface_CMz_Inv;
+
 
   if (lowerlimit != NULL)  		delete [] lowerlimit;
   if (upperlimit != NULL) 		delete [] upperlimit;
@@ -843,6 +845,7 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
   if (Secondary_i != NULL)      delete [] Secondary_i;
   if (Secondary_j != NULL)      delete [] Secondary_j;
 
+  
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete [] LowMach_Precontioner[iVar];
@@ -855,6 +858,7 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
     delete [] CPressure;
   }
 
+  
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete HeatFlux[iMarker];
@@ -862,8 +866,9 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
     delete [] HeatFlux;
   }
   if (nVertex != NULL) delete [] nVertex;
+  
+  if (reactive != NULL) { delete  reactive;}
 
-  if (reactive != NULL) delete [] reactive;
 
 
 }
