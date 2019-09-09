@@ -355,13 +355,13 @@ class Project(object):
                 if key == 'MESH': continue 
                 # build file path
                 name = seed_files[key]
-		if isinstance(name,list):
-		    built_name = []
-		    for elem in name:
-			built_name.append(os.path.join(seed_folder,elem))
-		    ztate.FILES[key] = built_name
-		else:
-		    name = os.path.join(seed_folder,name)
+                if isinstance(name,list):
+                    built_name = []
+                    for elem in name:
+                        built_name.append(os.path.join(seed_folder,elem))
+                    ztate.FILES[key] = built_name
+                else:
+                    name = os.path.join(seed_folder,name)
                     # update pull files
                     ztate.FILES[key] = name
             
@@ -380,9 +380,9 @@ class Project(object):
                 for elem in name:
                     built_name.append(os.path.split(elem)[-1])
                 design.files[key] = built_name
-	    else: 
-		name = os.path.split(name)[-1]
-            	design.files[key] = name
+            else:
+                name = os.path.split(name)[-1]
+                design.files[key] = name
         
         # add design to project 
         self.designs.append(design)        
