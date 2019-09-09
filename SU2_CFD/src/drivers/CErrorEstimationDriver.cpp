@@ -853,7 +853,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
             p = 1.0, // For now, hardcode L1 metric
             hmax = config[ZONE_0]->GetMesh_Hmax(),
             hmin = config[ZONE_0]->GetMesh_Hmin(),
-            outNPoint = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+            outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -901,6 +901,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -910,7 +911,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
-    localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
+    // localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
+    localScale += sqrt(abs(EigVal[0]*EigVal[1]))*Vol;
   }
 
 #ifdef HAVE_MPI
@@ -934,7 +936,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    const su2double factor = pow(outNPoint/(globalScale), 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+    // const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+    const su2double factor = pow(outComplex/globalScale, 2./nDim);
 
     EigVal[0] = abs(factor*EigVal[0]);
     EigVal[1] = abs(factor*EigVal[1]);
@@ -1019,7 +1022,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
             p = 1.0, // For now, hardcode L1 metric
             hmax = config[ZONE_0]->GetMesh_Hmax(),
             hmin = config[ZONE_0]->GetMesh_Hmin(),
-            outNPoint = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+            outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -1079,8 +1082,8 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double e = var->GetAnisoMetr(4);
     const su2double f = var->GetAnisoMetr(5);
 
-    // const su2double factor = pow(outNPoint/(1.54*globalScale), 2./nDim);
-    const su2double factor = pow(outNPoint/(globalScale), 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+    // const su2double factor = pow(outComplex/(1.54*globalScale), 2./nDim);
+    const su2double factor = pow(outComplex/(globalScale), 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
