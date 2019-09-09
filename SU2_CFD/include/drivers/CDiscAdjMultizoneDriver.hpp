@@ -77,11 +77,6 @@ public:
    */
   void Run();
 
-  /*!
-   * \brief Output the solution in solution file.
-   */
-  void Output(unsigned long TimeIter);
-
 //  /*!
 //   * \brief Check the convergence at the outer level.
 //   */
