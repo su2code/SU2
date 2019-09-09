@@ -595,12 +595,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
           // per-surface output to be added soon
           break;
-
         case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
-
           // per-surface output to be added soon
           break;
-
         default:
           break;
       }

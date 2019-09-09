@@ -161,7 +161,7 @@ public:
    * \brief Get the external contribution to a solution.
    * \return Pointer to the External array.
    */
-  inline su2double* Get_External(void) { return External; }
+  inline su2double* Get_External(void) const { return External; }
 
   /*!
    * \brief Set external contributions to zero.
@@ -176,7 +176,7 @@ public:
    * \brief Add a value to the External vector.
    * \param[in] val_sol - vector that has to be added component-wise
    */
-  inline void Add_External(su2double* val_sol) {
+  inline void Add_External(const su2double* val_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         External[iVar] += val_sol[iVar];
       }
@@ -186,7 +186,7 @@ public:
    * \brief Add a valaue to the old External vector.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
-  inline void Add_ExternalOld(su2double *val_sol) {
+  inline void Add_ExternalOld(const su2double *val_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       External_Old[iVar] = External_Old[iVar] + val_sol[iVar];
     }
