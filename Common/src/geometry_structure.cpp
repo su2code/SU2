@@ -2689,7 +2689,7 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
     if(config->GetMultiphysicsDiscrete_Adjoint()) {
       for (iDim = 0; iDim < nDim; iDim++) {
         AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
-        node[iPoint]->Set_AdjIndices(input);
+        node[iPoint]->SetAdjIndices(input);
       }
     }
     else {

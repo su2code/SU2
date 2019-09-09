@@ -504,7 +504,7 @@ void CDiscAdjMultizoneDriver::Run() {
             break;
 
           default:
-            cout << "WARNING: Setting sensitivities failed for one of the specified discrete adjoint solvers!" << endl;
+            cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
             break;
         }
       }

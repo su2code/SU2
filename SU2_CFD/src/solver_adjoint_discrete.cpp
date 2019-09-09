@@ -849,7 +849,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
     for (iDim = 0; iDim < nDim; iDim++) {
 
       if(config->GetMultiphysicsDiscrete_Adjoint()) {
-        geometry->node[iPoint]->GetAdjointSolution(&Sensitivity, iDim);
+        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
       }
       else {
         Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);

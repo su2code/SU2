@@ -297,19 +297,19 @@ public:
    * \brief Set the adjoint vector indices of Coord vector.
    * \param[in] input - Save them to the input or output indices vector.
    */
-  void Set_AdjIndices(bool input);
+  void SetAdjIndices(bool input);
 
   /*!
    * \brief Set the adjoint values of the (geometric) coordinates.
    * \param[in] adj_sol - Adjoint values of the Coord variables.
    */
-  void SetAdjointSolution(su2double *adj_sol);
+  void SetAdjointSolution(const su2double *adj_sol);
 
   /*!
    * \brief Get the adjoint values of the (geometric) coordinates.
    * \param[in] adj_sol - Adjoint values of the Coord variables.
    */
-  void GetAdjointSolution(su2double *adj_sol, unsigned short iDim);
+  su2double GetAdjointSolution(unsigned short iDim);
   
   /*!
 	 * \brief Get the coordinates of the control volume.
