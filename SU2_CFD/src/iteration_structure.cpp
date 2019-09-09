@@ -2257,16 +2257,16 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
         for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node[iPoint]->Set_OldSolution();
-           if (grid_IsMoving) {
-             geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_Old();
-           }
-           if (turbulent){
-             solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node[iPoint]->Set_OldSolution();
-           }
-           if (heat){
-             solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node[iPoint]->Set_OldSolution();
-           }
+          solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node[iPoint]->Set_OldSolution();
+          if (grid_IsMoving) {
+            geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_Old();
+          }
+          if (turbulent){
+            solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node[iPoint]->Set_OldSolution();
+          }
+          if (heat){
+            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node[iPoint]->Set_OldSolution();
+          }
         }
       }
 
