@@ -62,6 +62,7 @@ protected:
   su2double *Solution,    /*!< \brief Solution of the problem. */
   *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
+  unsigned short Non_Physical_Counter;      /*!< \brief Number of consecutive iterations that a point has been treated first-order. After a specified number of successful reconstructions, the point can be returned to second-order. */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   su2double **Gradient;    /*!< \brief Gradient of the solution of the problem. */
@@ -151,13 +152,23 @@ public:
    * \brief Set the value of the non-physical point.
    * \param[in] val_value - identification of the non-physical point.
    */
-  inline void SetNon_Physical(bool val_value) { Non_Physical = !val_value; }
+  inline void SetNon_Physical(bool val_value) {
+    if (val_value) {
+      Non_Physical = val_value;
+      Non_Physical_Counter = 0;
+    } else {
+      Non_Physical_Counter++;
+      if (Non_Physical_Counter > 20) {
+        Non_Physical = val_value;
+      }
+    }
+  }
 
   /*!
    * \brief Get the value of the non-physical point.
    * \return Value of the Non-physical point.
    */
-  inline su2double GetNon_Physical(void) { return su2double(Non_Physical); }
+  inline bool GetNon_Physical(void) { return Non_Physical; }
 
   /*!
    * \brief Get the solution.

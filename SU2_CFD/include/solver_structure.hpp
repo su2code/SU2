@@ -155,6 +155,9 @@ protected:
   su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
 public:
+  vector<bool> isNonRealizable;
+  vector<unsigned short> nonRealizableCounter;
+  vector<su2double> isNonRealizablePoint;
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
@@ -1294,7 +1297,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual su2double ComputeUnderRelaxationFactor(CConfig *config);
+  virtual void ComputeUnderRelaxationFactor(CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -5436,7 +5439,7 @@ public:
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  su2double ComputeUnderRelaxationFactor(CConfig *config);
+  void ComputeUnderRelaxationFactor(CConfig *config);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
@@ -9422,6 +9425,12 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(CConfig *config);
   
   /*!
    * \brief Load a solution from a restart file.

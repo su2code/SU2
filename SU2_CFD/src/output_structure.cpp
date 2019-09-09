@@ -12761,6 +12761,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
   
+  vector<su2double> First_Order(geometry->GetnPoint(),0.0);
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    if (solver[FLOW_SOL]->isNonRealizable[iEdge]) {
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      
+      First_Order[iPoint] = 1.0;
+      First_Order[jPoint] = 1.0;
+
+    }
+  }
+  
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
   /*---         variable, two things are required. First, increment the    ---*/
@@ -13006,7 +13018,35 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
     nVar_Par +=1;
     Variable_Names.push_back("Local_CFL");
-
+    nVar_Par +=1;
+    Variable_Names.push_back("Local_CFL_Factor");
+    nVar_Par +=1;
+    Variable_Names.push_back("Under_Relaxation");
+    
+    nVar_Par +=1;
+    Variable_Names.push_back("First_Order");
+    
+    nVar_Par += 5*nDim;
+    Variable_Names.push_back("GradT_x");
+    Variable_Names.push_back("GradT_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradT_z");
+    
+    Variable_Names.push_back("GradVelx_x");
+    Variable_Names.push_back("GradVelx_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradVelx_z");
+    
+    Variable_Names.push_back("GradVely_x");
+    Variable_Names.push_back("GradVely_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradVely_z");
+    
+    Variable_Names.push_back("GradP_x");
+    Variable_Names.push_back("GradP_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradP_z");
+    
+    Variable_Names.push_back("GradDensity_x");
+    Variable_Names.push_back("GradDensity_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradDensity_z");
+    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13326,7 +13366,20 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
         
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLocalCFL(); iVar++;
-
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLocalCFLFactor(); iVar++;
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetUnderRelaxation(); iVar++;
+        Local_Data[jPoint][iVar] = First_Order[iPoint]; iVar++;
+        
+        su2double **gradient  = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+        
+        /* First, write the primitive gradients from the solution. */
+        for (jVar = 0; jVar < 5; jVar++) {
+          for (iDim = 0; iDim < nDim; iDim ++){
+            Local_Data[jPoint][iVar] = gradient[jVar][iDim];
+            iVar++;
+          }
+        }
+        
       }
       
       /*--- Increment the point counter, as there may have been halos we
