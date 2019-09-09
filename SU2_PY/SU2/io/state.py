@@ -201,8 +201,8 @@ class State(ordered_bunch):
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 for elem in value:
-		    if elem:
-			link.append(elem)
+                    if elem:
+                        link.append(elem)
             #elif key == 'STABILITY':
                 #pass
             # copy all other files
@@ -269,17 +269,17 @@ class State(ordered_bunch):
 
                 elif label.split('_')[0] in ['MULTIPOINT']:
                     # if multipoint, list of files needs to be added
-		    file_list= [];
+                    file_list= [];
                     for name in filename:
-			if os.path.exists(name):
+                        if os.path.exists(name):
                             file_list.append(name)
                         else:
-			    # if file doesn't exist, enter empty string as placeholder
+                            # if file doesn't exist, enter empty string as placeholder
                             file_list.append('')
-		    # If even one of the multipoint files is found, add the list
-		    if any(file for file in file_list):
-			files[label] = file_list
-		else:
+		            # If even one of the multipoint files is found, add the list
+                    if any(file for file in file_list):
+                        files[label] = file_list
+                else:
                     if os.path.exists(filename):
                         files[label] = filename
                         print('Found: %s' % filename)
@@ -291,7 +291,7 @@ class State(ordered_bunch):
                     for name in expand_zones(files[label], config):
                         if name:
                             assert os.path.exists(name), 'state expected file: %s' % name
-		else:
+                else:
                     assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
 
@@ -302,7 +302,7 @@ class State(ordered_bunch):
         if restart:
             register_file('DIRECT',direct_name)
             if multipoint:
-		name_list = expand_multipoint(direct_name,config)
+                name_list = expand_multipoint(direct_name,config)
                 register_file('MULTIPOINT_DIRECT',name_list)
         
         # adjoint solutions
@@ -312,8 +312,8 @@ class State(ordered_bunch):
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
                 if multipoint:
-		    name_list = add_suffix(expand_multipoint(adjoint_name,config), suff)
-		    multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
+                    name_list = add_suffix(expand_multipoint(adjoint_name,config), suff)
+                    multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
                     register_file(multipoint_adj_name, name_list)
         
         # equivalent area
