@@ -393,12 +393,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Add_External(su2double* val_sol) {}
+  inline virtual void Add_External(const su2double* val_sol) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Add_ExternalOld(su2double* val_sol) {}
+  inline virtual void Add_ExternalOld(const su2double* val_sol) {}
 
   /*!
    * \brief A virtual member.
@@ -791,7 +791,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *Get_External(void) { return NULL; }
+  inline virtual su2double *Get_External(void) const { return NULL; }
 
   /*!
    * \brief Get the value of the preconditioner Beta.
