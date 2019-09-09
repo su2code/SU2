@@ -5739,14 +5739,6 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
-
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    delete A[iDim];
-    delete EigVec[iDim];
-  }
-  delete [] A;
-  delete [] EigVec;
-  delete [] EigVal;
 }
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){

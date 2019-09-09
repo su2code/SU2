@@ -938,8 +938,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     EigVal[0] = abs(factor*EigVal[0]);
     EigVal[1] = abs(factor*EigVal[1]);
-    su2double Lam1new = EigVal[0];
-    su2double Lam2new = EigVal[1];
+    const su2double Lam1new = EigVal[0];
+    const su2double Lam2new = EigVal[1];
     if(sqrt(Lam1new*Lam2new) < 1./(hmax*hmax)) {
       EigVal[0] = sqrt(Lam1new/Lam2new)/(hmax*hmax);
       EigVal[1] = sqrt(Lam2new/Lam1new)/(hmax*hmax);
@@ -979,14 +979,6 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
-
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    delete A[iDim];
-    delete EigVec[iDim];
-  }
-  delete [] A;
-  delete [] EigVec;
-  delete [] EigVal;
 }
 
 void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
@@ -1108,14 +1100,6 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     var->SetAnisoMetr(4, A[2][1]);
     var->SetAnisoMetr(5, A[2][2]);
   }
-
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    delete A[iDim];
-    delete EigVec[iDim];
-  }
-  delete [] A;
-  delete [] EigVec;
-  delete [] EigVal;
 }
 
 void CErrorEstimationDriver::Output() {
