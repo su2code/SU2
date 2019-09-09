@@ -376,7 +376,7 @@ class Project(object):
         for key in design.files:
             name = design.files[key]
             if isinstance(name,list):
-            	built_name = []
+                built_name = []
                 for elem in name:
                     built_name.append(os.path.split(elem)[-1])
                 design.files[key] = built_name
