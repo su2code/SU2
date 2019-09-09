@@ -2192,9 +2192,9 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
         // Subelement found that contains the exchange location. However,
         // what is needed is the location in the high order parent element.
         // Determine this.
-        HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
-                                   &standardElementsGrid[indInStandardElements[parElem]],
-                                   &volElems[parElem], coorGrid, parCoor);
+        //HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
+        //                           &standardElementsGrid[indInStandardElements[parElem]],
+        //                           &volElems[parElem], coorGrid, parCoor);
        
         
         // Carry out the actual interpolation.
