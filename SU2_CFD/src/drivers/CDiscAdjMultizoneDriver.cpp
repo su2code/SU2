@@ -143,138 +143,6 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 }
 
-void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
-
-  bool TimeDomain = driver_config->GetTime_Domain();
-
-  unsigned short RestartFormat = SU2_RESTART_ASCII;
-  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  
-  for (iZone = 0; iZone < nZone; iZone++){
-
-    bool Wrt_Surf = config_container[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Vol  = config_container[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_CSV  = config_container[iZone]->GetWrt_Csv_Sol();
-    
-    if (config_container[iZone]->GetWrt_Binary_Restart()){
-      RestartFormat = SU2_RESTART_BINARY;
-    }
-    
-    bool output_files = false;
-    
-    /*--- Determine whether a solution needs to be written
-   after the current iteration ---*/
-    
-    if (
-        
-        /*--- General if statements to print output statements ---*/
-        
-        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
-        ((config_container[iZone]->GetOuterIter() % config_container[iZone]->GetWrt_Sol_Freq()) == 0) ||
-        
-        /*--- Unsteady problems ---*/
-        
-        (((config_container[iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-          (config_container[iZone]->GetTime_Marching() == TIME_STEPPING)) &&
-         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
-         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                              ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
-         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[iZone]->GetDynamic_Analysis() == DYNAMIC) &&
-         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        /*--- No inlet profile file found. Print template. ---*/
-        
-        (config_container[iZone]->GetWrt_InletFile())
-        
-        ) {
-      
-      output_files = true;
-      
-    }
-    
-    /*--- write the solution ---*/
-    
-    if (output_files) {
-      
-      /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-      StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-      StopTime = MPI_Wtime();
-#endif
-      UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-      StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-      StartTime = MPI_Wtime();
-#endif
-      
-      if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-
-     /*--- Execute the routine for writing restart, volume solution,
-       surface solution, and surface comma-separated value files. ---*/
-      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
-        
-        config_container[iZone]->SetiInst(iInst);
-        
-        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0],
-                                           config_container[iZone], solver_container[iZone][iInst][MESH_0]);
-        
-        /*--- Write restart files ---*/
-        
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0],
-                                                  config_container[iZone], RestartFormat, TimeDomain);
-        
-        /*--- Write visualization files ---*/
-        
-        if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0],
-                                                    config_container[iZone], OutputFormat, TimeDomain);
-        
-        if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0],
-                                                     config_container[iZone], OutputFormat, TimeDomain);
-        if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0],
-                                                     config_container[iZone], CSV, TimeDomain);
-        
-        output_container[iZone]->DeallocateData_Parallel();
-        
-      }
-      
-      /*--- Execute the routine for writing special output. ---*/
-      // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
-      
-      
-      if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-      
-    }
-    /*--- Store output time and restart the timer for the compute phase. ---*/
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
-    UsedTimeOutput += StopTime-StartTime;
-    OutputCount++;
-    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
-
-  }
-
-}
-
-
 void CDiscAdjMultizoneDriver::Run() {
 
   bool            checkSensitivity  = false;
@@ -445,7 +313,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     AD::ClearAdjoints();
 
-    /*--- Compute the geometrical sensitivities ---*/
+    /*--- Compute the geometrical sensitivities and write them to file. ---*/
 
     if (nZone == 1) {
       checkSensitivity = ((iInner_Iter+1 >= nIter) ||
