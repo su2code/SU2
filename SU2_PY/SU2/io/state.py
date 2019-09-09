@@ -318,7 +318,7 @@ class State(ordered_bunch):
         
         # equivalent area
         if 'EQUIV_AREA' in special_cases:
-	    register_file('TARGET_EA',targetea_name)
+            register_file('TARGET_EA',targetea_name)
         
         # pressure inverse design
         if 'INV_DESIGN_CP' in special_cases:
