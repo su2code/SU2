@@ -218,7 +218,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
     
-    filename_ = config->GetFilename(filename_, "meta", Unst_RestartIter);
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
 
@@ -14199,7 +14199,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
     
-    filename_ = config->GetFilename(filename_, "meta", Unst_RestartIter);
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
 
