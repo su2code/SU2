@@ -908,8 +908,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
+    node[iPoint]->SetLocalCFLFactor(1.0);
   }
   
+  /* Create helper vector to track non-physical faces. */
+  isNonRealizable.resize(geometry->GetnEdge(),false);
+  nonRealizableCounter.resize(geometry->GetnEdge(),0);
+
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -3100,16 +3105,21 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    /*--- Initialize the non-physical points vector ---*/
-    
-    node[iPoint]->SetNon_Physical(false);
-    
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
     RightSol = node[iPoint]->SetPrimVar(FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
 
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); }
+    else {
+      /*--- Initialize the non-physical points vector ---*/
+      
+      node[iPoint]->SetNon_Physical(false);
+      
+    }
+    
+    if (node[iPoint]->GetNon_Physical() == true) ErrorCounter++;
+    
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
@@ -3430,10 +3440,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
           if (van_albada){
@@ -3509,28 +3518,68 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
       neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
-      
+
       if (neg_sound_speed) {
         for (iVar = 0; iVar < nPrimVar; iVar++) {
           Primitive_i[iVar] = V_i[iVar];
           Primitive_j[iVar] = V_j[iVar]; }
+        //node[iPoint]->SetNon_Physical(true);
+        //node[jPoint]->SetNon_Physical(true);
+        isNonRealizable[iEdge] = true;
+        nonRealizableCounter[iEdge] = 0;
         Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
         Secondary_j[0] = S_i[0]; Secondary_j[1] = S_i[1];
         counter_local++;
       }
-      
+
       if (neg_density_i || neg_pressure_i) {
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
+        //node[iPoint]->SetNon_Physical(true);
+        isNonRealizable[iEdge] = true;
+        nonRealizableCounter[iEdge] = 0;
         Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
         counter_local++;
       }
-      
+
       if (neg_density_j || neg_pressure_j) {
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
+        //node[jPoint]->SetNon_Physical(true);
+        isNonRealizable[iEdge] = true;
+        nonRealizableCounter[iEdge] = 0;
         Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
         counter_local++;
       }
-
+      
+      /* Lastly, check for existing first-order points still active
+       from previous iterations. */
+      
+      if (isNonRealizable[iEdge]) {
+        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
+        
+      }
+      
+      
+      if ((!neg_sound_speed && !neg_density_i && !neg_pressure_i) &&
+          (!neg_sound_speed && !neg_density_j && !neg_pressure_j)) {
+        nonRealizableCounter[iEdge]++;
+//        if (nonRealizableCounter[iEdge] > 20)
+//          isNonRealizable[iEdge] = false;
+      }
+      
+//      if (node[iPoint]->GetNon_Physical()) {
+//        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
+//      }
+//      if (node[jPoint]->GetNon_Physical()) {
+//        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
+//      }
+//
+//      if (!neg_sound_speed && !neg_density_i && !neg_pressure_i)
+//        node[iPoint]->SetNon_Physical(false);
+//
+//      if (!neg_sound_speed && !neg_density_j && !neg_pressure_j)
+//        node[jPoint]->SetNon_Physical(false);
+//
       numerics->SetPrimitive(Primitive_i, Primitive_j);
       numerics->SetSecondary(Secondary_i, Secondary_j);
       
@@ -5198,15 +5247,14 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   SetIterLinSolver(IterLinSol);
   
-  su2double underRelaxation = ComputeUnderRelaxationFactor(config);
+  ComputeUnderRelaxationFactor(config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      underRelaxation = node[iPoint]->GetUnderRelaxation();
       for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution(iVar, underRelaxation*LinSysSol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint*nVar+iVar]);
       }
     }
   }
@@ -5231,110 +5279,91 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
 }
 
-su2double CEulerSolver::ComputeUnderRelaxationFactor(CConfig *config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(CConfig *config) {
   
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
   
-  su2double underRelaxation = 1.0;
   su2double localUnderRelaxation = 1.0;
-  const su2double percentChange = 0.30;// config->GetUnderRelaxationPercentChange();
+  const su2double allowableRatio = 0.20;
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     localUnderRelaxation = 1.0;
-
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
+      
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
-
-
-      if ((iVar == 0) || (iVar == nVar-1)) {
-        
-        const unsigned long index = iPoint*nVar + iVar;
-
-
-        su2double ratio = fabs(LinSysSol[index])/node[iPoint]->GetSolution(iVar);
-
-        if (ratio > percentChange) {
-          underRelaxation = min(percentChange/ratio, underRelaxation);
-          localUnderRelaxation = min(percentChange/ratio, localUnderRelaxation);
-        }
-        
-      }
       
+      if ((iVar == 0) || (iVar == nVar-1)) {
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index])/(node[iPoint]->GetSolution(iVar)+EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
+        }
+      }
     }
     
-    node[iPoint]->SetUnderRelaxation(localUnderRelaxation);
+    /* Store the under-relaxation factor for this point. */
     
-  }
-  
-  /* Reduce to obtain the global minimum relaxation factor. */
+    node[iPoint]->SetUnderRelaxation(localUnderRelaxation);
 
-  localUnderRelaxation = underRelaxation;
-  SU2_MPI::Allreduce(&localUnderRelaxation, &underRelaxation,
-                     1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  }
   
   /* Adapt the CFL number based on the under-relaxation parameter. */
   
   if (config->GetCFL_Adapt()) {
     
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    su2double CFLFactor = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, MGFactor[100];
-    unsigned short iMesh;
-
-    /*--- Compute MG factor ---*/
-    
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
-      else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
-    }
-    
-    /*--- If we use a small under-relaxation parameter for stability,
-     then we should reduce the CFL before the next iteration. If we
-     are able to add the entire nonlinear update (under-relaxation = 1)
-     then we can increase the CFL number for the next iteration. ---*/
-    
-     underRelaxation = node[iPoint]->GetUnderRelaxation();
-
-    if (underRelaxation < 0.1) {
-      CFLFactor = config->GetCFL_AdaptParam(0);
-      node[iPoint]->SetUnderRelaxation(0.0);
-    } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
-      CFLFactor = 1.0;
-    } else {
-      CFLFactor = config->GetCFL_AdaptParam(1);
-    }
-    
-    CFLMin = config->GetCFL_AdaptParam(2);
-    CFLMax = config->GetCFL_AdaptParam(3);
-    
-    //CFL = config->GetCFL(MGLevel);
-      CFL = node[iPoint]->GetLocalCFL();
-    
-    if ((CFL <= CFLMin)) {
-      CFL = CFLMin;
-      CFLFactor = 1.001*MGFactor[MGLevel];
-    }
-    else if ((CFL >= CFLMax)) {
-      CFL = CFLMax;
-      CFLFactor = 0.999*MGFactor[MGLevel];
-    }
       
-    CFL *= CFLFactor;
+      su2double CFLFactor = 1.0, MGFactor[100];
       
+      const su2double CFLMin = config->GetCFL_AdaptParam(2);
+      const su2double CFLMax = config->GetCFL_AdaptParam(3);
+      
+      /*--- Compute MG factor ---*/
+      
+      for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+        if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+        else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+      }
+      
+      /* Get the current local CFL number at this point. */
+      
+      su2double CFL = node[iPoint]->GetLocalCFL();
+      
+      /* If we apply a small under-relaxation parameter for stability,
+       then we should reduce the CFL before the next iteration. If we
+       are able to add the entire nonlinear update (under-relaxation = 1)
+       then we can increase the CFL number for the next iteration. */
+      
+      const su2double underRelaxation = node[iPoint]->GetUnderRelaxation();
+      
+      if (underRelaxation < 0.1) {
+        CFLFactor = config->GetCFL_AdaptParam(0);
+      } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+        CFLFactor = 1.0;
+      } else {
+        CFLFactor = config->GetCFL_AdaptParam(1);
+      }
+      
+      /* Check if we are hitting the min or max and adjust. */
+      
+      if (CFL <= CFLMin) {
+        CFL       = CFLMin;
+        CFLFactor = 1.001*MGFactor[MGLevel];
+      } else if (CFL >= CFLMax) {
+        CFL       = CFLMax;
+        CFLFactor = 0.999*MGFactor[MGLevel];
+      }
+      
+      /* Apply the adjustment to the CFL and store local values. */
+      CFL *= CFLFactor;
       node[iPoint]->SetLocalCFL(CFL);
-      node[iPoint]->SetLocalCFLFactor(CFL);
-
-      //config->SetCFL(MGLevel, CFL);
-    //if (rank==MASTER_NODE) cout << " CFL: " << CFL << " omega: " << underRelaxation << endl;
-
+      node[iPoint]->SetLocalCFLFactor(CFLFactor);
+      
+    }
+    
   }
-
-  }
-  
-  return underRelaxation;
   
 }
 
@@ -15096,8 +15125,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
+    node[iPoint]->SetLocalCFLFactor(1.0);
   }
   
+  /* Create helper vector to track non-physical faces. */
+  isNonRealizable.resize(geometry->GetnEdge(),false);
+  nonRealizableCounter.resize(geometry->GetnEdge(),0);
+
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -15326,17 +15360,22 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
       }
     }
     
-    /*--- Initialize the non-physical points vector ---*/
-    
-    node[iPoint]->SetNon_Physical(false);
-    
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
     RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
 
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
-        
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true);
+    }
+    else {
+      /*--- Initialize the non-physical points vector ---*/
+      
+      node[iPoint]->SetNon_Physical(false);
+      
+    }
+    
+    if (node[iPoint]->GetNon_Physical() == true) ErrorCounter++;
+    
     /*--- Set the DES length scale ---*/
     
     node[iPoint]->SetDES_LengthScale(DES_LengthScale);

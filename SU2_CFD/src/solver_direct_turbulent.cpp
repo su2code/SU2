@@ -369,7 +369,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetLocalCFLFactor()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta = Vol / ((node[iPoint]->GetLocalCFL()/solver_container[FLOW_SOL]->node[iPoint]->GetLocalCFL())*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
     Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -397,6 +397,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
+  ComputeUnderRelaxationFactor(config);
+  
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
@@ -408,7 +410,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, solver_container[FLOW_SOL]->node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+          node[iPoint]->AddClippedSolution(0, node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
         }
         
         break;
@@ -458,6 +460,98 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+}
+
+void CTurbSolver::ComputeUnderRelaxationFactor(CConfig *config) {
+  
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  
+  su2double localUnderRelaxation = 1.0;
+  const su2double allowableDecrease = -1.00;
+  const su2double allowableIncrease = 1.0;
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    localUnderRelaxation = 1.0;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      
+      /* We impose a limit on the maximum percentage that the
+       turbulence variables can change over a nonlinear iteration. */
+      
+      const unsigned long index = iPoint*nVar + iVar;
+      su2double ratio = LinSysSol[index]/(node[iPoint]->GetSolution(iVar)+EPS);
+      if (ratio > allowableIncrease && (fabs(LinSysSol[index]) > 1.0e-3)) {
+        localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+      } else if (ratio < allowableDecrease && (fabs(LinSysSol[index]) > 1.0e-3)) {
+        localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+      }
+      
+    }
+    
+    /* Store the under-relaxation factor for this point. */
+    
+    node[iPoint]->SetUnderRelaxation(localUnderRelaxation);
+    
+  }
+  
+  /* Adapt the CFL number based on the under-relaxation parameter. */
+  
+  if (config->GetCFL_Adapt()) {
+    
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      su2double CFLFactor = 1.0, MGFactor[100];
+      
+      const su2double CFLMin = config->GetCFL_AdaptParam(2);
+      const su2double CFLMax = config->GetCFL_AdaptParam(3);
+      
+      /*--- Compute MG factor ---*/
+      
+      for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+        if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+        else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+      }
+      
+      
+      /* Get the current local CFL number at this point. */
+      
+      su2double CFL = node[iPoint]->GetLocalCFL();
+      
+      /* If we apply a small under-relaxation parameter for stability,
+       then we should reduce the CFL before the next iteration. If we
+       are able to add the entire nonlinear update (under-relaxation = 1)
+       then we can increase the CFL number for the next iteration. */
+      
+      const su2double underRelaxation = node[iPoint]->GetUnderRelaxation();
+      
+      if (underRelaxation < 0.1) {
+        CFLFactor = config->GetCFL_AdaptParam(0);
+      } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+        CFLFactor = 1.0;
+      } else {
+        CFLFactor = config->GetCFL_AdaptParam(1);
+      }
+      
+      /* Check if we are hitting the min or max and adjust. */
+      
+      if (CFL <= CFLMin) {
+        CFL       = CFLMin;
+        CFLFactor = 1.001*MGFactor[MGLevel];
+      } else if (CFL >= CFLMax) {
+        CFL       = CFLMax;
+        CFLFactor = 0.999*MGFactor[MGLevel];
+      }
+      
+      /* Apply the adjustment to the CFL and store local values. */
+      CFL *= CFLFactor;
+      node[iPoint]->SetLocalCFL(CFL);
+      node[iPoint]->SetLocalCFLFactor(CFLFactor);
+      
+    }
+    
+  }
   
 }
 
@@ -1115,6 +1209,14 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   SetImplicitPeriodic(true);
 
+  /* Store the initial CFL number for all grid points. */
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double CFL = config->GetCFL(MGLevel);
+    node[iPoint]->SetLocalCFL(CFL);
+    node[iPoint]->SetLocalCFLFactor(1.0);
+  }
+  
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -3433,6 +3535,14 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   implicit flag in case we have periodic BCs. ---*/
 
   SetImplicitPeriodic(true);
+      
+  /* Store the initial CFL number for all grid points. */
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double CFL = config->GetCFL(MGLevel);
+    node[iPoint]->SetLocalCFL(CFL);
+    node[iPoint]->SetLocalCFLFactor(1.0);
+  }
       
 }
 

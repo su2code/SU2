@@ -60,7 +60,11 @@ CVariable::CVariable(void) {
   /* Under-relaxation parameters. */
   UnderRelaxation = 1.0;
   LocalCFLFactor  = 1.0;
-
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical = false;
+  Non_Physical_Counter = 0;
+  
 }
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
@@ -94,6 +98,14 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution[iVar] = 0.0;
 
+  /* Under-relaxation parameters. */
+  UnderRelaxation = 1.0;
+  LocalCFLFactor  = 1.0;
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical = false;
+  Non_Physical_Counter = 0;
+  
 }
 
 CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
@@ -161,6 +173,14 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     }
   }
 
+  /* Under-relaxation parameters. */
+  UnderRelaxation = 1.0;
+  LocalCFLFactor  = 1.0;
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical = false;
+  Non_Physical_Counter = 0;
+  
 }
 
 CVariable::~CVariable(void) {
