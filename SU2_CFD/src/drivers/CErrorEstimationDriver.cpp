@@ -971,8 +971,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   }
 
   //--- compute min, max, total complexity
-  su2double localMinDensity = 0., localMaxDensity = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 0., globalMaxDensity = 0., globalTotComplex = 0.;
+  su2double localMinDensity = 1.E9, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E9, globalMaxDensity = 0., globalTotComplex = 0.;
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
