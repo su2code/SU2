@@ -535,7 +535,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	GmfSetKwd(OutMsh, GmfTriangles, nParallel_Tria);
   	for (iElem = 0; iElem < nParallel_Tria; iElem++) {
   	  iNode = iElem*N_POINTS_TRIANGLE;
-	  GmfSetLin(OutMsh, GmfTriangles,Conn_Tria_Par[iNode+0],Conn_Tria_Par[iNode+1],Conn_Tria_Par[iNode+2], 1);  
+	  GmfSetLin(OutMsh, GmfTriangles,Conn_Tria_Par[iNode+0],Conn_Tria_Par[iNode+1],Conn_Tria_Par[iNode+2], 0);  
   	}	
 
 	/*--- Write quadrilaterals ---*/
@@ -544,7 +544,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	  GmfSetKwd(OutMsh, GmfQuadrilaterals, nParallel_Quad);
 	  for (iElem = 0; iElem < nParallel_Quad; iElem++) {
   		  iNode = iElem*N_POINTS_QUADRILATERAL;
-				GmfSetLin(OutMsh, GmfQuadrilaterals,Conn_Quad_Par[iNode+0],Conn_Quad_Par[iNode+1],Conn_Quad_Par[iNode+2], Conn_Quad_Par[iNode+3], 1);  
+				GmfSetLin(OutMsh, GmfQuadrilaterals,Conn_Quad_Par[iNode+0],Conn_Quad_Par[iNode+1],Conn_Quad_Par[iNode+2], Conn_Quad_Par[iNode+3], 0);  
   		}
 	  }
 	
@@ -556,7 +556,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfTetrahedra, nParallel_Tetr);
 		for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
 	    iNode = iElem*N_POINTS_TETRAHEDRON;
-			GmfSetLin(OutMsh, GmfTetrahedra,Conn_Tetr_Par[iNode+0],Conn_Tetr_Par[iNode+1],Conn_Tetr_Par[iNode+2], Conn_Tetr_Par[iNode+3], 1); 
+			GmfSetLin(OutMsh, GmfTetrahedra,Conn_Tetr_Par[iNode+0],Conn_Tetr_Par[iNode+1],Conn_Tetr_Par[iNode+2], Conn_Tetr_Par[iNode+3], 0); 
 	  }
 	}
 	
@@ -566,7 +566,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfHexahedra, nParallel_Hexa);
 		for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
 	    iNode = iElem*N_POINTS_HEXAHEDRON;
-			GmfSetLin(OutMsh, GmfHexahedra,Conn_Hexa_Par[iNode+0],Conn_Hexa_Par[iNode+1], Conn_Hexa_Par[iNode+2], Conn_Hexa_Par[iNode+3], Conn_Hexa_Par[iNode+4],Conn_Hexa_Par[iNode+5],Conn_Hexa_Par[iNode+6], Conn_Hexa_Par[iNode+7],  1); 
+			GmfSetLin(OutMsh, GmfHexahedra,Conn_Hexa_Par[iNode+0],Conn_Hexa_Par[iNode+1], Conn_Hexa_Par[iNode+2], Conn_Hexa_Par[iNode+3], Conn_Hexa_Par[iNode+4],Conn_Hexa_Par[iNode+5],Conn_Hexa_Par[iNode+6], Conn_Hexa_Par[iNode+7],  0); 
 	  }
 	}
 	
@@ -576,7 +576,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfPrisms, nParallel_Pris);
 		for (iElem = 0; iElem < nParallel_Pris; iElem++) {
 	    iNode = iElem*N_POINTS_PRISM;
-			GmfSetLin(OutMsh, GmfPrisms,Conn_Pris_Par[iNode+0],Conn_Pris_Par[iNode+1], Conn_Pris_Par[iNode+2], Conn_Pris_Par[iNode+3], Conn_Pris_Par[iNode+4],Conn_Pris_Par[iNode+5],  1); 
+			GmfSetLin(OutMsh, GmfPrisms,Conn_Pris_Par[iNode+0],Conn_Pris_Par[iNode+1], Conn_Pris_Par[iNode+2], Conn_Pris_Par[iNode+3], Conn_Pris_Par[iNode+4],Conn_Pris_Par[iNode+5],  0); 
 	  }
 	}
 	
@@ -586,7 +586,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfPyramids, nParallel_Pyra);
 		for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
 	    iNode = iElem*N_POINTS_PYRAMID;
-	  	GmfSetLin(OutMsh, GmfPyramids,Conn_Pyra_Par[iNode+0],Conn_Pyra_Par[iNode+1], Conn_Pyra_Par[iNode+2], Conn_Pyra_Par[iNode+3], Conn_Pyra_Par[iNode+4],1); 
+	  	GmfSetLin(OutMsh, GmfPyramids,Conn_Pyra_Par[iNode+0],Conn_Pyra_Par[iNode+1], Conn_Pyra_Par[iNode+2], Conn_Pyra_Par[iNode+3], Conn_Pyra_Par[iNode+4],0); 
 		}
 	}
 	
@@ -604,7 +604,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
         const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
         for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
           CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
-          if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+          if (geometry->node[bnd->GetNode(0)]->GetDomain() || geometry->node[bnd->GetNode(1)]->GetDomain()) {
             switch ( bnd->GetVTK_Type() ) {
               case LINE:
                 const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
@@ -630,7 +630,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
         const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
         for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
           CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
-          if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+          if (geometry->node[bnd->GetNode(0)]->GetDomain() || geometry->node[bnd->GetNode(1)]->GetDomain() || geometry->node[bnd->GetNode(2)]->GetDomain()) {
             switch ( bnd->GetVTK_Type() ) {
               case TRIANGLE:
                 const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
@@ -810,7 +810,7 @@ vector<vector<unsigned long> > COutput::GetConnEdg(CConfig *config, CGeometry *g
       const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
       for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
         CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
-        if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+        if (geometry->node[bnd->GetNode(0)]->GetDomain() || geometry->node[bnd->GetNode(1)]->GetDomain()) {
           switch ( bnd->GetVTK_Type() ) {
             case LINE:
               const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
@@ -851,7 +851,7 @@ vector<vector<unsigned long> > COutput::GetConnTri(CConfig *config, CGeometry *g
         const unsigned long ref = (unsigned long) config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
         for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
           CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
-          if (geometry->node[bnd->GetNode(0)]->GetDomain()) {
+          if (geometry->node[bnd->GetNode(0)]->GetDomain() || geometry->node[bnd->GetNode(1)]->GetDomain() || geometry->node[bnd->GetNode(2)]->GetDomain()) {
             switch ( bnd->GetVTK_Type() ) {
               case TRIANGLE:
                 const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
