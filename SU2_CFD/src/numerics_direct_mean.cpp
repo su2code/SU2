@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
