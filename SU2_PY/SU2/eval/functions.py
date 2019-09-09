@@ -478,6 +478,8 @@ def multipoint( config, state=None, step=1e-2 ):
     config.MARKER_OUTLET = new_marker_outlet
     
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+
+    # If solution file for the first point is available, use it
     if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[0]: 
         state.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[0]
 
@@ -524,9 +526,9 @@ def multipoint( config, state=None, step=1e-2 ):
 
             konfig = copy.deepcopy(config)
             ztate  = copy.deepcopy(state)
-	    # Reset restart to original value 
-	    konfig['RESTART_SOL'] = restart_sol
-	    
+            # Reset restart to original value 
+            konfig['RESTART_SOL'] = restart_sol
+
             dst = os.getcwd()
             dst = os.path.abspath(dst).rstrip('/')+'/'
 
@@ -599,6 +601,7 @@ def multipoint( config, state=None, step=1e-2 ):
         # make unix link
         string = "ln -s " + src + " " + dst
         os.system(string)
+
     # Update MULTIPOINT_DIRECT in state.FILES
     state.FILES.MULTIPOINT_DIRECT = solution_flow_list
       
@@ -607,23 +610,20 @@ def multipoint( config, state=None, step=1e-2 ):
     # ----------------------------------------------------
         
     for derv_name in su2io.optnames_multi:
+        matches = [ k for k in su2io.optnames_aero if k in derv_name ]
+        if not len(matches) == 1: continue
+        func_name = matches[0]
+        obj_func = 0.0
+        for i in range(len(weight_list)):
+            obj_func = obj_func + float(weight_list[i])*func[i][func_name]
         
-      matches = [ k for k in su2io.optnames_aero if k in derv_name ]
-      if not len(matches) == 1: continue
-      func_name = matches[0]
-        
-      obj_func = 0.0
-      for i in range(len(weight_list)):
-        obj_func = obj_func + float(weight_list[i])*func[i][func_name]
-        
-      state.FUNCTIONS[derv_name] = obj_func
-
+        state.FUNCTIONS[derv_name] = obj_func
 
     # return output
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_multi:
-      if key in state['FUNCTIONS']:
-        funcs[key] = state['FUNCTIONS'][key]
+        if key in state['FUNCTIONS']:
+            funcs[key] = state['FUNCTIONS'][key]
     
     return funcs
 
