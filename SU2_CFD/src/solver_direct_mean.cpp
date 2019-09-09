@@ -5499,7 +5499,6 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
 void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
-  // unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
   unsigned short iVar, iFlux;
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   su2double density, velocity[2], pressure, enthalpy;
@@ -5510,16 +5509,6 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    //--- TODO: store sensors for feature-based
-    // if (Kind_Aniso_Sensor == ANISO_MACH) {
-    //   const su2double local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
-    //   node[iPoint]->SetAnisoSens(local_Mach);
-    // }
-    // else if (Kind_Aniso_Sensor == ANISO_PRES) {
-    //   const su2double local_Pres = node[iPoint]->GetPressure();
-    //   node[iPoint]->SetAnisoSens(local_Pres);
-    // }
-
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
@@ -5617,6 +5606,16 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   su2double vnx[3], vny[3];
   su2double hesTri[3];
   su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr];
+
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim], 
+            *EigVal  = new su2double[nDim];
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    A[iDim]      = new su2double[nDim];
+    EigVec[iDim] = new su2double[nDim];
+  }
+  
 
   //--- note: currently only implemented for Tri
 
@@ -5724,35 +5723,30 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         const su2double a = var->GetAnisoHess(i+0);
         const su2double b = var->GetAnisoHess(i+1);
         const su2double c = var->GetAnisoHess(i+2);
-        const su2double d = pow(a-c,2.) + 4.*b*b;
+        
+        A[0][0] = a; A[0][1] = b;
+        A[1][0] = b; A[1][1] = c;
 
-        const su2double Lam1 = (a+c+sqrt(d))/2.;
-        const su2double Lam2 = (a+c-sqrt(d))/2.;
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-        su2double RuH[2][2] = {{b, b},
-                               {Lam1-a, Lam2-a}};
+        for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
 
-        if(abs(b) < 1.0e-16){
-          RuH[0][0] = 1.; RuH[0][1] = 0.;
-          RuH[1][0] = 0.; RuH[1][1] = 1.;
-        }
+        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-        const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
-                                        {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
-
-        const su2double LamRuU[2][2] = {{abs(Lam1)*RuU[0][0],abs(Lam1)*RuU[1][0]},
-                                        {abs(Lam2)*RuU[0][1],abs(Lam2)*RuU[1][1]}};
-
-        const su2double Hess[3]      = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0], 
-                                        RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1], 
-                                        RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]};
-
-        var->SetAnisoHess(i+0, Hess[0]);
-        var->SetAnisoHess(i+1, Hess[1]);
-        var->SetAnisoHess(i+2, Hess[2]);
+        var->SetAnisoHess(i+0, A[0][0]);
+        var->SetAnisoHess(i+1, A[0][1]);
+        var->SetAnisoHess(i+2, A[1][1]);
       }
     }
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    delete A[iDim];
+    delete EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
