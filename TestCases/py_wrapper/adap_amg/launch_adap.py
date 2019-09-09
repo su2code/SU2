@@ -248,8 +248,9 @@ def main():
 
       # Get markers
       nMarker_All = SU2Error.GetnMarker_All()
-      mesh['markers'] = np.empty(nMarker_All, 'string')
-      for iMarker in range(nMarker_All):
+      mesh['markers'] = np.empty(nMarker_All+1, 'object')
+      mesh['markers'][0] = int(options.nDim)
+      for iMarker in range(1,nMarker_All+1):
         mesh['markers'][iMarker] = SU2Error.GetMarker_All_TagBound(iMarker)
 
       # Remesh options

@@ -961,14 +961,14 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     Lam2 = abs(factor*Lam2);
     su2double Lam1new = Lam1;
     su2double Lam2new = Lam2;
-    if(sqrt(Lam1new*Lam2new) < 1./(hmax*hmax)) {
-      Lam1new = sqrt(Lam1/Lam2)/(hmax*hmax);
-      Lam2new = sqrt(Lam2/Lam1)/(hmax*hmax);
-    }
-    else if(sqrt(Lam1new*Lam2new) > 1./(hmin*hmin)) {
-      Lam1new = sqrt(Lam1/Lam2)/(hmin*hmin);
-      Lam2new = sqrt(Lam2/Lam1)/(hmin*hmin);
-    }
+    // if(sqrt(Lam1new*Lam2new) < 1./(hmax*hmax)) {
+    //   Lam1new = sqrt(Lam1/Lam2)/(hmax*hmax);
+    //   Lam2new = sqrt(Lam2/Lam1)/(hmax*hmax);
+    // }
+    // else if(sqrt(Lam1new*Lam2new) > 1./(hmin*hmin)) {
+    //   Lam1new = sqrt(Lam1/Lam2)/(hmin*hmin);
+    //   Lam2new = sqrt(Lam2/Lam1)/(hmin*hmin);
+    // }
 
     const su2double LamRuU[2][2] = {{abs(Lam1new)*RuU[0][0],abs(Lam1new)*RuU[1][0]},
                                     {abs(Lam2new)*RuU[0][1],abs(Lam2new)*RuU[1][1]}};

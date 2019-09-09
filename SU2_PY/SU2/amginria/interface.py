@@ -260,12 +260,11 @@ def create_sensor(solution, sensor):
 
     elif sensor == "GOAL":
 
-        iGoal  = solution['id_solution_tag']['Aniso_Metric[0]']
         if Dim == 2:
-            sensor = Sol[:,iGoal:iGoal+3]
+            sensor = Sol[:,-3:]
             sensor = np.array(sensor).reshape((len(sensor),3))
         elif Dim == 3:
-            sensor = Sol[:,iGoal:iGoal+6]
+            sensor = Sol[:,-6:]
             sensor = np.array(sensor).reshape((len(sensor),6))
         sensor_header = ["Goal"]
                 
