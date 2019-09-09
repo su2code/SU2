@@ -1002,7 +1002,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   globalTotComplex = localTotComplex;
 #endif
 
-  if(rank = MASTER_NODE) {
+  if(rank == MASTER_NODE) {
     cout << "Minimum density: " << globalMinDensity << "." << endl;
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
