@@ -1166,7 +1166,16 @@ def restart2solution(config,state={}):
     if config.MATH_PROBLEM == 'DIRECT':
         restart  = config.RESTART_FILENAME
         solution = config.SOLUTION_FILENAME
+        restart = restart.split('.')[0]
+        solution = solution.split('.')[0]
         
+        if config.get('WRT_BINARY_RESTART', 'YES') == 'NO':
+            restart += '.csv'
+            solution += '.csv'
+        else:
+            restart += '.dat'
+            solution += '.dat'
+
         # expand zones
         restarts  = expand_zones(restart,config)
         solutions = expand_zones(solution,config)
@@ -1183,6 +1192,15 @@ def restart2solution(config,state={}):
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
+        restart = restart.split('.')[0]
+        solution = solution.split('.')[0]
+
+        if config.get('WRT_BINARY_RESTART', 'YES') == 'NO':
+            restart += '.csv'
+            solution += '.csv'
+        else:
+            restart += '.dat'
+            solution += '.dat'
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
         suffix    = get_adjointSuffix(func_name)

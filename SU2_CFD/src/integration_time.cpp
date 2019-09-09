@@ -692,9 +692,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
 void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
                                                       CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, 
                                                       su2double *monitor) {
-  
-  const unsigned short nDim = geometry[FinestMesh]->GetnDim();
-  
+    
   switch (RunTime_EqSystem) {
       
     case RUNTIME_FLOW_SYS:
