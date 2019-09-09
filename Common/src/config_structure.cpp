@@ -4457,6 +4457,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                        string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
       }
 
+      /*--- Quickfix to not trigger the error message below if SINGLEZONE_DRIVER is used.
+            Once the old driver (i.e. EXT_ITER with it) is removed, the Error conditional
+            can be changed. ---*/
+      if (SinglezoneDriver) nExtIter = Time_Iter;
+
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
                        string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),

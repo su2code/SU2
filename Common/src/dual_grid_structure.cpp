@@ -137,6 +137,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
+      Coord_Old = new su2double[nDim];
     }
   }
 
@@ -241,6 +242,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
+      Coord_Old = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
         Coord_p1[iDim] = Coord[iDim];
         Coord_n[iDim]  = Coord[iDim];
@@ -351,6 +353,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
+      Coord_Old = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
         Coord_p1[iDim] = Coord[iDim];
         Coord_n[iDim]  = Coord[iDim];
