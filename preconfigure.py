@@ -385,6 +385,8 @@ def init_inria(argument_dict, modes, update = False):
           
         try:
             subprocess.check_call('pip install --user externals/AMGIO/pyamg/Python2/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+            log.close()
+            err.close()
         except:
             print('pyAMG installation failed')
 

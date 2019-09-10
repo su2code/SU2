@@ -214,6 +214,8 @@ def install_pyamg(log, err):
         
     try:
         subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        log.close()
+        err.close()
     except:
         print('pyAMG installation failed')
 
