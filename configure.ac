@@ -192,7 +192,7 @@ else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
 AM_CONDITIONAL(BUILD_INRIA, test x$enableinria = xyes)
-AC_CONFIG_FILES([externals/libMeshb/Makefile])
+AC_CONFIG_FILES([externals/AMGIO/Makefile])
 
 # Metis
 CONFIGURE_METIS
@@ -421,7 +421,7 @@ Build Configuration Summary:
     Metis support:        $enablemetis
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
-    libMeshb support:     $enableinria
+    GMF support:          $enableinria
     CGNS support:         $enablecgns
     Mutation++ support:   $have_Mutationpp
     MKL support:          $have_MKL

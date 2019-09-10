@@ -38,8 +38,8 @@ def init_submodules(method = 'auto'):
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_libMeshb = '10d74159427ef7fc11dad670d629cb0356578a76'
-  github_repo_libMeshb = 'https://github.com/bmunguia/libMeshb'
+  sha_version_amg = '0abd5b88a760736e6e5f2966c101a3d263ea030d'
+  github_repo_amg = 'https://github.com/bmunguia/AMGIO'
   sha_version_meson = 'c904d3eefe2a01ca60027e2a5192e1f1c7ca5d9d'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
   sha_version_ninja = 'e0bc2e5fd9036a31d507881e1383adde3672aaef'
@@ -47,13 +47,13 @@ def init_submodules(method = 'auto'):
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'
-  libMeshb_name = 'libMeshb'
+  amg_name = 'AMGIO'
   meson_name = 'meson'
   ninja_name= 'ninja'
 
   alt_name_medi =   cur_dir + '/externals/medi'
   alt_name_codi =   cur_dir + '/externals/codi'
-  alt_name_libMeshb = cur_dir + '/externals/libMeshb'
+  alt_name_amg = cur_dir + '/externals/AMGIO'
   alt_name_meson =  cur_dir + '/externals/meson'
   alt_name_ninja =  cur_dir + '/externals/ninja'
 
@@ -72,14 +72,14 @@ def init_submodules(method = 'auto'):
   if is_git:
     submodule_status(alt_name_codi, sha_version_codi)
     submodule_status(alt_name_medi, sha_version_medi)
-    submodule_status(alt_name_libMeshb, sha_version_libMeshb)
+    submodule_status(alt_name_amg, sha_version_amg)
     submodule_status(alt_name_meson, sha_version_meson)
     submodule_status(alt_name_ninja, sha_version_ninja)
   # Otherwise download the zip file from git
   else:
     download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
     download_module(medi_name, alt_name_medi, github_repo_medi, sha_version_medi)
-    download_module(libMeshb_name, alt_name_libMeshb, github_repo_libMeshb, sha_version_libMeshb)
+    download_module(amg_name, alt_name_amg, github_repo_amg, sha_version_amg)
     download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
@@ -197,14 +197,8 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
 def install_pyamg(log, err):
   # Install pyAMG
-  if os.path.exists('pyAMG'):
-      print('Removing pyAMG')
-      shutil.rmtree('pyAMG')
-
   if sys.platform == 'linux' or sys.platform == 'linux2':
       print('Installing pyAMG for Linux.')
-      pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
-      pyamg_targz = 'LinuxPyAmg.tar.gz'
       import sysconfig
       if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
           pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
@@ -213,18 +207,12 @@ def install_pyamg(log, err):
 
   elif sys.platform == 'darwin':
       print('Installing pyAMG for Mac.')
-      pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/MacPyAmg.tar.gz'
-      pyamg_targz = 'MacPyAmg.tar.gz'
       pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
       
-  subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
-  subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
-  subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
   try:
-      subprocess.check_call('pip3 install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+      subprocess.check_call('pip3 install --user externals/amgio/pyamg/Python3' + pyamg_whl, stdout = log, stderr = err, shell = True)
   except:
       print('pyAMG installation failed')
-  subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
 
   return True
 

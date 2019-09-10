@@ -29,7 +29,7 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
 endif
 
 if get_option('enable-inria')
-  subdir('externals/libMeshb/sources')
+  subdir('externals/AMGIO/sources')
   su2_deps += libmeshb7_dep
   su2_cpp_args += '-DHAVE_INRIA'
 endif

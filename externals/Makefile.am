@@ -44,7 +44,7 @@ if BUILD_TECIO
   SUBDIRS += tecio
 endif
 if BUILD_INRIA
-  SUBDIRS += libMeshb
+  SUBDIRS += AMGIO
 endif
 
 if BUILD_METIS

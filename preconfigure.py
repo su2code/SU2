@@ -341,41 +341,35 @@ def init_inria(argument_dict, modes, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_libMeshb = '5aecc508d1554f2725634321497b63feb1ec74fa'
-    github_repo_libMeshb = 'https://github.com/bmunguia/libMeshb'
+    sha_version_amg = '0abd5b88a760736e6e5f2966c101a3d263ea030d'
+    github_repo_amg = 'https://github.com/bmunguia/AMGIO'
 
-    libMeshb_name = 'libMeshb'
+    amg_name = 'amg'
 
-    alt_name_libMeshb = 'externals/libMeshb'
-    alt_name_amgint   = 'SU2_PY/SU2/amginria'
+    alt_name_amg = 'externals/AMGIO'
+    alt_name_amgint  = 'SU2_PY/SU2/amginria'
 
     # Some log and error files
     log = open( 'preconf_inria.log', 'w' )
     err = open( 'preconf_inria.err', 'w' )
     pkg_environ = os.environ
 
-    libMeshb_status = False
+    amg_status = False
 
     # Remove modules if update is requested
     if update:
-        if os.path.exists(alt_name_libMeshb):
-            print('Removing ' + alt_name_libMeshb)
-            shutil.rmtree(alt_name_libMeshb)
+        if os.path.exists(alt_name_amg):
+            print('Removing ' + alt_name_amg)
+            shutil.rmtree(alt_name_amg)
 
-    submodule_check(libMeshb_name, alt_name_libMeshb, github_repo_libMeshb, sha_version_libMeshb, log, err, update)
+    submodule_check(amg_name, alt_name_amg, github_repo_amg, sha_version_amg, log, err, update)
 
     # Setup AMG interface
     subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
     # Install pyAMG
-    if os.path.exists('pyAMG'):
-        print('Removing pyAMG')
-        shutil.rmtree('pyAMG')
-
     if sys.platform == 'linux' or sys.platform == 'linux2':
         print('Installing pyAMG for Linux.')
-        pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
-        pyamg_targz = 'LinuxPyAmg.tar.gz'
         import sysconfig
         if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
             pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
@@ -384,18 +378,12 @@ def init_inria(argument_dict, modes, update = False):
 
     elif sys.platform == 'darwin':
         print('Installing pyAMG for Mac.')
-        pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/MacPyAmg.tar.gz'
-        pyamg_targz = 'MacPyAmg.tar.gz'
         pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
-        
-    subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
-    subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
-    subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
+      
     try:
-        subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('pip install --user externals/amgio/pyamg/Python2' + pyamg_whl, stdout = log, stderr = err, shell = True)
     except:
         print('pyAMG installation failed')
-    subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
 
     return True
 

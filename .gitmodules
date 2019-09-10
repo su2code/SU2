@@ -6,9 +6,9 @@
 	path = externals/medi
 	url = https://github.com/SciCompKL/MeDiPack
 	ignore = dirty
-[submodule "externals/libMeshb"]
-	path = externals/libMeshb
-	url = https://github.com/bmunguia/libMeshb
+[submodule "externals/AMGIO"]
+	path = externals/AMGIO
+	url = https://github.com/bmunguia/AMGIO
 [submodule "externals/ninja"]
 	path = externals/ninja
 	url = https://github.com/ninja-build/ninja
