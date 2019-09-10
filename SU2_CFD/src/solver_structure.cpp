@@ -4017,7 +4017,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     
     getline (restart_file_n, text_line);
     
-    istringstream point_line(text_line);
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -4025,10 +4025,12 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
-
+      
+      Coord[0] = PrintingToolbox::stod(point_line[1]);
+      Coord[1] = PrintingToolbox::stod(point_line[2]);
+      if (nDim == 3){
+        Coord[2] = PrintingToolbox::stod(point_line[3]);          
+      } 
       geometry->node[iPoint_Local]->SetCoord_n(Coord);
 
       iPoint_Global_Local++;
@@ -4071,8 +4073,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Open the restart file, throw an error if this fails. ---*/
 
-    restart_file_n.open(filename_n1.data(), ios::in);
-    if (restart_file_n.fail()) {
+    restart_file_n1.open(filename_n1.data(), ios::in);
+    if (restart_file_n1.fail()) {
         SU2_MPI::Error(string("There is no flow restart file ") + filename_n1, CURRENT_FUNCTION);
 
     }
@@ -4083,23 +4085,26 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
 
-    getline (restart_file_n, text_line);
+    getline (restart_file_n1, text_line);
 
     for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
       
-      getline (restart_file_n, text_line);
-      
-      istringstream point_line(text_line);
+      getline (restart_file_n1, text_line);
 
+      vector<string> point_line = PrintingToolbox::split(text_line, ',');
+      
       /*--- Retrieve local index. If this node from the restart file lives
        on the current processor, we will load and instantiate the vars. ---*/
 
       iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
       if (iPoint_Local > -1) {
-
-        if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-        if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
+        
+        Coord[0] = PrintingToolbox::stod(point_line[1]);
+        Coord[1] = PrintingToolbox::stod(point_line[2]);
+        if (nDim == 3){
+          Coord[2] = PrintingToolbox::stod(point_line[3]);          
+        } 
 
         geometry->node[iPoint_Local]->SetCoord_n1(Coord);
 
