@@ -855,6 +855,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
             eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
 
+  su2double localMinDensity = 1.E9, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E9, globalMaxDensity = 0., globalTotComplex = 0.;
+
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
@@ -920,8 +923,6 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 #endif
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  su2double localMinDensity = 1.E9, localMaxDensity = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E9, globalMaxDensity = 0., globalTotComplex = 0.;
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
@@ -982,9 +983,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   su2double localScale = 0.0,
             globalScale = 0.0,
             p = 1.0, // For now, hardcode L1 metric
-            hmax = config[ZONE_0]->GetMesh_Hmax(),
-            hmin = config[ZONE_0]->GetMesh_Hmin(),
+            eigmax = 1./(config[ZONE_0]->GetMesh_Hmin()*config[ZONE_0]->GetMesh_Hmin()),
+            eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+
+  su2double localMinDensity = 1.E9, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E9, globalMaxDensity = 0., globalTotComplex = 0.;
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
