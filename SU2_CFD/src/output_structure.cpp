@@ -14203,27 +14203,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- All adjoint solvers write the surface sensitivity. ---*/
     
     nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
-
-    /*--- Plot the metric if performing error estimation. ---*/
-
-    if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
-
-      if(nDim == 2){
-        Variable_Names.push_back("Aniso_Metric[0]");
-        Variable_Names.push_back("Aniso_Metric[1]");
-        Variable_Names.push_back("Aniso_Metric[2]");
-        nVar_Par += 3;
-      }
-      else{
-        Variable_Names.push_back("Aniso_Metric[0]");
-        Variable_Names.push_back("Aniso_Metric[1]");
-        Variable_Names.push_back("Aniso_Metric[2]");
-        Variable_Names.push_back("Aniso_Metric[3]");
-        Variable_Names.push_back("Aniso_Metric[4]");
-        Variable_Names.push_back("Aniso_Metric[5]");
-        nVar_Par += 6;
-      }
-    }
     
     /*--- For the continouus adjoint, we write either convective scheme's
      dissipation sensor (centered) or limiter (uwpind) for adj. density. ---*/
@@ -14422,19 +14401,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         /*--- Load data for the surface sensitivity. ---*/
         
         Local_Data[iPoint][iVar] = Aux_Sens[iPoint]; iVar++;
-
-        /*--- Load data for the metric. ---*/
-
-        if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
-          unsigned short iMetr, nMetr;
-          if(nDim == 2) nMetr = 3;
-          else          nMetr = 6;
-            
-          for(iMetr = 0; iMetr < nMetr; iMetr++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoMetr(iMetr);
-            iVar++;
-          }
-        }
         
         /*--- Load data for the convective scheme sensor. ---*/
         
