@@ -743,6 +743,14 @@ protected:
    * \param[in] config - Definition of the particular problem per zone.
    */
   inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
+  
+  /*!
+   * \brief Write information to meta data file
+   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] solver - The container holding all solution data.
+   */
+  inline virtual void WriteMetaData(CConfig *config, CGeometry *geometry, CSolver** solver) {}
 
 };
 

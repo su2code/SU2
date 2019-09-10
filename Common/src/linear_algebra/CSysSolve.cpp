@@ -881,6 +881,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
       Jacobian.BuildJacobiPreconditioner();
       precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
       break;
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+      Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond);
+      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
     default:
       Jacobian.BuildJacobiPreconditioner();
       precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
@@ -909,6 +913,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
       break;
     case SMOOTHER:
       IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
+      break;
+    case PASTIX_LDLT : case PASTIX_LU:
+      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+      IterLinSol = 1;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
@@ -950,6 +959,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
       case JACOBI:
         Jacobian.BuildJacobiPreconditioner(RequiresTranspose);
         break;
+      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond, RequiresTranspose);
+        break;
       default:
         SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
         break;
@@ -969,8 +981,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
   ScalarType SolverTol, Norm0 = 0.0;
-  bool ScreenOutput;
-  bool TapeActive = true;
+  bool ScreenOutput, RequiresTranspose = !mesh_deform; // jacobian is symmetric
 
   /*--- Normal mode ---*/
 
@@ -1007,6 +1018,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     case JACOBI:
       precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
       break;
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
   }
 
   CMatrixVectorProduct<ScalarType>* mat_vec = new CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
@@ -1034,6 +1048,11 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput, config);
         if ( Residual < SolverTol*Norm0 ) break;
       }
+      break;
+    case PASTIX_LDLT : case PASTIX_LU:
+      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
+      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+      IterLinSol = 1;
       break;
     default:
       SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);

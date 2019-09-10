@@ -5022,7 +5022,7 @@ CFSIDriver::CFSIDriver(char* confFile,
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
 
-  unsigned short iZone;
+//  unsigned short iZone;
 //  for (iZone = 0; iZone < nZone; iZone++){
 //    switch (config_container[iZone]->GetKind_Solver()) {
 //       case RANS: case EULER: case NAVIER_STOKES:
@@ -6728,7 +6728,7 @@ bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
 
   bool adjoint_convergence = false;
 
-  su2double residual_1, residual_2;
+//  su2double residual_1, residual_2;
 
 //  if (kind_recording == FLOW_CONS_VARS) {
 
