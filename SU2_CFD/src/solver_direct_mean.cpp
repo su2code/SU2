@@ -5595,6 +5595,11 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  /*--- Communicate the gradient values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_GRADIENT);
+  CompleteComms(geometry, config, ANISO_GRADIENT);
 }
 
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
