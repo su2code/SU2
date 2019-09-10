@@ -921,3 +921,40 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
   SetHistoryOutputValue("CP_DIFF", PressDiff);
 
 }
+
+void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry, CSolver **solver){
+    
+  ofstream meta_file;
+  
+  string filename = "flow";
+  
+  filename = config->GetFilename(filename, "meta", curTimeIter);
+  
+  /*--- All processors open the file. ---*/
+
+  if (rank == MASTER_NODE) {
+    meta_file.open(filename.c_str(), ios::out);
+    meta_file.precision(15);
+    
+    if (config->GetTime_Marching() == DT_STEPPING_1ST || config->GetTime_Marching() == DT_STEPPING_2ND)
+      meta_file <<"ITER= " << curTimeIter + 1 << endl;
+    else
+      meta_file <<"ITER= " << curInnerIter + config->GetExtIter_OffSet() + 1 << endl;
+    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    meta_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
+    meta_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
+    meta_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
+    
+    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+          config->GetKind_Solver() == DISC_ADJ_RANS )) {
+      meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    }
+  }
+  
+  meta_file.close();
+  
+}

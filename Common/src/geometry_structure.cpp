@@ -13597,9 +13597,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   filename = config->GetObjFunc_Extension(filename);
   
-  filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
   if (config->GetRead_Binary_Restart()) {
+    
+    filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
     char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
@@ -13893,6 +13894,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     config->SetAoA_Sens(Restart_Meta[4]);
 
   } else {
+    
+    filename = config->GetFilename(filename, ".csv", nTimeIter-1);
 
     /*--- First, check that this is not a binary restart file. ---*/
 
