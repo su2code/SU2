@@ -11471,7 +11471,7 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
                     MPI_INT, MPI_COMM_WORLD);
   
   if (rank == MASTER_NODE){
-    cout << "After AllGather: " << recvCounts.size() << endl;
+    //cout << "After AllGather: " << recvCounts.size() << endl;
     for(std::vector<int>::size_type i = 0; i != recvCounts.size(); i++) cout << recvCounts[i] << endl;
   }
   
@@ -11494,7 +11494,7 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   STG_GlobalListCoordX.erase(unique(STG_GlobalListCoordX.begin(), STG_GlobalListCoordX.end(), CompareWithGap), STG_GlobalListCoordX.end());
 
   if (rank == MASTER_NODE){
-    cout << "After AllGatherv: " << STG_GlobalListCoordX.size() << endl;
+    //cout << "After AllGatherv: " << STG_GlobalListCoordX.size() << endl;
     for(std::vector<int>::size_type i = 0; i != STG_GlobalListCoordX.size(); i++) cout << STG_GlobalListCoordX[i] << endl;
   }
 #else
@@ -11506,6 +11506,9 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   // Generate random numbers
   if (rank == MASTER_NODE){
     std::default_random_engine rand_gen;
+    
+    // a somewhat random seed
+    rand_gen.seed((int)time(0));
     uniform_real_distribution<su2double> u02pi(0.,2.0*PI_NUMBER);
     uniform_real_distribution<su2double> u01(0.,1.0);
     
@@ -11514,6 +11517,7 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
     for (unsigned long i = 0; i < NModes; ++i){
       PhaseMode.push_back(u02pi(rand_gen));
       
+      // Generate random number over a sphere with radius 1.
       theta = 2. * PI_NUMBER * u01(rand_gen);
       phi   = acos(1. - 2. * u01(rand_gen));
       x = sin(phi) * cos(theta);
@@ -11525,12 +11529,13 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
       xn = sin(phin) * cos(thetan);
       yn = sin(phin) * sin(thetan);
       zn = cos(phin);
-
+      
+      // Create a normal vector
       su2double norm = x * xn + y * yn + z * zn;
       xn = x - xn*norm;
       yn = y - yn*norm;
       zn = z - zn*norm;
-      //cout << nDim << " " << x  << " " << y << " " << z << " " << xn  << " " << yn << " " << zn << endl;
+      
       RandUnitVec.push_back(x);
       RandUnitVec.push_back(y);
       RandUnitVec.push_back(z);

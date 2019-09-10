@@ -885,7 +885,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     
     su2double wallDistance, turb_ke, omega, lengthTurb, maxLength, *Coord_i;
     su2double local_lengthEnergetic[3], max_localVelocity = 0.0, max_lengthEnergetic = 0.0;
-    su2double Density, Velocity2, max_lengthNyquist = 0.0;
+    su2double Density, Velocity2, min_lengthNyquist = 999.0;
     
     vector<unsigned long> LocalPoints = geometry[MESH_0]->GetSTG_LocalPoint();
     
@@ -915,13 +915,14 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         su2double* Coord_j = geometry[MESH_0]->node[jPoint]->GetCoord();
         maxdelta = max(maxdelta, max( abs(Coord_i[1]-Coord_j[1]), abs(Coord_i[2]-Coord_j[2])) );
       }
-      max_lengthNyquist = max(2.0 * min( max(maxdelta, 0.3*maxLength) + 0.1 * wallDistance, maxLength ), max_lengthNyquist);
+      min_lengthNyquist = min(2.0 * min( max(maxdelta, 0.3*maxLength) + 0.1 * wallDistance, maxLength ), min_lengthNyquist);
+      //min_lengthNyquist = min(2.0 * min( 0.3 * maxLength + 0.1 * wallDistance, maxLength ), min_lengthNyquist);
       
     }
     
     /*--- Find the max value ---*/
     local_lengthEnergetic[0] = max_lengthEnergetic;
-    local_lengthEnergetic[1] = max_lengthNyquist;
+    local_lengthEnergetic[1] = min_lengthNyquist;
     local_lengthEnergetic[2] = max_localVelocity;
     
 #ifndef HAVE_MPI
