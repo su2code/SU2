@@ -887,7 +887,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     }
   }
 
-  //--- constrain size and obtain global scaling
+  //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
@@ -902,11 +902,6 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
 
-    // const su2double factor = pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
-    //   const su2double factor = pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+3.));
-
-    // for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= factor;
-
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     var->SetAnisoMetr(0, A[0][0]);
@@ -916,7 +911,6 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
     localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
-    // localScale += sqrt(abs(EigVal[0]*EigVal[1]))*Vol;
   }
 
 #ifdef HAVE_MPI
@@ -941,9 +935,6 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
-    // const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+3));
-    // const su2double factor = pow(outComplex/globalScale, 2./nDim);
-    // const su2double factor = pow(outComplex/globalScale, 2./3.);
 
     EigVal[0] = abs(factor*EigVal[0]);
     EigVal[1] = abs(factor*EigVal[1]);
@@ -999,6 +990,22 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
                  nFluxMetr = 3;  //--- TODO: adjust size for goal (for different solvers, currently Euler) vs. feature
   unsigned short nMetr = 3*(nDim-1);
 
+  su2double localScale = 0.0,
+            globalScale = 0.0,
+            p = 1.0, // For now, hardcode L1 metric
+            hmax = config[ZONE_0]->GetMesh_Hmax(),
+            hmin = config[ZONE_0]->GetMesh_Hmin(),
+            outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim], 
+            *EigVal  = new su2double[nDim];
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    A[iDim]      = new su2double[nDim];
+    EigVec[iDim] = new su2double[nDim];
+  }
+
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     //--- initialize metric tensor
@@ -1022,23 +1029,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     }
   }
 
-  //--- constrain size and obtain global scaling
-  su2double localScale = 0.0,
-            globalScale = 0.0,
-            p = 1.0, // For now, hardcode L1 metric
-            hmax = config[ZONE_0]->GetMesh_Hmax(),
-            hmin = config[ZONE_0]->GetMesh_Hmin(),
-            outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
-
-  su2double **A      = new su2double*[nDim],
-            **EigVec = new su2double*[nDim], 
-            *EigVal  = new su2double[nDim];
-
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
-    A[iDim]      = new su2double[nDim];
-    EigVec[iDim] = new su2double[nDim];
-  }
-
+  //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
@@ -1055,7 +1046,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(EigVal[iDim]), 1./(hmax*hmax)), 1./(hmin*hmin));
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -1077,7 +1068,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   globalScale = localScale;
 #endif
 
-  //--- normalize to achieve Lp metric for constraint complexity
+  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
@@ -1088,16 +1079,30 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double e = var->GetAnisoMetr(4);
     const su2double f = var->GetAnisoMetr(5);
 
-    // const su2double factor = pow(outComplex/(1.54*globalScale), 2./nDim);
-    const su2double factor = pow(outComplex/(globalScale), 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
-
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
     A[2][0] = c; A[2][1] = e; A[2][2] = f;
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = factor*EigVal[iDim];
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+
+    EigVal[0] = abs(factor*EigVal[0]);
+    EigVal[1] = abs(factor*EigVal[1]);
+    EigVal[2] = abs(factor*EigVal[2]);
+    const su2double Lam1new = EigVal[0];
+    const su2double Lam2new = EigVal[1];
+    const su2double Lam3new = EigVal[2];
+    if(sqrt(Lam1new*Lam2new*Lam3new) < 1./(hmax*hmax*hmax)) {
+      EigVal[0] = sqrt(Lam1new/(Lam2new*Lam3new))/(hmax*hmax*hmax);
+      EigVal[1] = sqrt(Lam2new/(Lam1new*Lam3new))/(hmax*hmax*hmax);
+      EigVal[2] = sqrt(Lam3new/(Lam1new*Lam2new))/(hmax*hmax*hmax);
+    }
+    else if(sqrt(Lam1new*Lam2new*Lam3new) > 1./(hmin*hmin*hmin)) {
+      EigVal[0] = sqrt(Lam1new/(Lam2new*Lam3new))/(hmin*hmin*hmin);
+      EigVal[1] = sqrt(Lam2new/(Lam1new*Lam3new))/(hmin*hmin*hmin);
+      EigVal[2] = sqrt(Lam3new/(Lam1new*Lam2new))/(hmin*hmin*hmin);
+    }
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -1108,6 +1113,30 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     var->SetAnisoMetr(3, A[2][0]);
     var->SetAnisoMetr(4, A[2][1]);
     var->SetAnisoMetr(5, A[2][2]);
+
+    //--- compute min, max, total complexity
+    const su2double Vol = geometry->node[iPoint]->GetVolume();
+    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+
+    localMinDensity = min(localMinDensity, density);
+    localMaxDensity = max(localMaxDensity, density);
+    localTotComplex += density*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  globalMinDensity = localMinDensity;
+  globalMaxDensity = localMaxDensity;
+  globalTotComplex = localTotComplex;
+#endif
+
+  if(rank == MASTER_NODE) {
+    cout << "Minimum density: " << globalMinDensity << "." << endl;
+    cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 }
 
