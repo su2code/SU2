@@ -213,7 +213,7 @@ def install_pyamg(log, err):
         pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
         
     try:
-        subprocess.check_call('pip3 install --user externals/amgio/pyamg/Python3' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3' + pyamg_whl, stdout = log, stderr = err, shell = True)
     except:
         print('pyAMG installation failed')
 

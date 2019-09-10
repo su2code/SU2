@@ -384,7 +384,7 @@ def init_inria(argument_dict, modes, update = False):
             pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
           
         try:
-            subprocess.check_call('pip install --user externals/amgio/pyamg/Python2' + pyamg_whl, stdout = log, stderr = err, shell = True)
+            subprocess.check_call('pip install --user externals/AMGIO/pyamg/Python2' + pyamg_whl, stdout = log, stderr = err, shell = True)
         except:
             print('pyAMG installation failed')
 
