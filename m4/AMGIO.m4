@@ -12,7 +12,7 @@ AC_DEFUN([CONFIGURE_INRIA],
 		 esac],
 		 [enableinria=yes])
 
-  # The libMeshb API is distributed with SU2, so we don't have to guess
+  # The AMGIO API is distributed with SU2, so we don't have to guess
   # where it might be installed...
   if (test $enableinria = yes); then
 
@@ -36,10 +36,10 @@ AC_DEFUN([CONFIGURE_INRIA],
         ;;
     esac
 
-     INRIA_INCLUDE="-I\$(top_srcdir)/externals/libMeshb/sources"
-     INRIA_LIB="\$(top_builddir)/externals/libMeshb/libMeshb.a"
-     AC_DEFINE(HAVE_INRIA, 1, [Flag indicating whether the library will be compiled with libMeshb support])
-     AC_MSG_RESULT(<<< Configuring library with libMeshb support >>>)
+     INRIA_INCLUDE="-I\$(top_srcdir)/externals/AMGIO/sources"
+     INRIA_LIB="\$(top_builddir)/externals/AMGIO/libMeshb.a"
+     AC_DEFINE(HAVE_INRIA, 1, [Flag indicating whether the library will be compiled with GMF support])
+     AC_MSG_RESULT(<<< Configuring library with GMF support >>>)
 
      # look for thread-local storage
      #AX_TLS
