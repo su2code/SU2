@@ -341,7 +341,7 @@ def main():
         if len(sendEdgAdap) > 0:
           for j in range(0, len(sendEdgAdap)):
             for k in range(0, 2):
-              if sendEdgAdap[j,k] >= beg_node[i] and sendEdgAdap[j,k] < end_node[i]:
+              if sendEdgAdap[j,k] >= beg_node[i]+1 and sendEdgAdap[j,k] < end_node[i]+1:
                 indEdg.append(int(j))
                 nEdg[i] = nEdg[i] + 1
                 break
@@ -349,7 +349,7 @@ def main():
         if len(sendTriAdap) > 0:
           for j in range(0, len(sendTriAdap)):
             for k in range(0, 3):
-              if sendTriAdap[j,k] >= beg_node[i] and sendTriAdap[j,k] < end_node[i]:
+              if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
                 indTri.append(int(j))
                 nTri[i] = nTri[i] + 1
                 break
@@ -357,7 +357,7 @@ def main():
         if len(sendTetAdap) > 0:
           for j in range(0, len(sendTetAdap)):
             for k in range(0, 4):
-              if sendTetAdap[j,k] >= beg_node[i] and sendTetAdap[j,k] < end_node[i]:
+              if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
                 indTet.append(int(j))
                 nTet[i] = nTet[i] + 1
                 break
@@ -370,16 +370,19 @@ def main():
       print("Communicating partitioned elements.")
       if(nEdg[0] > 0):
         EdgAdap = np.array([sendEdgAdap[j,:] + [j] for j in indEdg[:nEdg[0]]])
+        EdgAdap[:,:2] = EdgAdap[:,:2]-1
       else:
         EdgAdap = np.empty((0,0), int)
 
       if(nTri[0] > 0):
         TriAdap = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[:nTri[0]]])
+        TriAdap[:,:3] = TriAdap[:,:3]-1
       else:
         TriAdap = np.empty((0,0), int)
 
       if(nTet[0] > 0):
         TetAdap = np.array([sendTetAdap[j,:].tolist() + [j+nEgdTot+nTriTot] for j in indTet[:nTet[0]]])
+        TetAdap[:,:4] = TetAdap[:,:4]-1
       else:
         TetAdap = np.empty((0,0), int)
 
@@ -394,16 +397,19 @@ def main():
 
         if(nEdg[i] > 0):
           sendBuf = np.array([sendEdgAdap[j,:].tolist() + [j] for j in indEdg[nEdgOff:nEdgOff+nEdg[i]]])
+          sendBuf[:,:2] = sendBuf[:,:2]-1
           comm.send(sendBuf, dest=i, tag=3)
           nEdgOff = nEdgOff + nEdg[i]
 
         if(nTri[i] > 0):
           sendBuf = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[nTriOff:nTriOff+nTri[i]]])
+          sendBuf[:,:3] = sendBuf[:,:3]-1
           comm.send(sendBuf, dest=i, tag=4)
           nTriOff = nTriOff + nTri[i]
 
         if(nTet[i] > 0):
           sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nEdgTot+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
+          sendBuf[:,:4] = sendBuf[:,:4]-1
           comm.send(sendBuf, dest=i, tag=5)
           nTetOff = nTetOff + nTet[i]
 
