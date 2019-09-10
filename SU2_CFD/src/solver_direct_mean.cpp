@@ -3529,7 +3529,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         nonRealizableCounter[iEdge] = 0;
         Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
         Secondary_j[0] = S_i[0]; Secondary_j[1] = S_i[1];
-        counter_local++;
       }
 
       if (neg_density_i || neg_pressure_i) {
@@ -3538,7 +3537,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         isNonRealizable[iEdge] = true;
         nonRealizableCounter[iEdge] = 0;
         Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
-        counter_local++;
       }
 
       if (neg_density_j || neg_pressure_j) {
@@ -3547,7 +3545,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         isNonRealizable[iEdge] = true;
         nonRealizableCounter[iEdge] = 0;
         Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
-        counter_local++;
       }
       
       /* Lastly, check for existing first-order points still active
@@ -3556,15 +3553,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       if (isNonRealizable[iEdge]) {
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
-        
+        counter_local++;
       }
       
       
       if ((!neg_sound_speed && !neg_density_i && !neg_pressure_i) &&
           (!neg_sound_speed && !neg_density_j && !neg_pressure_j)) {
         nonRealizableCounter[iEdge]++;
-//        if (nonRealizableCounter[iEdge] > 20)
-//          isNonRealizable[iEdge] = false;
+        if (nonRealizableCounter[iEdge] > 100)
+          isNonRealizable[iEdge] = false;
       }
       
 //      if (node[iPoint]->GetNon_Physical()) {
@@ -5247,7 +5244,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   SetIterLinSolver(IterLinSol);
   
-  ComputeUnderRelaxationFactor(config);
+  ComputeUnderRelaxationFactor(solver_container, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
@@ -5279,7 +5276,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
 }
 
-void CEulerSolver::ComputeUnderRelaxationFactor(CConfig *config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
   
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
@@ -5302,6 +5299,14 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CConfig *config) {
         }
       }
     }
+    
+    /* In case of turbulence, take the min of the under-relaxation factor
+     between the mean flow and the turb model. */
+    
+    if (config->GetKind_Turb_Model() != NONE)
+      localUnderRelaxation = min(localUnderRelaxation, solver_container[TURB_SOL]->node[iPoint]->GetUnderRelaxation());
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
     
     /* Store the under-relaxation factor for this point. */
     

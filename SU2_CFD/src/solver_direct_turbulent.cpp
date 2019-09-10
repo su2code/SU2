@@ -397,28 +397,20 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
-  ComputeUnderRelaxationFactor(config);
+  ComputeUnderRelaxationFactor(solver_container, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
     
-    /*--- Update and clip trubulent solution ---*/
+    /*--- Update the turbulent solution. Only SST variants are clipped. ---*/
     
     switch (config->GetKind_Turb_Model()) {
         
-      case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
+      case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-        }
-        
-        break;
-        
-      case SA_NEG:
-        
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
+          node[iPoint]->AddSolution(0, node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint]);
         }
         
         break;
@@ -437,7 +429,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+            node[iPoint]->AddConservativeSolution(iVar, node[iPoint]->GetUnderRelaxation()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
           
         }
@@ -463,14 +455,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactor(CConfig *config) {
+void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
   
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
   
   su2double localUnderRelaxation = 1.0;
-  const su2double allowableDecrease = -1.00;
-  const su2double allowableIncrease = 1.0;
+  const su2double allowableDecrease = -0.99;
+  const su2double allowableIncrease =  0.99;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -482,14 +474,20 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CConfig *config) {
       
       const unsigned long index = iPoint*nVar + iVar;
       su2double ratio = LinSysSol[index]/(node[iPoint]->GetSolution(iVar)+EPS);
-      if (ratio > allowableIncrease && (fabs(LinSysSol[index]) > 1.0e-3)) {
+      if (ratio > allowableIncrease) {
         localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-      } else if (ratio < allowableDecrease && (fabs(LinSysSol[index]) > 1.0e-3)) {
+      } else if (ratio < allowableDecrease) {
         localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
       }
       
     }
     
+    /* Choose the min factor between mean flow and turbulence. */
+    
+    localUnderRelaxation = min(localUnderRelaxation, solver_container[FLOW_SOL]->node[iPoint]->GetUnderRelaxation());
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
     /* Store the under-relaxation factor for this point. */
     
     node[iPoint]->SetUnderRelaxation(localUnderRelaxation);
@@ -1112,15 +1110,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
 
   }
-  
-  /*--- Initialize lower and upper limits---*/
-  
-  lowerlimit = new su2double[nVar];
-  upperlimit = new su2double[nVar];
-  
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0;
-  
 
   /*--- Read farfield conditions from config ---*/
   

@@ -1295,9 +1295,18 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeUnderRelaxationFactor(CConfig *config);
+  virtual void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
+  
+  /*!
+   * \brief Adapt the CFL number based on the local under-relaxation parameters
+   *        computed for each nonlinear iteration.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void AdaptCFLNumber(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -5437,9 +5446,10 @@ public:
   
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CConfig *config);
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
@@ -9428,9 +9438,10 @@ public:
   
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CConfig *config);
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
   
   /*!
    * \brief Load a solution from a restart file.
