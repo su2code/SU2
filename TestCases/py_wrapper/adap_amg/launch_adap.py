@@ -267,6 +267,9 @@ def main():
           sys.stderr("## ERROR : pyamg failed.\n")
           raise
 
+      mesh_new['markers'] = mesh['markers']
+      mesh_new['dimension'] = mesh['dimension']
+
       current_mesh = "mesh_new.meshb"
       current_solution = "mesh_new.solb" 
 

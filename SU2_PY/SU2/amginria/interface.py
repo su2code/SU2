@@ -62,9 +62,6 @@ def amg_call_python(mesh, config):
     remesh_options                = {}
     remesh_options['Lp']          = 1
     remesh_options['gradation']   = config['hgrad']
-    # remesh_options['hmax']        = config['hmax']
-    # remesh_options['hmin']        = config['hmin']
-    # remesh_options['target']      = config['size']
     remesh_options['logfile']     = config['amg_log']
     
     Dim = mesh['dimension']
