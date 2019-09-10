@@ -5506,6 +5506,13 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
 
+  /*--- MPI solution ---*/
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, PRIMITIVE);
+  CompleteComms(geometry, config, PRIMITIVE);
+
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -5756,6 +5763,13 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   su2double graTet[3];
   su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
 
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, PRIMITIVE);
+  CompleteComms(geometry, config, PRIMITIVE);
+
   //--- note: currently only implemented for Tet
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -5868,6 +5882,11 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  /*--- Communicate the gradient values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_GRADIENT);
+  CompleteComms(geometry, config, ANISO_GRADIENT);
 }
 
 void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){

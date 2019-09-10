@@ -1881,6 +1881,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case PRIMITIVE:
+      COUNT_PER_POINT  = nPrimVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case PRIMITIVE_LIMITER:
       COUNT_PER_POINT  = nPrimVarGrad;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -2013,6 +2017,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
+            break;
+          case PRIMITIVE:
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetPrimitive(iVar);
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2181,6 +2189,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case PRIMITIVE:
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              node[iPoint]->SetPrimitive(iVar, bufDRecv[buf_offset+iVar]);
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
