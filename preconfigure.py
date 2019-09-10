@@ -368,22 +368,25 @@ def init_inria(argument_dict, modes, update = False):
     subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
     # Install pyAMG
-    if sys.platform == 'linux' or sys.platform == 'linux2':
-        print('Installing pyAMG for Linux.')
-        import sysconfig
-        if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
-            pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
-        else:
-            pyamg_whl   = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
-
-    elif sys.platform == 'darwin':
-        print('Installing pyAMG for Mac.')
-        pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
-      
     try:
-        subprocess.check_call('pip install --user externals/amgio/pyamg/Python2' + pyamg_whl, stdout = log, stderr = err, shell = True)
-    except:
-        print('pyAMG installation failed')
+        import pyamg
+    except ImportError:
+        if sys.platform == 'linux' or sys.platform == 'linux2':
+            print('Installing pyAMG for Linux.')
+            import sysconfig
+            if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
+                pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
+            else:
+                pyamg_whl   = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
+
+        elif sys.platform == 'darwin':
+            print('Installing pyAMG for Mac.')
+            pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
+          
+        try:
+            subprocess.check_call('pip install --user externals/amgio/pyamg/Python2' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        except:
+            print('pyAMG installation failed')
 
     return True
 
