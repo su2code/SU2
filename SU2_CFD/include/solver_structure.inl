@@ -855,7 +855,7 @@ inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-inline void CSolver::ComputeUnderRelaxationFactor(CConfig *config) { }
+inline void CSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
