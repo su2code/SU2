@@ -257,9 +257,6 @@ def main():
       remesh_options                = {}
       remesh_options['Lp']          = 1
       remesh_options['gradation']   = 1.8
-      remesh_options['hmax']        = 10.0
-      remesh_options['hmin']        = 1.0e-8
-      remesh_options['target']      = 10000
       remesh_options['logfile']     = "amg.log"
 
       # Run pyAMG
