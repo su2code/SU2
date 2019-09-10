@@ -50,7 +50,7 @@ def amg ( config , kind='' ):
     #--- Check config options related to mesh adaptation
     
     adap_options = ['ADAP_SIZES', 'ADAP_SUBITE', 'ADAP_SENSOR', \
-    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_EXT_ITER', 'ADAP_SOURCE','ADAP_PYTHON']
+    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_FLOW_EXT_ITER', 'ADAP_SOURCE','ADAP_PYTHON']
     required_options = ['ADAP_SIZES', 'ADAP_SUBITE', \
     'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
     
@@ -71,6 +71,7 @@ def amg ( config , kind='' ):
     
     # solver iterations/ residual reduction param for each size level
     adap_ext_iter = su2amg.get_ext_iter(config)
+    adap_flow_iter = su2amg.get_flow_iter(config)
     adap_res = su2amg.get_residual_reduction(config)
 
     adap_sensor = config.ADAP_SENSOR
@@ -404,6 +405,7 @@ def amg ( config , kind='' ):
                 
                 config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.EXT_ITER = int(adap_ext_iter[iSiz])
+                config_cfd.ITER = int(adap_flow_iter[iSiz])
                 
                 config_cfd.WRT_BINARY_RESTART  = "NO"
                 config_cfd.READ_BINARY_RESTART = "NO"

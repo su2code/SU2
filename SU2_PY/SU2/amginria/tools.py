@@ -41,14 +41,24 @@ def get_residual_reduction(config):
         
 # --- How many SU2 solver iterations for each complexity level
 def get_ext_iter(config):
-    if 'ADAP_EXT_ITER' in config:
-        return config['ADAP_EXT_ITER'].strip('()').split(",")
+    if 'ADAP_FLOW_EXT_ITER' in config:
+        return config['ADAP_FLOW_EXT_ITER'].strip('()').split(",")
     else:
         nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
         ext_iter = []
         for i in range(nExt_iter):
             ext_iter.append(config['EXT_ITER'])        
         return ext_iter
+
+def get_flow_iter(config):
+    if 'ADAP_FLOW_ITER' in config:
+        return config['ADAP_FLOW_ITER'].strip('()').split(",")
+    else:
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
+        flow_iter = []
+        for i in range(nExt_iter):
+            flow_iter.append(config['ITER'])        
+        return flow_iter
     
 def print_adap_options(config, kwds):
     prt = '\nMesh adaptation options:\n'

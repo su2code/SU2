@@ -2511,7 +2511,10 @@ void CConfig::SetConfig_Options() {
   addPythonOption("ADAP_SUBITE");
   
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_EXT_ITER");
+  addPythonOption("ADAP_FLOW_ITER");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_FLOW_EXT_ITER");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RESIDUAL_REDUCTION");
