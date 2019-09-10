@@ -2013,7 +2013,7 @@ enum MPI_QUANTITIES {
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
-  SOLUTION_TIME_N1     = 30,  /*!< \brief Primitive variables. */
+  PRIMITIVE            = 30,  /*!< \brief Primitive variables. */
   ANISO_GRADIENT       = 31   /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
 };
 
