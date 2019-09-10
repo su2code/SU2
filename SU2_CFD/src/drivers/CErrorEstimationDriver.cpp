@@ -851,8 +851,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   su2double localScale = 0.0,
             globalScale = 0.0,
             p = 1.0, // For now, hardcode L1 metric
-            hmax = config[ZONE_0]->GetMesh_Hmax(),
-            hmin = config[ZONE_0]->GetMesh_Hmin(),
+            eigmax = 1./(config[ZONE_0]->GetMesh_Hmin()*config[ZONE_0]->GetMesh_Hmin()),
+            eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
 
   su2double **A      = new su2double*[nDim],
@@ -936,18 +936,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
-    EigVal[0] = abs(factor*EigVal[0]);
-    EigVal[1] = abs(factor*EigVal[1]);
-    const su2double Lam1new = EigVal[0];
-    const su2double Lam2new = EigVal[1];
-    if(sqrt(Lam1new*Lam2new) < 1./(hmax*hmax)) {
-      EigVal[0] = sqrt(Lam1new/Lam2new)/(hmax*hmax);
-      EigVal[1] = sqrt(Lam2new/Lam1new)/(hmax*hmax);
-    }
-    else if(sqrt(Lam1new*Lam2new) > 1./(hmin*hmin)) {
-      EigVal[0] = sqrt(Lam1new/Lam2new)/(hmin*hmin);
-      EigVal[1] = sqrt(Lam2new/Lam1new)/(hmin*hmin);
-    }
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -1087,22 +1076,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
-    EigVal[0] = abs(factor*EigVal[0]);
-    EigVal[1] = abs(factor*EigVal[1]);
-    EigVal[2] = abs(factor*EigVal[2]);
-    const su2double Lam1new = EigVal[0];
-    const su2double Lam2new = EigVal[1];
-    const su2double Lam3new = EigVal[2];
-    if(sqrt(Lam1new*Lam2new*Lam3new) < 1./(hmax*hmax*hmax)) {
-      EigVal[0] = sqrt(Lam1new/(Lam2new*Lam3new))/(hmax*hmax*hmax);
-      EigVal[1] = sqrt(Lam2new/(Lam1new*Lam3new))/(hmax*hmax*hmax);
-      EigVal[2] = sqrt(Lam3new/(Lam1new*Lam2new))/(hmax*hmax*hmax);
-    }
-    else if(sqrt(Lam1new*Lam2new*Lam3new) > 1./(hmin*hmin*hmin)) {
-      EigVal[0] = sqrt(Lam1new/(Lam2new*Lam3new))/(hmin*hmin*hmin);
-      EigVal[1] = sqrt(Lam2new/(Lam1new*Lam3new))/(hmin*hmin*hmin);
-      EigVal[2] = sqrt(Lam3new/(Lam1new*Lam2new))/(hmin*hmin*hmin);
-    }
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
