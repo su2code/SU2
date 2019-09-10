@@ -5505,17 +5505,18 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   su2double vnx[3], vny[3];
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
+  bool dummy_bool;
 
   /*--- MPI solution ---*/
   
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
 
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+    //--- recompute primitive variables from communicated solution
+    dummy_bool = node[iPoint]->SetPrimVar(FluidModel);
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
@@ -5762,17 +5763,18 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   su2double vnx[4], vny[4], vnz[4];
   su2double graTet[3];
   su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
+  bool dummy_bool;
 
   /*--- MPI solution ---*/
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
 
   //--- note: currently only implemented for Tet
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+    //--- recompute primitive variables from communicated solution
+    dummy_bool = node[iPoint]->SetPrimVar(FluidModel);
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
