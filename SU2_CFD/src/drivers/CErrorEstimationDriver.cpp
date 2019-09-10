@@ -154,7 +154,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false); 
+  driver_config = new CConfig(config_file_name, SU2_MET, nZone, false); 
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
