@@ -290,7 +290,9 @@ class State(ordered_bunch):
                 elif label.split('_')[0] in ['MULTIPOINT']:
                     for name in expand_zones(files[label], config):
                         if name:
-                            assert os.path.exists(name), 'state expected file: %s' % name
+                            if os.path.exists(name):
+                                raise AssertionError('state expected file: %s' % name)
+                            # assert os.path.exists(name), 'state expected file: %s' % name
                 else:
                     assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
