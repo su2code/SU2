@@ -168,6 +168,7 @@ protected:
    /*----------------------------- Volume output ----------------------------*/     
    
    CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
    
    vector<string> volumeFieldNames;     //!< Vector containing the volume field names
    unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */ 
@@ -456,7 +457,9 @@ public:
    * \brief Print a list of all volume output fields to screen.
    */
   void PrintVolumeFields();
-
+  
+  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing = false);
+ 
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  
@@ -465,11 +468,10 @@ protected:
    * \brief Allocates the appropriate file writer based on the chosen format.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] sorter - The parallel file sorter.
    * \param[out] filewriter - The allocated filewriter.
    * \param[in] format - The output format.
    */
-  void SetFileWriter(CConfig *config, CGeometry *geomery, CParallelDataSorter *sorter, CFileWriter *&filewriter, unsigned short format);  
+  void SetFileWriter(CConfig *config, CGeometry *geomery, CFileWriter *&filewriter, unsigned short format);  
   
   
   /*!
@@ -660,6 +662,13 @@ protected:
    */
   virtual bool WriteScreen_Output(CConfig *config);
 
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iter - Current iteration index.
+   */
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter);
+  
   /*!
    * \brief Set the values of the volume output fields for a point.
    * \param[in] config - Definition of the particular problem.
