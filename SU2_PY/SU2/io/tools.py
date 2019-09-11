@@ -1003,9 +1003,6 @@ def get_specialCases(config):
     if len(special_cases) > 1:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
         raise Exception(error_str)   
-    
-    if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
-        raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for harmonic balance
     if 'TIME_MARCHING' in config and config['TIME_MARCHING'] == 'HARMONIC_BALANCE':
@@ -1169,7 +1166,7 @@ def restart2solution(config,state={}):
         restart = restart.split('.')[0]
         solution = solution.split('.')[0]
         
-        if config.get('WRT_BINARY_RESTART', 'YES') == 'NO':
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
             restart += '.csv'
             solution += '.csv'
         else:
@@ -1195,7 +1192,7 @@ def restart2solution(config,state={}):
         restart = restart.split('.')[0]
         solution = solution.split('.')[0]
 
-        if config.get('WRT_BINARY_RESTART', 'YES') == 'NO':
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
             restart += '.csv'
             solution += '.csv'
         else:

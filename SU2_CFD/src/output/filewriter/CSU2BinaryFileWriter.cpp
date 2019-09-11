@@ -1,17 +1,16 @@
 #include "../../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 
-CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields,".dat", nDim){}
+CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim, 
+                                           string fileName, CParallelDataSorter *dataSorter)  : 
+  CFileWriter(fields, fileName, dataSorter, ".dat", nDim){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
   
 }
 
-void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
-  
-  filename += file_ext;
-  
+void CSU2BinaryFileWriter::Write_Data(){
+    
   /*--- Local variables ---*/
 
   unsigned short iVar;
@@ -21,14 +20,14 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
 //  bool wrt_perf  = config->GetWrt_Performance();
   
   unsigned short GlobalField_Counter = fieldnames.size();
-  unsigned long nParallel_Poin = data_sorter->GetnPoints();
+  unsigned long nParallel_Poin = dataSorter->GetnPoints();
   
   ofstream restart_file;
   char str_buf[CGNS_STRING_SIZE], fname[100];
 
   file_size = 0.0;
   
-  strcpy(fname, filename.c_str());
+  strcpy(fname, fileName.c_str());
 
   /*--- Prepare the first ints containing the counts. The first is a
    magic number that we can use to check for binary files (it is the hex
@@ -37,7 +36,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    one int for ExtIter and 8 su2doubles. ---*/
 
   int var_buf_size = 5;
-  int var_buf[5] = {535532, GlobalField_Counter, (int)data_sorter->GetnPointsGlobal(), 0, 0};
+  int var_buf[5] = {535532, GlobalField_Counter, (int)dataSorter->GetnPointsGlobal(), 0, 0};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
@@ -48,7 +47,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
 
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
     for (iVar = 0; iVar < GlobalField_Counter; iVar++)
-      buf[iPoint*GlobalField_Counter+iVar] = SU2_TYPE::GetValue(data_sorter->GetData(iVar,iPoint));
+      buf[iPoint*GlobalField_Counter+iVar] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,iPoint));
 
 //  /*--- Prepare metadata. ---*/
 
@@ -196,7 +195,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    in cumulative storage format. ---*/
 
   disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-          GlobalField_Counter*data_sorter->GetnPointCumulative(rank)*sizeof(passivedouble));
+          GlobalField_Counter*dataSorter->GetnPointCumulative(rank)*sizeof(passivedouble));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
@@ -223,14 +222,14 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
     /*--- External iteration. ---*/
 
 //    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-//            GlobalField_Counter*data_sorter->GetnPointsGlobal()*sizeof(passivedouble));
+//            GlobalField_Counter*dataSorter->GetnPointsGlobal()*sizeof(passivedouble));
 //    MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
 //    file_size += (su2double)sizeof(int);
 
     /*--- Additional doubles for AoA, AoS, etc. ---*/
 
 //    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-//            GlobalField_Counter*data_sorter->GetnPointsGlobal()*sizeof(passivedouble) + 1*sizeof(int));
+//            GlobalField_Counter*dataSorter->GetnPointsGlobal()*sizeof(passivedouble) + 1*sizeof(int));
 //    MPI_File_write_at(fhw, disp, Restart_Metadata, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 //    file_size += (su2double)8*sizeof(passivedouble);
 

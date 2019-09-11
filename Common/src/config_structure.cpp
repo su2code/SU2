@@ -2490,7 +2490,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1); 
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
-  
+  /* DESCRIPTION: Volume solution writing frequency */
+  addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
+  /* DESCRIPTION: Volume solution files */  
+  addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
   
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
@@ -6262,9 +6265,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
-      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6294,9 +6294,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
-      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
@@ -7449,6 +7446,7 @@ CConfig::~CConfig(void) {
   if (HistoryOutput != NULL) delete [] HistoryOutput;
   if (VolumeOutput != NULL) delete [] VolumeOutput;
   if (Mesh_Box_Size != NULL) delete [] Mesh_Box_Size;
+  if (VolumeOutputFiles != NULL) delete [] VolumeOutputFiles;
 
 }
 

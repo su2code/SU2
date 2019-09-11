@@ -951,7 +951,7 @@ void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry, CSolver **
     if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
           config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
           config->GetKind_Solver() == DISC_ADJ_RANS )) {
-      meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+      meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
     }
   }
   

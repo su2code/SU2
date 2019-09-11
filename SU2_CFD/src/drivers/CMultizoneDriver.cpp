@@ -473,114 +473,18 @@ void CMultizoneDriver::Update() {
 }
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
-
-  unsigned short RestartFormat = SU2_RESTART_ASCII;
-  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  bool TimeDomain = driver_config->GetTime_Domain();
+  
+  
+  bool wrote_files = false;
   
   for (iZone = 0; iZone < nZone; iZone++){
-    
-    bool Wrt_Surf = config_container[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Vol  = config_container[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_CSV  = config_container[iZone]->GetWrt_Csv_Sol();
-    
-    if (config_container[iZone]->GetWrt_Binary_Restart()){
-      RestartFormat = SU2_RESTART_BINARY;
-    }
-    
-    bool output_files = false;
-    
-    /*--- Determine whether a solution needs to be written
-   after the current iteration ---*/
-    
-    if (
-        
-        /*--- General if statements to print output statements ---*/
-        
-        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
-        
-        /*--- Unsteady problems ---*/
-        
-        (((config_container[iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-          (config_container[iZone]->GetTime_Marching() == TIME_STEPPING)) &&
-         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
-         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                              ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
-         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[iZone]->GetTime_Domain()) &&
-         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        /*--- No inlet profile file found. Print template. ---*/
-        
-        (config_container[iZone]->GetWrt_InletFile())
-        
-        ) {
-      
-      output_files = true;
-      
-    }
-    
-//    /*--- Determine whether a solution doesn't need to be written
-//   after the current iteration ---*/
-    
-//    if (config_container[iZone]->GetFixed_CL_Mode()) {
-//      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-//      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
-//    }
-    
-    /*--- write the solution ---*/
-    
-    if (output_files) {
-      
-      /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-      StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-      StopTime = MPI_Wtime();
-#endif
-      UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-      StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-      StartTime = MPI_Wtime();
-#endif
-      
-      if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-      
-      /*--- Execute the routine for writing restart, volume solution,
-       surface solution, and surface comma-separated value files. ---*/
-      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
-        
-        config_container[iZone]->SetiInst(iInst);
-        
-        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
-        
-        /*--- Write restart files ---*/
-        
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat, TimeDomain);
-        
-        /*--- Write visualization files ---*/
-        
-        if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
-        
-        if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
-        if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV, TimeDomain);    
-        
-        output_container[iZone]->DeallocateData_Parallel();
-        
-      }
-      
-      if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-      
-    }
+    wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                                            config_container[iZone],
+                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc);
+  }
+  
+  if (wrote_files){
+
     /*--- Store output time and restart the timer for the compute phase. ---*/
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);

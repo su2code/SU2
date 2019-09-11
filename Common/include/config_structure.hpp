@@ -1067,6 +1067,10 @@ private:
   su2double *default_wrt_freq;
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
+  unsigned long VolumeWrtFreq;    /*!< \brief Writing frequency for solution files. */
+  unsigned short* VolumeOutputFiles; /*!< \brief File formats to output */
+  unsigned short nVolumeOutputFiles; /*!< \brief Number of File formats to output */
+  
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -9176,7 +9180,25 @@ public:
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
-
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq_Inner
+   * \return 
+   */
+  unsigned long GetVolume_Wrt_Freq();
+  
+  /*!
+   * \brief GetVolumeOutputFiles
+   * \return 
+   */
+  unsigned short* GetVolumeOutputFiles();
+  
+  /*!
+   * \brief GetnVolumeOutputFiles
+   * \return 
+   */
+  unsigned short GetnVolumeOutputFiles();
+  
   /*!
    * \brief Get the desired factorization frequency for PaStiX
    * \return Number of calls to 'Build' that trigger re-factorization.

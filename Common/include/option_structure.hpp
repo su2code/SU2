@@ -1538,26 +1538,32 @@ static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 enum ENUM_OUTPUT {
   TECPLOT = 1,  		     /*!< \brief Tecplot format for the solution output. */
   TECPLOT_BINARY = 2,    /*!< \brief Tecplot binary format for the solution output. */
-  FIELDVIEW = 3,  		   /*!< \brief FieldView format for the solution output. */
-  FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
+  SURFACE_TECPLOT = 3,  		     /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY = 4,    /*!< \brief Tecplot binary format for the solution output. */
   CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
-  CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
+  SURFACE_CSV = 6,			 /*!< \brief Comma-separated values format for the solution output. */  
   PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY = 8,    /*!< \brief Paraview binary format for the solution output. */
-  SU2_MESH      = 9,      /*!< \brief SU2 mesh format (only used internally). */
-  SU2_RESTART_BINARY = 10,/*!< \brief SU2 binary restart format (only used internally). */
-  SU2_RESTART_ASCII = 11  /*!< \brief SU2 ASCII restart format (only used internally). */
+  PARAVIEW_BINARY = 8,   /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW = 9,  		     /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_BINARY = 10,   /*!< \brief Paraview binary format for the solution output. */
+  MESH      = 11,      /*!< \brief SU2 mesh format. */
+  RESTART_BINARY = 12,/*!< \brief SU2 binary restart format. */
+  RESTART_ASCII = 13  /*!< \brief SU2 ASCII restart format. */
 };
 
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
-("TECPLOT", TECPLOT)
-("TECPLOT_BINARY", TECPLOT_BINARY)
-("FIELDVIEW", FIELDVIEW)
-("FIELDVIEW_BINARY", FIELDVIEW_BINARY)
+("TECPLOT_ASCII", TECPLOT)
+("TECPLOT", TECPLOT_BINARY)
+("SURFACE_TECPLOT_ASCII", SURFACE_TECPLOT)
+("SURFACE_TECPLOT", SURFACE_TECPLOT_BINARY)
 ("CSV", CSV)
-("CGNS", CGNS_SOL)
-("PARAVIEW", PARAVIEW)
-("PARAVIEW_BINARY", PARAVIEW_BINARY);
+("SURFACE_CSV", SURFACE_CSV)
+("PARAVIEW_ASCII", PARAVIEW)
+("PARAVIEW", PARAVIEW_BINARY)
+("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
+("SURFACE_PARAVIEW", SURFACE_PARAVIEW_BINARY)
+("RESTART_ASCII", RESTART_ASCII)
+("RESTART", RESTART_BINARY);
 
 /*!
  * \brief type of volume sensitivity file formats (inout to SU2_DOT)
