@@ -930,12 +930,15 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     global_lengthEnergetic[1] = local_lengthEnergetic[1];
     global_lengthEnergetic[2] = local_lengthEnergetic[2];
 #else
-    SU2_MPI::Allreduce(&local_lengthEnergetic, &global_lengthEnergetic, 3, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&local_lengthEnergetic[0], &global_lengthEnergetic[0], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&local_lengthEnergetic[1], &global_lengthEnergetic[1], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&local_lengthEnergetic[2], &global_lengthEnergetic[2], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
     
     if (rank == MASTER_NODE){
       cout << "Most Energetic wave number " << 2. * PI_NUMBER / global_lengthEnergetic[0] << endl;
       cout << "Nyquist wave number " << 2. * PI_NUMBER / global_lengthEnergetic[1] << endl;
+      cout << "Maximum Velocity at the interface " <<  global_lengthEnergetic[2] << endl;
     }
     solver[MESH_0][FLOW_SOL]->SetLengthEnergetic(global_lengthEnergetic[0],global_lengthEnergetic[1],global_lengthEnergetic[2]);
   }
