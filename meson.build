@@ -1,7 +1,7 @@
 project('SU2', 'c', 'cpp', 
         version: '6.2.0', 
-	license: 'LGPL2',
-	default_options: ['buildtype=release', 
+        license: 'LGPL2',
+        default_options: ['buildtype=release', 
                           'warning_level=0', 
                           'cpp_std=c++11'])
 
@@ -16,7 +16,7 @@ default_warning_flags = ['-Wno-unused-parameter',
                          '-Wno-empty-body',
                          '-Wno-format-security',
                          '-Wno-deprecated-declarations',
-			 '-Wno-non-virtual-dtor']
+                         '-Wno-non-virtual-dtor']
 
 # external dependencies 
 mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 
@@ -28,7 +28,7 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_for_args = '-DCODI_FORWARD_TYPE'
 endif
 
-# Add cgns library
+# add cgns library
 if get_option('enable-cgns')
   subdir('externals/cgns')
   su2_deps     += cgns_dep
@@ -64,6 +64,42 @@ endif
 
 if get_option('enable-tecio')
   subdir('externals/tecio')
+endif
+
+# PaStiX
+if get_option('enable-pastix')
+  assert(mpi_dep[0].found() and mpi_dep[1].found(),
+         'PaStiX support requires MPI')
+  assert(get_option('enable-mkl') or get_option('enable-openblas'),
+         'PaStiX support requires either mkl or openblas')
+
+  su2_cpp_args += '-DHAVE_PASTIX'
+
+  pastix_root = get_option('pastix_root')+'/install'
+  scotch_root = get_option('scotch_root')+'/lib'
+  pastix_dep  = declare_dependency(include_directories: pastix_root,
+                                   link_args: [ '-L../'+pastix_root, '-L../'+scotch_root,
+                                   '-lpastix', '-lscotch', '-lptscotch', '-lptscotcherr',
+                                   '-lm', '-lrt', '-lpthread'])
+  su2_deps += pastix_dep
+endif
+
+# blas-type dependencies
+if get_option('enable-mkl')
+
+  su2_cpp_args += '-DHAVE_MKL'
+  mkl_root = get_option('mkl_root')
+  mkl_dep = declare_dependency(include_directories: mkl_root+'/include', compile_args: '-m64',
+    link_args: ['-L'+mkl_root+'/lib/intel64','-lmkl_intel_lp64','-lmkl_sequential','-lmkl_core','-lpthread','-lm','-ldl'])
+  su2_deps += mkl_dep
+
+elif get_option('enable-openblas')
+
+  su2_cpp_args += '-DHAVE_BLAS'
+  su2_cpp_args += '-DHAVE_LAPACK'
+  blas_dep = dependency(get_option('blas-name'))
+  su2_deps += blas_dep
+
 endif
 
 # compile common library

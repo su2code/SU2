@@ -57,6 +57,7 @@
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
 #include "variables/CVariable.hpp"
+#include "variables/CMeshElement.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
@@ -135,6 +136,8 @@ protected:
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
+  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   unsigned long nMarker_InletFile;       /*!< \brief Auxiliary structure for holding the number of markers in an inlet profile file. */
   vector<string> Marker_Tags_InletFile;       /*!< \brief Auxiliary structure for holding the string names of the markers in an inlet profile file. */
   unsigned long *nRow_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in an inlet profile file. */
@@ -145,7 +148,12 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
-  
+
+  bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
+
+  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
+
 public:
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -172,7 +180,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(void);
+  CSolver(bool mesh_deform_mode = false);
   
   /*!
    * \brief Destructor of the class.
@@ -246,6 +254,11 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Move the mesh in time
+   */
+  virtual void SetDualTime_Mesh(void);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -554,8 +567,9 @@ public:
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  virtual void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -768,98 +782,91 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  virtual void BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                          unsigned short val_marker);
+  virtual void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  virtual void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                               unsigned short val_marker);
+  virtual void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  virtual void BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                          unsigned short val_marker);
+  virtual void BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  
-  virtual void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                      unsigned short val_marker);
+  virtual void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                              unsigned short val_marker);
+  virtual void BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  virtual void BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                           unsigned short val_marker);
+  virtual void BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  virtual void BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                            unsigned short val_marker);
+  virtual void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                 unsigned short val_marker);
+  virtual void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+
+  virtual void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -3699,11 +3706,12 @@ public:
   virtual void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config);
   
   /*!
-   * \brief  A virtual member.
+   * \brief A virtual member. Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
+  virtual void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
@@ -3750,50 +3758,62 @@ public:
   virtual su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
 
   /*!
-   * \brief A virtual member.
+   * \brief A virtual member, get the value of the reference coordinate to set on the element structure.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] indexNode - Index of the node.
+   * \param[in] iDim - Dimension required.
    */
-  virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-  
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  
+  virtual void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -3803,17 +3823,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   
-  virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  
-  virtual void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -3821,7 +3831,7 @@ public:
    * \param[in] solver_container - Container vector with the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  virtual void Solve_System(CGeometry *geometry, CConfig *config);
   
   
   /*!
@@ -4307,6 +4317,22 @@ public:
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  virtual void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -4324,6 +4350,88 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Initialize the vertex traction containers at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+
+  inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
+
+    unsigned long iVertex;
+    unsigned short iMarker;
+
+    VertexTraction = new su2double** [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
+      }
+    }
+  }
+
+  /*!
+   * \brief Initialize the adjoint vertex traction containers at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+
+  inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
+
+    unsigned long iVertex;
+    unsigned short iMarker;
+
+    VertexTractionAdjoint = new su2double** [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
+      }
+    }
+  }
+
+  /*!
+   * \brief Compute the tractions at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   */
+  inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
+                                      unsigned short iDim){ return VertexTraction[iMarker][iVertex][iDim]; }
+
+  /*!
+   * \brief Register the vertex tractions as output.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the adjoints of the vertex tractions.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   * \param[in] val_adjoint - Value received for the adjoint (from another solver)
+   */
+  inline void StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                          unsigned short iDim, su2double val_adjoint){
+    VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
+  }
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions to the AD structure.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
   
 protected:
   /*!
@@ -4666,8 +4774,6 @@ protected:
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -6823,6 +6929,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
 };
 
 /*!
@@ -6992,8 +7099,6 @@ protected:
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
-  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -8214,6 +8319,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
 };
 
 /*!
@@ -9173,8 +9279,6 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
-  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
-  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
   
   /* Sliding meshes variables */
 
@@ -10120,7 +10224,6 @@ protected:
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
   bool space_centered;  /*!< \brief True if space centered scheeme used. */
   su2double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
@@ -11426,11 +11529,7 @@ private:
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
   /*!< We maintain the name to avoid defining a new function... */
   
-  unsigned long nElement;
-  unsigned short nMarker;
-  int nFEA_Terms;
-  
-  bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
+  int nFEA_Terms; 
   bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
   su2double *GradN_X,
@@ -11439,8 +11538,7 @@ private:
   su2double **Jacobian_c_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
   su2double **Jacobian_s_ij;      /*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
   su2double **MassMatrix_ij;      /*!< \brief Submatrix to store the term ij of the mass matrix. */
-  su2double *Res_Stress_i;      /*!< \brief Submatrix to store the nodal stress contribution of node i. */
-  
+
   su2double *Res_Ext_Surf;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
   su2double *Res_Time_Cont;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
   su2double *Res_FSI_Cont;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
@@ -11457,9 +11555,6 @@ private:
   
   su2double *normalVertex;      /*!< \brief Auxiliary vector to store the normals to a certain vertex */
   su2double **stressTensor;      /*!< \brief Auxiliary matrix to rebuild the stress tensor and compute reactions */
-  
-  su2double **mZeros_Aux;      /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
-  su2double **mId_Aux;        /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
   
   unsigned long *elProperties;  /*!< \brief Auxiliary vector to read the element properties from file */
 
@@ -11492,6 +11587,20 @@ private:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
+protected:
+
+  bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
+
+  unsigned long nElement;         /*!< \brief Number of elements. */
+  unsigned long IterLinSol;       /*!< \brief Number of iterations of the linear solver. */
+
+  su2double **mZeros_Aux;         /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
+  su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+
+  su2double *Res_Stress_i;        /*!< \brief Submatrix to store the nodal stress contribution of node i. */
+
+  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
+
 public:
   
   CSysVector<su2double> TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
@@ -11504,13 +11613,13 @@ public:
   CSysMatrix<su2double> MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
 
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
-  CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
+  CProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
 
   
   /*!
    * \brief Constructor of the class.
    */
-  CFEASolver(void);
+  CFEASolver(bool mesh_deform_mode = false);
   
   /*!
    * \overload
@@ -11571,6 +11680,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Get the value of the reference coordinate to set on the element structure.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] indexNode - Index of the node.
+   * \param[in] iDim - Dimension required.
+   */
+  su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
   
   /*!
    * \brief Compute the stiffness matrix of the problem.
@@ -11579,7 +11696,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time (more efficient if full Newton Raphson).
@@ -11588,34 +11705,31 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the mass matrix of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the mass residual of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Compute the nodal stress terms and add them to the residual.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the stress at the nodes for output purposes.
@@ -11625,7 +11739,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   
-  void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the dead loads.
@@ -11634,7 +11748,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
@@ -11654,90 +11768,85 @@ public:
   /*!
    * \brief Clamped boundary conditions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short val_marker);
+  void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  void BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-      unsigned short val_marker);
+  void BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Impose a displacement (constraint) boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                              unsigned short val_marker);
+  void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   
   /*!
    * \brief Impose a load boundary condition normal to the boundary.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                      unsigned short val_marker);
+  void BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Impose a load boundary condition in cartesian coordinates.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                   unsigned short val_marker);
+  void BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Impose a damping load.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                 unsigned short val_marker);
+  void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Deformable boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+
+  void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
@@ -11826,7 +11935,7 @@ public:
    * \param[in] solver_container - Container vector with the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Solve_System(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Get the residual for FEM structural analysis.
@@ -12371,7 +12480,6 @@ private:
   su2double Total_Sens_ModVel;    /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
   
@@ -12493,9 +12601,10 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   /*!
    * \brief Set the objective function.
@@ -12651,7 +12760,6 @@ private:
 
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
 
   /*!< \brief Definition of element based sensitivities. */
@@ -12776,9 +12884,10 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   /*!
    * \brief Set the objective function.
@@ -12961,13 +13070,11 @@ public:
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-      unsigned short val_marker);
+  void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Load a solution from a restart file.
@@ -12990,8 +13097,6 @@ public:
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
-
-  unsigned long nMarker; /*!< \brief Total number of markers using the grid information. */
 
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */

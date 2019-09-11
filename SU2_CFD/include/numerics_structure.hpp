@@ -1338,6 +1338,12 @@ public:
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set the element-based local properties in mesh problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
+
+  /*!
    * \brief A virtual member
    * \param[in] config - Config structure
    */
@@ -1537,7 +1543,7 @@ public:
  */
 class CUpwRoeBase_Flow : public CNumerics {
 protected:
-  bool implicit, grid_movement, roe_low_dissipation;
+  bool implicit, dynamic_grid, roe_low_dissipation;
   su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
   su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
   su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
@@ -1623,7 +1629,7 @@ public:
 class CUpwGeneralRoe_Flow : public CNumerics {
 private:
 
-  bool implicit, grid_movement;
+  bool implicit, dynamic_grid;
 
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
@@ -1791,7 +1797,7 @@ public:
  */
 class CUpwTurkel_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement;
+  bool implicit, dynamic_grid;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -1846,7 +1852,7 @@ public:
 class CUpwFDSInc_Flow : public CNumerics {
 private:
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
+  dynamic_grid, /*!< \brief Modification for grid movement. */
   variable_density, /*!< \brief Variable density incompressible flows. */
   energy; /*!< \brief computation with the energy equation. */
   su2double *Diff_V;
@@ -2189,7 +2195,7 @@ public:
  */
 class CUpwHLLC_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement;
+  bool implicit, dynamic_grid;
   unsigned short iDim, jDim, iVar, jVar;
   
   su2double *IntermediateState;
@@ -2240,7 +2246,7 @@ public:
  */
 class CUpwGeneralHLLC_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement;
+  bool implicit, dynamic_grid;
   unsigned short iDim, jDim, iVar, jVar;
   
   su2double *IntermediateState;
@@ -2300,7 +2306,7 @@ class CUpwLin_TransLM : public CNumerics {
 private:
   su2double *Velocity_i;
   su2double *Velocity_j;
-  bool implicit, grid_movement, incompressible;
+  bool implicit, incompressible;
   su2double Density_i, Density_j, q_ij, a0, a1;
   unsigned short iDim;
   
@@ -2401,7 +2407,7 @@ private:
 protected:
   su2double *Velocity_i, *Velocity_j; /*!< \brief Velocity, minus any grid movement. */
   su2double Density_i, Density_j;
-  bool implicit, grid_movement, incompressible;
+  bool implicit, dynamic_grid, incompressible;
   su2double q_ij, /*!< \brief Projected velocity at the face. */
             a0,   /*!< \brief The maximum of the face-normal velocity and 0 */
             a1;   /*!< \brief The minimum of the face-normal velocity and 0 */
@@ -2521,7 +2527,7 @@ public:
 class CUpwSca_TransLM : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
-  bool implicit, grid_movement;
+  bool implicit;
   su2double q_ij, a0, a1;
   unsigned short iDim;
   
@@ -2598,7 +2604,7 @@ public:
 class CUpwSca_Heat : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
-  bool implicit, grid_movement;
+  bool implicit, dynamic_grid;
   su2double q_ij, a0, a1;
   unsigned short iDim;
 
@@ -2637,7 +2643,7 @@ class CCentBase_Flow : public CNumerics {
 
 protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  bool grid_movement;              /*!< \brief Consider grid movement. */
+  bool dynamic_grid;              /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
   su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
@@ -2857,7 +2863,7 @@ private:
   Epsilon_2, Epsilon_4; /*!< \brief Artificial dissipation values. */
   su2double **Precon;
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
+  dynamic_grid, /*!< \brief Modification for grid movement. */
   variable_density, /*!< \brief Variable density incompressible flows. */
   energy; /*!< \brief computation with the energy equation. */
 
@@ -2952,7 +2958,7 @@ private:
   Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
   cte_0, cte_1; /*!< \brief Artificial dissipation values. */
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
+  dynamic_grid; /*!< \brief Modification for grid movement. */
 
 
 public:
@@ -3005,7 +3011,7 @@ private:
   Epsilon_0; /*!< \brief Artificial dissipation values. */
   su2double **Precon;
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
+  dynamic_grid, /*!< \brief Modification for grid movement. */
   variable_density, /*!< \brief Variable density incompressible flows. */
   energy; /*!< \brief computation with the energy equation. */
   
@@ -4154,6 +4160,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEAElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4175,7 +4186,7 @@ public:
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
-  void SetElement_Properties(CElement *element_container, CConfig *config);
+  virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   void ReadDV(CConfig *config);
 
@@ -4221,6 +4232,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEALinearElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -5245,6 +5261,42 @@ public:
    */
   void ComputeResidual(su2double *val_residual, CConfig *config);
   
+};
+
+/*!
+ * \class CSourceIncRotatingFrame_Flow
+ * \brief Class for a rotating frame source term.
+ * \ingroup SourceDiscr
+ */
+class CSourceIncRotatingFrame_Flow : public CNumerics {
+
+private:
+  su2double Omega[3];  /*!< \brief Angular velocity */
+  bool implicit; /*!< \brief Implicit calculation. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceIncRotatingFrame_Flow(void);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
 };
 
 /*!
