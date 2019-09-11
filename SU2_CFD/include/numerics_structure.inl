@@ -79,6 +79,8 @@ inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned 
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
+
 inline void CNumerics::ReadDV(CConfig *config){ }
 
 inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }

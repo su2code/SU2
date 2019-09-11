@@ -39,7 +39,7 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
-#include <CLI11.hpp>
+#include "CLI11.hpp"
 
 #include <ctime>
 
@@ -59,6 +59,6 @@
 #include "../../Common/include/interpolation_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
-#include "../include/transfer_structure.hpp"
+#include "../include/interfaces/CInterface.hpp"
 
 using namespace std;
