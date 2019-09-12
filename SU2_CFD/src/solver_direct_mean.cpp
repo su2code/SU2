@@ -116,6 +116,9 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Cauchy_Serie = NULL;
   
   AoA_FD_Change = false;
+  Start_AoA_FD = false;
+  End_AoA_FD = false;
+  Iter_Update_AoA = 0;
 
   FluidModel   = NULL;
   
@@ -305,6 +308,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Cauchy_Serie = NULL;
   
   AoA_FD_Change = false;
+  Start_AoA_FD = false;
+  End_AoA_FD = false;
+  Iter_Update_AoA = 0;
 
   FluidModel = NULL;
   
@@ -7306,39 +7312,40 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   unsigned long Update_Alpha = config->GetUpdate_Alpha();
   
   unsigned long ExtIter       = config->GetExtIter();
-  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0) && !AoA_FD_Change);
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0) && !Start_AoA_FD);
   su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
   su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   bool Update_AoA             = false;
   bool CL_Converged           = false;
-  
-  if (ExtIter == 0) AoA_Counter = 0;
+  write_heads = config->GetUpdate_Alpha();
+  //if (ExtIter == 0) AoA_Counter = 0;
   
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
-  if ((iMesh == MESH_0) && Output) {
+  //if ((iMesh == MESH_0) && Output) {
     
     /*--- Initialize the update flag to false ---*/
     
-    Update_AoA = false;
+  //  Update_AoA = false;
 
     /*--- Reevaluate Angle of Attack at a fixed number of iterations ---*/
     
-    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
-      AoA_Counter++;
-      if ((AoA_Counter <= Update_Alpha) && !AoA_FD_Change) Update_AoA = true;
-      else Update_AoA = false;
-    }
+  //  if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+  //    AoA_Counter++;
+  //    if ((AoA_Counter <= Update_Alpha) && !Start_AoA_FD) Update_AoA = true;
+  //    else Update_AoA = false;
+  //  }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
-    config->SetUpdate_AoA(Update_AoA);
+  //  config->SetUpdate_AoA(Update_AoA);
     
-  }
+  //}
   
-  else {
+  //else {
     Update_AoA = config->GetUpdate_AoA();
-  }
+    //if (rank == MASTER_NODE) cout << "In SetFarfield_AoA, Update_AoA = " << Update_AoA << endl;
+  //}
   
   if (Update_AoA && Output) {
     
@@ -7438,11 +7445,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 	unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
 
-  if ((config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) && Output) {
-
+  //if ((config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) && Output) {
+  if (Start_AoA_FD && Output && ((ExtIter - 1) == Iter_Update_AoA)) {
     AoA_old = config->GetAoA();
 
-    if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
+    //if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
       Wrt_Con_Freq = SU2_TYPE::Int(su2double(config->GetIter_dCL_dAlpha())/10.0);
       config->SetWrt_Con_Freq(Wrt_Con_Freq);
       Total_CD_Prev = Total_CD;
@@ -7451,16 +7458,17 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Total_CMy_Prev = Total_CMy;
       Total_CMz_Prev = Total_CMz;
       AoA_inc = 0.001;
-      AoA_FD_Change = true;
-    }
+      Start_AoA_FD = true;
+    //}
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
       
-    	if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
+    	//if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
        cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+       cout << " End of Fixed CL Mode. " << endl;
        cout << " Change AoA by +0.001 deg to evaluate gradient." << endl;
        cout << "-------------------------------------------------------------------------" << endl << endl;
-    	}
+    	//}
 
     }
 
@@ -7512,7 +7520,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
   
-  if (AoA_FD_Change && (config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  //if (Start_AoA_FD && (config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  if (Start_AoA_FD && (ExtIter-Iter_Update_AoA == Iter_dCL_dAlpha) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
     /*--- Update angle of attack ---*/
 
@@ -7538,7 +7547,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   		config->SetdCL_dAlpha(dCL_dAlpha_);
 
     if (rank == MASTER_NODE) {
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl << endl;
       cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
       cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
       if (nDim == 3 ) {
@@ -7551,6 +7560,47 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
   }
 
+}
+
+bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
+  su2double Target_CL = config->GetTarget_CL();
+  unsigned long curr_iter = config->GetExtIter();
+  bool Update_AoA = false;
+  bool fixed_cl_conv = false;
+
+  /* --- Solution allowed to end only after finite differencing has been done --- */
+  if (Start_AoA_FD && (curr_iter - Iter_Update_AoA) == config->GetIter_dCL_dAlpha()){
+    End_AoA_FD = true;
+    fixed_cl_conv = true;
+  }
+  
+  if (convergence && !Start_AoA_FD){
+
+    /* --- C_L and solution are converged --- */
+    if (fabs(Total_CL-Target_CL) < config->GetCauchy_Eps()){
+      Iter_Update_AoA = curr_iter;
+      Start_AoA_FD = true;
+      fixed_cl_conv = false;      
+    }
+
+    /* --- C_L is not converged to target value and some iterations 
+          have passed since last update --- */
+    else if ((curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter()){
+      Iter_Update_AoA = curr_iter;
+      Update_AoA = true;
+      fixed_cl_conv = false;
+    }
+  }
+
+  if ((curr_iter - Iter_Update_AoA) == config->GetUpdate_AoA_Iter_Limit() && !Start_AoA_FD){
+    Update_AoA = true;
+    Iter_Update_AoA = curr_iter;
+  }
+
+  config->SetUpdate_AoA(Update_AoA);
+
+  return fixed_cl_conv;
+  
 }
 
 void CEulerSolver::SetInletAtVertex(su2double *val_inlet,

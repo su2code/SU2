@@ -471,9 +471,12 @@ void CIteration::Output(COutput *output,
 
       /*--- Fixed CL problem ---*/
 
-      ((config[ZONE_0]->GetFixed_CL_Mode()) &&
-       (config[ZONE_0]->GetnExtIter()-config[ZONE_0]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
+      //((config[ZONE_0]->GetFixed_CL_Mode()) &&
+      // (config[ZONE_0]->GetnExtIter()-config[ZONE_0]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
 
+      ((config[ZONE_0]->GetFixed_CL_Mode()) &&
+       (solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD()) && 
+       Iter == solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) ||
       /*--- Steady problems ---*/
 
       ((Iter % config[ZONE_0]->GetWrt_Sol_Freq() == 0) && (Iter != 0) &&
@@ -491,12 +494,22 @@ void CIteration::Output(COutput *output,
 
   }
 
+  // if (rank == MASTER_NODE) {
+  //   cout << "AoA_FD_Change= " << solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetAoA_FD_Change() << endl;
+  //   cout << "Current Iter= " << Iter << endl;
+  //   cout << "Iter_Update_AoA= "<< solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA() << endl;
+  // }
+
   /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
 
   if (config[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config[ZONE_0]->GetnExtIter()-config[ZONE_0]->GetIter_dCL_dAlpha() - 1 < Iter) output_files = false;
-    if (config[ZONE_0]->GetnExtIter() - 1 == Iter) output_files = true;
+    if (solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD() && 
+      Iter != solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) output_files = false;
+    //if (solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetEnd_AoA_FD()) output_files = true;
+      //&&
+        //(Iter - solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA() == config[val_iZone]->GetIter_dCL_dAlpha())) output_files = true;
+    //if (solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetAoA_FD_Change()config[ZONE_0]->GetnExtIter() - 1 == Iter) output_files = true;
   }
 
   /*--- write the solution ---*/
@@ -661,6 +674,13 @@ void CFluidIteration::Iterate(COutput *output,
         SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
     }
     
+  }
+
+  /* --- Checking convergence of Fixed CL mode to target CL  --*/
+
+  if (config[val_iZone]->GetFixed_CL_Mode()){
+    bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], integration[val_iZone][INST_0][FLOW_SOL]->GetConvergence());
+    integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(fixed_cl_convergence);
   }
   
   

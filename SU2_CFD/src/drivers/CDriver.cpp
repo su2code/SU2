@@ -3991,7 +3991,8 @@ void CDriver::Output(unsigned long ExtIter) {
       /*--- Fixed CL problem ---*/
       
       ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
-       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == ExtIter)) ||
+       (solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetStart_AoA_FD()) && 
+       ExtIter == solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) ||
       
       /*--- Steady problems ---*/
       
@@ -4025,13 +4026,20 @@ void CDriver::Output(unsigned long ExtIter) {
     output_files = true;
     
   }
+
+  // if (rank == MASTER_NODE) {
+  //   cout << "AoA_FD_Change= " << solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetAoA_FD_Change() << endl;
+  //   cout << "Current Iter= " << ExtIter << endl;
+  //   cout << "Iter_Update_AoA= "<< solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetIter_Update_AoA() << endl;
+  // }
   
   /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
   
   if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
+    if (solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetStart_AoA_FD() && ExtIter != solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) output_files = false;
+    if (solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetEnd_AoA_FD()) output_files = true;
+        //(ExtIter - solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetIter_Update_AoA() == config_container[ZONE_0]->GetIter_dCL_dAlpha())) output_files = true;
   }
   
   /*--- write the solution ---*/

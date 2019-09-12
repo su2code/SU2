@@ -2021,6 +2021,33 @@ public:
    */
   virtual void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] convergence - boolean for whether the solution is converged
+   * \return boolean for whether the Fixed C_L mode is converged to target C_L
+   */
+  virtual bool FixedCL_Convergence(CConfig *config, bool convergence);
+
+  /*!
+   * \brief A virtual member.
+   * \return boolean for whether the Fixed C_L mode is currently in finite-differencing mode
+   */
+  virtual bool GetStart_AoA_FD(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return boolean for whether the Fixed C_L mode is currently in finite-differencing mode
+   */
+  virtual bool GetEnd_AoA_FD(void);
+
+
+  /*!
+   * \brief A virtual member.
+   * \return value for the last iteration that the AoA was updated
+   */
+  virtual unsigned long GetIter_Update_AoA();
   
   /*!
    * \brief A virtual member.
@@ -4796,7 +4823,10 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
-  bool AoA_FD_Change;
+  bool AoA_FD_Change; /*!< \brief Boolean for Finite Differencing for FixedCL mode */
+  bool Start_AoA_FD;
+  bool End_AoA_FD;
+  unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   unsigned short nSpanMax; /*!< \brief Max number of maximum span-wise sections for all zones */
@@ -5410,6 +5440,32 @@ public:
    */
   void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                        CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Check for convergence of the Fixed CL mode to the target CL
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] convergence - boolean for whether the solution is converged
+   * \return boolean for whether the Fixed CL mode is converged to target CL
+   */
+  bool FixedCL_Convergence(CConfig *config, bool convergence);
+
+  /*!
+   * \brief Checking whether fixed CL mode in finite-differencing mode 
+   * \return boolean for whether the Fixed CL mode is currently in finite-differencing mode
+   */
+  bool GetStart_AoA_FD(void);
+
+  /*!
+   * \brief Checking whether fixed CL mode in finite-differencing mode 
+   * \return boolean for whether the Fixed CL mode is currently in finite-differencing mode
+   */
+  bool GetEnd_AoA_FD(void);
+
+    /*!
+   * \brief Get the iteration of the last AoA update (Fixed CL Mode)
+   * \return value for the last iteration that the AoA was updated
+   */
+  unsigned long GetIter_Update_AoA();
   
   /*!
    * \brief Update the solution using the explicit Euler scheme.
