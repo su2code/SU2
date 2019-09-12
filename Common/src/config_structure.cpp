@@ -2562,20 +2562,6 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
-          if (!option_name.compare("AD_COEFF_FLOW")) newString.append("AD_COEFF_FLOW= (1st, 2nd, 4th) is now JST_SENSOR_COEFF= (2nd, 4th).\n");
-          if (!option_name.compare("AD_COEFF_ADJFLOW")) newString.append("AD_COEFF_ADJFLOW= (1st, 2nd, 4th) is now ADJ_JST_SENSOR_COEFF= (2nd, 4th).\n");
-          if (!option_name.compare("SPATIAL_ORDER_FLOW")) newString.append("SPATIAL_ORDER_FLOW is now the boolean MUSCL_FLOW and the appropriate SLOPE_LIMITER_FLOW.\n");
-          if (!option_name.compare("SPATIAL_ORDER_ADJFLOW")) newString.append("SPATIAL_ORDER_ADJFLOW is now the boolean MUSCL_ADJFLOW and the appropriate SLOPE_LIMITER_ADJFLOW.\n");
-          if (!option_name.compare("SPATIAL_ORDER_TURB")) newString.append("SPATIAL_ORDER_TURB is now the boolean MUSCL_TURB and the appropriate SLOPE_LIMITER_TURB.\n");
-          if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
-          if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
-          if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
-          if (!option_name.compare("DEFORM_TOL_FACTOR")) newString.append("DEFORM_TOL_FACTOR is no longer used.\n Set DEFORM_LINEAR_SOLVER_ERROR to define the minimum residual for grid deformation.\n");
-          if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
-          if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
-          if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
-          if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
-          if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
           if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
                                                                  "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
           if (!option_name.compare("UNST_TIMESTEP")) newString.append("UNST_TIMESTEP is now TIME_STEP.\n");
@@ -2890,6 +2876,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (nZone > 1){
     Multizone_Problem = YES;
+  }
+  
+  /*--- Set the default output files ---*/
+  if (nVolumeOutputFiles == 0){
+    nVolumeOutputFiles = 3;
+    VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
+    VolumeOutputFiles[0] = RESTART_BINARY;
+    VolumeOutputFiles[1] = PARAVIEW_BINARY;
+    VolumeOutputFiles[2] = SURFACE_PARAVIEW_BINARY;
+  }
+  
+  if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == INC_NAVIER_STOKES && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == RANS && Kind_Turb_Model == NONE){
+    SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == INC_RANS && Kind_Turb_Model == NONE){
+    SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
 #ifndef HAVE_TECIO
@@ -3302,6 +3310,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
+    /*--- Set the default write frequency to 1 if unsteady ---*/
+    if (!OptionIsSet("OUTPUT_WRT_FREQ")){
+      VolumeWrtFreq = 1;
+    }
   }
   
   if (!Multizone_Problem){
@@ -3310,14 +3322,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (!Time_Domain){
       /*--- If not running multizone or unsteady, INNER_ITER and ITER are interchangeable,
        * but precedence will be given to INNER_ITER if both options are present. ---*/
-      if (all_options.find("INNER_ITER") != all_options.end()){
+      if (!OptionIsSet("INNER_ITER")){
         nInnerIter = nIter;
       }
     }
   }
   
   
-  if ((Multizone_Problem || Time_Domain) && all_options.find("ITER") == all_options.end()){
+  if ((Multizone_Problem || Time_Domain) && OptionIsSet("ITER")){
     SU2_MPI::Error("ITER must not be used when running multizone and/or unsteady problems.\n"
                    "Use TIME_ITER, OUTER_ITER or INNER_ITER to specify number of time iterations,\n"
                    "outer iterations or inner iterations, respectively.", CURRENT_FUNCTION);

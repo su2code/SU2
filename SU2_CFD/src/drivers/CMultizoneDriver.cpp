@@ -185,7 +185,7 @@ void CMultizoneDriver::StartSolver() {
 
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(TimeIter);
+    StopCalc = Monitor(TimeIter);
 
     /*--- Output the solution in files. ---*/
 
@@ -319,9 +319,6 @@ void CMultizoneDriver::Run_GaussSeidel() {
       Corrector(iZone);
 
     }
-
-    /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
-    Monitor(iOuter_Iter);
 
     Convergence = OuterConvergence(iOuter_Iter);
 
@@ -628,4 +625,58 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
   }
 
   return UpdateMesh;
+}
+
+bool CMultizoneDriver::Monitor(unsigned long TimeIter){
+  
+  unsigned long nOuterIter, OuterIter, nTimeIter;
+  su2double MaxTime, CurTime;
+  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
+  
+  OuterIter  = driver_config->GetOuterIter();
+  nOuterIter = driver_config->GetnOuter_Iter();
+  nTimeIter  = driver_config->GetnTime_Iter();
+  MaxTime    = driver_config->GetMax_Time();
+  CurTime    = driver_output->GetHistoryFieldValue("CUR_TIME");
+  
+  TimeDomain = driver_config->GetTime_Domain();
+  
+  
+  /*--- Check whether the inner solver has converged --- */
+
+  if (TimeDomain == NO){
+    
+    InnerConvergence     = driver_output->GetConvergence();    
+    MaxIterationsReached = OuterIter+1 >= nOuterIter;
+        
+    if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << nOuterIter << " )." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+    
+    StopCalc = MaxIterationsReached || InnerConvergence;
+  }
+
+
+  if (TimeDomain == YES) {
+    
+    /*--- Check whether the outer time integration has reached the final time ---*/
+  
+    FinalTimeReached     = CurTime >= MaxTime;
+    MaxIterationsReached = TimeIter+1 >= nTimeIter;    
+    
+    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;      
+    }
+    
+    StopCalc = FinalTimeReached || MaxIterationsReached;
+  }
+
+  return StopCalc;
+  
 }
