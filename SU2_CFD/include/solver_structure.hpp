@@ -4823,9 +4823,8 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
-  bool AoA_FD_Change; /*!< \brief Boolean for Finite Differencing for FixedCL mode */
-  bool Start_AoA_FD;
-  bool End_AoA_FD;
+  bool Start_AoA_FD;  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
+  bool End_AoA_FD;    /*!< \brief Boolean for end of finite differencing for FixedCL mode */
   unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
