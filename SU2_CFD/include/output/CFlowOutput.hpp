@@ -51,7 +51,8 @@ public:
    * \brief Destructor of the class.
    */
   ~CFlowOutput(void) override;
-  
+
+protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.

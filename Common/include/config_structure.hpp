@@ -9210,6 +9210,12 @@ public:
    */
   unsigned short GetPastixFillLvl(void);
 
+  /*!
+   * \brief Check if an option is present in the config file
+   * \param[in] - Name of the option
+   * \return <TRUE> if option was set in the config file
+   */
+  bool OptionIsSet(string option);
 };
 
 #include "config_structure.inl"
