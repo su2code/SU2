@@ -382,9 +382,12 @@ void COutput::DeallocateData_Parallel(){
 }
 
 
-void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&filewriter, unsigned short format){
+void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
+
+  CFileWriter *fileWriter = NULL;
   
-  string fileName;
+  unsigned short lastindex = fileName.find_last_of(".");
+  fileName = fileName.substr(0, lastindex);
   
   /*--- Write files depending on the format --- */
   
@@ -392,7 +395,8 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
     
     case SURFACE_CSV:
       
-      fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
       
       surfaceDataSorter->SortConnectivity(config, geometry, true);
       
@@ -402,37 +406,40 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing CSV file." << endl;     
       }
       
-      filewriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
       
       break;
       
     case RESTART_ASCII: case CSV:
-      
-      fileName = config->GetFilename(restartFilename, "", curTimeIter);
+     
+      if (fileName == "")
+        fileName = config->GetFilename(restartFilename, "", curTimeIter);
       
       if (rank == MASTER_NODE) {
         cout << "Writing SU2 CSV restart file." << endl;     
       }
       
-      filewriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
       
       break;
       
     case RESTART_BINARY:
       
-      fileName = config->GetFilename(restartFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(restartFilename, "", curTimeIter);
       
       if (rank == MASTER_NODE) {
         cout << "Writing SU2 binary restart file." << endl;   
       }
       
-      filewriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
       
       break;
       
     case MESH:
       
-      fileName = volumeFilename;
+      if (fileName == "")
+        fileName = volumeFilename;
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -444,7 +451,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing SU2 mesh file." << endl;
       }
       
-      filewriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
                                           config->GetiZone(), config->GetnZone());
       
       
@@ -452,7 +459,8 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
       
     case TECPLOT_BINARY:
       
-      fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -464,14 +472,15 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Tecplot binary solution file." << endl;
       }
       
-      filewriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
       
       break;
       
     case TECPLOT:
       
-      fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -483,14 +492,15 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Tecplot ASCII solution file." << endl;
       }
       
-      filewriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
       
       break;
       
     case PARAVIEW_BINARY:
       
-      fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -501,13 +511,14 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Paraview binary solution file." << endl;
       }
       
-      filewriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
       
       break;
       
     case PARAVIEW:
       
-      fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -518,13 +529,14 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Paraview ASCII volume solution file." << endl;      
       }
       
-      filewriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
       
       break;
       
     case SURFACE_PARAVIEW:
       
-      fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -536,13 +548,14 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Paraview ASCII surface file." << endl;      
       }
       
-      filewriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
       
       break;
       
     case SURFACE_PARAVIEW_BINARY:
       
-      fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -554,13 +567,14 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Paraview Binary surface file." << endl;      
       }
       
-      filewriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
       
       break;
       
     case SURFACE_TECPLOT:
       
-      fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -572,14 +586,15 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Tecplot ASCII surface file." << endl;      
       }
       
-      filewriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
       
       break;
       
     case SURFACE_TECPLOT_BINARY:
       
-      fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
       
       /*--- Load and sort the output data and connectivity. ---*/
       
@@ -591,15 +606,25 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CFileWriter *&
         cout << "Writing Tecplot ASCII surface file." << endl;      
       }
       
-      filewriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
       
       break;
       
     default:
-      filewriter = NULL;
+      fileWriter = NULL;
       break;
   } 
+  
+  /*--- Write data to file ---*/
+  
+  if (fileWriter != NULL){
+    
+    fileWriter->Write_Data();
+    
+    delete fileWriter;
+   
+  }
 }
 
 
@@ -614,23 +639,13 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
     unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
-    
-    CFileWriter* fileWriter = NULL;
-    
+        
     /*--- Loop through all requested output files ---*/
     
     for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
       
-      SetFileWriter(config, geometry, fileWriter, VolumeFiles[iFile]);
-      
-      if (fileWriter != NULL){
-        
-        fileWriter->Write_Data(); 
-        
-        delete fileWriter;
-        
-        fileWriter = NULL;
-      }
+      WriteToFile(config, geometry, VolumeFiles[iFile]);
+
     }
     
     /*--- Write any additonal files ----*/
@@ -750,8 +765,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 void COutput::SetHistoryFile_Header(CConfig *config) { 
 
   
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY)) {
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "TITLE = \"SU2 Simulation\"" << endl;
     histFile << "VARIABLES = ";
   }
@@ -787,8 +801,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   /*--- Print the string to file and remove the last character (a separator) ---*/
   histFile << out.str().substr(0, out.str().size() - 1);
   histFile << endl;
-  if (config->GetOutput_FileFormat() == TECPLOT ||
-      config->GetOutput_FileFormat() == TECPLOT_BINARY) {
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "ZONE T= \"Convergence history\"" << endl;
   }
   histFile.flush();
@@ -969,9 +982,8 @@ void COutput::PrepareHistoryFile(CConfig *config){
   
   /*--- Add the correct file extension depending on the file format ---*/
   
-  if ((config->GetOutput_FileFormat() == TECPLOT)) SPRINTF (buffer, ".dat");
-  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
+  if ((config->GetTabular_FileFormat() == TAB_TECPLOT)) SPRINTF (buffer, ".dat");
+  else if (config->GetTabular_FileFormat() == TAB_CSV)  SPRINTF (buffer, ".csv");
   strcat(char_histfile, buffer);
   
   /*--- Open the history file ---*/

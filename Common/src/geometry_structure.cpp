@@ -3727,7 +3727,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
         Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
 
-      case CGNS:
+      case CGNS_GRID:
         Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
 
@@ -3739,7 +3739,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   else {
 
     switch (val_format) {
-      case SU2: case CGNS: case RECTANGLE: case BOX:
+      case SU2: case CGNS_GRID: case RECTANGLE: case BOX:
         Read_Mesh_FVM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
       default:
@@ -7509,7 +7509,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
     case SU2:
       MeshFVM = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
-    case CGNS:
+    case CGNS_GRID:
       MeshFVM = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
@@ -14828,7 +14828,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     
     /*--- Write an output file---*/
 
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Wing_File.open("wing_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
@@ -14920,7 +14920,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() > 1) {
-    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    		if (config->GetTabular_FileFormat() == TAB_CSV) {
     			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
     			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
     			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
@@ -15123,7 +15123,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Fuselage_File.open("fuselage_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Fuselage_File << "\"x (in)\",\"Area (in^2)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
@@ -15206,7 +15206,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() > 1) {
-    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    		if (config->GetTabular_FileFormat() == TAB_CSV) {
     			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
     			           <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
     			           <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
@@ -15434,7 +15434,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Write an output file---*/
     
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if (config->GetTabular_FileFormat() == CSV) {
       Nacelle_File.open("nacelle_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
@@ -15496,7 +15496,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
       su2double theta_deg = atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180;
       
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
+        if (config->GetTabular_FileFormat() == TAB_CSV) {
           Nacelle_File  << theta_deg <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
           <<", "<< Twist[iPlane] <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][2]
           <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][2] << endl;

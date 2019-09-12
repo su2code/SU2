@@ -1522,13 +1522,13 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  */
 enum ENUM_INPUT {
   SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS      = 2,  /*!< \brief CGNS input format for the computational grid. */
+  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
   RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
   BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS)
+("CGNS", CGNS_GRID)
 ("RECTANGLE", RECTANGLE)
 ("BOX", BOX);
 
@@ -1548,7 +1548,8 @@ enum ENUM_OUTPUT {
   SURFACE_PARAVIEW_BINARY = 10,   /*!< \brief Paraview binary format for the solution output. */
   MESH      = 11,      /*!< \brief SU2 mesh format. */
   RESTART_BINARY = 12,/*!< \brief SU2 binary restart format. */
-  RESTART_ASCII = 13  /*!< \brief SU2 ASCII restart format. */
+  RESTART_ASCII = 13,  /*!< \brief SU2 ASCII restart format. */
+  CGNS = 14
 };
 
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
@@ -1563,7 +1564,20 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
 ("SURFACE_PARAVIEW", SURFACE_PARAVIEW_BINARY)
 ("RESTART_ASCII", RESTART_ASCII)
-("RESTART", RESTART_BINARY);
+("RESTART", RESTART_BINARY)
+("CGNS", CGNS);
+
+/*!
+ * \brief type of solution output file formats
+ */
+enum ENUM_TAB_OUTPUT {
+  TAB_CSV = 1,			         /*!< \brief Comma-separated values format for the solution output. */
+  TAB_TECPLOT = 2            /*!< \brief Tecplot format for the solution output. */
+};
+
+static const map<string, ENUM_TAB_OUTPUT> TabOutput_Map = CCreateMap<string, ENUM_TAB_OUTPUT>
+("CSV", TAB_CSV)
+("TECPLOT", TAB_TECPLOT);
 
 /*!
  * \brief type of volume sensitivity file formats (inout to SU2_DOT)

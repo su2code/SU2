@@ -779,9 +779,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TAB_TECPLOT'): 
         header.append('VARIABLES=')
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'TAB_CSV'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -905,9 +905,9 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TAB_TECPLOT'): 
         header_format = header_format + 'VARIABLES='
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'TAB_CSV'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -963,11 +963,11 @@ def get_extension(output_format):
     if (output_format == "PARAVIEW")        : return ".csv"
     if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
-    if (output_format == "TECPLOT_BINARY")  : return ".plt"
+    if (output_format == "TECPLOT_BINARY")  : return ".szplt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  
     if (output_format == "CONFIG")          : return ".cfg"  
-
+    if (output_format == "CSV")         : return ".csv"
     # otherwise
     raise Exception("Output Format Unknown")
 

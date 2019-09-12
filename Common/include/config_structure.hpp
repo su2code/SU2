@@ -703,7 +703,7 @@ private:
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
   unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
-  unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
+  unsigned short Tab_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -746,8 +746,7 @@ private:
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  bool Low_MemoryOutput,      /*!< \brief Output less information for lower memory use */
-  Wrt_Output,                 /*!< \brief Write any output files */
+  bool Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -3180,13 +3179,7 @@ public:
    * \return <code>TRUE</code> means that a volume solution file will be written.
    */
   bool GetWrt_Vol_Sol(void);
-  
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetLow_MemoryOutput(void);
-  
+
   /*!
    * \brief Get information about writing a surface solution file.
    * \return <code>TRUE</code> means that a surface solution file will be written.
@@ -5388,7 +5381,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetOutput_FileFormat(void);
+  unsigned short GetTabular_FileFormat(void);
   
   /*!
    * \brief Get the format of the output solution.
