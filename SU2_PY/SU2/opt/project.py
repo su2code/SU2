@@ -479,7 +479,7 @@ class Project(object):
     def plot_results(self):
         """ writes a tecplot file for plotting design results
         """
-        output_format = self.config.OUTPUT_FORMAT
+        output_format = self.config.TABULAR_FORMAT
         functions     = self.results.FUNCTIONS
         history       = self.results.HISTORY
         
@@ -488,7 +488,7 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        if (output_format == 'PARAVIEW') or (output_format == 'PARAVIEW_BINARY'):
+        if (output_format == 'TAB_CSV'):
           su2util.write_plot('history_project.csv',output_format,results_plot)
         else:
           su2util.write_plot('history_project.dat',output_format,results_plot)

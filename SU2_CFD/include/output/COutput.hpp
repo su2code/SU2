@@ -459,21 +459,20 @@ public:
   void PrintVolumeFields();
   
   bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing = false);
+  
+  /*!
+   * \brief Allocates the appropriate file writer based on the chosen format and writes sorted data to file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The output format.
+   * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
+   */
+  void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");  
  
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  
 
-  /*!
-   * \brief Allocates the appropriate file writer based on the chosen format.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[out] filewriter - The allocated filewriter.
-   * \param[in] format - The output format.
-   */
-  void SetFileWriter(CConfig *config, CGeometry *geomery, CFileWriter *&filewriter, unsigned short format);  
-  
-  
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.

@@ -295,7 +295,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       
     }
       
-    case CGNS: {
+    case CGNS_GRID: {
       
 #ifdef HAVE_CGNS
       
@@ -423,7 +423,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
       break;
     }
 
-    case CGNS: {
+    case CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -765,6 +765,7 @@ void CConfig::SetPointersNull(void) {
   ScreenOutput = NULL;
   HistoryOutput = NULL;
   VolumeOutput = NULL;
+  VolumeOutputFiles = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -1686,7 +1687,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to input/output files and formats ---*/
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
-  addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
+  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
@@ -1759,9 +1760,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CON_FREQ_DUALTIME
    *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
-  /*!\brief LOW_MEMORY_OUTPUT
-   *  \n DESCRIPTION: Output less information for lower memory use.  \ingroup Config*/
-  addBoolOption("LOW_MEMORY_OUTPUT", Low_MemoryOutput, false);
   /*!\brief WRT_OUTPUT
    *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
   addBoolOption("WRT_OUTPUT", Wrt_Output, true);
@@ -2587,7 +2585,11 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("STARTCONV_ITER")) newString.append("STARTCONV_ITER is now CONV_STARTITER.\n");
           if (!option_name.compare("CAUCHY_ELEMS")) newString.append("CAUCHY_ELEMS is now CONV_CAUCHY_ELEMS.\n");
           if (!option_name.compare("CAUCHY_EPS")) newString.append("CAUCHY_EPS is now CONV_CAUCHY_EPS.\n");
-          
+          if (!option_name.compare("OUTPUT_FORMAT")) newString.append("OUTPUT_FORMAT is now TABULAR_FORMAT.\n");
+          if (!option_name.compare("PHYSICAL_PROBLEM")) newString.append("PHYSICAL_PROBLEM is now SOLVER.\n");
+          if (!option_name.compare("REGIME_TYPE")) newString.append("REGIME_TYPE has been removed.\n "
+                                                                    "If you want use the incompressible solver, \n"
+                                                                    "use INC_EULER, INC_NAVIER_STOKES or INC_RANS as value of the SOLVER option.");
           errorString.append(newString);
           err_count++;
         continue;
@@ -3089,11 +3091,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (TimeMarching == TIME_STEPPING){
       InnerIter = 1;
     }
+   VolumeWrtFreq = 1;
   }
-  
-  /*--- Low memory only for ASCII Tecplot ---*/
-
-  if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
   /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
   
@@ -6252,7 +6251,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     cout << "Writing a solution file every " << Wrt_Sol_Freq <<" iterations."<< endl;
     cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
     if ((TimeMarching == DT_STEPPING_1ST) || (TimeMarching == DT_STEPPING_2ND)) {
@@ -6260,7 +6258,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }
 
-    switch (Output_FileFormat) {
+    switch (Tab_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
       case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
@@ -6288,8 +6286,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_SOL) {
-    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
-    switch (Output_FileFormat) {
+    switch (Tab_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
       case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
