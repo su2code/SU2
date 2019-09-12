@@ -8039,20 +8039,20 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
    * small number (1e-10 or smaller) to a number close to 1.0, floating
    * point roundoff errors can occur. ---*/
 
-  if (abs(norm - 1.0) > 1e-6) {
-    ostringstream error_msg;
-    error_msg << "ERROR: Found these values in columns ";
-    error_msg << FlowDir_position << " - ";
-    error_msg << FlowDir_position + nDim - 1 << endl;
-    error_msg << std::scientific;
-    error_msg << "  [" << val_inlet[FlowDir_position];
-    error_msg << ", " << val_inlet[FlowDir_position + 1];
-    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
-    error_msg << "]" << endl;
-    error_msg << "  These values should be components of a unit vector for direction," << endl;
-    error_msg << "  but their magnitude is: " << norm << endl;
-    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
-  }
+//  if ((abs(norm - 1.0) > 1e-6)){
+//    ostringstream error_msg;
+//    error_msg << "ERROR: Found these values in columns ";
+//    error_msg << FlowDir_position << " - ";
+//    error_msg << FlowDir_position + nDim - 1 << endl;
+//    error_msg << std::scientific;
+//    error_msg << "  [" << val_inlet[FlowDir_position];
+//    error_msg << ", " << val_inlet[FlowDir_position + 1];
+//    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
+//    error_msg << "]" << endl;
+//    error_msg << "  These values should be components of a unit vector for direction," << endl;
+//    error_msg << "  but their magnitude is: " << norm << endl;
+//    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+//  }
 
   /*--- Store the values in our inlet data structures. ---*/
 
@@ -11003,6 +11003,55 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       V_domain = node[iPoint]->GetPrimitive();
       
+      /*--- If needed add the synthetic turbulence to the primitive variables ---*/
+      if (config->GetKind_SyntheticTurbulence() == INLET_STG){
+        
+        /*--- Retrieve the specified mass flow for the inlet. ---*/
+        Density  = Inlet_Ttotal[val_marker][iVertex];
+        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+        Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+        
+        /*--- TODO: Modify the parser. Be careful! ---*/
+        Velocity[0] = Vel_Mag;
+        Velocity[1] = Flow_Dir[0];
+        Velocity[2] = Flow_Dir[1];
+        Temperature = Flow_Dir[2];
+        
+        /*--- Pressure from the gas law ---*/
+        Pressure = Density*Gas_Constant*Temperature;
+        
+        /*--- Find the point in the STG vector ---*/
+        auto it = std::find(LocalPoints.begin(), LocalPoints.end(), iPoint);
+        if (it == LocalPoints.end())
+          SU2_MPI::Error("Point not found in the STG vector.", CURRENT_FUNCTION);
+        
+        // Get index of element from iterator
+        int index = std::distance(LocalPoints.begin(), it);
+        
+        /*--- Add the already computed synthetic velocities to the array ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] += VSTG_VelFluct[index*nDim+iDim];
+        
+        /*--- Compute the energy from the specified state ---*/
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
+        
+        /*--- I think this might be wrong. Get the tke from the inlet profile. ---*/
+        if (tkeNeeded) Energy += GetTke_Inf();
+        
+        V_inlet[0] = Temperature;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Velocity[iDim];
+        V_inlet[nDim+1] = Pressure;
+        V_inlet[nDim+2] = Density;
+        V_inlet[nDim+3] = Energy + Pressure/Density;
+        
+        //cout << V_inlet[0] << " " << V_inlet[1] << " " <<  V_inlet[2] << " " << V_inlet[3] << " " <<  V_inlet[4] << " " << V_inlet[5] << " " << V_inlet[6] << endl;
+      }
+      else{
+      
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
@@ -11179,24 +11228,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           break;
       }
-      
-      /*--- If needed add the synthetic turbulence to the primitive variables ---*/
-      
-      if (config->GetKind_SyntheticTurbulence() == INLET_STG){
-        
-        auto it = std::find(LocalPoints.begin(), LocalPoints.end(), iPoint);
-        
-        if (it == LocalPoints.end())
-          SU2_MPI::Error("Point not found in the STG vector.", CURRENT_FUNCTION);
-        
-        // Get index of element from iterator
-        int index = std::distance(LocalPoints.begin(), it);
-        
-        for (iDim = 0; iDim < nDim; iDim++){
-          V_inlet[iDim+1] += VSTG_VelFluct[index*nDim+iDim];
-        }
       }
-      
       /*--- Set various quantities in the solver class ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_inlet);
