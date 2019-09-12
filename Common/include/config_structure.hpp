@@ -703,7 +703,7 @@ private:
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
   unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
-  unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
+  unsigned short Tab_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -746,8 +746,7 @@ private:
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  bool Low_MemoryOutput,      /*!< \brief Output less information for lower memory use */
-  Wrt_Output,                 /*!< \brief Write any output files */
+  bool Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -1067,6 +1066,10 @@ private:
   su2double *default_wrt_freq;
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
+  unsigned long VolumeWrtFreq;    /*!< \brief Writing frequency for solution files. */
+  unsigned short* VolumeOutputFiles; /*!< \brief File formats to output */
+  unsigned short nVolumeOutputFiles; /*!< \brief Number of File formats to output */
+  
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -3176,13 +3179,7 @@ public:
    * \return <code>TRUE</code> means that a volume solution file will be written.
    */
   bool GetWrt_Vol_Sol(void);
-  
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetLow_MemoryOutput(void);
-  
+
   /*!
    * \brief Get information about writing a surface solution file.
    * \return <code>TRUE</code> means that a surface solution file will be written.
@@ -5384,7 +5381,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetOutput_FileFormat(void);
+  unsigned short GetTabular_FileFormat(void);
   
   /*!
    * \brief Get the format of the output solution.
@@ -9176,7 +9173,25 @@ public:
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
-
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq_Inner
+   * \return 
+   */
+  unsigned long GetVolume_Wrt_Freq();
+  
+  /*!
+   * \brief GetVolumeOutputFiles
+   * \return 
+   */
+  unsigned short* GetVolumeOutputFiles();
+  
+  /*!
+   * \brief GetnVolumeOutputFiles
+   * \return 
+   */
+  unsigned short GetnVolumeOutputFiles();
+  
   /*!
    * \brief Get the desired factorization frequency for PaStiX
    * \return Number of calls to 'Build' that trigger re-factorization.
@@ -9195,6 +9210,12 @@ public:
    */
   unsigned short GetPastixFillLvl(void);
 
+  /*!
+   * \brief Check if an option is present in the config file
+   * \param[in] - Name of the option
+   * \return <TRUE> if option was set in the config file
+   */
+  bool OptionIsSet(string option);
 };
 
 #include "config_structure.inl"

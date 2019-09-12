@@ -56,7 +56,7 @@ def write_plot(filename,plot_format,data_plot,keys_plot=None):
     keys_space = [default_spacing] * len(keys_plot)
     
     header = ''
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'):
+    if (plot_format == 'TAB_TECPLOT'):
         header = 'VARIABLES='
         indent_spacing += 10
     indent_spacing = ' '*indent_spacing
@@ -95,8 +95,8 @@ def write_plot(filename,plot_format,data_plot,keys_plot=None):
     return
     
 def tecplot(filename,data_plot,keys_plot=[]):
-    write_plot(filename,'TECPLOT',data_plot,keys_plot)
+    write_plot(filename,'TAB_CSV',data_plot,keys_plot)
 
 def paraview(filename,data_plot,keys_plot=[]):
-    write_plot(filename,'PARAVIEW',data_plot,keys_plot)
+    write_plot(filename,'TAB_CSV',data_plot,keys_plot)
         

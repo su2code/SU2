@@ -180,8 +180,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool rans = (config->GetKind_Turb_Model() != NONE);
   unsigned short direct_diff = config->GetDirectDiff();
-  int Unst_RestartIter;
-  unsigned short iZone = config->GetiZone();
+  int Unst_RestartIter = 0;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
@@ -220,7 +219,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
     
-    filename_ = config->GetFilename(filename_, "meta", Unst_RestartIter);
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
 
@@ -14118,7 +14117,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short nZone = geometry->GetnZone();
   bool restart    = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter;
-  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
@@ -14159,7 +14157,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
     
-    filename_ = config->GetFilename(filename_, "meta", Unst_RestartIter);
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
 
