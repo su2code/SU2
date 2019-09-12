@@ -1070,30 +1070,31 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
 void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
   
-  /*--- Sort connectivity for each type of element (excluding halos). Note
+  if (!connectivity_sorted){
+    /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
-  
-  /*--- Sort volumetric grid connectivity. ---*/
-  
-  
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
-
-  SortSurfaceConnectivity(config, geometry, LINE         );
-  SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
-  
-  
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
+    
+    /*--- Sort volumetric grid connectivity. ---*/
+    
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting surface grid connectivity." << endl;
+    
+    SortSurfaceConnectivity(config, geometry, LINE         );
+    SortSurfaceConnectivity(config, geometry, TRIANGLE     );
+    SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
+    
+    
+    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
-  nGlobal_Elem_Par   = nTotal_Surf_Elem;
+    nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
-  connectivity_sorted = true;
-  
+    
+    connectivity_sorted = true;
+  }
 }
 
 void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {

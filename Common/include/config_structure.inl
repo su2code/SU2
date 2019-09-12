@@ -1465,7 +1465,7 @@ inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
 
-inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
+inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
@@ -1640,8 +1640,6 @@ inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
 
 inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
-
-inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
 
@@ -2066,3 +2064,10 @@ inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return H
 
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
 
+inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
+
+inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles;}
+
+inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
+
+inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}

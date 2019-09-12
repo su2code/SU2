@@ -93,6 +93,16 @@ protected:
       return rc == 0 ? stat_buf.st_size : -1;
   }
   
+  /*!
+   * \brief Filename
+   */
+  string fileName;
+  
+  /*!
+   * \brief The parallel data sorter
+   */
+  CParallelDataSorter* dataSorter;
+  
 public:
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
@@ -100,7 +110,7 @@ public:
    * \param[in] file_ext - The file extension to be attached to the filename
    * \param[in] nDim - Physical dimension
    */  
-  CFileWriter(std::vector<std::string> fields, string file_ext, unsigned short nDim);
+  CFileWriter(std::vector<std::string> fields, string fileName, CParallelDataSorter* dataSorter, string file_ext, unsigned short nDim);
   
   /*!
    * \brief Destructor
@@ -109,10 +119,8 @@ public:
   
   /*!
    * \brief Write sorted data to file
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
    */
-  virtual void Write_Data(std::string filename, CParallelDataSorter* data_sorter){}
+  virtual void Write_Data(){}
   
   /*!
    * \brief Get the bandwith used for the last writing

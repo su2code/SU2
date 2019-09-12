@@ -307,15 +307,16 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 
-  
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
-  
-  
-  SortSurfaceConnectivity(config, geometry, LINE         );
-  SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
-  
+  if (!connectivity_sorted){
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting surface grid connectivity." << endl;
+    
+    
+    SortSurfaceConnectivity(config, geometry, LINE         );
+    SortSurfaceConnectivity(config, geometry, TRIANGLE     );
+    SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
+    
     
     unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
@@ -325,7 +326,7 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 #endif
     
     connectivity_sorted = true;
-
+  }
 }
 
 

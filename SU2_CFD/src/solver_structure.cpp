@@ -49,7 +49,7 @@
 #include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
-#include "../include/toolboxes/printing_toolbox.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 
 CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
@@ -3971,8 +3971,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   int Unst_RestartIter;
   ifstream restart_file_n;
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
+
   string filename = config->GetSolution_FileName();
   string filename_n;
 
@@ -3986,18 +3985,13 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
   unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
-
   /*--- First, we load the restart file for time n ---*/
 
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
   Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
+  filename_n = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
 
@@ -4018,7 +4012,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     
     getline (restart_file_n, text_line);
     
-    istringstream point_line(text_line);
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -4026,10 +4020,12 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
-
+      
+      Coord[0] = PrintingToolbox::stod(point_line[1]);
+      Coord[1] = PrintingToolbox::stod(point_line[2]);
+      if (nDim == 3){
+        Coord[2] = PrintingToolbox::stod(point_line[3]);          
+      } 
       geometry->node[iPoint_Local]->SetCoord_n(Coord);
 
       iPoint_Global_Local++;
@@ -4068,12 +4064,12 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Modify file name for an unsteady restart ---*/
     Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
+    filename_n1 = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
 
-    restart_file_n.open(filename_n1.data(), ios::in);
-    if (restart_file_n.fail()) {
+    restart_file_n1.open(filename_n1.data(), ios::in);
+    if (restart_file_n1.fail()) {
         SU2_MPI::Error(string("There is no flow restart file ") + filename_n1, CURRENT_FUNCTION);
 
     }
@@ -4084,23 +4080,26 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
 
-    getline (restart_file_n, text_line);
+    getline (restart_file_n1, text_line);
 
     for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
       
-      getline (restart_file_n, text_line);
-      
-      istringstream point_line(text_line);
+      getline (restart_file_n1, text_line);
 
+      vector<string> point_line = PrintingToolbox::split(text_line, ',');
+      
       /*--- Retrieve local index. If this node from the restart file lives
        on the current processor, we will load and instantiate the vars. ---*/
 
       iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
       if (iPoint_Local > -1) {
-
-        if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-        if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
+        
+        Coord[0] = PrintingToolbox::stod(point_line[1]);
+        Coord[1] = PrintingToolbox::stod(point_line[2]);
+        if (nDim == 3){
+          Coord[2] = PrintingToolbox::stod(point_line[3]);          
+        } 
 
         geometry->node[iPoint_Local]->SetCoord_n1(Coord);
 
@@ -4279,7 +4278,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
       /*--- Store the solution (starting with node coordinates) --*/
 
       for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
-        Restart_Data[counter*Restart_Vars[1] + iVar] = PrintingToolbox::stod(point_line[iVar+1]);
+        Restart_Data[counter*Restart_Vars[1] + iVar] = SU2_TYPE::GetValue(PrintingToolbox::stod(point_line[iVar+1]));
 
       /*--- Increment our local point counter. ---*/
 
@@ -5439,13 +5438,14 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     filename = config->GetSolution_FileName();
   }
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-  
-  filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
   /*--- Read only the number of variables in the restart file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
     char fname[100];
     strcpy(fname, filename.c_str());
@@ -5578,6 +5578,10 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     
 #endif
   } else {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    filename = config->GetFilename(filename, ".csv", config->GetTimeIter());
 
     /*--- First, check that this is not a binary restart file. ---*/
 
@@ -5672,12 +5676,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     getline (restart_file, text_line);
 
-    stringstream ss(text_line);
-    fields.clear();
-    while (ss >> Tag) {
-      fields.push_back(Tag);
-      if (ss.peek() == ',') ss.ignore();
-    }
+    fields = PrintingToolbox::split(text_line, ',');
 
     /*--- Close the file (the solution date is read later). ---*/
     

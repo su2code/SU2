@@ -168,6 +168,7 @@ protected:
    /*----------------------------- Volume output ----------------------------*/     
    
    CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
    
    vector<string> volumeFieldNames;     //!< Vector containing the volume field names
    unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */ 
@@ -456,22 +457,22 @@ public:
    * \brief Print a list of all volume output fields to screen.
    */
   void PrintVolumeFields();
-
+  
+  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing = false);
+  
+  /*!
+   * \brief Allocates the appropriate file writer based on the chosen format and writes sorted data to file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The output format.
+   * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
+   */
+  void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");  
+ 
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  
 
-  /*!
-   * \brief Allocates the appropriate file writer based on the chosen format.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] sorter - The parallel file sorter.
-   * \param[out] filewriter - The allocated filewriter.
-   * \param[in] format - The output format.
-   */
-  void SetFileWriter(CConfig *config, CGeometry *geomery, CParallelDataSorter *sorter, CFileWriter *&filewriter, unsigned short format);  
-  
-  
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
@@ -661,6 +662,13 @@ protected:
   virtual bool WriteScreen_Output(CConfig *config);
 
   /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iter - Current iteration index.
+   */
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter);
+  
+  /*!
    * \brief Set the values of the volume output fields for a point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -740,13 +748,7 @@ protected:
    */
   inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
   
-  /*!
-   * \brief Write information to meta data file
-   * \param[in] output - Container holding the output instances per zone.   
-   * \param[in] config - Definition of the particular problem per zone.
-   * \param[in] solver - The container holding all solution data.
-   */
-  inline virtual void WriteMetaData(CConfig *config, CGeometry *geometry, CSolver** solver) {}
+  inline virtual void WriteAdditionalFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container){}
 
 };
 

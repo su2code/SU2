@@ -94,7 +94,7 @@ def projection( config, state={}, step = 1e-3 ):
     # filenames
     objective      = konfig['OBJECTIVE_FUNCTION']
     grad_filename  = konfig['GRAD_OBJFUNC_FILENAME']
-    output_format  = konfig['OUTPUT_FORMAT']
+    output_format  = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension = su2io.get_extension(output_format)
     adj_suffix     = su2io.get_adjointSuffix(objective)
     grad_plotname  = os.path.splitext(grad_filename)[0] + '_' + adj_suffix + plot_extension    

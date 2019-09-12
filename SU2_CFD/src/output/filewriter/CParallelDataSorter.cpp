@@ -60,10 +60,12 @@ CParallelDataSorter::~CParallelDataSorter(){
   
   /*--- Deallocate memory for solution data ---*/
   
-  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
-    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+  if (Parallel_Data != NULL){
+    for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
+      if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+    }
+    delete [] Parallel_Data;  
   }
-  if (Parallel_Data != NULL) delete [] Parallel_Data;  
 }
 
 

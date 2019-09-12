@@ -37,6 +37,7 @@
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <algorithm>
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
@@ -853,7 +854,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
+    filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
   reference_file.open(filename.data(), ios::in);
 
@@ -891,7 +892,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   getline (reference_file, text_line);
 
   while (getline (reference_file, text_line)) {
-    istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -901,9 +903,15 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
     iPoint_Local = Global2Local[iPoint_Global];
 
     if (iPoint_Local >= 0) {
-
-      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+      
+      if (nDim == 2){
+        Solution[0] = PrintingToolbox::stod(point_line[3]);
+        Solution[1] = PrintingToolbox::stod(point_line[4]);
+      } else {
+        Solution[0] = PrintingToolbox::stod(point_line[4]);
+        Solution[1] = PrintingToolbox::stod(point_line[5]);
+        Solution[2] = PrintingToolbox::stod(point_line[6]);        
+      }
 
       for (iVar = 0; iVar < nVar; iVar++) node->SetReference_Geometry(iPoint_Local,iVar, Solution[iVar]);
 
@@ -2117,7 +2125,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  
+
   if (disc_adj_fem) {
 
     if (nonlinear_analysis) {

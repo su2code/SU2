@@ -989,21 +989,21 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     output = new CBaselineOutput(config[iZone], geometry[iZone][INST_0]->GetnDim(), solver);
     output->PreprocessVolumeOutput(config[iZone]);
     
-    /*--- Load the data --- */
+//    /*--- Load the data --- */
     
-    output->Load_Data(geometry[iZone][INST_0], config[iZone], &solver);
+//    output->Load_Data(geometry[iZone][INST_0], config[iZone], &solver);
 
-    /*--- Set the surface filename ---*/
+//    /*--- Set the surface filename ---*/
     
-    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
+//    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
     
-    /*--- Write to file ---*/
+//    /*--- Write to file ---*/
     
-    output->SetSurface_Output(geometry[iZone][INST_0], config[iZone], config[iZone]->GetOutput_FileFormat(), false);
+//    output->SetSurface_Output(geometry[iZone][INST_0], config[iZone], config[iZone]->GetOutput_FileFormat(), false);
 
-    /*--- Deallocate ---*/
+//    /*--- Deallocate ---*/
     
-    output->DeallocateData_Parallel();
+//    output->DeallocateData_Parallel();
     
     /*--- Free memory ---*/
     
