@@ -193,6 +193,10 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nParallel_Poin = globalSurfaceDOFIDs.size();
   
+  if (sortedDataBuffer == nullptr){
+    sortedDataBuffer = new su2double[nParallel_Poin*VARS_PER_POINT];
+  }
+  
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nParallel_Poin; ++i) {
@@ -302,27 +306,25 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 }
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
-
-  if (!connectivity_sorted){
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting surface grid connectivity." << endl;
-    
-    
-    SortSurfaceConnectivity(config, geometry, LINE         );
-    SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-    SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
-    
-    
-    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
+  
+  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+    cout <<"Sorting surface grid connectivity." << endl;
+  
+  
+  SortSurfaceConnectivity(config, geometry, LINE         );
+  SortSurfaceConnectivity(config, geometry, TRIANGLE     );
+  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
+  
+  
+  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
-    nGlobal_Elem_Par   = nTotal_Surf_Elem;
+  nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
-    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
-    connectivity_sorted = true;
-  }
+  
+  connectivity_sorted = true;
+  
 }
 
 
@@ -424,14 +426,17 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     switch (Elem_Type) {
       case LINE:
         nParallel_Line = nSubElem_Local;
+        if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
         Conn_Line_Par = Conn_SubElem;
         break;
       case TRIANGLE:
         nParallel_Tria = nSubElem_Local;
+        if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;        
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
         nParallel_Quad = nSubElem_Local;
+        if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;       
         Conn_Quad_Par = Conn_SubElem;
         break;
       default:
