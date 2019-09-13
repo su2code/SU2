@@ -104,7 +104,7 @@ inline su2double CSolver::GetPsiE_Inf(void) { return 0; }
 
 inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) { }
 
 inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 

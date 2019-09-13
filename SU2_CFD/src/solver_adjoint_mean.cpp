@@ -1627,9 +1627,9 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
-  bool RightSol = true;
+  bool physical = true;
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -1653,16 +1653,15 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Get the distance form a sharp edge ---*/
     
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
-    
-    /*--- Initialize the non-physical points vector ---*/
 
-    node[iPoint]->SetNon_Physical(false);
-    
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
     
-    RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+    physical = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
+
+    /* Check for non-realizable states for reporting. */
+    
+    if (!physical) nonPhysicalPoints++;
     
     /*--- Initialize the convective residual vector ---*/
     
@@ -1703,10 +1702,10 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = nonPhysicalPoints; nonPhysicalPoints = 0;
+    SU2_MPI::Allreduce(&MyErrorCounter, &nonPhysicalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(nonPhysicalPoints);
   }
   
 }
@@ -1786,8 +1785,8 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL,
-  *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j, Non_Physical = 1.0;
-  unsigned long iEdge, iPoint, jPoint;
+  *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j;
+  unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   
   bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -1837,10 +1836,9 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       
       for (iVar = 0; iVar < nVar; iVar++) {
         Project_Grad_i = 0; Project_Grad_j = 0;
-        Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
           Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i*Limiter_i[iDim];
@@ -1852,6 +1850,33 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         }
       }
       
+      /* Check our reconstruction for exceeding bounds on the
+       adjoint density. */
+      
+      su2double adj_limit = config->GetAdjointLimit();
+      bool phi_bound_i = (fabs(Solution_i[0]) > adj_limit);
+      bool phi_bound_j = (fabs(Solution_j[0]) > adj_limit);
+
+      if (phi_bound_i) node[iPoint]->SetNon_Physical(true);
+      else             node[iPoint]->SetNon_Physical(false);
+      
+      if (phi_bound_j) node[jPoint]->SetNon_Physical(true);
+      else             node[jPoint]->SetNon_Physical(false);
+      
+      /* Lastly, check for existing first-order points still active
+       from previous iterations. */
+      
+      if (node[iPoint]->GetNon_Physical()) {
+        counter_local++;
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution_i[iVar] = Psi_i[iVar];
+      }
+      if (node[jPoint]->GetNon_Physical()) {
+        counter_local++;
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution_j[iVar] = Psi_j[iVar];
+      }
+
       numerics->SetAdjointVar(Solution_i, Solution_j);
       
     }
@@ -1874,6 +1899,17 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
     }
     
+  }
+  
+  /*--- Warning message about non-physical reconstructions. ---*/
+  
+  if (config->GetComm_Level() == COMM_FULL) {
+#ifdef HAVE_MPI
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    counter_global = counter_local;
+#endif
+    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
   
 }
@@ -5170,9 +5206,9 @@ void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
-  bool RightSol = true;
+  bool physical = true;
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -5195,15 +5231,14 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
-    /*--- Initialize the non-physical points vector ---*/
-    
-    node[iPoint]->SetNon_Physical(false);
-    
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
     
-    RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+    physical = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
+
+    /* Check for non-realizable states for reporting. */
+    
+    if (!physical) nonPhysicalPoints++;
     
     /*--- Initialize the convective residual vector ---*/
     
@@ -5242,10 +5277,10 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = nonPhysicalPoints; nonPhysicalPoints = 0;
+    SU2_MPI::Allreduce(&MyErrorCounter, &nonPhysicalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(nonPhysicalPoints);
   }
   
 }

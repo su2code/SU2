@@ -6396,102 +6396,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   }
 }
 
-void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone) {
-  
-  su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
-  unsigned short iMesh;
-  
-  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
-  unsigned short nVar = 1;
-
-  bool energy = config[val_iZone]->GetEnergy_Equation();
-  bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-
-  switch( config[val_iZone]->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES : case RANS:
-    case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:      
-      if (energy) {
-        nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
-        RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-      }
-      else if (weakly_coupled_heat) {
-        RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-      }
-      else {
-        RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-      }
-      break;
-    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-      break;
-    case HEAT_EQUATION_FVM:
-      RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-      break;
-  }
-  
-  if (RhoRes_New < EPS) RhoRes_New = EPS;
-  if (RhoRes_Old[val_iZone] < EPS) RhoRes_Old[val_iZone] = RhoRes_New;
-
-  Div = RhoRes_Old[val_iZone]/RhoRes_New;
-  Diff = RhoRes_New-RhoRes_Old[val_iZone];
-
-  /*--- Compute MG factor ---*/
-
-  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-    if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
-    else MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
-  }
-
-  if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
-  else power = config[val_iZone]->GetCFL_AdaptParam(1);
-
-  /*--- Detect a stall in the residual ---*/
-
-  if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
-
-  CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
-  CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
-
-  CFLFactor = pow(Div, power);
-
-  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-    CFL = config[val_iZone]->GetCFL(iMesh);
-    CFL *= CFLFactor;
-
-    if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
-      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-        config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
-      }
-      break;
-    }
-    if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
-      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-        config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
-      break;
-    }
-
-    config[val_iZone]->SetCFL(iMesh, CFL);
-  }
-
-  switch( config[val_iZone]->GetKind_Solver()) {
-  case EULER : case NAVIER_STOKES : case RANS:
-  case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:            
-    nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
-    if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-    else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    else RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-    break;
-  case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-    break;
-  case HEAT_EQUATION_FVM:
-    RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    break;
-  }
-  
-}
-
 void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) {
   
   char cstr[200];
@@ -6512,8 +6416,12 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
 
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nDim = geometry[val_iZone][INST_0][FinestMesh]->GetnDim();
-  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-               (config[val_iZone]->GetKind_Solver() == RANS));
+  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) ||
+               (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Solver() == RANS) ||
+               (config[val_iZone]->GetKind_Solver() == INC_EULER) ||
+               (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Solver() == INC_RANS));
   
   /*--- Output the mean flow solution using only the master node ---*/
   
@@ -12761,18 +12669,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
   
-  vector<su2double> First_Order(geometry->GetnPoint(),0.0);
-  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    if (solver[FLOW_SOL]->isNonRealizable[iEdge]) {
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      
-      First_Order[iPoint] = 1.0;
-      First_Order[jPoint] = 1.0;
-
-    }
-  }
-  
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
   /*---         variable, two things are required. First, increment the    ---*/
@@ -13019,13 +12915,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     nVar_Par +=1;
     Variable_Names.push_back("Local_CFL");
     nVar_Par +=1;
-    Variable_Names.push_back("Local_CFL_Factor");
-    nVar_Par +=1;
     Variable_Names.push_back("Under_Relaxation");
-    
-    nVar_Par +=1;
-    Variable_Names.push_back("First_Order");
-    
+
     nVar_Par += 5*nDim;
     Variable_Names.push_back("GradT_x");
     Variable_Names.push_back("GradT_y");
@@ -13366,9 +13257,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
         
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLocalCFL(); iVar++;
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLocalCFLFactor(); iVar++;
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetUnderRelaxation(); iVar++;
-        Local_Data[jPoint][iVar] = First_Order[iPoint]; iVar++;
         
         su2double **gradient  = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
         

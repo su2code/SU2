@@ -551,7 +551,7 @@ void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_con
 void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-          **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad, Non_Physical = 1.0;
+          **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
   unsigned short iDim, iVar;
   unsigned long iEdge, iPoint, jPoint;
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
@@ -590,8 +590,8 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
               Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
             }
 
-            Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-            Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
+            Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Reconstruction();
+            Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Reconstruction();
             Temp_i_Grad = node[iPoint]->GetGradient();
             Temp_j_Grad = node[jPoint]->GetGradient();
 
@@ -601,8 +601,8 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
               /*Apply the Gradient to get the right temperature value on the edge */
               Project_Grad_i = 0.0; Project_Grad_j = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) {
-                  Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
-                  Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+                  Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+                  Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
               }
 
               Primitive_Flow_i[iVar] = V_i[iVar] + Project_Grad_i;
@@ -612,8 +612,8 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
             /* Correct the temperature variables */
             Project_Temp_i_Grad = 0.0; Project_Temp_j_Grad = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-                Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim]*Non_Physical;
-                Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim]*Non_Physical;
+                Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim];
+                Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim];
             }
 
             Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;

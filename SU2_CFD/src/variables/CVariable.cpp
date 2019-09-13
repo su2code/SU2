@@ -57,12 +57,11 @@ CVariable::CVariable(void) {
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
 
-  /* Under-relaxation parameters. */
+  /* Under-relaxation parameter. */
   UnderRelaxation = 1.0;
-  LocalCFLFactor  = 1.0;
   
   /* Non-physical point (first-order) initialization. */
-  Non_Physical = false;
+  Non_Physical         = false;
   Non_Physical_Counter = 0;
   
 }
@@ -98,12 +97,11 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution[iVar] = 0.0;
 
-  /* Under-relaxation parameters. */
+  /* Under-relaxation parameter. */
   UnderRelaxation = 1.0;
-  LocalCFLFactor  = 1.0;
   
   /* Non-physical point (first-order) initialization. */
-  Non_Physical = false;
+  Non_Physical         = false;
   Non_Physical_Counter = 0;
   
 }
@@ -164,21 +162,18 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	  Solution_Adj_Old = new su2double [nVar];
 	}
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    Rmatrix = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Rmatrix[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        Rmatrix[iDim][jDim] = 0.0;
-    }
+  Rmatrix = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Rmatrix[iDim] = new su2double[nDim];
+    for (jDim = 0; jDim < nDim; jDim++)
+      Rmatrix[iDim][jDim] = 0.0;
   }
 
-  /* Under-relaxation parameters. */
+  /* Under-relaxation parameter. */
   UnderRelaxation = 1.0;
-  LocalCFLFactor  = 1.0;
   
   /* Non-physical point (first-order) initialization. */
-  Non_Physical = false;
+  Non_Physical         = false;
   Non_Physical_Counter = 0;
   
 }

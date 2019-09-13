@@ -155,10 +155,7 @@ protected:
   su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
 public:
-  vector<bool> isNonRealizable;
-  vector<unsigned short> nonRealizableCounter;
-  vector<su2double> isNonRealizablePoint;
-  
+
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector<su2double> LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
@@ -1303,10 +1300,11 @@ public:
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
    *        computed for each nonlinear iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - Container vector with all the solutions.
    */
-  void AdaptCFLNumber(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -1444,7 +1442,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief A virtual member.
@@ -5066,7 +5064,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -7341,7 +7339,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -7520,6 +7518,13 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
+  
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.

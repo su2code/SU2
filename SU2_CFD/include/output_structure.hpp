@@ -785,19 +785,6 @@ public:
   void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
   
   /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
-   */
-  void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);
-  
-  /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
    *  on the surface and in the volume to a file.
    * \param[in] geometry - Geometrical definition of the problem.

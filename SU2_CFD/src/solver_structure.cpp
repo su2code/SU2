@@ -1878,7 +1878,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_GRADIENT:
-      COUNT_PER_POINT  = nPrimVarGrad*nDim;
+      COUNT_PER_POINT  = nPrimVarGrad*nDim*2;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_LIMITER:
@@ -2011,9 +2011,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
             break;
           case PRIMITIVE_GRADIENT:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim+nDim*nPrimVarGrad] = node[iPoint]->GetGradient_Reconstruction(iVar, iDim);
+              }
+            }
             break;
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2173,9 +2176,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
           case PRIMITIVE_GRADIENT:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
                 node[iPoint]->SetGradient_Primitive(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                node[iPoint]->SetGradient_Reconstruction(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim+nDim*nPrimVarGrad]);
+              }
+            }
             break;
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2248,64 +2254,87 @@ void CSolver::CompleteComms(CGeometry *geometry,
   
 }
 
-void CSolver::AdaptCFLNumber(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CSolver::AdaptCFLNumber(CGeometry **geometry,
+                             CSolver ***solver_container,
+                             CConfig *config) {
   
-  /* Adapt the CFL number based on the under-relaxation parameter. */
+  /* Adapt the CFL number on all multigrid levels using an
+   exponential progression with under-relaxation approach. */
+
+  vector<su2double> MGFactor(config->GetnMGLevels()+1,1.0);
+  const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
+  const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
+  const su2double CFLMin            = config->GetCFL_AdaptParam(2);
+  const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     
-    su2double CFLFactor = 1.0, MGFactor[100];
+    /* Store the mean flow, and turbulence solvers more clearly. */
     
-    const su2double CFLMin = config->GetCFL_AdaptParam(2);
-    const su2double CFLMax = config->GetCFL_AdaptParam(3);
+    const CSolver *solverFlow   = solver_container[iMesh][FLOW_SOL];
+    const CSolver *solverTurb   = solver_container[iMesh][TURB_SOL];
     
-    /*--- Compute MG factor ---*/
+    /* Compute the reduction factor for CFLs on the coarse levels. */
     
-    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
-      else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
-    }
-    
-    /* Get the current local CFL number at this point. */
-    
-    su2double CFL = solver_container[FLOW_SOL]->node[iPoint]->GetLocalCFL();
-    
-    /* If we apply a small under-relaxation parameter for stability,
-     then we should reduce the CFL before the next iteration. If we
-     are able to add the entire nonlinear update (under-relaxation = 1)
-     then we can increase the CFL number for the next iteration. */
-    
-    su2double underRelaxationFlow = solver_container[FLOW_SOL]->node[iPoint]->GetUnderRelaxation();
-    
-    su2double underRelaxationTurb = 1.0;
-    
-    bool turbulent     = (config->GetKind_Turb_Model() != NONE);
-    if (turbulent) underRelaxationTurb = solver_container[TURB_SOL]->node[iPoint]->GetUnderRelaxation();
-    
-    const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
-    
-    if (underRelaxation < 0.1) {
-      CFLFactor = config->GetCFL_AdaptParam(0);
-    } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
-      CFLFactor = 1.0;
+    if (iMesh == MESH_0) {
+      MGFactor[iMesh] = 1.0;
     } else {
-      CFLFactor = config->GetCFL_AdaptParam(1);
+      const su2double CFLRatio = config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+      MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
     }
     
-    /* Check if we are hitting the min or max and adjust. */
+    /* Loop over all points on this grid and apply CFL adaption. */
     
-    if (CFL <= CFLMin) {
-      CFL       = CFLMin;
-      CFLFactor = 1.001*MGFactor[MGLevel];
-    } else if (CFL >= CFLMax) {
-      CFL       = CFLMax;
-      CFLFactor = 0.999*MGFactor[MGLevel];
+    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+      
+      /* Get the current local flow CFL number at this point. */
+      
+      su2double CFL = solverFlow->node[iPoint]->GetLocalCFL();
+      
+      /* Get the current under-relaxation parameters that were computed
+       during the previous nonlinear update. If we have a turbulence model,
+       take the minimum under-relaxation parameter between the mean flow
+       and turbulence systems. */
+      
+      su2double underRelaxationFlow = solverFlow->node[iPoint]->GetUnderRelaxation();
+      su2double underRelaxationTurb = 1.0;
+      if (config->GetKind_Turb_Model() != NONE)
+        underRelaxationTurb = solverTurb->node[iPoint]->GetUnderRelaxation();
+      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+      
+      /* If we apply a small under-relaxation parameter for stability,
+       then we should reduce the CFL before the next iteration. If we
+       are able to add the entire nonlinear update (under-relaxation = 1)
+       then we schedule an increase the CFL number for the next iteration. */
+      
+      su2double CFLFactor = 1.0;
+      if (underRelaxation < 0.1) {
+        CFLFactor = CFLFactorDecrease;
+      } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+        CFLFactor = 1.0;
+      } else {
+        CFLFactor = CFLFactorIncrease;
+      }
+      
+      /* Check if we are hitting the min or max and adjust. */
+      
+      if (CFL*CFLFactor <= CFLMin) {
+        CFL       = CFLMin;
+        CFLFactor = 1.001*MGFactor[iMesh];
+      } else if (CFL*CFLFactor >= CFLMax) {
+        CFL       = CFLMax;
+        CFLFactor = 0.999*MGFactor[iMesh];
+      }
+      
+      /* Apply the adjustment to the CFL and store local values. */
+      
+      CFL *= CFLFactor;
+      solverFlow->node[iPoint]->SetLocalCFL(CFL);
+      if (config->GetKind_Turb_Model() != NONE) {
+        solverTurb->node[iPoint]->SetLocalCFL(CFL);
+      }
+      
     }
-    
-    /* Apply the adjustment to the CFL and store local values. */
-    CFL *= CFLFactor;
-    solver_container[FLOW_SOL]->node[iPoint]->SetLocalCFL(CFL);
-    solver_container[FLOW_SOL]->node[iPoint]->SetLocalCFLFactor(CFLFactor);
     
   }
   
