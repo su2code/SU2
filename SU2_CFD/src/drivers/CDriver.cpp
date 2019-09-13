@@ -3943,14 +3943,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
     }
   }
 
-//  /*--- Evaluate the new CFL number (adaptive). ---*/
-//  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-//    for (iZone = 0; iZone < nZone; iZone++){
-//      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-//        output->SetCFL_Number(solver_container, config_container, iZone);
-//    }
-//  }
-
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
   
@@ -4310,26 +4302,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
       output->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
-
-
-//  /*--- Evaluate the new CFL number (adaptive). ---*/
-//  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-//    if(mixingplane){
-//      CFL = 0;
-//      for (iZone = 0; iZone < nZone; iZone++){
-//        output->SetCFL_Number(solver_container, config_container, iZone);
-//        CFL += config_container[iZone]->GetCFL(MESH_0);
-//      }
-//      /*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
-//      for (iZone = 0; iZone < nZone; iZone++){
-//        config_container[iZone]->SetCFL(MESH_0, CFL/nZone);
-//      }
-//    }
-//    else{
-//      output->SetCFL_Number(solver_container, config_container, ZONE_0);
-//    }
-//  }
-
 
   /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {

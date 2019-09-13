@@ -84,7 +84,6 @@ protected:
   *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
   su2double UnderRelaxation;  /*!< \brief Value of the under-relxation parameter local to the control volume. */
   su2double LocalCFL;  /*!< \brief Value of the CFL number local to the control volume. */
-  su2double LocalCFLFactor;  /*!< \brief Value of the factor to increase/decrease the CFL number local to the control volume. */
 
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
@@ -510,19 +509,7 @@ public:
    * \return Value of the local CFL number for this CV.
    */
   inline su2double GetLocalCFL(void) { return LocalCFL; }
-  
-  /*!
-   * \brief Set the value of the factor to increase/decrease the local CFL number for the current control volume (CV).
-   * \param[in] val_cfl_factor - the input value of the factor to increase/decrease the local CFL number for this CV.
-   */
-  inline void SetLocalCFLFactor(su2double val_cfl_factor) { LocalCFLFactor = val_cfl_factor; }
-  
-  /*!
-   * \brief Get the value of the factor to increase/decrease the local CFL number for the current control volume (CV).
-   * \return Value of the factor to increase/decrease the local CFL number for this CV.
-   */
-  inline su2double GetLocalCFLFactor(void) { return LocalCFLFactor; }
-  
+
   /*!
    * \brief Set auxiliar variables, we are looking for the gradient of that variable.
    * \param[in] val_auxvar - Value of the auxiliar variable.
@@ -1901,6 +1888,28 @@ public:
    */
   inline virtual su2double *GetLimiter_Secondary(void) {return NULL; }
 
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  inline virtual su2double GetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim) { return 0; }
+  
+  /*!
+   * \brief Set the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  inline virtual void SetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim, su2double val_value) { }
+  
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \return Value of the primitive gradient for MUSCL reconstruction.
+   */
+  inline virtual su2double **GetGradient_Reconstruction(void) { return NULL; }
+  
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.

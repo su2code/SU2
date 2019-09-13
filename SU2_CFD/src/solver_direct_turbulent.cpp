@@ -136,8 +136,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
       
-      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
+      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Reconstruction();
+      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Reconstruction();
       if (limiter) {
         Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
         Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
@@ -460,7 +460,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
   
-  su2double localUnderRelaxation = 1.0;
+  su2double localUnderRelaxation    =  1.00;
   const su2double allowableDecrease = -0.99;
   const su2double allowableIncrease =  0.99;
 
@@ -482,72 +482,19 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
       
     }
     
-    /* Choose the min factor between mean flow and turbulence. */
+    /* Choose the minimum factor between mean flow and turbulence. */
     
     localUnderRelaxation = min(localUnderRelaxation, solver_container[FLOW_SOL]->node[iPoint]->GetUnderRelaxation());
+    
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
     
     if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
 
     /* Store the under-relaxation factor for this point. */
     
     node[iPoint]->SetUnderRelaxation(localUnderRelaxation);
-    
-  }
-  
-  /* Adapt the CFL number based on the under-relaxation parameter. */
-  
-  if (config->GetCFL_Adapt()) {
-    
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
-      su2double CFLFactor = 1.0, MGFactor[100];
-      
-      const su2double CFLMin = config->GetCFL_AdaptParam(2);
-      const su2double CFLMax = config->GetCFL_AdaptParam(3);
-      
-      /*--- Compute MG factor ---*/
-      
-      for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
-        else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
-      }
-      
-      
-      /* Get the current local CFL number at this point. */
-      
-      su2double CFL = node[iPoint]->GetLocalCFL();
-      
-      /* If we apply a small under-relaxation parameter for stability,
-       then we should reduce the CFL before the next iteration. If we
-       are able to add the entire nonlinear update (under-relaxation = 1)
-       then we can increase the CFL number for the next iteration. */
-      
-      const su2double underRelaxation = node[iPoint]->GetUnderRelaxation();
-      
-      if (underRelaxation < 0.1) {
-        CFLFactor = config->GetCFL_AdaptParam(0);
-      } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
-        CFLFactor = 1.0;
-      } else {
-        CFLFactor = config->GetCFL_AdaptParam(1);
-      }
-      
-      /* Check if we are hitting the min or max and adjust. */
-      
-      if (CFL <= CFLMin) {
-        CFL       = CFLMin;
-        CFLFactor = 1.001*MGFactor[MGLevel];
-      } else if (CFL >= CFLMax) {
-        CFL       = CFLMax;
-        CFLFactor = 0.999*MGFactor[MGLevel];
-      }
-      
-      /* Apply the adjustment to the CFL and store local values. */
-      CFL *= CFLFactor;
-      node[iPoint]->SetLocalCFL(CFL);
-      node[iPoint]->SetLocalCFLFactor(CFLFactor);
-      
-    }
     
   }
   
@@ -1203,7 +1150,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
-    node[iPoint]->SetLocalCFLFactor(1.0);
   }
   
 }
@@ -3530,7 +3476,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
-    node[iPoint]->SetLocalCFLFactor(1.0);
   }
       
 }

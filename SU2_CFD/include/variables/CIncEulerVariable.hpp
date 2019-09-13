@@ -51,9 +51,11 @@ protected:
 
   /*--- Primitive variable definition ---*/
 
-  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Primitive;  /*!< \brief Primitive variables (P, vx, vy, vz, T, rho ...) for incompressible flows. */
+  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables */
+  su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the primitive variables for MUSCL reconstruction for the convective term */
+
+  su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables */
 
   /*--- Old solution container for BGS iterations ---*/
 
@@ -159,6 +161,28 @@ public:
    */
   inline su2double *GetLimiter_Primitive(void) {return Limiter_Primitive; }
 
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double GetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim) {return Gradient_Reconstruction[val_var][val_dim]; }
+  
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  inline void SetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Reconstruction[val_var][val_dim] = val_value; }
+  
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double **GetGradient_Reconstruction(void) {return Gradient_Reconstruction; }
+  
   /*!
    * \brief Set the value of the pressure.
    */
