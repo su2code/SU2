@@ -74,7 +74,7 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   /*--- Call to write the entire restart file data in binary in one shot. ---*/
 
-  fwrite(buf, nParallel_Poin*GlobalField_Counter, sizeof(passivedouble), fhw);
+  fwrite(dataSorter->GetData(), nParallel_Poin*GlobalField_Counter, sizeof(passivedouble), fhw);
   file_size += (su2double)nParallel_Poin*GlobalField_Counter*sizeof(passivedouble);
 
   /*--- Write the external iteration. ---*/
