@@ -74,11 +74,6 @@ void CFEMDataSorter::SortOutputData() {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
-    connRecv[ii] = 0;
-
   unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
   for (int ii = 0; ii < nPoint_Recv[size]; ii++)
     idRecv[ii] = 0;
@@ -98,7 +93,7 @@ void CFEMDataSorter::SortOutputData() {
       int count  = VARS_PER_POINT*kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
+      SU2_MPI::Irecv(&(sortedDataBuffer[ll]), count, MPI_DOUBLE, source, tag,
                      MPI_COMM_WORLD, &(recv_req[iMessage]));
       iMessage++;
     }
@@ -159,7 +154,7 @@ void CFEMDataSorter::SortOutputData() {
   int ll = VARS_PER_POINT*nPoint_Send[rank];
   int kk = VARS_PER_POINT*nPoint_Send[rank+1];
 
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  for (int nn=ll; nn<kk; nn++, mm++) sortedDataBuffer[mm] = connSend[nn];
 
   mm = nPoint_Recv[rank];
   ll = nPoint_Send[rank];
@@ -181,21 +176,6 @@ void CFEMDataSorter::SortOutputData() {
   delete [] send_req;
   delete [] recv_req;
 #endif
-  
-  delete [] connSend;
-  connSend = NULL;
-
-  /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. First, allocate the
-   appropriate amount of memory for this section. ---*/
-
-  Parallel_Data = new su2double*[VARS_PER_POINT];
-  for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nPoint_Recv[size]]();
-    for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
-      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
-    }
-  }
 
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -213,7 +193,6 @@ void CFEMDataSorter::SortOutputData() {
 
   /*--- Free temporary memory from communications ---*/
 
-  delete [] connRecv;
   delete [] idRecv;
   
 }
