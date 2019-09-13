@@ -192,18 +192,14 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   /* Allocate the memory for Parallel_Surf_Data. */
   nParallel_Poin = globalSurfaceDOFIDs.size();
-
-  Parallel_Data = new su2double*[VARS_PER_POINT];
-  for(int jj=0; jj<VARS_PER_POINT; jj++)
-    Parallel_Data[jj] = new su2double[nParallel_Poin]();
-
+  
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nParallel_Poin; ++i) {
     const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
-      Parallel_Data[jj][i] = volume_sorter->GetData(jj,ii);
+      sortedDataBuffer[i*VARS_PER_POINT+jj] = volume_sorter->GetData(jj,ii);
   }
 
   /*--- Reduce the total number of surf points we have. This will be

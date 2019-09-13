@@ -82,7 +82,6 @@ protected:
   CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
   
   unsigned short GlobalField_Counter;  //!< Number of output fields
-  su2double** Parallel_Data;           //!< Array holding the output data after sorting
   
   bool connectivity_sorted;            //!< Boolean to store information on whether the connectivity is sorted
   
@@ -90,6 +89,8 @@ protected:
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
+  su2double *sortedDataBuffer;                 //!< Send buffer holding the data that will be send to other processors
+  
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
@@ -189,7 +190,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  su2double GetData(unsigned short iField, unsigned long iPoint) {return Parallel_Data[iField][iPoint];}
+  su2double GetData(unsigned short iField, unsigned long iPoint) {return sortedDataBuffer[iPoint*GlobalField_Counter + iField];}
+  
+  /*!
+   * \brief Get the pointer to the sorted linear partitioned data.
+   * \return Pointer to the sorted data.
+   */
+  su2double *GetData() {return sortedDataBuffer;}
   
   /*!
    * \brief Get the global index of a point.
@@ -228,5 +235,9 @@ public:
    */
   void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
     connSend[Index[iPoint] + iField] = data;
+  }
+  
+  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
+    return connSend[Index[iPoint] + iField];
   }
 };

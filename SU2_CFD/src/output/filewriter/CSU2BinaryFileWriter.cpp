@@ -38,42 +38,6 @@ void CSU2BinaryFileWriter::Write_Data(){
   int var_buf_size = 5;
   int var_buf[5] = {535532, GlobalField_Counter, (int)dataSorter->GetnPointsGlobal(), 0, 0};
 
-  /*--- Prepare the 1D data buffer on this rank. ---*/
-
-  passivedouble *buf = new passivedouble[nParallel_Poin*GlobalField_Counter];
-
-  /*--- For now, create a temp 1D buffer to load up the data for writing.
-   This will be replaced with a derived data type most likely. ---*/
-
-  for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
-    for (iVar = 0; iVar < GlobalField_Counter; iVar++)
-      buf[iPoint*GlobalField_Counter+iVar] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,iPoint));
-
-//  /*--- Prepare metadata. ---*/
-
-//  int Restart_ExtIter;
-//  if (dual_time)
-//    Restart_ExtIter= (int)config->GetExtIter() + 1;
-//  else
-//    Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
-
-//  passivedouble Restart_Metadata[8] = {
-//    SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
-//    SU2_TYPE::GetValue(config->GetAoS() - config->GetAoS_Offset()),
-//    SU2_TYPE::GetValue(config->GetInitial_BCThrust()),
-//    SU2_TYPE::GetValue(config->GetdCD_dCL()),
-//    SU2_TYPE::GetValue(config->GetdCMx_dCL()),
-//    SU2_TYPE::GetValue(config->GetdCMy_dCL()),
-//    SU2_TYPE::GetValue(config->GetdCMz_dCL()),
-//    0.0
-//  };
-
-//  if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
-//        config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-//        config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
-//    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
-//  }
-
   /*--- Set a timer for the binary file writing. ---*/
   
 #ifndef HAVE_MPI
@@ -204,7 +168,7 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   /*--- Collective call for all ranks to write to their view simultaneously. ---*/
 
-  MPI_File_write_all(fhw, buf, GlobalField_Counter*nParallel_Poin, MPI_DOUBLE, &status);
+  MPI_File_write_all(fhw, dataSorter->GetData(), GlobalField_Counter*nParallel_Poin, MPI_DOUBLE, &status);
   file_size += (su2double)GlobalField_Counter*nParallel_Poin*sizeof(passivedouble);
 
   /*--- Free the derived datatype. ---*/
@@ -270,6 +234,6 @@ void CSU2BinaryFileWriter::Write_Data(){
   
   /*--- Free temporary data buffer for writing the binary file. ---*/
 
-  delete [] buf;
+//  delete [] buf;
 
 }

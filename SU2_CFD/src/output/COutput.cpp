@@ -131,6 +131,9 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   curOuterIter = 0;
   curTimeIter  = 0;
   
+  volumeDataSorter = nullptr;
+  surfaceDataSorter = nullptr;
+  
 }
 
 COutput::~COutput(void) {
@@ -139,6 +142,17 @@ COutput::~COutput(void) {
   delete multiZoneHeaderTable;
 
   delete [] cauchySerie;
+  
+    if (volumeDataSorter != nullptr)
+      delete volumeDataSorter;
+    
+    volumeDataSorter = nullptr;
+    
+    if (surfaceDataSorter != nullptr)
+      delete surfaceDataSorter;
+    
+    surfaceDataSorter = nullptr;
+  
   
 }
 
@@ -336,34 +350,29 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
   /*---- Construct a data sorter object to partition and distribute
    *  the local data into linear chunks across the processors ---*/
   
+  
   if (femOutput){
-
-    volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
     
-    surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields, 
+    if (volumeDataSorter == nullptr)
+      volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
+    
+    if (surfaceDataSorter == nullptr)
+      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields, 
                                                   dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
-
+    
   }  else {
+   
+    if (volumeDataSorter == nullptr)    
+      volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
     
-    volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
-    
-    surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
+    if (surfaceDataSorter == nullptr)
+      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
                                                   dynamic_cast<CFVMDataSorter*>(volumeDataSorter));  
     
-  }  
+  }
 
-  /*--- Collect that data defined in the subclasses from the different processors ---*/
-  
-  if (rank == MASTER_NODE)
-    cout << endl << "Loading solution output data locally on each rank." << endl;
-  
   CollectVolumeData(config, geometry, solver_container);
-  
-  /*--- Sort the data, needed for volume and surface output ---*/
-  
-  if (rank == MASTER_NODE) 
-    cout << "Sorting output data across all ranks." << endl;
-  
+
   volumeDataSorter->SortOutputData();
   
 }
@@ -371,15 +380,15 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::DeallocateData_Parallel(){
   
-  if (volumeDataSorter != NULL)
-    delete volumeDataSorter;
+//  if (volumeDataSorter != NULL)
+//    delete volumeDataSorter;
   
-  volumeDataSorter = NULL;
+//  volumeDataSorter = NULL;
   
-  if (surfaceDataSorter != NULL)
-    delete surfaceDataSorter;
+//  if (surfaceDataSorter != NULL)
+//    delete surfaceDataSorter;
   
-  surfaceDataSorter = NULL;
+//  surfaceDataSorter = NULL;
   
 }
 
@@ -399,9 +408,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       if (fileName == "")
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
-      
-      surfaceDataSorter->SortConnectivity(config, geometry, true);
-      
+       
+      surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
       
       if (rank == MASTER_NODE) {
@@ -542,7 +550,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      surfaceDataSorter->SortConnectivity(config, geometry, true);
+      surfaceDataSorter->SortConnectivity(config, geometry);      
       surfaceDataSorter->SortOutputData();
       
       /*--- Write paraview binary ---*/
@@ -561,7 +569,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      surfaceDataSorter->SortConnectivity(config, geometry, true);
+      surfaceDataSorter->SortConnectivity(config, geometry);            
       surfaceDataSorter->SortOutputData();
       
       /*--- Write paraview binary ---*/
@@ -580,7 +588,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      surfaceDataSorter->SortConnectivity(config, geometry, true);
+      surfaceDataSorter->SortConnectivity(config, geometry);      
       surfaceDataSorter->SortOutputData();
       
       /*--- Write paraview binary ---*/
@@ -600,7 +608,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      surfaceDataSorter->SortConnectivity(config, geometry, true);
+      surfaceDataSorter->SortConnectivity(config, geometry);      
       surfaceDataSorter->SortOutputData();
       
       /*--- Write paraview binary ---*/
@@ -633,12 +641,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing){
   
+  /*--- Load the volume data from the solver and sort it ---*/
+  
+  Load_Data(geometry, config, solver_container);
+  
   if (WriteVolume_Output(config, Iter) || force_writing){
-   
-    /*--- Load the volume data from the solver and sort it ---*/
-    
-    Load_Data(geometry, config, solver_container);
-    
+
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
     unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
         
@@ -1260,7 +1268,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
           
         }
       }   
-    } 
+    }
   }
 }
 
