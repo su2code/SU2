@@ -604,28 +604,27 @@ void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 
 su2double CFlowIncOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
       Grad_Vel[iDim][jDim] = node_flow->GetGradient_Primitive(iDim+1, jDim);
-      Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-      Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
     }
   }
   
-  su2double OmegaMag = 0.0, StrainMag = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-      OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-    }
-  }
-  StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
+  su2double s11 = Grad_Vel[0][0];
+  su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+  su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+  su2double s22 = Grad_Vel[1][1];
+  su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+  su2double s33 = Grad_Vel[2][2];
+  su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+  su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+  su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
   
-  su2double Q = 0.5*(OmegaMag - StrainMag);
+  su2double Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+      pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
   
   return Q;
 }
