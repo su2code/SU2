@@ -7535,6 +7535,10 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
       /* --- C_L and solution are converged, start finite differencing --- */
 
       if (fabs(Total_CL-Target_CL) < config->GetCauchy_Eps()){
+        if (Iter_dCL_dAlpha == 0){
+          fixed_cl_conv = true;
+          return fixed_cl_conv;
+        }
         Iter_Update_AoA = curr_iter;
         Start_AoA_FD = true;
         fixed_cl_conv = false;
@@ -7561,7 +7565,10 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
     /* --- If the total iteration limit is reached, start finite differencing --- */
 
-    else if (curr_iter == config->GetnExtIter() - Iter_dCL_dAlpha){
+    if (curr_iter == config->GetnExtIter() - Iter_dCL_dAlpha){
+      if (Iter_dCL_dAlpha == 0){
+        End_AoA_FD = true;
+      }
       Iter_Update_AoA = curr_iter;
       Start_AoA_FD = true;
       fixed_cl_conv = false;
