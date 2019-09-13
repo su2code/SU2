@@ -176,6 +176,19 @@ void CFEMDataSorter::SortOutputData() {
   delete [] send_req;
   delete [] recv_req;
 #endif
+  
+  su2double *tmpBuffer = new su2double[nPoint_Recv[size]];
+  
+  for (int jj = 0; jj < VARS_PER_POINT; jj++){
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      tmpBuffer[idRecv[ii]] = sortedDataBuffer[ii*VARS_PER_POINT+jj];
+    }
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      sortedDataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
+    }
+  }
+  
+  delete [] tmpBuffer;
 
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -332,26 +345,32 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
   switch (Elem_Type) {
     case TRIANGLE:
       nParallel_Tria = nSubElem_Local;
+      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;      
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nSubElem_Local;
+      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;            
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
       nParallel_Tetr = nSubElem_Local;
+      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;                  
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
       nParallel_Hexa = nSubElem_Local;
+      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;                        
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
       nParallel_Pris = nSubElem_Local;
+      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;                        
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
       nParallel_Pyra = nSubElem_Local;
+      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;                        
       Conn_Pyra_Par = Conn_SubElem;
       break;
     default:
