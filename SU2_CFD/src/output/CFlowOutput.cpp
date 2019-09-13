@@ -2815,7 +2815,8 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter){
     
     if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
         ((Iter == 0) || (Iter    % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter-1) % config->GetVolume_Wrt_Freq() == 0) )){
+         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || 
+         ((Iter+2 == config->GetnTime_Iter())))){
       return true;
     }
   } else {

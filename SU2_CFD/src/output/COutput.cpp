@@ -152,6 +152,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
                                   unsigned long InnerIter) {
 
   curTimeIter  = TimeIter;
+  curAbsTimeIter = TimeIter - config->GetRestart_Iter();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
   
@@ -205,6 +206,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
   
   curTimeIter  = TimeIter;
+  curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();  
   curOuterIter = OuterIter;
   
   bool write_header, write_screen, write_history;
@@ -709,7 +711,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
       
       /*--- Check the convergence ---*/
       
-      if ((monitor <= config->GetMinLogResidual())) { convergence = true;  }
+      if (Iteration != 0 && (monitor <= config->GetMinLogResidual())) { convergence = true;  }
       else { convergence = false; }
       
     }
@@ -1198,6 +1200,8 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   /*--- Reset the offset cache and index --- */
   curFieldIndex = 0;
   fieldIndexCache.clear();
+  curGetFieldIndex = 0;
+  fieldGetIndexCache.clear();
   
   if (femOutput){
     
@@ -1240,7 +1244,9 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     /*--- Reset the offset cache and index --- */
     curFieldIndex = 0;
-    fieldIndexCache.clear(); 
+    fieldIndexCache.clear();
+    curGetFieldIndex = 0;
+    fieldGetIndexCache.clear();
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
@@ -1289,6 +1295,86 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
   }
   
 }
+
+su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
+  
+  if (buildFieldIndexCache){ 
+    
+    /*--- Build up the offset cache to speed up subsequent 
+     * calls of this routine since the order of calls is 
+     * the same for every value of iPoint --- */
+    
+    if (volumeOutput_Map.count(name) > 0){
+      const short Offset = volumeOutput_Map[name].offset;
+      fieldGetIndexCache.push_back(Offset);        
+      if (Offset != -1){
+        return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+      }
+    } else {
+      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+    }
+  } else {
+    
+    /*--- Use the offset cache for the access ---*/
+    
+    const short Offset = fieldGetIndexCache[curGetFieldIndex++];
+  
+    if (curGetFieldIndex == fieldGetIndexCache.size()){
+      curGetFieldIndex = 0;
+    }
+    if (Offset != -1){
+      return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+    } 
+  }
+  
+  return 0.0;
+}
+
+void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+  
+  const su2double scaling = 1.0 / su2double(curAbsTimeIter + 1);
+  
+  if (buildFieldIndexCache){ 
+    
+    /*--- Build up the offset cache to speed up subsequent 
+     * calls of this routine since the order of calls is 
+     * the same for every value of iPoint --- */
+    
+    if (volumeOutput_Map.count(name) > 0){
+      const short Offset = volumeOutput_Map[name].offset;
+      fieldIndexCache.push_back(Offset);        
+      if (Offset != -1){
+        
+        const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+        const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+        
+        volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
+      }
+    } else {
+      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+    }
+  } else {
+    
+    /*--- Use the offset cache for the access ---*/
+    
+    const short Offset = fieldIndexCache[curFieldIndex++];
+    if (Offset != -1){
+      
+      const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+      
+      volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
+    }   
+    if (curFieldIndex == fieldIndexCache.size()){
+      curFieldIndex = 0;
+    }
+  }
+  
+}
+
+
+
+
 
 void COutput::Postprocess_HistoryData(CConfig *config){
    

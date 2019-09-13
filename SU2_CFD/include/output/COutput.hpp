@@ -84,6 +84,7 @@ protected:
   unsigned short fieldWidth;      /*!< \brief Width of each column for the screen output (hardcoded for now) */
   bool noWriting;                 /*!< \brief Boolean indicating whether a screen/history output should be written */
   unsigned long curTimeIter,      /*!< \brief Current value of the time iteration index */
+  curAbsTimeIter,      /*!< \brief Current value of the time iteration index */  
   curOuterIter,                   /*!< \brief Current value of the outer iteration index */
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
   
@@ -208,13 +209,16 @@ protected:
   unsigned short                                curFieldIndex;
   /*! \brief Boolean to store whether the field index cache should be build. */    
   bool                                          buildFieldIndexCache;
-  
+  /*! \brief Vector to cache the positions of the field in the data array */
+  std::vector<short>                            fieldGetIndexCache;
+  /*! \brief Current value of the cache index */  
+  unsigned short                                curGetFieldIndex;
 
   /*! \brief Requested volume field names in the config file. */    
   std::vector<string> requestedVolumeFields;
   /*! \brief Number of requested volume field names in the config file. */      
   unsigned short nRequestedVolumeFields;
-  
+    
   /*----------------------------- Convergence monitoring ----------------------------*/     
 
   su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
@@ -569,6 +573,14 @@ protected:
     volumeOutput_List.push_back(name);
   }
   
+  
+  /*!
+   * \brief Set the value of a volume output field
+   * \param[in] name - Name of the field.
+   * \param[in] value - The new value of this field.
+   */
+  su2double GetVolumeOutputValue(string name, unsigned long iPoint);
+  
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
@@ -576,6 +588,13 @@ protected:
    */
   void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
 
+  /*!
+   * \brief Set the value of a volume output field
+   * \param[in] name - Name of the field.
+   * \param[in] value - The new value of this field.
+   */
+  void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  
   /*!
    * \brief CheckHistoryOutput
    */
