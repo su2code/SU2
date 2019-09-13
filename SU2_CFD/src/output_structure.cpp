@@ -450,7 +450,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
-  su2double PressCoeff = 0.0, SkinFrictionCoeff[3], HeatFlux;
+  su2double PressCoeff = 0.0, SkinFrictionCoeff[3], HeatFlux, Temperature;
   su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Mach, Pressure;
   char cstr[200];
   
@@ -490,8 +490,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   switch (solver) {
     case EULER : SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
     case NAVIER_STOKES: case RANS:
-      if (nDim == 2) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Heat_Flux\"" << "\n";
-      if (nDim == 3) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\"" << "\n";
+      if (nDim == 2) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Temperature\", \"Heat_Flux\"" << "\n";
+      if (nDim == 3) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Temperature\", \"Heat_Flux\"" << "\n";
       break;
   }
   
@@ -524,10 +524,11 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
             for (iDim = 0; iDim < nDim; iDim++)
               SkinFrictionCoeff[iDim] = FlowSolver->GetCSkinFriction(iMarker, iVertex, iDim);
+            Temperature = FlowSolver->node[iPoint]->GetTemperature();
             HeatFlux = FlowSolver->GetHeatFlux(iMarker, iVertex);
             
-            if (nDim == 2) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << HeatFlux << "\n";
-            if (nDim == 3) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << SkinFrictionCoeff[2] << ", " << HeatFlux << "\n";
+            if (nDim == 2) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << Temperature << ", " <<HeatFlux << "\n";
+            if (nDim == 3) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << SkinFrictionCoeff[2] << ", " << Temperature << ", " << HeatFlux << "\n";
             
             break;
         }
@@ -594,7 +595,10 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   su2double *Buffer_Send_SkinFriction_z = new su2double [MaxLocalVertex_Surface];
   su2double *Buffer_Recv_SkinFriction_z = NULL;
-  
+
+  su2double *Buffer_Send_Temperature = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_Temperature = NULL;
+
   su2double *Buffer_Send_HeatTransfer = new su2double [MaxLocalVertex_Surface];
   su2double *Buffer_Recv_HeatTransfer = NULL;
   
@@ -614,6 +618,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     Buffer_Recv_SkinFriction_y = new su2double [nProcessor*MaxLocalVertex_Surface];
     if (nDim == 3) Buffer_Recv_SkinFriction_z = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_HeatTransfer = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Temperature  = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
   }
   
@@ -652,6 +657,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             Buffer_Send_SkinFriction_y[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 1);
             if (nDim == 3) Buffer_Send_SkinFriction_z[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 2);
             Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatFlux(iMarker, iVertex);
+            Buffer_Send_Temperature[nVertex_Surface] = FlowSolver->node[iPoint]->GetTemperature();
           }
           nVertex_Surface++;
         }
@@ -670,6 +676,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     SU2_MPI::Gather(Buffer_Send_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Temperature, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Temperature, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   }
   SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -708,8 +715,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     switch (solver) {
       case EULER : case FEM_EULER: SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
       case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
-        if (nDim == 2) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Heat_Flux\"" << "\n";
-        if (nDim == 3) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\"" << "\n";
+        if (nDim == 2) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Temperature\", \"Heat_Flux\"" << "\n";
+        if (nDim == 3) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\",  \"Temperature\", \"Heat_Flux\"" << "\n";
         break;
     }
     
@@ -748,8 +755,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SkinFrictionCoeff[1] = Buffer_Recv_SkinFriction_y[Total_Index];
             if (nDim == 3) SkinFrictionCoeff[2] = Buffer_Recv_SkinFriction_z[Total_Index];
             HeatFlux = Buffer_Recv_HeatTransfer[Total_Index];
-            if (nDim == 2) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << HeatFlux << "\n";
-            if (nDim == 3) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << SkinFrictionCoeff[2] << ", " << HeatFlux << "\n";
+            Temperature = Buffer_Recv_Temperature[Total_Index];
+            if (nDim == 2) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", "  << Temperature << ", " << HeatFlux << "\n";
+            if (nDim == 3) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << SkinFrictionCoeff[2] << ", " << Temperature << ", " << HeatFlux << "\n";
             break;
         }
       }
@@ -770,6 +778,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     delete [] Buffer_Recv_SkinFriction_y;
     if (nDim == 3) delete [] Buffer_Recv_SkinFriction_z;
     delete [] Buffer_Recv_HeatTransfer;
+    delete [] Buffer_Recv_Temperature;
     delete [] Buffer_Recv_GlobalIndex;
     
     delete [] Buffer_Recv_nVertex;
@@ -788,6 +797,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   delete [] Buffer_Send_SkinFriction_y;
   delete [] Buffer_Send_SkinFriction_z;
   delete [] Buffer_Send_HeatTransfer;
+  delete [] Buffer_Send_Temperature;
   delete [] Buffer_Send_GlobalIndex;
   
 #endif
