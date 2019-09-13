@@ -7309,26 +7309,18 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   //unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
   //unsigned long Update_Alpha = config->GetUpdate_Alpha();
   
-  unsigned long ExtIter       = config->GetExtIter();
-  su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
-  bool Update_AoA             = false;
-  bool CL_Converged           = false;
-
-  Update_AoA = config->GetUpdate_AoA();
-
+  Target_CL = config->GetTarget_CL();
+  unsigned long ExtIter         = config->GetExtIter();
+  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+  su2double Beta                = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCL_dAlpha          = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
+  bool Update_AoA               = config->GetUpdate_AoA();
+  bool CL_Converged             = fabs(Total_CL - Target_CL) < config->GetCauchy_Eps();
+  End_AoA_FD                    = Start_AoA_FD && ((ExtIter - Iter_Update_AoA) == 
+                                  Iter_dCL_dAlpha || ExtIter == config->GetnExtIter()- 1 );
   
   if (Update_AoA && Output) {
     
-    /*--- Retrieve the specified target CL value. ---*/
-    
-    Target_CL = config->GetTarget_CL();
-
-    /* --- Check for CL convergence ---*/
-    if (fabs(Total_CL - Target_CL) < config->GetCauchy_Eps()) {
-      CL_Converged = true;
-    }
-
     /*--- Retrieve the old AoA (radians) ---*/
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
@@ -7414,7 +7406,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-	unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+	
 
   if (Start_AoA_FD && Output && ((ExtIter - 1) == Iter_Update_AoA)) {
     AoA_old = config->GetAoA();
@@ -7485,7 +7477,9 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
   
-  if (Start_AoA_FD && End_AoA_FD && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  if (Start_AoA_FD && 
+    ((ExtIter - Iter_Update_AoA) == Iter_dCL_dAlpha || ExtIter == config->GetnExtIter()- 1 ) && 
+    Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
     /*--- Update angle of attack ---*/
 
@@ -7529,54 +7523,61 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
   su2double Target_CL = config->GetTarget_CL();
   unsigned long curr_iter = config->GetExtIter();
+  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
   bool Update_AoA = false;
   bool fixed_cl_conv = false;
 
-  /* --- Solution allowed to end only after finite differencing has been done --- */
-  if (Start_AoA_FD && (curr_iter - Iter_Update_AoA) == config->GetIter_dCL_dAlpha()){
-    End_AoA_FD = true;
-    fixed_cl_conv = true;
-  }
+  /*--- if in Fixed CL mode, before finite differencing --- */
 
+  if (!Start_AoA_FD){
+    if (convergence){
 
-  /* --- If the solution has converged, either start finite differencing
-          or update AoA ---*/
-  if (convergence && !Start_AoA_FD){
+      /* --- C_L and solution are converged, start finite differencing --- */
 
-    /* --- C_L and solution are converged, start finite differencing --- */
-    if (fabs(Total_CL-Target_CL) < config->GetCauchy_Eps()){
+      if (fabs(Total_CL-Target_CL) < config->GetCauchy_Eps()){
+        Iter_Update_AoA = curr_iter;
+        Start_AoA_FD = true;
+        fixed_cl_conv = false;
+        Update_AoA = false;      
+      }
+
+      /* --- C_L is not converged to target value and some iterations 
+          have passed since last update, so update AoA --- */
+
+      else if ((curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter()){
+        Iter_Update_AoA = curr_iter;
+        Update_AoA = true;
+        fixed_cl_conv = false;
+      }
+    }
+
+    /* --- If the iteration limit between AoA updates is met, so update AoA --- */
+
+    else if ((curr_iter - Iter_Update_AoA) == config->GetUpdate_AoA_Iter_Limit()) {
+      Update_AoA = true;
+      Iter_Update_AoA = curr_iter;
+      fixed_cl_conv = false;
+    }
+
+    /* --- If the total iteration limit is reached, start finite differencing --- */
+
+    else if (curr_iter == config->GetnExtIter() - Iter_dCL_dAlpha){
       Iter_Update_AoA = curr_iter;
       Start_AoA_FD = true;
       fixed_cl_conv = false;
-      Update_AoA = false;      
-    }
-
-    /* --- C_L is not converged to target value and some iterations 
-          have passed since last update, so update AoA --- */
-    else if ((curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter()){
-      Iter_Update_AoA = curr_iter;
-      Update_AoA = true;
-      fixed_cl_conv = false;
+      Update_AoA = false;
     }
   }
 
-  /* --- If the iteration limit between AoA updates is met, update AoA --- */
-  if ((curr_iter - Iter_Update_AoA) == config->GetUpdate_AoA_Iter_Limit() && !Start_AoA_FD){
-    Update_AoA = true;
-    Iter_Update_AoA = curr_iter;
-  }
+  /* --- Else in finite differencing mode, check for when to exit ---*/
+  else if (End_AoA_FD){
 
-  /* --- If the total iteration limit is reached, switch to finite differencing --- */
-  if (curr_iter == config->GetnExtIter() - config->GetIter_dCL_dAlpha()){
-    Iter_Update_AoA = curr_iter;
-    Start_AoA_FD = true;
-    fixed_cl_conv = false;
-    Update_AoA = false;
-  }
+    /* --- Solution allowed to end only after finite differencing has been done --- */
+    if ((curr_iter - Iter_Update_AoA) == Iter_dCL_dAlpha){
+     End_AoA_FD = true;
+     fixed_cl_conv = true;
+    }
 
-  /* --- If total iteration is reached after finite differencing, end solution --- */
-  else if(Start_AoA_FD && curr_iter == config->GetnExtIter()- 1){
-    End_AoA_FD = true;
   }
 
   config->SetUpdate_AoA(Update_AoA);
