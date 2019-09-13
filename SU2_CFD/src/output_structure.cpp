@@ -12361,6 +12361,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
   unsigned short nInst = 1;
   bool compressible = true;
 
+  if (config[iZone]->GetWrt_Output()) {
+
   for (iZone = 0; iZone < val_nZone; iZone++) {
 
     /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
@@ -12702,6 +12704,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
     }
   }
+}
 }
 
 void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
