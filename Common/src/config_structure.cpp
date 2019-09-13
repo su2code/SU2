@@ -2511,6 +2511,9 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
+
+  /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
+  addPythonOption("MULTIPOINT_MESH_FILENAME");
   
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
