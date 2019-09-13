@@ -92,8 +92,9 @@ def State_Factory(state=None,config=None):
             MESH: mesh.su2
             DIRECT: solution_flow.dat
             ADJOINT_DRAG: solution_adj_cd.dat
-            MULTIPOINT_DIRECT: [solution_flow_point0.dat solution_flow_point1.dat ...]
-            MULTIPOINT_ADJOINT_DRAG: [solution_adj_point0_cd.dat solution_adj_point1_cd.dat ...]
+            MULTIPOINT_DIRECT: [solution_flow_point0.dat solution_flow_point1.dat, ...]
+            MULTIPOINT_ADJOINT_DRAG: [solution_adj_point0_cd.dat solution_adj_point1_cd.dat, ...]
+            MULTIPOINT_MESH_FILENAME: [mesh_0.su2, mesh_1.su2, ... ]
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
@@ -198,8 +199,10 @@ class State(ordered_bunch):
                 link.extend(value)
             elif 'MULTIPOINT' in key:
                 # multipoint files
-                value = expand_zones(value,config)
-                value = expand_time(value,config)
+                if key != 'MULTIPOINT_MESH_FILENAME':
+                    # DIRECT and ADJOINT files
+                    value = expand_zones(value,config)
+                    value = expand_time(value,config)
                 for elem in value:
                     if elem:
                         link.append(elem)
@@ -270,7 +273,7 @@ class State(ordered_bunch):
                 elif label.split('_')[0] in ['MULTIPOINT']:
                     # if multipoint, list of files needs to be added
                     file_list= [];
-                    for name in filename:
+                    for name in names:
                         if os.path.exists(name):
                             file_list.append(name)
                         else:
@@ -299,12 +302,16 @@ class State(ordered_bunch):
 
         # mesh
         register_file('MESH',mesh_name)
+
+        if multipoint:
+            register_file('MULTIPOINT_MESH_FILENAME', mesh_list)
         
         # direct solution
         if restart:
             register_file('DIRECT',direct_name)
             if multipoint:
                 name_list = expand_multipoint(direct_name,config)
+                name_list = expand_zones(name_list,config)
                 register_file('MULTIPOINT_DIRECT',name_list)
         
         # adjoint solutions
@@ -314,7 +321,7 @@ class State(ordered_bunch):
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
                 if multipoint:
-                    name_list = add_suffix(expand_multipoint(adjoint_name,config), suff)
+                    name_list = expand_zones(add_suffix(expand_multipoint(adjoint_name,config), suff), config)
                     multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
                     register_file(multipoint_adj_name, name_list)
         

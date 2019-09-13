@@ -425,6 +425,7 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
+    mesh_list = config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
     restart_sol = config['RESTART_SOL']
     func = []
@@ -476,7 +477,7 @@ def multipoint( config, state=None, step=1e-2 ):
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
     config.MARKER_OUTLET = new_marker_outlet
-    
+    config.MESH_FILENAME = mesh_list[0]
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
 
     # If solution file for the first point is available, use it
