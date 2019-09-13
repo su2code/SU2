@@ -4174,6 +4174,8 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_Inf[iDim] = Vel_Infty[iDim];
     }
+
+    cout << "Vx= " << Velocity_Inf[0] << ", Vy= " << Vel_Infty[1] << endl;
     
     /*--- Only the fine mesh stores the updated values for velocity in config ---*/
     

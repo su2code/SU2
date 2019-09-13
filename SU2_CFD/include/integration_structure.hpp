@@ -69,8 +69,7 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   bool Convergence,    /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
   Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG,    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
-  AoA_FD;             /*!< \brief To indicate weather a Finite difference calculation on AoA is being done for Fixed CL Mode. */
+  Convergence_FullMG;    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
   su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
 
 public:

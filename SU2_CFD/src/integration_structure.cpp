@@ -50,7 +50,6 @@ CIntegration::CIntegration(CConfig *config) {
   Convergence_FullMG = false;
   Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
   InitResidual = 0.0;
-  AoA_FD = false;
 }
 
 CIntegration::~CIntegration(void) {
