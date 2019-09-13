@@ -202,8 +202,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   /*--- Set the gamma value ---*/
   //Gamma = 0.0; //Cat vai ser p apagar
   //Gamma_Minus_One = 0.0;
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
+  //Gamma = config->GetGamma();
+  //Gamma_Minus_One = Gamma - 1.0;
   /*--- Define geometric constants in the solver structure ---*/
   nMarker      = config->GetnMarker_All();
   nDim         = geometry->GetnDim();
@@ -4420,7 +4420,12 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   
   Gamma     = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
-  Gamma = config->GetGamma();
+  
+  //std::cout << setprecision(6)<< "Mutation: Gamma=" << Gamma << std::endl << std::endl;
+
+
+
+  //Gamma = config->GetGamma();
 
   Cvtr     = reactive->Get_CvTraRotSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
   //Cvve     = reactive->Get_CvVibElSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
@@ -4547,6 +4552,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
     else {
 
+      std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 1" <<std::endl <<std::endl<<std::endl;
+
       //Cat gamma calcular aqui com base no freestream
 
       Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3)); 
@@ -4592,11 +4599,13 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
+    std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 2" <<std::endl <<std::endl<<std::endl;
     Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma //Cat gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
+    std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 3" <<std::endl <<std::endl<<std::endl;
     Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2) //Cat gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
@@ -4935,6 +4944,8 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
   su2double *U_i = NULL;
   su2double Beta_max = config->GetmaxTurkelBeta();
   su2double Mach_infty2, Mach_lim2, aux, parameter;
+
+  std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI CTNE2EulerSolver::SetPreconditioner" <<std::endl <<std::endl<<std::endl;
 
 
   cout << "This dont work" << endl;
@@ -5426,11 +5437,17 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   cout << "This dont work" << endl;
+  cout << "Using gamma = 1.4" << endl;
+
   unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
       Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
       alpha, aa, bb, cc, dd, Area, UnitaryNormal[3];
+
+
+  
+
 
   bool implicit             = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -6204,7 +6221,8 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   g         = config->GetElDegeneracy();
   nElStates = config->GetnElStates();
 
-  Gamma = config->GetGamma();
+  //Gamma = config->GetGamma();
+  //Gamma     = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
   Gamma_Minus_One = Gamma - 1.0;
 
 
@@ -6253,11 +6271,9 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       Density = V_domain[RHO_INDEX];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        //std::cout << std::endl << "Mutation Velocity[iDim]=" <<Velocity[iDim] << std::endl << std::endl;
         Velocity[iDim] = V_domain[VEL_INDEX+iDim];
         Velocity2 += Velocity[iDim]*Velocity[iDim];
         Vn += Velocity[iDim]*UnitaryNormal[iDim];
-        //std::cout << std::endl << "Mutation Vn=" <<Vn << std::endl << std::endl;
       }
       Energy      = U_domain[nVar-2]/Density;
       Temperature = V_domain[T_INDEX];
@@ -6267,11 +6283,15 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       rhoCvtr     = V_domain[RHOCVTR_INDEX];
       Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
 
+
       /*--- Compute Species Concentrations ---*/
       //Using partial pressures, maybe not
       for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
         Ys[iSpecies] = V_domain[iSpecies]/Density;
       }
+
+      Gamma     = reactive->Get_Gamma(Ys, Density, Temperature, Tve);
+      Gamma_Minus_One = Gamma - 1.0;
 
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {  //Mach_Exit >= 1.0
@@ -6286,32 +6306,6 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       } else {
 
-        V_outlet[T_INDEX]     = V_domain[T_INDEX]; //done
-        V_outlet[TVE_INDEX]   = V_domain[TVE_INDEX]; //done
-
-        Pressure   = P_Exit;
-
-        conc = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
-          conc += V_domain[RHOS_INDEX+iSpecies] / Ms[iSpecies];
-        
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          Xs[iSpecies] = (V_domain[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
-
-        Density = reactive->Get_Density(Temperature, Xs, Pressure );  
-
-        conc = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
-          conc +=  Ys[iSpecies]*Density / Ms[iSpecies];
-
-        //std::cout << "Mutation Density=" << Density << std::endl << std::endl;
-
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
-          V_outlet[iSpecies]= Ys[iSpecies]*Density;
-        }
-
-       
-
         /*--- Subsonic exit flow: there is one incoming characteristic,
          therefore one variable can be specified (back pressure) and is used
          to update the conservative variables. Compute the entropy and the
@@ -6320,141 +6314,39 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
          (T and Tve) and species concentraition are also assumed to be extrapolated.
          ---*/
 
-        //Entropy = Pressure*pow(1.0/Density,Gamma);
+        Entropy = Pressure*pow(1.0/Density,Gamma);
+        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
         
-        //std::cout << std::endl << "Mutation Vn=" << Vn << std::endl << std::endl;
-
-        //std::cout << std::endl << "Mutation SoundSpeed=" <<SoundSpeed << std::endl << std::endl;
-
-        //std::cout << std::endl << "Mutation Gamma_Minus_One=" << Gamma_Minus_One << std::endl << std::endl;
-
-        //std::cout << std::endl << "Mutation 2.0*SoundSpeed/Gamma_Minus_One=" <<2.0*SoundSpeed/Gamma_Minus_One << std::endl << std::endl;
-
-
-        //su2double SoundSpeedtest = sqrt(((1.0 + Ru/(Density*740))*conc) * Pressure/Density); 
-
-        //Riemann = Vn + 2.0*SoundSpeedtest/Gamma_Minus_One;
-
-        //std::cout << std::endl << "Mutation Riemann=" << Riemann << std::endl << std::endl;
-
-        //su2double K = Pressure * (1.0 + Ru/(Density*740)*conc);
-
-        //su2double Riemann2 = Vn + (2/5) * Density / sqrt(K/(Density*Density*Density));
-
-        //std::cout << std::endl << "Mutation Riemann2=" << Riemann2 << std::endl << std::endl;
-
-        //std::cout << std::endl << "Mutation Riemann=" << Riemann << std::endl << std::endl;
 
         /*--- Compute the new fictious state at the outlet ---*/
         //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
         //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-        //Density    = pow(P_Exit/Entropy,1.0/Gamma);
-
-        //std::cout << "Mutation Density Nemo=" << Density << std::endl << std::endl;
         
-        //SoundSpeed = sqrt(Gamma*P_Exit/Density);
 
-        su2double Density_Old = V_domain[RHO_INDEX];
+        Density    = pow(P_Exit/Entropy,1.0/Gamma);
 
-        su2double Pressure_Old = V_domain[PRESS_INDEX];
+        Pressure   = P_Exit;
 
+        conc = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+          conc +=  Ys[iSpecies]*Density / Ms[iSpecies];
 
-        Cvtr     = reactive->Get_CvTraRotSpecies(Ys, Density_Old, Temperature, Tve);
-
-
-        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
-
-        //su2double Density_Old = V_domain[RHO_INDEX];
-
-        //std::cout << std::endl << "Mutation Vn=" << Vn << std::endl << std::endl;
-
-        //su2double Riemann2 = Vn + 2.0/sqrt(Pressure*(1.0 + Ru/rhoCvtr*conc)/Density);
-
-        //std::cout << std::endl << "Mutation 2.0/sqrt(Pressure*(1.0 + Ru/rhoCvtr*conc)/Density)=" << 2.0/sqrt(Pressure*(1.0 + Ru/rhoCvtr*conc)/Density) << std::endl << std::endl;
-
-        //su2double Riemann3 = Vn - 2.0*sqrt(Pressure*(rhoCvtr + Ru*conc)/(Density*rhoCvtr));
-
-//        std::cout << std::endl << "Mutation Riemann=" << Riemann << std::endl << std::endl;
-//
-//        //std::cout << std::endl << "Mutation Riemann2=" << Riemann2 << std::endl << std::endl;
-//
-//        //std::cout << std::endl << "Mutation Riemann3=" << Riemann3 << std::endl << std::endl;
-//
-//        // ------------ Using domain values ------------------- // rhoCvtr as function of rho
-//        su2double aux = 0.0;
-//        su2double B = 0.0;
-//        conc2 = 0.0;
-//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//          conc2 +=  Ys[iSpecies]*Density_Old / Ms[iSpecies];
-//          aux   +=  Ys[iSpecies]*Cvtr[iSpecies];
-//          B     +=  Ys[iSpecies]*Ru/Ms[iSpecies]*Temperature;
-//        }
-//
-//        su2double A = (Ru*conc2) / (aux);
-//
-//        su2double tanh_1 = 1/tanh(sqrt(A+Density_Old)/sqrt(A));
-//
-//
-//        su2double Riemann2 = Vn - sqrt((Pressure_Old*(A+Density_Old))/(Density_Old*Density_Old)) * ( ((Density_Old*tanh_1)/(sqrt(A)*sqrt(A+Density_Old))) + 1);
-//
-//        // --------------------------- rhoCvtr as function of rho and P as function of rho
-//
-//        su2double K1, K2, C1, C2;
-//
-//        K2 = sqrt(A+Density_Old);
-//
-//        C1 = sqrt((B*(A+Density_Old))/Density_Old);
-//
-//        C2 = sqrt(A+Density_Old) - sqrt(Density_Old) * log (sqrt(A+Density_Old) + sqrt(Density_Old));
-//
-//        K1 = 2 * C1 * C2;
-//
-//        su2double Riemann3 = Vn - K1/K2; //(2*sqrt((B*(A+Density_Old))/Density_Old) * (sqrt(A+Density_Old) - sqrt(Density_Old) * log (sqrt(A+Density_Old) + sqrt(Density_Old))) )/sqrt(A+Density_Old);
-//
-//
-//        std::cout << std::endl << "Mutation Riemann2=" << Riemann2 << std::endl << std::endl;
-//
-//        std::cout << std::endl << "Mutation Riemann3=" << Riemann3 << std::endl << std::endl;
-//
-//
-//        // ------------------- rhoCvtr and P constant from domain
-//
-//        su2double Riemann4 = Vn - 2* sqrt(((1+(Ru*conc2/rhoCvtr))*Pressure_Old)/Density_Old);
-//
-//        std::cout << std::endl << "Mutation Riemann4=" << Riemann4 << std::endl << std::endl;
-//
-//
-//
-//        //------------------------
-//
         Cvtr     = reactive->Get_CvTraRotSpecies(Ys, Density, Temperature, Tve);
 
-
-        
         for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-          V_outlet[RHOCVTR_INDEX ] += Density* Ys[iSpecies] * Cvtr[iSpecies];
+          rhoCvtr += Density* Ys[iSpecies] * Cvtr[iSpecies];
         }
 
         SoundSpeed = sqrt((1.0 + Ru/V_outlet[RHOCVTR_INDEX ]*conc) * Pressure/Density);
+
         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        
+
         Velocity2  = 0.0;
-
-        //std::cout << "Mutation 1" << std::endl << std::endl;
-
-
-        //std::cout << std::endl << "Mutation Vn_Exit=" << Vn_Exit << std::endl << std::endl;
-
-//std::cout << std::endl << "Mutation Vn=" << Vn << std::endl << std::endl;
-
-        //std::cout << std::endl << "Mutation Vn_Exit-Vn=" << Vn_Exit-Vn << std::endl << std::endl;
-
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitaryNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
-
-        //std::cout << "Mutation 2"  << std::endl << std::endl;
-        //Energy  = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
         
         Energies = reactive->Get_MixtureEnergies(Ys, Density, Temperature, Tve);
 
@@ -6463,131 +6355,47 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         if (tkeNeeded) Energy += GetTke_Inf();
 
         /*--- Primitive variables, using the derived quantities ---*/
-        //std::cout << "Mutation 3" << std::endl << std::endl;
-
         
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
+          V_outlet[iSpecies]= Ys[iSpecies]*Density;
+        }
+
+        V_outlet[T_INDEX]     = V_domain[T_INDEX];
+        V_outlet[TVE_INDEX]   = V_domain[TVE_INDEX];
 
         for (iDim = 0; iDim < nDim; iDim++){
           V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
         }
 
-        V_outlet[PRESS_INDEX] = Pressure;
-        V_outlet[RHO_INDEX]   = Density;
-        V_outlet[H_INDEX]     = Energy+Pressure/Density;
-        V_outlet[A_INDEX]     = SoundSpeed;
+        V_outlet[PRESS_INDEX]   = Pressure;
+        V_outlet[RHO_INDEX]     = Density;
+        V_outlet[H_INDEX]       = Energy+Pressure/Density;
+        V_outlet[A_INDEX]       = SoundSpeed;
+        V_outlet[RHOCVTR_INDEX] = rhoCvtr;
 
-        //std::cout << "Mutation 4"  << std::endl << std::endl; 
-
-       // Cvtr     = reactive->Get_CvTraRotSpecies(Ys, Density, Temperature, Tve);
+       
         Cvve     = reactive->Get_CvVibElSpecies (Ys, Density, Temperature, Tve);
 
-
-
-//       for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//         V_outlet[RHOCVTR_INDEX ] += Density* Ys[iSpecies] * Cvtr[iSpecies];
-//       }
-
-        //std::cout << "Mutation 5"  << std::endl << std::endl;
-
-        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-
-         // for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-
-          /*--- Vibrational energy ---*/
-//          if (thetav[iSpecies] != 0.0) {
-//
-//            /*--- Rename for convenience ---*/
-//            thoTve = thetav[iSpecies]/Tve;
-//            exptv = exp(thetav[iSpecies]/Tve);
-//            thsqr = thetav[iSpecies]*thetav[iSpecies];
-//
-//            /*--- Calculate species vibrational specific heats ---*/
-//            Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
-//
-            /*--- Add contribution ---*/
-            //V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cvvs;
-          //}
-          //std::cout << "Mutation 6"  << std::endl << std::endl;
-
-          /*--- Electronic energy ---*/
-//          if (nElStates[iSpecies] != 0) {
-//            num = 0.0; num2 = 0.0;
-//            denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
-//            num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-//            for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-//              thoTve = thetae[iSpecies][iEl]/Tve;
-//              exptv = exp(-thetae[iSpecies][iEl]/Tve);
-//
-//              num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
-//              denom += g[iSpecies][iEl] * exptv;
-//              num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
-//              num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
-//            }
-//            Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
+        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
             V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cvve[iSpecies];
-          //}
+         
 
-        }
-        //std::cout << "Mutation 7"  << std::endl << std::endl;
 
-       //for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-       //  cout << "THIS MAY BE WRONG" << endl;
-       //  Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
-       //  V_outlet[RHOCVVE_INDEX] += V_outlet[nSpecies-1] * Cves;
-       //}
 
         /*--- Conservative variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
           U_outlet[iSpecies] = V_outlet[iSpecies];
         }
 
-        //std::cout << "Mutation 8"  << std::endl << std::endl;
-
         for (iDim = 0; iDim < nDim; iDim++)
           U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
+
         U_outlet[nVar-2] = Density*Energy;
 
-        //std::cout << "Mutation 9"  << std::endl << std::endl;
-
-        /*--- Set the Electronic energy ---*/
-//        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//
-//          // Species formation energy
-//          Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-//
-//          // Species vibrational energy
-//          if (thetav[iSpecies] != 0.0)
-//            Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-//          else
-//            Ev = 0.0;
-//
-//          // Species electronic energy
-//          num = 0.0;
-//          denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-//          for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-//            num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//            denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//          }
-//          Ee = Ru/Ms[iSpecies] * (num/denom);
-//
-//          // Mixture vibrational-electronic energy
-//          U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
-//        }
-//
-//        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-//
-//          // Species formation energy
-//          Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-//
-//          // Electron t-r mode contributes to mixture vib-el energy
-//          U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-        //}
-
-           U_outlet[nVar-1] = Density*Energies[1];
+        U_outlet[nVar-1] = Density*Energies[1];
 
       }
 
-      //std::cout << "Mutation 5" << Density << std::endl << std::endl;
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetConservative(U_domain, U_outlet);
