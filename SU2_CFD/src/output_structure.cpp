@@ -12912,32 +12912,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Volume_Ratio");
     }
 
-    nVar_Par +=1;
-    Variable_Names.push_back("Local_CFL");
-    nVar_Par +=1;
-    Variable_Names.push_back("Under_Relaxation");
-
-    nVar_Par += 5*nDim;
-    Variable_Names.push_back("GradT_x");
-    Variable_Names.push_back("GradT_y");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradT_z");
-    
-    Variable_Names.push_back("GradVelx_x");
-    Variable_Names.push_back("GradVelx_y");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradVelx_z");
-    
-    Variable_Names.push_back("GradVely_x");
-    Variable_Names.push_back("GradVely_y");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradVely_z");
-    
-    Variable_Names.push_back("GradP_x");
-    Variable_Names.push_back("GradP_y");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradP_z");
-    
-    Variable_Names.push_back("GradDensity_x");
-    Variable_Names.push_back("GradDensity_y");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("GradDensity_z");
-    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13255,20 +13229,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = geometry->Aspect_Ratio[iPoint];  iVar++;
           Local_Data[jPoint][iVar] = geometry->Volume_Ratio[iPoint];  iVar++;
         }
-        
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLocalCFL(); iVar++;
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetUnderRelaxation(); iVar++;
-        
-        su2double **gradient  = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-        
-        /* First, write the primitive gradients from the solution. */
-        for (jVar = 0; jVar < 5; jVar++) {
-          for (iDim = 0; iDim < nDim; iDim ++){
-            Local_Data[jPoint][iVar] = gradient[jVar][iDim];
-            iVar++;
-          }
-        }
-        
+
       }
       
       /*--- Increment the point counter, as there may have been halos we
