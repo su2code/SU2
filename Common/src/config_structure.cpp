@@ -2527,6 +2527,15 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
   addBoolOption("UQ_PERMUTE", uq_permute, false);
 
+  /* DESCRIPTION: Number of calls to 'Build' that trigger re-factorization (0 means only once). */
+  addUnsignedLongOption("PASTIX_FACTORIZATION_FREQUENCY", pastix_fact_freq, 1);
+
+  /* DESCRIPTION: 0 - Quiet, 1 - During factorization and cleanup, 2 - Even more detail. */
+  addUnsignedShortOption("PASTIX_VERBOSITY_LEVEL", pastix_verb_lvl, 0);
+
+  /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
+  addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -4299,10 +4308,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Grid motion is not yet supported with the incompressible solver. ---*/
+  /*--- Rotating frame is not yet supported with the incompressible solver. ---*/
 
-  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (GetGrid_Movement())) {
-    SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_GridMovement == ROTATING_FRAME)) {
+    SU2_MPI::Error("Support for rotating frame simulation not yet implemented for incompressible flows.", CURRENT_FUNCTION);
   }
 
   /*--- Assert that there are two markers being analyzed if the
