@@ -4268,7 +4268,6 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
-  su2double CFL;
   su2double rot_z_ini, rot_z_final ,rot_z;
   su2double outPres_ini, outPres_final, outPres;
   unsigned long rampFreq, finalRamp_Iter;
