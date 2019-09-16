@@ -8317,7 +8317,7 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
   
   bool debug_cout = false;
   su2double density, muT, turb_ke, nuL, omega, lengthTurb, wallDistance, hmax;
-  su2double epsilon, l_e, k_e;
+  su2double epsilon, l_e, k_e, StrainMag;
   su2double f_cut, k_neta, f_neta, E_k_sum, NormalizedAmplitude_sum;
   unsigned short iMode, iDim, jDim;
   su2double *Coord, ConvectiveTerm[3]={0.,0.,0.}, **GradPrimVar, *PrimVar;
@@ -8435,12 +8435,14 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
     GradPrimVar  = node[LocalPoints[ii]]->GetGradient_Primitive();
     wallDistance = geometry->node[LocalPoints[ii]]->GetWall_Distance();
     hmax         = geometry->node[LocalPoints[ii]]->GetMaxLength();
+    StrainMag    = node[LocalPoints[ii]]->GetStrainMag();
     
     // Turbulent length scale.
     lengthTurb   = sqrt(turb_ke) / (0.09 * omega);
     
     // Kolmogorov length scale and wave number
-    epsilon      = pow(U0,3.) / config->GetRefLength();
+    //epsilon      = pow(U0,3.) / config->GetRefLength();
+    epsilon = 2.0 * nuL * pow(StrainMag,2.0); // TODO: Check the energy dissipation rate eq.
     k_neta = 2.0 * PI_NUMBER / pow( pow(nuL,3.0) / epsilon , 0.25);
     
     if (debug_cout)
