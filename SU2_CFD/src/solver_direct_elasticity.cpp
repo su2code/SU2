@@ -3044,7 +3044,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
     LoadCoeff = min(LoadCoeff,1.0);
 
   }
-  else if (Sine_Load){ //Allow sine load with initial ramp loading as well
+  if (Sine_Load){ //Allow sine load with initial ramp loading as well
 
       /*--- Retrieve amplitude, frequency (Hz) and phase (rad) ---*/
       SineAmp   = config->GetLoad_Sine()[0];
