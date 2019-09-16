@@ -18072,7 +18072,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             
             counter++;
             if (counter == max_iter) {
-              cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
+              cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
               converged = false;
               break;
             }
@@ -18085,13 +18085,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             using the y+ value, the definition of y+, and the definition of
             the friction velocity. ---*/
           
-           Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
-
+          Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
           
           /*--- Store this value for the wall shear stress at the node.  ---*/
           
           node[iPoint]->SetTauWall(Tau_Wall);
-          
+          node[iPoint]->SetTemperature(T_Wall);
+          node[iPoint]->SetDensity(Density_Wall);
           
         }
         
