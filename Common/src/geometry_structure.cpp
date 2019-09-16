@@ -2833,9 +2833,10 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
     Local_TagBound = config->GetMarker_All_TagBound(iMarker);
 
     /*--- Marker has to be Symmetry or Euler. Additionally marker can't be a 
-          moving surface and Grid Movement Elasticity is forbidden as well. ---*/
+          moving surface and Grid Movement Elasticity is forbidden as well. All
+          other GridMovements are rigid. ---*/
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE || 
-        config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
+         config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
         config->GetMarker_Moving_Bool(Local_TagBound) == false &&
         config->GetKind_GridMovement() != ELASTICITY) {
 
@@ -2891,6 +2892,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
   /*--- Communicate results and print on screen. ---*/
   if(print_on_screen) {
+
     /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
           on screen as nMarker (local) can vary across ranks. Default 'true' as it can
           happen that a local rank does not contain an element of each surface marker.  ---*/
@@ -2920,18 +2922,18 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
                        nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
 
     /*--- Print results on screen. ---*/
-    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
-      if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
+    if(rank == MASTER_NODE) {
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
           config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
 
-        if(rank == MASTER_NODE) {
           cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
-          if(Buff_Send_isStraight[iMarker_Global] == false) cout << " NOT";
+          if(Buff_Recv_isStraight[iMarker_Global] == false) cout << " NOT";
           if(nDim == 2) cout << " straight." << endl;
           if(nDim == 3) cout << " plane." << endl;
-        }
-      }//if sym or euler
-    }//for iMarker_Global
+        }//if sym or euler
+      }//for iMarker_Global
+    }//if rank==MASTER
   }//if print_on_scren
 
 }
