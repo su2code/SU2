@@ -1572,12 +1572,16 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Pointer to the COutput class.
    * \param[in] iZone - Index of the zone.
-   * \param[in] iInst - Index of the zone.
+   * \param[in] iInst - Index of the instance layer.
    */
-  void RegisterOutput(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst);
-  using CIteration::RegisterOutput;
-  
+  void RegisterOutput(CSolver *****solver,
+                      CGeometry ****geometry,
+                      CConfig** config,
+                      COutput* output,
+                      unsigned short iZone, unsigned short iInst);
+
   /*!
    * \brief Initializes the adjoints of the output variables of the FEM iteration.
    * \param[in] solver - Container vector with all the solutions.

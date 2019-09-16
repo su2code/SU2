@@ -123,8 +123,8 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- For the adjoint iteration we need the derivatives of the iteration function with
    *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
    *--- we only have to record if the current recording is different from the main variables. ---*/
-
-  if (RecordingState != MainVariables){
+  
+  if ((RecordingState != MainVariables) || (config->GetTime_Domain())){
 
     MainRecording();
 
@@ -361,24 +361,25 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     break;
   case DISC_ADJ_FEM:
-    switch (config->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-        break;
-    case REFERENCE_NODE:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-        break;
-    case VOLUME_FRACTION:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-        break;
-    default:
-        ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-        break;
-    }
+    solver[ADJFEA_SOL]->RegisterObj_Func(config);
+    // switch (config->GetKind_ObjFunc()){
+    // case REFERENCE_GEOMETRY:
+    //     ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+    //     break;
+    // case REFERENCE_NODE:
+    //     ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+    //     break;
+    // case VOLUME_FRACTION:
+    //     ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+    //     break;
+    // default:
+    //     ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+    //     break;
+    // }
     break;
   }
-
-  if (rank == MASTER_NODE){
+  
+  if ((config->GetKind_Solver() != DISC_ADJ_FEM) && (rank == MASTER_NODE)) {
     AD::RegisterOutput(ObjFunc);
   }
 
