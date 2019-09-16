@@ -3831,7 +3831,8 @@ void CDriver::StartSolver(){
     PreprocessExtIter(ExtIter);
 
     /*--- Perform a dynamic mesh update if required. ---*/
-
+    /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
+          mesh cordinates are read from the restart files. ---*/
     if (!fem_solver &&
         !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
       DynamicMeshUpdate(ExtIter);
