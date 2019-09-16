@@ -273,9 +273,10 @@ class State(ordered_bunch):
                 elif label.split('_')[0] in ['MULTIPOINT']:
                     # if multipoint, list of files needs to be added
                     file_list= [];
-                    for name in names:
+                    for name in filename:
                         if os.path.exists(name):
                             file_list.append(name)
+                            print('Found: %s' % name)
                         else:
                             # if file doesn't exist, enter empty string as placeholder
                             file_list.append('')
@@ -301,12 +302,16 @@ class State(ordered_bunch):
         #: register_file()                
 
         # mesh
+        if multipoint:
+            mesh_list = [elem.strip() for elem in config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')]
+            #print(mesh_list)
+            if len(set(mesh_list)) > 1:
+                # Only register MULTIPOINT_MESH_FILENAME if multiple meshes are specified
+                register_file('MULTIPOINT_MESH_FILENAME', mesh_list)
+            mesh_name = mesh_list[0]
+
         register_file('MESH',mesh_name)
 
-        if multipoint:
-            register_file('MULTIPOINT_MESH_FILENAME', mesh_list)
-        
-        # direct solution
         if restart:
             register_file('DIRECT',direct_name)
             if multipoint:

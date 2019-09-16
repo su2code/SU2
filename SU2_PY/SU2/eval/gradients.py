@@ -553,6 +553,14 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][i+1]:
             ztate.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][i+1]
 
+        if 'MULTIPOINT_MESH_FILENAME' in ztate.FILES:
+            if 'deform' in ztate.FILES.MESH:
+                ztate.FILES.MESH = su2io.add_suffix(ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1],'deform')
+                konfig.MESH_FILENAME= su2io.add_suffix(ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1],'deform')
+            else:
+                ztate.FILES.MESH = ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+                konfig.MESH_FILENAME= ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+
         files = ztate.FILES
         link = []
         files['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
