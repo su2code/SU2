@@ -39,16 +39,44 @@
 #include "CMultizoneDriver.hpp"
 
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
+
 protected:
 
-  bool retape;                        /*!< \brief Boolean whether derivative information for all zones is kept in memory.*/
-  unsigned short RecordingState;      /*!< \brief The kind of recording the tape currently holds.*/
-  su2double ObjFunc;                  /*!< \brief The value of the objective function.*/
-  int ObjFunc_Index;                  /*!< \brief Index of the value of the objective function.*/
-  unsigned short* direct_nInst;       /*!< \brief Total number of instances in the direct problem (per zone). */
-  unsigned short* nInnerIter;         /*!< \brief Number of inner iterations for each set of adjoint variables in a zone. */
-  CIteration*** direct_iteration;     /*!< \brief A pointer to the direct iteration.*/
-  COutput** direct_output;            /*!< \brief A pointer to the direct output.*/
+  /*!
+   * \brief Kinds of recordings (three different ones).
+   */
+  enum ENUM_TAPE {
+    FULL_TAPE = 1,                /*!< \brief Entire derivative information for a coupled adjoint
+                                              solution update. */
+    OBJECTIVE_FUNCTION_TAPE = 2,  /*!< \brief Record only the dependence of the objective function
+                                              w.r.t. solver variables (from all zones). */
+    ZONE_SPECIFIC_TAPE = 3        /*!< \brief Record only the depence of the solution update in a
+                                              specified zone w.r.t. solver variables (from all zones). */
+  };
+
+  /*!
+   * \brief Position markers within a tape.
+   */
+  enum ENUM_TAPE_POSITIONS {
+    START = 0,                    /*!< \brief Starting point of the tape. */
+    REGISTERED = 1,               /*!< \brief Solver variables are registered on the tape. */
+    DEPENDENCIES = 2,             /*!< \brief Derived values (e.g. gradients) are set. */
+    OBJECTIVE_FUNCTION = 3,       /*!< \brief Objective function is set. */
+    TRANSFER = 4,                 /*!< \brief Solution data is transferred between coupled solvers of
+                                              different physical zones (giving cross contributions). */
+    ITERATION_READY = 5           /*!< \brief Until here, all derivative information is gathered so
+                                              that it can be connected to a solver update evaluation. */
+  };
+
+  bool retape;                    /*!< \brief Boolean whether full tape can be kept in memory. */
+  unsigned short RecordingState;  /*!< \brief The kind of recording that the tape currently holds. */
+  su2double ObjFunc;              /*!< \brief The value of the objective function. */
+  int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
+  CIteration*** direct_iteration; /*!< \brief Array of pointers to the direct iterations. */
+  COutput** direct_output;        /*!< \brief Array of pointers to the direct outputs. */
+  unsigned short* direct_nInst;   /*!< \brief Total number of instances in the direct problem. */
+  unsigned short* nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
+
 
 public:
 

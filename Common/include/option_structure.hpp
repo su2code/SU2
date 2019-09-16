@@ -1933,12 +1933,6 @@ enum ENUM_RECORDING {
   MESH_DEFORM = 9
 };
 
-enum ENUM_TAPE {
-  FULL_TAPE = 1,
-  OBJECTIVE_FUNCTION_TAPE = 2,
-  ZONE_SPECIFIC_TAPE = 3
-};
-
 /*!
  * \brief types of schemes for dynamic structural computations
  */
