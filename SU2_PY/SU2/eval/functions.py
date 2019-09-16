@@ -425,9 +425,11 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-    mesh_list = config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')
+    #mesh_list = config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
     restart_sol = config['RESTART_SOL']
+    dv_value_old = config['DV_VALUE_OLD'];
+
     func = []
     folder = []
     for i in range(len(weight_list)):
@@ -457,6 +459,11 @@ def multipoint( config, state=None, step=1e-2 ):
     #  Update Mesh
     # ----------------------------------------------------
 
+    # If multiple meshes specified, use relevant mesh
+    if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
+        state.FILES.MESH = state.FILES.MULTIPOINT_MESH_FILENAME[0]
+        config.MESH_FILENAME = state.FILES.MULTIPOINT_MESH_FILENAME[0]
+
     # does decomposition and deformation
     info = update_mesh(config,state)
   
@@ -477,7 +484,6 @@ def multipoint( config, state=None, step=1e-2 ):
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
     config.MARKER_OUTLET = new_marker_outlet
-    config.MESH_FILENAME = mesh_list[0]
     config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
 
     # If solution file for the first point is available, use it
@@ -543,15 +549,23 @@ def multipoint( config, state=None, step=1e-2 ):
         ztate  = copy.deepcopy(state)
 
         konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+
+        # delete direct solution file from previous point
         if 'DIRECT' in ztate.FILES:
             del ztate.FILES.DIRECT
 
+        # use direct solution file from relevant point
         if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[i+1]: 
             ztate.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
 
+        # use mesh file from relevant point
+        if 'MULTIPOINT_MESH_FILENAME' in ztate.FILES:
+            ztate.FILES.MESH = ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+            konfig.MESH_FILENAME= ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+            konfig['DV_VALUE_OLD'] = dv_value_old
+
         files = ztate.FILES
         link = []
-
 
         # files: mesh
         name = files['MESH']
@@ -569,7 +583,11 @@ def multipoint( config, state=None, step=1e-2 ):
       # pull needed files, start folder_1
         with redirect_folder( folder[i+1], pull, link ) as push:
             with redirect_output(log_direct):
-          
+
+                # Perform deformation on multipoint mesh
+                if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
+                    info = update_mesh(konfig,ztate)
+                    
                 konfig.AOA = aoa_list[i+1]
                 konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
                 konfig.MACH_NUMBER = mach_list[i+1]
@@ -589,19 +607,34 @@ def multipoint( config, state=None, step=1e-2 ):
 
                 # direct files to push
                 dst = os.getcwd()
-                dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
+                dst_direct = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
                 name = ztate.FILES['DIRECT']
                 name = su2io.expand_zones(name,konfig)
                 name = su2io.expand_time(name,konfig)
                 push.extend(name)
 
+                if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
+                    # Mesh files to push
+                    dst_mesh = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['MESH']
+                    name = ztate.FILES['MESH']
+                    name = su2io.expand_part(name,konfig)
+                    push.extend(name)
+
+
         # Link direct solution to MULTIPOINT_# folder
         src = os.getcwd()
-        src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
-      
+        src_direct = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
+
         # make unix link
-        string = "ln -s " + src + " " + dst
-        os.system(string)
+        string_direct = "ln -s " + src_direct + " " + dst_direct
+        os.system(string_direct)
+
+        # If the mesh doesn't already exist, link
+        if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
+            src_mesh = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['MESH']
+            string_mesh =  "ln -s " + src_mesh + " " + dst_mesh
+            if not os.path.exists(src_mesh): 
+                os.system(string_mesh)
 
     # Update MULTIPOINT_DIRECT in state.FILES
     state.FILES.MULTIPOINT_DIRECT = solution_flow_list

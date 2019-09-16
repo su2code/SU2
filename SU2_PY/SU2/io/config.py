@@ -727,7 +727,7 @@ def read_config(filename):
       for i in range(multipoints):
         if i != 0: Mesh_List +=  ", "
         Mesh_List +=  str(Mesh_Filename)
-      MeshList += ")"
+      Mesh_List += ")"
       data_dict['MULTIPOINT_MESH_FILENAME'] = Mesh_List  
       
 
