@@ -1910,7 +1910,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool adjoint = config->GetContinuous_Adjoint();
 
 
   /*--- Problem dimension and physical time step ---*/
@@ -2073,7 +2073,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool adjoint = config->GetContinuous_Adjoint();
 
   
   /*--- Retrieve values from the config file ---*/
@@ -2220,7 +2220,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool adjoint = config->GetContinuous_Adjoint();
 
   
   /*--- Retrieve values from the config file ---*/
@@ -2352,7 +2352,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()); // This should be consistent over all Rigid_* routines
+  bool adjoint = config->GetContinuous_Adjoint();
 
   
   /*--- Retrieve values from the config file ---*/
@@ -6447,7 +6447,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   string DV_Filename, UnstExt, text_line;
   ifstream surface_positions;
   bool unsteady = config->GetUnsteady_Simulation();
-  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool adjoint = config->GetContinuous_Adjoint();
   
   /*--- Load stuff from config ---*/
   

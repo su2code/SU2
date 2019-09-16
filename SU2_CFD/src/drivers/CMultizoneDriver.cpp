@@ -43,7 +43,8 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          MPICommunicator) {
+                                                          MPICommunicator, 
+                                                          false) {
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
@@ -87,6 +88,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
+    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:    
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:
@@ -111,10 +113,10 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
       case RIGID_MOTION: 
-      case ELASTICITY:
         prefixed_motion[iZone] = true; break;
       case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
+      case ELASTICITY:
         prefixed_motion[iZone] = false; break;
     }
     if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
@@ -234,7 +236,10 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
     if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
         (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
+        (config_container[iZone]->GetKind_Solver() ==  RANS) ||
+        (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
+        (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() ==  INC_RANS) ) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
 
@@ -345,7 +350,7 @@ void CMultizoneDriver::Run_Jacobi() {
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
-        if (jZone != iZone && transfer_container[iZone][jZone] != NULL){
+        if (jZone != iZone && interface_container[iZone][jZone] != NULL){
           DeformMesh = Transfer_Data(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
@@ -479,6 +484,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     for (iZone = 0; iZone < nZone; iZone++){
       if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
       if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
+      if (config_container[iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ZONE_FLOW = iZone;
     }
     output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
         config_container, integration_container, 0,
@@ -516,9 +522,10 @@ void CMultizoneDriver::Update() {
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
+      if (integration_container[iZone][INST_0][iSol] != NULL){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
     }
   }
 
@@ -638,9 +645,22 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
 
+  /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement()) {
   iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                                            config_container[val_iZone], 0, ExtIter);
+  }
+
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  if (config_container[ZONE_0]->GetDeform_Mesh()) {
+    iteration_container[val_iZone][INST_0]->SetMesh_Deformation(geometry_container[val_iZone][INST_0],
+                                                                solver_container[val_iZone][INST_0][MESH_0],
+                                                                numerics_container[val_iZone][INST_0][MESH_0],
+                                                                config_container[ZONE_0],
+                                                                NONE);
+  }
 
 }
 
@@ -650,49 +670,83 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
 
-  if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
-    if (config_container[targetZone]->GetKind_Solver() == RANS)
-      transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                         config_container[donorZone], config_container[targetZone]);
+  if (interface_types[donorZone][targetZone] == SLIDING_INTERFACE) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+    if (config_container[targetZone]->GetKind_Solver() == RANS ||
+        config_container[targetZone]->GetKind_Solver() == INC_RANS)
+      interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
+                                                                solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+                                                                geometry_container[donorZone][INST_0][MESH_0],
+                                                                geometry_container[targetZone][INST_0][MESH_0],
+                                                                config_container[donorZone],
+                                                                config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_LEGACY) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
     UpdateMesh = true;
   }
-  else if (transfer_types[donorZone][targetZone] == FLOW_TRACTION) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == BOUNDARY_DISPLACEMENTS) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+    UpdateMesh = true;
   }
-  else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
-           || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-           || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
+  else if (interface_types[donorZone][targetZone] == FLOW_TRACTION) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+  }
+  else if ((interface_types[donorZone][targetZone] == NO_TRANSFER)
+           || (interface_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
+           || (interface_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
   else {
     cout << "WARNING: One of the intended interface transfer routines is not known to the chosen driver and has not been executed." << endl;
   }

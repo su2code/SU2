@@ -99,7 +99,7 @@ def direct ( config ):
     plot_format      = konfig['OUTPUT_FORMAT']
     plot_extension   = su2io.get_extension(plot_format)
     # CVC: Adjustment needed as FSI history filenames are different
-    if konfig['PHYSICAL_PROBLEM'] == 'FLUID_STRUCTURE_INTERACTION':
+    if konfig['SOLVER'] == 'FLUID_STRUCTURE_INTERACTION':
         shutil.copy(konfig['CONV_FILENAME_FSI'] + '.vtk',konfig['CONV_FILENAME_FSI'] + '.csv')
         history_filename = konfig['CONV_FILENAME_FSI'] + '.csv'
     else:

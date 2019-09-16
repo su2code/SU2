@@ -96,7 +96,7 @@ def adjoint( config ):
     plot_format      = konfig['OUTPUT_FORMAT']
     plot_extension   = su2io.get_extension(plot_format)
     # CVC: Adjustment needed as FSI history filenames are different
-    if konfig['PHYSICAL_PROBLEM'] == 'FLUID_STRUCTURE_INTERACTION':
+    if konfig['SOLVER'] == 'FLUID_STRUCTURE_INTERACTION':
         history_filename = 'history_adjoint_FSI' + plot_extension
     else:
         history_filename = konfig['CONV_FILENAME'] + plot_extension

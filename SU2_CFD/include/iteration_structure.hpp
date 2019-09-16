@@ -46,7 +46,6 @@
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
-#include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -100,6 +99,20 @@ public:
   virtual void SetGrid_Movement(CGeometry **geometry, CSurfaceMovement *surface_movement,
                       CVolumetricMovement *grid_movement,
                       CSolver ***solver, CConfig *config, unsigned long IntIter, unsigned long ExtIter);
+  /*!
+   * \brief Run the mesh deformation algorithms.
+   * \author R. Sanchez
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Current kind of recording.
+   */
+  void SetMesh_Deformation(CGeometry **geometry,
+                           CSolver **solver_container,
+                           CNumerics ***numerics_container,
+                           CConfig *config_container,
+                           unsigned short kind_recording);
   
   /*!
    * \brief A virtual member.

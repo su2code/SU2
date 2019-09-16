@@ -43,7 +43,8 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
   energy           = config->GetEnergy_Equation();
-  grid_movement    = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   Diff_V       = new su2double[nVar];
   Velocity_i   = new su2double[nDim];
@@ -90,7 +91,7 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim);
     AD::SetPreaccIn(GridVel_j, nDim);
   }
@@ -128,7 +129,7 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   
   /*--- Projected velocity adjustment due to mesh motion ---*/
   
-  if (grid_movement) { 
+  if (dynamic_grid) { 
     ProjGridVel = 0.0; 
     for (iDim = 0; iDim < nDim; iDim++) { 
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim]; 
@@ -230,8 +231,8 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     }
   }
 
-  /*--- Jacobian contributions due to grid motion ---*/
-  if (grid_movement) {
+  /*--- Corrections due to grid motion ---*/
+  if (dynamic_grid) {
 
     /*--- Recompute conservative variables ---*/
 
@@ -244,9 +245,12 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     ProjVelocity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+    /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
+      /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
@@ -281,7 +285,8 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
   energy           = config->GetEnergy_Equation();
-  grid_movement    = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Artifical dissipation part ---*/
 
@@ -321,10 +326,9 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 
 void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  //Preaccumulation?
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
-  
+
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
@@ -385,8 +389,8 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     }
   }
 
-  /*--- Jacobian contributions due to grid motion ---*/
-  if (grid_movement) {
+  /*--- Corrections due to grid motion ---*/
+  if (dynamic_grid) {
 
     /*--- Recompute conservative variables ---*/
 
@@ -399,9 +403,12 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     su2double ProjVelocity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+    /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
+      /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
@@ -430,7 +437,7 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   /*--- Projected velocity adjustment due to mesh motion ---*/
 
-  if (grid_movement) {
+  if (dynamic_grid) {
     ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
@@ -484,14 +491,14 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-  
 }
 
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  grid_movement    = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   energy           = config->GetEnergy_Equation();
 
   /*--- Artificial dissipation part ---*/
@@ -594,8 +601,8 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     }
   }
 
-  /*--- Jacobian contributions due to grid motion ---*/
-  if (grid_movement) {
+  /*--- Corrections due to grid motion ---*/
+  if (dynamic_grid) {
 
     /*--- Recompute conservative variables ---*/
 
@@ -607,9 +614,12 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+    /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
+      /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
@@ -639,7 +649,7 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   /*--- Projected velocity adjustment due to mesh motion ---*/
 
-  if (grid_movement) {
+  if (dynamic_grid) {
     ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
@@ -687,7 +697,6 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-
 }
 
 CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
@@ -981,78 +990,71 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 
 }
 
-CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { 
+CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  Gamma = config->GetGamma(); 
-  Gamma_Minus_One = Gamma - 1.0; 
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-} 
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
 
-CSourceIncRotatingFrame_Flow::~CSourceIncRotatingFrame_Flow(void) { } 
-
-void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { 
-
-
-  unsigned short iDim, iVar, jVar; 
-  su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0}, Velocity_i[3] = {0,0,0}; 
-
-  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
-
-  /*--- Retrieve the angular velocity vector from config. ---*/ 
-
-  for (iDim = 0; iDim < 3; iDim++){
+  /*--- Retrieve the angular velocity vector from config. ---*/
+  for (unsigned short iDim = 0; iDim < 3; iDim++)
     Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+
+}
+
+CSourceIncRotatingFrame_Flow::~CSourceIncRotatingFrame_Flow(void) { }
+
+void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
+
+  unsigned short iDim, iVar, jVar;
+  su2double Momentum[3] = {0,0,0},
+            Velocity_i[3] = {0,0,0};
+
+  /*--- Primitive variables plus momentum at the node (point i) ---*/
+
+  DensityInc_i  = V_i[nDim+2];
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim] = V_i[iDim+1];
+    Momentum[iDim]   = DensityInc_i*Velocity_i[iDim];
   }
 
-  /*--- Primitive variables at point i and j ---*/ 
+  /*--- Calculate rotating frame source term residual as ( Omega X Rho-U ) ---*/
 
-  DensityInc_i  = V_i[nDim+2]; 
-
-  for (iDim = 0; iDim < nDim; iDim++) { 
-    Velocity_i[iDim]    = V_i[iDim+1]; 
-  } 
-
-  /*--- Get the momentum vector at the current node. ---*/ 
-
-  for (iDim = 0; iDim < nDim; iDim++) { 
-    Momentum[iDim] = DensityInc_i*Velocity_i[iDim]; 
-  }
-
-  /*--- Calculate rotating frame source term as ( Omega X Rho-U ) ---*/ 
-
-  if (nDim == 2) { 
-    val_residual[0] = 0.0; 
-    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume; 
-    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume; 
-    val_residual[3] = 0.0; 
+  if (nDim == 2) {
+    val_residual[0] = 0.0;
+    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    val_residual[3] = 0.0;
   } else { 
-    val_residual[0] = 0.0; 
-    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume; 
-    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume; 
-    val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume; 
-    val_residual[4] = 0.0; 
+    val_residual[0] = 0.0;
+    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
+    val_residual[4] = 0.0;
   } 
 
-  /*--- Calculate the source term Jacobian ---*/ 
+  /*--- Calculate the source term Jacobian ---*/
 
-  if (implicit) { 
-    for (iVar = 0; iVar < nVar; iVar++) 
-      for (jVar = 0; jVar < nVar; jVar++) 
-        val_Jacobian_i[iVar][jVar] = 0.0; 
-    if (nDim == 2) { 
-      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume; 
-      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume; 
-    } else { 
-      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume; 
-      val_Jacobian_i[1][3] =  DensityInc_i*Omega[1]*Volume; 
-      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume; 
-      val_Jacobian_i[2][3] = -DensityInc_i*Omega[0]*Volume; 
-      val_Jacobian_i[3][1] = -DensityInc_i*Omega[1]*Volume; 
-      val_Jacobian_i[3][2] =  DensityInc_i*Omega[0]*Volume; 
-    } 
-  } 
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_i[iVar][jVar] = 0.0;
+    if (nDim == 2) {
+      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume;
+      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume;
+    } else {
+      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume;
+      val_Jacobian_i[1][3] =  DensityInc_i*Omega[1]*Volume;
+      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume;
+      val_Jacobian_i[2][3] = -DensityInc_i*Omega[0]*Volume;
+      val_Jacobian_i[3][1] = -DensityInc_i*Omega[1]*Volume;
+      val_Jacobian_i[3][2] =  DensityInc_i*Omega[0]*Volume;
+    }
+  }
 
-} 
+}
 
 CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
