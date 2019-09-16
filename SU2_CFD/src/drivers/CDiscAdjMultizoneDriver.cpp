@@ -749,16 +749,8 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
 
-  /*--- Position markers
-   * 0: Recording started
-   * 1: Copied solution registered and direct solver resetted to copied solution
-   * 2: Dependencies are set
-   * 3: Objective function is set
-   * 4: Data transferred between zones
-   ---*/
-
-  unsigned short leave_izone = iZone*2+5;
-  unsigned short enter_izone = iZone*2+6;
+  unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
+  unsigned short leave_izone = iZone*2 + ITERATION_READY;
 
   AD::ClearAdjoints();
 
@@ -771,8 +763,8 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
-  AD::ComputeAdjoint(4,3);
-  AD::ComputeAdjoint(2,0);
+  AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
+  AD::ComputeAdjoint(DEPENDENCIES, START);
 }
 
 void CDiscAdjMultizoneDriver::AddSolution_ExternalOld(unsigned short iZone) {
