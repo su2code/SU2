@@ -155,7 +155,7 @@ private:
   PeriodicBoundary;                   /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
   long *Vertex;                       /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
   su2double *Coord,                   /*!< \brief vector with the coordinates of the node. */
-            *Coord_Old,               /*!< \brief Old coordinates vector for geometry smoothing. */
+            *Coord_Old,               /*!< \brief Old coordinates vector for primal solution reloading for Disc.Adj. with dynamic grid. */
             *Coord_Sum,               /*!< \brief Sum of coordinates vector for geometry smoothing. */
             *Coord_n,                 /*!< \brief Coordinates at time n for use with dynamic meshes. */
             *Coord_n1,                /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
