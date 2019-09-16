@@ -2767,8 +2767,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   su2double T_Normal, P_Normal, Density_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
   su2double *Coord, *Coord_Normal;
-  su2double diff, Delta;
-  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
+  su2double diff, grad_diff, Delta;
+  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus = 0.0;
   su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
@@ -2810,8 +2810,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
     
     iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-      iPoint_Neighbor = geometry->node[iPoint]->GetPoint(iNode);
+    //for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+    //  iPoint_Neighbor = geometry->node[iPoint]->GetPoint(iNode);
       
       /*--- Check if the node belongs to the domain (i.e, not a halo node)
        and the neighbor is not part of the physical boundary ---*/
@@ -2922,14 +2922,12 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
          iteratively solve for a new wall shear stress. Use the current wall
          shear stress as a starting guess for the wall function. ---*/
         
-        Tau_Wall_Old = WallShearStress;
         counter = 0; diff = 1.0;
+        U_Tau = sqrt(WallShearStress/Density_Wall);
         
-        while (diff > tol) {
+        while (abs(diff) > tol) {
           
           /*--- Friction velocity and u+ ---*/
-          
-          U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
           U_Plus = VelTangMod/U_Tau;
           
           /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
@@ -2947,19 +2945,31 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
            outer velocity form of White & Christoph above. ---*/
           
           Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)*
-                                            (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
-                                             kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
+                                              (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
+                                              kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
+
+            /* --- Define function for Newton method to zero --- */
+          diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
+
+            /* --- Gradient of function defined above --- */
+          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                    kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+                    exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
+                    pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+
+            /* --- Newton Step --- */
+          U_Tau = U_Tau - diff / grad_diff;
 
           /*--- Calculate an updated value for the wall shear stress
            using the y+ value, the definition of y+, and the definition of
            the friction velocity. ---*/
           
-          Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+          // Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
           
           /*--- Difference between the old and new Tau. Update old value. ---*/
           
-          diff = fabs(Tau_Wall-Tau_Wall_Old);
-          Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
+          // diff = fabs(Tau_Wall-Tau_Wall_Old);
+          // Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
           
           counter++;
           if (counter > max_iter) {
@@ -2969,13 +2979,20 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
         }
         
+        /*--- Calculate an updated value for the wall shear stress
+          using the y+ value, the definition of y+, and the definition of
+          the friction velocity. ---*/
+
+        Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+
+        
         /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
         
         Lam_Visc_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetLaminarViscosity();
         Density_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetDensity();
         Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
 
-        dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+        dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)/sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
         Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                              (1.0 + kappa*U_Plus
                                               + kappa*kappa*U_Plus*U_Plus/2.0)
@@ -3020,7 +3037,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
       }
       
-    }
+    //}
   }
 }
 
