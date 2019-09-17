@@ -729,6 +729,11 @@ def read_config(filename):
         Mesh_List +=  str(Mesh_Filename)
       Mesh_List += ")"
       data_dict['MULTIPOINT_MESH_FILENAME'] = Mesh_List  
+    mesh_names = [elem.strip() for elem in data_dict['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')]
+    if len(set(mesh_names)) > 1:
+      print('Multiple mesh files specified. Ensure the DVs, FFD boxes, marker definitions are consistent.')
+
+
       
 
     #
