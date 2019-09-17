@@ -30,6 +30,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   Index        = NULL;
   connSend     = NULL;
   idSend       = NULL;
+  idRecv       = NULL;
+  
   nSends = 0;
   nRecvs = 0;
   
@@ -210,6 +212,10 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   idSend = new unsigned long[nPoint_Send[size]];
   for (int ii = 0; ii < nPoint_Send[size]; ii++)
     idSend[ii] = 0;
+  
+  idRecv = new unsigned long[nPoint_Recv[size]];
+  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
+    idRecv[ii] = 0;
   
   /*--- Create an index variable to keep track of our index
    positions as we load up the send buffer. ---*/

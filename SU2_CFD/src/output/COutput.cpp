@@ -138,6 +138,7 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): fem_out
   curr_OuterIter = 0;
   curr_TimeIter  = 0;
   
+  catalyst_writer = NULL;
 }
 
 COutput::~COutput(void) {
@@ -547,7 +548,7 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
     /*--- Write data to file --- */
   
-    file_writer->Write_Data(FileName, surface_sort);
+//    file_writer->Write_Data(FileName, surface_sort);
   
   }
   
@@ -587,7 +588,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Write data to file --- */
   
-  file_writer->Write_Data(FileName, data_sorter);
+//  file_writer->Write_Data(FileName, data_sorter);
   
   if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
     cout << "Wrote " << file_writer->Get_Filesize()/(1.0e6) << " MB to disk in ";
@@ -601,6 +602,10 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   delete file_writer;
   
   if (format == PARAVIEW_BINARY){
+    
+    if (catalyst_writer == NULL)
+      catalyst_writer = new CCatalystWriter(Variable_Names, nDim);
+    
     CCatalystWriter* cat = dynamic_cast<CCatalystWriter*>(catalyst_writer);
     cat->Write_Data(curr_TimeIter, GetHistoryFieldValue("CUR_TIME"), data_sorter);
   }
@@ -1142,7 +1147,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     cout << endl;
   }
   
-  catalyst_writer = new CCatalystWriter(Variable_Names, nDim);
   
 }
 

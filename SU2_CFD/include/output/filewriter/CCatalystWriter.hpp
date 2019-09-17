@@ -12,14 +12,15 @@
 #include <vtkPointData.h>
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
-
+#include <set>
 class CParallelDataSorter;
 
 class CCatalystWriter : public CFileWriter {
   
   vtkCPProcessor* Processor = NULL;
   vtkUnstructuredGrid* VTKGrid;
-  
+  std::set<unsigned long> halo_nodes;
+  vector<unsigned long> sorted_halo_nodes;
 public:
   CCatalystWriter(vector<string> fields, unsigned short nDim);
 
@@ -31,4 +32,6 @@ public:
   void BuildVTKDataStructures(vtkCPInputDataDescription* idd, CParallelDataSorter *data_sorter);
   
   void Write_Data(unsigned long TimeStep, double time, CParallelDataSorter *data_sorter);
+  
+  int64_t GetHaloNodeNumber(unsigned long global_node_number, unsigned long last_local_node, vector<unsigned long> const &halo_node_list);
 };

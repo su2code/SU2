@@ -50,7 +50,7 @@ protected:
   int *nPoint_Recv;
   unsigned long *Index;
   su2double *connSend;
-  unsigned long *idSend;
+  unsigned long *idSend, *idRecv;
   int nSends, nRecvs;
 
   void PrepareSendBuffers(std::vector<unsigned long>& globalID);  

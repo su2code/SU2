@@ -100,9 +100,9 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
     connRecv[ii] = 0;
   
-  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    idRecv[ii] = 0;
+//  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
+//  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
+//    idRecv[ii] = 0;
   
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
@@ -235,7 +235,7 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Free temporary memory from communications ---*/
   
   delete [] connRecv;
-  delete [] idRecv;
+//  delete [] idRecv;
 }
 
 
