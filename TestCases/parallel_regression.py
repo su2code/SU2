@@ -79,7 +79,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.816407, 4.925831, -0.251950, 0.044386] #last 4 columns
+    wedge.test_vals = [-0.941371, 4.787744, -0.208777, 0.036781] #last 4 columns
     wedge.su2_exec  = "parallel_computation.py -f"
     wedge.timeout   = 1600
     wedge.tol       = 0.00001
@@ -90,7 +90,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-10.518617, -9.973988, 0.282580, 0.012694] #last 4 columns
+    oneram6.test_vals = [-7.079068, -6.542899, 0.282322, 0.011804] #last 4 columns
     oneram6.su2_exec  = "parallel_computation.py -f"
     oneram6.timeout   = 3200
     oneram6.tol       = 0.00001
@@ -339,7 +339,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.852261, -4.818859, -0.000280, 0.124229] #last 4 columns
+    inc_nozzle.test_vals = [-5.959953, -4.932037, -0.000109, 0.121192] #last 4 columns
     inc_nozzle.su2_exec  = "parallel_computation.py -f"
     inc_nozzle.timeout   = 1600
     inc_nozzle.tol       = 0.00001
@@ -387,7 +387,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.437518, -3.087892, -0.022290, -0.172644] #last 4 columns
+    inc_lam_bend.test_vals = [-3.437567, -3.088005, -0.022291, -0.172738] #last 4 columns
     inc_lam_bend.su2_exec  = "mpirun -n 2 SU2_CFD"
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
