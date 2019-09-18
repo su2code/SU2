@@ -391,9 +391,44 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3){
       AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
       AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
+      AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");      
     }
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
-    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");  
+  }
+  
+  if (config->GetTime_Domain()){
+    AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TAVG_SOLUTION", "Time-averaged value of the density");
+    if (nDim == 3)
+      AddVolumeOutput("MEAN_VELOCITY-Z", "MeanVelocity_z", "TAVG_SOLUTION", "Time-averaged value of the density");
+    if (nDim == 3){
+      AddVolumeOutput("MEAN_ENERGY", "MeanEnergy", "TAVG_SOLUTION", "Time-averaged value of the density");
+    }
+    else {
+      AddVolumeOutput("MEAN_ENERGY", "MeanEnergy", "TAVG_SOLUTION", "Time-averaged value of the density");    
+    }
+    AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TAVG_SOLUTION", "Time-averaged value of the density");
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      AddVolumeOutput("MEAN_ROE_DISSIPATION", "MeanRoe_Dissipation", "TAVG_SOLUTION", "Time-averaged value of the density");
+    }  
+    
+    AddVolumeOutput("RMS_U",   "RMSVelocity_x", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("RMS_V",   "RMSVelocity_y", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("RMS_UV",  "RMSUV",         "TAVG_SOLUTION", "Time-averaged value of the density");    
+    AddVolumeOutput("RMS_P",   "RMSPressure",   "TAVG_SOLUTION", "Time-average value pf pressure");
+    AddVolumeOutput("UUPRIME", "UUPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("VVPRIME", "VVPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("UVPRIME", "UVPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
+    AddVolumeOutput("PPRIME",  "PPrimeMean",   "TAVG_SOLUTION", "Time-averaged value of the density");
+    if (nDim == 3){
+      AddVolumeOutput("RMS_W",   "RMSVelocity_z", "TAVG_SOLUTION", "Time-averaged value of the density");
+      AddVolumeOutput("RMS_UW", "RMSUW", "TAVG_SOLUTION", "Time-averaged value of the density");
+      AddVolumeOutput("RMS_VW", "RMSVW", "TAVG_SOLUTION", "Time-averaged value of the density");
+      AddVolumeOutput("WWPRIME", "WWPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
+      AddVolumeOutput("UWPRIME", "UWPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
+      AddVolumeOutput("VWPRIME", "VWPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
+    }
   }
 }
 
@@ -440,8 +475,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure());
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature());
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2())/Node_Flow->GetSoundSpeed());
-  su2double factor = 1.0/(0.5*config->GetDensity_Ref()*config->GetVelocity_Ref()*config->GetVelocity_Ref());
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - config->GetPressure_Ref())/factor);
+  su2double VelMag = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    VelMag += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);    
+  }
+  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag); 
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - solver[FLOW_SOL]->GetPressure_Inf())*factor);
   
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity());
@@ -513,12 +552,60 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity()[0]);
-      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity()[1]);      
+      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity()[1]);
+      SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(config, geometry, Node_Flow));            
     } 
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity()[2]);      
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(config, geometry, Node_Flow));      
   }
   
+  if (config->GetTime_Domain()){
+    SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetSolution(0));
+    SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0));
+    SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0));
+    if (nDim == 3)
+      SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0));
+    if (nDim == 3){
+      SetAvgVolumeOutputValue("MEAN_ENERGY", iPoint, Node_Flow->GetSolution(4));
+    } else {
+      SetAvgVolumeOutputValue("MEAN_ENERGY", iPoint, Node_Flow->GetSolution(3));    
+    }
+    SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure());
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      SetAvgVolumeOutputValue("MEAN_ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation());
+    }  
+    
+    SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0),2));
+    SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0),2));
+    SetAvgVolumeOutputValue("RMS_UV", iPoint, (Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0)) * (Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0)));
+    SetAvgVolumeOutputValue("RMS_P", iPoint, pow(Node_Flow->GetPressure(),2));
+    if (nDim == 3){
+      SetAvgVolumeOutputValue("RMS_W", iPoint, pow(Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0),2));
+      SetAvgVolumeOutputValue("RMS_VW", iPoint, (Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0)) * (Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0)));
+      SetAvgVolumeOutputValue("RMS_UW", iPoint, (Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0)) * (Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0)));
+    }
+    
+    const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY-X", iPoint);
+    const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);    
+    const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY-Y", iPoint);
+    const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);    
+    const su2double uvmean = GetVolumeOutputValue("RMS_UV", iPoint);
+    const su2double pmean  = GetVolumeOutputValue("MEAN_PRESSURE", iPoint);
+    const su2double ppmean = GetVolumeOutputValue("RMS_P", iPoint);
+    
+    SetVolumeOutputValue("UUPRIME", iPoint, -(umean*umean - uumean));
+    SetVolumeOutputValue("VVPRIME", iPoint, -(vmean*vmean - vvmean));
+    SetVolumeOutputValue("UVPRIME", iPoint, -(umean*vmean - uvmean));
+    SetVolumeOutputValue("PPRIME",  iPoint, -(pmean*pmean - ppmean));
+    if (nDim == 3){
+      const su2double wmean  = GetVolumeOutputValue("MEAN_VELOCITY-Z", iPoint);
+      const su2double wwmean = GetVolumeOutputValue("RMS_W", iPoint);
+      const su2double uwmean = GetVolumeOutputValue("RMS_UW", iPoint);
+      const su2double vwmean = GetVolumeOutputValue("RMS_VW", iPoint);
+      SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
+      SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
+      SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+    } 
+  }
 }
 
 void CFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
@@ -642,28 +729,27 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 su2double CFlowCompOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
       Grad_Vel[iDim][jDim] = node_flow->GetGradient_Primitive(iDim+1, jDim);
-      Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-      Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
     }
   }
   
-  su2double OmegaMag = 0.0, StrainMag = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-      OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-    }
-  }
-  StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
+  su2double s11 = Grad_Vel[0][0];
+  su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+  su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+  su2double s22 = Grad_Vel[1][1];
+  su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+  su2double s33 = Grad_Vel[2][2];
+  su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+  su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+  su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
   
-  su2double Q = 0.5*(OmegaMag - StrainMag);
+  su2double Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+      pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
   
   return Q;
 }
@@ -678,7 +764,7 @@ bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
 
 bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
   
-  return (config->GetTime_Marching() != STEADY && curInnerIter == 0);
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
       
 }
 

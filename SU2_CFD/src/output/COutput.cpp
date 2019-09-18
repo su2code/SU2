@@ -131,6 +131,9 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   curOuterIter = 0;
   curTimeIter  = 0;
   
+  volumeDataSorter = nullptr;
+  surfaceDataSorter = nullptr;
+  
 }
 
 COutput::~COutput(void) {
@@ -139,6 +142,17 @@ COutput::~COutput(void) {
   delete multiZoneHeaderTable;
 
   delete [] cauchySerie;
+  
+    if (volumeDataSorter != nullptr)
+      delete volumeDataSorter;
+    
+    volumeDataSorter = nullptr;
+    
+    if (surfaceDataSorter != nullptr)
+      delete surfaceDataSorter;
+    
+    surfaceDataSorter = nullptr;
+  
   
 }
 
@@ -152,6 +166,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
                                   unsigned long InnerIter) {
 
   curTimeIter  = TimeIter;
+  curAbsTimeIter = TimeIter - config->GetRestart_Iter();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
   
@@ -205,6 +220,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
   
   curTimeIter  = TimeIter;
+  curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();  
   curOuterIter = OuterIter;
   
   bool write_header, write_screen, write_history;
@@ -334,31 +350,29 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
   /*---- Construct a data sorter object to partition and distribute
    *  the local data into linear chunks across the processors ---*/
   
+  
   if (femOutput){
-  
-    volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
-
+    
+    if (volumeDataSorter == nullptr)
+      volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
+    
+    if (surfaceDataSorter == nullptr)
+      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields, 
+                                                  dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
+    
   }  else {
+   
+    if (volumeDataSorter == nullptr)    
+      volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
     
-    volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
+    if (surfaceDataSorter == nullptr)
+      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
+                                                  dynamic_cast<CFVMDataSorter*>(volumeDataSorter));  
     
-  }  
+  }
 
-  /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
-   * before writing it to file ---*/
-    
-  /*--- Collect that data defined in the subclasses from the different processors ---*/
-  
-  if (rank == MASTER_NODE)
-    cout << endl << "Loading solution output data locally on each rank." << endl;
-  
   CollectVolumeData(config, geometry, solver_container);
-  
-  /*--- Sort the data, needed for volume and surface output ---*/
-  
-  if (rank == MASTER_NODE) 
-    cout << "Sorting output data across all ranks." << endl;
-  
+
   volumeDataSorter->SortOutputData();
   
 }
@@ -366,231 +380,296 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::DeallocateData_Parallel(){
   
-  if (volumeDataSorter != NULL)
-    delete volumeDataSorter;
+//  if (volumeDataSorter != NULL)
+//    delete volumeDataSorter;
   
-  volumeDataSorter = NULL;
+//  volumeDataSorter = NULL;
+  
+//  if (surfaceDataSorter != NULL)
+//    delete surfaceDataSorter;
+  
+//  surfaceDataSorter = NULL;
   
 }
 
 
-void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataSorter *sorter, CFileWriter *&filewriter, unsigned short format){
+void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
+
+  CFileWriter *fileWriter = NULL;
+  
+  unsigned short lastindex = fileName.find_last_of(".");
+  fileName = fileName.substr(0, lastindex);
   
   /*--- Write files depending on the format --- */
   
   switch (format) {
     
-    case CSV:
-
-      sorter->SortConnectivity(config, geometry, true);
+    case SURFACE_CSV:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+       
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
       
       if (rank == MASTER_NODE) {
-          cout << "Writing CSV file." << endl;     
+        cout << "Writing CSV file." << endl;     
       }
-         
-      filewriter = new CCSVFileWriter(volumeFieldNames, nDim);
-          
-      break;
-    
-  case SU2_RESTART_ASCII:
-    
-    if (rank == MASTER_NODE) {
-        cout << "Writing SU2 ASCII restart file." << endl;     
-    }
-       
-    filewriter = new CSU2FileWriter(volumeFieldNames, nDim);
-        
-    break;
-    
-  case SU2_RESTART_BINARY:
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing SU2 binary restart file." << endl;   
-    }
-
-    filewriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim);
-        
-    break;
-  
-  case SU2_MESH:
-    
-    /*--- Load and sort the output data and connectivity.
-     *  Note that the solver container is not need in this case. ---*/
-    
-    sorter->SortConnectivity(config, geometry, true);
-    
-    /*--- Set the mesh ASCII format ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing SU2 mesh file." << endl;
-    }
-    
-    filewriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, config->GetiZone(), config->GetnZone());
-    
-    
-    break;    
-    
-  case TECPLOT_BINARY:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-     sorter->SortConnectivity(config, geometry, false);
-    
-    /*--- Write tecplot binary ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing Tecplot binary file solution file." << endl;
-    }
-    
-    filewriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
       
-    break;
-    
-  case TECPLOT:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    sorter->SortConnectivity(config, geometry, true);
-    
-    /*--- Write tecplot binary ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing Tecplot ASCII file solution file." << endl;
-    }
-    
-    filewriter = new CTecplotFileWriter(volumeFieldNames, nDim, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
-
-    break;
-    
-  case PARAVIEW_BINARY:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    sorter->SortConnectivity(config, geometry, true);
-    
-    /*--- Write paraview binary ---*/
-    if (rank == MASTER_NODE) {
-      cout << "Writing Paraview binary file solution file." << endl;
-    }
-    
-    filewriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim);
-    
-    break;
-    
-  case PARAVIEW:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    sorter->SortConnectivity(config, geometry, true);
-    
-    /*--- Write paraview binary ---*/
-    if (rank == MASTER_NODE) {
-        cout << "Writing Paraview ASCII file volume solution file." << endl;      
-    }
-    
-    filewriter = new CParaviewFileWriter(volumeFieldNames, nDim);
-
-    break;
-    
-  default:
-    SU2_MPI::Error("Requested volume output format not available.", CURRENT_FUNCTION);
-    break;
+      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      
+      break;
+      
+    case RESTART_ASCII: case CSV:
+     
+      if (fileName == "")
+        fileName = config->GetFilename(restartFilename, "", curTimeIter);
+      
+      if (rank == MASTER_NODE) {
+        cout << "Writing SU2 CSV restart file." << endl;     
+      }
+      
+      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      
+      break;
+      
+    case RESTART_BINARY:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(restartFilename, "", curTimeIter);
+      
+      if (rank == MASTER_NODE) {
+        cout << "Writing SU2 binary restart file." << endl;   
+      }
+      
+      fileWriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      
+      break;
+      
+    case MESH:
+      
+      if (fileName == "")
+        fileName = volumeFilename;
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Set the mesh ASCII format ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << "Writing SU2 mesh file." << endl;
+      }
+      
+      fileWriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+                                          config->GetiZone(), config->GetnZone());
+      
+      
+      break;    
+      
+    case TECPLOT_BINARY:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Write tecplot binary ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << "Writing Tecplot binary solution file." << endl;
+      }
+      
+      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+                                                curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      
+      break;
+      
+    case TECPLOT:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Write tecplot binary ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << "Writing Tecplot ASCII solution file." << endl;
+      }
+      
+      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+                                          curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      
+      break;
+      
+    case PARAVIEW_BINARY:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        cout << "Writing Paraview binary solution file." << endl;
+      }
+      
+      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      
+      break;
+      
+    case PARAVIEW:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        cout << "Writing Paraview ASCII volume solution file." << endl;      
+      }
+      
+      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      
+      break;
+      
+    case SURFACE_PARAVIEW:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      surfaceDataSorter->SortConnectivity(config, geometry);      
+      surfaceDataSorter->SortOutputData();
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        cout << "Writing Paraview ASCII surface file." << endl;      
+      }
+      
+      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      
+      break;
+      
+    case SURFACE_PARAVIEW_BINARY:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      surfaceDataSorter->SortConnectivity(config, geometry);            
+      surfaceDataSorter->SortOutputData();
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        cout << "Writing Paraview Binary surface file." << endl;      
+      }
+      
+      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      
+      break;
+      
+    case SURFACE_TECPLOT:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      surfaceDataSorter->SortConnectivity(config, geometry);      
+      surfaceDataSorter->SortOutputData();
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        cout << "Writing Tecplot ASCII surface file." << endl;      
+      }
+      
+      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+                                          curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      
+      break;
+      
+    case SURFACE_TECPLOT_BINARY:
+      
+      if (fileName == "")
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      surfaceDataSorter->SortConnectivity(config, geometry);      
+      surfaceDataSorter->SortOutputData();
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        cout << "Writing Tecplot ASCII surface file." << endl;      
+      }
+      
+      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+                                                curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      
+      break;
+      
+    default:
+      fileWriter = NULL;
+      break;
   } 
-}
-
-void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep){
   
-  CParallelDataSorter* surface_sort = NULL;
-  CFileWriter*         file_writer = NULL;
+  /*--- Write data to file ---*/
   
-  if (femOutput){
-    surface_sort = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields, dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
-  } else {
-    surface_sort = new CSurfaceFVMDataSorter(config, geometry,nVolumeFields, dynamic_cast<CFVMDataSorter*>(volumeDataSorter));    
-  }
-
-  /*--- Set the file writer --- */
-  
-  SetFileWriter(config, geometry, surface_sort, file_writer, format);
+  if (fileWriter != NULL){
     
-  /*--- Sort the surface output data --- */
-  
-  surface_sort->SortOutputData();
-  
-  string FileName = surfaceFilename;
-  
-  /*--- Remove extension --- */
-  
-  unsigned short lastindex = FileName.find_last_of(".");
-  FileName = FileName.substr(0, lastindex);
-  
-  if (format != SU2_MESH){
-    FileName = config->GetMultizone_FileName(FileName, config->GetiZone(),"");
+    fileWriter->Write_Data();
+    
+    delete fileWriter;
+   
   }
-
-  /*--- Add time iteration if requested --- */
-  
-  if (time_dep){
-    FileName = config->GetUnsteady_FileName(FileName, curTimeIter, "");
-  }
-  
-  if (surface_sort->GetnElem() > 0){
-  
-    /*--- Write data to file --- */
-  
-    file_writer->Write_Data(FileName, surface_sort);
-  
-  }
-  
-  delete file_writer;
-  delete surface_sort;
-  
 }
 
-void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep){
-  
-  string FileName = volumeFilename;
-  
-  if(format == SU2_RESTART_ASCII || format == SU2_RESTART_BINARY){
-    FileName = restartFilename;
-  }
-  
-  /*--- Remove extension --- */
-  
-  unsigned short lastindex = FileName.find_last_of(".");
-  FileName = FileName.substr(0, lastindex);
-  
-  if (format != SU2_MESH){
-    FileName = config->GetMultizone_FileName(FileName, config->GetiZone(),"");
-  }
 
-  /*--- Add time iteration if requested --- */
-  
-  if (time_dep){
-    FileName = config->GetUnsteady_FileName(FileName, curTimeIter, "");
-  }
-  
-  CFileWriter* file_writer = NULL;
 
-  /*--- Set the file writer --- */
+bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing){
   
-  SetFileWriter(config, geometry, volumeDataSorter, file_writer, format);
+  /*--- Load the volume data from the solver and sort it ---*/
   
-  /*--- Write data to file --- */
+  Load_Data(geometry, config, solver_container);
   
-  file_writer->Write_Data(FileName, volumeDataSorter);
-  
-  if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
-    cout << "Wrote " << file_writer->Get_Filesize()/(1.0e6) << " MB to disk in ";
-    cout << file_writer->Get_UsedTime() << " s. (" << file_writer->Get_Bandwidth() << " MB/s)." << endl;
-  }
-  
-  if(format == SU2_RESTART_ASCII || format == SU2_RESTART_BINARY){
-    config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg() + file_writer->Get_Bandwidth());
-  }
+  if (WriteVolume_Output(config, Iter) || force_writing){
 
-  delete file_writer;
+    unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
+    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
+        
+    /*--- Loop through all requested output files ---*/
+    
+    for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
+      
+      WriteToFile(config, geometry, VolumeFiles[iFile]);
+
+    }
+    
+    /*--- Write any additonal files ----*/
+    
+    WriteAdditionalFiles(config, geometry, solver_container);
+    
+    /*--- Free the data sorters ---*/
+    
+    DeallocateData_Parallel();
+    
+    return true;
+  }
   
+  return false;
 }
 
 
@@ -640,7 +719,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
       
       /*--- Check the convergence ---*/
       
-      if ((monitor <= config->GetMinLogResidual())) { convergence = true;  }
+      if (Iteration != 0 && (monitor <= config->GetMinLogResidual())) { convergence = true;  }
       else { convergence = false; }
       
     }
@@ -696,10 +775,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 void COutput::SetHistoryFile_Header(CConfig *config) { 
 
   
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "TITLE = \"SU2 Simulation\"" << endl;
     histFile << "VARIABLES = ";
   }
@@ -735,10 +811,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   /*--- Print the string to file and remove the last character (a separator) ---*/
   histFile << out.str().substr(0, out.str().size() - 1);
   histFile << endl;
-  if (config->GetOutput_FileFormat() == TECPLOT ||
-      config->GetOutput_FileFormat() == TECPLOT_BINARY ||
-      config->GetOutput_FileFormat() == FIELDVIEW ||
-      config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "ZONE T= \"Convergence history\"" << endl;
   }
   histFile.flush();
@@ -919,11 +992,8 @@ void COutput::PrepareHistoryFile(CConfig *config){
   
   /*--- Add the correct file extension depending on the file format ---*/
   
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
+  if ((config->GetTabular_FileFormat() == TAB_TECPLOT)) SPRINTF (buffer, ".dat");
+  else if (config->GetTabular_FileFormat() == TAB_CSV)  SPRINTF (buffer, ".csv");
   strcat(char_histfile, buffer);
   
   /*--- Open the history file ---*/
@@ -1138,6 +1208,8 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   /*--- Reset the offset cache and index --- */
   curFieldIndex = 0;
   fieldIndexCache.clear();
+  curGetFieldIndex = 0;
+  fieldGetIndexCache.clear();
   
   if (femOutput){
     
@@ -1180,7 +1252,9 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     /*--- Reset the offset cache and index --- */
     curFieldIndex = 0;
-    fieldIndexCache.clear(); 
+    fieldIndexCache.clear();
+    curGetFieldIndex = 0;
+    fieldGetIndexCache.clear();
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
@@ -1194,7 +1268,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
           
         }
       }   
-    } 
+    }
   }
 }
 
@@ -1230,6 +1304,86 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
   
 }
 
+su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
+  
+  if (buildFieldIndexCache){ 
+    
+    /*--- Build up the offset cache to speed up subsequent 
+     * calls of this routine since the order of calls is 
+     * the same for every value of iPoint --- */
+    
+    if (volumeOutput_Map.count(name) > 0){
+      const short Offset = volumeOutput_Map[name].offset;
+      fieldGetIndexCache.push_back(Offset);        
+      if (Offset != -1){
+        return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+      }
+    } else {
+      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+    }
+  } else {
+    
+    /*--- Use the offset cache for the access ---*/
+    
+    const short Offset = fieldGetIndexCache[curGetFieldIndex++];
+  
+    if (curGetFieldIndex == fieldGetIndexCache.size()){
+      curGetFieldIndex = 0;
+    }
+    if (Offset != -1){
+      return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+    } 
+  }
+  
+  return 0.0;
+}
+
+void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+  
+  const su2double scaling = 1.0 / su2double(curAbsTimeIter + 1);
+  
+  if (buildFieldIndexCache){ 
+    
+    /*--- Build up the offset cache to speed up subsequent 
+     * calls of this routine since the order of calls is 
+     * the same for every value of iPoint --- */
+    
+    if (volumeOutput_Map.count(name) > 0){
+      const short Offset = volumeOutput_Map[name].offset;
+      fieldIndexCache.push_back(Offset);        
+      if (Offset != -1){
+        
+        const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+        const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+        
+        volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
+      }
+    } else {
+      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+    }
+  } else {
+    
+    /*--- Use the offset cache for the access ---*/
+    
+    const short Offset = fieldIndexCache[curFieldIndex++];
+    if (Offset != -1){
+      
+      const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+      
+      volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
+    }   
+    if (curFieldIndex == fieldIndexCache.size()){
+      curFieldIndex = 0;
+    }
+  }
+  
+}
+
+
+
+
+
 void COutput::Postprocess_HistoryData(CConfig *config){
    
   map<string, su2double> Average;
@@ -1241,7 +1395,8 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       if ( SetInit_Residuals(config) || (currentField.value > initialResiduals[historyOutput_List[iField]]) ) {
         initialResiduals[historyOutput_List[iField]] = currentField.value;
       }
-      SetHistoryOutputValue("REL_" + historyOutput_List[iField], currentField.value - initialResiduals[historyOutput_List[iField]]);
+      SetHistoryOutputValue("REL_" + historyOutput_List[iField], 
+                            currentField.value - initialResiduals[historyOutput_List[iField]]);
       
       Average[currentField.outputGroup] += currentField.value;
       Count[currentField.outputGroup]++;
@@ -1249,11 +1404,13 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     }
     if (currentField.fieldType == TYPE_COEFFICIENT){
       if(SetUpdate_Averages(config)){
-        SetHistoryOutputValue("TAVG_" + historyOutput_List[iField], runningAverages[historyOutput_List[iField]].Update(currentField.value));
+        SetHistoryOutputValue("TAVG_" + historyOutput_List[iField],
+                              runningAverages[historyOutput_List[iField]].Update(currentField.value));
       }
       if (config->GetDirectDiff() != NO_DERIVATIVE){
         SetHistoryOutputValue("D_" + historyOutput_List[iField], SU2_TYPE::GetDerivative(currentField.value));      
-        SetHistoryOutputValue("D_TAVG_" + historyOutput_List[iField], SU2_TYPE::GetDerivative(runningAverages[historyOutput_List[iField]].Get()));
+        SetHistoryOutputValue("D_TAVG_" + historyOutput_List[iField], 
+                              SU2_TYPE::GetDerivative(runningAverages[historyOutput_List[iField]].Get()));
         
       }
     }
@@ -1274,38 +1431,47 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
     if (currentField.fieldType == TYPE_RESIDUAL){
-      AddHistoryOutput("REL_" + historyOutput_List[iField], "rel" + currentField.fieldName, currentField.screenFormat, "REL_" + currentField.outputGroup, "Relative residual.", TYPE_AUTO_RESIDUAL);
+      AddHistoryOutput("REL_" + historyOutput_List[iField], "rel" + currentField.fieldName, currentField.screenFormat,
+                       "REL_" + currentField.outputGroup,  "Relative residual.", TYPE_AUTO_RESIDUAL);
       Average[currentField.outputGroup] = true;
     }
   }
   
   map<string, bool>::iterator it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
-    AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_" + it->first , "Average residual over all solution variables.", TYPE_AUTO_RESIDUAL);
+    AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED,
+                     "AVG_" + it->first , "Average residual over all solution variables.", TYPE_AUTO_RESIDUAL);
   }  
   
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
     if (currentField.fieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("TAVG_"   + historyOutput_List[iField], "tavg["  + currentField.fieldName + "]", currentField.screenFormat, "TAVG_"   + currentField.outputGroup, "Time averaged values.", TYPE_AUTO_COEFFICIENT);
+      AddHistoryOutput("TAVG_"   + historyOutput_List[iField], "tavg["  + currentField.fieldName + "]",
+                       currentField.screenFormat, "TAVG_"   + currentField.outputGroup, "Time averaged values.", 
+                       TYPE_AUTO_COEFFICIENT);
     }
   }
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
     if (currentField.fieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("D_"      + historyOutput_List[iField], "d["     + currentField.fieldName + "]", currentField.screenFormat, "D_"      + currentField.outputGroup, "Derivative value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+      AddHistoryOutput("D_"      + historyOutput_List[iField], "d["     + currentField.fieldName + "]",
+                       currentField.screenFormat, "D_"      + currentField.outputGroup, 
+                       "Derivative value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
     }
   }
   
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
     if (currentField.fieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("D_TAVG_" + historyOutput_List[iField], "dtavg[" + currentField.fieldName + "]", currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, "Derivative of the time averaged value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+      AddHistoryOutput("D_TAVG_" + historyOutput_List[iField], "dtavg[" + currentField.fieldName + "]",
+                       currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
+                       "Derivative of the time averaged value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
     }
   }
   
   if (historyOutput_Map[convField].fieldType == TYPE_COEFFICIENT){
-    AddHistoryOutput("CAUCHY", "C["  + historyOutput_Map[convField].fieldName + "]", FORMAT_SCIENTIFIC, "CAUCHY","Cauchy residual value of field set with CONV_FIELD." ,TYPE_AUTO_COEFFICIENT);
+    AddHistoryOutput("CAUCHY", "C["  + historyOutput_Map[convField].fieldName + "]", FORMAT_SCIENTIFIC, "CAUCHY",
+                     "Cauchy residual value of field set with CONV_FIELD." ,TYPE_AUTO_COEFFICIENT);
   }
 
 }
@@ -1429,6 +1595,10 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
  
   return true;
 
+}
+
+bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter){
+  return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0));
 }
 
 void COutput::SetCommonHistoryFields(CConfig *config){

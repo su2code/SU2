@@ -761,7 +761,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent, *Solution_Fine;
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {

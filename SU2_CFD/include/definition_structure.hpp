@@ -47,7 +47,6 @@
 #include "../../Common/include/fem_geometry_structure.hpp"
 
 
-
 using namespace std;
 
 /*!

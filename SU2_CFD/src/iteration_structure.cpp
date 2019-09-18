@@ -456,85 +456,10 @@ void CIteration::Output(COutput *output,
     unsigned short val_iInst)      {
 
   
-  bool output_files = false;
+  output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0],
+                          config[val_iZone],
+                          solver[val_iZone][INST_0][MESH_0], InnerIter);
   
-  unsigned short RestartFormat = SU2_RESTART_ASCII;
-  unsigned short OutputFormat = config[val_iZone]->GetOutput_FileFormat();
-  
-  bool Wrt_Surf = config[val_iZone]->GetWrt_Srf_Sol();
-  bool Wrt_Vol  = config[val_iZone]->GetWrt_Vol_Sol();
-  bool Wrt_CSV  = config[val_iZone]->GetWrt_Csv_Sol();
-  
-  if (config[val_iZone]->GetWrt_Binary_Restart()){
-    RestartFormat = SU2_RESTART_BINARY;
-  }
-  
-  /*--- Determine whether a solution needs to be written
-   after the current iteration ---*/
-
-  if ( 
-
-      /*--- Fixed CL problem ---*/
-
-      ((config[val_iZone]->GetFixed_CL_Mode()) &&
-       (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == InnerIter)) ||
-
-      /*--- Steady problems ---*/
-
-      ((InnerIter % config[val_iZone]->GetWrt_Sol_Freq() == 0) && (InnerIter != 0)) ||
-
-      /*--- No inlet profile file found. Print template. ---*/
-
-      (config[val_iZone]->GetWrt_InletFile())
-
-      ) {
-
-    output_files = true;
-
-  }
-
-  /*--- Determine whether a solution doesn't need to be written
-   after the current iteration ---*/
-
-  if (config[val_iZone]->GetFixed_CL_Mode()) {
-    if (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < InnerIter) output_files = false;
-    if (config[val_iZone]->GetnInner_Iter() - 1 == InnerIter) output_files = true;
-  }
-
-  /*--- write the solution ---*/
-
-  if (output_files && config[val_iZone]->GetWrt_Output()) {
-
-    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-
-    /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
-
-      config[val_iZone]->SetiInst(val_iInst);
-      
-      output->Load_Data(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], solver[val_iZone][val_iInst][MESH_0]);
-      
-      /*--- Write restart files ---*/
-      
-      output->SetVolume_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], RestartFormat, false);
-      
-      /*--- Write visualization files ---*/
-      
-      if (Wrt_Vol)
-        output->SetVolume_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OutputFormat, false);
-      if (Wrt_Surf)
-        output->SetSurface_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OutputFormat,false);
-      if (Wrt_CSV)
-        output->SetSurface_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], CSV, false);    
-      
-      output->DeallocateData_Parallel();      
-    
-    /*--- Execute the routine for writing special output. ---*/
-    //output->SetSpecial_Output(solver, geometry, config, Iter, nZone);
-
-    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-
-  }
 
 }
 void CIteration::Postprocess(COutput *output,

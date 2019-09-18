@@ -96,16 +96,16 @@ def main():
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
 
-#    # Fixed CL NACA0012
-#    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
-#    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-#    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-#    fixedCL_naca0012.test_iter = 100
-#    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
-#    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
-#    fixedCL_naca0012.timeout   = 1600
-#    fixedCL_naca0012.tol       = 0.00001
-#    test_list.append(fixedCL_naca0012)
+    # Fixed CL NACA0012
+    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
+    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
+    fixedCL_naca0012.test_iter = 100
+    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
+    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
+    fixedCL_naca0012.timeout   = 1600
+    fixedCL_naca0012.tol       = 0.00001
+    test_list.append(fixedCL_naca0012)
     
     # Polar sweep of the inviscid NACA0012
     polar_naca0012           = TestCase('polar_naca0012')
@@ -558,16 +558,16 @@ def main():
     contadj_wedge.tol       = 0.00001
     test_list.append(contadj_wedge)
 
-#    # Inviscid fixed CL NACA0012
-#    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
-#    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-#    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-#    contadj_fixed_CL_naca0012.test_iter = 100
-#    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
-#    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
-#    contadj_fixed_CL_naca0012.timeout   = 1600
-#    contadj_fixed_CL_naca0012.tol       = 0.00001
-#    test_list.append(contadj_fixed_CL_naca0012)
+    # Inviscid fixed CL NACA0012
+    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+    contadj_fixed_CL_naca0012.test_iter = 100
+    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
+    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
+    contadj_fixed_CL_naca0012.timeout   = 1600
+    contadj_fixed_CL_naca0012.tol       = 0.00001
+    test_list.append(contadj_fixed_CL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -807,6 +807,18 @@ def main():
     ddes_flatplate.tol       = 0.00001
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)    
+
+    # unsteady pitching NACA0015, SA
+    unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
+    unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
+    unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
+    unst_inc_turb_naca0015_sa.test_iter = 1
+    unst_inc_turb_naca0015_sa.test_vals = [-2.990702, -6.861616, 1.475736, 0.419771] #last 4 columns
+    unst_inc_turb_naca0015_sa.su2_exec  = "parallel_computation.py -f"
+    unst_inc_turb_naca0015_sa.timeout   = 1600
+    unst_inc_turb_naca0015_sa.tol       = 0.00001
+    unst_inc_turb_naca0015_sa.unsteady  = True
+    test_list.append(unst_inc_turb_naca0015_sa)
 
     ######################################
     ### NICFD                          ###
@@ -1061,7 +1073,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [ -3.498815, -5.272652, 4.1230e-08, 46.0000, 291.00000] #last 5 columns
+    stat_fsi.test_vals = [-3.307431, -4.955885, 4.1224e-08, 46.0000] #last 5 columns
     stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi.multizone = True
     stat_fsi.timeout   = 1600
@@ -1073,7 +1085,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.413915, -4.837068, 4.7367e-08, 64.000000, 40.000000] #last 5 columns
+    dyn_fsi.test_vals = [ -4.413916, -4.837043, 4.7367e-08, 64.0000] #last 5 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
@@ -1086,7 +1098,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-9.685290, -8.386780, 0.000000, 46.00000, 290.00000] #last 5 columns
+    stat_fsi_restart.test_vals = [-3.388879, -4.968790, 4.1230e-08, 46.00000] #last 5 columns
     stat_fsi_restart.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi_restart.multizone = True
     stat_fsi_restart.timeout   = 1600

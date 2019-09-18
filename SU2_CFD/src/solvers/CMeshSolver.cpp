@@ -724,7 +724,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+  restart_filename = config->GetFilename(restart_filename, "", val_iter);
   
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -867,7 +867,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
+    filename = config->GetMultizone_FileName(filename, iZone, "");
 
   /*-------------------------------------------------------------------------------------------*/
   /*----------------------- First, load the restart file for time n ---------------------------*/
@@ -875,7 +875,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Modify file name for an unsteady restart ---*/
   Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
+  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -951,7 +951,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Modify file name for an unsteady restart ---*/
     Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
+    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 

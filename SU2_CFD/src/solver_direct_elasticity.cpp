@@ -39,6 +39,7 @@
 #include "../include/variables/CFEAFSIBoundVariable.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
 #include "../include/variables/CFEAVariable.hpp"
+#include "../include/toolboxes/printing_toolbox.hpp"
 #include <algorithm>
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
@@ -108,7 +109,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   unsigned long iPoint;
   unsigned short iVar, jVar, iDim, jDim;
-  unsigned short iTerm, iKind;
+  unsigned short iTerm;
 
   bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -858,7 +859,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
+    filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
   reference_file.open(filename.data(), ios::in);
 
@@ -896,7 +897,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   getline (reference_file, text_line);
 
   while (getline (reference_file, text_line)) {
-    istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -906,9 +908,15 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
     iPoint_Local = Global2Local[iPoint_Global];
 
     if (iPoint_Local >= 0) {
-
-      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+      
+      if (nDim == 2){
+        Solution[0] = PrintingToolbox::stod(point_line[3]);
+        Solution[1] = PrintingToolbox::stod(point_line[4]);
+      } else {
+        Solution[0] = PrintingToolbox::stod(point_line[4]);
+        Solution[1] = PrintingToolbox::stod(point_line[5]);
+        Solution[2] = PrintingToolbox::stod(point_line[6]);        
+      }
 
       for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetReference_Geometry(iVar, Solution[iVar]);
 
@@ -2135,12 +2143,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   unsigned short iVar;
   unsigned long iPoint, total_index;
   
-  bool first_iter = (config->GetInnerIter() == 0);
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  
-  su2double solNorm = 0.0, solNorm_recv = 0.0;
-  
+    
   if (disc_adj_fem) {
 
     if (nonlinear_analysis) {
@@ -4362,7 +4367,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
+  filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- Read all lines in the restart file ---*/
 
