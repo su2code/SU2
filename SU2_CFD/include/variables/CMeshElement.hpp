@@ -1,8 +1,8 @@
 /*!
- * \file CVariable.hpp
+ * \file CMeshElement.hpp
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -73,7 +73,7 @@ public:
    * \brief Get the value of the element volume with undeformed coordinates.
    * \return Value of the element volume with reference coordinates.
    */
-  inline su2double GetRef_Volume(void) { return Ref_Volume; }
+  inline su2double GetRef_Volume(void) const { return Ref_Volume; }
 
   /*!
    * \brief Set the value of the element volume with undeformed coordinates.
@@ -85,7 +85,7 @@ public:
    * \brief Get the value of the element volume with deformed coordinates.
    * \return Value of the element volume with deformed coordinates.
    */
-  inline su2double GetCurr_Volume(void) { return Curr_Volume; }
+  inline su2double GetCurr_Volume(void) const { return Curr_Volume; }
 
   /*!
    * \brief Set the value of the element distance to the nearest wall with deformed coordinates.
@@ -97,7 +97,7 @@ public:
    * \brief Get the value of the element distance to the nearest wall with undeformed coordinates.
    * \return Value of the element distance to the nearest wall with reference coordinates.
    */
-  inline su2double GetWallDistance(void) { return WallDistance; }
+  inline su2double GetWallDistance(void) const { return WallDistance; }
 
   /*!
    * \brief Set the value of the element distance to the nearest wall with undeformed coordinates.

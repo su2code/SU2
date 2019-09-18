@@ -4,15 +4,9 @@
 
 
 
-CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim, unsigned short iZone, unsigned short nZone) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".su2";
-    
-  this->iZone = iZone;
-  this->nZone = nZone;
-  
-}
+CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim, 
+                                       unsigned short iZone, unsigned short nZone) : 
+  iZone(iZone), nZone(nZone), CFileWriter(fields, ".su2", nDim){}
 
 
 CSU2MeshFileWriter::~CSU2MeshFileWriter(){

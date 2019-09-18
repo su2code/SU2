@@ -46,7 +46,7 @@
 #include "integration_structure.hpp"
 #include "output/COutput.hpp"
 #include "numerics_structure.hpp"
-#include "transfer_structure.hpp"
+#include "transfer/CTransfer.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -100,7 +100,6 @@ public:
   virtual void SetGrid_Movement(CGeometry **geometry, CSurfaceMovement *surface_movement,
                       CVolumetricMovement *grid_movement,
                       CSolver ***solver, CConfig *config, unsigned long IntIter, unsigned long TimeIter);
-  
   /*!
    * \brief Run the mesh deformation algorithms.
    * \author R. Sanchez

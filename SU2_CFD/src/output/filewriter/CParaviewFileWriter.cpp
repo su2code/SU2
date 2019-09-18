@@ -2,16 +2,10 @@
 
 
 CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".vtk";
-    
-}
+  CFileWriter(fields, ".vtk", nDim){}
 
 
-CParaviewFileWriter::~CParaviewFileWriter(){
-  
-}
+CParaviewFileWriter::~CParaviewFileWriter(){}
 
 void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
   

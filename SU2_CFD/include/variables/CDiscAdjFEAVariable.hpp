@@ -188,14 +188,6 @@ public:
   inline su2double GetSolution_Vel_time_n(unsigned short val_var) {return Solution_Vel_time_n[val_var]; }
 
   /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = Solution[iVar];
-  }
-
-  /*!
    * \brief Set the value of the acceleration (Structural Analysis - adjoint).
    * \param[in] val_solution - Solution of the problem (acceleration).
    */

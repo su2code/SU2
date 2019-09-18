@@ -158,7 +158,7 @@ class Interface:
 	self.MPIPrint('Fluid solver : SU2_CFD')
 	self.MPIPrint('Solid solver : {}'.format(FSI_config['CSD_SOLVER']))
 
-	if FSI_config['UNSTEADY_SIMULATION'] == 'YES':
+	if FSI_config['TIME_MARCHING'] == 'YES':
           self.MPIPrint('Unsteady coupled simulation with physical time step : {} s'.format(FSI_config['UNST_TIMESTEP']))
           self.unsteady = True
 	else:

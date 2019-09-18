@@ -98,7 +98,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
   v_y     =      4.0;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 

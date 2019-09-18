@@ -81,20 +81,11 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   unsigned short iVar, iMarker, iDim;
 
-  bool restart = config->GetRestart();
-
-  restart = false;
-
-  unsigned long iVertex, iPoint, index;
+  unsigned long iVertex, iPoint;
   string text_line, mesh_filename;
-  ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool dynamic = (config->GetTime_Domain());
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
@@ -392,7 +383,7 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
-  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic (config->GetTime_Domain());
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -449,7 +440,7 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
-  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic (config->GetTime_Domain());
   bool input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
@@ -544,7 +535,7 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
-  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   /*--- Register variables as output of the solver iteration ---*/
 
@@ -580,7 +571,11 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
       ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
       break;
   case VOLUME_FRACTION:
+  case TOPOL_DISCRETENESS:
       ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
+      break;
+  case TOPOL_COMPLIANCE:
+      ObjFunc_Value = direct_solver->GetTotal_OFCompliance();
       break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
@@ -604,7 +599,7 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
 
 void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long TimeIter = config->GetTimeIter();
   su2double seeding = 1.0;
@@ -627,7 +622,7 @@ void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -703,7 +698,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint solution at time n ---*/
 
-      node[iPoint]->SetSolution_time_n(Solution);
+      node[iPoint]->Set_Solution_time_n(Solution);
     }
 
     /*--- The acceleration solution at time n... ---*/
@@ -837,7 +832,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   bool fsi = config->GetFSI_Simulation();
   bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
 
@@ -892,7 +887,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
 
-  bool dynamic = (config_container->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config_container->GetTime_Domain());
   unsigned long iPoint;
   unsigned short iVar;
 
@@ -1019,7 +1014,7 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
 void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -1160,7 +1155,7 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
   /*--- Read and store the restart metadata. ---*/
 
-  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
+//  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -1254,3 +1249,4 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
 }
 
+    

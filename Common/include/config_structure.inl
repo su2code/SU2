@@ -1238,8 +1238,6 @@ inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingP
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
 
-inline bool CConfig::GetBoolZoneSpecific(void) { return ZoneSpecific_Problem;}
-
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
 inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
@@ -1302,7 +1300,7 @@ inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) { return Ob
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth; }
 
-inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
+inline unsigned short CConfig::GetTime_Marching(void) { return TimeMarching; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
@@ -1539,8 +1537,6 @@ inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_
 
 inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 
-inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
-
 inline su2double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
 inline su2double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
@@ -1588,6 +1584,12 @@ inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
 inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC)); }
+
+inline bool CConfig::GetDynamic_Grid(void) {
+  return (Kind_GridMovement != NO_MOVEMENT)
+      || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC))
+      || (Deform_Mesh && (Time_Domain));
+}
 
 inline unsigned short CConfig::GetKind_SurfaceMovement(unsigned short iMarkerMoving){return Kind_SurfaceMovement[iMarkerMoving];}
 
@@ -1863,8 +1865,6 @@ inline bool CConfig::GetPredictor(void) { return Predictor; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
-inline bool CConfig::GetpyFSI(void) { return pyFSI; }
-
 inline bool CConfig::GetRelaxation(void) { return Relaxation; }
 
 inline bool CConfig::GetIncrementalLoad(void) { return IncrementalLoad; }
@@ -1898,26 +1898,6 @@ inline su2double CConfig::GetRadialBasisFunctionParameter(void) {return RadialBa
 inline bool CConfig::GetConservativeInterpolation(void) { return ConservativeInterpolation; }
 
 inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }
-
-inline su2double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI; }
-
-inline su2double CConfig::GetMinLogResidualFSI(void) { return MinLogResidualFSI; }
-
-inline su2double CConfig::GetOrderMagResidual_BGS_F(void) { return OrderMagResidual_BGS_F; }
-
-inline su2double CConfig::GetMinLogResidual_BGS_F(void) { return MinLogResidual_BGS_F; }
-
-inline su2double CConfig::GetOrderMagResidual_BGS_S(void) { return OrderMagResidual_BGS_S; }
-
-inline su2double CConfig::GetMinLogResidual_BGS_S(void) { return MinLogResidual_BGS_S; }
-
-inline su2double CConfig::GetResidual_FEM_UTOL(void) { return Res_FEM_UTOL; }
-
-inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
-
-inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
-
-inline su2double CConfig::GetCriteria_FEM_ADJ(void) { return Res_FEM_ADJ; }
 
 inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_LoadTransfer; }
 
@@ -2000,6 +1980,8 @@ inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsi
   radius = top_optim_filter_radius[iKernel];
 }
 
+inline unsigned short CConfig::GetTopology_Search_Limit(void) const { return top_optim_search_lim; }
+
 inline void CConfig::GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
   type = top_optim_proj_type;  param = top_optim_proj_param;
 }
@@ -2019,6 +2001,8 @@ inline unsigned long CConfig::GetnInner_Iter(void) { return nInnerIter; }
 inline unsigned long CConfig::GetnOuter_Iter(void) { return nOuterIter; }
 
 inline unsigned long CConfig::GetnTime_Iter(void) { return nTimeIter; }
+
+inline void CConfig::SetnTime_Iter(unsigned long val_iter) { nTimeIter = val_iter; }
 
 inline unsigned long CConfig::GetnIter(void) { return nIter; }
 
@@ -2076,7 +2060,11 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
-inline bool CConfig::GetDryRun() {return dry_run;}
+inline short CConfig::GetMeshBoxSize(unsigned short val_iDim) { return Mesh_Box_Size[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mesh_Box_Length[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
 
 inline string CConfig::GetConv_Field(){ return ConvField; }
 
@@ -2087,5 +2075,4 @@ inline su2double  CConfig::Get_StartTime() {return StartTime;}
 inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
-
 

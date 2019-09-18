@@ -40,7 +40,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim) {
+CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
   
   turb_model = config->GetKind_Turb_Model();
 
@@ -53,46 +53,46 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("RMS_RES");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
-    RequestedScreenFields.push_back("RMS_PRESSURE");
-    RequestedScreenFields.push_back("RMS_VELOCITY-X");
-    RequestedScreenFields.push_back("RMS_VELOCITY-Y");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
+    requestedScreenFields.push_back("INNER_ITER");
+    requestedScreenFields.push_back("RMS_PRESSURE");
+    requestedScreenFields.push_back("RMS_VELOCITY-X");
+    requestedScreenFields.push_back("RMS_VELOCITY-Y");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("PRIMITIVE");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.push_back("COORDINATES");
+    requestedVolumeFields.push_back("SOLUTION");
+    requestedVolumeFields.push_back("PRIMITIVE");
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Incomp. Fluid)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetVolume_FileName(); 
+  volumeFilename = config->GetVolume_FileName(); 
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfCoeff_FileName();
+  surfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_PRESSURE";
+  if (convField.size() == 0 ) convField = "RMS_PRESSURE";
 
 
 }
@@ -100,7 +100,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 CFlowIncOutput::~CFlowIncOutput(void) {
 
   if (rank == MASTER_NODE){
-    HistFile.close();
+    histFile.close();
   }
 
 
@@ -128,7 +128,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
     AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
-  case SST:
+  case SST: case SST_SUST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
     AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
@@ -157,7 +157,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
     AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
-  case SST:
+  case SST: case SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
     AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
@@ -186,7 +186,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
     AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
-  case SST:
+  case SST: case SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
     AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
@@ -208,7 +208,16 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Angle of attack  
   AddHistoryOutput("AOA",         "AoA",                      FORMAT_SCIENTIFIC,"AOA", "Angle of attack");
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver");
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", FORMAT_INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", FORMAT_FIXED, "LINSOL", "Residual of the linear solver.");
+  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");  
+  
+  if (config->GetDeform_Mesh()){
+    AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", FORMAT_SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
+    AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", FORMAT_SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
+    AddHistoryOutput("DEFORM_ITER", "DeformIter", FORMAT_INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
+    AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", FORMAT_FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");    
+  }
   
   /*--- Add analyze surface history fields --- */
   
@@ -226,6 +235,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* turb_solver = solver[TURB_SOL];  
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
+  CSolver* mesh_solver = solver[MESH_SOL];
   
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
@@ -236,7 +246,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;  
-  case SST:
+  case SST: case SST_SUST:
     SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
@@ -259,13 +269,13 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
     break;  
-  case SST:
+  case SST: case SST_SUST:
     SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
   }
   
-  if (multizone){
+  if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
     SetHistoryOutputValue("BGS_VELOCITY-Y", log10(flow_solver->GetRes_BGS(2)));
@@ -288,7 +298,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
-    if (multizone) SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
+    if (multiZone) SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
   }
   if (heat){
     SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
@@ -299,12 +309,25 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     
     if (nDim == 3) SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(3)));
-    if (multizone){
+    if (multiZone){
       if (nDim == 3) SetHistoryOutputValue("BGS_HEAT",         log10(flow_solver->GetRes_BGS(4)));
       else           SetHistoryOutputValue("BGS_HEAT",         log10(flow_solver->GetRes_BGS(3)));
     }
 
+  }  
+  
+  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
+  
+  if (config->GetDeform_Mesh()){
+    SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
+    SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
+    SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetLinSol_Residual()));
   }
+  
+  SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
+
   
   /*--- Set the analyse surface history values --- */
   
@@ -335,7 +358,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
   
   switch(config->GetKind_Turb_Model()){
-  case SST:
+  case SST: case SST_SUST:
     AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
     AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
     break;
@@ -398,7 +421,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
   
   switch(config->GetKind_Turb_Model()){
-  case SST:
+  case SST: case SST_SUST:
     AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
     AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation.");
     break;
@@ -419,7 +442,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   
   switch(config->GetKind_Turb_Model()){
-  case SST:
+  case SST: case SST_SUST:
     AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy.");
     AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate.");
     break;
@@ -485,7 +508,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Heat->GetSolution(0));
   
   switch(config->GetKind_Turb_Model()){
-  case SST:
+  case SST: case SST_SUST:
     SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(0));
     SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(1));
     break;
@@ -543,7 +566,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
   
   switch(config->GetKind_Turb_Model()){
-  case SST:
+  case SST: case SST_SUST:
     SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
     SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 1));
     break;
@@ -566,7 +589,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
   
   switch(config->GetKind_Turb_Model()){
-  case SST:
+  case SST: case SST_SUST:
     SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter_Primitive(0));
     SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter_Primitive(1));
     break;
@@ -640,8 +663,8 @@ su2double CFlowIncOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, C
 
 bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && (curr_InnerIter == 0))|| 
-        (config->GetUnsteady_Simulation() == STEADY && (curr_TimeIter < 2)); 
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
+        (config->GetTime_Marching() == STEADY && (curTimeIter < 2)); 
   
 }
 

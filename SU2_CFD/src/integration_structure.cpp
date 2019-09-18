@@ -65,8 +65,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Compute inviscid residuals ---*/
   
@@ -534,7 +534,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver->node[iPoint]->SetSolution_time_n();
+    solver->node[iPoint]->Set_Solution_time_n();
     solver->node[iPoint]->SetSolution_Vel_time_n();
     solver->node[iPoint]->SetSolution_Accel_time_n();
     
@@ -579,7 +579,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
+    solver_container[FEA_SOL]->node[iPoint]->Set_Solution_time_n();
     solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
     solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
     

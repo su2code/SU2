@@ -96,16 +96,16 @@ def main():
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
 
-    # Fixed CL NACA0012
-    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
-    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    fixedCL_naca0012.test_iter = 100
-    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
-    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
-    fixedCL_naca0012.timeout   = 1600
-    fixedCL_naca0012.tol       = 0.00001
-    test_list.append(fixedCL_naca0012)
+#    # Fixed CL NACA0012
+#    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
+#    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
+#    fixedCL_naca0012.test_iter = 100
+#    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
+#    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
+#    fixedCL_naca0012.timeout   = 1600
+#    fixedCL_naca0012.tol       = 0.00001
+#    test_list.append(fixedCL_naca0012)
     
     # Polar sweep of the inviscid NACA0012
     polar_naca0012           = TestCase('polar_naca0012')
@@ -215,6 +215,17 @@ def main():
     rae2822_sst.tol       = 0.00001
     test_list.append(rae2822_sst)
 
+    # RAE2822 SST_SUST
+    rae2822_sst_sust           = TestCase('rae2822_sst_sust')
+    rae2822_sst_sust.cfg_dir   = "rans/rae2822"
+    rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
+    rae2822_sst_sust.test_iter = 20
+    rae2822_sst_sust.test_vals = [-2.407053, 4.916635, 0.827705, 0.053331] #last 4 columns
+    rae2822_sst_sust.su2_exec  = "parallel_computation.py -f"
+    rae2822_sst_sust.timeout   = 1600
+    rae2822_sst_sust.tol       = 0.00001
+    test_list.append(rae2822_sst_sust)
+
     # Flat plate
     turb_flatplate           = TestCase('turb_flatplate')
     turb_flatplate.cfg_dir   = "rans/flatplate"
@@ -269,6 +280,17 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
+
+    # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
+    turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
+    turb_naca0012_sst_sust.test_iter = 10
+    turb_naca0012_sst_sust.test_vals = [-13.280836, -5.645158, 1.022304, 0.019539] #last 4 columns
+    turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_sust.timeout   = 3200
+    turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_sust)
 
     # PROPELLER
     propeller           = TestCase('propeller')
@@ -359,6 +381,17 @@ def main():
     inc_poly_cylinder.timeout   = 1600
     inc_poly_cylinder.tol       = 0.00001
     test_list.append(inc_poly_cylinder)
+    
+    # X-coarse laminar bend as a mixed element CGNS test
+    inc_lam_bend          = TestCase('inc_lam_bend')
+    inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
+    inc_lam_bend.cfg_file  = "lam_bend.cfg"
+    inc_lam_bend.test_iter = 10
+    inc_lam_bend.test_vals = [-3.437518, -3.087892, -0.022290, -0.172644] #last 4 columns
+    inc_lam_bend.su2_exec  = "mpirun -n 2 SU2_CFD"
+    inc_lam_bend.timeout   = 1600
+    inc_lam_bend.tol       = 0.00001
+    test_list.append(inc_lam_bend)
 
     ############################
     ### Incompressible RANS  ###
@@ -374,6 +407,17 @@ def main():
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
+
+    # NACA0012, SST_SUST
+    inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
+    inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
+    inc_turb_naca0012_sst_sust.test_iter = 20
+    inc_turb_naca0012_sst_sust.test_vals = [-7.277551, 0.147212, -0.000000, 0.311977] #last 4 columns
+    inc_turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
+    inc_turb_naca0012_sst_sust.timeout   = 1600
+    inc_turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(inc_turb_naca0012_sst_sust)
     
     ####################
     ### DG-FEM Euler ###
@@ -514,16 +558,16 @@ def main():
     contadj_wedge.tol       = 0.00001
     test_list.append(contadj_wedge)
 
-    # Inviscid fixed CL NACA0012
-    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
-    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-    contadj_fixed_CL_naca0012.test_iter = 100
-    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
-    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
-    contadj_fixed_CL_naca0012.timeout   = 1600
-    contadj_fixed_CL_naca0012.tol       = 0.00001
-    test_list.append(contadj_fixed_CL_naca0012)
+#    # Inviscid fixed CL NACA0012
+#    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+#    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+#    contadj_fixed_CL_naca0012.test_iter = 100
+#    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
+#    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
+#    contadj_fixed_CL_naca0012.timeout   = 1600
+#    contadj_fixed_CL_naca0012.tol       = 0.00001
+#    test_list.append(contadj_fixed_CL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -992,9 +1036,10 @@ def main():
     dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [6.000000, 1.000000, 0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
+    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
     dynbeam2d.timeout   = 1600
+    dynbeam2d.unsteady  = True
     dynbeam2d.tol       = 0.00001
     test_list.append(dynbeam2d)
 
@@ -1003,9 +1048,11 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
+    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
     fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
     fsi2d.timeout   = 1600
+    fsi2d.multizone= True
+    fsi2d.unsteady = True
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)
     
@@ -1013,20 +1060,35 @@ def main():
     stat_fsi           = TestCase('stat_fsi')
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7000
-    stat_fsi.test_vals = [-6.762763, -6.522814, -9.205275, -10.113188] #last 4 columns
-    stat_fsi.su2_exec  = "SU2_CFD"
+    stat_fsi.test_iter = 7
+    stat_fsi.test_vals = [ -3.498815, -5.272652, 4.1230e-08, 46.0000, 291.00000] #last 5 columns
+    stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    stat_fsi.multizone = True
     stat_fsi.timeout   = 1600
     stat_fsi.tol       = 0.00001
     test_list.append(stat_fsi)
+
+    # FSI, Dynamic, 2D, new mesh solver
+    dyn_fsi           = TestCase('dyn_fsi')
+    dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
+    dyn_fsi.cfg_file  = "config.cfg"
+    dyn_fsi.test_iter = 4
+    dyn_fsi.test_vals = [-4.413915, -4.837068, 4.7367e-08, 64.000000, 40.000000] #last 5 columns
+    dyn_fsi.multizone = True
+    dyn_fsi.unsteady  = True
+    dyn_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    dyn_fsi.timeout   = 1600
+    dyn_fsi.tol       = 0.00001
+    test_list.append(dyn_fsi)
 
     # FSI, Static, 2D, new mesh solver, restart
     stat_fsi_restart           = TestCase('stat_fsi_restart')
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1000
-    stat_fsi_restart.test_vals = [-9.692985, -9.452006, -12.132021, -13.042439] #last 4 columns
-    stat_fsi_restart.su2_exec  = "SU2_CFD"
+    stat_fsi_restart.test_iter = 1
+    stat_fsi_restart.test_vals = [-9.685290, -8.386780, 0.000000, 46.00000, 290.00000] #last 5 columns
+    stat_fsi_restart.su2_exec  = "mpirun -n 2 SU2_CFD"
+    stat_fsi_restart.multizone = True
     stat_fsi_restart.timeout   = 1600
     stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)

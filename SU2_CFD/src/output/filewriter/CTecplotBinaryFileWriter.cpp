@@ -5,21 +5,9 @@
 #include <set>
 
 CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
-  CFileWriter(fields, nDim){
+  time_iter(time_iter), timestep(timestep), CFileWriter(fields, ".szplt", nDim){}
 
-  file_ext = ".szplt";
-    
-  this->time_iter = time_iter;
-  
-  this->timestep = timestep;
-  
-}
-
-
-CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){
-  
-}
-
+CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
 void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
   

@@ -4,11 +4,7 @@
 
 
 CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".dat";
-    
-}
+  CFileWriter(fields, ".dat", nDim){}
 
 
 CSU2FileWriter::~CSU2FileWriter(){
@@ -59,7 +55,7 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   /*--- Write the restart file in parallel, processor by processor. ---*/
   
-  unsigned long myPoint = 0, offset = 0, Global_Index;
+  unsigned long myPoint = 0, Global_Index;
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
       for (iPoint = 0; iPoint < data_sorter->GetnPoints(); iPoint++) {
@@ -85,7 +81,6 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
     /*--- Flush the file and wait for all processors to arrive. ---*/
     restart_file.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     

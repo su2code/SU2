@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-0.776047, -0.795108, 3.1979e+02, 0.0000e+00] #last 4 columns
+    discadj_arina2k.test_vals    = [2.206814, 1.674391, 4.7250e+04, 0.0000e+00]#last 4 columns
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -303,16 +303,16 @@ def main():
     test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    discadj_multi_py            = TestCase('discadj_multi_py')
-    discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    discadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    discadj_multi_py.test_iter  = 10
-    discadj_multi_py.su2_exec   = "discrete_adjoint.py"
-    discadj_multi_py.timeout    = 1600
-    discadj_multi_py.reference_file = "of_grad_combo.dat.refdiscrete"
-    discadj_multi_py.test_file  = "of_grad_combo.dat"
-    pass_list.append(discadj_multi_py.run_filediff())
-    test_list.append(discadj_multi_py)
+#    discadj_multi_py            = TestCase('discadj_multi_py')
+#    discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+#    discadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+#    discadj_multi_py.test_iter  = 10
+#    discadj_multi_py.su2_exec   = "discrete_adjoint.py"
+#    discadj_multi_py.timeout    = 1600
+#    discadj_multi_py.reference_file = "of_grad_combo.dat.refdiscrete"
+#    discadj_multi_py.test_file  = "of_grad_combo.dat"
+#    pass_list.append(discadj_multi_py.run_filediff())
+#    test_list.append(discadj_multi_py)
 
     # FEA AD Flow Load Sensitivity
     pywrapper_FEA_AD_FlowLoad               = TestCase('pywrapper_FEA_AD_FlowLoad')
@@ -322,8 +322,8 @@ def main():
     pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401579657, -0.585985886606256, -0.00036377840086080753, -0.0031005670174756375] #last 4 columns
     pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
-    pywrapper_FEA_AD_FlowLoad.tol           = 0.00001
-    pywrapper_FEA_AD_FlowLoad.unsteady      = True
+    pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 
@@ -335,8 +335,8 @@ def main():
     pywrapper_FEA_AD_FlowLoad.test_vals     = [30, -2.4701936842091294, 1.4366255094753457, 0.0] #last 4 columns
     pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
-    pywrapper_FEA_AD_FlowLoad.tol           = 0.00001
-    pywrapper_FEA_AD_FlowLoad.unsteady      = True
+    pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 

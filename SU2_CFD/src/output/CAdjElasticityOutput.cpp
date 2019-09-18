@@ -40,7 +40,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
+CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
  
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -52,54 +52,58 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RESIDUALS");
-    RequestedHistoryFields.push_back("SENSITIVITY");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.push_back("RESIDUALS");
+    requestedHistoryFields.push_back("SENSITIVITY");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
   if (nRequestedScreenFields == 0){
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
-    RequestedScreenFields.push_back("ADJOINT_DISP_X");
-    RequestedScreenFields.push_back("ADJOINT_DISP_Y");
-    RequestedScreenFields.push_back("SENS_E");
-    RequestedScreenFields.push_back("SENS_NU");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
+    requestedScreenFields.push_back("INNER_ITER");
+    requestedScreenFields.push_back("ADJOINT_DISP_X");
+    requestedScreenFields.push_back("ADJOINT_DISP_Y");
+    requestedScreenFields.push_back("SENS_E");
+    requestedScreenFields.push_back("SENS_NU");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
 
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.push_back("COORDINATES");
+    requestedVolumeFields.push_back("SOLUTION");
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
 
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetAdj_FileName();
+  volumeFilename = config->GetAdj_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfAdjCoeff_FileName();
+  surfaceFilename = config->GetSurfAdjCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  restartFilename = config->GetRestart_AdjFileName();
+  
+  /*--- Add the obj. function extension --- */
+  
+  restartFilename = config->GetObjFunc_Extension(restartFilename);
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "ADJOINT_DISP_X";
+  if (convField.size() == 0 ) convField = "ADJOINT_DISP_X";
   
 }
 
 CAdjElasticityOutput::~CAdjElasticityOutput(void) {
 
   if (rank == MASTER_NODE){
-    HistFile.close();
+    histFile.close();
   }
 
 

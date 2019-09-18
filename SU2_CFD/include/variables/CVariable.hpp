@@ -675,6 +675,14 @@ public:
   inline su2double GetRmatrix(unsigned short val_iDim, unsigned short val_jDim) {return Rmatrix[val_iDim][val_jDim]; }
 
   /*!
+   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \return Value of the Rmatrix entry.
+   */
+  inline su2double **GetRmatrix(void) {return Rmatrix; }
+
+  /*!
    * \brief Set the value of the limiter.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
@@ -1657,7 +1665,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool Get_isVertex(void) {return false;}
+  inline virtual bool Get_isVertex(void) const {return false;}
 
   /*!
    * \brief A virtual member.
@@ -2091,26 +2099,6 @@ public:
   inline virtual su2double* GetSolution_Accel_Direct() {return NULL; }
 
   /*!
-   * \brief Set the value of the old solution.
-   */
-  inline virtual void SetSolution_time_n(void) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_time_n - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(unsigned short val_var, su2double val_solution) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(su2double *val_solution_time_n) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_time_n[iVar] = val_solution_time_n[iVar];
-  }
-
-  /*!
    * \brief Set the value of the velocity (Structural Analysis).
    * \param[in] val_solution - Solution of the problem (velocity).
    */
@@ -2147,6 +2135,13 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   inline su2double GetSolution_time_n(unsigned short val_var) {return Solution_time_n[val_var]; }
+
+  /*!
+   * \brief Get the solution at time n-1.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  inline su2double GetSolution_time_n1(unsigned short val_var) {return Solution_time_n1[val_var]; }
 
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -2337,7 +2332,7 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the original coordinate iDim.
    */
-  inline virtual su2double GetMesh_Coord(unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetMesh_Coord(unsigned short iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Get the undeformed coordinates.
@@ -2350,20 +2345,20 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
    */
-  inline virtual void SetMesh_Coord(unsigned short iDim, su2double val_coord) { }
+  inline virtual void SetMesh_Coord(unsigned short iDim, const su2double val_coord) { }
 
     /*!
    * \brief A virtual member. Get the value of the wall distance in reference coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.
    */
-  inline virtual su2double GetWallDistance(void) { return 0.0; }
+  inline virtual su2double GetWallDistance(void) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the value of the wall distance in reference coordinates.
    * \param[in] val_dist - Value of wall distance.
    */
-  inline virtual void SetWallDistance(su2double val_dist) { }
+  inline virtual void SetWallDistance(const su2double val_dist) { }
 
   /*!
    * \brief A virtual member. Register the reference coordinates of the mesh.
@@ -2374,19 +2369,19 @@ public:
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
    */
-  inline virtual void GetAdjoint_MeshCoord(su2double *adj_mesh) { }
+  inline virtual void GetAdjoint_MeshCoord(su2double *adj_mesh) const { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline virtual su2double GetBound_Disp(unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetBound_Disp(unsigned short iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline virtual void SetBound_Disp(su2double *val_BoundDisp) { }
+  inline virtual void SetBound_Disp(const su2double *val_BoundDisp) { }
 
 
   /*!
@@ -2394,32 +2389,32 @@ public:
    * \param[in] iDim - Index of the dimension of interest.
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
-  inline virtual void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) { }
+  inline virtual void SetBound_Disp(unsigned short iDim, const su2double val_BoundDisp) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline virtual su2double* GetBoundDisp_Direct() { return NULL; }
+  inline virtual su2double* GetBoundDisp_Direct(void) { return NULL; }
 
   /*!
    * \brief A virtual member. Set the solution for the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline virtual void SetBoundDisp_Direct(su2double *val_BoundDisp) { }
+  inline virtual void SetBoundDisp_Direct(const su2double *val_BoundDisp) { }
 
   /*!
    * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
    */
-  inline virtual void SetBoundDisp_Sens(su2double *val_sens) { }
+  inline virtual void SetBoundDisp_Sens(const su2double *val_sens) { }
 
   /*!
    * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
    * \return Value of the original Mesh_Coord_Sens iDim.
    */
-  inline virtual su2double GetBoundDisp_Sens(unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetBoundDisp_Sens(unsigned short iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Register the boundary displacements of the mesh.

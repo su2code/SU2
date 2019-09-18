@@ -2,7 +2,7 @@
  * \file CDiscAdjMeshVariable.hpp
  * \brief Declaration and inlines of the class
  *        to define the adjoint variables of the mesh movement.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -62,6 +62,6 @@ public:
    * \brief Determine whether the node is a moving vertex.
    * \return False. The node is not at the boundary.
    */
-  inline virtual bool Get_isVertex(void) { return false; }
+  inline virtual bool Get_isVertex(void) const override { return false; }
 
 };

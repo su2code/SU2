@@ -109,6 +109,10 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+    
+  /*--- Set runtime option ---*/
+  
+  Runtime_Options();
   
   /*--- Set the current time iteration in the config ---*/
   
@@ -118,7 +122,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
   
-  if (config_container[ZONE_0]->GetUnsteady_Simulation())
+  if (config_container[ZONE_0]->GetTime_Marching())
     config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
@@ -190,6 +194,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
   bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
   bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
+  bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
   
   if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
     RestartFormat = SU2_RESTART_BINARY;
@@ -206,18 +211,18 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
       /*--- Unsteady problems ---*/
 
-      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+      (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+        (config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) &&
        ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
 
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) &&
        ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
                            ((TimeIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
 
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) &&
        ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
 
-      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+      ((config_container[ZONE_0]->GetTime_Domain()) &&
        ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
 
       /*--- No inlet profile file found. Print template. ---*/
@@ -268,16 +273,16 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
       
       /*--- Write restart files ---*/
       
-      output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
+      output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat, TimeDomain);
       
       /*--- Write visualization files ---*/
       
       if (Wrt_Vol)
-        output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+        output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat, TimeDomain);
       if (Wrt_Surf)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat, TimeDomain);
       if (Wrt_CSV)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV, TimeDomain);    
       
       output_container[ZONE_0]->DeallocateData_Parallel();
       
@@ -348,13 +353,15 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     
     InnerConvergence     = output_container[ZONE_0]->GetConvergence();    
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
-    
+        
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------";
       if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
       else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
+    
+    StopCalc = MaxIterationsReached || InnerConvergence;
   }
 
 
@@ -380,4 +387,21 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   output_container[ZONE_0]->SetConvergence(false);
 
   return StopCalc;
+}
+
+void CSinglezoneDriver::Runtime_Options(){
+  
+  ifstream runtime_configfile;
+  
+  /*--- Try to open the runtime config file ---*/
+  
+  runtime_configfile.open(runtime_file_name, ios::in);
+  
+  /*--- If succeeded create a temporary config object ---*/
+  
+  if (runtime_configfile.good()){
+    CConfig *runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    delete runtime;
+  }
+  
 }
