@@ -145,13 +145,7 @@ public:
    * \brief Add External_Old vector to Solution.
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void AddSolution_ExternalOld(unsigned short iZone);
-
-  /*!
-   * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
-   * \param[in] iZone - Zone where data between solvers is transferred.
-   */
-  void Set_BGSSolution(unsigned short iZone);
+  void Add_ExternalOld_To_Solution(unsigned short iZone);
 
   /*!
    * \brief Sets External to zero.
@@ -159,21 +153,27 @@ public:
   void SetExternal_Zero(void);
 
   /*!
+   * \brief Set External_Old to External.
+   */
+  void Set_OldExternal(void);
+
+  /*!
    * \brief Add Solution vector to External.
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void AddExternal_Solution(unsigned short iZone);
+  void Add_Solution_To_External(unsigned short iZone);
 
   /*!
    * \brief Add Solution vector to External_Old.
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void AddExternalOld_Solution(unsigned short iZone);
+  void Add_Solution_To_ExternalOld(unsigned short iZone);
 
   /*!
-   * \brief Set the current solution (adjoint) values to the current iterated ones.
+   * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
+   * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void Set_OldExternal(void);
+  void Set_BGSSolution(unsigned short iZone);
 
   /*!
    * \brief Compute BGS residuals.

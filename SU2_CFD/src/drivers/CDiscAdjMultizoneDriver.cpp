@@ -242,7 +242,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Add the objective function contribution to the external contributions for solvers in iZone. ---*/
 
-      AddExternalOld_Solution(iZone);
+      Add_Solution_To_ExternalOld(iZone);
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
@@ -260,7 +260,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
         /*--- Add off-diagonal contribution (including the OF gradient) to Solution for next inner evaluation. ---*/
 
-        AddSolution_ExternalOld(iZone);
+        Add_ExternalOld_To_Solution(iZone);
       }
 
 
@@ -279,7 +279,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
           /*--- Add the cross derivatives from iZone<-jZone dependencies to the External vector. ---*/
 
-          AddExternal_Solution(jZone);
+          Add_Solution_To_External(jZone);
 
         }
       }
@@ -774,29 +774,14 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
   AD::ComputeAdjoint(DEPENDENCIES, START);
 }
 
-void CDiscAdjMultizoneDriver::AddSolution_ExternalOld(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::Add_ExternalOld_To_Solution(unsigned short iZone) {
 
   unsigned short iSol;
 
   for (iSol=0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
       if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->AddSolution_ExternalOld(geometry_container[iZone][INST_0][MESH_0]);
-      }
-    }
-  }
-}
-
-void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
-
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++){
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
-                                                                          config_container[iZone]);
-        solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
+        solver_container[iZone][INST_0][MESH_0][iSol]->Add_ExternalOld_To_Solution(geometry_container[iZone][INST_0][MESH_0]);
       }
     }
   }
@@ -832,30 +817,43 @@ void CDiscAdjMultizoneDriver::Set_OldExternal(void) {
       }
     }
   }
-
 }
 
-void CDiscAdjMultizoneDriver::AddExternal_Solution(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
   unsigned short iSol;
 
   for (iSol=0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
       if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->AddExternal_Solution(geometry_container[iZone][INST_0][MESH_0]);
+        solver_container[iZone][INST_0][MESH_0][iSol]->Add_Solution_To_External(geometry_container[iZone][INST_0][MESH_0]);
       }
     }
   }
 }
 
-void CDiscAdjMultizoneDriver::AddExternalOld_Solution(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::Add_Solution_To_ExternalOld(unsigned short iZone) {
 
   unsigned short iSol;
 
   for (iSol=0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
       if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->AddExternalOld_Solution(geometry_container[iZone][INST_0][MESH_0]);
+        solver_container[iZone][INST_0][MESH_0][iSol]->Add_Solution_To_ExternalOld(geometry_container[iZone][INST_0][MESH_0]);
+      }
+    }
+  }
+}
+
+void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
+
+  unsigned short iSol;
+
+  for (iSol=0; iSol < MAX_SOLS; iSol++){
+    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+        solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
+                                                                          config_container[iZone]);
       }
     }
   }
