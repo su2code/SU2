@@ -526,8 +526,8 @@ def main():
     contadj_naca0012           = TestCase('contadj_naca0012')
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.787554, -15.192510, 0.300920, 0.019552] #last 4 columns
+    contadj_naca0012.test_iter = 6005
+    contadj_naca0012.test_vals = [-10.958367, -16.447969, 1.4538e+00, 5.7060e-03] #last 4 columns
     contadj_naca0012.su2_exec  = "SU2_CFD"
     contadj_naca0012.timeout   = 1600
     contadj_naca0012.tol       = 0.001
