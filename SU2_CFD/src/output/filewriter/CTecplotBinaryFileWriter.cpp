@@ -303,7 +303,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
           }
           else { /* Receive data from other rank. */
             var_data.resize(max((int64_t)1, (int64_t)fieldnames.size() * rank_num_points));
-            SU2_MPI::Recv(&var_data[0], fieldnames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            CBaseMPIWrapper::Recv(&var_data[0], fieldnames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
@@ -325,7 +325,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
             var_data.push_back(dataSorter->GetData(iVar,i));
       
       if (var_data.size() > 0)
-        SU2_MPI::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
+        CBaseMPIWrapper::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
     }
   }
 
@@ -340,7 +340,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   for (iVar = 0; err == 0 && iVar <  fieldnames.size(); iVar++) {
     for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
-      var_data.push_back(SU2_TYPE::GetValue(dataSorter->GetData(iVar,i)));
+      var_data.push_back(dataSorter->GetData(iVar,i));
     err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, dataSorter->GetnPoints(), &var_data[iVar * dataSorter->GetnPoints()]);
     if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
   }
