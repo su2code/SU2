@@ -350,7 +350,7 @@ def amg ( config , kind='' ):
                     su2amg.write_mesh(current_mesh, current_solution, mesh_new)
 
                     if config_cfd.WRT_INRIA_MESH == 'YES':
-                        write_mesh("mesh_new.meshb", "mesh_new.solb", mesh_new)
+                        su2amg.write_mesh("mesh_new.meshb", "mesh_new.solb", mesh_new)
 
                 else:
                 
