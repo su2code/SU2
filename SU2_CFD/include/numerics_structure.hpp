@@ -4530,7 +4530,6 @@ class CNumericsRadiation : public CNumerics {
   **RadVar_Grad_j;            /*!< \brief Gradient of turbulent variables at point j. */
   su2double Absorption_Coeff; /*!< \brief Absorption coefficient. */
   su2double Scattering_Coeff; /*!< \brief Scattering coefficient. */
-  su2double Refractive_Index; /*!< \brief Refractive index n = c/c_medium. */
 
   su2double Temperature_Ref;  /*!< \brief Reference temperature for redimensionalization of P1 solver. */
 

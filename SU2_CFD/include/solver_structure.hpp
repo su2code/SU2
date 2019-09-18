@@ -10227,7 +10227,6 @@ protected:
   *FlowPrimVar_j;         /*!< \brief Store the flow solution at point j. */
   su2double Absorption_Coeff;  /*!< \brief Absorption coefficient. */
   su2double Scattering_Coeff;  /*!< \brief Scattering coefficient. */
-  su2double Refractive_Index;  /*!< \brief Refractive index. */
 
 public:
 

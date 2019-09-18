@@ -2248,8 +2248,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 1.0);
   /* DESCRIPTION: Scattering coefficient */
   addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.0);
-  /* DESCRIPTION: Refractive index */
-  addDoubleOption("REFRACTIVE_INDEX", Refractive_Index, 1.0);
 
   /* DESCRIPTION: Apply a volumetric heat source as a source term (NO, YES) */
   addBoolOption("HEAT_SOURCE", HeatSource, false);
