@@ -79,11 +79,16 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
-  ../src/numerics_direct_radiation.cpp \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
   ../src/numerics/CFEAMeshElasticity.cpp \
+  ../src/numerics/CNumericsRadiation.cpp \
+  ../src/numerics/viscous/CAvgGrad_P1.cpp \
+  ../src/numerics/viscous/CAvgGradCorrected_P1.cpp \
+  ../src/numerics/source/CSourceP1.cpp \
+  ../src/numerics/source/CSourceRadiation.cpp \
+  ../src/numerics/source/CSourceVolumeticHeat.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
