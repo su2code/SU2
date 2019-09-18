@@ -3982,7 +3982,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8765,6 +8773,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief Computes the eddy viscosity at the first point of the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config);
  
 };
 
