@@ -1,5 +1,5 @@
 /*!
- * \file output_driver.hpp
+ * \file CDriverOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
  * \version 6.1.0 "Falcon"
@@ -60,13 +60,13 @@ using namespace std;
  * \brief Class for writing the multizone output.
  * \author R. Sanchez, T. Albring.
  */
-class CDriverOutput : public COutput {
+class CDriverOutput final: public COutput {
 
 protected:
-  unsigned short nZone;
+  unsigned short nZone; //!< Number of zones
   
-  string bgs_res_name;
-  bool write_zone;
+  string bgs_res_name; //!< Block-Gauss seidel residual name
+  bool write_zone;     //!< Boolean indicating whether the individual zones write to screen
   
 public:
 
@@ -78,38 +78,37 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDriverOutput(void);
+  ~CDriverOutput(void) override;
 
   /*!
-   * \brief Load the history file fields for multizone computations.
-   * \param[in] output - Output information of the particular multizone problem.
-   * \param[in] config - Definition of the particular multizone problem.
-   */
-  void LoadMultizoneHistoryData(COutput **output, CConfig **config);
-
-  /*!
-   * \brief Write the history output fields for multizone computations.
-   * \param[in] output - Output information of the particular multizone problem.
-   * \param[in] config - Definition of the particular multizone problem.
-   */
-  void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config);
-
-  /*! 
-   * \brief Determines if the screen header should be written.
+   * \brief Load the multizone history output field values
+   * \param[in] output - Container holding the output instances per zone.   
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Header(CConfig *config);
+  void LoadMultizoneHistoryData(COutput **output, CConfig **config) override;
 
   /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Set the available multizone history output fields
+   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] config - Definition of the particular problem per zone.
    */
-  bool WriteScreen_Output(CConfig *config);
-  
+  void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) override;
+
   /*!
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteHistoryFile_Output(CConfig *config);
-
+  bool WriteHistoryFile_Output(CConfig *config) override;
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config) override;
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config) override;
 };

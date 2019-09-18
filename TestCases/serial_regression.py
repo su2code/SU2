@@ -227,6 +227,17 @@ def main():
     rae2822_sst.tol       = 0.00001
     test_list.append(rae2822_sst)
 
+    # RAE2822 SST_SUST
+    rae2822_sst_sust           = TestCase('rae2822_sst_sust')
+    rae2822_sst_sust.cfg_dir   = "rans/rae2822"
+    rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
+    rae2822_sst_sust.test_iter = 20
+    rae2822_sst_sust.test_vals = [-2.401009, 4.909241, 0.825023, 0.052675] #last 4 columns
+    rae2822_sst_sust.su2_exec  = "SU2_CFD"
+    rae2822_sst_sust.timeout   = 1600
+    rae2822_sst_sust.tol       = 0.00001
+    test_list.append(rae2822_sst_sust)
+
     # Flat plate
     turb_flatplate           = TestCase('turb_flatplate')
     turb_flatplate.cfg_dir   = "rans/flatplate"
@@ -286,6 +297,18 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
+
+    # NACA0012 (SST_SUST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
+    turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
+    turb_naca0012_sst_sust.test_iter = 10
+    turb_naca0012_sst_sust.test_vals = [-13.280975, -5.646508, 1.022304, 0.019539] #last 4 columns
+    turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
+    turb_naca0012_sst_sust.timeout   = 3200
+    turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_sust)
+
 
     # PROPELLER 
     propeller           = TestCase('propeller')
@@ -382,12 +405,23 @@ def main():
     inc_poly_cylinder.timeout   = 1600
     inc_poly_cylinder.tol       = 0.00001
     test_list.append(inc_poly_cylinder)
+    
+    # X-coarse laminar bend as a mixed element CGNS test
+    inc_lam_bend          = TestCase('inc_lam_bend')
+    inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
+    inc_lam_bend.cfg_file  = "lam_bend.cfg"
+    inc_lam_bend.test_iter = 10
+    inc_lam_bend.test_vals = [-3.450832, -3.083603, -0.020698, -0.168320] #last 4 columns
+    inc_lam_bend.su2_exec  = "SU2_CFD"
+    inc_lam_bend.timeout   = 1600
+    inc_lam_bend.tol       = 0.00001
+    test_list.append(inc_lam_bend)
 
     ############################
     ### Incompressible RANS  ###
     ############################
 
-    # NACA0012
+    # NACA0012, SA
     inc_turb_naca0012           = TestCase('inc_turb_naca0012')
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
@@ -398,7 +432,18 @@ def main():
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
-    
+
+    # NACA0012, SST_SUST
+    inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
+    inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
+    inc_turb_naca0012_sst_sust.test_iter = 20
+    inc_turb_naca0012_sst_sust.test_vals = [-7.277591, 0.146922, 0.000021, 0.311963] #last 4 columns
+    inc_turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
+    inc_turb_naca0012_sst_sust.timeout   = 1600
+    inc_turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(inc_turb_naca0012_sst_sust)
+
     ####################
     ### DG-FEM Euler ###
     ####################
@@ -551,16 +596,16 @@ def main():
     test_list.append(contadj_wedge)
     
     # Inviscid fixed CL NACA0012
-    contadj_fixedCL_naca0012           = TestCase('contadj_fixedcl_naca0012')
-    contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-    contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.341038, -5.166613, 0.265510, -0.000322] #last 4 columns
-    contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
-    contadj_fixedCL_naca0012.new_output= True
-    contadj_fixedCL_naca0012.timeout   = 1600
-    contadj_fixedCL_naca0012.tol       = 0.00001
-    test_list.append(contadj_fixedCL_naca0012)
+#    contadj_fixedCL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+#    contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+#    contadj_fixedCL_naca0012.test_iter = 100
+#    contadj_fixedCL_naca0012.test_vals = [0.341038, -5.166613, 0.265510, -0.000322] #last 4 columns
+#    contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
+#    contadj_fixedCL_naca0012.new_output= True
+#    contadj_fixedCL_naca0012.timeout   = 1600
+#    contadj_fixedCL_naca0012.tol       = 0.00001
+#    test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -1076,7 +1121,7 @@ def main():
     dynbeam2d.unsteady  = True
     dynbeam2d.new_output= True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66127.000000] #last 4 columns
+    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "SU2_CFD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001
@@ -1099,10 +1144,11 @@ def main():
     stat_fsi           = TestCase('stat_fsi')
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7000
-    stat_fsi.test_vals = [-6.762763, -6.522814, -9.205275, -10.113188] #last 4 columns
+    stat_fsi.test_iter = 7
+    stat_fsi.test_vals = [-6.762767, -6.439588, 4.1223e-08, 47.000000, 292.00000] #last 5 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
+    stat_fsi.multizone = True
     stat_fsi.tol       = 0.00001
     test_list.append(stat_fsi)
 
@@ -1110,12 +1156,26 @@ def main():
     stat_fsi_restart           = TestCase('stat_fsi_restart')
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1000
-    stat_fsi_restart.test_vals = [-9.692985, -9.452006, -12.132021, -13.042439] #last 4 columns
+    stat_fsi_restart.test_iter = 1
+    stat_fsi_restart.test_vals = [-9.685290, -8.386780, 4.1223e-08, 47.00000, 290.0000] #last 5 columns
+    stat_fsi_restart.multizone = True
     stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
     stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)
+
+    # FSI, Dynamic, 2D, new mesh solver
+    dyn_fsi           = TestCase('dyn_fsi')
+    dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
+    dyn_fsi.cfg_file  = "config.cfg"
+    dyn_fsi.test_iter = 4
+    dyn_fsi.test_vals = [-4.413915, -4.837080, 4.7367e-08, 59.000000, 33.000000] #last 5 columns
+    dyn_fsi.multizone = True
+    dyn_fsi.unsteady  = True
+    dyn_fsi.su2_exec  = "SU2_CFD"
+    dyn_fsi.timeout   = 1600
+    dyn_fsi.tol       = 0.00001
+    test_list.append(dyn_fsi)
 
     # FSI, 2D airfoil with RBF interpolation
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
@@ -1456,28 +1516,28 @@ def main():
     # Optimization with multiple objectives, with gradients evaluated individually
     # the difference in gradient value relative to combined case 
     # is due to lack of solution file for the adjoint and small number of iterations
-    opt_multiobj_py            = TestCase('opt_multiobj_py')
-    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
-    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    opt_multiobj_py.test_iter  = 1
-    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
-    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
-    opt_multiobj_py.timeout    = 1600
-    opt_multiobj_py.tol       = 0.00001
-    pass_list.append(opt_multiobj_py.run_opt())
-    test_list.append(opt_multiobj_py)
-
-    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
-    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
-    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
-    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
-    opt_multiobjcombo_py.test_iter  = 1
-    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
-    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
-    opt_multiobjcombo_py.timeout    = 1600
-    opt_multiobjcombo_py.tol       = 0.00001
-    pass_list.append(opt_multiobjcombo_py.run_opt())
-    test_list.append(opt_multiobjcombo_py)
+#    opt_multiobj_py            = TestCase('opt_multiobj_py')
+#    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+#    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+#    opt_multiobj_py.test_iter  = 1
+#    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
+#    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+#    opt_multiobj_py.timeout    = 1600
+#    opt_multiobj_py.tol       = 0.00001
+#    pass_list.append(opt_multiobj_py.run_opt())
+#    test_list.append(opt_multiobj_py)
+#
+#    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
+#    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
+#    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+#    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
+#    opt_multiobjcombo_py.test_iter  = 1
+#    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+#    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+#    opt_multiobjcombo_py.timeout    = 1600
+#    opt_multiobjcombo_py.tol       = 0.00001
+#    pass_list.append(opt_multiobjcombo_py.run_opt())
+#    test_list.append(opt_multiobjcombo_py)
 
     # test optimization, with multiple objectives evaluated on a single surface
     opt_multiobj1surf_py            = TestCase('opt_multiobj1surf_py')

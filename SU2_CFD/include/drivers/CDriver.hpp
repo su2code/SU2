@@ -44,7 +44,8 @@
 #include "../integration_structure.hpp"
 
 #include "../numerics_structure.hpp"
-#include "../transfer_structure.hpp"
+#include "../transfer/CTransfer.hpp"
+#include "../transfer/physics/CTransfer_BoundaryDisplacements.hpp"
 #include "../numerics/CFEAMeshElasticity.hpp"
 #include "../solvers/CDiscAdjMeshSolver.hpp"
 #include "../solvers/CMeshSolver.hpp"
@@ -52,6 +53,8 @@
 #include "../../../Common/include/grid_movement_structure.hpp"
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
+
+#include "../output/COutputLegacy.hpp"
 
 #include "../solvers/CRadSolver.hpp"
 #include "../solvers/CRadP1Solver.hpp"
@@ -98,6 +101,8 @@ protected:
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
+  su2double Mpoints;                              /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
+  su2double MpointsDomain;                        /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
   unsigned long TimeIter;                        /*!< \brief External iteration.*/
@@ -199,15 +204,6 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void Solver_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***&solver);
-
-  /*!
-   * \brief Preprocess the mesh solvers for dynamic mesh movement using a linear elastic solver.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iInst - Instance index.
-   */
-  void MeshSolver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -788,7 +784,8 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  void SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ);
+  void SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+                    passivedouble LoadY, passivedouble LoadZ);
 
   /*!
    * \brief Return the displacements from the FEA solver.
@@ -796,7 +793,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of displacements.
    */
-  vector<passivedouble> GetDisplacements(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -804,7 +801,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities.
    */
-  vector<passivedouble> GetVelocity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -812,7 +809,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities at time n.
    */
-  vector<passivedouble> GetVelocity_n(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
@@ -1216,7 +1213,8 @@ public:
  * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFSIDriver : public CDriver {
-
+  
+  COutputLegacy* output_legacy;
   CIteration** direct_iteration;
   unsigned short RecordingState;
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
@@ -1472,53 +1470,5 @@ public:
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
   void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone);
-
-};
-
-/*!
- * \class CMultiphysicsZonalDriver
- * \brief Class for driving zone-specific iterations.
- * \author O. Burghardt
- * \version 6.2.0 "Falcon"
- */
-class CMultiphysicsZonalDriver : public CDriver {
-protected:
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CMultiphysicsZonalDriver(char* confFile,
-                           unsigned short val_nZone,
-                           SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMultiphysicsZonalDriver(void);
-
-  /*!
-   * \brief Run one iteration in all physical zones.
-   */
-  void Run();
-
-  /*!
-   * \brief Update the dual-time solution within multiple zones.
-   */
-  void Update();
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
-   */
-  void DynamicMeshUpdate(unsigned long TimeIter);
-
-  /*!
-   * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
-   */
-  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
 };

@@ -483,8 +483,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
   unsigned short RestartFormat = SU2_RESTART_ASCII;
   unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  
-
+  bool TimeDomain = driver_config->GetTime_Domain();
   
   for (iZone = 0; iZone < nZone; iZone++){
     
@@ -509,18 +508,18 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         
         /*--- Unsteady problems ---*/
         
-        (((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-          (config_container[iZone]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+        (((config_container[iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+          (config_container[iZone]->GetTime_Marching() == TIME_STEPPING)) &&
          ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
         
-        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
          ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
                               ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
         
-        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
          ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
         
-        ((config_container[iZone]->GetDynamic_Analysis() == DYNAMIC) &&
+        ((config_container[iZone]->GetTime_Domain()) &&
          ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
         
         /*--- No inlet profile file found. Print template. ---*/
@@ -570,17 +569,17 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         
         /*--- Write restart files ---*/
         
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat, TimeDomain);
         
         /*--- Write visualization files ---*/
         
         if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
         
         if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
         if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV, TimeDomain);    
         
         output_container[iZone]->DeallocateData_Parallel();
         
@@ -613,7 +612,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   bool harmonic_balance;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-   harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+   harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone], 

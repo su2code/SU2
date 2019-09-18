@@ -47,6 +47,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <array>
 #include <stdlib.h>
 #include <cmath>
 #include <map>
@@ -85,18 +86,7 @@ private:
   unsigned short nZoneSpecified; /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
-  su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_F; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_F; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_S; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_S; /*!< \brief Minimum value of the log residual. */
-  su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
-  su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
-  su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
-  su2double Res_FEM_ADJ;     /*!< \brief Convergence criteria for adjoint FEM. */
   su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -163,7 +153,7 @@ private:
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
-  unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  unsigned short TimeMarching;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -460,7 +450,6 @@ private:
   su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
-  *Kind_Solver_PerZone,  /*!< \brief Kind of solvers for each zone Euler, NS, Continuous adjoint, etc.  */
   Kind_MZSolver,         /*!< \brief Kind of multizone solver.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -540,7 +529,6 @@ private:
   Use_Accurate_Jacobians;   /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;        /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  ZoneSpecific_Problem,   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
   Multizone_Problem;      /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
@@ -736,6 +724,10 @@ private:
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
   nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
   nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
+  unsigned short nMesh_Box_Size;
+  short *Mesh_Box_Size;     /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  su2double* Mesh_Box_Length;       /*!< \brief Array containing the length in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  su2double* Mesh_Box_Offset;       /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
   Solution_FileName,			/*!< \brief Flow solution input file. */
@@ -978,7 +970,6 @@ private:
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
-  bool pyFSI;             /*!< \brief Initialize FSI structures, as loads will come from a python wrapper. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -1054,7 +1045,8 @@ private:
   unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
                 *top_optim_kernels, /*!< \brief The kernels to use. */
                  top_optim_nKernelParams, /*!< \brief Number of kernel parameters specified. */
-                 top_optim_nRadius; /*!< \brief Number of radius values specified. */
+                 top_optim_nRadius, /*!< \brief Number of radius values specified. */
+                 top_optim_search_lim; /*!< \brief Limit the maximum "logical radius" considered during filtering. */
   su2double *top_optim_kernel_params, /*!< \brief The kernel parameters. */
             *top_optim_filter_radius; /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
@@ -1104,8 +1096,6 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
   
-  bool dry_run;                 /*!< Run driver construction with dummy geometry class */
-
   
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -4943,12 +4933,6 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void);
-
-  /*!
-   * \brief Verify if there are zone specific solvers entered in the config file.
-   * \return boolean.
-   */
-  bool GetBoolZoneSpecific(void);
   
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
@@ -5159,7 +5143,7 @@ public:
    * \return The kind of time integration: Steady state, time stepping method (unsteady) or
    *         dual time stepping method (unsteady).
    */
-  unsigned short GetUnsteady_Simulation(void);
+  unsigned short GetTime_Marching(void);
   
   /*!
    * \brief Provides the number of chemical reactions in the chemistry model
@@ -5672,7 +5656,13 @@ public:
    * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
    */
   bool GetGrid_Movement(void);
-  
+
+  /*!
+   * \brief Get information about dynamic grids.
+   * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
+   */
+  bool GetDynamic_Grid(void);
+
   /*!
    * \brief Get information about the volumetric movement.
    * \return <code>TRUE</code> if there is a volumetric movement is required; otherwise <code>FALSE</code>.
@@ -6203,76 +6193,10 @@ public:
   unsigned short GetContainerPosition(unsigned short val_eqsystem);
   
   /*!
-   * \brief Value of the order of magnitude reduction of the residual.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual(void);
-  
-  /*!
    * \brief Value of the minimum residual value (log10 scale).
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the residual for FSI applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidualFSI(void);
-  
-  /*!
-   * \brief Value of the minimum residual value for FSI applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidualFSI(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual_BGS_F(void);
-  
-  /*!
-   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidual_BGS_F(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual_BGS_S(void);
-  
-  /*!
-   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidual_BGS_S(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_UTOL(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_RTOL(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_ETOL(void);
-  
-  /*!
-   * \brief Value of the maximum objective function for FEM elasticity adjoint (log10 scale).
-   * \return Value of Res_FEM_ADJ (log10 scale).
-   */
-  su2double GetCriteria_FEM_ADJ(void);
   
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
@@ -8756,12 +8680,6 @@ public:
   unsigned short GetPredictorOrder(void);
 
   /*!
-   * \brief Get whether loads will come from a python wrapper.
-   * \return  Bool: determines if loads will come from a python wrapper.
-   */
-  bool GetpyFSI(void);
-
-  /*!
    * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
    * \return Boolean for using Persson's shock capturing method in Euler flow DG-FEM
    */
@@ -9071,6 +8989,11 @@ public:
   void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
                                 su2double &param, su2double &radius) const;
   /*!
+   * \brief Get the maximum "logical radius" (degree of neighborhood) to consider in the neighbor search.
+   */
+  unsigned short GetTopology_Search_Limit(void) const;
+
+  /*!
    * \brief Get the type and parameter for the projection function used in topology optimization
    */
   void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const;
@@ -9117,10 +9040,16 @@ public:
 
   /*!
    * \brief Get the number of time iterations
-   * \return Number of time steps run for the multizone problem
+   * \return Number of time steps run 
    */
   unsigned long GetnTime_Iter(void);
 
+  /*!
+   * \brief Set the number of time iterations
+   * \param[in] val_iter - Number of time steps run 
+   */
+  void SetnTime_Iter(unsigned long val_iter);
+  
   /*!
    * \brief Get the number of pseudo-time iterations
    * \return Number of pseudo-time steps run for the single-zone problem
@@ -9236,12 +9165,24 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
-
+  
   /*!
-   * \brief Boolean to check whether dry run mode is enabled
-   * \return YES if dry run mode is enabled.
+   * \brief Get the number of grid points in the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Number of grid points in the analytic RECTANGLE or BOX grid in the specified coordinate direction.
    */
-  bool GetDryRun();
+  short GetMeshBoxSize(unsigned short val_iDim);
+  
+  /*!
+   * \brief Get the length of the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Length the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  su2double GetMeshBoxLength(unsigned short val_iDim);
+  
+  /*!
+   * \brief Get the offset from 0.0 of the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Offset from 0.0 the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  su2double GetMeshBoxOffset(unsigned short val_iDim);
 
   /*!
    * \brief Get the number of screen output variables requested (maximum 6)
@@ -9301,7 +9242,7 @@ public:
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
-  
+
 };
 
 #include "config_structure.inl"

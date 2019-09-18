@@ -68,8 +68,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
@@ -187,7 +187,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     HB_Source = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
   }
@@ -231,8 +231,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
@@ -342,7 +342,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     HB_Source = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
   }

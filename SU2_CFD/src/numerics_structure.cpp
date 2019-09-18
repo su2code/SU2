@@ -64,6 +64,8 @@ CNumerics::CNumerics(void) {
 
   l = NULL;
   m = NULL;
+  
+  using_uq = false;
 
 }
 

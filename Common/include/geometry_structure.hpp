@@ -65,6 +65,7 @@ extern "C" {
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"
 #include "fem_standard_element.hpp"
+#include "CMeshReaderFVM.hpp"
 
 using namespace std;
 
@@ -341,10 +342,6 @@ public:
   su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
 
   unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
-	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that
-																			 must be sent [0], and the image point in the periodic bc[1]. */
-	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
-																			 must be sent. */
   
   short *Marker_All_SendRecv;
   
@@ -360,17 +357,18 @@ public:
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
   
   /*--- Partitioning-specific variables ---*/
-  map<unsigned long,unsigned long> Global_to_Local_Elem;
-  unsigned long xadj_size;
-  unsigned long adjacency_size;
-  unsigned long *starting_node;
-  unsigned long *ending_node;
-  unsigned long *npoint_procs;
-  unsigned long *nPoint_Linear;
+  
+  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unsigned long *beg_node; /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
+  unsigned long *end_node; /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
+  unsigned long *nPointLinear;     /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
+  unsigned long *nPointCumulative; /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
+  
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  idx_t * adjacency;
-  idx_t * xadj;
+  vector< vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
+  idx_t *adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
+  idx_t *xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
 #endif
 #endif
   
@@ -1628,12 +1626,13 @@ public:
    * \brief Filter values given at the element CG by performing a weighted average over a radial neighbourhood.
    * \param[in] filter_radius - Parameter defining the size of the neighbourhood.
    * \param[in] kernels - Kernel types and respective parameter, size of vector defines number of filter recursions.
+   * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
    * \param[in] input_values - "Raw" values.
    * \param[out] output_values - Filtered values.
    */
-  void FilterValuesAtElementCG(const vector<su2double> filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
-                               const su2double *input_values, su2double *output_values) const;
-  
+  void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+                               const unsigned short search_limit, const su2double *input_values, su2double *output_values) const;
+
   /*!
    * \brief Build the global (entire mesh!) adjacency matrix for the elements in compressed format.
    *        Used by FilterValuesAtElementCG to search for geometrically close neighbours.
@@ -1647,14 +1646,17 @@ public:
    * \brief Get the neighbours of the global element in the first position of "neighbours" that are within "radius" of it.
    * \param[in] iElem_global - Element of interest.
    * \param[in] radius - Parameter defining the size of the neighbourhood.
+   * \param[in] search_limit - Maximum "logical radius" to consider, limits cost in refined regions, use 0 for unlimited.
    * \param[in] neighbour_start - See GetGlobalElementAdjacencyMatrix.
    * \param[in] neighbour_idx - See GetGlobalElementAdjacencyMatrix.
    * \param[in] cg_elem - Global element centroid coordinates in row major format {x0,y0,x1,y1,...}. Size nDim*nElemDomain.
    * \param[in,out] neighbours - The neighbours of iElem_global.
+   * \param[in,out] is_neighbor - Working vector of size nElemGlobal, MUST be all false on entry (if so, on exit it will be the same).
+   * \return true if the search was successful, i.e. not limited.
    */
-  void GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius,
+  bool GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius, size_t search_limit,
                               const vector<unsigned long> &neighbour_start, const long *neighbour_idx,
-                              const su2double *cg_elem, vector<long> &neighbours) const;
+                              const su2double *cg_elem, vector<long> &neighbours, vector<bool> &is_neighbor) const;
 
   /*!
    * \brief Compute and store the volume of the elements.
@@ -1897,6 +1899,25 @@ public:
                         SU2_MPI::Request *recvReq);
 
   /*!
+   * \brief Routine to compute the initial linear partitioning offset counts and store in persistent data structures.
+   * \param[in] val_npoint_global - total number of grid points in the mesh.
+   */
+  void PrepareOffsets(unsigned long val_npoint_global);
+  
+  /*!
+   * \brief Get the processor that owns the global numbering index based on the linear partitioning.
+   * \param[in] val_global_index - Global index for a point.
+   * \returns Rank of the owner processor for the current point based on linear partitioning.
+   */
+  unsigned long GetLinearPartition(unsigned long val_global_index);
+  
+  /*!
+   * \brief Routine to sort the adjacency for ParMETIS for graph partitioning in parallel.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SortAdjacency(CConfig *config);
+  
+  /*!
 	 * \brief Set the send receive boundaries of the grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1930,29 +1951,17 @@ public:
 	 * \returns Local marker that correspond with the global index.
 	 */
 	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
+  /*!
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void Read_Mesh_FVM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
-  /*!
-   * \brief Reads the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-
-  /*!
-   * \brief Reads the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-
   /*!
    * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
@@ -1973,7 +1982,37 @@ public:
    */
   void Read_CGNS_Format_Parallel_FEM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
-	/*!
+  /*!
+   * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedPoints(CConfig        *config,
+                                     CMeshReaderFVM *mesh);
+  
+  /*!
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedVolumeElements(CConfig        *config,
+                                             CMeshReaderFVM *mesh);
+  
+  /*!
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadUnpartitionedSurfaceElements(CConfig        *config,
+                                        CMeshReaderFVM *mesh);
+  
+  /*!
+   * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph partitioning in parallel.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareAdjacency(CConfig *config);
+  
+	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
 	 * \param[in] first_elem - Identification of the first element.
 	 * \param[in] second_elem - Identification of the second element.
@@ -2138,12 +2177,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Check_BoundElem_Orientation(CConfig *config);
-
-	/*! 
-	 * \brief Set the domains for grid grid partitioning using METIS.
-	 * \param[in] config - Definition of the particular problem.		 
-	 */
-	void SetColorGrid(CConfig *config);
   
   /*!
    * \brief Set the domains for grid grid partitioning using ParMETIS.
@@ -2927,115 +2960,24 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 };
 
 /*! 
- * \struct CMultiGridQueue
- * \brief Class for a multigrid queue system
- * \author F. Palacios
- * \date Aug 12, 2012
- */
-class CMultiGridQueue {
-	vector<vector<unsigned long> > QueueCV; /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
-	short *Priority;	/*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
-	bool *RightCV;	/*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them */  
-	unsigned long nPoint; /*!< \brief Total number of points. */  
-
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] val_npoint - Number of control volumes.
-	 */
-	CMultiGridQueue(unsigned long val_npoint);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CMultiGridQueue(void);
-
-	/*! 
-	 * \brief Add a new CV to the list.
-	 * \param[in] val_new_point - Index of the new point.
-	 * \param[in] val_number_neighbors - Number of neighbors of the new point.
-	 */
-	void AddCV(unsigned long val_new_point, unsigned short val_number_neighbors);
-
-	/*! 
-	 * \brief Remove a CV from the list.
-	 * \param[in] val_remove_point - Index of the control volume to be removed.
-	 */
-	void RemoveCV(unsigned long val_remove_point);
-
-	/*! 
-	 * \brief Change a CV from a list to a different list.
-	 * \param[in] val_move_point - Index of the control volume to be moved.
-	 * \param[in] val_number_neighbors - New number of neighbors of the control volume.
-	 */
-	void MoveCV(unsigned long val_move_point, short val_number_neighbors);
-
-	/*! 
-	 * \brief Increase the priority of the CV.
-	 * \param[in] val_incr_point - Index of the control volume.
-	 */
-	void IncrPriorityCV(unsigned long val_incr_point);
-
-	/*! 
-	 * \brief Increase the priority of the CV.
-	 * \param[in] val_red_point - Index of the control volume.
-	 */
-	void RedPriorityCV(unsigned long val_red_point);
-
-	/*! 
-	 * \brief Visualize the control volume queue.
-	 */
-	void VisualizeQueue(void);
-
-	/*! 
-	 * \brief Visualize the priority list.
-	 */
-	void VisualizePriority(void);
-
-	/*! 
-	 * \brief Find a new seed control volume.
-	 * \return Index of the new control volume.
-	 */
-	long NextCV(void);
-
-	/*! 
-	 * \brief Check if the queue is empty.
-	 * \return <code>TRUE</code> or <code>FALSE</code> depending if the queue is empty.
-	 */
-	bool EmptyQueue(void);
-
-	/*! 
-	 * \brief Total number of control volume in the queue.
-	 * \return Total number of control points.
-	 */
-	unsigned long TotalCV(void);
-
-	/*! 
-	 * \brief Update the queue with the new control volume (remove the CV and 
-	 increase the priority of the neighbors).
-	 * \param[in] val_update_point - Index of the new point.
-	 * \param[in] fine_grid - Fine grid geometry.
-	 */
-	void Update(unsigned long val_update_point, CGeometry *fine_grid);
-
-};
-
-/*!
- * \brief The CDummyGeometry class
+ * \class CDummyGeometry
+ * \brief Class for defining a geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without 
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
  */
 class CDummyGeometry : public CGeometry{
   
 public:
   /*!
-   * \brief CDummyGeometry
-   * \param config
-   * \param nDim
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
    */
   CDummyGeometry(CConfig *config);
   
-  /*!
-  */
+  /*! 
+	 * \brief Destructor of the class.
+	 */
   ~CDummyGeometry();
   
 };

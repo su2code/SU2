@@ -167,6 +167,10 @@ const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CG
 const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
+const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int SU2_CONN_SIZE   = 10; /*!< \brief Size of the connectivity array that is allocated for each element that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
+const int SU2_CONN_SKIP   = 2;  /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
+
 /*!
  * \brief Boolean answers
  */
@@ -205,7 +209,6 @@ enum ENUM_SOLVER {
   ADJ_NAVIER_STOKES = 11,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 12,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
   TEMPLATE_SOLVER = 13,                 /*!< \brief Definition of template solver. */
-  ZONE_SPECIFIC = 14,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
   DISC_ADJ_EULER = 15,
   DISC_ADJ_RANS = 16,
   DISC_ADJ_NAVIER_STOKES = 17,
@@ -254,7 +257,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-("ZONE_SPECIFIC", ZONE_SPECIFIC)
 ("MULTIPHYSICS", MULTIPHYSICS);
 
 /*!
@@ -826,28 +828,30 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
  */
 enum ENUM_TURB_MODEL {
   NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
-  SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SA        = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG    = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_E      = 3, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP   = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SST       = 6, /*!< \brief Kind of Turbulence model (Menter SST). */
+  SST_SUST  = 7  /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
 ("SA_E", SA_E)
 ("SA_COMP", SA_COMP)
-("SA_E_COMP", SA_E_COMP);
+("SA_E_COMP", SA_E_COMP)
+("SST", SST)
+("SST_SUST", SST_SUST);
 
 /*!
  * \brief types of transition models
  */
 enum ENUM_TRANS_MODEL {
   NO_TRANS_MODEL = 0,            /*!< \brief No transition model. */
-  LM = 1,	/*!< \brief Kind of transition model (LM for Spalart-Allmaras). */
+  LM = 1,	/*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
   BC = 2	/*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
@@ -1412,7 +1416,9 @@ enum ENUM_OBJECTIVE {
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
-  VOLUME_FRACTION=62              /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  VOLUME_FRACTION=62,             /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  TOPOL_DISCRETENESS=63,          /*!<\brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE=64             /*!<\brief Measure of the discreteness of the current topology. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1461,7 +1467,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
 ("REFERENCE_NODE", REFERENCE_NODE)
-("VOLUME_FRACTION", VOLUME_FRACTION);
+("VOLUME_FRACTION", VOLUME_FRACTION)
+("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
+("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE);
 
 /*!
  * \brief types of residual criteria equations
@@ -1541,14 +1549,16 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  * \brief types of input file formats
  */
 enum ENUM_INPUT {
-  SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
+  SU2       = 1,  /*!< \brief SU2 input format. */
+  CGNS      = 2,  /*!< \brief CGNS input format for the computational grid. */
+  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS);
-
-const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */
+("CGNS", CGNS)
+("RECTANGLE", RECTANGLE)
+("BOX", BOX);
 
 /*!
  * \brief type of solution output file formats
@@ -1857,7 +1867,7 @@ enum ENUM_UNSTEADY {
   HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
-static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
+static const map<string, ENUM_UNSTEADY> TimeMarching_Map = CCreateMap<string, ENUM_UNSTEADY>
 ("NO", STEADY)
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
@@ -2015,7 +2025,9 @@ enum MPI_QUANTITIES {
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
-  MESH_DISPLACEMENTS   = 27   /*!< \brief Mesh displacements at the interface. */
+  MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
+  SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
+  SOLUTION_TIME_N1     = 29   /*!< \brief Solution at time n-1. */
 };
 
 /*!

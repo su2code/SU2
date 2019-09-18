@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_elastic_mesh_solver
+        - develop
 
 virtualenv:
   system_site_packages: true
@@ -42,7 +42,7 @@ env:
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-directdiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
@@ -72,7 +72,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b feature_elastic_mesh_solver https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases

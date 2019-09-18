@@ -136,6 +136,8 @@ protected:
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
+  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   unsigned long nMarker_InletFile;       /*!< \brief Auxiliary structure for holding the number of markers in an inlet profile file. */
   vector<string> Marker_Tags_InletFile;       /*!< \brief Auxiliary structure for holding the string names of the markers in an inlet profile file. */
   unsigned long *nRow_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in an inlet profile file. */
@@ -146,9 +148,16 @@ protected:
   
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+
+  bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
+
+  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
   
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
-
+  
+  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
+  
 public:
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -2218,6 +2227,12 @@ public:
    * \return Value of the objective function for the volume fraction.
    */
   virtual su2double GetTotal_OFVolFrac(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the objective function for the structural compliance.
+   */
+  virtual su2double GetTotal_OFCompliance(void);
 
   /*!
    * \brief A virtual member.
@@ -3487,6 +3502,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4345,11 +4368,51 @@ public:
   virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Initialize the vertex traction containers at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+
+  inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
+
+    unsigned long iVertex;
+    unsigned short iMarker;
+
+    VertexTraction = new su2double** [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
+      }
+    }
+  }
+
+  /*!
+   * \brief Initialize the adjoint vertex traction containers at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+
+  inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
+
+    unsigned long iVertex;
+    unsigned short iMarker;
+
+    VertexTractionAdjoint = new su2double** [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
+      }
+    }
+  }
+
+  /*!
    * \brief Compute the tractions at the vertices.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  virtual void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the adjoints of the vertex tractions.
@@ -4357,15 +4420,15 @@ public:
    * \param[in] iVertex  - Index of the relevant vertex
    * \param[in] iDim     - Dimension
    */
-  virtual su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                       unsigned short iDim);
+  inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
+                                      unsigned short iDim){ return VertexTraction[iMarker][iVertex][iDim]; }
 
   /*!
    * \brief Register the vertex tractions as output.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  virtual void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the adjoints of the vertex tractions.
@@ -4374,15 +4437,35 @@ public:
    * \param[in] iDim     - Dimension
    * \param[in] val_adjoint - Value received for the adjoint (from another solver)
    */
-  virtual void StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                           unsigned short iDim, su2double val_adjoint);
+  inline void StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                          unsigned short iDim, su2double val_adjoint){
+    VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
+  }
 
   /*!
    * \brief Set the adjoints of the vertex tractions to the AD structure.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  virtual void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
+  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Get minimun volume in the mesh
+   * \return 
+   */
+  virtual su2double GetMinimum_Volume(){ return 0.0; }
+  
+  /*!
+   * \brief Get maximum volume in the mesh
+   * \return 
+   */
+  virtual su2double GetMaximum_Volume(){ return 0.0; }
+  
+  /*!
+   * \brief Get residual of the linear solver
+   * \return 
+   */
+  su2double GetLinSol_Residual(){ return valResidual; }
   
 protected:
   /*!
@@ -4726,8 +4809,6 @@ protected:
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -4802,9 +4883,6 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
-
-  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
 public:
   
@@ -6875,45 +6953,6 @@ public:
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
-  /*!
-   * \brief Compute the tractions at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the adjoints of the vertex tractions.
-   * \param[in] iMarker  - Index of the marker
-   * \param[in] iVertex  - Index of the relevant vertex
-   * \param[in] iDim     - Dimension
-   */
-  su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                               unsigned short iDim);
-
-  /*!
-   * \brief Register the vertex tractions as output.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  virtual void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the adjoints of the vertex tractions.
-   * \param[in] iMarker  - Index of the marker
-   * \param[in] iVertex  - Index of the relevant vertex
-   * \param[in] iDim     - Dimension
-   * \param[in] val_adjoint - Value received for the adjoint (from another solver)
-   */
-   void StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                    unsigned short iDim, su2double val_adjoint);
-
-  /*!
-   * \brief Set the adjoints of the vertex tractions to the AD structure.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -7083,8 +7122,6 @@ protected:
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
-  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -7106,9 +7143,6 @@ protected:
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
-
-  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
   /* Sliding meshes variables */
 
@@ -8297,45 +8331,6 @@ public:
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
-  /*!
-   * \brief Compute the tractions at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the adjoints of the vertex tractions.
-   * \param[in] iMarker  - Index of the marker
-   * \param[in] iVertex  - Index of the relevant vertex
-   * \param[in] iDim     - Dimension
-   */
-  su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                               unsigned short iDim);
-
-  /*!
-   * \brief Register the vertex tractions as output.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the adjoints of the vertex tractions.
-   * \param[in] iMarker  - Index of the marker
-   * \param[in] iVertex  - Index of the relevant vertex
-   * \param[in] iDim     - Dimension
-   * \param[in] val_adjoint - Value received for the adjoint (from another solver)
-   */
-  void StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
-                                   unsigned short iDim, su2double val_adjoint);
-
-  /*!
-   * \brief Set the adjoints of the vertex tractions to the AD structure.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -9295,8 +9290,6 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
-  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
-  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
   
   /* Sliding meshes variables */
 
@@ -10242,7 +10235,6 @@ protected:
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
   bool space_centered;  /*!< \brief True if space centered scheeme used. */
   su2double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
@@ -11543,8 +11535,8 @@ private:
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
   /*!< We maintain the name to avoid defining a new function... */
   
-  unsigned short nMarker;
-  int nFEA_Terms;
+  int nFEA_Terms; 
+  bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
   su2double *GradN_X,
   *GradN_x;
@@ -11590,6 +11582,7 @@ private:
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
+  su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
 
   su2double Global_OFRefGeom;        /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;        /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -11611,8 +11604,6 @@ protected:
   su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
   su2double *Res_Stress_i;        /*!< \brief Submatrix to store the nodal stress contribution of node i. */
-
-  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
 
 public:
   
@@ -11980,6 +11971,12 @@ public:
    * \param[out] OFVolFrac - value of the objective function.
    */
   su2double GetTotal_OFVolFrac(void);
+  
+  /*!
+   * \brief Retrieve the value of the structural compliance objective function
+   * \return Value of the objective function.
+   */
+  su2double GetTotal_OFCompliance(void);
 
   /*!
    * \brief Determines whether there is an element-based file or not.
@@ -12109,6 +12106,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Compute the compliance objective function
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Compute the penalty due to the stiffness increase
@@ -12468,7 +12473,6 @@ private:
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
   
@@ -12740,7 +12744,6 @@ private:
 
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
 
   /*!< \brief Definition of element based sensitivities. */
@@ -13068,8 +13071,6 @@ public:
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
-
-  unsigned long nMarker; /*!< \brief Total number of markers using the grid information. */
 
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */

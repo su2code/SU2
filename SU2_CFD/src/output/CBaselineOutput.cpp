@@ -41,33 +41,37 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) : COutput(config, nDim) {
+CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) : COutput(config, nDim, false) {
   
   unsigned short iField = 0;
 
   /*--- Set the requested volume fields to all fields in the solver ---*/
   
-  RequestedVolumeFields = solver->GetSolutionFields();
+  requestedVolumeFields = solver->GetSolutionFields();
   
   /*--- remove the point ID from the fields --- */
   
-  RequestedVolumeFields.erase(RequestedVolumeFields.begin());
+  requestedVolumeFields.erase(requestedVolumeFields.begin());
   
-  nRequestedVolumeFields = RequestedVolumeFields.size();
+  nRequestedVolumeFields = requestedVolumeFields.size();
     
   /*--- Remove first and last character of the strings (the quotation marks) ---*/
   
   for (iField = 0; iField < nRequestedVolumeFields; iField++){
-    RequestedVolumeFields[iField] = RequestedVolumeFields[iField].substr(1, RequestedVolumeFields[iField].size() - 2);
+    requestedVolumeFields[iField] = requestedVolumeFields[iField].substr(1, requestedVolumeFields[iField].size() - 2);
   }
      
   /*--- Set the volume filename --- */
   
-  VolumeFilename = "baseline";
+  volumeFilename = "baseline";
   
   /*--- Set the surface filename ---*/
   
-  SurfaceFilename = "surface_baseline";
+  surfaceFilename = "surface_baseline";
+  
+  /*--- Conv field --- */
+  
+  convField = "NONE";
   
 }
 
@@ -82,25 +86,25 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
     
   /*--- The first three fields should be the coordinates, if not, something is wrong ---*/
   
-  if (RequestedVolumeFields[0] != "x" || RequestedVolumeFields[1] != "y"){
+  if (requestedVolumeFields[0] != "x" || requestedVolumeFields[1] != "y"){
     SU2_MPI::Error("No coordinates found in the restart file!!", CURRENT_FUNCTION);
   }
   if (nDim == 3){
-    if (RequestedVolumeFields[2] != "z"){
+    if (requestedVolumeFields[2] != "z"){
       SU2_MPI::Error("No coordinates found in the restart file!!", CURRENT_FUNCTION);
     }
   }
   
   // Grid coordinates
-  AddVolumeOutput(RequestedVolumeFields[0], RequestedVolumeFields[0], "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput(RequestedVolumeFields[1], RequestedVolumeFields[1], "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput(requestedVolumeFields[0], requestedVolumeFields[0], "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput(requestedVolumeFields[1], requestedVolumeFields[1], "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput(RequestedVolumeFields[2], RequestedVolumeFields[2], "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput(requestedVolumeFields[2], requestedVolumeFields[2], "COORDINATES", "z-component of the coordinate vector");
 
   // Add all the remaining fields
   
   for (iField = nDim; iField < nRequestedVolumeFields; iField++){
-    AddVolumeOutput(RequestedVolumeFields[iField], RequestedVolumeFields[iField], "SOLUTION","");
+    AddVolumeOutput(requestedVolumeFields[iField], requestedVolumeFields[iField], "SOLUTION","");
   }
   
 }
@@ -118,7 +122,7 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   CVariable* Node_Sol  = solver[0]->node[iPoint];
    
   for (iField = 0; iField < nRequestedVolumeFields; iField++){
-    SetVolumeOutputValue(RequestedVolumeFields[iField], iPoint, Node_Sol->GetSolution(iField));
+    SetVolumeOutputValue(requestedVolumeFields[iField], iPoint, Node_Sol->GetSolution(iField));
   }
   
 }

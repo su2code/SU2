@@ -10,23 +10,19 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
   nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
   nLocalPoint_Sort  = geometry->GetnPointDomain();
   
-  /*--- Create a linear partition --- */
+  /*--- Create the linear partitioner --- */
   
-  CreateLinearPartition(nGlobalPoint_Sort);
+  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
 
 }
 
 CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
   
-  delete [] beg_node;
-  delete [] end_node;
-  
-  delete [] nPoint_Cum;
-  delete [] nPoint_Lin;
+  if (linearPartitioner != NULL) delete linearPartitioner;
   
 }
 
-void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
+void CSurfaceFVMDataSorter::SortOutputData() {
   
   if (!connectivity_sorted){
     SU2_MPI::Error("Connectivity must be sorted before sorting output data", CURRENT_FUNCTION);
@@ -50,9 +46,9 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   /*--- Prepare to check and communicate the nodes that each proc has
    locally from the surface connectivity. ---*/
   
-  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
-  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
-  int *nElem_Flag = new int[size];
+  int *nElem_Send = new int[size+1](); nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1](); nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size]();
   
   for (int ii=0; ii < size; ii++) {
     nElem_Send[ii] = 0;
@@ -74,7 +70,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);      
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
       
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -102,7 +98,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -130,7 +126,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -172,13 +168,12 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   
   /*--- Allocate arrays for sending the global ID. ---*/
   
-  unsigned long *idSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++) idSend[ii] = 0;
+  unsigned long *idSend = new unsigned long[nElem_Send[size]]();
   
   /*--- Create an index variable to keep track of our index
    positions as we load up the send buffer. ---*/
   
-  unsigned long *idIndex = new unsigned long[size];
+  unsigned long *idIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
   
   /*--- Now loop back through the local connectivities for the surface
@@ -194,7 +189,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
    
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- Load global ID into the buffer for sending ---*/
       
@@ -228,7 +223,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
       
@@ -262,7 +257,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- Load global ID into the buffer for sending ---*/
       
@@ -289,10 +284,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
   
-  unsigned long *idRecv = NULL;
-  idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    idRecv[ii] = 0;
+  unsigned long *idRecv = new unsigned long[nElem_Recv[size]]();
   
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
@@ -374,7 +366,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) surfPoint[iPoint] = -1;
   
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    surfPoint[(int)idRecv[ii]- volume_sorter->GetNodeBegin(rank)] = (int)idRecv[ii];
+    surfPoint[(int)idRecv[ii] - volume_sorter->GetNodeBegin(rank)] = (int)idRecv[ii];
   }
   
   /*--- First, add up the number of surface points I have on my rank. ---*/
@@ -398,8 +390,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
    processors so that it can be used to create offsets for the new
    global numbering for the surface points. ---*/
   
-  int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
-  int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
+  int *nPoint_Send = new int[size+1](); nPoint_Send[0] = 0;
+  int *nPoint_Recv = new int[size+1](); nPoint_Recv[0] = 0;
   
   for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nParallel_Poin;
   
@@ -423,7 +415,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   
   Parallel_Data = new su2double*[VARS_PER_POINT];
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nParallel_Poin];
+    Parallel_Data[jj] = new su2double[nParallel_Poin]();
     count = 0;
     for (int ii = 0; ii < (int)volume_sorter->GetnPoints(); ii++) {
       if (surfPoint[ii] !=-1) {
@@ -448,8 +440,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
    create a new mapping using two arrays, which will need to be
    communicated. We use our mask again here.  ---*/
   
-  unsigned long *globalP = new unsigned long[nParallel_Poin];
-  unsigned long *renumbP = new unsigned long[nParallel_Poin];
+  unsigned long *globalP = new unsigned long[nParallel_Poin]();
+  unsigned long *renumbP = new unsigned long[nParallel_Poin]();
   
   count = 0;
   for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) {
@@ -491,7 +483,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = FindProcessor(Global_Index);
+    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -534,22 +526,18 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
    sending. ---*/
   
   unsigned long *globalSend = NULL;
-  globalSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    globalSend[ii] = 0;
+  globalSend = new unsigned long[nElem_Send[size]]();
   
   /*--- Allocate memory to hold the renumbering that we are
    sending. ---*/
   
   unsigned long *renumbSend = NULL;
-  renumbSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    renumbSend[ii] = 0;
+  renumbSend = new unsigned long[nElem_Send[size]]();
   
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
   
-  unsigned long *index = new unsigned long[size];
+  unsigned long *index = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) index[ii] = nElem_Send[ii];
   
   /*--- Loop back through and load up the buffers for the global IDs
@@ -561,7 +549,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = FindProcessor(Global_Index);
+    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
     if (nElem_Flag[iProcessor] != ii) {
       
@@ -588,15 +576,11 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
    directly copy our own data later. ---*/
   
   unsigned long *globalRecv = NULL;
-  globalRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    globalRecv[ii] = 0;
+  globalRecv = new unsigned long[nElem_Recv[size]]();
   
   unsigned long *renumbRecv = NULL;
-  renumbRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    renumbRecv[ii] = 0;
-  
+  renumbRecv = new unsigned long[nElem_Recv[size]]();
+
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
@@ -727,7 +711,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- Store the global ID if it is outside our own linear partition. ---*/
       
@@ -748,7 +732,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- Store the global ID if it is outside our own linear partition. ---*/
       
@@ -769,7 +753,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = FindProcessor(Global_Index);
+      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
       /*--- Store the global ID if it is outside our own linear partition. ---*/
       
@@ -804,7 +788,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = FindProcessor(Global_Index);
+    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -860,7 +844,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = FindProcessor(Global_Index);
+    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);      
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -887,10 +871,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
    directly copy our own data later. ---*/
   
   delete [] idRecv;
-  idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    idRecv[ii] = 0;
-  
+  idRecv = new unsigned long[nElem_Recv[size]]();
+
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
@@ -1195,7 +1177,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
             
             /*--- Search for the processor that owns this point ---*/
             
-            iProcessor = FindProcessor(Global_Index);
+            iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
 
             /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
@@ -1289,7 +1271,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
             
             /*--- Search for the processor that owns this point ---*/
             
-            iProcessor = FindProcessor(Global_Index);
+            iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
 
             /*--- Load connectivity into the buffer for sending ---*/
             

@@ -101,6 +101,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
+  valResidual = 0.0;
+  
 
   /*--- Inlet profile data structures. ---*/
 
@@ -120,6 +122,18 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   
   rotate_periodic   = false;
   implicit_periodic = false;
+
+  /*--- Containers to store the markers. ---*/
+  nMarker = 0;
+  nVertex = nullptr;
+
+  /*--- Flags for the dynamic grid (rigid movement or unsteady deformation). ---*/
+  dynamic_grid = false;
+
+  /*--- Container to store the vertex tractions. ---*/
+  VertexTraction = NULL;
+  VertexTractionAdjoint = NULL;
+
   
   nPrimVarGrad = 0;
   nPrimVar     = 0;
@@ -129,7 +143,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 CSolver::~CSolver(void) {
 
   unsigned short iVar, iDim;
-  unsigned long iPoint;
+  unsigned long iPoint, iMarker, iVertex;
   
   /*--- Public variables, may be accessible outside ---*/
 
@@ -234,6 +248,26 @@ CSolver::~CSolver(void) {
       delete [] Cvector[iVar];
     delete [] Cvector;
   }
+
+  if (VertexTraction != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] VertexTraction[iMarker][iVertex];
+      delete [] VertexTraction[iMarker];
+    }
+    delete [] VertexTraction;
+  }
+
+  if (VertexTractionAdjoint != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] VertexTractionAdjoint[iMarker][iVertex];
+      delete [] VertexTractionAdjoint[iMarker];
+    }
+    delete [] VertexTractionAdjoint;
+  }
+
+  if (nVertex != nullptr) delete [] nVertex;
 
   if (Restart_Vars != NULL) {delete [] Restart_Vars; Restart_Vars = NULL;}
   if (Restart_Data != NULL) {delete [] Restart_Data; Restart_Data = NULL;}
@@ -1861,7 +1895,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_FEA:
-      if (config->GetDynamic_Analysis() == DYNAMIC)
+      if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
@@ -1889,6 +1923,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
       break;
     case MESH_DISPLACEMENTS:
       COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_TIME_N:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_TIME_N1:
+      COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -1989,7 +2031,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel(iVar);
                 bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel(iVar);
               }
@@ -2020,6 +2062,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = node[iPoint]->GetBound_Disp(iDim);
+            break;
+          case SOLUTION_TIME_N:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_time_n(iVar);
+            break;
+          case SOLUTION_TIME_N1:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_time_n1(iVar);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2143,7 +2193,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 node[iPoint]->SetSolution_Vel(iVar, bufDRecv[buf_offset+nVar+iVar]);
                 node[iPoint]->SetSolution_Accel(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
@@ -2151,7 +2201,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case SOLUTION_FEA_OLD:
             for (iVar = 0; iVar < nVar; iVar++) {
-              node[iPoint]->SetSolution_time_n(iVar, bufDRecv[buf_offset+iVar]);
+              node[iPoint]->Set_Solution_time_n(iVar, bufDRecv[buf_offset+iVar]);
               node[iPoint]->SetSolution_Vel_time_n(iVar, bufDRecv[buf_offset+nVar+iVar]);
               node[iPoint]->SetSolution_Accel_time_n(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
@@ -2174,6 +2224,14 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               node[iPoint]->SetBound_Disp(iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case SOLUTION_TIME_N:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->Set_Solution_time_n(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_TIME_N1:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->Set_Solution_time_n1(iVar, bufDRecv[buf_offset+iVar]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -4007,7 +4065,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+  if (config->GetTime_Marching() == DT_STEPPING_2ND) {
 
     ifstream restart_file_n1;
     string filename_n1;
@@ -5079,9 +5137,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
   su2double Area_Children, Area_Parent, *Coord, dist, min_dist;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -5322,6 +5380,187 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   
 }
 
+void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
+
+  /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
+  su2double *Velocity_ND, *Velocity_Real;
+  su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
+  su2double factor;
+
+  unsigned short iDim, jDim;
+
+  // Check whether the problem is viscous
+  bool viscous_flow = ((config->GetKind_Solver() == NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == RANS) ||
+                       (config->GetKind_Solver() == INC_RANS) ||
+                       (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                       (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
+                       (config->GetKind_Solver() == DISC_ADJ_RANS));
+
+  // Parameters for the calculations
+  su2double Pn = 0.0, div_vel = 0.0;
+  su2double Viscosity = 0.0;
+  su2double Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0},{0.0, 0.0, 1.0}};
+  su2double auxForce[3] = {1.0, 0.0, 0.0};
+
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  su2double const *iNormal;
+
+  su2double Pressure_Inf = config->GetPressure_FreeStreamND();
+
+  Velocity_Real = config->GetVelocity_FreeStream();
+  Density_Real  = config->GetDensity_FreeStream();
+
+  Velocity_ND = config->GetVelocity_FreeStreamND();
+  Density_ND  = config->GetDensity_FreeStreamND();
+
+  Velocity2_Real = 0.0;
+  Velocity2_ND   = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
+    Velocity2_ND   += Velocity_ND[iDim]*Velocity_ND[iDim];
+  }
+
+  factor = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- If this is defined as an interface marker ---*/
+    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+
+      // Loop over the vertices
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        // Recover the point index
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        // Get the normal at the vertex: this normal goes inside the fluid domain.
+        iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          // Retrieve the values of pressure
+          Pn = node[iPoint]->GetPressure();
+
+          // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+          for (iDim = 0; iDim < nDim; iDim++)
+            auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
+
+          // Calculate tn in the fluid nodes for the viscous term
+          if (viscous_flow) {
+
+            Viscosity = node[iPoint]->GetLaminarViscosity();
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0 ; jDim < nDim; jDim++) {
+                Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              }
+            }
+
+            // Divergence of the velocity
+            div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0 ; jDim < nDim; jDim++) {
+
+                // Viscous stress
+                Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim])
+                                 - TWO3*Viscosity*div_vel*delta[iDim][jDim];
+
+                // Viscous component in the tn vector --> Units of force (non-dimensional).
+                auxForce[iDim] += Tau[iDim][jDim]*iNormal[jDim];
+              }
+            }
+          }
+
+          // Redimensionalize the forces
+          for (iDim = 0; iDim < nDim; iDim++) {
+            VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
+          }
+        }
+        else{
+          for (iDim = 0; iDim < nDim; iDim++) {
+            VertexTraction[iMarker][iVertex][iDim] = 0.0;
+          }
+        }
+      }
+    }
+  }
+
+}
+
+void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
+
+  unsigned short iMarker, iDim;
+  unsigned long iVertex, iPoint;
+
+  /*--- Loop over all the markers ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- If this is defined as an interface marker ---*/
+    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+
+      /*--- Loop over the vertices ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Recover the point index ---*/
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          /*--- Register the vertex traction as output ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+            AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
+          }
+
+        }
+      }
+    }
+  }
+
+}
+
+void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
+
+  unsigned short iMarker, iDim;
+  unsigned long iVertex, iPoint;
+
+  /*--- Loop over all the markers ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- If this is defined as an interface marker ---*/
+    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+
+      /*--- Loop over the vertices ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Recover the point index ---*/
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          /*--- Set the adjoint of the vertex traction from the value received ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+
+            SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
+                                    SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
+          }
+
+        }
+      }
+    }
+  }
+
+}
+
+
 void CSolver::SetVerificationSolution(unsigned short nDim,
                                       unsigned short nVar,
                                       CConfig        *config) {
@@ -5427,6 +5666,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
   }
+
+  dynamic_grid = config->GetDynamic_Grid();
   
 }
 
@@ -5461,6 +5702,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   }
 
+  dynamic_grid = config->GetDynamic_Grid();
+
 }
 
 void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
@@ -5468,10 +5711,6 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
   string Tag, text_line;
-  unsigned long InnerIter = config->GetInnerIter();
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
 
   ifstream restart_file;
   string filename;
@@ -5486,19 +5725,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst(), ".dat");
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetTime_Domain()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(InnerIter), ".dat");
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(InnerIter), ".dat");
-  }
+  
+  filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
   /*--- Read only the number of variables in the restart file. ---*/
 
@@ -5758,7 +5986,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar;
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iInst = config->GetiInst();
-  bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
 
@@ -5819,7 +6046,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
-      if (grid_movement && val_update_geo) {
+      if (dynamic_grid && val_update_geo) {
 
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
@@ -5865,7 +6092,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
-  if (grid_movement && val_update_geo) {
+  if (dynamic_grid && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     

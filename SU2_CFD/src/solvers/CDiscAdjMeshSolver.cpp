@@ -1,7 +1,7 @@
 /*!
- * \file solver_adjoint_mesh.cpp
+ * \file CDiscAdjMeshSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint mesh problem.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -60,9 +60,6 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   unsigned long iPoint;
   long iVertex;
   bool isVertex;
-  bool restart = config->GetRestart();
-
-  restart = false;
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();
@@ -234,7 +231,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
   unsigned long iPoint;
   unsigned short iDim;
   su2double Sensitivity, eps;
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   /*--- Extract the sensitivities ---*/
   ExtractAdjoint_Solution(geometry, config);
