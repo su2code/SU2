@@ -1041,8 +1041,7 @@ private:
   unsigned short Kind_Radiation;  /*!< \brief Kind of radiation model used. */
   unsigned short Kind_P1_Init;      /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,     /*!< \brief Absorption coefficient of the medium (radiation). */
-  Scattering_Coeff,               /*!< \brief Scattering coefficient of the medium (radiation). */
-  Refractive_Index;               /*!< \brief Refractive index of the medium (radiation). */
+  Scattering_Coeff;               /*!< \brief Scattering coefficient of the medium (radiation). */
   unsigned short nMarker_Emissivity; /*!< \brief Number of markers for which the emissivity is defined. */
   string *Marker_Emissivity;         /*!< \brief Wall markers with defined emissivity. */
   su2double *Wall_Emissivity;        /*!< \brief Emissivity of the wall. */
@@ -9193,12 +9192,6 @@ public:
    * \return Value of the scattering coefficient of the medium.
    */
   su2double GetScattering_Coeff(void);
-
-  /*!
-   * \brief Get the value of the refractive index of the medium.
-   * \return Value of the refractive index of the medium.
-   */
-  su2double GetRefractive_Index(void);
 
   /*!
    * \brief Get the wall emissivity at a boundary.

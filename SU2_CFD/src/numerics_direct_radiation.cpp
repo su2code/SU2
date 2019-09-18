@@ -47,7 +47,6 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
-  Refractive_Index = config->GetRefractive_Index();
 
   Absorption_Coeff = max(Absorption_Coeff,0.01);
 
@@ -230,8 +229,6 @@ CSourceP1::~CSourceP1(void) {
 
 void CSourceP1::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
-  unsigned short iDim;
-
   /*--- Retrieve the energy at the node i ---*/
   Energy_i = RadVar_i[0];
 
@@ -239,8 +236,7 @@ void CSourceP1::ComputeResidual(su2double *val_residual, su2double **val_Jacobia
   Temperature_i = V_i[nDim+1];
 
   /*--- Compute the blackbody intensity for gray media ---*/
-  //BlackBody_Intensity = pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature_i,4.0)/PI_NUMBER; // This needs to be integrated in 4PI steradians
-  BlackBody_Intensity = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature_i,4.0);
+  BlackBody_Intensity = 4.0*STEFAN_BOLTZMANN*pow(Temperature_i,4.0);
 
   /*--- Source term from black-body and energy contributions ---*/
   val_residual[0] = Absorption_Coeff * Volume * (BlackBody_Intensity - Energy_i);

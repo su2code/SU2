@@ -53,7 +53,6 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
-  Refractive_Index = config->GetRefractive_Index();
 
   Absorption_Coeff = max(Absorption_Coeff,0.01);
 
@@ -71,7 +70,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar;
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Vol;
-  su2double Delta_time = 0.01, Delta;
+  su2double Delta;
 
   /*--- Set maximum residual to zero ---*/
 
@@ -151,9 +150,7 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Restart the solution from file information ---*/
 
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
+  unsigned short iVar;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
@@ -356,7 +353,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   su2double init_val;
   switch(config->GetKind_P1_Init()){
     case P1_INIT_ZERO: init_val = 0.0; break;
-    case P1_INIT_TEMP: init_val = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
+    case P1_INIT_TEMP: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
     default: init_val = 0.0; break;
   }
 
@@ -405,10 +402,10 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
 
     /*--- Compute the divergence of the radiative flux ---*/
-    SourceTerm = Absorption_Coeff*(Energy - 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0));
+    SourceTerm = Absorption_Coeff*(Energy - 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0));
 
     /*--- Compute the derivative of the source term with respect to the temperature ---*/
-    SourceTerm_Derivative =  - 16.0*Absorption_Coeff*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,3.0);
+    SourceTerm_Derivative =  - 16.0*Absorption_Coeff*STEFAN_BOLTZMANN*pow(Temperature,3.0);
 
     /*--- Store the source term and its derivative ---*/
     node[iPoint]->SetRadiative_SourceTerm(0, SourceTerm);
@@ -492,19 +489,16 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
   su2double *Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
-  su2double *Gradient, *Unit_Normal;
+  su2double *Unit_Normal;
 
   Unit_Normal = new su2double[nDim];
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  bool energy        = config->GetEnergy_Equation();
-
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -548,7 +542,7 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
 
       /*--- Compute the blackbody intensity at the wall. ---*/
-      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+      Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0);
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = node[iPoint]->GetSolution(0);
@@ -575,19 +569,16 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
                                        unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iVertex, iPoint;
 
-  su2double Theta, Ib_w, Temperature, Radiative_Energy;
+  su2double Theta, Ib_w, Radiative_Energy;
   su2double *Normal, *Unit_Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
   su2double Twall;
-  su2double *Gradient;
 
   Unit_Normal = new su2double[nDim];
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -632,7 +623,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
       /*--- Compute the blackbody intensity at the wall. ---*/
-      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
+      Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Twall,4.0);
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = node[iPoint]->GetSolution(0);
@@ -657,19 +648,16 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iVertex, iPoint;
 
-  su2double Theta, Ib_w, Temperature, Radiative_Energy;
+  su2double Theta, Ib_w, Radiative_Energy;
   su2double *Normal, *Unit_Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
   su2double Twall;
-  su2double *Gradient;
 
   Unit_Normal = new su2double[nDim];
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -714,7 +702,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
       /*--- Compute the blackbody intensity at the wall. ---*/
-      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
+      Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Twall,4.0);
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = node[iPoint]->GetSolution(0);
@@ -758,7 +746,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double *Normal, Area, Vol, Lambda;
-  su2double Global_Delta_Time = 1E6, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
+  su2double Global_Delta_Time = 1E6, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, K_v = 0.25;
   su2double CFL = config->GetCFL_Rad();
   su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
 
