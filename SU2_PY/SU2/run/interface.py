@@ -250,8 +250,12 @@ def MET(config):
 
     tempname = 'config_MET.cfg'
     konfig.dump(tempname)
-    # for now run in serial
+
+    # must run with rank 1
+    processes = konfig['NUMBER_PART']
+    
     the_Command = 'SU2_MET%s %s' % (quote, tempname)
+    the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
     #os.remove(tempname)
