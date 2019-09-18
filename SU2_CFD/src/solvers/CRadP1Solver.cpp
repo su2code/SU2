@@ -614,8 +614,8 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   su2double CFL = config->GetCFL_Rad();
   su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -709,7 +709,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
 
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (config->GetTime_Marching() == TIME_STEPPING) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;

@@ -70,9 +70,9 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   unsigned short iVar;
   unsigned long index;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
