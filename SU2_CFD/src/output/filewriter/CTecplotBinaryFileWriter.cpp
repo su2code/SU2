@@ -250,7 +250,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       for(iVar = 0; iVar < fieldnames.size(); ++iVar)
         for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
           unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank) - 1;
-          data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));
+          data_to_send[index++] =dataSorter->GetData(iVar,node_offset);
         }
     }
     SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
@@ -269,7 +269,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     std::vector<passivedouble> values_to_write(dataSorter->GetnPoints());
     for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
       for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
-        values_to_write[i] = SU2_TYPE::GetValue(dataSorter->GetData(iVar, i));
+        values_to_write[i] = dataSorter->GetData(iVar, i);
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, dataSorter->GetnPoints(), &values_to_write[0]);
       if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
       for (int iRank = 0; err == 0 && iRank < size; ++iRank) {
@@ -296,7 +296,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
             for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
               values_to_write.resize(rank_num_points);
               for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
-                values_to_write[i] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,i));
+                values_to_write[i] = dataSorter->GetData(iVar,i);
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]); 
               if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
             }
@@ -322,7 +322,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       var_data.reserve(var_data_size);
       for (iVar = 0; err == 0 && iVar < fieldnames.size() ; iVar++)
           for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
-            var_data.push_back(SU2_TYPE::GetValue(dataSorter->GetData(iVar,i)));
+            var_data.push_back(dataSorter->GetData(iVar,i));
       
       if (var_data.size() > 0)
         SU2_MPI::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);

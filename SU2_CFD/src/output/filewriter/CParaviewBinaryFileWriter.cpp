@@ -535,7 +535,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       if (nDim == 2 && iDim == 2) {
         coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)SU2_TYPE::GetValue(dataSorter->GetData(iDim, iPoint));
+        float val = (float)dataSorter->GetData(iDim, iPoint);
         coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -928,7 +928,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
           if (nDim == 2 && iDim == 2) {
             vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+iDim,iPoint));
+            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
             vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
@@ -1003,7 +1003,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
        This will be replaced with a derived data type most likely. ---*/
       
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        float val = (float)SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
+        float val = (float)dataSorter->GetData(VarCounter,iPoint);
         scalar_buf[iPoint] = val;
       }
       if (!BigEndian) SwapBytes((char *)scalar_buf, sizeof(float), myPoint);
