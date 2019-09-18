@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy, time
+import os, sys, shutil, copy, time, subprocess
 from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
@@ -627,14 +627,18 @@ def multipoint( config, state=None, step=1e-2 ):
 
         # make unix link
         string_direct = "ln -s " + src_direct + " " + dst_direct
-        os.system(string_direct)
+        # print(string_direct)
+        # print(os.getcwd())
+        subprocess.call(string_direct, shell=True)
+        # os.system(string_direct)
 
         # If the mesh doesn't already exist, link
         if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
             src_mesh = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['MESH']
             string_mesh =  "ln -s " + src_mesh + " " + dst_mesh
             if not os.path.exists(src_mesh): 
-                os.system(string_mesh)
+                subprocess.call(string_mesh, shell=True)
+                # os.system(string_direct)
 
     # Update MULTIPOINT_DIRECT in state.FILES
     state.FILES.MULTIPOINT_DIRECT = solution_flow_list
