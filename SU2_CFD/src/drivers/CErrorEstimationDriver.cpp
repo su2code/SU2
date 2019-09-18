@@ -1078,7 +1078,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
