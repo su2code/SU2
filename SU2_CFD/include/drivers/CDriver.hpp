@@ -53,6 +53,13 @@
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
+#include "../numerics/viscous/CAvgGrad_P1.hpp"
+#include "../numerics/viscous/CAvgGradCorrected_P1.hpp"
+
+#include "../numerics/source/CSourceP1.hpp"
+#include "../numerics/source/CSourceRadiation.hpp"
+#include "../numerics/source/CSourceVolumetricHeat.hpp"
+
 #include "../output/COutput.hpp"
 #include "../output/CDriverOutput.hpp"
 #include "../output/CElasticityOutput.hpp"

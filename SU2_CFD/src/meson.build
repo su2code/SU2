@@ -98,7 +98,13 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
 su2_cfd_src += files(['solvers/CMeshSolver.cpp',
                      'solvers/CDiscAdjMeshSolver.cpp'])
 
-su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
+su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp',
+                      'numerics/CNumericsRadiation.cpp',
+                      'numerics/viscous/CAvgGrad_P1.cpp',
+                      'numerics/viscous/CAvgGradCorrected_P1.cpp',
+                      'numerics/source/CSourceP1.cpp',
+                      'numerics/source/CSourceRadiation.cpp',
+                      'numerics/source/CSourceVolumeticHeat.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
