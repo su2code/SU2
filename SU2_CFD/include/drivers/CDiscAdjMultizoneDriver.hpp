@@ -50,7 +50,7 @@ protected:
                                               solution update. */
     OBJECTIVE_FUNCTION_TAPE = 2,  /*!< \brief Record only the dependence of the objective function
                                               w.r.t. solver variables (from all zones). */
-    ZONE_SPECIFIC_TAPE = 3        /*!< \brief Record only the depence of the solution update in a
+    ZONE_SPECIFIC_TAPE = 3        /*!< \brief Record only the dependence of the solution update in a
                                               specified zone w.r.t. solver variables (from all zones). */
   };
 
@@ -58,7 +58,7 @@ protected:
    * \brief Position markers within a tape.
    */
   enum ENUM_TAPE_POSITIONS {
-    START = 0,                    /*!< \brief Starting point of the tape. */
+    START = 0,                    /*!< \brief Beginning of the tape. */
     REGISTERED = 1,               /*!< \brief Solver variables are registered on the tape. */
     DEPENDENCIES = 2,             /*!< \brief Derived values (e.g. gradients) are set. */
     OBJECTIVE_FUNCTION = 3,       /*!< \brief Objective function is set. */
@@ -68,10 +68,12 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  bool retape;                    /*!< \brief Boolean whether full tape can be kept in memory. */
   unsigned short RecordingState;  /*!< \brief The kind of recording that the tape currently holds. */
-  su2double ObjFunc;              /*!< \brief The value of the objective function. */
+  bool retape;                    /*!< \brief Boolean whether a full tape can be kept in memory. */
+
+  su2double ObjFunc;              /*!< \brief Value of the objective function. */
   int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
+
   CIteration*** direct_iteration; /*!< \brief Array of pointers to the direct iterations. */
   COutput** direct_output;        /*!< \brief Array of pointers to the direct outputs. */
   unsigned short* direct_nInst;   /*!< \brief Total number of instances in the direct problem. */

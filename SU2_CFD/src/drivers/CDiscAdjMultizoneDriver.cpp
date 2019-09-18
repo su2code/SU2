@@ -147,7 +147,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   bool            checkSensitivity  = false;
   unsigned short  jZone             = 0,
-                  wrt_sol_freq      = config_container[ZONE_0]->GetWrt_Sol_Freq();
+                  wrt_sol_freq      = config_container[ZONE_0]->GetVolume_Wrt_Freq();
   unsigned long   iIter             = 0,
                   nIter             = 0,
                   iOuter_Iter       = 0,
@@ -309,6 +309,10 @@ void CDiscAdjMultizoneDriver::Run() {
 
     driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
+    /*--- Check for convergence. ---*/
+
+    StopCalc = driver_output->GetConvergence();
+
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
@@ -323,7 +327,7 @@ void CDiscAdjMultizoneDriver::Run() {
                           (iOuter_Iter % wrt_sol_freq == 0));
     }
 
-    if (checkSensitivity){
+    if (checkSensitivity || StopCalc){
 
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
        *    as argument ensures that all information from a previous recording is removed. ---*/
@@ -383,10 +387,13 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (iZone = 0; iZone < nZone; iZone++) {
 
-        iteration_container[iZone][INST_0]->Output(output_container[iZone], geometry_container, solver_container,
-                                                   config_container, iIter, StopCalc, iZone, INST_0);
+        output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                                 config_container[iZone],
+                                                 solver_container[iZone][INST_0][MESH_0], iIter, StopCalc);
       }
     }
+
+    if (StopCalc) break;
   }
 }
 
