@@ -5521,13 +5521,14 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     filename = config->GetSolution_FileName();
   }
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-  
-  filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
   /*--- Read only the number of variables in the restart file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
     char fname[100];
     strcpy(fname, filename.c_str());
@@ -5660,6 +5661,10 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     
 #endif
   } else {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    filename = config->GetFilename(filename, ".csv", config->GetTimeIter());
 
     /*--- First, check that this is not a binary restart file. ---*/
 
@@ -5754,12 +5759,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     getline (restart_file, text_line);
 
-    stringstream ss(text_line);
-    fields.clear();
-    while (ss >> Tag) {
-      fields.push_back(Tag);
-      if (ss.peek() == ',') ss.ignore();
-    }
+    fields = PrintingToolbox::split(text_line, ',');
 
     /*--- Close the file (the solution date is read later). ---*/
     

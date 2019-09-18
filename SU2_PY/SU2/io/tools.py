@@ -779,9 +779,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TAB_TECPLOT'): 
         header.append('VARIABLES=')
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'TAB_CSV'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -905,9 +905,9 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TAB_TECPLOT'): 
         header_format = header_format + 'VARIABLES='
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'TAB_CSV'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -963,11 +963,11 @@ def get_extension(output_format):
     if (output_format == "PARAVIEW")        : return ".csv"
     if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
-    if (output_format == "TECPLOT_BINARY")  : return ".plt"
+    if (output_format == "TECPLOT_BINARY")  : return ".szplt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  
     if (output_format == "CONFIG")          : return ".cfg"  
-
+    if (output_format == "CSV")         : return ".csv"
     # otherwise
     raise Exception("Output Format Unknown")
 
@@ -1003,9 +1003,6 @@ def get_specialCases(config):
     if len(special_cases) > 1:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
         raise Exception(error_str)   
-    
-    if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
-        raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for harmonic balance
     if 'TIME_MARCHING' in config and config['TIME_MARCHING'] == 'HARMONIC_BALANCE':
@@ -1169,7 +1166,7 @@ def restart2solution(config,state={}):
         restart = restart.split('.')[0]
         solution = solution.split('.')[0]
         
-        if config.get('WRT_BINARY_RESTART', 'YES') == 'NO':
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
             restart += '.csv'
             solution += '.csv'
         else:
@@ -1195,7 +1192,7 @@ def restart2solution(config,state={}):
         restart = restart.split('.')[0]
         solution = solution.split('.')[0]
 
-        if config.get('WRT_BINARY_RESTART', 'YES') == 'NO':
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
             restart += '.csv'
             solution += '.csv'
         else:

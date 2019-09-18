@@ -49,7 +49,6 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
 CFEMDataSorter::~CFEMDataSorter(){
 
-  if (connSend != NULL)    delete [] connSend;
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
   if (linearPartitioner != NULL) delete linearPartitioner;
@@ -74,11 +73,6 @@ void CFEMDataSorter::SortOutputData() {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
-    connRecv[ii] = 0;
-
   unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
   for (int ii = 0; ii < nPoint_Recv[size]; ii++)
     idRecv[ii] = 0;
@@ -98,7 +92,7 @@ void CFEMDataSorter::SortOutputData() {
       int count  = VARS_PER_POINT*kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
+      SU2_MPI::Irecv(&(sortedDataBuffer[ll]), count, MPI_DOUBLE, source, tag,
                      MPI_COMM_WORLD, &(recv_req[iMessage]));
       iMessage++;
     }
@@ -159,7 +153,7 @@ void CFEMDataSorter::SortOutputData() {
   int ll = VARS_PER_POINT*nPoint_Send[rank];
   int kk = VARS_PER_POINT*nPoint_Send[rank+1];
 
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  for (int nn=ll; nn<kk; nn++, mm++) sortedDataBuffer[mm] = connSend[nn];
 
   mm = nPoint_Recv[rank];
   ll = nPoint_Send[rank];
@@ -182,20 +176,18 @@ void CFEMDataSorter::SortOutputData() {
   delete [] recv_req;
 #endif
   
-  delete [] connSend;
-  connSend = NULL;
-
-  /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. First, allocate the
-   appropriate amount of memory for this section. ---*/
-
-  Parallel_Data = new su2double*[VARS_PER_POINT];
-  for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nPoint_Recv[size]]();
-    for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
-      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
+  su2double *tmpBuffer = new su2double[nPoint_Recv[size]];
+  
+  for (int jj = 0; jj < VARS_PER_POINT; jj++){
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      tmpBuffer[idRecv[ii]] = sortedDataBuffer[ii*VARS_PER_POINT+jj];
+    }
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      sortedDataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
     }
   }
+  
+  delete [] tmpBuffer;
 
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -213,7 +205,6 @@ void CFEMDataSorter::SortOutputData() {
 
   /*--- Free temporary memory from communications ---*/
 
-  delete [] connRecv;
   delete [] idRecv;
   
 }
@@ -353,26 +344,32 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
   switch (Elem_Type) {
     case TRIANGLE:
       nParallel_Tria = nSubElem_Local;
+      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;      
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nSubElem_Local;
+      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;            
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
       nParallel_Tetr = nSubElem_Local;
+      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;                  
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
       nParallel_Hexa = nSubElem_Local;
+      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;                        
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
       nParallel_Pris = nSubElem_Local;
+      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;                        
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
       nParallel_Pyra = nSubElem_Local;
+      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;                        
       Conn_Pyra_Par = Conn_SubElem;
       break;
     default:

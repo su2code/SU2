@@ -84,8 +84,6 @@ def merge( config ):
     # # MERGING # #
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         merge_multizone(konfig)
-    elif konfig['OUTPUT_FORMAT'] == 'PARAVIEW_BINARY':
-        pass
     else:
         if 'WRT_UNSTEADY' in special_cases:
             merge_unsteady(konfig)
