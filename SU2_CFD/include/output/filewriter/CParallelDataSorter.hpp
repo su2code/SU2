@@ -89,8 +89,7 @@ protected:
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
-  su2double *sortedDataBuffer;                 //!< Send buffer holding the data that will be send to other processors
-  
+  passivedouble *dataBuffer;
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
@@ -120,7 +119,7 @@ public:
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    */
-  virtual void SortOutputData(){}
+  virtual void SortOutputData();
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures.
@@ -190,13 +189,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  su2double GetData(unsigned short iField, unsigned long iPoint) {return sortedDataBuffer[iPoint*GlobalField_Counter + iField];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return dataBuffer[iPoint*GlobalField_Counter + iField];}
   
   /*!
    * \brief Get the pointer to the sorted linear partitioned data.
    * \return Pointer to the sorted data.
    */
-  su2double *GetData() {return sortedDataBuffer;}
+  passivedouble *GetData() {return dataBuffer;}
   
   /*!
    * \brief Get the global index of a point.
