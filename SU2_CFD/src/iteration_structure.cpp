@@ -456,9 +456,9 @@ void CIteration::Output(COutput *output,
     unsigned short val_iInst)      {
 
   
-  output->SetResult_Files(geometry[ZONE_0][INST_0][MESH_0],
-                          config[ZONE_0],
-                          solver[ZONE_0][INST_0][MESH_0], InnerIter);
+  output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0],
+                          config[val_iZone],
+                          solver[val_iZone][INST_0][MESH_0], InnerIter);
   
 
 }
