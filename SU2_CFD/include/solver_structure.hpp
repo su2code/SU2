@@ -541,7 +541,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void AddSolution_ExternalOld(CGeometry *geometry);
+  void Add_ExternalOld_To_Solution(CGeometry *geometry);
 
   /*!
    * \brief Set the Solution vector to zero.
@@ -559,13 +559,13 @@ public:
    * \brief Add the current Solution vector to External.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void AddExternal_Solution(CGeometry *geometry);
+  void Add_Solution_To_External(CGeometry *geometry);
 
   /*!
    * \brief Add the current Solution vector to External_Old.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void AddExternalOld_Solution(CGeometry *geometry);
+  void Add_Solution_To_ExternalOld(CGeometry *geometry);
 
   /*!
    * \brief Set External_Old to External.

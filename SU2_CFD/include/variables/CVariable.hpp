@@ -381,7 +381,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Set_External_Zero(void) {}
+  inline virtual void SetExternalZero(void) {}
 
   /*!
    * \brief A virtual member.

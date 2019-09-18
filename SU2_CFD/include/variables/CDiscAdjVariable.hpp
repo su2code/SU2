@@ -166,7 +166,7 @@ public:
   /*!
    * \brief Set external contributions to zero.
    */
-  inline void Set_External_Zero(void) {
+  inline void SetExternalZero(void) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       External[iVar] = 0.0;
     }
