@@ -2529,8 +2529,4 @@ inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return D
 
 inline void CSolver::SetDualTime_Mesh(void){ }
 
-inline void CRadP1Solver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
-
-inline su2double CRadP1Solver::GetTemperature_Inf(void) { return Temperature_Inf; }
-
 inline vector<string> CSolver::GetSolutionFields(){return fields;}
