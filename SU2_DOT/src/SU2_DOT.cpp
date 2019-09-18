@@ -998,10 +998,18 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
     
+    /*--- Set the surface filename ---*/
+    
+    output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
+    
     /*--- Write to file ---*/
     
-    output->SetSurface_Output(geometry[iZone][INST_0], config[iZone], config[iZone]->GetOutput_FileFormat(), false);
-
+    for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
+      if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+        output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
+    }
+    
     /*--- Deallocate ---*/
     
     output->DeallocateData_Parallel();

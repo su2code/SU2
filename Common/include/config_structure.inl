@@ -1467,7 +1467,7 @@ inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
 
-inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
+inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
@@ -1647,8 +1647,6 @@ inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
 
 inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
 
-inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
-
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
 
 inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
@@ -1670,6 +1668,8 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
+
+inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
 
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
 
@@ -2060,6 +2060,12 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
+inline unsigned long CConfig::GetPastixFactFreq(void) { return pastix_fact_freq; }
+
+inline unsigned short CConfig::GetPastixVerbLvl(void) { return pastix_verb_lvl; }
+
+inline unsigned short CConfig::GetPastixFillLvl(void) { return pastix_fill_lvl; }
+
 inline short CConfig::GetMeshBoxSize(unsigned short val_iDim) { return Mesh_Box_Size[val_iDim]; }
 
 inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mesh_Box_Length[val_iDim]; }
@@ -2076,3 +2082,10 @@ inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return H
 
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
 
+inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
+
+inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles;}
+
+inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
+
+inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}
