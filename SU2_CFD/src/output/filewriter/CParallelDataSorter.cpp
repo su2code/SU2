@@ -27,7 +27,7 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   nPoint_Recv  = NULL;
   Index        = NULL;
   connSend     = NULL;
-  sortedDataBuffer     = NULL;  
+  dataBuffer   = NULL;
   idSend       = NULL;
   nSends = 0;
   nRecvs = 0;
@@ -57,7 +57,6 @@ CParallelDataSorter::~CParallelDataSorter(){
   if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
   if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   
-  if (sortedDataBuffer != NULL) delete [] sortedDataBuffer;
   if (connSend != NULL) delete [] connSend;
   
   
@@ -105,6 +104,170 @@ unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
   return 0;
 }
 
+void CParallelDataSorter::SortOutputData() {
+  
+  int VARS_PER_POINT = GlobalField_Counter;
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
+  int ind;
+#endif
+  
+  /*--- Use the data buffer to temporarily hold data (using AD datatype) after receiving it ---*/
+  
+  su2double *tempRecvBuffer = reinterpret_cast<su2double*>(dataBuffer);
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+
+  
+  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
+  
+#ifdef HAVE_MPI
+  /*--- We need double the number of messages to send both the conn.
+   and the global IDs. ---*/
+  
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
+  
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = VARS_PER_POINT*nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
+      int count  = VARS_PER_POINT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(tempRecvBuffer[ll]), count, MPI_DOUBLE, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = VARS_PER_POINT*nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count  = VARS_PER_POINT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Repeat the process to communicate the global IDs. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the global IDs. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+#endif
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  int mm = VARS_PER_POINT*nPoint_Recv[rank];
+  int ll = VARS_PER_POINT*nPoint_Send[rank];
+  int kk = VARS_PER_POINT*nPoint_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) tempRecvBuffer[mm] = connSend[nn];
+  
+  mm = nPoint_Recv[rank];
+  ll = nPoint_Send[rank];
+  kk = nPoint_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+  
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  
+#ifdef HAVE_MPI
+  int number = 2*nSends;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+  
+  number = 2*nRecvs;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+  
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+  
+  /*--- Note, dataBuffer and tempRecvBuffer point to the same address.
+   * This is the reason why we have to do the following copy/reordering in two steps. ---*/
+  
+  /*--- Step 1: Extract the underlying double value --- */
+  
+  if (sizeof(passivedouble) != sizeof(su2double)){
+    for (int jj = 0; jj < VARS_PER_POINT*nPoint_Recv[size]; jj++){
+      dataBuffer[jj] = SU2_TYPE::GetValue(tempRecvBuffer[jj]);
+    } 
+  }
+  
+  /*--- Step 2: Reorder the data in the buffer --- */
+  
+  passivedouble *tmpBuffer = new passivedouble[nPoint_Recv[size]];
+  for (int jj = 0; jj < VARS_PER_POINT; jj++){
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      tmpBuffer[idRecv[ii]] = dataBuffer[ii*VARS_PER_POINT+jj];
+    }
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      dataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
+    }
+  }
+  
+  delete [] tmpBuffer;
+  
+  /*--- Store the total number of local points my rank has for
+   the current section after completing the communications. ---*/
+  
+  nParallel_Poin = nPoint_Recv[size];
+  
+  /*--- Reduce the total number of points we will write in the output files. ---*/
+
+#ifndef HAVE_MPI
+  nGlobal_Poin_Par = nParallel_Poin;
+#else
+  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  delete [] idRecv;
+}
 
 void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalID){
   
@@ -162,8 +325,11 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   connSend = NULL;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
   
-  sortedDataBuffer = NULL;
-  sortedDataBuffer = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
+  
+  /*--- Allocate the data buffer to hold the sorted data.
+   * It should be big enough to also temporarily hold the data received using the AD type ---*/
+  
+  dataBuffer = reinterpret_cast<passivedouble*>(new su2double[VARS_PER_POINT*nPoint_Recv[size]]());
   
   /*--- Allocate arrays for sending the global ID. ---*/
   
