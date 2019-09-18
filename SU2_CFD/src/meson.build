@@ -88,6 +88,8 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                      'variables/CMeshVariable.cpp',
                      'variables/CMeshBoundVariable.cpp',
                      'variables/CMeshElement.cpp',
+                     'variables/CRadVariable.cpp',
+                     'variables/CRadP1Variable.cpp',
                      'variables/CTurbSSTVariable.cpp',
                      'variables/CVariable.cpp',
                      'variables/CNSVariable.cpp',
@@ -96,7 +98,9 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                      'variables/CEulerVariable.cpp'])
 
 su2_cfd_src += files(['solvers/CMeshSolver.cpp',
-                     'solvers/CDiscAdjMeshSolver.cpp'])
+                     'solvers/CDiscAdjMeshSolver.cpp',
+                     'solvers/CRadSolver.cpp',
+                     'solvers/CRadP1Solver.cpp'])
 
 su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp',
                       'numerics/CNumericsRadiation.cpp',

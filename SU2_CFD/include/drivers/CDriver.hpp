@@ -53,6 +53,9 @@
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
+#include "../solvers/CRadSolver.hpp"
+#include "../solvers/CRadP1Solver.hpp"
+
 #include "../numerics/viscous/CAvgGrad_P1.hpp"
 #include "../numerics/viscous/CAvgGradCorrected_P1.hpp"
 
