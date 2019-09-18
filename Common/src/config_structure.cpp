@@ -295,7 +295,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       
     }
       
-    case CGNS: {
+    case CGNS_GRID: {
       
 #ifdef HAVE_CGNS
       
@@ -423,7 +423,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
       break;
     }
 
-    case CGNS: {
+    case CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -765,6 +765,7 @@ void CConfig::SetPointersNull(void) {
   ScreenOutput = NULL;
   HistoryOutput = NULL;
   VolumeOutput = NULL;
+  VolumeOutputFiles = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -1690,7 +1691,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to input/output files and formats ---*/
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
-  addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
+  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
@@ -1763,9 +1764,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CON_FREQ_DUALTIME
    *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
-  /*!\brief LOW_MEMORY_OUTPUT
-   *  \n DESCRIPTION: Output less information for lower memory use.  \ingroup Config*/
-  addBoolOption("LOW_MEMORY_OUTPUT", Low_MemoryOutput, false);
   /*!\brief WRT_OUTPUT
    *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
   addBoolOption("WRT_OUTPUT", Wrt_Output, true);
@@ -2494,7 +2492,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1); 
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
-  
+  /* DESCRIPTION: Volume solution writing frequency */
+  addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
+  /* DESCRIPTION: Volume solution files */  
+  addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
   
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
@@ -2565,20 +2566,6 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
-          if (!option_name.compare("AD_COEFF_FLOW")) newString.append("AD_COEFF_FLOW= (1st, 2nd, 4th) is now JST_SENSOR_COEFF= (2nd, 4th).\n");
-          if (!option_name.compare("AD_COEFF_ADJFLOW")) newString.append("AD_COEFF_ADJFLOW= (1st, 2nd, 4th) is now ADJ_JST_SENSOR_COEFF= (2nd, 4th).\n");
-          if (!option_name.compare("SPATIAL_ORDER_FLOW")) newString.append("SPATIAL_ORDER_FLOW is now the boolean MUSCL_FLOW and the appropriate SLOPE_LIMITER_FLOW.\n");
-          if (!option_name.compare("SPATIAL_ORDER_ADJFLOW")) newString.append("SPATIAL_ORDER_ADJFLOW is now the boolean MUSCL_ADJFLOW and the appropriate SLOPE_LIMITER_ADJFLOW.\n");
-          if (!option_name.compare("SPATIAL_ORDER_TURB")) newString.append("SPATIAL_ORDER_TURB is now the boolean MUSCL_TURB and the appropriate SLOPE_LIMITER_TURB.\n");
-          if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
-          if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
-          if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
-          if (!option_name.compare("DEFORM_TOL_FACTOR")) newString.append("DEFORM_TOL_FACTOR is no longer used.\n Set DEFORM_LINEAR_SOLVER_ERROR to define the minimum residual for grid deformation.\n");
-          if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
-          if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
-          if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
-          if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
-          if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
           if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
                                                                  "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
           if (!option_name.compare("UNST_TIMESTEP")) newString.append("UNST_TIMESTEP is now TIME_STEP.\n");
@@ -2588,7 +2575,11 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("STARTCONV_ITER")) newString.append("STARTCONV_ITER is now CONV_STARTITER.\n");
           if (!option_name.compare("CAUCHY_ELEMS")) newString.append("CAUCHY_ELEMS is now CONV_CAUCHY_ELEMS.\n");
           if (!option_name.compare("CAUCHY_EPS")) newString.append("CAUCHY_EPS is now CONV_CAUCHY_EPS.\n");
-          
+          if (!option_name.compare("OUTPUT_FORMAT")) newString.append("OUTPUT_FORMAT is now TABULAR_FORMAT.\n");
+          if (!option_name.compare("PHYSICAL_PROBLEM")) newString.append("PHYSICAL_PROBLEM is now SOLVER.\n");
+          if (!option_name.compare("REGIME_TYPE")) newString.append("REGIME_TYPE has been removed.\n "
+                                                                    "If you want use the incompressible solver, \n"
+                                                                    "use INC_EULER, INC_NAVIER_STOKES or INC_RANS as value of the SOLVER option.");
           errorString.append(newString);
           err_count++;
         continue;
@@ -2890,6 +2881,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nZone > 1){
     Multizone_Problem = YES;
   }
+  
+  /*--- Set the default output files ---*/
+  if (nVolumeOutputFiles == 0){
+    nVolumeOutputFiles = 3;
+    VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
+    VolumeOutputFiles[0] = RESTART_BINARY;
+    VolumeOutputFiles[1] = PARAVIEW_BINARY;
+    VolumeOutputFiles[2] = SURFACE_PARAVIEW_BINARY;
+  }
+  
+  if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == INC_NAVIER_STOKES && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == RANS && Kind_Turb_Model == NONE){
+    SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == INC_RANS && Kind_Turb_Model == NONE){
+    SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
+  }
 
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
@@ -3090,11 +3103,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (TimeMarching == TIME_STEPPING){
       InnerIter = 1;
     }
+   if (!OptionIsSet("OUTPUT_WRT_FREQ"))
+     VolumeWrtFreq = 1;
+   if (Restart == NO){
+     Restart_Iter = 0;
+   }
   }
-  
-  /*--- Low memory only for ASCII Tecplot ---*/
-
-  if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
   /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
   
@@ -3304,6 +3318,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
+    /*--- Set the default write frequency to 1 if unsteady ---*/
+    if (!OptionIsSet("OUTPUT_WRT_FREQ")){
+      VolumeWrtFreq = 1;
+    }
   }
   
   if (!Multizone_Problem){
@@ -3312,14 +3330,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (!Time_Domain){
       /*--- If not running multizone or unsteady, INNER_ITER and ITER are interchangeable,
        * but precedence will be given to INNER_ITER if both options are present. ---*/
-      if (all_options.find("INNER_ITER") != all_options.end()){
+      if (!OptionIsSet("INNER_ITER")){
         nInnerIter = nIter;
       }
     }
   }
   
   
-  if ((Multizone_Problem || Time_Domain) && all_options.find("ITER") == all_options.end()){
+  if ((Multizone_Problem || Time_Domain) && OptionIsSet("ITER")){
     SU2_MPI::Error("ITER must not be used when running multizone and/or unsteady problems.\n"
                    "Use TIME_ITER, OUTER_ITER or INNER_ITER to specify number of time iterations,\n"
                    "outer iterations or inner iterations, respectively.", CURRENT_FUNCTION);
@@ -6257,7 +6275,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     cout << "Writing a solution file every " << Wrt_Sol_Freq <<" iterations."<< endl;
     cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
     if ((TimeMarching == DT_STEPPING_1ST) || (TimeMarching == DT_STEPPING_2ND)) {
@@ -6265,14 +6282,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }
 
-    switch (Output_FileFormat) {
+    switch (Tab_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
       case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
-      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6296,15 +6310,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_SOL) {
-    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
-    switch (Output_FileFormat) {
+    switch (Tab_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
       case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
-      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
@@ -7457,6 +7467,7 @@ CConfig::~CConfig(void) {
   if (HistoryOutput != NULL) delete [] HistoryOutput;
   if (VolumeOutput != NULL) delete [] VolumeOutput;
   if (Mesh_Box_Size != NULL) delete [] Mesh_Box_Size;
+  if (VolumeOutputFiles != NULL) delete [] VolumeOutputFiles;
 
 }
 

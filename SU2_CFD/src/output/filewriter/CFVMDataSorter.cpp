@@ -41,7 +41,6 @@ CFVMDataSorter::~CFVMDataSorter(){
   
   delete [] Local_Halo;
   
-  if (connSend != NULL)    delete [] connSend;
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
   if (linearPartitioner != NULL) delete linearPartitioner;
@@ -91,9 +90,7 @@ void CFVMDataSorter::SortOutputData() {
    values and then cue up the non-blocking receives. Note that
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
-  
-  su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
+
   
   unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
   
@@ -112,7 +109,7 @@ void CFVMDataSorter::SortOutputData() {
       int count  = VARS_PER_POINT*kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
+      SU2_MPI::Irecv(&(sortedDataBuffer[ll]), count, MPI_DOUBLE, source, tag,
                      MPI_COMM_WORLD, &(recv_req[iMessage]));
       iMessage++;
     }
@@ -173,7 +170,7 @@ void CFVMDataSorter::SortOutputData() {
   int ll = VARS_PER_POINT*nPoint_Send[rank];
   int kk = VARS_PER_POINT*nPoint_Send[rank+1];
   
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  for (int nn=ll; nn<kk; nn++, mm++) sortedDataBuffer[mm] = connSend[nn];
   
   mm = nPoint_Recv[rank];
   ll = nPoint_Send[rank];
@@ -196,20 +193,18 @@ void CFVMDataSorter::SortOutputData() {
   delete [] recv_req;
 #endif
   
-  delete [] connSend;
-  connSend = NULL;
+  su2double *tmpBuffer = new su2double[nPoint_Recv[size]];
   
-  /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. First, allocate the
-   appropriate amount of memory for this section. ---*/
-  
-  Parallel_Data = new su2double*[VARS_PER_POINT];
-  for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nPoint_Recv[size]]();
-    for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
-      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
+  for (int jj = 0; jj < VARS_PER_POINT; jj++){
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      tmpBuffer[idRecv[ii]] = sortedDataBuffer[ii*VARS_PER_POINT+jj];
+    }
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      sortedDataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
     }
   }
+  
+  delete [] tmpBuffer;
   
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -227,7 +222,6 @@ void CFVMDataSorter::SortOutputData() {
   
   /*--- Free temporary memory from communications ---*/
   
-  delete [] connRecv;
   delete [] idRecv;
 }
 
@@ -622,26 +616,32 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   switch (Elem_Type) {
     case TRIANGLE:
       nParallel_Tria = nElem_Total;
+      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
       if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nElem_Total;
+      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;      
       if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
       break;
     case TETRAHEDRON:
       nParallel_Tetr = nElem_Total;
+      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;            
       if (nParallel_Tetr > 0) Conn_Tetr_Par = Conn_Elem;
       break;
     case HEXAHEDRON:
       nParallel_Hexa = nElem_Total;
+      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;                  
       if (nParallel_Hexa > 0) Conn_Hexa_Par = Conn_Elem;
       break;
     case PRISM:
       nParallel_Pris = nElem_Total;
+      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;                  
       if (nParallel_Pris > 0) Conn_Pris_Par = Conn_Elem;
       break;
     case PYRAMID:
       nParallel_Pyra = nElem_Total;
+      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;                  
       if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
       break;
     default:

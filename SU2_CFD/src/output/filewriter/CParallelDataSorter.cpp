@@ -22,13 +22,12 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   Conn_Tetr_Par = NULL;
   Conn_Tria_Par = NULL;
   Conn_Pyra_Par = NULL;
-  
-  Parallel_Data = NULL;
-  
+    
   nPoint_Send  = NULL;
   nPoint_Recv  = NULL;
   Index        = NULL;
   connSend     = NULL;
+  sortedDataBuffer     = NULL;  
   idSend       = NULL;
   nSends = 0;
   nRecvs = 0;
@@ -58,12 +57,18 @@ CParallelDataSorter::~CParallelDataSorter(){
   if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
   if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   
+  if (sortedDataBuffer != NULL) delete [] sortedDataBuffer;
+  if (connSend != NULL) delete [] connSend;
+  
+  
   /*--- Deallocate memory for solution data ---*/
   
-  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
-    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
-  }
-  if (Parallel_Data != NULL) delete [] Parallel_Data;  
+//  if (Parallel_Data != NULL){
+//    for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
+//      if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+//    }
+//    delete [] Parallel_Data;  
+//  }
 }
 
 
@@ -156,6 +161,10 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   
   connSend = NULL;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
+  
+  sortedDataBuffer = NULL;
+  sortedDataBuffer = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
+  
   /*--- Allocate arrays for sending the global ID. ---*/
   
   idSend = new unsigned long[nPoint_Send[size]]();

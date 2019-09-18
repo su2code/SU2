@@ -51,7 +51,8 @@ public:
    * \brief Destructor of the class.
    */
   ~CFlowOutput(void) override;
-  
+
+protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
@@ -98,7 +99,12 @@ public:
    * \brief Write information to meta data file
    * \param[in] output - Container holding the output instances per zone.   
    * \param[in] config - Definition of the particular problem per zone.
-   * \param[in] solver - The container holding all solution data.
    */
-  void WriteMetaData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
+  void WriteMetaData(CConfig *config, CGeometry *geometry);
+  
+  void WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container) override;
+  
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter) override;
+  
+  void WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container);
 };
