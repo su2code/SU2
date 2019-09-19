@@ -3099,11 +3099,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (TimeMarching == TIME_STEPPING){
       InnerIter = 1;
     }
-   if (!OptionIsSet("OUTPUT_WRT_FREQ"))
-     VolumeWrtFreq = 1;
-   if (Restart == NO){
-     Restart_Iter = 0;
-   }
+    if (!OptionIsSet("OUTPUT_WRT_FREQ"))
+      VolumeWrtFreq = 1;
+    if (Restart == NO){
+      Restart_Iter = 0;
+    }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")){
+      HistoryWrtFreq[2] = 0;
+    }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")){
+      HistoryWrtFreq[1] = 0;
+    }
   }
   
   /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
