@@ -4251,6 +4251,10 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   
   char delimiter = ',';
   fields = PrintingToolbox::split(text_line, delimiter);
+  
+  for (int iField = 0; iField < fields.size(); iField++){
+    PrintingToolbox::trim(fields[iField]);
+  }
 
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
@@ -5716,7 +5720,11 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     getline (restart_file, text_line);
 
     fields = PrintingToolbox::split(text_line, ',');
-
+    
+    for (int iField = 0; iField < fields.size(); iField++){
+      PrintingToolbox::trim(fields[iField]);
+    }
+    
     /*--- Close the file (the solution date is read later). ---*/
     
     restart_file.close();
