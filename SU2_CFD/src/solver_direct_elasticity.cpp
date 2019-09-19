@@ -858,8 +858,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   filename = config->GetRefGeom_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".csv");
+  
+  filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
   reference_file.open(filename.data(), ios::in);
 
