@@ -7536,7 +7536,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     
     if (GetnZone() > 1 ) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer)+ext);
+        multizone_filename.append(string(buffer));
     }
     
     multizone_filename += ext;    
