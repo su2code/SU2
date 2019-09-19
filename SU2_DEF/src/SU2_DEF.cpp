@@ -358,9 +358,7 @@ int main(int argc, char *argv[]) {
           output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
       }
     } 
-    
-    output[iZone]->DeallocateData_Parallel();
-    
+       
   }
 
   

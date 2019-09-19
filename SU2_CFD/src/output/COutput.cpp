@@ -64,6 +64,7 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
+  fileWritingTable = new PrintingToolbox::CTablePrinter(&std::cout);
   
   /*--- Set default filenames ---*/
   
@@ -142,6 +143,8 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   
   volumeDataSorter = nullptr;
   surfaceDataSorter = nullptr;
+  
+  headerNeeded = false;
   
 }
 
@@ -386,22 +389,6 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
   
 }
 
-
-void COutput::DeallocateData_Parallel(){
-  
-//  if (volumeDataSorter != NULL)
-//    delete volumeDataSorter;
-  
-//  volumeDataSorter = NULL;
-  
-//  if (surfaceDataSorter != NULL)
-//    delete surfaceDataSorter;
-  
-//  surfaceDataSorter = NULL;
-  
-}
-
-
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
   CFileWriter *fileWriter = NULL;
@@ -422,7 +409,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortOutputData();
       
       if (rank == MASTER_NODE) {
-        cout << "Writing CSV file." << endl;     
+        (*fileWritingTable) << "Writing CSV file" << fileName + CSU2FileWriter::fileExt;     
       }
       
       fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
@@ -435,7 +422,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
       
       if (rank == MASTER_NODE) {
-        cout << "Writing SU2 CSV restart file." << endl;     
+          (*fileWritingTable) << "Writing SU2 CSV restart file" << fileName + CSU2FileWriter::fileExt;     
       }
       
       fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
@@ -448,7 +435,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
       
       if (rank == MASTER_NODE) {
-        cout << "Writing SU2 binary restart file." << endl;   
+          (*fileWritingTable) << "Writing SU2 binary restart file" << fileName + CSU2BinaryFileWriter::fileExt;   
       }
       
       fileWriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
@@ -467,7 +454,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       /*--- Set the mesh ASCII format ---*/
       
       if (rank == MASTER_NODE) {
-        cout << "Writing SU2 mesh file." << endl;
+          (*fileWritingTable) << "Writing SU2 mesh file" << fileName + CSU2MeshFileWriter::fileExt;
       }
       
       fileWriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
@@ -488,7 +475,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       /*--- Write tecplot binary ---*/
       
       if (rank == MASTER_NODE) {
-        cout << "Writing Tecplot binary solution file." << endl;
+          (*fileWritingTable) << "Writing Tecplot binary solution file" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
       
       fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
@@ -508,7 +495,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       /*--- Write tecplot binary ---*/
       
       if (rank == MASTER_NODE) {
-        cout << "Writing Tecplot ASCII solution file." << endl;
+          (*fileWritingTable) << "Writing Tecplot ASCII solution file" << fileName + CTecplotFileWriter::fileExt;
       }
       
       fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
@@ -527,7 +514,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-        cout << "Writing Paraview binary solution file." << endl;
+          (*fileWritingTable) << "Writing Paraview binary solution file" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
       
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
@@ -545,7 +532,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-        cout << "Writing Paraview ASCII volume solution file." << endl;      
+          (*fileWritingTable) << "Writing Paraview ASCII volume solution file" << fileName + CParaviewFileWriter::fileExt;      
       }
       
       fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
@@ -564,7 +551,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-        cout << "Writing Paraview ASCII surface file." << endl;      
+          (*fileWritingTable) << "Writing Paraview ASCII surface file" << fileName + CParaviewFileWriter::fileExt;      
       }
       
       fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
@@ -583,7 +570,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-        cout << "Writing Paraview Binary surface file." << endl;      
+          (*fileWritingTable) << "Writing Paraview Binary surface file" << fileName + CParaviewBinaryFileWriter::fileExt;      
       }
       
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
@@ -602,7 +589,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-        cout << "Writing Tecplot ASCII surface file." << endl;      
+          (*fileWritingTable) << "Writing Tecplot ASCII surface file" << fileName + CTecplotFileWriter::fileExt;      
       }
       
       fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
@@ -622,7 +609,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-        cout << "Writing Tecplot ASCII surface file." << endl;      
+          (*fileWritingTable) << "Writing Tecplot Binary surface file" << fileName + CTecplotBinaryFileWriter::fileExt;      
       }
       
       fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
@@ -655,7 +642,12 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
   Load_Data(geometry, config, solver_container);
   
   if (WriteVolume_Output(config, Iter) || force_writing){
-
+    
+    if (rank == MASTER_NODE){
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);    
+      fileWritingTable->PrintHeader();
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);    
+    }
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
     unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
         
@@ -667,13 +659,14 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     }
     
+    if (rank == MASTER_NODE){
+      fileWritingTable->PrintFooter();
+      headerNeeded = true;
+    }
+    
     /*--- Write any additonal files ----*/
     
     WriteAdditionalFiles(config, geometry, solver_container);
-    
-    /*--- Free the data sorters ---*/
-    
-    DeallocateData_Parallel();
     
     return true;
   }
@@ -910,6 +903,8 @@ void COutput::SetScreen_Output(CConfig *config) {
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   
+    int total_width = 80;
+  
     noWriting = !wrt;
 
     /*--- Set the common output fields ---*/
@@ -934,15 +929,22 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
       
       PrepareHistoryFile(config);
       
+      total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
+      
       /*--- Set the multizone screen header ---*/
       
       if (config->GetMultizone_Problem()){
-        multiZoneHeaderTable->AddColumn(multiZoneHeaderString, nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1));      
+        multiZoneHeaderTable->AddColumn(multiZoneHeaderString, total_width);      
         multiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
         multiZoneHeaderTable->SetPrintHeaderBottomLine(false);
       }
-      
+
     }
+    
+    fileWritingTable->AddColumn("File Writing Summary", (total_width-1)/2); 
+    fileWritingTable->AddColumn("Filename", total_width/2); 
+    
+    fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     
 }
 
@@ -1481,6 +1483,13 @@ bool COutput::WriteScreen_Header(CConfig *config) {
   unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
   unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
+  
+  /*--- Always print header if it is forced ---*/
+  
+  if (headerNeeded){
+    headerNeeded = false;
+    return true;
+  }
   
   /*--- Header is always disabled for multizone problems unless explicitely requested --- */
   

@@ -64,7 +64,8 @@ void CSinglezoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Single-zone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
+      cout << "The simulation will run for " 
+           << driver_config->GetnTime_Iter() - config_container[ZONE_0]->GetRestart_Iter() << " time steps." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/

@@ -1009,10 +1009,6 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
     
-    /*--- Deallocate ---*/
-    
-    output->DeallocateData_Parallel();
-    
     /*--- Free memory ---*/
     
     delete output;
