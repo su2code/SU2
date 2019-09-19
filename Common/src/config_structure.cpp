@@ -7531,12 +7531,15 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     string multizone_filename = val_filename;
     char buffer[50];
     
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    
     if (GetnZone() > 1 ) {
-        unsigned short lastindex = multizone_filename.find_last_of(".");
-        multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer)+ext);
     }
+    
+    multizone_filename += ext;    
     return multizone_filename;
 }
 
