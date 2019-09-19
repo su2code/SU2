@@ -308,10 +308,6 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
   
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
-  
-  
   SortSurfaceConnectivity(config, geometry, LINE         );
   SortSurfaceConnectivity(config, geometry, TRIANGLE     );
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   

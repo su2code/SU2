@@ -1074,11 +1074,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
-  
-  
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
-  
+
   SortSurfaceConnectivity(config, geometry, LINE         );
   SortSurfaceConnectivity(config, geometry, TRIANGLE     );
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
