@@ -716,7 +716,7 @@ int main(int argc, char *argv[]) {
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
               for (iZone = 0; iZone < nZone; iZone++){
                 
-                WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], TimeIter);
+                WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
                 
               }        
         }
@@ -743,7 +743,7 @@ int main(int argc, char *argv[]) {
       }
       for (iZone = 0; iZone < nZone; iZone++){
         
-        WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], 0);
+        WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);
         
       }  
     }
