@@ -7489,7 +7489,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   return filename;
 }
 
-string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) {
+string CConfig::GetUnsteady_FileName(string val_filename, unsigned long val_iter, string ext) {
 
   string UnstExt="", UnstFilename = val_filename;
   char buffer[50];
@@ -7534,17 +7534,17 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     return multizone_filename;
 }
 
-string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone) {
+string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) {
 
     string multizone_filename = val_filename;
     char buffer[50];
-
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
     if (GetnZone() > 1 ) {
-        unsigned short lastindex = multizone_filename.find_last_of(".");
-        multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
+    multizone_filename += ext;
     return multizone_filename;
 }
 
