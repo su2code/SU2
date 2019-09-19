@@ -12651,6 +12651,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average    = (config->GetCompute_Average());
+  bool wall_function        = config->GetWall_Functions();
   
   int *Local_Halo = NULL;
   
@@ -12969,6 +12970,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 3) {
         nVar_Par +=1;
         Variable_Names.push_back("Q_Criterion");
+      }
+      if(wall_function){
+        nVar_Par +=1;
+        Variable_Names.push_back("TauWall_WM");
       }
     }
     
@@ -13369,6 +13374,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
                 pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
             Local_Data[jPoint][iVar] = Q; iVar++;
+          }
+          
+          if(wall_function){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTauWall(); iVar++;
           }
         }
         
