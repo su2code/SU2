@@ -13451,14 +13451,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     string::size_type position;
     
     Surface_file.open(cstr, ios::in);
-    
-    /*--- Read extra inofmration ---*/
-    
-//    getline(Surface_file, text_line);
-//    text_line.erase (0,9);
-//    su2double AoASens = atof(text_line.c_str());
-//    config->SetAoA_Sens(AoASens);
-    
+
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
@@ -13467,6 +13460,10 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     
     char delimiter = ',';
     split_line = PrintingToolbox::split(text_line, delimiter);
+    
+    for (int iField = 0; iField < split_line.size(); iField++){
+      PrintingToolbox::trim(split_line[iField]);
+    }
     
     std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
     
@@ -13981,6 +13978,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   getline (restart_file, text_line);
   
   vector<string> fields = PrintingToolbox::split(text_line, ',');
+  
+  for (int iField = 0; iField < fields.size(); iField++){
+    PrintingToolbox::trim(fields[iField]);
+  }
   
   std::vector<string>::iterator itx = std::find(fields.begin(), fields.end(), "\"Sensitivity_x\"");
   std::vector<string>::iterator ity = std::find(fields.begin(), fields.end(), "\"Sensitivity_y\"");
