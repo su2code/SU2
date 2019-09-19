@@ -1398,16 +1398,18 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       Count[currentField.outputGroup]++;
            
     }
-    if (currentField.fieldType == TYPE_COEFFICIENT){
-      if(SetUpdate_Averages(config)){
-        SetHistoryOutputValue("TAVG_" + historyOutput_List[iField],
-                              runningAverages[historyOutput_List[iField]].Update(currentField.value));
-      }
-      if (config->GetDirectDiff() != NO_DERIVATIVE){
-        SetHistoryOutputValue("D_" + historyOutput_List[iField], SU2_TYPE::GetDerivative(currentField.value));      
-        SetHistoryOutputValue("D_TAVG_" + historyOutput_List[iField], 
-                              SU2_TYPE::GetDerivative(runningAverages[historyOutput_List[iField]].Get()));
-        
+    if (config->GetTime_Domain()){
+      if (currentField.fieldType == TYPE_COEFFICIENT){
+        if(SetUpdate_Averages(config)){
+          SetHistoryOutputValue("TAVG_" + historyOutput_List[iField],
+                                runningAverages[historyOutput_List[iField]].Update(currentField.value));
+        }
+        if (config->GetDirectDiff() != NO_DERIVATIVE){
+          SetHistoryOutputValue("D_" + historyOutput_List[iField], SU2_TYPE::GetDerivative(currentField.value));      
+          SetHistoryOutputValue("D_TAVG_" + historyOutput_List[iField], 
+                                SU2_TYPE::GetDerivative(runningAverages[historyOutput_List[iField]].Get()));
+          
+        }
       }
     }
   }
@@ -1439,29 +1441,36 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
                      "AVG_" + it->first , "Average residual over all solution variables.", TYPE_AUTO_RESIDUAL);
   }  
   
-  for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
-    HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
-    if (currentField.fieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("TAVG_"   + historyOutput_List[iField], "tavg["  + currentField.fieldName + "]",
-                       currentField.screenFormat, "TAVG_"   + currentField.outputGroup, "Time averaged values.", 
-                       TYPE_AUTO_COEFFICIENT);
-    }
-  }
-  for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
-    HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
-    if (currentField.fieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("D_"      + historyOutput_List[iField], "d["     + currentField.fieldName + "]",
-                       currentField.screenFormat, "D_"      + currentField.outputGroup, 
-                       "Derivative value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+  if (config->GetTime_Domain()){
+    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+      HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
+      if (currentField.fieldType == TYPE_COEFFICIENT){
+        AddHistoryOutput("TAVG_"   + historyOutput_List[iField], "tavg["  + currentField.fieldName + "]",
+                         currentField.screenFormat, "TAVG_"   + currentField.outputGroup, "Time averaged values.", 
+                         TYPE_AUTO_COEFFICIENT);
+      }
     }
   }
   
-  for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
-    HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
-    if (currentField.fieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("D_TAVG_" + historyOutput_List[iField], "dtavg[" + currentField.fieldName + "]",
-                       currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
-                       "Derivative of the time averaged value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+  if (config->GetDirectDiff()){
+    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+      HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
+      if (currentField.fieldType == TYPE_COEFFICIENT){
+        AddHistoryOutput("D_"      + historyOutput_List[iField], "d["     + currentField.fieldName + "]",
+                         currentField.screenFormat, "D_"      + currentField.outputGroup, 
+                         "Derivative value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+      }
+    }
+  }
+  
+  if (config->GetTime_Domain() && config->GetDirectDiff()){
+    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+      HistoryOutputField &currentField = historyOutput_Map[historyOutput_List[iField]];
+      if (currentField.fieldType == TYPE_COEFFICIENT){
+        AddHistoryOutput("D_TAVG_" + historyOutput_List[iField], "dtavg[" + currentField.fieldName + "]",
+                         currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
+                         "Derivative of the time averaged value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+      }
     }
   }
   
