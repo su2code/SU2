@@ -2960,6 +2960,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     SetAoA(alpha);
     SetAoS(beta);
+
+    if (Fixed_CL_Mode) {
+      SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
+    }
     
   }
 
@@ -3090,7 +3094,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
-  /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
+  /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
   
   if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
     Discard_InFiles = false;
@@ -3851,7 +3855,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Evaluate when the Cl should be evaluated ---*/
   
-  Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+1));
+  // Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+1));
   Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
   Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
 
@@ -3862,7 +3866,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
-    Iter_Fixed_CL = SU2_TYPE::Int(su2double (Iter_Fixed_CL) / CFLRedCoeff_AdjFlow);
+    // Iter_Fixed_CL = SU2_TYPE::Int(su2double (Iter_Fixed_CL) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_CM = SU2_TYPE::Int(su2double (Iter_Fixed_CM) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
@@ -3875,7 +3879,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kappa_Flow[1] = Kappa_AdjFlow[1];
   }
   
-  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
+  // if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
 
@@ -4156,12 +4160,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 
-  /*--- If it is a fixed mode problem, then we will add 100 iterations to
+  /*--- If it is a fixed mode problem, then we will add Iter_dCL_dAlpha iterations to
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
-  	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
-  		nExtIter += Iter_dCL_dAlpha;
+  	if (Fixed_CL_Mode) nExtIter += Iter_dCL_dAlpha;
+
+    if (Fixed_CM_Mode) {
+      nExtIter += Iter_dCL_dAlpha;
+      ConvCriteria = RESIDUAL;
+      OrderMagResidual = 24;
+      MinLogResidual = -24;
   	}
   }
 
