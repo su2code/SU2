@@ -103,8 +103,8 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
   }
 
   *out_stream_ << std::setw((int)separator_.size()+indent) << separator_;
+  *out_stream_ << "\n";
   if (print_header_bottom_line_){
-    *out_stream_ << "\n";
     PrintHorizontalLine();
   }
 }
