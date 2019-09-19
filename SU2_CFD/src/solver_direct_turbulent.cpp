@@ -436,6 +436,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           for (iVar = 0; iVar < nVar; iVar++) {
             node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
+          //if (iPoint == 54 || iPoint == 64) cout<<iPoint<<"\t"<<LinSysSol[iPoint*nVar+0]<<"\t"<<LinSysRes[iPoint*nVar+0]<<endl;
           
         }
         
@@ -3599,6 +3600,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
+    if (iPoint == 54) cout<<iPoint<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag()<<"\t"<<geometry->node[iPoint]->GetWall_Distance()<<"\t"<<Residual[0]<<endl;
+    
     /*--- Subtract residual and the Jacobian ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -3966,6 +3969,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       /*--- Compute residual, and Jacobians ---*/
 
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      
+      //if (iPoint == 54) cout<<Residual[0]<<"\t"<<V_outlet[1]<<"\t"<<V_domain[1]<<endl;
 
       /*--- Subtract residual, and update Jacobians ---*/
 

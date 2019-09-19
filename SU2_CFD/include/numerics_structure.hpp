@@ -2479,12 +2479,12 @@ class CUpwPB_Flow : public CNumerics {
 private:
   bool implicit;
   bool gravity;
-  su2double Froude;
+  su2double Froude, Upw_i, Upw_j;
   su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *MeanVelocity;
+  su2double *Velocity_i, *Velocity_j, *MeanVelocity, *Velocity_upw;
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
+  su2double **P_Tensor, **invP_Tensor,**val_Jacobian_upw;
   su2double Proj_ModJac_Tensor_ij, Pressure_i,
   Pressure_j, MeanDensity, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
   ProjVelocity, FaceVel;

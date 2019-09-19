@@ -47,6 +47,7 @@ CUpwPB_Flow::CUpwPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConf
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
+  Velocity_upw = new su2double [nDim];
   MeanVelocity = new su2double [nDim];
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
@@ -54,11 +55,13 @@ CUpwPB_Flow::CUpwPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConf
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
+  val_Jacobian_upw = new su2double* [nVar];
   
   
   for (iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
+    val_Jacobian_upw[iVar] = new su2double [nVar];
   }
   
 }
@@ -68,6 +71,7 @@ CUpwPB_Flow::~CUpwPB_Flow(void) {
   delete [] Diff_U;
   delete [] Velocity_i;
   delete [] Velocity_j;
+  delete [] Velocity_upw;
   delete [] MeanVelocity;
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
@@ -77,16 +81,18 @@ CUpwPB_Flow::~CUpwPB_Flow(void) {
   for (iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
+    delete [] val_Jacobian_upw[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] val_Jacobian_upw;
   
 }
 
 void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 	
 	
-  su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF;
+  su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF, Vel0, Vel1;
    
    
   /*--- Primitive variables at point i and j ---*/
@@ -109,30 +115,33 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
  
   Flux0 = 0.5*(Face_Flux + fabs(Face_Flux)) ;
   Flux1 = 0.5*(Face_Flux - fabs(Face_Flux)) ;
-    
+  
+  Upw_i = round(fabs(Flux0/(fabs(Face_Flux)+EPS)));
+  Upw_j = round(fabs(Flux1/(fabs(Face_Flux)+EPS)));
+     
   for (iVar = 0; iVar < nVar; iVar++) {
 	  val_residual[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
+	  Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1];
   }
     
-  /*for (iDim = 0; iDim < nDim; iDim++) {
-	val_residual[iDim] += MeanPressure*Normal[iDim];
-  }*/
-  	
+    	
   if (implicit) {
 	  
 	  for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++) {
         val_Jacobian_j[iVar][jVar] = 0.0;
         val_Jacobian_i[iVar][jVar] = 0.0;
+        val_Jacobian_upw[iVar][jVar] = 0.0;
 	}
 	  
-	  if (Face_Flux > 0) 
-         GetInviscidPBProjJac(&DensityInc_i, Velocity_i,  Normal, 0.5, val_Jacobian_i);
-      else
-         GetInviscidPBProjJac(&DensityInc_j, Velocity_j,  Normal, 0.5, val_Jacobian_j);  
-    
+	GetInviscidPBProjJac(&DensityInc_i, Velocity_upw,  Normal, 0.5, val_Jacobian_upw);
+	
+	 for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_j[iVar][jVar] = Upw_i*val_Jacobian_upw[iVar][jVar];
+        val_Jacobian_i[iVar][jVar] = Upw_j*val_Jacobian_upw[iVar][jVar];
+	}
   } 
-
 }
 
 CCentPB_Flow::CCentPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
