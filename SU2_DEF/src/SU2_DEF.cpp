@@ -418,6 +418,14 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
+  if (output != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output[iZone] != NULL) {
+        delete output[iZone];
+      }
+    }
+    delete [] output;
+  }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
   if (output != NULL) delete output;
