@@ -70,6 +70,12 @@ public:
   void SetSeparator(const std::string & separator);
   
   /*!
+   * \brief Set the separator between columns (inner decoration)
+   * \param[in] separator - The separation character.
+   */
+  void SetInnerSeparator(const std::string & inner_separator);
+  
+  /*!
    * \brief Set the alignment of the table entries (CENTER only works for the header at the moment).
    * \param[in] align_ - The alignment (CENTER, LEFT, RIGHT).
    */
@@ -105,13 +111,18 @@ public:
    */
   void PrintFooter();
   
+  /*!
+   * \brief Set the floating point precision.
+   */
+  void SetPrecision(int precision);
+  
   template<typename T> CTablePrinter& operator<<(T input){
 
     int indent = 0;
 
     /* --- Set the left separator --- */
     if (j_ == 0)
-      *out_stream_ << "|";
+      *out_stream_ << separator_;
 
     /* --- Determine and set the current alignment in the stream --- */
     if(align_ == LEFT)
@@ -121,16 +132,16 @@ public:
 
     /*--- Print the current column value to the stream --- */
     *out_stream_ << std::setw(column_widths_.at(j_) - indent)
-                 << input;
+                 << std::setprecision(precision_) << input;
 
     /*--- Reset the column counter and if it is the last column, 
      * add also a line break ---*/
     if (j_ == GetNumColumns()-1){
-      *out_stream_ << std::setw(indent+2) << "|\n";
+      *out_stream_ << std::setw(indent+1+(int)separator_.size()) << separator_ + "\n";
       i_ = i_ + 1;
       j_ = 0;
     } else {
-      *out_stream_ << std::setw(indent+1) << separator_;
+      *out_stream_ << std::setw(indent+(int)inner_separator_.size()) << inner_separator_;
       j_ = j_ + 1;
     }
 
@@ -148,7 +159,10 @@ private:
   std::vector<std::string> column_headers_; /*< \brief Vector of column header names. */
   std::vector<int> column_widths_;          /*< \brief Vector of column widths. */
   std::string separator_;                   /*< \brief Column separator char. */
+  std::string inner_separator_;             /*< \brief Inner column separator char. */
 
+  int precision_;                           /*< \brief Floating point precision */  
+  
   int i_; /*< \brief Index of the current row. */
   int j_; /*< \brief Index of the current column. */
 

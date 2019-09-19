@@ -75,12 +75,21 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
  
   historyFilename = config->GetConv_FileName();
   
+  /*--- Add the correct file extension depending on the file format ---*/
+  
+  string hist_ext = ".csv";
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+       
   /*--- Append the zone ID ---*/
- 
- if(config->GetnZone() > 1){
-   historyFilename = config->GetMultizone_HistoryFileName(historyFilename, config->GetiZone());
- }
- 
+  
+  historyFilename = config->GetMultizone_HistoryFileName(historyFilename, config->GetiZone(), hist_ext);
+
+  /*--- Append the restart iteration ---*/
+  
+  if (config->GetTime_Domain() && config->GetRestart()) {
+    historyFilename = config->GetUnsteady_FileName(historyFilename, config->GetRestart_Iter(), hist_ext);
+  }
+  
   historySep = ","; 
   
   /*--- Initialize residual ---*/
@@ -777,20 +786,24 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   
   if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "TITLE = \"SU2 Simulation\"" << endl;
-    histFile << "VARIABLES = ";
+    histFile << "VARIABLES = \\";
+    histFile << endl;
   }
   
   stringstream out;
   string RequestedField;
-  std::vector<bool> found_field(nRequestedHistoryFields, false);
-    
+  std::vector<bool> found_field(nRequestedHistoryFields, false);  
+  int width = 20;
+  
   for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField_Output]];
     for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       RequestedField = requestedHistoryFields[iReqField];   
       if (RequestedField == Field.outputGroup || (RequestedField == historyOutput_List[iField_Output])){
-        found_field[iReqField] = true;        
-        out << "\"" << Field.fieldName << "\"" << historySep;
+        found_field[iReqField] = true;   
+        if (Field.screenFormat == FORMAT_INTEGER) width = std::max((int)Field.fieldName.size()+2, 10);  
+        else{ width = std::max((int)Field.fieldName.size()+2, 20);}
+        historyFileTable->AddColumn("\"" + Field.fieldName + "\"", width);
       }
     }  
   }
@@ -801,21 +814,21 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
       for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         RequestedField = requestedHistoryFields[iReqField];   
         if (RequestedField == Field.outputGroup || (RequestedField == historyOutputPerSurface_List[iField_Output])){
-          found_field[iReqField] = true;          
-          out << "\"" << Field.fieldName << "\"" << historySep;        
+          found_field[iReqField] = true;    
+          if (Field.screenFormat == FORMAT_INTEGER) width = std::max((int)Field.fieldName.size()+2, 10);  
+          else{ width = std::max((int)Field.fieldName.size()+2, 20);}
+          historyFileTable->AddColumn("\"" + Field.fieldName + "\"", 20);          
         }
       }
     }
   }
-  
-  /*--- Print the string to file and remove the last character (a separator) ---*/
-  histFile << out.str().substr(0, out.str().size() - 1);
+ 
+  historyFileTable->PrintHeader();
   histFile << endl;
   if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "ZONE T= \"Convergence history\"" << endl;
   }
   histFile.flush();
-  
 }
 
 
@@ -824,13 +837,12 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   stringstream out;
   string RequestedField;
   
-  
   for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField_Output]];
     for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       RequestedField = requestedHistoryFields[iReqField];   
       if (RequestedField == Field.outputGroup){
-        out << std::setprecision(10) << Field.value << historySep << " ";
+        (*historyFileTable) << Field.value; 
       }
     }
   }
@@ -841,16 +853,14 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
       for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         RequestedField = requestedHistoryFields[iReqField];   
         if (RequestedField == Field.outputGroup){
-          out << std::setprecision(10) << Field.value << historySep << " ";
+          (*historyFileTable) << Field.value;  
         }
       }
     }
   }
   
   /*--- Print the string to file and remove the last two characters (a separator and a space) ---*/
-  
-  histFile << out.str().substr(0, out.str().size()-2);
-  histFile << endl;
+
   histFile.flush();
 }
 
@@ -971,35 +981,19 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 }
 
 void COutput::PrepareHistoryFile(CConfig *config){
-
-  char buffer[50];
-  
-  string history_filename;
-  
-  strcpy (char_histfile, historyFilename.data());
-  
-   /*--- Append the restart iteration: if dynamic problem and restart ---*/
-  
-  if (config->GetTime_Domain() && config->GetRestart()) {
-    long iIter = config->GetRestart_Iter();
-    if (SU2_TYPE::Int(iIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iIter));
-    if ((SU2_TYPE::Int(iIter) >= 10) && (SU2_TYPE::Int(iIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iIter));
-    if ((SU2_TYPE::Int(iIter) >= 100) && (SU2_TYPE::Int(iIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iIter));
-    if ((SU2_TYPE::Int(iIter) >= 1000) && (SU2_TYPE::Int(iIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iIter));
-    if (SU2_TYPE::Int(iIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iIter));
-    strcat(char_histfile, buffer);
-  }
-  
-  /*--- Add the correct file extension depending on the file format ---*/
-  
-  if ((config->GetTabular_FileFormat() == TAB_TECPLOT)) SPRINTF (buffer, ".dat");
-  else if (config->GetTabular_FileFormat() == TAB_CSV)  SPRINTF (buffer, ".csv");
-  strcat(char_histfile, buffer);
   
   /*--- Open the history file ---*/
   
-  histFile.open(char_histfile, ios::out);
-  histFile.precision(15);
+  histFile.open(historyFilename.c_str(), ios::out);
+  
+  /*--- Create and format the history file table ---*/
+  
+  historyFileTable = new PrintingToolbox::CTablePrinter(&histFile, "");
+  historyFileTable->SetInnerSeparator(historySep);
+  historyFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+  historyFileTable->SetPrintHeaderTopLine(false);
+  historyFileTable->SetPrintHeaderBottomLine(false);
+  historyFileTable->SetPrecision(14);
   
   /*--- Add the header to the history file. ---*/
   

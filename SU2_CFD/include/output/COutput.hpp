@@ -158,6 +158,7 @@ protected:
 
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
+  PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
   std::string multiZoneHeaderString;                    //!< Multizone header string
   
   //! Structure to store the value of the running averages

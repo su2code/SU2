@@ -4382,8 +4382,11 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   
   /*--- Write file name with extension ---*/
   string filename = config->GetConv_FileName();
+  string hist_ext = ".csv";
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  
   if(config->GetnZone() > 1){
-    filename = config->GetMultizone_HistoryFileName(filename, val_iZone);
+    filename = config->GetMultizone_HistoryFileName(filename, val_iZone, hist_ext);
   }
   if(config->GetnTimeInstances() > 1){
     filename = config->GetMultiInstance_HistoryFileName(filename, val_iInst);
