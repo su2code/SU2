@@ -2929,8 +2929,8 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
           cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
           if(Buff_Recv_isStraight[iMarker_Global] == false) cout << " NOT";
-          if(nDim == 2) cout << " straight." << endl;
-          if(nDim == 3) cout << " plane." << endl;
+          if(nDim == 2) cout << " a single straight." << endl;
+          if(nDim == 3) cout << " a single plane." << endl;
         }//if sym or euler
       }//for iMarker_Global
     }//if rank==MASTER

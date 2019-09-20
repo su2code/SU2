@@ -970,7 +970,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [-1.124271, 4.605462, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-0.211187, 5.611098, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
