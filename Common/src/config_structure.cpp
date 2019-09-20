@@ -1075,8 +1075,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Maximum number of iterations between AoA updates for fixed CL problem. */
   addUnsignedLongOption("UPDATE_AOA_ITER_LIMIT", Update_AoA_Iter_Limit, 200);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
-  addUnsignedLongOption("UPDATE_ALPHA", Update_Alpha, 5);
-  /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_IH", Update_iH, 5);
   /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
   addUnsignedLongOption("ITER_DCL_DALPHA", Iter_dCL_dAlpha, 500);
