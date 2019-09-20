@@ -841,15 +841,12 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
-  unsigned long index;
 
   unsigned short iVar;
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
   unsigned short file_format = config->GetRefGeom_FileFormat();
 
   string filename;
-  su2double dull_val;
   ifstream reference_file;
 
 
