@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os, sys, shutil, copy, subprocess
 from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
@@ -533,7 +533,8 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
             # make unix link
             string = "ln -s " + src + " " + dst
-            os.system(string)
+            string_list = string.split()
+            subprocess.Popen(string_list)
 
     for i in range(len(weight_list)-1):
         
@@ -617,7 +618,8 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
       
         # make unix link
         string = "ln -s " + src + " " + dst
-        os.system(string)
+        string_list = string.split()
+        subprocess.Popen(string_list)
     
     # Update MULTPOINT_ADJOINT files in state.FILES
     state.FILES[MULTIPOINT_ADJ_NAME] = solution_adj_list
