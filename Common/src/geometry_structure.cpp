@@ -8491,7 +8491,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
     
     for (int iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      Marker_Tag = config->GetMarker_CfgFile_TagBound(iMarker);
       Tag_to_Marker[iMarker] = Marker_Tag;
       config->SetMarker_All_TagBound(iMarker, Marker_Tag);
       config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
