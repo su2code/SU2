@@ -432,7 +432,6 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  if (output != NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the

@@ -3972,8 +3972,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- This function is intended for dual time simulations ---*/
 
-  unsigned long index;
-
   int Unst_RestartIter;
   ifstream restart_file_n;
 
@@ -4149,7 +4147,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   ifstream restart_file;
   string text_line, Tag;
   unsigned short iVar;
-  long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   int counter = 0;
   fields.clear();
 
@@ -4261,7 +4259,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
     SU2_MPI::Error(string("Restart file does not seem to be a CSV file.\n") + error_string, CURRENT_FUNCTION);
   }
   
-  for (int iField = 0; iField < fields.size(); iField++){
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
     PrintingToolbox::trim(fields[iField]);
   }
 
@@ -4288,11 +4286,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      /*--- The PointID is not stored --*/
-
-      index = PrintingToolbox::stoi(point_line[0]);
-
+      
       /*--- Store the solution (starting with node coordinates) --*/
 
       for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
@@ -5420,7 +5414,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   /*--- Routines to access the number of variables and string names. ---*/
 
   SetOutputVariables(geometry, config);
-
+  
   /*--- Initialize a zero solution and instantiate the CVariable class. ---*/
 
   Solution = new su2double[nVar];
@@ -5730,7 +5724,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     fields = PrintingToolbox::split(text_line, ',');
     
-    for (int iField = 0; iField < fields.size(); iField++){
+    for (unsigned short iField = 0; iField < fields.size(); iField++){
       PrintingToolbox::trim(fields[iField]);
     }
     
