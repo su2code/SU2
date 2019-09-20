@@ -8474,7 +8474,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
         int iMarker = TriAdap[iElem][4]-2;
         int jElem = jElem_Bound[iMarker];
         bound[iMarker][jElem] = new CTriangle(TriAdap[iElem][0],
-                                              TriAdap[iElem][1]
+                                              TriAdap[iElem][1],
                                               TriAdap[iElem][2],2);
         jElem_Bound[iMarker]++;
       }
