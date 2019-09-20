@@ -250,9 +250,12 @@ class State(ordered_bunch):
         restart = config.RESTART_SOL == 'YES'
         special_cases = get_specialCases(config)
 
-        def_objs = config['OPT_OBJECTIVE']
-        objectives = def_objs.keys()
-        multipoint = any(elem in optnames_multi for elem in objectives)
+        if config.get('OPT_OBJECTIVE'):
+            def_objs = config['OPT_OBJECTIVE']
+            objectives = def_objs.keys()
+            multipoint = any(elem in optnames_multi for elem in objectives)
+        else:
+            multipoint = False
         
         def register_file(label,filename):
             if not label in files:

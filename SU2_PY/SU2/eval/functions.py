@@ -537,11 +537,12 @@ def multipoint( config, state=None, step=1e-2 ):
             konfig['RESTART_SOL'] = restart_sol
 
             dst = os.getcwd()
-            dst = os.path.abspath(dst).rstrip('/')+'/'
+            dst = os.path.abspath(dst).rstrip('/')+'/'+'DIRECT'
 
             # make unix link
             string = "ln -s " + src + " " + dst
-            os.system(string)
+            stringlist = string.split()
+            subprocess.Popen(stringlist)
 
     for i in range(len(weight_list)-1):
 
@@ -627,18 +628,14 @@ def multipoint( config, state=None, step=1e-2 ):
 
         # make unix link
         string_direct = "ln -s " + src_direct + " " + dst_direct
-        # print(string_direct)
-        # print(os.getcwd())
-        subprocess.call(string_direct, shell=True)
-        # os.system(string_direct)
-
+        os.symlink(src_direct, dst_direct)
+        
         # If the mesh doesn't already exist, link
         if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
             src_mesh = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['MESH']
             string_mesh =  "ln -s " + src_mesh + " " + dst_mesh
             if not os.path.exists(src_mesh): 
-                subprocess.call(string_mesh, shell=True)
-                # os.system(string_direct)
+                os.symlink(src_mesh, dst_mesh)
 
     # Update MULTIPOINT_DIRECT in state.FILES
     state.FILES.MULTIPOINT_DIRECT = solution_flow_list

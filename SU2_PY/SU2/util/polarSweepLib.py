@@ -642,8 +642,7 @@ def updatedControlFile(ctrl,nc,parAngle,ctrlFile,verbose):
        
 # Prepare a backup of control file
 
-    st1='cp '+ctrlFile+' '+ctrlFile+'.bck'
-    os.system(st1)
+    shutil.copy2(ctrlFile, ctrlFile+'.bck')
 #
 # --- Write down the updated file
     fc=open(ctrlFile,'w')
