@@ -8392,12 +8392,6 @@ public:
   su2double GetdCL_dAlpha(void);
   
   /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetUpdate_Alpha(void);
-  
-  /*!
    * \brief Number of iterations to evaluate dCL_dAlpha.
    * \return Number of iterations.
    */
@@ -8408,12 +8402,6 @@ public:
    * \return Damping coefficient for fixed CL mode.
    */
   su2double GetdCM_diH(void);
-  
-  /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetIter_Fixed_CL(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.

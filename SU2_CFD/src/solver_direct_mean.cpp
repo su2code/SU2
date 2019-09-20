@@ -106,14 +106,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
  
   Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-  
-  Cauchy_Value   = 0;
-  Cauchy_Func    = 0;
-  Old_Func       = 0;
-  New_Func       = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
+  /*--- Fixed CL mode initialization ---*/
   
   Start_AoA_FD = false;
   End_AoA_FD = false;
@@ -297,14 +290,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
+  /*--- Fixed CL mode initialization ---*/
   
   Start_AoA_FD = false;
   End_AoA_FD = false;
@@ -726,7 +712,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc=0.0;
   Total_NetThrust = 0.0;
-  Total_Power = 0.0;      AoA_Prev           = 0.0;
+  Total_Power = 0.0;      
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev      = 0.0; Total_CMy_Prev      = 0.0; Total_CMz_Prev      = 0.0;
   Total_AeroCD = 0.0;  Total_SolidCD = 0.0;   Total_IDR   = 0.0;    Total_IDC   = 0.0;
@@ -1130,8 +1116,6 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] YPlus;
   }
 
-  if (Cauchy_Serie != NULL)  delete [] Cauchy_Serie;
-  
   if (FluidModel != NULL) delete FluidModel;
 
   if(AverageVelocity !=NULL){
@@ -7306,9 +7290,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   unsigned long Wrt_Con_Freq;
   unsigned short iDim;
   
-  //unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  //unsigned long Update_Alpha = config->GetUpdate_Alpha();
-  
   Target_CL = config->GetTarget_CL();
   unsigned long ExtIter         = config->GetExtIter();
   unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
@@ -7405,8 +7386,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     }
 
   }
-
-	
 
   if (Start_AoA_FD && Output && ((ExtIter - 1) == Iter_Update_AoA)) {
     AoA_old = config->GetAoA();
@@ -14320,7 +14299,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
+  CSkinFriction = NULL; HF_Visc = NULL;
   HeatConjugateVar = NULL;
   
   /*--- Initialize quantities for the average process for internal flow ---*/
@@ -14836,15 +14815,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Total_CD         = 0.0;    Total_CL           = 0.0;    Total_CSF          = 0.0;
   Total_CMx        = 0.0;    Total_CMy          = 0.0;    Total_CMz          = 0.0;
-  Total_CoPx        = 0.0;    Total_CoPy          = 0.0;    Total_CoPz          = 0.0;
+  Total_CoPx       = 0.0;    Total_CoPy         = 0.0;    Total_CoPz         = 0.0;
   Total_CEff       = 0.0;    Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
   Total_CFx        = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
   Total_CT         = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat    = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff     = 0.0;    Total_HeatFluxDiff = 0.0;
-  Total_NetThrust = 0.0;     Total_CL_Prev      = 0.0;
-  Total_Power      = 0.0;    AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_CMx_Prev   = 0.0;    Total_CMy_Prev     = 0.0;    Total_CMz_Prev     = 0.0;
+  Total_NetThrust  = 0.0;    Total_Power        = 0.0;
+  Total_CL_Prev    = 0.0;    Total_CD_Prev      = 0.0;    Total_CMx_Prev     = 0.0;
+  Total_CMy_Prev   = 0.0;    Total_CMz_Prev     = 0.0;
   Total_AeroCD     = 0.0;    Total_SolidCD      = 0.0;    Total_IDR          = 0.0;
   Total_IDC           = 0.0;
   Total_Custom_ObjFunc = 0.0;
