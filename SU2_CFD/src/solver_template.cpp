@@ -59,8 +59,12 @@ void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 void CTemplateSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                  CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-                                      unsigned short val_marker) { }
+void CTemplateSolver::BC_Euler_Wall(CGeometry      *geometry,
+                                    CSolver        **solver_container,
+                                    CNumerics      *conv_numerics,
+                                    CNumerics      *visc_numerics,
+                                    CConfig        *config,
+                                    unsigned short val_marker) { }
 
 void CTemplateSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
@@ -73,8 +77,12 @@ void CTemplateSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 void CTemplateSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                                   unsigned short val_marker) { }
 
-void CTemplateSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
-                                     unsigned short val_marker) { }
+void CTemplateSolver::BC_Sym_Plane(CGeometry      *geometry,
+                                   CSolver        **solver_container,
+                                   CNumerics      *conv_numerics,
+                                   CNumerics      *visc_numerics,
+                                   CConfig        *config,
+                                   unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 

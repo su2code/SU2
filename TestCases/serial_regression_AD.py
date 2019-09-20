@@ -57,7 +57,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.610567, -9.034912, -0.000000, 0.005621] #last 4 columns
+    discadj_naca0012.test_vals = [-3.610517, -9.034863, -0.000000, 0.005623] #last 4 columns
     discadj_naca0012.su2_exec  = "SU2_CFD_AD"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
