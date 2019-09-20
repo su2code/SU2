@@ -251,7 +251,7 @@ def main():
       mesh['markers'] = np.empty(nMarker_All+1, 'object')
       mesh['markers'][0] = int(options.nDim)
       for iMarker in range(1,nMarker_All+1):
-        mesh['markers'][iMarker] = SU2Error.GetMarker_All_TagBound(iMarker)
+        mesh['markers'][iMarker-1] = SU2Error.GetMarker_All_TagBound(iMarker-1)
 
       # Remesh options
       remesh_options                = {}
@@ -341,25 +341,23 @@ def main():
       nTri = np.zeros(size, int)
       nTet = np.zeros(size, int)
 
-      for i in range(1, size):
-        
-        if options.nDim == 2:
-          if len(sendTriAdap) > 0:
-            for j in range(0, len(sendTriAdap)):
-              for k in range(0, 3):
-                if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
-                  indTri.append(int(j))
-                  nTri[i] = nTri[i] + 1
-                  break
+      for i in range(0, size):
 
-        else:
-          if len(sendTetAdap) > 0:
-            for j in range(0, len(sendTetAdap)):
-              for k in range(0, 4):
-                if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
-                  indTet.append(int(j))
-                  nTet[i] = nTet[i] + 1
-                  break
+        if len(sendTriAdap) > 0:
+          for j in range(0, len(sendTriAdap)):
+            for k in range(0, 3):
+              if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
+                indTri.append(int(j))
+                nTri[i] = nTri[i] + 1
+                break
+
+        if len(sendTetAdap) > 0:
+          for j in range(0, len(sendTetAdap)):
+            for k in range(0, 4):
+              if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
+                indTet.append(int(j))
+                nTet[i] = nTet[i] + 1
+                break
 
       print("Communicating partitioned elements.")
 
