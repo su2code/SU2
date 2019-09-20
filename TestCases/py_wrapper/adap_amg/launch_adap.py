@@ -359,12 +359,6 @@ def main():
                 nTet[i] = nTet[i] + 1
                 break
 
-      # We need totals for global indices, which will be edg then tri then tet
-      if(options.nDim == 2):
-        nTriTot = np.sum(nTri)
-      else:
-        nTetTot = np.sum(nTet)
-
       print("Communicating partitioned elements.")
 
       if(options.nDim == 2):
@@ -376,7 +370,7 @@ def main():
 
       else:
         if(nTet[0] > 0):
-          TetAdap = np.array([sendTetAdap[j,:].tolist() + [j+nTriTot] for j in indTet[:nTet[0]]])
+          TetAdap = np.array([sendTetAdap[j,:].tolist() + [j] for j in indTet[:nTet[0]]])
           TetAdap[:,:4] = TetAdap[:,:4]-1
         else:
           TetAdap = np.empty((0,0), int)
@@ -398,7 +392,7 @@ def main():
 
         else:
           if(nTet[i] > 0):
-            sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
+            sendBuf = np.array([sendTetAdap[j,:].tolist() + [j] for j in indTet[nTetOff:nTetOff+nTet[i]]])
             sendBuf[:,:4] = sendBuf[:,:4]-1
             comm.send(sendBuf, dest=i, tag=5)
             nTetOff = nTetOff + nTet[i]
