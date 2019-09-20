@@ -40,9 +40,9 @@ def get_residual_reduction(config):
         return res 
         
 # --- How many SU2 solver iterations for each complexity level
-def get_ext_iter(config):
-    if 'ADAP_FLOW_EXT_ITER' in config:
-        return config['ADAP_FLOW_EXT_ITER'].strip('()').split(",")
+def get_adj_iter(config):
+    if 'ADAP_ADJ_ITER' in config:
+        return config['ADAP_ADJ_ITER'].strip('()').split(",")
     else:
         nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
         ext_iter = []
