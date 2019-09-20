@@ -988,6 +988,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     output = new CBaselineOutput(config[iZone], geometry[iZone][INST_0]->GetnDim(), solver);
     output->PreprocessVolumeOutput(config[iZone]);
+    output->PreprocessHistoryOutput(config[iZone], false);
     
     /*--- Load the data --- */
     

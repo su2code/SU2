@@ -222,7 +222,11 @@ int main(int argc, char *argv[]) {
     
     /*--- Preprocess the volume output ---*/
     
-    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);    
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+    
+    /*--- Preprocess history --- */
+    
+    output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
     
 
   }

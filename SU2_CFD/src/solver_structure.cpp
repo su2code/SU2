@@ -4154,6 +4154,9 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   fields.clear();
 
   Restart_Vars = new int[5];
+  
+  string error_string = "Note: ASCII restart files must be in CSV format since v7.0.\n"
+                        "Check https://su2code.github.io/docs/Guide-to-v7 for more information.";
 
   /*--- First, check that this is not a binary restart file. ---*/
 
@@ -4209,7 +4212,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
+    SU2_MPI::Error(string("SU2 ASCII restart file ") + string(fname) + string(" not found.\n") + error_string, 
+                   CURRENT_FUNCTION);
   }
 
   /*--- Have the master attempt to read the magic number. ---*/
@@ -4242,7 +4246,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- In case there is no restart file ---*/
 
   if (restart_file.fail()) {
-    SU2_MPI::Error(string("SU2 ASCII solution file  ") + string(fname) + string(" not found."), CURRENT_FUNCTION);
+    SU2_MPI::Error(string("SU2 ASCII restart file ") + string(fname) + string(" not found.\n") + error_string, 
+                   CURRENT_FUNCTION);
   }
 
   /*--- Identify the number of fields (and names) in the restart file ---*/
@@ -4251,6 +4256,10 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   
   char delimiter = ',';
   fields = PrintingToolbox::split(text_line, delimiter);
+  
+  if (fields.size() <= 1) {
+    SU2_MPI::Error(string("Restart file does not seem to be a CSV file.\n") + error_string, CURRENT_FUNCTION);
+  }
   
   for (int iField = 0; iField < fields.size(); iField++){
     PrintingToolbox::trim(fields[iField]);
