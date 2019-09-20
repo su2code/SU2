@@ -298,6 +298,8 @@ def main():
 
     else:
       sendPoiAdap = np.empty(0)
+      sendTriAdap = np.empty(0)
+      sendTetAdap = np.empty(0)
 
     # Compute beginning and ending nodes for linear partitions
     if rank == 0:
