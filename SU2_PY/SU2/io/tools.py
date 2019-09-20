@@ -779,9 +779,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if (plot_format == 'TAB_TECPLOT'): 
+    if (plot_format == 'TECPLOT'): 
         header.append('VARIABLES=')
-    elif (plot_format == 'TAB_CSV'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -905,9 +905,9 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if (plot_format == 'TAB_TECPLOT'): 
+    if (plot_format == 'TECPLOT'): 
         header_format = header_format + 'VARIABLES='
-    elif (plot_format == 'TAB_CSV'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
 
