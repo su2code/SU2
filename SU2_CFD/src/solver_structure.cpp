@@ -4812,31 +4812,31 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 						/*--- dCD_dCL coefficient ---*/
 
-       position = text_line.find ("DCD_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-       }
+            position = text_line.find ("DCD_DCL_VALUE=",0);
+            if (position != string::npos) {
+              text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+            }
+            
+            /*--- dCMx_dCL coefficient ---*/
        
-       /*--- dCMx_dCL coefficient ---*/
+            position = text_line.find ("DCMX_DCL_VALUE=",0);
+            if (position != string::npos) {
+              text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+            }
        
-       position = text_line.find ("DCMX_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
-       }
+            /*--- dCMy_dCL coefficient ---*/
        
-       /*--- dCMy_dCL coefficient ---*/
+            position = text_line.find ("DCMY_DCL_VALUE=",0);
+            if (position != string::npos) {
+              text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+            }
        
-       position = text_line.find ("DCMY_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
-       }
+            /*--- dCMz_dCL coefficient ---*/
        
-       /*--- dCMz_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMZ_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
-       }
+            position = text_line.find ("DCMZ_DCL_VALUE=",0);
+            if (position != string::npos) {
+              text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+            }
        
 					}
 

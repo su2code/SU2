@@ -467,12 +467,11 @@ void CIteration::Output(COutput *output,
 
       /*--- General if statements to print output statements ---*/
 
-//      (ExtIter+1 >= nExtIter) || (StopCalc) ||
-
-      /*--- Fixed CL problem ---*/
+      /*--- Fixed CL problem, output solution just before finite differencing ---*/
 
       ((config[ZONE_0]->GetFixed_CL_Mode()) &&
-       (config[ZONE_0]->GetnExtIter()-config[ZONE_0]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
+       (solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD()) && 
+       Iter == solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) ||
 
       /*--- Steady problems ---*/
 
@@ -491,12 +490,12 @@ void CIteration::Output(COutput *output,
 
   }
 
-  /*--- Determine whether a solution doesn't need to be written
-   after the current iteration ---*/
+  /*--- Don't write a solution if in Finite Differencing mode ---*/
 
   if (config[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config[ZONE_0]->GetnExtIter()-config[ZONE_0]->GetIter_dCL_dAlpha() - 1 < Iter) output_files = false;
-    if (config[ZONE_0]->GetnExtIter() - 1 == Iter) output_files = true;
+    if (solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD() && 
+      Iter != solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) output_files = false;
+    
   }
 
   /*--- write the solution ---*/
@@ -661,6 +660,13 @@ void CFluidIteration::Iterate(COutput *output,
         SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
     }
     
+  }
+
+  /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
+
+  if (config[val_iZone]->GetFixed_CL_Mode()){
+    bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], integration[val_iZone][INST_0][FLOW_SOL]->GetConvergence());
+    integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(fixed_cl_convergence);
   }
   
   

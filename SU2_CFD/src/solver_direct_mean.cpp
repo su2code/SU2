@@ -106,16 +106,11 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
  
   Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+  /*--- Fixed CL mode initialization ---*/
   
-  Cauchy_Value   = 0;
-  Cauchy_Func    = 0;
-  Old_Func       = 0;
-  New_Func       = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
-  
-  AoA_FD_Change = false;
+  Start_AoA_FD = false;
+  End_AoA_FD = false;
+  Iter_Update_AoA = 0;
 
   FluidModel   = NULL;
   
@@ -295,16 +290,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
+  /*--- Fixed CL mode initialization ---*/
   
-  AoA_FD_Change = false;
+  Start_AoA_FD = false;
+  End_AoA_FD = false;
+  Iter_Update_AoA = 0;
 
   FluidModel = NULL;
   
@@ -722,7 +712,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc=0.0;
   Total_NetThrust = 0.0;
-  Total_Power = 0.0;      AoA_Prev           = 0.0;
+  Total_Power = 0.0;      
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev      = 0.0; Total_CMy_Prev      = 0.0; Total_CMz_Prev      = 0.0;
   Total_AeroCD = 0.0;  Total_SolidCD = 0.0;   Total_IDR   = 0.0;    Total_IDC   = 0.0;
@@ -1126,8 +1116,6 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] YPlus;
   }
 
-  if (Cauchy_Serie != NULL)  delete [] Cauchy_Serie;
-  
   if (FluidModel != NULL) delete FluidModel;
 
   if(AverageVelocity !=NULL){
@@ -7302,48 +7290,17 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   unsigned long Wrt_Con_Freq;
   unsigned short iDim;
   
-  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long Update_Alpha = config->GetUpdate_Alpha();
-  
-  unsigned long ExtIter       = config->GetExtIter();
-  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
-  su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
-  bool Update_AoA             = false;
-  
-  if (ExtIter == 0) AoA_Counter = 0;
-  
-  /*--- Only the fine mesh level should check the convergence criteria ---*/
-  
-  if ((iMesh == MESH_0) && Output) {
-    
-    /*--- Initialize the update flag to false ---*/
-    
-    Update_AoA = false;
-
-    /*--- Reevaluate Angle of Attack at a fixed number of iterations ---*/
-    
-    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
-      AoA_Counter++;
-      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
-      else Update_AoA = false;
-    }
-    
-    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
-    
-    config->SetUpdate_AoA(Update_AoA);
-    
-  }
-  
-  else {
-    Update_AoA = config->GetUpdate_AoA();
-  }
+  Target_CL = config->GetTarget_CL();
+  unsigned long ExtIter         = config->GetExtIter();
+  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+  su2double Beta                = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCL_dAlpha          = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
+  bool Update_AoA               = config->GetUpdate_AoA();
+  bool CL_Converged             = fabs(Total_CL - Target_CL) < config->GetCauchy_Eps();
+  End_AoA_FD                    = Start_AoA_FD && ((ExtIter - Iter_Update_AoA) == 
+                                  Iter_dCL_dAlpha || ExtIter == config->GetnExtIter()- 1 );
   
   if (Update_AoA && Output) {
-    
-    /*--- Retrieve the specified target CL value. ---*/
-    
-    Target_CL = config->GetTarget_CL();
     
     /*--- Retrieve the old AoA (radians) ---*/
     
@@ -7357,6 +7314,12 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
     else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
+
+    /*--- Don't update AoA if CL is converged ---*/
+
+    if (CL_Converged){
+      AoA = AoA_old;
+    }
     
     /*--- Only the fine mesh stores the updated values for AoA in config ---*/
     
@@ -7403,47 +7366,45 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Output some information to the console with the headers ---*/
     
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && !config->GetDiscrete_Adjoint()) {
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
       Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      
+      if (CL_Converged) Old_AoA = config->GetAoA();
       cout.precision(7);
       cout.setf(ios::fixed, ios::floatfield);
       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
       cout << "CL: " << Total_CL;
       cout << " (target: " << config->GetTarget_CL() <<")." << endl;
       cout.precision(4);
-      cout << "Previous AoA: " << Old_AoA << " deg";
-      cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
+      if (CL_Converged){
+        cout << "CL converged to within "<< config->GetCauchy_Eps() <<", not changing AoA" << endl;
+      }
+      else {
+        cout << "Previous AoA: " << Old_AoA << " deg";
+        cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
+      }
       cout << "-------------------------------------------------------------------------" << endl << endl;
     }
 
   }
 
-	unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
-
-  if ((config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) && Output) {
-
+  if (Start_AoA_FD && Output && ((ExtIter - 1) == Iter_Update_AoA)) {
     AoA_old = config->GetAoA();
 
-    if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
-      Wrt_Con_Freq = SU2_TYPE::Int(su2double(config->GetIter_dCL_dAlpha())/10.0);
-      config->SetWrt_Con_Freq(Wrt_Con_Freq);
-      Total_CD_Prev = Total_CD;
-      Total_CL_Prev = Total_CL;
-      Total_CMx_Prev = Total_CMx;
-      Total_CMy_Prev = Total_CMy;
-      Total_CMz_Prev = Total_CMz;
-      AoA_inc = 0.001;
-      AoA_FD_Change = true;
-    }
-    
+    Wrt_Con_Freq = SU2_TYPE::Int(su2double(Iter_dCL_dAlpha)/10.0);
+    config->SetWrt_Con_Freq(Wrt_Con_Freq);
+    Total_CD_Prev = Total_CD;
+    Total_CL_Prev = Total_CL;
+    Total_CMx_Prev = Total_CMx;
+    Total_CMy_Prev = Total_CMy;
+    Total_CMz_Prev = Total_CMz;
+    AoA_inc = 0.001;
+        
     if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
       
-    	if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
-       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-       cout << " Change AoA by +0.001 deg to evaluate gradient." << endl;
-       cout << "-------------------------------------------------------------------------" << endl << endl;
-    	}
+     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+     cout << " End of Fixed CL Mode. " << endl;
+     cout << " Change AoA by +0.001 deg to evaluate gradient." << endl;
+     cout << "-------------------------------------------------------------------------" << endl << endl;
 
     }
 
@@ -7495,7 +7456,9 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
   
-  if (AoA_FD_Change && (config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  if (Start_AoA_FD && 
+    ((ExtIter - Iter_Update_AoA) == Iter_dCL_dAlpha || ExtIter == config->GetnExtIter()- 1 ) && 
+    Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
     /*--- Update angle of attack ---*/
 
@@ -7521,7 +7484,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   		config->SetdCL_dAlpha(dCL_dAlpha_);
 
     if (rank == MASTER_NODE) {
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl << endl;
       cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
       cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
       if (nDim == 3 ) {
@@ -7534,6 +7497,79 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
   }
 
+}
+
+bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
+  su2double Target_CL = config->GetTarget_CL();
+  unsigned long curr_iter = config->GetExtIter();
+  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+  bool Update_AoA = false;
+  bool fixed_cl_conv = false;
+
+  /*--- if in Fixed CL mode, before finite differencing --- */
+
+  if (!Start_AoA_FD){
+    if (convergence){
+
+      /* --- C_L and solution are converged, start finite differencing --- */
+
+      if (fabs(Total_CL-Target_CL) < config->GetCauchy_Eps()){
+        if (Iter_dCL_dAlpha == 0){
+          fixed_cl_conv = true;
+          return fixed_cl_conv;
+        }
+        Iter_Update_AoA = curr_iter;
+        Start_AoA_FD = true;
+        fixed_cl_conv = false;
+        Update_AoA = false;      
+      }
+
+      /* --- C_L is not converged to target value and some iterations 
+          have passed since last update, so update AoA --- */
+
+      else if ((curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter()){
+        Iter_Update_AoA = curr_iter;
+        Update_AoA = true;
+        fixed_cl_conv = false;
+      }
+    }
+
+    /* --- If the iteration limit between AoA updates is met, so update AoA --- */
+
+    else if ((curr_iter - Iter_Update_AoA) == config->GetUpdate_AoA_Iter_Limit()) {
+      Update_AoA = true;
+      Iter_Update_AoA = curr_iter;
+      fixed_cl_conv = false;
+    }
+
+    /* --- If the total iteration limit is reached, start finite differencing --- */
+
+    if (curr_iter == config->GetnExtIter() - Iter_dCL_dAlpha){
+      if (Iter_dCL_dAlpha == 0){
+        End_AoA_FD = true;
+      }
+      Iter_Update_AoA = curr_iter;
+      Start_AoA_FD = true;
+      fixed_cl_conv = false;
+      Update_AoA = false;
+    }
+  }
+
+  /* --- Else in finite differencing mode, check for when to exit ---*/
+  else if (End_AoA_FD){
+
+    /* --- Solution allowed to end only after finite differencing has been done --- */
+    if ((curr_iter - Iter_Update_AoA) == Iter_dCL_dAlpha){
+     End_AoA_FD = true;
+     fixed_cl_conv = true;
+    }
+
+  }
+
+  config->SetUpdate_AoA(Update_AoA);
+
+  return fixed_cl_conv;
+  
 }
 
 void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
@@ -14263,7 +14299,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
+  CSkinFriction = NULL; HF_Visc = NULL;
   HeatConjugateVar = NULL;
   
   /*--- Initialize quantities for the average process for internal flow ---*/
@@ -14779,15 +14815,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Total_CD         = 0.0;    Total_CL           = 0.0;    Total_CSF          = 0.0;
   Total_CMx        = 0.0;    Total_CMy          = 0.0;    Total_CMz          = 0.0;
-  Total_CoPx        = 0.0;    Total_CoPy          = 0.0;    Total_CoPz          = 0.0;
+  Total_CoPx       = 0.0;    Total_CoPy         = 0.0;    Total_CoPz         = 0.0;
   Total_CEff       = 0.0;    Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
   Total_CFx        = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
   Total_CT         = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat    = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff     = 0.0;    Total_HeatFluxDiff = 0.0;
-  Total_NetThrust = 0.0;     Total_CL_Prev      = 0.0;
-  Total_Power      = 0.0;    AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_CMx_Prev   = 0.0;    Total_CMy_Prev     = 0.0;    Total_CMz_Prev     = 0.0;
+  Total_NetThrust  = 0.0;    Total_Power        = 0.0;
+  Total_CL_Prev    = 0.0;    Total_CD_Prev      = 0.0;    Total_CMx_Prev     = 0.0;
+  Total_CMy_Prev   = 0.0;    Total_CMz_Prev     = 0.0;
   Total_AeroCD     = 0.0;    Total_SolidCD      = 0.0;    Total_IDR          = 0.0;
   Total_IDC           = 0.0;
   Total_Custom_ObjFunc = 0.0;

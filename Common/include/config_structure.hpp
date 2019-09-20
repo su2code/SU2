@@ -633,6 +633,7 @@ private:
   su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
   bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  unsigned long Update_AoA_Iter_Limit; /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode */
   bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
   unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
@@ -8391,12 +8392,6 @@ public:
   su2double GetdCL_dAlpha(void);
   
   /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetUpdate_Alpha(void);
-  
-  /*!
    * \brief Number of iterations to evaluate dCL_dAlpha.
    * \return Number of iterations.
    */
@@ -8407,12 +8402,6 @@ public:
    * \return Damping coefficient for fixed CL mode.
    */
   su2double GetdCM_diH(void);
-  
-  /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetIter_Fixed_CL(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
@@ -8455,6 +8444,12 @@ public:
    * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
    */
   bool GetUpdate_AoA(void);
+
+  /*!
+   * \brief Get the maximum number of iterations between AoA updates for fixed C_L mode
+   * \return Number of maximum iterations between AoA updates
+   */
+  unsigned long GetUpdate_AoA_Iter_Limit(void);
   
   /*!
    * \brief Set the current number of non-physical nodes in the solution.
