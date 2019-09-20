@@ -8441,7 +8441,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
       for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
         /*---Note that the last  value for each surface element is 
          the marker, and that the ref we stored for AMG was jMarker+2. ---*/
-        nElem_Bound[EdgAdap[iElem][3]-2]++;
+        nElem_Bound[EdgAdap[iElem][2]-2]++;
       }
 
       for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
@@ -8450,7 +8450,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
       }
 
       for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
-        int iMarker = EdgAdap[iElem][3]-2;
+        int iMarker = EdgAdap[iElem][2]-2;
         int jElem = jElem_Bound[iMarker];
         bound[iMarker][jElem] = new CLine(EdgAdap[iElem][0],
                                           EdgAdap[iElem][1],2);
@@ -8462,7 +8462,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
       for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
         /*---Note that the last  value for each surface element is 
          the marker, and that the ref we stored for AMG was jMarker+2. ---*/
-        nElem_Bound[TriAdap[iElem][4]-2]++;
+        nElem_Bound[TriAdap[iElem][3]-2]++;
       }
 
       for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
@@ -8471,7 +8471,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
       }
 
       for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
-        int iMarker = TriAdap[iElem][4]-2;
+        int iMarker = TriAdap[iElem][3]-2;
         int jElem = jElem_Bound[iMarker];
         bound[iMarker][jElem] = new CTriangle(TriAdap[iElem][0],
                                               TriAdap[iElem][1],
