@@ -425,7 +425,6 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-    #mesh_list = config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
     restart_sol = config['RESTART_SOL']
     dv_value_old = config['DV_VALUE_OLD'];

@@ -299,7 +299,6 @@ class State(ordered_bunch):
                         if name:
                             if not os.path.exists(name):
                                 raise AssertionError('state expected file: %s' % name)
-                            # assert os.path.exists(name), 'state expected file: %s' % name
                 else:
                     assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
@@ -307,7 +306,6 @@ class State(ordered_bunch):
         # mesh
         if multipoint:
             mesh_list = [elem.strip() for elem in config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')]
-            #print(mesh_list)
             if len(set(mesh_list)) > 1:
                 # Only register MULTIPOINT_MESH_FILENAME if multiple meshes are specified
                 register_file('MULTIPOINT_MESH_FILENAME', mesh_list)
