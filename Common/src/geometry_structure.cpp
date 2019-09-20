@@ -8432,7 +8432,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
     nElem_Bound   = new unsigned long [nMarker];
     Tag_to_Marker = new string [config->GetnMarker_Max()];
 
-    unsigned long* jElem_Bound   = new unsigned long [nMarker];
+    unsigned long* jElem_Bound = new unsigned long [nMarker];
 
     /*--- Loop over elements and store. ---*/
 
