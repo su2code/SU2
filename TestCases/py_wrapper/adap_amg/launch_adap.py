@@ -364,6 +364,7 @@ def main():
       print("Communicating partitioned elements.")
 
       if(options.nDim == 2):
+        TetAdap = np.empty((0,0), int)
         if(nTri[0] > 0):
           TriAdap = np.array([sendTriAdap[j,:].tolist() + [j] for j in indTri[:nTri[0]]])
           TriAdap[:,:3] = TriAdap[:,:3]-1
