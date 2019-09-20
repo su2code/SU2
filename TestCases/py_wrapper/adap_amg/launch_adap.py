@@ -278,15 +278,20 @@ def main():
       if options.nDim == 2:
         sendSolAdap = mesh_new['solution']
         sendPoiAdap = mesh_new['xy']
-        sendEdgAdap = mesh_new['Edges']
         sendTriAdap = mesh_new['Triangles']
         sendTetAdap = np.empty((0,0), int)
+
+        # Only store edge info on rank 0 for 2D
+        EdgAdap = np.array(mesh_new['Edges'])
+
       else:
         sendSolAdap = mesh_new['solution']
         sendPoiAdap = mesh_new['xyz']
         sendEdgAdap = np.empty((0,0), int)
-        sendTriAdap = mesh_new['Triangles']
         sendTetAdap = mesh_new['Tetrahedra']
+
+        # Only store triangle info on rank 0 for 3D
+        TriAdap = np.array(mesh_new['Triangles'])
 
       del [mesh, mesh_new]
 
@@ -329,101 +334,78 @@ def main():
     # Partition elements based on node partitions
     if rank == 0:
       print("Preparing element partitions.")
-      indEdg = []
       indTri = []
       indTet = []
 
-      nEdg = np.zeros(size, int)
       nTri = np.zeros(size, int)
       nTet = np.zeros(size, int)
 
-      for i in range(0, size):
-        if len(sendEdgAdap) > 0:
-          for j in range(0, len(sendEdgAdap)):
-            for k in range(0, 2):
-              if sendEdgAdap[j,k] >= beg_node[i]+1 and sendEdgAdap[j,k] < end_node[i]+1:
-                indEdg.append(int(j))
-                nEdg[i] = nEdg[i] + 1
-                break
+        if(options.nDim == 2):
+          if len(sendTriAdap) > 0:
+            for j in range(0, len(sendTriAdap)):
+              for k in range(0, 3):
+                if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
+                  indTri.append(int(j))
+                  nTri[i] = nTri[i] + 1
+                  break
 
-        if len(sendTriAdap) > 0:
-          for j in range(0, len(sendTriAdap)):
-            for k in range(0, 3):
-              if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
-                indTri.append(int(j))
-                nTri[i] = nTri[i] + 1
-                break
-
-        if len(sendTetAdap) > 0:
-          for j in range(0, len(sendTetAdap)):
-            for k in range(0, 4):
-              if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
-                indTet.append(int(j))
-                nTet[i] = nTet[i] + 1
-                break
+        else:
+          if len(sendTetAdap) > 0:
+            for j in range(0, len(sendTetAdap)):
+              for k in range(0, 4):
+                if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
+                  indTet.append(int(j))
+                  nTet[i] = nTet[i] + 1
+                  break
 
       # We need totals for global indices, which will be edg then tri then tet
-      nEdgTot = np.sum(nEdg)
-      nTriTot = np.sum(nTri)
-      nTetTot = np.sum(nTet)
+      if(options.nDim == 2):
+        nTriTot = np.sum(nTri)
+      else:
+        nTetTot = np.sum(nTet)
 
       print("Communicating partitioned elements.")
-      if(nEdg[0] > 0):
-        EdgAdap = np.array([sendEdgAdap[j,:] + [j] for j in indEdg[:nEdg[0]]])
-        EdgAdap[:,:2] = EdgAdap[:,:2]-1
-      else:
-        EdgAdap = np.empty((0,0), int)
 
-      if(nTri[0] > 0):
-        TriAdap = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[:nTri[0]]])
-        TriAdap[:,:3] = TriAdap[:,:3]-1
-      else:
-        TriAdap = np.empty((0,0), int)
+      if(options.nDim == 2):
+        if(nTri[0] > 0):
+          TriAdap = np.array([sendTriAdap[j,:].tolist() + [j] for j in indTri[:nTri[0]]])
+          TriAdap[:,:3] = TriAdap[:,:3]-1
+        else:
+          TriAdap = np.empty((0,0), int)
 
-      if(nTet[0] > 0):
-        TetAdap = np.array([sendTetAdap[j,:].tolist() + [j+nEgdTot+nTriTot] for j in indTet[:nTet[0]]])
-        TetAdap[:,:4] = TetAdap[:,:4]-1
       else:
-        TetAdap = np.empty((0,0), int)
+        if(nTet[0] > 0):
+          TetAdap = np.array([sendTetAdap[j,:].tolist() + [j+nTriTot] for j in indTet[:nTet[0]]])
+          TetAdap[:,:4] = TetAdap[:,:4]-1
+        else:
+          TetAdap = np.empty((0,0), int)
 
-      nEdgOff = nEdg[0]
       nTriOff = nTri[0]
       nTetOff = nTet[0]
 
       for i in range(1,size):
-        comm.send(nEdg[i], dest=i, tag=0)
         comm.send(nTri[i], dest=i, tag=1)
         comm.send(nTet[i], dest=i, tag=2)
 
-        if(nEdg[i] > 0):
-          sendBuf = np.array([sendEdgAdap[j,:].tolist() + [j] for j in indEdg[nEdgOff:nEdgOff+nEdg[i]]])
-          sendBuf[:,:2] = sendBuf[:,:2]-1
-          comm.send(sendBuf, dest=i, tag=3)
-          nEdgOff = nEdgOff + nEdg[i]
+        if(options.nDim == 2):
+          if(nTri[i] > 0):
+            sendBuf = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[nTriOff:nTriOff+nTri[i]]])
+            sendBuf[:,:3] = sendBuf[:,:3]-1
+            comm.send(sendBuf, dest=i, tag=4)
+            nTriOff = nTriOff + nTri[i]
 
-        if(nTri[i] > 0):
-          sendBuf = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[nTriOff:nTriOff+nTri[i]]])
-          sendBuf[:,:3] = sendBuf[:,:3]-1
-          comm.send(sendBuf, dest=i, tag=4)
-          nTriOff = nTriOff + nTri[i]
-
-        if(nTet[i] > 0):
-          sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nEdgTot+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
-          sendBuf[:,:4] = sendBuf[:,:4]-1
-          comm.send(sendBuf, dest=i, tag=5)
-          nTetOff = nTetOff + nTet[i]
+        else:
+          if(nTet[i] > 0):
+            sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nEdgTot+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
+            sendBuf[:,:4] = sendBuf[:,:4]-1
+            comm.send(sendBuf, dest=i, tag=5)
+            nTetOff = nTetOff + nTet[i]
 
       del [sendEdgAdap, sendTriAdap, sendTetAdap]
 
     else:
-      nEdg = comm.recv(source=0, tag=0)
       nTri = comm.recv(source=0, tag=1)
       nTet = comm.recv(source=0, tag=2)
-
-      if(nEdg > 0):
-        EdgAdap = comm.recv(source=0, tag=3)
-      else:
-        EdgAdap = np.empty((0,0), int)
 
       if(nTri > 0):
         TriAdap = comm.recv(source=0, tag=4)

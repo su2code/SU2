@@ -1448,6 +1448,9 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
 
     config_container[val_iZone]->SetiInst(iInst);
 
+    /*--- Set number of markers to number in config before partitioning. ---*/
+    config_container[val_iZone]->SetnMarker_All(config_container[val_iZone]->GetnMarker_CfgFile());
+
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
 

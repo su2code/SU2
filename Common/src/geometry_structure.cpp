@@ -8413,6 +8413,100 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   Global_nelem_prism    = nelem_prism;
   Global_nelem_pyramid  = nelem_pyramid;
 #endif
+
+  /*--- The master node takes care of loading all markers and
+   surface elements. This information is later put into linear
+   partitions to make its redistribution easier after we call 
+   ParMETIS. ---*/
+  
+  if (rank == MASTER_NODE) {
+        
+    /*--- Store the number of markers and print to the screen. ---*/
+    
+    nMarker = config->GetnMarker_All();
+    cout << nMarker << " surface markers." << endl;
+    
+    /*--- Create the data structure for boundary elements. ---*/
+    
+    bound         = new CPrimalGrid**[nMarker];
+    nElem_Bound   = new unsigned long [nMarker];
+    Tag_to_Marker = new string [config->GetnMarker_Max()];
+
+    unsigned long* jElem_Bound   = new unsigned long [nMarker];
+
+    /*--- Loop over elements and store. ---*/
+
+    if(nDim == 2) {
+
+      for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
+        /*---Note that the last  value for each surface element is 
+         the marker, and that the ref we stored for AMG was jMarker+2. ---*/
+        nElem_Bound[EdgAdap[iElem][3]-2]++;
+      }
+
+      for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
+        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+        jElem_Bound[iMarker] = 0;
+      }
+
+      for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
+        int iMarker = EdgAdap[iElem][3]-2;
+        int jElem = jElem_Bound[iMarker];
+        bound[iMarker][jElem] = new CLine(EdgAdap[iElem][0],
+                                          EdgAdap[iElem][1],2);
+        jElem_Bound[iMarker]++;
+      }
+    }
+
+    else {
+      for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
+        /*---Note that the last  value for each surface element is 
+         the marker, and that the ref we stored for AMG was jMarker+2. ---*/
+        nElem_Bound[TriAdap[iElem][4]-2]++;
+      }
+
+      for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
+        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+        jElem_Bound[iMarker] = 0;
+      }
+
+      for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
+        int iMarker = TriAdap[iElem][4]-2;
+        int jElem = jElem_Bound[iMarker];
+        bound[iMarker][jElem] = new CTriangle(TriAdap[iElem][0],
+                                              TriAdap[iElem][1]
+                                              TriAdap[iElem][2],2);
+        jElem_Bound[iMarker]++;
+      }
+    }
+
+    delete jElem_Bound;
+    
+    /*--- Update config file lists in order to store the boundary
+     information for this marker in the correct place. ---*/
+    
+    for (int iMarker = 0; iMarker < nMarker; iMarker++) {
+      
+      Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+      config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+      config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+      config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+      config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+      config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+      config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+      config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+      config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
+      config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+      config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
+      config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+      config->SetMarker_All_SendRecv(iMarker, NONE);
+      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      
+    }
+  }
   
 }
 
