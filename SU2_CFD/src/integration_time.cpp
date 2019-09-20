@@ -131,28 +131,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   
   Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
 
-  /* --- If fixed C_L mode, ensure that C_L is converged to target C_L --- */
-  //if (config[iZone]->GetFixed_CL_Mode() && Convergence){
-  //  su2double Total_CL = solver_container[iZone][iInst][FinestMesh][FLOW_SOL]->GetTotal_CL();
-  //  su2double Target_CL = config[iZone]->GetTarget_CL();
-    
-    /* --- C_L is not converged to target value --- */
-  //  if (fabs(Total_CL-Target_CL) > config[iZone]->GetCauchy_Eps()){
-  //    Convergence = false; Convergence_FullMG = false;
-  //  }
-    /* --- C_L is converged to target value --- */
-  //  else {
-  //    Convergence = false; Convergence_FullMG = false;
-  //    if (!AoA_FD) {
-	/* --- Set options for Finite Difference part of fixed CL mode --- */
-  //      config[iZone]->SetnExtIter(Iteration + config[iZone]->GetIter_dCL_dAlpha()+1);
-  //      AoA_FD = true;
-  //     if (rank == MASTER_NODE) cout << "---------------------- Fixed CL Mode has converged ----------------------" << endl;
-  //    }
-      
-  //  }
-  //}
-
 }
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
@@ -867,29 +845,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
-
-    /* --- If fixed C_L mode, ensure that C_L is converged to target C_L --- */
-  //if (config[iZone]->GetFixed_CL_Mode() && Convergence){
-  //  su2double Total_CL = solver_container[iZone][iInst][FinestMesh][FLOW_SOL]->GetTotal_CL();
-  //  su2double Target_CL = config[iZone]->GetTarget_CL();
-    
-    /* --- C_L is not converged to target value --- */   
-  //  if (fabs(Total_CL-Target_CL) > config[iZone]->GetCauchy_Eps()){
-  //    Convergence = false; Convergence_FullMG = false;
-  //  }
-    
-    /* --- C_L is converged to target value --- */
-  //  else {
-  //    Convergence = false; Convergence_FullMG = false;
-  //    if (!AoA_FD) {
-        /* --- Set options for Finite Difference part of fixed CL mode --- */
-	//config[iZone]->SetnExtIter(Iteration + config[iZone]->GetIter_dCL_dAlpha()+1);
-   //     AoA_FD = true;
-    //    if (rank == MASTER_NODE) cout << "---------------------- Fixed CL Mode has converged ----------------------" << endl;
-     // }
-      
-    //}
-  //}
+  
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
