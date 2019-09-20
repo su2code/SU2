@@ -49,6 +49,11 @@
 #include "geometry_structure.hpp"
 #include "gauss_structure.hpp"
 
+/*
+ * great rework of gauss quadrature rules in progress
+ * author: Thomas Dick
+ */
+
 using namespace std;
 
 /*!
@@ -530,6 +535,44 @@ public:
 
 };
 
+/*!
+ * \class CTRIA3
+ * \brief Tria element with 3 Gauss Points
+ * \author T. Dick
+ */
+
+class CTRIA3 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTRIA3(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTRIA3(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTRIA3(void);
+
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[in] mode - Type of coordinates to consider in the computation
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeArea(const FrameType mode = REFERENCE);
+
+};
 
 /*!
  * \class CQUAD4
@@ -609,6 +652,45 @@ public:
 };
 
 /*!
+ * \class CTETRA4
+ * \brief Tetrahedral element with 4 Gauss Point
+ * \author T. Dick
+ */
+
+class CTETRA4 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTETRA4(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTETRA4(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTETRA4(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(const FrameType mode = REFERENCE);
+
+};
+
+
+/*!
  * \class CHEXA8
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
@@ -676,6 +758,45 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CPYRAM5(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[in] mode - Type of coordinates to consider in the computation
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(const FrameType mode = REFERENCE);
+
+};
+
+/*!
+ * \class CPYRAM6
+ * \brief Pyramid element with 6 Gauss Points
+ * \author T. Dick
+ */
+
+class CPYRAM6 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPYRAM6(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPYRAM6(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPYRAM6(void);
 
   /*!
    * \brief Compute the value of the volume of the element

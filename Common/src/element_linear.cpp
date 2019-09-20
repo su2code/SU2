@@ -37,6 +37,11 @@
 
 #include "../include/element_structure.hpp"
 
+/*
+ * great rework of gauss quadrature rules in progress
+ * author: Thomas Dick
+ */
+
 CTRIA1::CTRIA1(void) : CElement() {
   
 }
@@ -47,14 +52,12 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
   /*--- Allocate internal structures ---*/
 
   nNodes = 3;
-  nGaussPoints = 3;
+  nGaussPoints = 1;
   AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 0.66666666666666666667; GaussCoord[0][1] = 0.16666666666666666667; GaussWeight[0] = 0.33333333333333333333;
-  GaussCoord[1][0] = 0.16666666666666666667; GaussCoord[1][1] = 0.66666666666666666667; GaussWeight[1] = 0.33333333333333333333;
-  GaussCoord[2][0] = 0.16666666666666666667; GaussCoord[2][1] = 0.16666666666666666667; GaussWeight[2] = 0.33333333333333333333;
+  GaussCoord[0][0] = 1.0/3.0;  GaussCoord[0][1] = 1.0/3.0;  GaussWeight[0] = 0.5;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -109,6 +112,81 @@ su2double CTRIA1::ComputeArea(const FrameType mode){
 }
 
 CTRIA1::~CTRIA1(void) {
+
+}
+
+CTRIA3::CTRIA3(void) : CElement() {
+
+}
+
+CTRIA3::CTRIA3(unsigned short val_nDim, CConfig *config)
+: CElement(val_nDim, config) {
+
+  /*--- Allocate internal structures ---*/
+
+  nNodes = 3;
+  nGaussPoints = 3;
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
+
+  /*--- Gauss coordinates and weights ---*/
+
+  GaussCoord[0][0] = 0.66666666666666666667; GaussCoord[0][1] = 0.16666666666666666667; GaussWeight[0] = 0.33333333333333333333;
+  GaussCoord[1][0] = 0.16666666666666666667; GaussCoord[1][1] = 0.66666666666666666667; GaussWeight[1] = 0.33333333333333333333;
+  GaussCoord[2][0] = 0.16666666666666666667; GaussCoord[2][1] = 0.16666666666666666667; GaussWeight[2] = 0.33333333333333333333;
+
+  /*--- Store the values of the shape functions and their derivatives ---*/
+
+  unsigned short iGauss;
+  su2double Xi, Eta, val_Ni;
+
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    Xi = GaussCoord[iGauss][0];
+    Eta = GaussCoord[iGauss][1];
+
+    val_Ni = Xi;        GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = Eta;       GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 1-Xi-Eta;  GaussPoint[iGauss]->SetNi(val_Ni,2);
+
+    /*--- dN/d xi, dN/d eta ---*/
+
+    dNiXj[iGauss][0][0] =  1.0;  dNiXj[iGauss][0][1] =  0.0;
+    dNiXj[iGauss][1][0] =  0.0;  dNiXj[iGauss][1][1] =  1.0;
+    dNiXj[iGauss][2][0] = -1.0;  dNiXj[iGauss][2][1] = -1.0;
+
+  }
+
+  /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+  /*--- The stress is constant over a TRIA1 element ---*/
+
+  NodalExtrap[0][0] = 1.0;
+  NodalExtrap[1][0] = 1.0;
+  NodalExtrap[2][0] = 1.0;
+
+}
+
+su2double CTRIA3::ComputeArea(const FrameType mode){
+
+  unsigned short iDim;
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
+  su2double Area = 0.0;
+
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
+  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = Coord[0][iDim]-Coord[2][iDim];
+    b[iDim] = Coord[1][iDim]-Coord[2][iDim];
+  }
+
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+
+  return Area;
+
+}
+
+CTRIA3::~CTRIA3(void) {
 
 }
 
@@ -292,6 +370,93 @@ su2double CTETRA1::ComputeVolume(const FrameType mode){
 }
 
 CTETRA1::~CTETRA1(void) {
+
+}
+
+CTETRA4::CTETRA4(void) : CElement() {
+
+}
+
+CTETRA4::CTETRA4(unsigned short val_nDim, CConfig *config)
+: CElement(val_nDim, config) {
+
+  /*--- Allocate internal structures ---*/
+
+  nNodes = 4;
+  nGaussPoints = 4;
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
+
+  /*--- Gauss coordinates and weights ---*/
+
+  su2double r = ((5.0-sqrt(5.0))/20);
+  su2double s = ((5.0+3*sqrt(5.0))/20);
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight[0] = 1.0/24.0;
+  GaussCoord[0][0] = s;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight[0] = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = s; GaussCoord[0][2] = r;  GaussWeight[0] = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = s;  GaussWeight[0] = 1.0/24.0;
+
+  /*--- Store the values of the shape functions and their derivatives ---*/
+
+  unsigned short iGauss;
+  su2double Xi, Eta, Zeta, val_Ni;
+
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    Xi = GaussCoord[iGauss][0];
+    Eta = GaussCoord[iGauss][1];
+    Zeta = GaussCoord[iGauss][2];
+
+    val_Ni = Xi;						  GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = Eta;						  GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = Zeta;					  GaussPoint[iGauss]->SetNi(val_Ni,3);
+
+    /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
+
+    dNiXj[iGauss][0][0] =  1.0;  dNiXj[iGauss][0][1] =  0.0;  dNiXj[iGauss][0][2] =  0.0;
+    dNiXj[iGauss][1][0] =  0.0;  dNiXj[iGauss][1][1] =  1.0;  dNiXj[iGauss][1][2] =  0.0;
+    dNiXj[iGauss][2][0] = -1.0;  dNiXj[iGauss][2][1] = -1.0;  dNiXj[iGauss][2][2] = -1.0;
+    dNiXj[iGauss][3][0] =  0.0;  dNiXj[iGauss][3][1] =  0.0;  dNiXj[iGauss][3][2] =  1.0;
+
+  }
+
+  /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+  /*--- The stress is constant at a TETRA1 element ---*/
+
+  NodalExtrap[0][0] = 1.0;
+  NodalExtrap[1][0] = 1.0;
+  NodalExtrap[2][0] = 1.0;
+  NodalExtrap[3][0] = 1.0;
+
+}
+
+su2double CTETRA4::ComputeVolume(const FrameType mode){
+
+  unsigned short iDim;
+  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
+  su2double Volume = 0.0;
+
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
+  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord[1][iDim] - Coord[0][iDim];
+    r2[iDim] = Coord[2][iDim] - Coord[0][iDim];
+    r3[iDim] = Coord[3][iDim] - Coord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  return Volume;
+
+}
+
+CTETRA4::~CTETRA4(void) {
 
 }
 
@@ -613,6 +778,139 @@ su2double CPYRAM5::ComputeVolume(const FrameType mode){
 }
 
 CPYRAM5::~CPYRAM5(void) {
+
+}
+
+CPYRAM6::CPYRAM6(void) : CElement() {
+
+}
+
+CPYRAM6::CPYRAM6(unsigned short val_nDim, CConfig *config)
+: CElement(val_nDim, config) {
+
+  /*--- Allocate internal structures ---*/
+
+  nNodes = 5;
+  nGaussPoints = 6;
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
+
+  /*--- Gauss coordinates and weights ---*/
+
+  GaussCoord[0][0] = sqrt(4.0/27.0);  GaussCoord[0][1] = sqrt(4.0/27.0);  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = 9.0/20.0;
+  GaussCoord[0][0] = sqrt(4.0/27.0);  GaussCoord[0][1] = sqrt(4.0/27.0);  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = 9.0/20.0;
+  GaussCoord[0][0] = sqrt(4.0/27.0);  GaussCoord[0][1] = sqrt(4.0/27.0);  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = 9.0/20.0;
+  GaussCoord[0][0] = sqrt(4.0/27.0);  GaussCoord[0][1] = sqrt(4.0/27.0);  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = 9.0/20.0;
+  GaussCoord[4][0] = 0.0;  GaussCoord[4][1] = 0.0;  GaussCoord[4][2] = 0.5;  GaussWeight[4] = 3.0/5.0;
+  GaussCoord[5][0] = 0.0;  GaussCoord[5][1] = 0.0;  GaussCoord[5][2] = 0.25;  GaussWeight[5] = -16.0/15.0;
+
+  /*--- Store the values of the shape functions and their derivatives ---*/
+
+  unsigned short iNode, iGauss;
+  su2double Xi, Eta, Zeta, val_Ni;
+
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    Xi = GaussCoord[iGauss][0];
+    Eta = GaussCoord[iGauss][1];
+    Zeta = GaussCoord[iGauss][2];
+
+    val_Ni = 0.25*(-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = 0.25*(-Xi-Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 0.25*( Xi+Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = 0.25*( Xi+Eta+Zeta-1.0)*(-Xi+Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,3);
+    val_Ni = Zeta;                                                   GaussPoint[iGauss]->SetNi(val_Ni,4);
+
+    /*--- dN/d xi ---*/
+
+    dNiXj[iGauss][0][0] = 0.5*(Zeta-Xi-1.0)/(Zeta-1.0);
+    dNiXj[iGauss][1][0] = 0.5*Xi/(Zeta-1.0);
+    dNiXj[iGauss][2][0] = 0.5*(1.0-Zeta-Xi)/(Zeta-1.0);
+    dNiXj[iGauss][3][0] = dNiXj[iGauss][1][0];
+    dNiXj[iGauss][4][0] = 0.0;
+
+    /*--- dN/d eta ---*/
+
+    dNiXj[iGauss][0][1] = 0.5*Eta/(Zeta-1.0);
+    dNiXj[iGauss][1][1] = 0.5*(Zeta-Eta-1.0)/(Zeta-1.0);
+    dNiXj[iGauss][2][1] = dNiXj[iGauss][0][1];
+    dNiXj[iGauss][3][1] = 0.5*(1.0-Zeta-Eta)/(Zeta-1.0);
+    dNiXj[iGauss][4][1] = 0.0;
+
+    /*--- dN/d zeta ---*/
+
+    dNiXj[iGauss][0][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta - Eta*Eta + Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+    dNiXj[iGauss][1][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta + Eta*Eta - Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+    dNiXj[iGauss][2][2] = dNiXj[iGauss][0][2];
+    dNiXj[iGauss][3][2] = dNiXj[iGauss][1][2];
+    dNiXj[iGauss][4][2] = 1.0;
+
+  }
+
+  /*--- Store the extrapolation functions ---*/
+
+  su2double ExtrapCoord[5][3];
+
+  ExtrapCoord[0][0] =  2.0;  ExtrapCoord[0][1] =  0.0;  ExtrapCoord[0][2] = -0.316397779494322;
+  ExtrapCoord[1][0] =  0.0;  ExtrapCoord[1][1] =  2.0;  ExtrapCoord[1][2] = -0.316397779494322;
+  ExtrapCoord[2][0] = -2.0;  ExtrapCoord[2][1] =  0.0;  ExtrapCoord[2][2] = -0.316397779494322;
+  ExtrapCoord[3][0] =  0.0;  ExtrapCoord[3][1] = -2.0;  ExtrapCoord[3][2] = -0.316397779494322;
+  ExtrapCoord[4][0] =  0.0;  ExtrapCoord[4][1] =  0.0;  ExtrapCoord[4][2] =  1.749193338482970;
+
+  for (iNode = 0; iNode < nNodes; iNode++) {
+
+    Xi = ExtrapCoord[iNode][0];
+    Eta = ExtrapCoord[iNode][1];
+    Zeta = ExtrapCoord[iNode][2];
+
+    NodalExtrap[iNode][0] = 0.25*(-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][1] = 0.25*(-Xi-Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][2] = 0.25*( Xi+Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][3] = 0.25*( Xi+Eta+Zeta-1.0)*(-Xi+Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][4] = Zeta;
+
+  }
+
+}
+
+su2double CPYRAM6::ComputeVolume(const FrameType mode){
+
+  unsigned short iDim;
+  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
+  su2double Volume = 0.0;
+
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
+  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord[1][iDim] - Coord[0][iDim];
+    r2[iDim] = Coord[2][iDim] - Coord[0][iDim];
+    r3[iDim] = Coord[4][iDim] - Coord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord[2][iDim] - Coord[0][iDim];
+    r2[iDim] = Coord[3][iDim] - Coord[0][iDim];
+    r3[iDim] = Coord[4][iDim] - Coord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  return Volume;
+
+}
+
+CPYRAM6::~CPYRAM6(void) {
 
 }
 

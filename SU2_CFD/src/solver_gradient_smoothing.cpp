@@ -63,14 +63,21 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   if (nDim == 2) {
-      element_container[GRAD_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[GRAD_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+    element_container[GRAD_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+    element_container[GRAD_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+    if (config->GetSecOrdQuad()) {
+      element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3(nDim, config);
+    }
   }
   else if (nDim == 3) {
-      element_container[GRAD_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[GRAD_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
-      element_container[GRAD_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
-      element_container[GRAD_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    element_container[GRAD_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+    element_container[GRAD_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
+    element_container[GRAD_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
+    element_container[GRAD_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    if (config->GetSecOrdQuad()) {
+      element_container[GRAD_TERM][EL_TETRA2] = new CTETRA4(nDim, config);
+      element_container[GRAD_TERM][EL_PYRAM2] = new CPYRAM6(nDim, config);
+    }
   }
 
   /*--- Allocate element properties - only the index, to allow further integration with CFEASolver on a later stage ---*/
@@ -280,6 +287,13 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
 
+    // if we need higher order quadrature rules overide some of the element kinds
+    if (config->GetSecOrdQuad()) {
+      if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)    {nNodes = 3; EL_KIND = EL_TRIA2;}
+      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {nNodes = 4; EL_KIND = EL_TETRA2;}
+      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)     {nNodes = 6; EL_KIND = EL_PYRAM2;}
+    }
+
     for (iNode = 0; iNode < nNodes; iNode++) {
 
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
@@ -304,7 +318,6 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
       for (jNode = 0; jNode < NelNodes; jNode++) {
 
         DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
-        //DHiHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
 
         /*
@@ -324,10 +337,8 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
           for (iDim = 0; iDim < nDim; iDim++) {
             for (jDim = 0; jDim < nDim; jDim++) {
               Jacobian_ij[iDim][jDim] = DHiDHj[iDim][jDim];
-              std::cout << Jacobian_ij[iDim][jDim] << " ";
-            }
+              }
             Jacobian_ij[iDim][iDim] += HiHj;
-            std::cout << " | " << HiHj << std::endl;
           }
           Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
@@ -363,19 +374,6 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
 void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *solver, CConfig *config){
 
-/*
-  unsigned long iPoint;
-  unsigned short iDim;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Residual[iDim] = solver->node[iPoint]->GetSensitivity(iDim);
-      Residual[iDim] = Residual[iDim] * element_container[GRAD_TERM][EL_KIND]->GetNi(iPoint,iDim);
-    }
-    LinSysRes.SetBlock(iPoint, Residual);
-  }
-*/
-
   unsigned long iElem;
   unsigned short iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
@@ -390,6 +388,13 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    // if we need higher order quadrature rules overide some of the element kinds
+    if (config->GetSecOrdQuad()) {
+      if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)    {nNodes = 3; EL_KIND = EL_TRIA2;}
+      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {nNodes = 4; EL_KIND = EL_TETRA2;}
+      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)     {nNodes = 6; EL_KIND = EL_PYRAM2;}
+    }
 
     for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -421,12 +426,11 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 
           Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(dir);
           LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
-          std::cout << "Input " << indexNode[iNode] << ", " << dir << ", " << solver->node[indexNode[iNode]]->GetSensitivity(dir) << std::endl;
+
         } else {
 
           for (iDim = 0; iDim < nDim; iDim++) {
             Residual[iDim] += Weight * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(iDim);
-            // std:: cout << Weight << ", " << Jac_X << ", " << element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) << ", " << solver->node[indexNode[iNode]]->GetSensitivity(iDim) << std::endl;
           }
           LinSysRes.AddBlock(indexNode[iNode], Residual);
 
@@ -552,42 +556,8 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
 
 }
 
-
+// For now: left empty since there is no calculation necessary for zero Neumann boundaries.
 void CGradientSmoothingSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker) {
-
-
-  unsigned long iElem;
-  unsigned short iVertex, iPoint, jNode, nNodes = 0;
-  int EL_KIND = 0;
-  su2double* DHiHj=NULL;
-
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-        if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-        if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-        if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-        if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-        if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-        if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
-
-        for (jNode = 0; jNode < nNodes; jNode++) {
-
-          DHiHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiHj(iPoint, geometry->elem[iElem]->GetNode(jNode));
-
-          LinSysRes.AddBlock(iPoint, DHiHj);
-        }
-      }
-    }
-  }
 
 }
 

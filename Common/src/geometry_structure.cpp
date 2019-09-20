@@ -3500,17 +3500,19 @@ void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
 
 void CGeometry::SetElemVolume(CConfig *config)
 {
-  CElement *elements[4] = {NULL, NULL, NULL, NULL}, *element = NULL;
+  CElement *elements[5] = {NULL, NULL, NULL, NULL, NULL}, *element = NULL;
 
   /*--- Create a bank of elements to avoid instantiating inside loop ---*/
   if (nDim==2) {
     elements[0] = new CTRIA1(nDim,config);
     elements[1] = new CQUAD4(nDim,config);
+    elements[2] = new CTRIA3(nDim,config);
   } else {
     elements[0] = new CTETRA1(nDim,config);
     elements[1] = new CPYRAM5(nDim,config);
     elements[2] = new CPRISM6(nDim,config);
     elements[3] = new CHEXA8(nDim,config);
+    elements[4] = new CTETRA4(nDim,config);
   }
 
   /*--- Compute and store the volume of each "elem" ---*/

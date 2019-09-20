@@ -120,7 +120,7 @@ const unsigned int MAX_SOLS = 11;		         /*!< \brief Maximum number of soluti
 const unsigned int MAX_TERMS = 8;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 6;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -476,11 +476,15 @@ const int GRAD_TERM = 7;  /*!< \brief Position of the gradient smoothing terms i
 
 const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;		/*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;		/*!< \brief Elements of eight nodes (3D). */
 const int EL_PYRAM = 2;    /*!< \brief Elements of five nodes (3D). */
 const int EL_PRISM = 3;    /*!< \brief Elements of six nodes (3D). */
+const int EL_TETRA2 = 4;		/*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;		/*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
+
 
 
 /*!

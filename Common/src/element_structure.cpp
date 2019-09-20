@@ -543,13 +543,12 @@ void CElement::ComputeGrad_2D(const FrameType mode) {
 
     detJac = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
 
-    // Jac_X zu was sinnvollem umbenennen!!!
+    // changed formular for the jacobian determinant: tested to make no difference
     su2double TrafoJacobi = abs( (Coord[1][0]-Coord[0][0])*(Coord[2][1]-Coord[0][1])
                                  - (Coord[2][0]-Coord[0][0])*(Coord[1][1]-Coord[0][1]) );
 
     if (mode==REFERENCE) {
       GaussPoint[iGauss]->SetJ_X(TrafoJacobi);
-      std::cout << std::scientific << "Altes Jac_X " << detJac << " Neuse Jac_X " << TrafoJacobi << std::endl;
     }
     else
       GaussPoint[iGauss]->SetJ_x(detJac);

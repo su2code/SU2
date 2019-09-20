@@ -105,8 +105,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   /*--- Set element properties  if they need to be set ---*/
   SetElement_Properties(element, config);
 
-  Compute_Constitutive_Matrix(element, config);
-
   element->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
@@ -131,9 +129,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
       for (jNode = iNode; jNode < nNode; jNode++) {
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          //for (jDim = 0; jDim < nDim; jDim++) {
-            GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][iDim];
-          //}
+          GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][iDim];
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -180,31 +176,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
   }
 
-  /*--- contribution from Neumann boundary terms ---
-  /* computed here and stored for later use          */
-
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
-
-    Weight = element->GetWeight(iGauss);
-
-    for (iNode = 0; iNode < nNode; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
-      }
-      Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
-    }
-
-    for (iNode = 0; iNode < nNode; iNode++) {
-      for (jNode = 0; jNode < nNode; jNode++) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          val_DHiHj[iDim] = epsilon * epsilon * Weight * GradNi_Ref_Mat[iNode][iDim] * Ni_Vec[jNode];
-        }
-        element->Add_DHiHj(val_DHiHj, iNode, jNode);
-      }
-    }
-
-  }
-
   delete [] val_DHiHj;
 
 }
@@ -212,28 +183,5 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 void CGradSmoothing::SetElement_Properties(CElement *element, CConfig *config) {
 
  // no special element properties needed so far ???
-
-}
-
-void CGradSmoothing::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) {
-
-  /*--- Compute the D Matrix, so far identity for test purposes ---*/
-
-  if (nDim == 2) {
-
-    D_Mat[0][0] = 1.0;  D_Mat[0][1] = 0.0;  D_Mat[0][2] = 0.0;
-    D_Mat[1][0] = 0.0;  D_Mat[1][1] = 1.0;  D_Mat[1][2] = 0.0;
-    D_Mat[2][0] = 0.0;  D_Mat[2][1] = 0.0;  D_Mat[2][2] = 1.0;
-  }
-  else if (nDim == 3) {
-
-    D_Mat[0][0] = 1.0;  D_Mat[0][1] = 0.0;  D_Mat[0][2] = 0.0;  D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
-    D_Mat[1][0] = 0.0;  D_Mat[1][1] = 1.0;  D_Mat[1][2] = 0.0;  D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
-    D_Mat[2][0] = 0.0;  D_Mat[2][1] = 0.0;  D_Mat[2][2] = 1.0;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
-    D_Mat[3][0] = 0.0;  D_Mat[3][1] = 0.0;  D_Mat[3][2] = 0.0;  D_Mat[3][3] = 1.0;  D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
-    D_Mat[4][0] = 0.0;  D_Mat[4][1] = 0.0;  D_Mat[4][2] = 0.0;  D_Mat[4][3] = 0.0;  D_Mat[4][4] = 1.0;  D_Mat[4][5] = 0.0;
-    D_Mat[5][0] = 0.0;  D_Mat[5][1] = 0.0;  D_Mat[5][2] = 0.0;  D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = 1.0;
-
-  }
 
 }

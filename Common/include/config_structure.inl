@@ -339,6 +339,8 @@ inline su2double CConfig::GetSmoothingParam(void) { return SmoothingParam; }
 
 inline bool CConfig::GetSepDim(void) { return SepDim; }
 
+inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }
+
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
