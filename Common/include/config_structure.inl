@@ -1802,10 +1802,6 @@ inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
 
 inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
 
-inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
-
-inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
-
 inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
