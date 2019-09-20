@@ -627,13 +627,11 @@ def multipoint( config, state=None, step=1e-2 ):
         src_direct = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
 
         # make unix link
-        string_direct = "ln -s " + src_direct + " " + dst_direct
         os.symlink(src_direct, dst_direct)
         
         # If the mesh doesn't already exist, link
         if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
             src_mesh = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['MESH']
-            string_mesh =  "ln -s " + src_mesh + " " + dst_mesh
             if not os.path.exists(src_mesh): 
                 os.symlink(src_mesh, dst_mesh)
 
