@@ -1208,15 +1208,15 @@ vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTet(unsign
   return Tet;
 }
 
-unsigned short CErrorEstimationDriver::GetnMarker_All() {
+unsigned short CErrorEstimationDriver::GetnMarker_CfgFile() {
 
-  unsigned short nMarker_All = config[ZONE_0]->GetnMarker_All();
+  unsigned short nMarker_All = config[ZONE_0]->GetnMarker_CfgFile();
   return nMarker_All;
 }
 
-string CErrorEstimationDriver::GetMarker_All_TagBound(unsigned short val_iMarker) {
+string CErrorEstimationDriver::GetMarker_CfgFile_TagBound(unsigned short val_iMarker) {
 
-  string Marker_Tag = config[ZONE_0]->GetMarker_All_TagBound(val_iMarker);
+  string Marker_Tag = config[ZONE_0]->GetMarker_CfgFile_TagBound(val_iMarker);
   return Marker_Tag;
 }
 

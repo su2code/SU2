@@ -247,11 +247,11 @@ def main():
         del mesh['Edges']
 
       # Get markers
-      nMarker_All = SU2Error.GetnMarker_All()
+      nMarker_All = SU2Error.GetnMarker_CfgFile()
       mesh['markers'] = np.empty(nMarker_All+1, 'object')
       mesh['markers'][0] = int(options.nDim)
       for iMarker in range(1,nMarker_All+1):
-        mesh['markers'][iMarker-1] = SU2Error.GetMarker_All_TagBound(iMarker-1)
+        mesh['markers'][iMarker] = SU2Error.GetMarker_CfgFile_TagBound(iMarker-1)
 
       # Remesh options
       remesh_options                = {}
