@@ -287,10 +287,11 @@ def main():
       else:
         sendSolAdap = mesh_new['solution']
         sendPoiAdap = mesh_new['xyz']
-        sendEdgAdap = np.empty((0,0), int)
+        sendTriAdap = np.empty((0,0), int)
         sendTetAdap = mesh_new['Tetrahedra']
 
         # Only store triangle info on rank 0 for 3D
+        EdgAdap = np.empty((0,0), int)
         TriAdap = np.array(mesh_new['Triangles'])
 
       del [mesh, mesh_new]
@@ -387,27 +388,28 @@ def main():
         comm.send(nTri[i], dest=i, tag=1)
         comm.send(nTet[i], dest=i, tag=2)
 
-        EdgAdap = np.empty((0,0), int)
 
         if(options.nDim == 2):
           if(nTri[i] > 0):
-            sendBuf = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[nTriOff:nTriOff+nTri[i]]])
+            sendBuf = np.array([sendTriAdap[j,:].tolist() + [j] for j in indTri[nTriOff:nTriOff+nTri[i]]])
             sendBuf[:,:3] = sendBuf[:,:3]-1
             comm.send(sendBuf, dest=i, tag=4)
             nTriOff = nTriOff + nTri[i]
 
         else:
           if(nTet[i] > 0):
-            sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nEdgTot+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
+            sendBuf = np.array([sendTetAdap[j,:].tolist() + [j+nTriTot] for j in indTet[nTetOff:nTetOff+nTet[i]]])
             sendBuf[:,:4] = sendBuf[:,:4]-1
             comm.send(sendBuf, dest=i, tag=5)
             nTetOff = nTetOff + nTet[i]
 
-      del [sendEdgAdap, sendTriAdap, sendTetAdap]
+      del [sendTriAdap, sendTetAdap]
 
     else:
       nTri = comm.recv(source=0, tag=1)
       nTet = comm.recv(source=0, tag=2)
+
+      EdgAdap = np.empty((0,0), int)
 
       if(nTri > 0):
         TriAdap = comm.recv(source=0, tag=4)
