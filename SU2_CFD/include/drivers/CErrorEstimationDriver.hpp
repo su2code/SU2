@@ -196,12 +196,12 @@ public:
   /*!
    * \brief Get the number of markers.
    */
-  unsigned short GetnMarker_All(void);
+  unsigned short GetnMarker_CfgFile(void);
 
   /*!
    * \brief Get the marker tag.
    */
-  string GetMarker_All_TagBound(unsigned short val_iMarker);
+  string GetMarker_CfgFile_TagBound(unsigned short val_iMarker);
 
   /*!
    * \brief Delete the sorted solution data.
