@@ -2514,7 +2514,7 @@ void CConfig::SetConfig_Options() {
   addPythonOption("ADAP_FLOW_ITER");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_FLOW_EXT_ITER");
+  addPythonOption("ADAP_ADJ_ITER");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RESIDUAL_REDUCTION");
