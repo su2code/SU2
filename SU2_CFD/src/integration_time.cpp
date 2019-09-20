@@ -1381,8 +1381,8 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 }
 
 void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
-                                            CSolver *****solver_container,
-                                            CNumerics ******numerics_container,
+                                            CSolver *****solver,
+                                            CNumerics ******numerics,
                                             CConfig **config,
                                             unsigned short iMesh,
                                             unsigned short RunTime_EqSystem,
@@ -1397,30 +1397,30 @@ void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
     
     /*--- Send-Receive boundary conditions, and preprocessing ---*/
       
-    solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, 0, RunTime_EqSystem, false);
+    solver[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh, 0, RunTime_EqSystem, false);
              
     /*--- Set the old solution ---*/
         
-    solver_container[iZone][iInst][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iInst][iMesh]);
+    solver[iZone][iInst][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iInst][iMesh]);
 
     /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
-    solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
+    solver[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
       
     /*--- Space integration ---*/
-    Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
+    Space_Integration(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], numerics[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
       
     /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-    Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], NO_RK_ITER, RunTime_EqSystem, Iteration);
+    Time_Integration(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], NO_RK_ITER, RunTime_EqSystem, Iteration);
       
     /*--- Send-Receive boundary conditions, and postprocessing ---*/
       
-    solver_container[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
+    solver[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
 
    /*--- Compute adimensional parameters and the convergence monitor ---*/
   
    switch (RunTime_EqSystem) {
-    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][iInst][iMesh][POISSON_SOL]->GetRes_RMS(0)); break;
-    case RUNTIME_FLOW_SYS: monitor = log10(solver_container[iZone][iInst][iMesh][FLOW_SOL]->GetRes_RMS(0)); break;
+    case RUNTIME_POISSON_SYS: monitor = log10(solver[iZone][iInst][iMesh][POISSON_SOL]->GetRes_RMS(0)); break;
+    case RUNTIME_FLOW_SYS: monitor = log10(solver[iZone][iInst][iMesh][FLOW_SOL]->GetRes_RMS(0)); break;
   }
   
   /*--- Convergence strategy ---*/
@@ -1431,8 +1431,8 @@ void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
     for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
-      SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][SolContainer_Position], solver_container[iZone][iInst][iMesh+1][SolContainer_Position], geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
-      SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][SolContainer_Position], solver_container[iZone][iInst][iMesh+1][SolContainer_Position], geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
+      SetRestricted_Solution(RunTime_EqSystem, solver[iZone][iInst][iMesh][SolContainer_Position], solver[iZone][iInst][iMesh+1][SolContainer_Position], geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
+      SetRestricted_EddyVisc(RunTime_EqSystem, solver[iZone][iInst][iMesh][SolContainer_Position], solver[iZone][iInst][iMesh+1][SolContainer_Position], geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
     }
   }
     

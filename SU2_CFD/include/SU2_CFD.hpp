@@ -39,10 +39,15 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
+#include "CLI11.hpp"
 
 #include <ctime>
 
-#include "driver_structure.hpp"
+#include "drivers/CDriver.hpp"
+#include "drivers/CSinglezoneDriver.hpp"
+#include "drivers/CMultizoneDriver.hpp"
+#include "drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "drivers/CDummyDriver.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
@@ -54,6 +59,6 @@
 #include "../../Common/include/interpolation_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
-#include "../include/transfer_structure.hpp"
+#include "../include/interfaces/CInterface.hpp"
 
 using namespace std;

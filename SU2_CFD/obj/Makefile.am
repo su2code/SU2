@@ -58,50 +58,7 @@ bin_PROGRAMS += ../bin/SU2_CFD_AD
 noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
-libSU2Core_sources = \
-  ../include/definition_structure.hpp \
-  ../include/fluid_model.hpp \
-  ../include/fluid_model.inl \
-  ../include/integration_structure.hpp \
-  ../include/integration_structure.inl \
-  ../include/driver_structure.hpp \
-  ../include/iteration_structure.hpp \
-  ../include/numerics_structure.hpp \
-  ../include/numerics_structure.inl \
-  ../include/output_structure.hpp \
-  ../include/output_structure.inl \
-  ../include/sgs_model.hpp \
-  ../include/sgs_model.inl \
-  ../include/solver_structure.hpp \
-  ../include/solver_structure.inl \
-  ../include/SU2_CFD.hpp \
-  ../include/task_definition.hpp \
-  ../include/task_definition.inl \
-  ../include/transport_model.hpp \
-  ../include/transport_model.inl \
-  ../src/variables/CFEABoundVariable.hpp \
-  ../src/variables/CHeatFVMVariable.hpp \
-  ../src/variables/CVariable.hpp \
-  ../src/variables/CAdjNSVariable.hpp \
-  ../src/variables/CTurbSSTVariable.hpp \
-  ../src/variables/CAdjTurbVariable.hpp \
-  ../src/variables/CTransLMVariable.hpp \
-  ../src/variables/CDiscAdjFEAVariable.hpp \
-  ../src/variables/CIncEulerVariable.hpp \
-  ../src/variables/CTurbVariable.hpp \
-  ../src/variables/CNSVariable.hpp \
-  ../src/variables/CBaselineVariable.hpp \
-  ../src/variables/CTurbSAVariable.hpp \
-  ../src/variables/CFEAVariable.hpp \
-  ../src/variables/CAdjEulerVariable.hpp \
-  ../src/variables/CDiscAdjVariable.hpp \
-  ../src/variables/CIncNSVariable.hpp \
-  ../src/variables/CEulerVariable.hpp \
-  ../src/variables/CPBIncEulerVariable.hpp \
-  ../src/variables/CPBIncNSVariable.hpp \
-  ../include/transfer_structure.hpp \
-  ../include/transfer_structure.inl \
-  ../src/definition_structure.cpp \
+libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
@@ -109,10 +66,11 @@ libSU2Core_sources = \
   ../src/fluid_model_inc.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
-  ../src/driver_direct_multizone.cpp \
-  ../src/driver_direct_singlezone.cpp \
-  ../src/driver_adjoint_singlezone.cpp \
-  ../src/driver_structure.cpp \
+  ../src/drivers/CMultizoneDriver.cpp \
+  ../src/drivers/CSinglezoneDriver.cpp \
+  ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
+  ../src/drivers/CDriver.cpp \
+  ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
@@ -126,6 +84,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
+  ../src/numerics/CFEAMeshElasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
@@ -140,6 +99,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
   ../src/solver_adjoint_elasticity.cpp \
+  ../src/solvers/CDiscAdjMeshSolver.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
   ../src/solver_direct_mean_fem.cpp \
@@ -149,18 +109,34 @@ libSU2Core_sources = \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solvers/CMeshSolver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
-  ../src/transfer_physics.cpp \
-  ../src/transfer_structure.cpp \
+  ../src/interfaces/CInterface.cpp \
+  ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
+  ../src/interfaces/cfd/CMixingPlaneInterface.cpp \
+  ../src/interfaces/cfd/CSlidingInterface.cpp \
+  ../src/interfaces/cht/CConjugateHeatInterface.cpp \
+  ../src/interfaces/fsi/CDisplacementsInterface.cpp \
+  ../src/interfaces/fsi/CFlowTractionInterface.cpp \
+  ../src/interfaces/fsi/CDiscAdjFlowTractionInterface.cpp \
+  ../src/interfaces/fsi/CDisplacementsInterfaceLegacy.cpp \
+  ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
+  ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \
+  ../src/variables/CDiscAdjMeshBoundVariable.cpp \
+  ../src/variables/CDiscAdjMeshVariable.cpp \
+  ../src/variables/CMeshBoundVariable.cpp \
+  ../src/variables/CMeshElement.cpp \
+  ../src/variables/CMeshVariable.cpp \
   ../src/variables/CHeatFVMVariable.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
+  ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
@@ -179,10 +155,10 @@ su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
 
-libSU2Core_cxx_flags = -fPIC
+libSU2Core_cxx_flags = -fPIC -std=c++11
 libSU2Core_libadd = 
 
-su2_cfd_cxx_flags =
+su2_cfd_cxx_flags = -fPIC -std=c++11
 su2_cfd_ldadd =
 
 # always link to built dependencies from ./externals

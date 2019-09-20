@@ -3436,7 +3436,6 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-      //if (iPoint == 54) cout<<iPoint<<"\t"<<LinSysRes[total_index]<<endl;
     }
   }
   
@@ -4705,14 +4704,15 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
       
       Face_Flux = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) {
-		Face_Flux -= 0.5*node[iPoint]->GetDensity()*(V_domain[iDim+1] + V_infty[iDim+1])*Normal[iDim];
+		//Face_Flux -= 0.5*node[iPoint]->GetDensity()*(V_domain[iDim+1] + V_infty[iDim+1])*Normal[iDim];
+		Face_Flux -= node[iPoint]->GetDensity()*V_domain[iDim+1]*Normal[iDim];
 	  }
 	  
 	  Flux0 = 0.5*(Face_Flux + fabs(Face_Flux));
 	  Flux1 = 0.5*(Face_Flux - fabs(Face_Flux));
 	  
       for (iVar = 0; iVar < nVar; iVar++) {
-	     Residual[iVar] = Flux0*V_domain[iVar+1] + Flux1*V_infty[iDim+1];
+	     Residual[iVar] = Flux0*V_domain[iVar+1] ;//+ Flux1*V_infty[iDim+1];
 	  }
 	  	  
 	  if ((Face_Flux < 0.0) && (fabs(Face_Flux) > EPS)) inflow = true;
@@ -4720,13 +4720,10 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 	  if (inflow) {
 	      for (iDim = 0; iDim < nDim; iDim++)
               LinSysRes.SetBlock_Zero(iPoint, iDim);
-        /*  cout<<"Inflow\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<V_domain[1]<<"\t"<<V_domain[2]<<endl;
-          cout<<GetVelocity_Inf(0)<<"\t"<<GetVelocity_Inf(1)<<"\t"<<Flux1<<"\t"<<Flux0<<endl;*/
 	  }
 	  else {
 		   node[iPoint]->SetPressure_val(GetPressure_Inf());   
            LinSysRes.AddBlock(iPoint, Residual);
-           //cout<<iPoint<<"\t"<<Face_Flux<<"\t"<<"Outflow\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<V_domain[1]<<"\t"<<V_domain[2]<<"\t"<<Flux0<<"\t"<<Residual[0]<<"\t"<<Residual[1]<<endl;
       }
       
    
@@ -6089,7 +6086,7 @@ unsigned long iPoint, ErrorCounter = 0;
 		solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
 		solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
     }
-    cout<<"Strain Mag from solver 54\t"<<node[54]->GetStrainMag()<<endl;
+    //cout<<"Strain Mag from solver 54\t"<<node[54]->GetStrainMag()<<endl;
   
 }
 

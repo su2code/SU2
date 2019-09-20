@@ -116,7 +116,7 @@ const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parame
 const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 8;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 10;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
@@ -165,6 +165,10 @@ const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CG
 const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
+const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int SU2_CONN_SIZE   = 10; /*!< \brief Size of the connectivity array that is allocated for each element that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
+const int SU2_CONN_SKIP   = 2;  /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
+
 /*!
  * \brief Boolean answers
  */
@@ -193,28 +197,33 @@ enum ENUM_SOLVER {
   EULER = 1,							/*!< \brief Definition of the Euler's solver. */
   NAVIER_STOKES = 2,					/*!< \brief Definition of the Navier-Stokes' solver. */
   RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  POISSON_EQUATION = 4,					/*!< \brief Definition of the poisson/pressure correction equation. */
-  HEAT_EQUATION_FVM = 28,               /*!< \brief Definition of the finite volume heat solver. */
-  FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
-  FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
-  ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
-  ZONE_SPECIFIC = 31,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
-  DISC_ADJ_EULER = 35,
-  DISC_ADJ_RANS = 36,
-  DISC_ADJ_NAVIER_STOKES = 37,
-  DISC_ADJ_HEAT = 38,
-  DISC_ADJ_FEM_EULER = 65,
-  DISC_ADJ_FEM_RANS = 66,
-  DISC_ADJ_FEM_NS = 67,
-  DISC_ADJ_FEM = 40,
-  FEM_EULER = 50,                       /*!< \brief Definition of the finite element Euler's solver. */
-  FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
-  FEM_RANS = 52,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 53,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 99
+  INC_EULER = 4,							/*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES =5,					/*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS = 6,								/*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  HEAT_EQUATION_FVM = 7,     /*!< \brief Definition of the finite volume heat solver. */
+  FLUID_STRUCTURE_INTERACTION = 8,		/*!< \brief Definition of a FSI solver. */
+  FEM_ELASTICITY = 9,					/*!< \brief Definition of a FEM solver. */
+  ADJ_EULER = 10,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES = 11,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS = 12,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TEMPLATE_SOLVER = 13,                 /*!< \brief Definition of template solver. */
+  DISC_ADJ_EULER = 15,
+  DISC_ADJ_RANS = 16,
+  DISC_ADJ_NAVIER_STOKES = 17,
+  DISC_ADJ_INC_EULER = 18,
+  DISC_ADJ_INC_RANS = 19,
+  DISC_ADJ_INC_NAVIER_STOKES = 20,
+  DISC_ADJ_HEAT = 21,
+  DISC_ADJ_FEM_EULER = 22,
+  DISC_ADJ_FEM_RANS = 23,
+  DISC_ADJ_FEM_NS = 24,
+  DISC_ADJ_FEM = 25,
+  FEM_EULER = 26,                       /*!< \brief Definition of the finite element Euler's solver. */
+  FEM_NAVIER_STOKES = 27,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
+  FEM_RANS = 28,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES = 29,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIPHYSICS = 30,
+  POISSON_EQUATION = 31					/*!< \brief Definition of the poisson/pressure correction equation. */
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -222,7 +231,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("EULER", EULER)
 ("NAVIER_STOKES", NAVIER_STOKES)
 ("RANS", RANS)
-("POISSON_EQUATION", POISSON_EQUATION)
+("INC_EULER", INC_EULER)
+("INC_NAVIER_STOKES", INC_NAVIER_STOKES)
+("INC_RANS", INC_RANS)
 ("FEM_EULER", FEM_EULER)
 ("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
 ("FEM_RANS", FEM_RANS)
@@ -234,7 +245,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
-("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
+("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_NAVIER_STOKES)
+("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
+("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
+("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
 ("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
 ("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
 ("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
@@ -242,8 +256,8 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-("ZONE_SPECIFIC", ZONE_SPECIFIC)
-("MULTIPHYSICS", MULTIPHYSICS);
+("MULTIPHYSICS", MULTIPHYSICS)
+("POISSON_EQUATION", POISSON_EQUATION);
 
 /*!
  * \brief different solver types for the multizone environment component
@@ -277,7 +291,7 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
  */
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
-  FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  FEM_ELASTICITY_SFSI = 9,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
@@ -392,7 +406,8 @@ enum ENUM_TRANSFER {
   NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
   NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
   FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
-  STRUCTURAL_DISPLACEMENTS          = 11,   /*!< \brief Structural displacements (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS_LEGACY   = 11,   /*!< \brief Structural displacements (between fluids and solids) - legacy version (to be removed). */
+  BOUNDARY_DISPLACEMENTS            = 21,   /*!< \brief Boundary displacements (between fluids and solids) */
   STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
@@ -402,30 +417,15 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
 };
-static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
-("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
-("NO_COMMON_INTERFACE", NO_COMMON_INTERFACE)
-("NO_TRANSFER", NO_TRANSFER)
-("FLOW_TRACTION", FLOW_TRACTION)
-("STRUCTURAL_DISPLACEMENTS", STRUCTURAL_DISPLACEMENTS)
-("STRUCTURAL_DISPLACEMENTS_DISC_ADJ", STRUCTURAL_DISPLACEMENTS_DISC_ADJ)
-("SLIDING_INTERFACE", SLIDING_INTERFACE)
-("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
-("MIXING_PLANE", MIXING_PLANE)
-("CONJUGATE_HEAT_FS", CONJUGATE_HEAT_FS)
-("CONJUGATE_HEAT_WEAKLY_FS", CONJUGATE_HEAT_WEAKLY_FS)
-("CONJUGATE_HEAT_SF", CONJUGATE_HEAT_SF)
-("CONJUGATE_HEAT_WEAKLY_SF", CONJUGATE_HEAT_WEAKLY_SF);
+
 /*!
  * \brief different regime modes
  */
 enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
+  NO_FLOW = 2
 };
-static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
-("COMPRESSIBLE", COMPRESSIBLE)
-("INCOMPRESSIBLE", INCOMPRESSIBLE);
 
 /*!
  * \brief different non-dimensional modes
@@ -506,6 +506,9 @@ const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the num
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
 const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
+
+const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
+const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 
 /*!
@@ -851,28 +854,30 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
  */
 enum ENUM_TURB_MODEL {
   NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
-  SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SA        = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG    = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_E      = 3, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP   = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SST       = 6, /*!< \brief Kind of Turbulence model (Menter SST). */
+  SST_SUST  = 7  /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
 ("SA_E", SA_E)
 ("SA_COMP", SA_COMP)
-("SA_E_COMP", SA_E_COMP);
+("SA_E_COMP", SA_E_COMP)
+("SST", SST)
+("SST_SUST", SST_SUST);
 
 /*!
  * \brief types of transition models
  */
 enum ENUM_TRANS_MODEL {
   NO_TRANS_MODEL = 0,            /*!< \brief No transition model. */
-  LM = 1,	/*!< \brief Kind of transition model (LM for Spalart-Allmaras). */
+  LM = 1,	/*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
   BC = 2	/*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
@@ -1417,7 +1422,9 @@ enum ENUM_OBJECTIVE {
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
-  VOLUME_FRACTION=62              /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  VOLUME_FRACTION=62,             /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  TOPOL_DISCRETENESS=63,          /*!<\brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE=64             /*!<\brief Measure of the discreteness of the current topology. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1466,7 +1473,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
 ("REFERENCE_NODE", REFERENCE_NODE)
-("VOLUME_FRACTION", VOLUME_FRACTION);
+("VOLUME_FRACTION", VOLUME_FRACTION)
+("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
+("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE);
 
 /*!
  * \brief types of residual criteria equations
@@ -1546,14 +1555,16 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  * \brief types of input file formats
  */
 enum ENUM_INPUT {
-  SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
+  SU2       = 1,  /*!< \brief SU2 input format. */
+  CGNS      = 2,  /*!< \brief CGNS input format for the computational grid. */
+  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS);
-
-const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */
+("CGNS", CGNS)
+("RECTANGLE", RECTANGLE)
+("BOX", BOX);
 
 /*!
  * \brief type of solution output file formats
@@ -1744,7 +1755,9 @@ enum ENUM_LINEAR_SOLVER {
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
   RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER = 8,  /*!< \brief Iterative smoother. */
+  SMOOTHER = 8,    /*!< \brief Iterative smoother. */
+  PASTIX_LDLT = 9, /*!< \brief PaStiX LDLT (complete) factorization. */
+  PASTIX_LU = 10,  /*!< \brief PaStiX LU (complete) factorization. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1754,7 +1767,9 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
 ("RESTARTED_FGMRES", RESTARTED_FGMRES)
-("SMOOTHER", SMOOTHER);
+("SMOOTHER", SMOOTHER)
+("PASTIX_LDLT", PASTIX_LDLT)
+("PASTIX_LU", PASTIX_LU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1806,13 +1821,19 @@ enum ENUM_LINEAR_SOLVER_PREC {
   JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
   LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
   LINELET = 3,  /*!< \brief Line implicit preconditioner. */
-  ILU = 4       /*!< \brief ILU(0) preconditioner. */
+  ILU = 4,      /*!< \brief ILU(k) preconditioner. */
+  PASTIX_ILU= 5,  /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_LU_P= 6,  /*!< \brief PaStiX LU as preconditioner. */
+  PASTIX_LDLT_P= 7, /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU", ILU);
+("ILU", ILU)
+("PASTIX_ILU", PASTIX_ILU)
+("PASTIX_LU", PASTIX_LU_P)
+("PASTIX_LDLT", PASTIX_LDLT_P);
 
 /*!
  * \brief types of analytic definitions for various geometries
@@ -1881,9 +1902,9 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
  * \brief types of element stiffnesses imposed for FEA mesh deformation
  */
 enum ENUM_DEFORM_STIFFNESS {
-  CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
-  INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  CONSTANT_STIFFNESS = 0,       /*!< \brief Impose a constant stiffness for each element (steel). */
+  INVERSE_VOLUME = 1,			      /*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
+  SOLID_WALL_DISTANCE = 2			  /*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
@@ -1938,7 +1959,8 @@ enum ENUM_RECORDING {
   FLOW_CROSS_TERM = 5,
   FEM_CROSS_TERM_GEOMETRY = 6,
   GEOMETRY_CROSS_TERM = 7,
-  ALL_VARIABLES = 8
+  ALL_VARIABLES = 8,
+  MESH_DEFORM = 9
 };
 
 /*!
@@ -2015,9 +2037,12 @@ enum MPI_QUANTITIES {
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
-  MASS_FLUX            = 27,  /*!< \brief Mass flux in a CV communication. */
-  MOM_COEFF		  	   = 28,  /*!< \brief Momentum eq coefficient communication. */
-  PRESSURE_VAR	       = 29   /*!< \brief Primitive variable communication. */
+  MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
+  SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
+  SOLUTION_TIME_N1     = 29,   /*!< \brief Solution at time n-1. */
+  MASS_FLUX            = 30,  /*!< \brief Mass flux in a CV communication. */
+  MOM_COEFF		  	   = 31,  /*!< \brief Momentum eq coefficient communication. */
+  PRESSURE_VAR	       = 32   /*!< \brief Primitive variable communication. */
 };
 
 /*!

@@ -44,7 +44,7 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
                                                  unsigned short val_iMesh,
                                                  CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+  
   /*--- Write a message that the solution is initialized for the
    inviscid vortex test case. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -77,12 +77,14 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
     SU2_MPI::Error("Unsteady mode must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_Regime() != COMPRESSIBLE)
+  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
+     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
+     Kind_Solver != FEM_LES)
     SU2_MPI::Error("Compressible flow equations must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 
-  if((config->GetKind_Solver() != EULER) &&
-     (config->GetKind_Solver() != FEM_EULER))
+  if((Kind_Solver != EULER) &&
+     (Kind_Solver != FEM_EULER))
     SU2_MPI::Error("Euler equations must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 

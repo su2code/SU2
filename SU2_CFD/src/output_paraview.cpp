@@ -176,7 +176,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
   
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -634,7 +634,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       
       Paraview_File << "\nSCALARS Grid_Velx double 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -1155,7 +1155,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
   
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetDynamic_Grid();
   bool adjoint = config->GetContinuous_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
@@ -1560,7 +1560,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       
       Paraview_File << "\nSCALARS Grid_Velx double 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -2948,24 +2948,24 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     myPoint     = nParallel_Poin;
   }
   
-  int *nPoint_Snd = new int[size+1];
-  int *nPoint_Cum = new int[size+1];
+  int *nPoint_Snd       = new int[size+1];
+  int *nPointCumulative = new int[size+1];
   
-  nPoint_Snd[0] = 0; nPoint_Cum[0] = 0;
+  nPoint_Snd[0] = 0; nPointCumulative[0] = 0;
   for (int ii=1; ii < size; ii++) {
-    nPoint_Snd[ii] = myPoint; nPoint_Cum[ii] = 0;
+    nPoint_Snd[ii] = myPoint; nPointCumulative[ii] = 0;
   }
-  nPoint_Snd[size] = myPoint; nPoint_Cum[size] = 0;
+  nPoint_Snd[size] = myPoint; nPointCumulative[size] = 0;
   
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
   
   SU2_MPI::Alltoall(&(nPoint_Snd[1]), 1, MPI_INT,
-                    &(nPoint_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPointCumulative[1]), 1, MPI_INT, MPI_COMM_WORLD);
   
   /*--- Put the counters into cumulative storage format. ---*/
   
   for (int ii = 0; ii < size; ii++) {
-    nPoint_Cum[ii+1] += nPoint_Cum[ii];
+    nPointCumulative[ii+1] += nPointCumulative[ii];
   }
   
   SPRINTF(str_buf, "POINTS %i float\n", SU2_TYPE::Int(GlobalPoint));
@@ -3003,7 +3003,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Compute the offset for this rank's linear partition of the
    data in bytes. ---*/
   
-  disp2 = disp + NCOORDS*nPoint_Cum[rank]*sizeof(float);
+  disp2 = disp + NCOORDS*nPointCumulative[rank]*sizeof(float);
   
   /*--- Set the view for the MPI file write, i.e., describe the
    location in the file that this rank "sees" for writing its
@@ -3018,7 +3018,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   /*--- Update the displacement position for MPI IO. ---*/
   
-  disp += NCOORDS*nPoint_Cum[size]*sizeof(float);
+  disp += NCOORDS*nPointCumulative[size]*sizeof(float);
   
   /*--- Free the derived datatype and coordinate array. ---*/
   
@@ -3435,7 +3435,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       /*--- Compute the offset for this rank's linear partition of the
        data in bytes. ---*/
       
-      disp2 = disp + NCOORDS*nPoint_Cum[rank]*sizeof(float);
+      disp2 = disp + NCOORDS*nPointCumulative[rank]*sizeof(float);
       
       /*--- Set the view for the MPI file write, i.e., describe the
        location in the file that this rank "sees" for writing its
@@ -3450,7 +3450,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       
       /*--- Update the displacement position for MPI IO. ---*/
       
-      disp += NCOORDS*nPoint_Cum[size]*sizeof(float);
+      disp += NCOORDS*nPointCumulative[size]*sizeof(float);
       
       /*--- Free the derived datatype and coordinate array. ---*/
       
@@ -3503,7 +3503,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       /*--- Compute the offset for this rank's linear partition of the
        data in bytes. ---*/
       
-      disp2 = disp + nPoint_Cum[rank]*sizeof(float);
+      disp2 = disp + nPointCumulative[rank]*sizeof(float);
       
       /*--- Set the view for the MPI file write, i.e., describe the
        location in the file that this rank "sees" for writing its
@@ -3518,7 +3518,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       
       /*--- Update the displacement position for MPI IO. ---*/
       
-      disp += nPoint_Cum[size]*sizeof(float);
+      disp += nPointCumulative[size]*sizeof(float);
       
       /*--- Free the derived datatype and coordinate array. ---*/
       
@@ -3538,7 +3538,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   delete [] nElem_Snd;        delete [] nElem_Cum;
   delete [] nElemStorage_Snd; delete [] nElemStorage_Cum;
-  delete [] nPoint_Snd;       delete [] nPoint_Cum;
+  delete [] nPoint_Snd;       delete [] nPointCumulative;
   
 #endif
   

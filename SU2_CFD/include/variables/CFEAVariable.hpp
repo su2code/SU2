@@ -133,30 +133,6 @@ public:
   inline su2double Get_BodyForces_Res(unsigned short iVar) {return Residual_Ext_Body[iVar];}
 
   /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = Solution[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(su2double *val_solution_time_n) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = val_solution_time_n[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(unsigned short val_var, su2double val_solution) {
-    Solution_time_n[val_var] = val_solution;
-  }
-
-  /*!
    * \brief Set the value of the velocity (Structural Analysis).
    * \param[in] val_solution - Solution of the problem (velocity).
    */
