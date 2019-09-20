@@ -387,6 +387,8 @@ def main():
         comm.send(nTri[i], dest=i, tag=1)
         comm.send(nTet[i], dest=i, tag=2)
 
+        EdgAdap = np.empty((0,0), int)
+
         if(options.nDim == 2):
           if(nTri[i] > 0):
             sendBuf = np.array([sendTriAdap[j,:].tolist() + [j+nEdgTot] for j in indTri[nTriOff:nTriOff+nTri[i]]])
