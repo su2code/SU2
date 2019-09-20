@@ -279,7 +279,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config->GetTime_Domain();
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
@@ -372,25 +372,28 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     break;
   case DISC_ADJ_FEM:
-    solver[ADJFEA_SOL]->RegisterObj_Func(config);
-    // switch (config->GetKind_ObjFunc()){
-    // case REFERENCE_GEOMETRY:
-    //     ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-    //     break;
-    // case REFERENCE_NODE:
-    //     ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-    //     break;
-    // case VOLUME_FRACTION:
-    //     ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-    //     break;
-    // default:
-    //     ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-    //     break;
-    // }
+    switch (config->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+      break;
+    case REFERENCE_NODE:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+      break;
+    case VOLUME_FRACTION:
+    case TOPOL_DISCRETENESS:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+      break;
+    case TOPOL_COMPLIANCE:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
+      break;
+    default:
+      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+      break;
+    }
     break;
   }
   
-  if ((config->GetKind_Solver() != DISC_ADJ_FEM) && (rank == MASTER_NODE)) {
+  if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
   }
 
