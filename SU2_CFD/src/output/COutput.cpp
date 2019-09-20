@@ -776,24 +776,18 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
 void COutput::SetHistoryFile_Header(CConfig *config) { 
 
-  
-  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
-    histFile << "TITLE = \"SU2 Simulation\"" << endl;
-    histFile << "VARIABLES = \\";
-    histFile << endl;
-  }
-  
+  unsigned short iField_Output = 0, 
+      iReqField = 0,
+      iMarker = 0;
   stringstream out;
   string RequestedField;
-  std::vector<bool> found_field(nRequestedHistoryFields, false);  
   int width = 20;
   
-  for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
-    HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField_Output]];
-    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+  for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
+    const HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField_Output]];
+    for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       RequestedField = requestedHistoryFields[iReqField];   
       if (RequestedField == Field.outputGroup || (RequestedField == historyOutput_List[iField_Output])){
-        found_field[iReqField] = true;   
         if (Field.screenFormat == FORMAT_INTEGER) width = std::max((int)Field.fieldName.size()+2, 10);  
         else{ width = std::max((int)Field.fieldName.size()+2, 20);}
         historyFileTable->AddColumn("\"" + Field.fieldName + "\"", width);
@@ -801,13 +795,12 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
     }  
   }
   
-  for (unsigned short iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]].size(); iMarker++){  
-      HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]][iMarker];
-      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
+    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]].size(); iMarker++){  
+      const HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]][iMarker];
+      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         RequestedField = requestedHistoryFields[iReqField];   
         if (RequestedField == Field.outputGroup || (RequestedField == historyOutputPerSurface_List[iField_Output])){
-          found_field[iReqField] = true;    
           if (Field.screenFormat == FORMAT_INTEGER) width = std::max((int)Field.fieldName.size()+2, 10);  
           else{ width = std::max((int)Field.fieldName.size()+2, 20);}
           historyFileTable->AddColumn("\"" + Field.fieldName + "\"", 20);          
@@ -815,23 +808,26 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
       }
     }
   }
- 
-  historyFileTable->PrintHeader();
+  
   if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
-    histFile << "ZONE T= \"Convergence history\"" << endl;
+    histFile << "VARIABLES = \\" << endl;
   }
+  historyFileTable->PrintHeader();
   histFile.flush();
 }
 
 
 void COutput::SetHistoryFile_Output(CConfig *config) { 
   
+  unsigned short iField_Output = 0, 
+      iReqField = 0,
+      iMarker = 0;
   stringstream out;
   string RequestedField;
   
-  for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
-    HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField_Output]];
-    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+  for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
+    const HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField_Output]];
+    for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       RequestedField = requestedHistoryFields[iReqField];   
       if (RequestedField == Field.outputGroup){
         (*historyFileTable) << Field.value; 
@@ -839,10 +835,10 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
     }
   }
   
-  for (unsigned short iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]].size(); iMarker++){
-      HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]][iMarker];
-      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
+    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]].size(); iMarker++){
+      const HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField_Output]][iMarker];
+      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         RequestedField = requestedHistoryFields[iReqField];   
         if (RequestedField == Field.outputGroup){
           (*historyFileTable) << Field.value;  
@@ -901,9 +897,7 @@ void COutput::SetScreen_Output(CConfig *config) {
 }
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
-  
-    int total_width = 72;
-  
+   
     noWriting = !wrt;
 
     /*--- Set the common output fields ---*/
@@ -918,6 +912,9 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     
     Postprocess_HistoryFields(config);
     
+    /*--- We use a fixed size of the file output summary table ---*/
+    
+    int total_width = 72;    
     fileWritingTable->AddColumn("File Writing Summary", (total_width-1)/2); 
     fileWritingTable->AddColumn("Filename", total_width/2);  
     fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -949,19 +946,20 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 }
 
 void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt){
-  
-  int total_width = 72;
-  
+    
   noWriting = !wrt;
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
   
   SetMultizoneHistoryOutputFields(output, config);
   
+  /*--- We use a fixed size of the file output summary table ---*/
+  
+  int total_width = 72;    
   fileWritingTable->AddColumn("File Writing Summary", (total_width-1)/2); 
   fileWritingTable->AddColumn("Filename", total_width/2);  
   fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-  
+
   if (rank == MASTER_NODE && !noWriting){
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
