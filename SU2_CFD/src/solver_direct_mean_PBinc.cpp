@@ -4721,11 +4721,10 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 	      for (iDim = 0; iDim < nDim; iDim++)
               LinSysRes.SetBlock_Zero(iPoint, iDim);
 	  }
-	  else {
-		   node[iPoint]->SetPressure_val(GetPressure_Inf());   
+	  else {   
            LinSysRes.AddBlock(iPoint, Residual);
       }
-      
+      node[iPoint]->SetPressure_val(GetPressure_Inf());
    
       /*--- Convective Jacobian contribution for implicit integration ---*/
       

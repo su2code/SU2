@@ -6561,9 +6561,11 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nDim = geometry[val_iZone][INST_0][FinestMesh]->GetnDim();
   bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-               (config[val_iZone]->GetKind_Solver() == RANS));
+               (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == INC_EULER) ||
+               (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == INC_RANS));
   
   /*--- Output the mean flow solution using only the master node ---*/
+  cout<<"Breakdown file\t"<<flow<<"\t"<<output<<endl;
   
   if ((rank == MASTER_NODE) && (flow) && (output)) {
     
