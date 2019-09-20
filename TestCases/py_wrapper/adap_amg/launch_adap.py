@@ -340,23 +340,23 @@ def main():
       nTri = np.zeros(size, int)
       nTet = np.zeros(size, int)
 
-        if(options.nDim == 2):
-          if len(sendTriAdap) > 0:
-            for j in range(0, len(sendTriAdap)):
-              for k in range(0, 3):
-                if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
-                  indTri.append(int(j))
-                  nTri[i] = nTri[i] + 1
-                  break
+      if(options.nDim == 2):
+        if len(sendTriAdap) > 0:
+          for j in range(0, len(sendTriAdap)):
+            for k in range(0, 3):
+              if sendTriAdap[j,k] >= beg_node[i]+1 and sendTriAdap[j,k] < end_node[i]+1:
+                indTri.append(int(j))
+                nTri[i] = nTri[i] + 1
+                break
 
-        else:
-          if len(sendTetAdap) > 0:
-            for j in range(0, len(sendTetAdap)):
-              for k in range(0, 4):
-                if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
-                  indTet.append(int(j))
-                  nTet[i] = nTet[i] + 1
-                  break
+      else:
+        if len(sendTetAdap) > 0:
+          for j in range(0, len(sendTetAdap)):
+            for k in range(0, 4):
+              if sendTetAdap[j,k] >= beg_node[i]+1 and sendTetAdap[j,k] < end_node[i]+1:
+                indTet.append(int(j))
+                nTet[i] = nTet[i] + 1
+                break
 
       # We need totals for global indices, which will be edg then tri then tet
       if(options.nDim == 2):
