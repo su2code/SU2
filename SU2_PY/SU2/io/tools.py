@@ -91,9 +91,9 @@ def read_plot( filename ):
         title = line.split('=')[1] .strip() # not used right now
         line = plot_file.readline()
 
-    # process header
-    if '=' in line:
-        line = line.split("=")[1].strip()
+    if line.startswith('VARIABLES'):
+        line = plot_file.readline()
+
     line = line.split(",")
     Variables = [ x.strip('" ') for x in line ]
     n_Vars = len(Variables)
