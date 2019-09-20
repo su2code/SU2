@@ -282,9 +282,7 @@ def main():
         sendTetAdap = np.empty((0,0), int)
 
         # Only store edge info on rank 0 for 2D
-        EdgAdap = np.array(mesh_new['Edges'])
-
-        EdgAdap.reshape(EdgAdap.size/3,3)
+        EdgAdap = np.array(mesh_new['Edges'], int)
 
       else:
         sendSolAdap = mesh_new['solution']
@@ -294,9 +292,7 @@ def main():
 
         # Only store triangle info on rank 0 for 3D
         EdgAdap = np.empty((0,0), int)
-        TriAdap = np.array(mesh_new['Triangles'])
-
-        TriAdap.reshape(TriAdap.size/4,4)
+        TriAdap = np.array(mesh_new['Triangles'], int)
 
       del [mesh, mesh_new]
 
