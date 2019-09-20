@@ -284,6 +284,8 @@ def main():
         # Only store edge info on rank 0 for 2D
         EdgAdap = np.array(mesh_new['Edges'])
 
+        EdgAdap.reshape(EdgAdap.size/3,3)
+
       else:
         sendSolAdap = mesh_new['solution']
         sendPoiAdap = mesh_new['xyz']
@@ -294,12 +296,12 @@ def main():
         EdgAdap = np.empty((0,0), int)
         TriAdap = np.array(mesh_new['Triangles'])
 
+        TriAdap.reshape(TriAdap.size/4,4)
+
       del [mesh, mesh_new]
 
     else:
       sendPoiAdap = np.empty(0)
-      sendTriAdap = np.empty(0)
-      sendTetAdap = np.empty(0)
 
     # Compute beginning and ending nodes for linear partitions
     if rank == 0:
@@ -343,7 +345,7 @@ def main():
       nTri = np.zeros(size, int)
       nTet = np.zeros(size, int)
 
-      if(options.nDim == 2):
+      if options.nDim == 2:
         if len(sendTriAdap) > 0:
           for j in range(0, len(sendTriAdap)):
             for k in range(0, 3):
@@ -363,7 +365,7 @@ def main():
 
       print("Communicating partitioned elements.")
 
-      if(options.nDim == 2):
+      if options.nDim == 2:
         TetAdap = np.empty((0,0), int)
         if(nTri[0] > 0):
           TriAdap = np.array([sendTriAdap[j,:].tolist() + [j] for j in indTri[:nTri[0]]])
@@ -385,8 +387,7 @@ def main():
         comm.send(nTri[i], dest=i, tag=1)
         comm.send(nTet[i], dest=i, tag=2)
 
-
-        if(options.nDim == 2):
+        if options.nDim == 2:
           if(nTri[i] > 0):
             sendBuf = np.array([sendTriAdap[j,:].tolist() + [j] for j in indTri[nTriOff:nTriOff+nTri[i]]])
             sendBuf[:,:3] = sendBuf[:,:3]-1
