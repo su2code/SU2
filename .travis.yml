@@ -18,7 +18,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - tobias.kattmann@de.bosch.com
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
@@ -72,7 +72,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b feature_dynamic_mesh_discrete_adjoint https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
