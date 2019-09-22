@@ -4215,20 +4215,19 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
            if (geometry->node[iPoint]->GetDomain()) {		
 		     
-		     Pressure_Correc[iPoint] = PCorr_Ref;
-		     
 		     geometry->vertex[iMarker][iVertex]->GetNormal(Normal); 
 		        
 		     MassFlux_Part = 0.0;
 		     for (iDim = 0; iDim < nDim; iDim++) 
                MassFlux_Part -= node[iPoint]->GetDensity()*(node[iPoint]->GetVelocity(iDim))*Normal[iDim];
-             
+             inflow = false;
              if ((MassFlux_Part < 0.0) && (fabs(MassFlux_Part) > EPS)) inflow = true;
              if (inflow) {
                 for (iDim = 0; iDim < nDim; iDim++)
                   vel_corr[iPoint][iDim] = 0.0;
-                //cout<<iPoint<<"\t from vel corr"<<endl;
-			  }             
+   			  }
+			  else
+			  Pressure_Correc[iPoint] = PCorr_Ref;
 		   }
          }
          
@@ -4241,8 +4240,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
               for (iDim = 0; iDim < nDim; iDim++)
                   vel_corr[iPoint][iDim] = 0.0;
               
-              //alpha_p[iPoint] = 1.0;
-              //cout<<iPoint<<"\t"<<Pressure_Correc[iPoint]<<endl;
+              alpha_p[iPoint] = 1.0;
            }    
 	    }
 	    break;
@@ -4714,7 +4712,7 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
       for (iVar = 0; iVar < nVar; iVar++) {
 	     Residual[iVar] = Flux0*V_domain[iVar+1] ;//+ Flux1*V_infty[iDim+1];
 	  }
-	  	  
+	  inflow = false;
 	  if ((Face_Flux < 0.0) && (fabs(Face_Flux) > EPS)) inflow = true;
            
 	  if (inflow) {
@@ -4723,8 +4721,8 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 	  }
 	  else {   
            LinSysRes.AddBlock(iPoint, Residual);
+           node[iPoint]->SetPressure_val(GetPressure_Inf());
       }
-      node[iPoint]->SetPressure_val(GetPressure_Inf());
    
       /*--- Convective Jacobian contribution for implicit integration ---*/
       

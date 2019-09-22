@@ -4655,7 +4655,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
 
       
-      if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------"<<endl;
+      if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
       
       switch (config[val_iZone]->GetKind_Solver()) {
 
@@ -6565,7 +6565,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
                (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == INC_RANS));
   
   /*--- Output the mean flow solution using only the master node ---*/
-  cout<<"Breakdown file\t"<<flow<<"\t"<<output<<endl;
   
   if ((rank == MASTER_NODE) && (flow) && (output)) {
     
