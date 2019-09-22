@@ -1339,37 +1339,34 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
    first point of the wall  ---*/
-   
-  if (!config->GetWall_Functions()) {
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      /*--- Get the velocity vector ---*/
       
-      if (geometry->node[iPoint]->GetDomain()) {
-        
-        /*--- Get the velocity vector ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = 0.0;
-        
-        node[iPoint]->SetSolution_Old(Solution);
-        LinSysRes.SetBlock_Zero(iPoint);
-        
-        /*--- Includes 1 in the diagonal ---*/
-        
-        Jacobian.DeleteValsRowi(iPoint);
-      }
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = 0.0;
+      
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+      
+      /*--- Includes 1 in the diagonal ---*/
+      
+      Jacobian.DeleteValsRowi(iPoint);
     }
   }
-  else {
-    
-    /*--- Evaluate nu tilde at the closest point to the surface using the wall functions ---*/
-    
-    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-    
-  }
+}
+
+void CTurbSASolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions ---*/
+  
+  SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 
 }
 
