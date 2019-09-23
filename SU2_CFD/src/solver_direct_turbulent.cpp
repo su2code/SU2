@@ -2755,7 +2755,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   
   /*--- Local variables ---*/
   
-  unsigned short iDim, jDim, iVar, iNode;
+  unsigned short iDim, jDim, iVar;
   unsigned long iVertex, iPoint, iPoint_Neighbor, counter;
   
   su2double func, func_prim;
@@ -2765,7 +2765,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
   su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til, cv1_3;
   su2double T_Normal, P_Normal, Density_Normal;
-  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
+  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall;
   su2double *Coord, *Coord_Normal;
   su2double diff, grad_diff, Delta;
   su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus = 0.0;
@@ -3783,10 +3783,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(total_index);
       }
       
-      if (config->GetWall_Functions()) {
-        
+      if(config->GetWall_Functions()){
         su2double Density_Wall  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
         su2double Tau_Wall      = solver_container[FLOW_SOL]->node[iPoint]->GetTauWall();
+        
         su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
         su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
         
@@ -3801,6 +3801,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Solution[1] = Omega;
         
         node[jPoint]->SetSolution_Old(Solution);
+        node[jPoint]->SetSolution(Solution);
         LinSysRes.SetBlock_Zero(jPoint);
         
         /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -3808,8 +3809,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           total_index = jPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
-
-
       }
       
     }

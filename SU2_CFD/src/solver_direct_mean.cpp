@@ -8545,7 +8545,7 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
 
     
     /*--- TODO: Check why VelTurb is nan at the wall ---*/
-    if (isnan(VelTurb[0]) || isnan(VelTurb[1]) || isnan(VelTurb[2])){
+    if (std::isnan(VelTurb[0]) || std::isnan(VelTurb[1]) || std::isnan(VelTurb[2])){
       VelTurb[0] = 0.0; VelTurb[1] = 0.0; VelTurb[2] = 0.0;
     }
     
@@ -16011,9 +16011,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Compute the TauWall from the wall functions ---*/
   
-  if (wall_functions){
+  if (wall_functions  && (iMesh == MESH_0)){
     SetTauWall_WF(geometry, solver_container, config);
-    SetEddyViscFirstPoint(geometry, solver_container, config);
+    //SetEddyViscFirstPoint(geometry, solver_container, config);
   }
   
   /*--- Roe Low Dissipation Sensor ---*/
@@ -16393,7 +16393,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   bool QCR                  = config->GetQCR();
   bool axisymmetric         = config->GetAxisymmetric();
-
+  bool wall_function        = config->GetWall_Functions();
+  su2double TauWall         = 0.0;
+  
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values,
@@ -16553,6 +16555,28 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           WallShearStress += TauTangent[iDim] * TauTangent[iDim];
         }
         WallShearStress = sqrt(WallShearStress);
+        
+        if (wall_function){
+          TauWall = node[iPoint]->GetTauWall();
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++) {
+              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+            }
+          }
+
+          TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+          WallShearStress = TauWall;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+            CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          }
+        }
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
@@ -18119,8 +18143,8 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
   
   /*--- Typical constants from boundary layer theory ---*/
 
-  su2double kappa = 0.4;
-  su2double B = 5.5;
+  su2double kappa = 0.41;
+  su2double B = 5.0;
   
   /*--- Compute the recovery factor ---*/
   // su2double-check: laminar or turbulent Pr for this?
@@ -18226,15 +18250,16 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
 
               Lam_Visc_Normal = node[Point_Normal]->GetLaminarViscosity();
               Density_Normal  = node[Point_Normal]->GetDensity();
-              Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
 
-              dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)/sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+              dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
               
               Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                          (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
                                          - Lam_Visc_Normal/Lam_Visc_Wall);
               
               node[Point_Normal]->SetEddyViscosity(Eddy_Visc);
+              
+              if ((Coord[0] > 0.969) && (Coord[0] < 0.971)) cout << Coord[0] << " " << Coord[1] << " " << Eddy_Visc << endl;
               
             }
           }
