@@ -148,8 +148,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Perform a dynamic mesh update if required. ---*/
-
-  DynamicMeshUpdate(TimeIter);
+  /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
+          mesh cordinates are read from the restart files. ---*/
+  if (!(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint()))
+    DynamicMeshUpdate(TimeIter);
 
 }
 
