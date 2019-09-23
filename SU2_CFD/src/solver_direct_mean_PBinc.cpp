@@ -4226,7 +4226,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
                 for (iDim = 0; iDim < nDim; iDim++)
                   vel_corr[iPoint][iDim] = 0.0;
    			  }
-			  else
+			  //else
 			  Pressure_Correc[iPoint] = PCorr_Ref;
 		   }
          }
