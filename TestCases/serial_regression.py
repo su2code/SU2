@@ -560,7 +560,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.244511, -5.216185, 0.277760, -0.000229] #last 4 columns
+    contadj_fixedCL_naca0012.test_vals = [0.292693, -5.201663, 0.273550, -0.000026] #last 4 columns
     contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
     contadj_fixedCL_naca0012.timeout   = 1600
     contadj_fixedCL_naca0012.tol       = 0.00001
