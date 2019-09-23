@@ -1617,7 +1617,10 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter){
-  return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0));
+  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0));
+  else {
+     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0));
+  }
 }
 
 void COutput::SetCommonHistoryFields(CConfig *config){
