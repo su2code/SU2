@@ -4456,9 +4456,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
-      if (GetGrid_Movement()) {
-        SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
+      if (GetKind_GridMovement() != RIGID_MOTION &&
+          GetKind_GridMovement() != NO_MOVEMENT) {
+        SU2_MPI::Error(string("Dynamic mesh movement currently only supported for the discrete adjoint solver for\n") + 
+                       string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
       }
+
+      /*--- Quickfix to not trigger the error message below if SINGLEZONE_DRIVER is used.
+            Once the old driver (i.e. EXT_ITER with it) is removed, the Error conditional
+            can be changed. ---*/
+      if (SinglezoneDriver) nExtIter = Time_Iter;
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
