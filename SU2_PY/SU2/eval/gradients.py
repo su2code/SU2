@@ -265,6 +265,13 @@ def adjoint( func_name, config, state=None ):
     # files: target heat flux coefficient
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         pull.append(files['TARGET_HEATFLUX'])
+    
+    if not 'OUTPUT_FILES' in config:
+        config['OUTPUT_FILES'] = ['RESTART']
+
+    if not 'SURFACE_CSV' in config['OUTPUT_FILES']:
+      config['OUTPUT_FILES'].append('SURFACE_CSV')
+    
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
