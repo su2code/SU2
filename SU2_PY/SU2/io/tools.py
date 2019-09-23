@@ -92,10 +92,10 @@ def read_plot( filename ):
         line = plot_file.readline()
 
     if line.startswith('VARIABLES'):
-        line = plot_file.readline()
+          line = plot_file.readline()
 
     line = line.split(",")
-    Variables = [ x.strip('" ') for x in line ]
+    Variables = [ x.strip().strip('"') for x in line ]
     n_Vars = len(Variables)
     
     # initialize plot data dictionary
