@@ -564,6 +564,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (tabTecplot) ObjFunc_file << "\nZONE T= \"Geometrical variables (value)\"" << endl;
+    else ObjFunc_file << endl;
     
     if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
       if (geometry_container[ZONE_0]->GetnDim() == 3) {
@@ -1191,7 +1192,7 @@ int main(int argc, char *argv[]) {
           }
           
           if (tabTecplot) Gradient_file << "\nZONE T= \"Geometrical variables (gradient)\"" << endl;
-          
+          else Gradient_file << endl;
         }
         
         Gradient_file << (iDV) <<",";

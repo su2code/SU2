@@ -1404,22 +1404,23 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       Count[currentField.outputGroup]++;
            
     }
-    if (config->GetTime_Domain()){
-      if (currentField.fieldType == TYPE_COEFFICIENT){
-        if(SetUpdate_Averages(config)){
+    if (currentField.fieldType == TYPE_COEFFICIENT){
+      if(SetUpdate_Averages(config)){
+        if (config->GetTime_Domain()){
           SetHistoryOutputValue("TAVG_" + historyOutput_List[iField],
                                 runningAverages[historyOutput_List[iField]].Update(currentField.value));
+          if (config->GetDirectDiff() != NO_DERIVATIVE) {      
+            SetHistoryOutputValue("D_TAVG_" + historyOutput_List[iField], 
+                                  SU2_TYPE::GetDerivative(runningAverages[historyOutput_List[iField]].Get()));
+          }
         }
-        if (config->GetDirectDiff() != NO_DERIVATIVE){
-          SetHistoryOutputValue("D_" + historyOutput_List[iField], SU2_TYPE::GetDerivative(currentField.value));      
-          SetHistoryOutputValue("D_TAVG_" + historyOutput_List[iField], 
-                                SU2_TYPE::GetDerivative(runningAverages[historyOutput_List[iField]].Get()));
-          
-        }
+      }
+      if (config->GetDirectDiff() != NO_DERIVATIVE){
+        SetHistoryOutputValue("D_" + historyOutput_List[iField], SU2_TYPE::GetDerivative(currentField.value));          
       }
     }
   }
-
+  
   map<string, su2double>::iterator it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
     SetHistoryOutputValue("AVG_" + it->first, it->second/Count[it->first]);
