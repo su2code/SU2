@@ -195,6 +195,7 @@ def amg ( config , kind='' ):
         config_cfd.SOLUTION_FLOW_FILENAME = '../' + config['SOLUTION_FLOW_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
         config_cfd.ERROR_ESTIMATE         = 'YES'
+        config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
         config_cfd.MESH_HMAX              = config.ADAP_HMAX
         config_cfd.MESH_HMIN              = config.ADAP_HMIN
         config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
