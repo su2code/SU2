@@ -685,9 +685,14 @@ def add_suffix(base_name,suffix):
             suffix      = 'new'
             suffix_name = 'input_new.txt'
     """
-    
-    base_name = os.path.splitext(base_name)    
-    suffix_name = base_name[0] + '_' + suffix + base_name[1]
+    if isinstance(base_name, list):
+        suffix_name = []
+        for name in base_name:
+            name_split = os.path.splitext(name)
+            suffix_name.append(name_split[0] + '_' + suffix + name_split[1])
+    else:
+        base_name = os.path.splitext(base_name)    
+        suffix_name = base_name[0] + '_' + suffix + base_name[1]
     
     return suffix_name
     
@@ -1100,20 +1105,58 @@ def expand_time(name,config):
     return names
 
 def expand_zones(name, config):
+    names = []
     if int(config.NZONES) > 1:
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%d')
             names = [name_pat%i for i in range(int(config.NZONES))]
         else:
             for n in range(len(name)):
-                name_pat[i] = add_suffix(name, '%d')
-                names[i]    = [name_pat%i for i in range(int(config.NZONES))]
+                name_pat = add_suffix(name[n], '%d')
+                names.extend([name_pat%i for i in range(int(config.NZONES))])
+
     else:
         if not isinstance(name, list):
             names = [name]
         else:
             names = name
     return names
+
+def expand_multipoint(name,config):
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    names = []
+    n_multipoint = len(config['MULTIPOINT_WEIGHT'].split(','))
+
+    if any(elem in optnames_multi for elem in objectives):
+        if not isinstance(name, list):
+            if '_point0' not in name:
+                name_pat = add_suffix(name,'point%d')
+                names = [name_pat%i for i in range(n_multipoint)]
+            else: 
+                name_parts = name.split('_point0')
+                name_base = name_parts[0]
+                name_suff = name_parts[1]
+                name_pat = name_base + '_point%d' + name_suff
+                names = [name_pat%i for i in range(n_multipoint)]
+        else:
+            for n in range(len(name)):
+                if '_point0' not in name:
+                    name_pat = add_suffix(name[n], 'point%d')
+                    names.extend([name_pat%i for i in range(n_multipoint)])
+                else: 
+                    name_parts = name[n].split('_point0')
+                    name_base = name_parts[0]
+                    name_suff = name_parts[1]
+                    name_pat = name_base + '_point%d' + name_suff
+                    names.extend([name_pat%i for i in range(n_multipoint)])
+    else:
+        if not isinstance(name, list):
+            names = [name]
+        else:
+            names = name
+    return names        
+
 
 
 def make_link(src,dst):
