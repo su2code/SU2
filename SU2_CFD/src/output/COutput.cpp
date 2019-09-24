@@ -152,6 +152,7 @@ COutput::~COutput(void) {
   
   delete convergenceTable;
   delete multiZoneHeaderTable;
+  delete fileWritingTable;
 
   delete [] cauchySerie;
   
