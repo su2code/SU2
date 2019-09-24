@@ -39,7 +39,7 @@
 #include "../include/variables/CFEAFSIBoundVariable.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
 #include "../include/variables/CFEAVariable.hpp"
-#include "../include/toolboxes/printing_toolbox.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <algorithm>
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
