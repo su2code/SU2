@@ -1015,7 +1015,7 @@ def directdiff( config, state=None ):
 
     grad_filename  = config['GRAD_OBJFUNC_FILENAME']
     grad_filename  = os.path.splitext( grad_filename )[0]
-    output_format  = config['TABULAR_FORMAT']
+    output_format  = config.get('TABULAR_FORMAT', 'CSV')
     plot_extension = su2io.get_extension(output_format)
     grad_filename  = grad_filename + '_directdiff' + plot_extension
 
