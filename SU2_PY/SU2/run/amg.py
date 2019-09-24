@@ -198,6 +198,9 @@ def amg ( config , kind='' ):
         config_cfd.MESH_HMIN             = config.ADAP_HMIN
         config_cfd.MESH_COMPLEXITY       = int(mesh_sizes[0])
         SU2_MET(config_cfd)
+
+        sys.stdout = sav_stdout
+        sys.stderr = sav_stderr
         
         sys.stdout.write('Initial CFD solution is provided.\n')
         sys.stdout.flush()
