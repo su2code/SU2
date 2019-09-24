@@ -3786,38 +3786,67 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
+    }
+  }
+  
+}
+
+void CTurbSSTSolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned long iPoint, jPoint, iVertex, total_index;
+  unsigned short iDim, iVar;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, nu = 0.0;
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
       
-      if(config->GetWall_Functions()){
-        su2double Density_Wall  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-        su2double Tau_Wall      = solver_container[FLOW_SOL]->node[iPoint]->GetTauWall();
-        
-        su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-        su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
-        
-        /*--- Set K and Omega at the first point of the wall ---*/
-        
-        su2double eddy_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
-        su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
-        su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
-        su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-        
-        Solution[0] = Omega * eddy_viscosity / density;
-        Solution[1] = Omega;
-        
-        node[jPoint]->SetSolution_Old(Solution);
-        node[jPoint]->SetSolution(Solution);
-        LinSysRes.SetBlock_Zero(jPoint);
-        
-        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          total_index = jPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
+      /*--- distance to closest neighbor ---*/
+      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      distance = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
+        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+      distance = sqrt(distance);
+      
+      /*--- Set wall values ---*/
+      
+      density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+
+      nu = laminar_viscosity / density;
+      
+      su2double Density_Wall  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+      su2double Tau_Wall      = solver_container[FLOW_SOL]->node[iPoint]->GetTauWall();
+      
+      su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
+      
+      /*--- Set K and Omega at the first point of the wall ---*/
+      
+      su2double eddy_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
+      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
+      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      
+      Solution[0] = Omega * eddy_viscosity / density;
+      Solution[1] = Omega;
+      
+      node[jPoint]->SetSolution_Old(Solution);
+      node[jPoint]->SetSolution(Solution);
+      LinSysRes.SetBlock_Zero(jPoint);
+      
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = jPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
       }
       
     }
   }
-  
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,

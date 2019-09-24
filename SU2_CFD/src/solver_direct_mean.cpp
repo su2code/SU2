@@ -16127,7 +16127,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the TauWall from the wall functions ---*/
   if (WallFunctionUsed  && (iMesh == MESH_0)){
     SetTauWall_WF(geometry, solver_container, config);
-    //SetEddyViscFirstPoint(geometry, solver_container, config);
+    if (config->GetKind_Turb_Model() == SST)
+      SetEddyViscFirstPoint(geometry, solver_container, config);
   }
   
   if (WallModelUsed  && (iMesh == MESH_0))
@@ -19025,7 +19026,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               
               node[Point_Normal]->SetEddyViscosity(Eddy_Visc);
               
-              if ((Coord[0] > 0.969) && (Coord[0] < 0.971)) cout << Coord[0] << " " << Coord[1] << " " << Eddy_Visc << endl;
+              //if ((Coord[0] > 0.969) && (Coord[0] < 0.971)) cout << Coord[0] << " " << Coord[1] << " " << Eddy_Visc << endl;
               
             }
           }
