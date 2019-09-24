@@ -1,9 +1,10 @@
 #include "../../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 
+const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
 CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim, string fileName, 
                                                      CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, ".vtk", nDim){}
+  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
 
 
 CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){

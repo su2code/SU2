@@ -77,6 +77,13 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned 
   multiZoneHeaderString = "Multizone Summary";
   
   historyFilename = "multizone_history";
+  
+  /*--- Add the correct file extension depending on the file format ---*/
+  
+  string hist_ext = ".csv";
+  if (driver_config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  
+  historyFilename += hist_ext;
 
   /*--- Set the default convergence field --- */
 

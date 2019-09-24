@@ -1,9 +1,11 @@
 #include "../../../include/output/filewriter/CTecplotFileWriter.hpp"
 
+const string CTecplotFileWriter::fileExt = ".dat";
+
 CTecplotFileWriter::CTecplotFileWriter(vector<string> fields, unsigned short nDim, 
                                        string fileName, CParallelDataSorter *dataSorter,
                                        unsigned long time_iter, su2double timestep) : 
-   CFileWriter(fields, fileName, dataSorter, ".dat", nDim), time_iter(time_iter), timestep(timestep){}
+   CFileWriter(fields, fileName, dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
 
 CTecplotFileWriter::~CTecplotFileWriter(){}
 

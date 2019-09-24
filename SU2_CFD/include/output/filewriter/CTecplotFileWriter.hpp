@@ -46,6 +46,11 @@ class CTecplotFileWriter final: public CFileWriter{
 public:
   
   /*!
+   * \brief File extension
+   */
+  const static string fileExt;
+  
+  /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension

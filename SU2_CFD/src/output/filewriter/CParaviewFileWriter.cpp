@@ -1,9 +1,10 @@
 #include "../../../include/output/filewriter/CParaviewFileWriter.hpp"
 
+const string CParaviewFileWriter::fileExt = ".vtk";
 
 CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim, 
                                          string fileName, CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, ".vtk", nDim){}
+  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
 
 
 CParaviewFileWriter::~CParaviewFileWriter(){}
