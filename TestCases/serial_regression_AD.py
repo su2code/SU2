@@ -199,6 +199,22 @@ def main():
     discadj_DT_1ST_cylinder.unsteady  = True
     test_list.append(discadj_DT_1ST_cylinder)
 
+    ######################################################
+    ### Unsteady Disc. adj. compressible pitching NACA ###
+    ######################################################
+
+    # compressible pitching NACA0012
+    discadj_pitchingNACA0012           = TestCase('pitchingNACA0012')
+    discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
+    discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
+    discadj_pitchingNACA0012.test_iter = 4
+    discadj_pitchingNACA0012.test_vals = [-2.641237, -3.110423, -7.0498e-04, 1.2996e-06] #last 4 columns
+    discadj_pitchingNACA0012.su2_exec  = "SU2_CFD_AD"
+    discadj_pitchingNACA0012.timeout   = 1600
+    discadj_pitchingNACA0012.tol       = 0.00001
+    discadj_pitchingNACA0012.unsteady  = True
+    test_list.append(discadj_pitchingNACA0012)
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
