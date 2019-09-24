@@ -2932,7 +2932,7 @@ public:
       totalnParamDV += nParamDV[iDV];
     }
     
-    if (totalnParamDV != option_value.size()){
+    if (totalnParamDV > option_value.size()){
       SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
     }
     

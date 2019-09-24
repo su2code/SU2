@@ -399,7 +399,7 @@ def main():
                     command = 'cp '+caseName+'/'+config.SOLUTION_FILENAME+' .'
                     if options.verbose:
                         print(command)
-                    shutil.copy2(caseName+'/'+config.SOLUTION_FLOW_FILENAME, os.getcwd())
+                    shutil.copy2(caseName+'/'+config.SOLUTION_FILENAME, os.getcwd())
                     konfig.RESTART_SOL = 'YES'
                 else:
                     konfig.RESTART_SOL = 'NO'
