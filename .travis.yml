@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - test_merge
+        - teste_merge
         
 python:
     - 3.6
