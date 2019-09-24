@@ -179,6 +179,12 @@ def amg ( config , kind='' ):
                 if not opt in config:
                     err += opt + '\n'
             raise RuntimeError , err
+
+        config_cfd.ERROR_ESTIMATE  = 'YES'
+        config_cfd.MESH_HMAX       = config.ADAP_HMAX
+        config_cfd.MESH_HMIN       = config.ADAP_HMIN
+        config_cfd.MESH_COMPLEXITY = int(mesh_sizes[0])
+        SU2_MET(config_cfd)
         
         current_mesh     = config['MESH_FILENAME']
         current_solution = config['SOLUTION_FLOW_FILENAME']
