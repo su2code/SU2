@@ -2881,45 +2881,47 @@ public:
 
     this->FFDTag = new string[this->nDV];
 
-    unsigned short nParamDV = 0;
-    stringstream ss;
-    unsigned int i = 0;
+   vector<unsigned short> nParamDV(nDV, 0);
+   unsigned short totalnParamDV = 0;
+   stringstream ss;
+   unsigned int i = 0;
+    
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
-        case NO_DEFORMATION:       nParamDV = 0; break;
-        case FFD_SETTING:          nParamDV = 0; break;
-        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_CAMBER_2D:        nParamDV = 2; break;
-        case FFD_THICKNESS_2D:     nParamDV = 2; break;
-        case FFD_TWIST_2D:         nParamDV = 3; break;
-        case HICKS_HENNE:          nParamDV = 2; break;
-        case SURFACE_BUMP:         nParamDV = 3; break;
-        case CST:                  nParamDV = 3; break;
-        case ANGLE_OF_ATTACK:      nParamDV = 1; break;
-        case SCALE:                nParamDV = 0; break;
-        case TRANSLATION:          nParamDV = 3; break;
-        case ROTATION:             nParamDV = 6; break;
-        case NACA_4DIGITS:         nParamDV = 3; break;
-        case PARABOLIC:            nParamDV = 2; break;
-        case AIRFOIL:              nParamDV = 2; break;
-        case FFD_CONTROL_POINT:    nParamDV = 7; break;
-        case FFD_NACELLE:          nParamDV = 6; break;
-        case FFD_GULL:             nParamDV = 2; break;
-        case FFD_TWIST:            nParamDV = 8; break;
-        case FFD_ROTATION:         nParamDV = 7; break;
-        case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
-        case FFD_CAMBER:           nParamDV = 3; break;
-        case FFD_THICKNESS:        nParamDV = 3; break;
-        case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
-        case SURFACE_FILE:         nParamDV = 0; break;
-        case DV_EFIELD:            nParamDV = 2; break;
-        case DV_YOUNG:             nParamDV = 0; break;
-        case DV_POISSON:           nParamDV = 0; break;
-        case DV_RHO:               nParamDV = 0; break;
-        case DV_RHO_DL:            nParamDV = 0; break;
-        case SCALE_GRID:           nParamDV = 0; break;
-        case TRANSLATE_GRID:       nParamDV = 3; break;
-        case ROTATE_GRID:          nParamDV = 6; break;
+        case NO_DEFORMATION:       nParamDV[iDV] = 0; break;
+        case FFD_SETTING:          nParamDV[iDV] = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV[iDV] = 5; break;
+        case FFD_CAMBER_2D:        nParamDV[iDV] = 2; break;
+        case FFD_THICKNESS_2D:     nParamDV[iDV] = 2; break;
+        case FFD_TWIST_2D:         nParamDV[iDV] = 3; break;
+        case HICKS_HENNE:          nParamDV[iDV] = 2; break;
+        case SURFACE_BUMP:         nParamDV[iDV] = 3; break;
+        case CST:                  nParamDV[iDV] = 3; break;
+        case ANGLE_OF_ATTACK:      nParamDV[iDV] = 1; break;
+        case SCALE:                nParamDV[iDV] = 0; break;
+        case TRANSLATION:          nParamDV[iDV] = 3; break;
+        case ROTATION:             nParamDV[iDV] = 6; break;
+        case NACA_4DIGITS:         nParamDV[iDV] = 3; break;
+        case PARABOLIC:            nParamDV[iDV] = 2; break;
+        case AIRFOIL:              nParamDV[iDV] = 2; break;
+        case FFD_CONTROL_POINT:    nParamDV[iDV] = 7; break;
+        case FFD_NACELLE:          nParamDV[iDV] = 6; break;
+        case FFD_GULL:             nParamDV[iDV] = 2; break;
+        case FFD_TWIST:            nParamDV[iDV] = 8; break;
+        case FFD_ROTATION:         nParamDV[iDV] = 7; break;
+        case FFD_CONTROL_SURFACE:  nParamDV[iDV] = 7; break;
+        case FFD_CAMBER:           nParamDV[iDV] = 3; break;
+        case FFD_THICKNESS:        nParamDV[iDV] = 3; break;
+        case FFD_ANGLE_OF_ATTACK:  nParamDV[iDV] = 2; break;
+        case SURFACE_FILE:         nParamDV[iDV] = 0; break;
+        case DV_EFIELD:            nParamDV[iDV] = 2; break;
+        case DV_YOUNG:             nParamDV[iDV] = 0; break;
+        case DV_POISSON:           nParamDV[iDV] = 0; break;
+        case DV_RHO:               nParamDV[iDV] = 0; break;
+        case DV_RHO_DL:            nParamDV[iDV] = 0; break;
+        case SCALE_GRID:           nParamDV[iDV] = 0; break;
+        case TRANSLATE_GRID:       nParamDV[iDV] = 3; break;
+        case ROTATE_GRID:          nParamDV[iDV] = 6; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2927,8 +2929,15 @@ public:
           return newstring;
         }
       }
-
-      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
+      totalnParamDV += nParamDV[iDV];
+    }
+    
+    if (totalnParamDV != option_value.size()){
+      SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
+    }
+    
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) { 
+      for (unsigned short iParamDV = 0; iParamDV < nParamDV[iDV]; iParamDV++) {
 
         ss << option_value[i] << " ";
 
