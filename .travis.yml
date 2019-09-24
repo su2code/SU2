@@ -16,8 +16,8 @@ notifications:
   
 branches:
     only:
-        - feature_DDES-SST
-
+        - test_merge
+        
 python:
     - 3.6
 
