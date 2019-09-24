@@ -1404,37 +1404,34 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
    first point of the wall  ---*/
-   
-  if (!config->GetWall_Functions()) {
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      /*--- Get the velocity vector ---*/
       
-      if (geometry->node[iPoint]->GetDomain()) {
-        
-        /*--- Get the velocity vector ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = 0.0;
-        
-        node[iPoint]->SetSolution_Old(Solution);
-        LinSysRes.SetBlock_Zero(iPoint);
-        
-        /*--- Includes 1 in the diagonal ---*/
-        
-        Jacobian.DeleteValsRowi(iPoint);
-      }
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = 0.0;
+      
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+      
+      /*--- Includes 1 in the diagonal ---*/
+      
+      Jacobian.DeleteValsRowi(iPoint);
     }
   }
-  else {
-    
-    /*--- Evaluate nu tilde at the closest point to the surface using the wall functions ---*/
-    
-    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-    
-  }
+}
+
+void CTurbSASolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions ---*/
+  
+  SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 
 }
 
@@ -2768,7 +2765,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall;
   su2double *Coord, *Coord_Normal;
   su2double diff, grad_diff, Delta;
-  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus = 0.0;
+  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
   su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
@@ -2927,7 +2924,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         while (abs(diff) > tol) {
           
-          /*--- Friction velocity and u+ ---*/
+          /*--- Friction velocity and u+ ---*/          
+
           U_Plus = VelTangMod/U_Tau;
           
           /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
@@ -2978,6 +2976,12 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
           }
 
         }
+
+        /*--- Calculate an updated value for the wall shear stress
+          using the y+ value, the definition of y+, and the definition of
+          the friction velocity. ---*/
+
+        Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
         
         /*--- Calculate an updated value for the wall shear stress
           using the y+ value, the definition of y+, and the definition of

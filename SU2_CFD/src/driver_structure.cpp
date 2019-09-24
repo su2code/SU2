@@ -171,6 +171,7 @@ CDriver::CDriver(char* confFile,
           cout << "Computing wall distances." << endl;
 
         geometry_container[iZone][iInst][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+        
       }
       
       if ((config_container[iZone]->GetKind_Solver() == RANS) &&
@@ -181,7 +182,6 @@ CDriver::CDriver(char* confFile,
         
         geometry_container[iZone][iInst][MESH_0]->STGPreprocessing(config_container[iZone]);
       }
-
 
       /*--- Computation of positive surface area in the z-plane which is used for
      the calculation of force coefficient (non-dimensionalization). ---*/
@@ -947,6 +947,7 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
+  bool wall_models = config_container[ZONE_0]->GetWall_Models();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -975,13 +976,17 @@ void CDriver::Geometrical_Preprocessing() {
       if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetElement_Connectivity();
 
-      /*--- Check the orientation before computing geometrical quantities ---*/
+      /*--- Check the orientation before computing geometrical quantities.
+            Not needed when a wall treatment is used, because this has
+            already been done. ---*/
 
       geometry_container[iZone][iInst][MESH_0]->SetBoundVolume();
-      if (config_container[iZone]->GetReorientElements()) {
-        if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
-        geometry_container[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
-        geometry_container[iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+      if( !wall_models ) {
+        if (config_container[iZone]->GetReorientElements()) {
+          if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+          geometry_container[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
+          geometry_container[iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+        }
       }
 
       /*--- Create the edge structure ---*/
@@ -995,11 +1000,23 @@ void CDriver::Geometrical_Preprocessing() {
       if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetCoord_CG();
 
-      /*--- Create the control volume structures ---*/
+      /*--- Create the control volume structures or update if using wall model. ---*/
+      if (!wall_models){
+        if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
+        geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+      }
+      else{
+        geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], UPDATE);
+        geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], UPDATE);
+      }
 
-      if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
-      geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+      /*--- Interpolate the donor information for the wall model, if needed. ---*/
+
+      if( wall_models ) {
+        if (rank == MASTER_NODE) cout << "Preprocessing for the wall models." << endl;
+        geometry_container[iZone][iInst][MESH_0]->WallModelPreprocessing(config_container[iZone]);
+      }
 
       /*--- Visualize a dual control volume if requested ---*/
 

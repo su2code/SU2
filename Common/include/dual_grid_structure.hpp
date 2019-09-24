@@ -935,23 +935,25 @@ public:
  */
 class CVertex : public CDualGrid {
 protected:
-	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
-	su2double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
-	su2double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
-	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
-	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
-	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-	long PeriodicPoint[5];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
-  bool ActDisk_Perimeter;     /*!< \brief Identify nodes at the perimeter of the actuator disk */
-	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
-	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
-	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
-	unsigned long *Donor_Proc; /*!< \brief indices of donor processor for interpolation across zones in parallel */
-  unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
-  unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
-  su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
-  su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
-  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
+  unsigned long *Nodes;          /*!< \brief Vector to store the global nodes of an element. */
+  su2double *Normal;             /*!< \brief Normal coordinates of the element and its center of gravity. */
+  su2double Aux_Var;             /*!< \brief Auxiliar variable defined only on the surface. */
+  su2double CartCoord[3];        /*!< \brief Vertex cartesians coordinates. */
+  su2double VarCoord[3];         /*!< \brief Used for storing the coordinate variation due to a surface modification. */
+  su2double *VarRot;             /*!< \brief Used for storing the rotation variation due to a surface modification. */
+  long PeriodicPoint[5];         /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+  bool ActDisk_Perimeter;        /*!< \brief Identify nodes at the perimeter of the actuator disk */
+  short Rotation_Type;           /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
+  unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
+  unsigned long *Donor_Points;   /*!< \brief Indices of donor points for interpolation across zones. Also used for
+                                             the interpolation for wall model data. */
+  unsigned long *Donor_Proc;     /*!< \brief indices of donor processor for interpolation across zones in parallel */
+  unsigned long Donor_Elem;      /*!< \brief Store the donor element for interpolation across zones. Also used for
+                                             the interpolation for wall model data. */
+  unsigned short Donor_Face;     /*!< \brief Store the donor face (w/in donor element) for interpolation across zones */
+  su2double Basis_Function[3];   /*!< \brief Basis function values for interpolation across zones. */
+  su2double *Donor_Coeff;        /*!< \brief Store a list of coefficients corresponding to the donor points. */
+  unsigned short nDonor_Points;  /*!< \brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
   
 public:
 

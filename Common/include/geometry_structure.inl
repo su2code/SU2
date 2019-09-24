@@ -147,6 +147,8 @@ inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
 inline void CGeometry::STGPreprocessing(CConfig *config) { }
 
+inline void CGeometry::WallModelPreprocessing(CConfig *config) { }
+
 inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 
 inline void CGeometry::SetPoint_Connectivity(void) { }

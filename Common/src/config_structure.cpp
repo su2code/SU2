@@ -2598,23 +2598,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Output_FileFormat = TECPLOT;
   }
 #endif
-
-  /*--- Set the boolean Wall_Functions equal to true if there is a
-   definition for the wall founctions ---*/
-
-  Wall_Functions = false;
-  if (nMarker_WallFunctions > 0) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
-      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
-        Wall_Functions = true;
-      
-      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
-
-        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
-
-    }
-  }
   
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
@@ -3827,6 +3810,41 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for(unsigned short i=0; i<nTimeIntegrationADER_DG; ++i) {
       TimeIntegrationADER_DG[i]    = GLPoints[i];
       WeightsIntegrationADER_DG[i] = GLWeights[i];
+    }
+  }
+  
+  /*--- Check for the correct use of SGS Models---*/
+  
+  if ((Kind_Turb_Model != NONE) && (Kind_SGS_Model != NO_SGS_MODEL)){
+    if (Kind_Solver!=NAVIER_STOKES)
+      SU2_MPI::Error("SGS models are only available in the NAVIER STOKES solver.", CURRENT_FUNCTION);
+  }
+  
+  /*--- Set the boolean Wall_Functions equal to true if there is a
+   definition for the wall founctions: Check the Wall functions with Finite Volume code.---*/
+  
+  bool FV_SteadyRANS = ((Unsteady_Simulation == STEADY) && (Kind_Solver == RANS));
+  bool FV_LES = ((Unsteady_Simulation == DT_STEPPING_2ND) && (Kind_Solver == NAVIER_STOKES) && (Kind_Turb_Model == NONE));
+  Wall_Functions = false;
+  Wall_Models = false;
+  if (nMarker_WallFunctions > 0) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      
+      if (FV_SteadyRANS){
+        Wall_Functions = true;
+        if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL) ||
+          (Kind_WallFunctions[iMarker] == EQUILIBRIUM_WALL_MODEL)  || (Kind_WallFunctions[iMarker] == LOGARITHMIC_WALL_MODEL))
+          SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION.\n"), CURRENT_FUNCTION);
+      }
+      else if (FV_LES || (Kind_Solver == FEM_LES)){
+        Wall_Models = true;
+        if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker]==NONEQUILIBRIUM_WALL_MODEL) ||
+                (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION))
+          SU2_MPI::Error(string("For ILES problems, use EQUILIBRIUM_WALL_MODEL or LOGARITHMIC_WALL_MODEL.\n"), CURRENT_FUNCTION);
+      }
+//      else{
+//        SU2_MPI::Error(string("Please check the correct use of Wall Functions/Models.\n"), CURRENT_FUNCTION);
+//      }
     }
   }
 
@@ -5054,6 +5072,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        
+        switch (Kind_SGS_Model) {
+          case NO_SGS_MODEL: cout << "No Subgrid Scale model." << endl; break;
+          case IMPLICIT_LES: cout << "Subgrid Scale model: Implicit LES" << endl; break;
+          case SMAGORINSKY:  cout << "Subgrid Scale model: Smagorinsky " << endl; break;
+          case WALE:         cout << "Subgrid Scale model: WALE"         << endl; break;
+          case VREMAN:       cout << "Subgrid Scale model: VREMAN"       << endl; break;
+          default:
+            SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
+        }
         break;
       case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;

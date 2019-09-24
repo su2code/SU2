@@ -2379,6 +2379,18 @@ public:
   virtual void SetTauWall(su2double val_tau_wall);
 
   virtual su2double GetTauWall();
+  
+  virtual void SetHeatFlux(su2double val_heat_flux);
+  
+  virtual su2double GetHeatFlux();
+
+  virtual void SetDirTanWM(su2double  *val_dir_tan_wm);
+  
+  virtual su2double *GetDirTanWM();
+
+  virtual void SetDirNormalWM(su2double  *val_dir_normal_wm);
+  
+  virtual su2double *GetDirNormalWM();
 
   virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
 
@@ -3849,6 +3861,10 @@ private:
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  su2double Heat_Flux;       /*!< \brief Heat Flux calculated from the wall model. */
+  su2double DirTanWM[3];     /*!< \brief Tangential direction of wall model. */
+  su2double DirNormalWM[3];  /*!< \brief Normal direction of wall model. */
+  su2double kOverCv;         /*!< \brief Thermal Conductivity of wall model. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
   su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
@@ -4002,15 +4018,49 @@ public:
   void SetSecondaryVar(CFluidModel *FluidModel);
 
   /*! 
-   * \brief Set the value of the wall shear stress computed by a wall function.
+   * \brief Set the value of the wall shear stress computed by a wall function/model.
    */
   void SetTauWall(su2double val_tau_wall);
   
   /*!
-   * \brief Get the value of the wall shear stress computed by a wall function.
-   * \return Value of the wall shear stress computed by a wall function.
+   * \brief Get the value of the wall shear stress computed by a wall function/model.
+   * \return Value of the wall shear stress computed by a wall function/model.
    */
   su2double GetTauWall(void);
+
+  /*!
+   * \brief Set the value of the heat flux computed by the wall model.
+   */
+  void SetHeatFlux(su2double val_heat_flux);
+  
+  /*!
+   * \brief Get the value of the heat flux computed by the model
+   * \return Value of the heat flux computed by the model
+   */
+  su2double GetHeatFlux(void);
+
+  /*!
+   * \brief Set the value of the tangent direction of the shear stress computed by the wall model.
+   */
+  void SetDirTanWM(su2double *val_dir_tan_wm);
+  
+  /*!
+   * \brief Get the value of the tangent direction of the shear stress computed by the wall model.
+   * \return Value.
+   */
+  su2double *GetDirTanWM(void);
+
+
+  /*!
+   * \brief Set the value of the normal direction of the shear stress computed by the wall model.
+   */
+  void SetDirNormalWM(su2double *val_dir_normal_wm);
+  
+  /*!
+   * \brief Set the value of the normal direction of the shear stress computed by the wall model.
+   * \return Value.
+   */
+  su2double *GetDirNormalWM(void);
   
   /*!
    * \brief Get the DES length scale

@@ -994,6 +994,34 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Isothermal_WallModel(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics, CConfig *config,
+                                     unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics, CConfig *config,
+                                unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
@@ -3991,6 +4019,23 @@ public:
    */
   virtual void SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  
+  virtual void Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config, unsigned short val_irkstep);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8344,6 +8389,12 @@ private:
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
+  CSGSModel *SGSModel;     /*!< \brief LES Subgrid Scale model. */
+  CWallModel *WallModel;   /*!< \brief Choice of the Wall Model LES. */
+  bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
+  bool WallModelUsed;      /*!< \brief Whether or not a Wall Model LES is used. */
+  bool WallFunctionUsed;   /*!< \brief Whether or not a Wall Function RANS is used. */
+
 public:
   
   /*!
@@ -8585,6 +8636,28 @@ public:
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
+   * \brief Weakly impose a constant heat-flux condition when using wall models/functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief Weakly impose a isothermal condition when using wall models/functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -8774,6 +8847,22 @@ public:
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
   
+  /*!
+   * \brief Computes the Sub-grid Scale (SGS) model for LES simulations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) and heat flux on the surface using a wall models.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config, unsigned short val_irkstep);
+
   /*!
    * \brief Computes the eddy viscosity at the first point of the wall.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9524,6 +9613,18 @@ public:
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                         unsigned short val_marker);
+  
+  /*!
+   * \brief Weakly impose a constant heat-flux condition when using wall models/functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+ void BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                       unsigned short val_marker);
   
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.

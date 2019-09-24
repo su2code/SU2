@@ -455,6 +455,18 @@ inline void CVariable::SetTauWall(su2double val_tau_wall) { }
 
 inline su2double CVariable::GetTauWall(void) { return 0; }
 
+inline void CVariable::SetHeatFlux(su2double val_heat_flux) { }
+
+inline su2double CVariable::GetHeatFlux(void) { return 0; }
+
+inline void CVariable::SetDirTanWM(su2double *val_dir_tan_wm) { }
+
+inline su2double* CVariable::GetDirTanWM(void) { return 0; }
+
+inline void CVariable::SetDirNormalWM(su2double *val_dir_normal_wm) { }
+
+inline su2double* CVariable::GetDirNormalWM(void) { return 0; }
+
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
 inline void CVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { }
@@ -930,6 +942,18 @@ inline void CNSVariable::SetdktdT_rho(su2double dktdT_rho) {
 inline void CNSVariable::SetTauWall(su2double val_tau_wall) { Tau_Wall = val_tau_wall; }
 
 inline su2double CNSVariable::GetTauWall(void) { return Tau_Wall; }
+
+inline void CNSVariable::SetHeatFlux(su2double val_heat_flux) { Heat_Flux = val_heat_flux; }
+
+inline su2double CNSVariable::GetHeatFlux(void) { return Heat_Flux; }
+
+inline void CNSVariable::SetDirTanWM(su2double *val_dir_tan_wm) { for (unsigned short iDim = 0; iDim < nDim; iDim++) DirTanWM[iDim] = val_dir_tan_wm[iDim];}
+
+inline su2double *CNSVariable::GetDirTanWM(void) { return DirTanWM; }
+
+inline void CNSVariable::SetDirNormalWM(su2double *val_dir_normal_wm) { for (unsigned short iDim = 0; iDim < nDim; iDim++) DirNormalWM[iDim] = val_dir_normal_wm[iDim];}
+
+inline su2double *CNSVariable::GetDirNormalWM(void) { return DirNormalWM; }
 
 inline void CNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+6] = eddy_visc; }
 

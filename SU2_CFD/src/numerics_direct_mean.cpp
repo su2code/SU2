@@ -4778,6 +4778,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   TauWall_i = 0; TauWall_j = 0;
 
+  qWall_i = 0; qWall_j = 0.;
+
   PrimVar_i = new su2double [nPrimVar];
   PrimVar_j = new su2double [nPrimVar];
   Mean_PrimVar = new su2double [nPrimVar];
@@ -4943,11 +4945,43 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
    to the computed representation of the shear stress ---*/
-
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
 }
+
+
+void CAvgGrad_Base::ReplaceTauWall(const su2double *val_primvar,
+                                   const su2double *val_normal,
+                                   const su2double *val_dir_tan,
+                                   const su2double *val_dir_normal,
+                                   const su2double val_tau_wall,
+                                   const su2double val_q_Wall) {
+  
+  /*--- ---*/
+  unsigned short iDim;
+  su2double Area, velWall_tan;
+  
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += val_normal[iDim]*val_normal[iDim];
+  Area = sqrt(Area);
+  
+  /*--- primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+  
+  velWall_tan = 0.;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    velWall_tan +=  val_primvar[iDim+1] * val_dir_tan[iDim];
+  
+  Proj_Flux_Tensor[0] = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Proj_Flux_Tensor[iDim+1] = - val_tau_wall * val_dir_tan[iDim] * Area;
+  
+  Proj_Flux_Tensor[nVar-1] = ( val_q_Wall - val_tau_wall * velWall_tan) * Area;
+  
+  //cout << velWall_tan << " " << val_q_Wall << " " << val_tau_wall << endl;
+}
+
 
 void CAvgGrad_Base::GetMeanRateOfStrainMatrix(su2double **S_ij) const
 {
@@ -5372,12 +5406,42 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
   
   /*--- Wall shear stress values (wall functions) ---*/
+  /*--- TODO: - Fix this Mean values of shear stress when using wall functions. ---*/
   
-  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
-  else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
-  else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
-  else Mean_TauWall = -1.0;
+  if (TauWall_i > 0.0 && TauWall_j > 0.0){
+    Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+    Mean_qWall   = 0.5*(qWall_i + qWall_j);
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
+      Mean_DirNormal[iDim] = 0.5 * (DirNormal_i[iDim] + DirNormal_j[iDim]);
+    }
 
+  }
+  else if (TauWall_i > 0.0){
+    Mean_TauWall = TauWall_i;
+    Mean_qWall = qWall_i;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = DirTan_i[iDim];
+      Mean_DirNormal[iDim] = DirNormal_i[iDim];
+    }
+  } 
+  else if (TauWall_j > 0.0){
+    Mean_TauWall = TauWall_j;
+    Mean_qWall = qWall_j;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = DirTan_j[iDim];
+      Mean_DirNormal[iDim] = DirNormal_j[iDim];
+    }
+  }
+  else{
+    Mean_TauWall = -1.0;
+    Mean_qWall = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = 0.0;
+      Mean_DirNormal[iDim] = 0.0;
+    }
+  }
+   
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
@@ -5389,14 +5453,24 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
-  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
-
+  
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
-  GetViscousProjFlux(Mean_PrimVar, Normal);
-
+  if (Mean_TauWall > 0){
+    if (config->GetWall_Models())
+      ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
+    else if (config->GetWall_Functions()){
+      AddTauWall(Normal, Mean_TauWall);
+      GetViscousProjFlux(Mean_PrimVar, Normal);
+    }
+    else
+      SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
+  }
+  else GetViscousProjFlux(Mean_PrimVar, Normal);
+  
   /*--- Update viscous residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)

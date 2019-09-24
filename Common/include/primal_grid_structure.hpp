@@ -70,12 +70,17 @@ protected:
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
-  su2double Volume;    /*!< \brief Volume of the element. */
+  su2double Volume;             /*!< \brief Volume of the element. */
   bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
                                             constant in the transformation to the standard element. */
   bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
+
+  unsigned short nProcElemIsOnlyInterpolDonor;  /*!< \brief Number of processors on which this element is
+                                                            only an interpolation donor. */
+  unsigned long  *ProcElemIsOnlyInterpolDonor;  /*!< \brief The processors on which this element is
+                                                            only an interpolation donor. */
 public:
 	
 	/*!
@@ -191,6 +196,28 @@ public:
 	 */
 	su2double GetCG(unsigned short val_dim);
 		
+  /*!
+   * \brief Add the given processor to the list of processor on which
+            this cell is only used as interpolation donor.
+   * \param[in] procInterpol - Processor to be added to the list.
+   */
+  void AddProcElemIsOnlyInterpolDonor(unsigned long procInterpol);
+
+  /*!
+   * \brief Make available the number of processors on which this
+            element is only an interpolation donor.
+   * \return The value of nProcElemIsOnlyInterpolDonor.
+   */
+  unsigned short GetNProcElemIsOnlyInterpolDonor(void);
+
+  /*!
+   * \brief Make available a processor on which this element
+            is only an interpolation donor.
+   * \param[in] val_iProc - index in the list of processors that
+                            must be made available.
+   */
+  unsigned long GetProcElemIsOnlyInterpolDonor(unsigned short val_iProc);
+
   /*!
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.

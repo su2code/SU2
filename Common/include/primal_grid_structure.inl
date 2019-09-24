@@ -75,6 +75,10 @@ inline void CPrimalGrid::SetJacobianConstantFace(bool val_JacFaceIsConstant, uns
 
 inline long CPrimalGrid::GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
 
+inline unsigned short CPrimalGrid::GetNProcElemIsOnlyInterpolDonor(void) { return nProcElemIsOnlyInterpolDonor; }
+
+inline unsigned long CPrimalGrid::GetProcElemIsOnlyInterpolDonor(unsigned short val_iProc) { return ProcElemIsOnlyInterpolDonor[val_iProc]; }
+
 inline su2double CPrimalGrid::GetVolume(void) { return Volume; }
 
 inline void CPrimalGrid::SetVolume(su2double val_volume) { Volume = val_volume; }

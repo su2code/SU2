@@ -12643,7 +12643,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
   su2double *Grid_Vel = NULL;
   su2double Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter()) + 2;
-  
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
@@ -12651,12 +12650,29 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average    = (config->GetCompute_Average());
+
+  bool wall_model           = config->GetWall_Models();
   bool wall_function        = config->GetWall_Functions();
   
   int *Local_Halo = NULL;
   
   stringstream varname;
   
+  /*--- Set the use of SGS model. ---*/
+  bool SGSModelUsed = false;
+  switch( config->GetKind_SGS_Model() ) {
+    case NO_SGS_MODEL:
+    case IMPLICIT_LES:
+      SGSModelUsed = false;
+      break;
+      
+    case SMAGORINSKY:
+    case WALE:
+    case VREMAN:
+      SGSModelUsed = true;
+      break;
+  }
+
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
@@ -12837,7 +12853,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add Eddy Viscosity. ---*/
     
-    if (Kind_Solver == RANS) {
+    if (Kind_Solver == RANS || SGSModelUsed) {
       nVar_Par += 2;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
@@ -12958,7 +12974,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
-    
+ 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       nVar_Par += 2;
       Variable_Names.push_back("Vorticity_x");
@@ -12983,6 +12999,22 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Relative_Velocity_y");
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1; Variable_Names.push_back("Relative_Velocity_z");
+      }
+    }
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+            
+      if(wall_model){
+        nVar_Par +=1;
+        Variable_Names.push_back("lenScale");        
+      }
+      if(wall_model || wall_function){
+        nVar_Par +=1;
+        Variable_Names.push_back("TauWall_WM");
+      }
+      if(wall_model){
+        nVar_Par +=1;
+        Variable_Names.push_back("HeatFlux_WM");
       }
     }
     
@@ -13190,7 +13222,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load data for the Eddy viscosity for RANS. ---*/
         
-        if (Kind_Solver == RANS) {
+        if (Kind_Solver == RANS || SGSModelUsed) {
           Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
@@ -13391,6 +13423,20 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           if (geometry->GetnDim() == 3) {
             Local_Data[jPoint][iVar] = Solution[3]/Solution[0] - Grid_Vel[2];
             iVar++;
+          }
+        }
+        
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+                    
+          if(wall_model){
+            Local_Data[jPoint][iVar] = pow(geometry->node[iPoint]->GetVolume(),1./3.); iVar++;
+          }
+
+          if(wall_model || wall_function){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTauWall(); iVar++;
+          }
+          if(wall_model){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetHeatFlux(); iVar++;
           }
         }
         

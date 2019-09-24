@@ -957,6 +957,7 @@ private:
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
   bool Wall_Functions;         /*!< \brief Use wall functions with the turbulence model */
+  bool Wall_Models;         /*!< \brief Use wall models for Large Eddy Simulations (WMLES) */
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
@@ -8911,6 +8912,13 @@ public:
    * \return <code>TRUE</code> if wall functions are on; otherwise <code>FALSE</code>.
    */
   bool GetWall_Functions(void);
+  
+  /*!
+   * \brief Get information about whether to use wall models for LES.
+   * \return <code>TRUE</code> if wall models are on; otherwise <code>FALSE</code>.
+   */
+  bool GetWall_Models(void);
+  
   /*!
    * \brief Get the AD support.
    */

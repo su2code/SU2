@@ -686,6 +686,10 @@ inline void CSolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_Isothermal_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
                   
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                   unsigned short val_marker) { }
@@ -1053,6 +1057,10 @@ inline su2double* CBaselineSolver_FEM::GetVecSolDOFs(void) {return VecSolDOFs.da
 inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
 
 inline void CSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
+
+inline void CSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config, unsigned short val_irkstep){}
+
+inline void CSolver::Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
 
 inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}

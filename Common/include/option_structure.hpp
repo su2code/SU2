@@ -917,19 +917,17 @@ enum ENUM_WALL_FUNCTIONS {
   NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
   ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
-  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
-  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
-  NONEQUILIBRIUM_WALL_MODEL = 5,   /*!< \brief Non-equilibrium wall model for LES. */
-  LOGARITHMIC_WALL_MODEL    = 6    /*!< \brief Logarithmic law-of-the-wall model for LES. */
+  EQUILIBRIUM_WALL_MODEL    = 3,   /*!< \brief Equilibrium wall model for LES. */
+  NONEQUILIBRIUM_WALL_MODEL = 4,   /*!< \brief Non-equilibrium wall model for LES. */
+  LOGARITHMIC_WALL_MODEL    = 5    /*!< \brief Logarithmic law-of-the-wall model for LES. */
 };
 static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<string, ENUM_WALL_FUNCTIONS>
 ("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
 ("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
 ("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
-("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
 ("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
 ("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL)
-("LOGARITHMIC_WALL_MODEL", LOGARITHMIC_WALL_MODEL);
+("LOGARITHMIC_WALL_MODEL",    LOGARITHMIC_WALL_MODEL);
 
 /*!
  * \brief type of time integration schemes
