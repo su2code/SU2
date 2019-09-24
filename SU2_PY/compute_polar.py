@@ -50,7 +50,7 @@
 from __future__ import print_function
 
 # imports
-import os, sys
+import os, sys, shutil
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -399,7 +399,7 @@ def main():
                     command = 'cp '+caseName+'/'+config.SOLUTION_FLOW_FILENAME+' .'
                     if options.verbose:
                         print(command)
-                    os.system(command)
+                    shutil.copy2(caseName+'/'+config.SOLUTION_FLOW_FILENAME, os.getcwd())
                     konfig.RESTART_SOL = 'YES'
                 else:
                     konfig.RESTART_SOL = 'NO'
@@ -463,8 +463,8 @@ def main():
             f.write(output)
             # save data
             SU2.io.save_data('results.pkl', results)
-            os.system('cp results.pkl  DIRECT/.')
-            os.system('cp '+config.SOLUTION_FLOW_FILENAME+' DIRECT/.')
+            shutil.copy2('results.pkl', 'DIRECT')
+            shutil.copy2(config.SOLUTION_FLOW_FILENAME, 'DIRECT')
 
             if os.path.isdir(caseName):
                 command = 'cat '+caseName+\
@@ -473,21 +473,21 @@ def main():
                 if options.verbose:
                     print(command)
                 os.system(command)
-                os.system('rm -R '+caseName)
+                shutil.rmtree(caseName)
 
             command = 'cp -p -R DIRECT '+caseName
             if options.verbose:
                 print(command)
-            os.system(command)
+            shutil.copytree('DIRECT', caseName)
 
     # Close open file
     f.close()
     if os.path.isdir('DIRECT'):
-        os.system('rm -R DIRECT')
+        shutil.rmtree('DIRECT')
     if os.path.isfile(config.SOLUTION_FLOW_FILENAME):
-        os.system('rm '+config.SOLUTION_FLOW_FILENAME)
+        os.remove(config.SOLUTION_FLOW_FILENAME)
     if os.path.isfile('results.pkl'):
-        os.system('rm results.pkl')
+        os.remove('results.pkl')
     print('Post sweep cleanup completed')
 
     #         sys.exit(0)
