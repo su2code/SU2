@@ -638,11 +638,42 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing){
   
-  /*--- Load the volume data from the solver and sort it ---*/
+  /*--- Check if the data sorters are allocated, if not, allocate them. --- */ 
   
-  Load_Data(geometry, config, solver_container);
+  if (femOutput){
+    
+    if (volumeDataSorter == nullptr)
+      volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
+    
+    if (surfaceDataSorter == nullptr)
+      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields, 
+                                                  dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
+    
+  }  else {
+   
+    if (volumeDataSorter == nullptr)    
+      volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
+    
+    if (surfaceDataSorter == nullptr)
+      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
+                                                  dynamic_cast<CFVMDataSorter*>(volumeDataSorter));  
+    
+  }
   
-  if (WriteVolume_Output(config, Iter) || force_writing){
+  bool writeFiles = WriteVolume_Output(config, Iter) || force_writing;
+  
+  /*--- Collect the volume data from the solvers.
+   *  If time-domain is enabled, we also load the data although we don't output it,
+   *  since we might want to do time-averaging. ---*/
+  
+  if (writeFiles || config->GetTime_Domain())
+    CollectVolumeData(config, geometry, solver_container);
+  
+  if (writeFiles){
+    
+    /*--- Partition and sort the data --- */
+    
+    volumeDataSorter->SortOutputData();    
     
     if (rank == MASTER_NODE){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);    
