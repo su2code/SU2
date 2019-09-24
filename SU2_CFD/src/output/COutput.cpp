@@ -789,7 +789,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
       RequestedField = requestedHistoryFields[iReqField];   
       if (RequestedField == Field.outputGroup || (RequestedField == historyOutput_List[iField_Output])){
         if (Field.screenFormat == FORMAT_INTEGER) width = std::max((int)Field.fieldName.size()+2, 10);  
-        else{ width = std::max((int)Field.fieldName.size()+2, 20);}
+        else{ width = std::max((int)Field.fieldName.size()+2, 18);}
         historyFileTable->AddColumn("\"" + Field.fieldName + "\"", width);
       }
     }  
@@ -802,8 +802,8 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
         RequestedField = requestedHistoryFields[iReqField];   
         if (RequestedField == Field.outputGroup || (RequestedField == historyOutputPerSurface_List[iField_Output])){
           if (Field.screenFormat == FORMAT_INTEGER) width = std::max((int)Field.fieldName.size()+2, 10);  
-          else{ width = std::max((int)Field.fieldName.size()+2, 20);}
-          historyFileTable->AddColumn("\"" + Field.fieldName + "\"", 20);          
+          else{ width = std::max((int)Field.fieldName.size()+2, 18);}
+          historyFileTable->AddColumn("\"" + Field.fieldName + "\"", width);          
         }
       }
     }
@@ -1001,8 +1001,8 @@ void COutput::PrepareHistoryFile(CConfig *config){
   historyFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   historyFileTable->SetPrintHeaderTopLine(false);
   historyFileTable->SetPrintHeaderBottomLine(false);
-  historyFileTable->SetPrecision(15);
-  
+  historyFileTable->SetPrecision(10);
+
   /*--- Add the header to the history file. ---*/
   
   SetHistoryFile_Header(config);    
