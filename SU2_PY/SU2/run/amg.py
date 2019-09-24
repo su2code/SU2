@@ -106,7 +106,6 @@ def amg ( config , kind='' ):
     sys.stdout.flush()
     
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
-    os.symlink(os.path.join(cwd, config.SOLUTION_FLOW_FILENAME), config.SOLUTION_FLOW_FILENAME)
     
     #--- Compute initial solution if needed, else link current files
     
@@ -172,13 +171,16 @@ def amg ( config , kind='' ):
         sys.stderr = sav_stderr
         
     else:
-        required_options=['SOLUTION_FLOW_FILENAME']
+        required_options=['SOLUTION_FLOW_FILENAME','SOLUTION_ADJ_FILENAME']
         if not all (opt in config for opt in required_options):
             err = '\n\n## ERROR : RESTART_SOL is set to YES, but the solution is missing:\n'
             for opt in required_options:
                 if not opt in config:
                     err += opt + '\n'
             raise RuntimeError , err
+
+        os.symlink(os.path.join(cwd, config.SOLUTION_FLOW_FILENAME), config.SOLUTION_FLOW_FILENAME)
+        os.symlink(os.path.join(cwd, config.SOLUTION_ADJ_FILENAME), config.SOLUTION_ADJ_FILENAME)
 
         stdout_hdl = open('ini.out','w') # new targets
         stderr_hdl = open('ini.err','w')
