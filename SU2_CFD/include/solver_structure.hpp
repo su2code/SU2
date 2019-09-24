@@ -4813,17 +4813,11 @@ protected:
   su2double *Secondary,    /*!< \brief Auxiliary nPrimVar vector. */
   *Secondary_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Secondary_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-  
-  //su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
-  //Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
-  //unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  //su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
-  //su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
-  //New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
-  su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
-  //unsigned long AoA_Counter;
+
+  su2double AoA_Prev;  /*!< \brief Old value of the angle of attack (monitored). */
   bool Start_AoA_FD;  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
   bool End_AoA_FD;    /*!< \brief Boolean for end of finite differencing for FixedCL mode */
+
   unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
@@ -7156,15 +7150,6 @@ protected:
   su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
   *Primitive_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Primitive_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
-  //su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
-  //Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
-  //unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  //su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
-  //su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
-  //New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
-  //su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
-  //unsigned long AoA_Counter;
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
