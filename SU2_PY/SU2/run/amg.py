@@ -180,6 +180,15 @@ def amg ( config , kind='' ):
                     err += opt + '\n'
             raise RuntimeError , err
 
+        stdout_hdl = open('ini.out','w') # new targets
+        stderr_hdl = open('ini.err','w')
+
+        success = False
+        val_out = [False]
+
+        sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
+        sav_stderr, sys.stderr = sys.stderr, stderr_hdl
+
         current_mesh     = config['MESH_FILENAME']
         current_solution = "ini_restart_flow.dat"
 
