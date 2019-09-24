@@ -4,10 +4,12 @@
 #endif
 #include <set>
 
+const string CTecplotBinaryFileWriter::fileExt = ".szplt";
+
 CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim,
                                                    string fileName, CParallelDataSorter *dataSorter,
                                                    unsigned long time_iter, su2double timestep) : 
-  CFileWriter(fields, fileName, dataSorter, ".szplt", nDim), time_iter(time_iter), timestep(timestep){}
+  CFileWriter(fields, fileName, dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 

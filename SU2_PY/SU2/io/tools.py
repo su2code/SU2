@@ -91,11 +91,11 @@ def read_plot( filename ):
         title = line.split('=')[1] .strip() # not used right now
         line = plot_file.readline()
 
-    # process header
-    if '=' in line:
-        line = line.split("=")[1].strip()
+    if line.startswith('VARIABLES'):
+          line = plot_file.readline()
+
     line = line.split(",")
-    Variables = [ x.strip('" ') for x in line ]
+    Variables = [ x.strip().strip('"') for x in line ]
     n_Vars = len(Variables)
     
     # initialize plot data dictionary
@@ -779,9 +779,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if (plot_format == 'TAB_TECPLOT'): 
+    if (plot_format == 'TECPLOT'): 
         header.append('VARIABLES=')
-    elif (plot_format == 'TAB_CSV'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -905,9 +905,9 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if (plot_format == 'TAB_TECPLOT'): 
+    if (plot_format == 'TECPLOT'): 
         header_format = header_format + 'VARIABLES='
-    elif (plot_format == 'TAB_CSV'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
 

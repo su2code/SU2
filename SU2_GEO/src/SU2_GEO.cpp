@@ -153,6 +153,8 @@ int main(int argc, char *argv[]) {
     
   }
   
+  bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_TECPLOT;
+  
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
   
 #ifdef HAVE_MPI
@@ -507,18 +509,21 @@ int main(int argc, char *argv[]) {
     }
     
     /*--- Write the objective function in a external file ---*/
-    
-    cstr = new char [config_container[ZONE_0]->GetObjFunc_Value_FileName().size()+1];
-    strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Value_FileName().c_str());
-    ObjFunc_file.open(cstr, ios::out);
-    ObjFunc_file << "TITLE = \"SU2_GEO Evaluation\"" << endl;
+    string filename = config_container[ZONE_0]->GetObjFunc_Value_FileName();
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
+    if (tabTecplot) filename += ".dat";
+    else filename += ".csv";
+    ObjFunc_file.open(filename.c_str(), ios::out);
+    if (tabTecplot) ObjFunc_file << "TITLE = \"SU2_GEO Evaluation\"" << endl;
     
     if (geometry_container[ZONE_0]->GetnDim() == 2) {
-      ObjFunc_file << "VARIABLES = \"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
+      if (tabTecplot) ObjFunc_file << "VARIABLES =//" << endl;
+      ObjFunc_file << "\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
     }
     else if (geometry_container[ZONE_0]->GetnDim() == 3) {
       
-      ObjFunc_file << "VARIABLES = ";
+      if (tabTecplot) ObjFunc_file << "VARIABLES = //" << endl;
       
       if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
        	ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
@@ -558,7 +563,8 @@ int main(int argc, char *argv[]) {
       
     }
     
-    ObjFunc_file << "\nZONE T= \"Geometrical variables (value)\"" << endl;
+    if (tabTecplot) ObjFunc_file << "\nZONE T= \"Geometrical variables (value)\"" << endl;
+    else ObjFunc_file << endl;
     
     if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
       if (geometry_container[ZONE_0]->GetnDim() == 3) {
@@ -609,9 +615,12 @@ int main(int argc, char *argv[]) {
     
     /*--- Write the gradient in a external file ---*/
     if (rank == MASTER_NODE) {
-      cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-      strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-      Gradient_file.open(cstr, ios::out);
+      string filename = config_container[ZONE_0]->GetObjFunc_Grad_FileName();
+      unsigned short lastindex = filename.find_last_of(".");
+      filename = filename.substr(0, lastindex);
+      if (tabTecplot) filename += ".dat";
+      else filename += ".csv";
+      Gradient_file.open(filename.c_str(), ios::out);
     }
     
     for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
@@ -1133,15 +1142,16 @@ int main(int argc, char *argv[]) {
         
         
         if (iDV == 0) {
-          Gradient_file << "TITLE = \"SU2_GEO Gradient\"" << endl;
+          if (tabTecplot) Gradient_file << "TITLE = \"SU2_GEO Gradient\"" << endl;
+          if (tabTecplot) Gradient_file << "VARIABLES = //" << endl;
           
           if (geometry_container[ZONE_0]->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
+            Gradient_file << "\"DESIGN_VARIABLE\",\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
           }
           else if (geometry_container[ZONE_0]->GetnDim() == 3) {
             
             if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
-              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"DESIGN_VARIABLE\",";
               Gradient_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
@@ -1153,7 +1163,7 @@ int main(int argc, char *argv[]) {
               }
             }
             else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
-              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"DESIGN_VARIABLE\",";
               Gradient_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
@@ -1166,7 +1176,7 @@ int main(int argc, char *argv[]) {
               }
             }
             else {
-              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"DESIGN_VARIABLE\",";
               Gradient_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
@@ -1181,8 +1191,8 @@ int main(int argc, char *argv[]) {
             
           }
           
-          Gradient_file << "\nZONE T= \"Geometrical variables (gradient)\"" << endl;
-          
+          if (tabTecplot) Gradient_file << "\nZONE T= \"Geometrical variables (gradient)\"" << endl;
+          else Gradient_file << endl;
         }
         
         Gradient_file << (iDV) <<",";

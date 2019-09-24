@@ -841,15 +841,12 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
-  unsigned long index;
 
   unsigned short iVar;
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
   unsigned short file_format = config->GetRefGeom_FileFormat();
 
   string filename;
-  su2double dull_val;
   ifstream reference_file;
 
 
@@ -858,8 +855,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   filename = config->GetRefGeom_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".csv");
+  
+  filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
   reference_file.open(filename.data(), ios::in);
 

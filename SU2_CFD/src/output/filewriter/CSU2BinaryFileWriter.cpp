@@ -1,8 +1,10 @@
 #include "../../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 
+const string CSU2BinaryFileWriter::fileExt = ".dat";
+
 CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim, 
                                            string fileName, CParallelDataSorter *dataSorter)  : 
-  CFileWriter(fields, fileName, dataSorter, ".dat", nDim){}
+  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){

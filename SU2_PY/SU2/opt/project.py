@@ -488,7 +488,7 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        if (output_format == 'TAB_CSV'):
+        if (output_format == 'CSV'):
           su2util.write_plot('history_project.csv',output_format,results_plot)
         else:
           su2util.write_plot('history_project.dat',output_format,results_plot)

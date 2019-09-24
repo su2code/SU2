@@ -158,7 +158,10 @@ protected:
 
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
+  PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
+  PrintingToolbox::CTablePrinter* fileWritingTable;     //!< File writing header
   std::string multiZoneHeaderString;                    //!< Multizone header string
+  bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
   
   //! Structure to store the value of the running averages
   map<string, Signal_Processing::RunningAverage> runningAverages; 
@@ -280,12 +283,7 @@ public:
    * \param[in] time_dep - Indicates whether time dependent files should be written.   
    */
   void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
-  
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   */
-  void DeallocateData_Parallel();
-    
+
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
@@ -617,7 +615,6 @@ protected:
   /*!
    * \brief Postprocess_HistoryData
    * \param[in] config - Definition of the particular problem.
-   * \param[in] dualtime - TODO: REMOVE PARAMETER
    */
   void Postprocess_HistoryData(CConfig *config);
 
