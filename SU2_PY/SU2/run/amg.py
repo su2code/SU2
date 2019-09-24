@@ -179,9 +179,6 @@ def amg ( config , kind='' ):
                     err += opt + '\n'
             raise RuntimeError , err
 
-        os.symlink(os.path.join(cwd, config.SOLUTION_FLOW_FILENAME), config.SOLUTION_FLOW_FILENAME)
-        os.symlink(os.path.join(cwd, config.SOLUTION_ADJ_FILENAME), config.SOLUTION_ADJ_FILENAME)
-
         stdout_hdl = open('ini.out','w') # new targets
         stderr_hdl = open('ini.err','w')
 
@@ -194,11 +191,13 @@ def amg ( config , kind='' ):
         current_mesh     = config['MESH_FILENAME']
         current_solution = "ini_restart_flow.dat"
 
-        config_cfd.RESTART_FLOW_FILENAME = current_solution
-        config_cfd.ERROR_ESTIMATE        = 'YES'
-        config_cfd.MESH_HMAX             = config.ADAP_HMAX
-        config_cfd.MESH_HMIN             = config.ADAP_HMIN
-        config_cfd.MESH_COMPLEXITY       = int(mesh_sizes[0])
+        config_cfd.RESTART_FLOW_FILENAME  = current_solution
+        config_cfd.SOLUTION_FLOW_FILENAME = '../' + config['SOLUTION_FLOW_FILENAME']
+        config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
+        config_cfd.ERROR_ESTIMATE         = 'YES'
+        config_cfd.MESH_HMAX              = config.ADAP_HMAX
+        config_cfd.MESH_HMIN              = config.ADAP_HMIN
+        config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
         SU2_MET(config_cfd)
 
         sys.stdout = sav_stdout
