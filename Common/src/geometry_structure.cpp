@@ -8371,6 +8371,10 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
                                                 TriAdap[iElem][2], 2);
       local_element_count++;
 
+      /*--- Free memory ---*/
+      vector<unsigned long>().swap(TriAdap[iElem]);
+
+
     }
   }
   /*--- 3D ---*/
@@ -8382,6 +8386,9 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
                                                    TetAdap[iElem][2],
                                                    TetAdap[iElem][3]);
       local_element_count++;
+
+      /*--- Free memory ---*/
+      vector<unsigned long>().swap(TetAdap[iElem]);
     }
   }
 
@@ -8459,6 +8466,9 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
         bound[iMarker][jElem] = new CLine(EdgAdap[iElem][0],
                                           EdgAdap[iElem][1],2);
         jElem_Bound[iMarker]++;
+
+        /*--- Free memory ---*/
+        vector<unsigned long>().swap(EdgAdap[iElem]);
       }
     }
 
@@ -8481,6 +8491,9 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
                                               TriAdap[iElem][1],
                                               TriAdap[iElem][2],3);
         jElem_Bound[iMarker]++;
+
+        /*--- Free memory ---*/
+        vector<unsigned long>().swap(TriAdap[iElem]);
       }
     }
 
@@ -8512,6 +8525,12 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
       
     }
   }
+
+  /*--- Free memory ---*/
+  vector<vector<passivedouble> >().swap(PoiAdap);
+  vector<vector<unsigned long> >().swap(EdgAdap);
+  vector<vector<unsigned long> >().swap(TriAdap);
+  vector<vector<unsigned long> >().swap(TetAdap);
   
 }
 

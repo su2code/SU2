@@ -1425,9 +1425,7 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
                                           vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                           unsigned short val_iZone, unsigned short val_nZone) {
 
-  char zone_file_name[MAX_STRING_SIZE];
   unsigned short iMesh, requestedMGlevels = config_container[val_iZone]->GetnMGLevels();
-  unsigned long iPoint;
   bool fea = false;
 
   /*--- Determine whether or not the FEM solver is used, which decides the
