@@ -1632,6 +1632,7 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
 void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > SolAdap) {
 
   unsigned short iSol;
+  int val_iter = 0;
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------ Solver Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -1679,6 +1680,26 @@ void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry
   
   bool compressible   = false;
   bool incompressible = false;
+
+  /*--- Adjust iteration number for unsteady restarts. ---*/
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC); // Dynamic simulation (FSI).
+
+  if (dual_time) {
+    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+    else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+  }
+
+  if (time_stepping) {
+    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  }
   
   /*--- Assign booleans ---*/
   
