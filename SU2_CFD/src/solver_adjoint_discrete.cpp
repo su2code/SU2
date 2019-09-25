@@ -1039,8 +1039,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 }
 
-void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > SolAdap, 
-                                      int val_iter, bool val_update_geo) {
+void CDiscAdjSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > SolAdap, 
+                                         int val_iter, bool val_update_geo) {
   
 }
 
