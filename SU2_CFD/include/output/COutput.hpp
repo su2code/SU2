@@ -132,10 +132,10 @@ protected:
     /*! \brief Default constructor. */
     HistoryOutputField() {}         
     /*! \brief Constructor to initialize all members. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, 
-                       unsigned short fieldtype, string description):
-      fieldName(fieldname), value(0.0), screenFormat(screenformat),
-      outputGroup(historyoutputgroup), fieldType(fieldtype), description(description){}
+    HistoryOutputField(string fieldName_, unsigned short screenFormat_, string OutputGroup_, 
+                       unsigned short fieldType_, string description_):
+      fieldName(std::move(fieldName_)), value(0.0), screenFormat(screenFormat_),
+      outputGroup(std::move(OutputGroup_)), fieldType(fieldType_), description(std::move(description_)){}
   };
 
   /*! \brief Associative map to access data stored in the history output fields by a string identifier. */
@@ -197,8 +197,9 @@ protected:
     /*! \brief Default constructor. */
     VolumeOutputField () {}
     /*! \brief Constructor to initialize all members. */    
-    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup, string description):
-      fieldName(fieldname), offset(offset), outputGroup(volumeoutputgroup), description(description){}
+    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
+      fieldName(std::move(fieldName_)), offset(std::move(offset_)), 
+      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
   };
   
   /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */  

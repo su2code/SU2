@@ -95,14 +95,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
 }
 
-CFlowIncOutput::~CFlowIncOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-
-}
+CFlowIncOutput::~CFlowIncOutput(void) {}
 
 
 void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){

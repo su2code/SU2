@@ -91,10 +91,7 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned 
 
 }
 
-CDriverOutput::~CDriverOutput() {
-
-
-}
+CDriverOutput::~CDriverOutput() {}
 
 
 void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config) {

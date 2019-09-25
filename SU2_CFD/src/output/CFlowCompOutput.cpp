@@ -94,15 +94,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   
 }
 
-CFlowCompOutput::~CFlowCompOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-
-  }
-
-
-}
+CFlowCompOutput::~CFlowCompOutput(void) {}
 
 
 
