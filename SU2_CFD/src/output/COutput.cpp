@@ -676,15 +676,16 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     /*--- Partition and sort the data --- */
     
     volumeDataSorter->SortOutputData();    
+   
+    unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
+    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
     
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);    
       fileWritingTable->PrintHeader();
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);    
     }
-    unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
-        
+    
     /*--- Loop through all requested output files ---*/
     
     for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
@@ -693,7 +694,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     }
     
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->PrintFooter();
       headerNeeded = true;
     }
