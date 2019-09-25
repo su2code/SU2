@@ -1639,7 +1639,7 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
     /*--- Compute the max length. ---*/
     
     if ((rank == MASTER_NODE) && (!fea) && (iMesh == MESH_0)) cout << "Finding max control volume width." << endl;
-    geometry[ieEsh]->SetMaxLength(config);
+    geometry[iMesh]->SetMaxLength(config);
     
     /*--- Communicate the number of neighbors. This is needed for
          some centered schemes and for multigrid in parallel. ---*/
