@@ -75,10 +75,7 @@ CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* 
   
 }
 
-CBaselineOutput::~CBaselineOutput(void) {
-
-
-}
+CBaselineOutput::~CBaselineOutput(void) {}
 
 void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
 

@@ -106,14 +106,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
 }
 
-CElasticityOutput::~CElasticityOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-
-  }
-
-}
+CElasticityOutput::~CElasticityOutput(void) {}
 
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 

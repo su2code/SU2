@@ -99,13 +99,7 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
   
 }
 
-CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-}
+CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {}
 
 void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
