@@ -389,38 +389,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
   
   if (config->GetTime_Domain()){
-    AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TAVG_SOLUTION", "Time-averaged value of the density");
-    if (nDim == 3)
-      AddVolumeOutput("MEAN_VELOCITY-Z", "MeanVelocity_z", "TAVG_SOLUTION", "Time-averaged value of the density");
-    if (nDim == 3){
-      AddVolumeOutput("MEAN_ENERGY", "MeanEnergy", "TAVG_SOLUTION", "Time-averaged value of the density");
-    }
-    else {
-      AddVolumeOutput("MEAN_ENERGY", "MeanEnergy", "TAVG_SOLUTION", "Time-averaged value of the density");    
-    }
-    AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TAVG_SOLUTION", "Time-averaged value of the density");
-    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-      AddVolumeOutput("MEAN_ROE_DISSIPATION", "MeanRoe_Dissipation", "TAVG_SOLUTION", "Time-averaged value of the density");
-    }  
-    
-    AddVolumeOutput("RMS_U",   "RMSVelocity_x", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("RMS_V",   "RMSVelocity_y", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("RMS_UV",  "RMSUV",         "TAVG_SOLUTION", "Time-averaged value of the density");    
-    AddVolumeOutput("RMS_P",   "RMSPressure",   "TAVG_SOLUTION", "Time-average value pf pressure");
-    AddVolumeOutput("UUPRIME", "UUPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("VVPRIME", "VVPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("UVPRIME", "UVPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
-    AddVolumeOutput("PPRIME",  "PPrimeMean",   "TAVG_SOLUTION", "Time-averaged value of the density");
-    if (nDim == 3){
-      AddVolumeOutput("RMS_W",   "RMSVelocity_z", "TAVG_SOLUTION", "Time-averaged value of the density");
-      AddVolumeOutput("RMS_UW", "RMSUW", "TAVG_SOLUTION", "Time-averaged value of the density");
-      AddVolumeOutput("RMS_VW", "RMSVW", "TAVG_SOLUTION", "Time-averaged value of the density");
-      AddVolumeOutput("WWPRIME", "WWPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
-      AddVolumeOutput("UWPRIME", "UWPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
-      AddVolumeOutput("VWPRIME", "VWPrimeMean", "TAVG_SOLUTION", "Time-averaged value of the density");
-    }
+    SetTimeAveragedFields();
   }
 }
 
@@ -462,6 +431,13 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   case NONE:
     break;
+  }
+  
+  if (config->GetGrid_Movement()){
+    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel()[0]);
+    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel()[1]);
+    if (nDim == 3)
+      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
   }
   
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure());
@@ -551,52 +527,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
   
   if (config->GetTime_Domain()){
-    SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetSolution(0));
-    SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0));
-    SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0));
-    if (nDim == 3)
-      SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0));
-    if (nDim == 3){
-      SetAvgVolumeOutputValue("MEAN_ENERGY", iPoint, Node_Flow->GetSolution(4));
-    } else {
-      SetAvgVolumeOutputValue("MEAN_ENERGY", iPoint, Node_Flow->GetSolution(3));    
-    }
-    SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure());
-    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-      SetAvgVolumeOutputValue("MEAN_ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation());
-    }  
-    
-    SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0),2));
-    SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0),2));
-    SetAvgVolumeOutputValue("RMS_UV", iPoint, (Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0)) * (Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0)));
-    SetAvgVolumeOutputValue("RMS_P", iPoint, pow(Node_Flow->GetPressure(),2));
-    if (nDim == 3){
-      SetAvgVolumeOutputValue("RMS_W", iPoint, pow(Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0),2));
-      SetAvgVolumeOutputValue("RMS_VW", iPoint, (Node_Flow->GetSolution(2)/Node_Flow->GetSolution(0)) * (Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0)));
-      SetAvgVolumeOutputValue("RMS_UW", iPoint, (Node_Flow->GetSolution(1)/Node_Flow->GetSolution(0)) * (Node_Flow->GetSolution(3)/Node_Flow->GetSolution(0)));
-    }
-    
-    const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY-X", iPoint);
-    const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);    
-    const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY-Y", iPoint);
-    const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);    
-    const su2double uvmean = GetVolumeOutputValue("RMS_UV", iPoint);
-    const su2double pmean  = GetVolumeOutputValue("MEAN_PRESSURE", iPoint);
-    const su2double ppmean = GetVolumeOutputValue("RMS_P", iPoint);
-    
-    SetVolumeOutputValue("UUPRIME", iPoint, -(umean*umean - uumean));
-    SetVolumeOutputValue("VVPRIME", iPoint, -(vmean*vmean - vvmean));
-    SetVolumeOutputValue("UVPRIME", iPoint, -(umean*vmean - uvmean));
-    SetVolumeOutputValue("PPRIME",  iPoint, -(pmean*pmean - ppmean));
-    if (nDim == 3){
-      const su2double wmean  = GetVolumeOutputValue("MEAN_VELOCITY-Z", iPoint);
-      const su2double wwmean = GetVolumeOutputValue("RMS_W", iPoint);
-      const su2double uwmean = GetVolumeOutputValue("RMS_UW", iPoint);
-      const su2double vwmean = GetVolumeOutputValue("RMS_VW", iPoint);
-      SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
-      SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
-      SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
-    } 
+    LoadTimeAveragedData(iPoint, Node_Flow);
   }
 }
 
