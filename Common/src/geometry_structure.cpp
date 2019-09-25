@@ -3797,13 +3797,19 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
                                      vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                      CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
+  /*--- Get rank and size. ---*/
+
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();  
   
+  /*--- Initialize several class data members for later. ---*/
+
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
+  /*--- Arrays for defining the linear partitioning. ---*/
+
   beg_node = NULL;
   end_node = NULL;
 
@@ -3816,6 +3822,91 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
   xadj      = NULL;
 #endif
 #endif
+
+  /*--- Arrays for defining the turbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+  
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
+
+  /*--- Initialize counters for the points/elements local to a rank. ---*/
+
+  nLocal_Point         = 0;
+  nLocal_PointDomain   = 0;
+  nLocal_PointGhost    = 0;
+  nLocal_PointPeriodic = 0;
+  nLocal_Line          = 0;
+  nLocal_BoundTria     = 0;
+  nLocal_BoundQuad     = 0;
+  nLocal_Tria          = 0;
+  nLocal_Quad          = 0;
+  nLocal_Tetr          = 0;
+  nLocal_Hexa          = 0;
+  nLocal_Pris          = 0;
+  nLocal_Pyra          = 0;
+
+  Local_Coords = NULL;
+  Local_Points = NULL;
+  Local_Colors = NULL;
+
+  /*--- Arrays for holding the element connectivity. ---*/
+
+  Conn_Line      = NULL;
+  Conn_BoundTria = NULL;
+  Conn_BoundQuad = NULL;
+
+  Conn_Line_Linear      = NULL;
+  Conn_BoundTria_Linear = NULL;
+  Conn_BoundQuad_Linear = NULL;
+
+  Conn_Tria = NULL;
+  Conn_Quad = NULL;
+  Conn_Tetr = NULL;
+  Conn_Hexa = NULL;
+  Conn_Pris = NULL;
+  Conn_Pyra = NULL;
+
+  /*--- Arrays for holding the element IDs. ---*/
+
+  ID_Line             = NULL;
+  ID_BoundTria        = NULL;
+  ID_BoundQuad        = NULL;
+  ID_Line_Linear      = NULL;
+  ID_BoundTria_Linear = NULL;
+  ID_BoundQuad_Linear = NULL;
+
+  ID_Tria = NULL;
+  ID_Quad = NULL;
+  ID_Tetr = NULL;
+  ID_Hexa = NULL;
+  ID_Pris = NULL;
+  ID_Pyra = NULL;
+
+  Elem_ID_Line             = NULL;
+  Elem_ID_BoundTria        = NULL;
+  Elem_ID_BoundQuad        = NULL;
+  Elem_ID_Line_Linear      = NULL;
+  Elem_ID_BoundTria_Linear = NULL;
+  Elem_ID_BoundQuad_Linear = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
