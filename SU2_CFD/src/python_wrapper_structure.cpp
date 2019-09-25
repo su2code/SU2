@@ -1631,4 +1631,300 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
 
 void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > SolAdap) {
 
+  unsigned short iSol;
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------ Solver Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
+
+  solver = new CSolver**[config->GetnMGLevels()+1];
+  
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    solver[iMesh] = NULL;
+  
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    solver[iMesh] = new CSolver* [MAX_SOLS];
+    for (iSol = 0; iSol < MAX_SOLS; iSol++)
+      solver[iMesh][iSol] = NULL;
+  }
+  
+  unsigned short iMGlevel;
+  bool euler, ns, turbulent,
+      fem_euler, fem_ns, fem_turbulent, fem_transition,
+      adj_euler, adj_ns, adj_turb,
+      heat_fvm,
+      fem, disc_adj_fem,
+      spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+      template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
+      fem_dg_flow, fem_dg_shock_persson,
+      e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  
+  /*--- Count the number of DOFs per solution point. ---*/
+  
+  DOFsPerPoint = 0;
+  
+  /*--- Initialize some useful booleans ---*/
+  
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
+  template_solver  = false;
+  fem_dg_flow      = false;  fem_dg_shock_persson = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
+  bool compressible   = false;
+  bool incompressible = false;
+  
+  /*--- Assign booleans ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; compressible = true; break;
+    case NAVIER_STOKES: ns = true; compressible = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; compressible = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case INC_EULER : euler = true; incompressible = true; break;
+    case INC_NAVIER_STOKES: ns = true; incompressible = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case INC_RANS : ns = true; turbulent = true; incompressible = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case FEM_EULER : fem_euler = true; compressible = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; compressible = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; compressible = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case FEM_LES : fem_ns = true; compressible = true; break;
+    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; compressible = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); compressible = true; adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; compressible = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; compressible = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; compressible = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; compressible = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; incompressible = true; break;
+    case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; incompressible = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; incompressible = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; compressible = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; compressible = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; compressible = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; compressible = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+  }
+  
+  /*--- Determine the kind of FEM solver used for the flow. ---*/
+  
+  switch( config->GetKind_FEM_Flow() ) {
+    case DG: fem_dg_flow = true; break;
+  }
+  
+  /*--- Determine the kind of shock capturing method for FEM DG solver. ---*/
+  
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case PERSSON: fem_dg_shock_persson = true; break;
+  }
+  
+  /*--- Assign turbulence model booleans ---*/
+  
+  if (turbulent || fem_turbulent)
+    switch (config->GetKind_Turb_Model()) {
+      case SA:        spalart_allmaras = true;        break;
+      case SA_NEG:    neg_spalart_allmaras = true;    break;
+      case SA_E:      e_spalart_allmaras = true;      break;
+      case SA_COMP:   comp_spalart_allmaras = true;   break;
+      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case SST:       menter_sst = true;              break;
+      case SST_SUST:  menter_sst = true;              break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
+    }
+  
+  /*--- Definition of the Class for the solution: solver[DOMAIN][INSTANCE][MESH_LEVEL][EQUATION]. Note that euler, ns
+   and potential are incompatible, they use the same position in sol container ---*/
+  
+  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    
+    /*--- Allocate solution for a template problem ---*/
+    
+    if (template_solver) {
+      solver[iMGlevel][TEMPLATE_SOL] = new CTemplateSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][TEMPLATE_SOL]->GetnVar();
+    }
+    
+    /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
+    
+    if (euler) {
+      if (compressible) {
+        solver[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      }
+      if (incompressible) {
+        solver[iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FLOW_SOL]->GetnVar();
+    }
+    if (ns) {
+      if (compressible) {
+        solver[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
+      }
+      if (incompressible) {
+        solver[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
+      }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FLOW_SOL]->GetnVar();
+    }
+    if (turbulent) {
+      if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
+        solver[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver[iMGlevel][FLOW_SOL]->GetFluidModel() );
+        solver[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel);
+      }
+      else if (menter_sst) {
+        solver[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
+        solver[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel);
+        solver[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][TURB_SOL]->GetnVar();
+      if (transition) {
+        solver[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][TRANS_SOL]->GetnVar();
+      }
+    }
+    if (fem_euler) {
+      if( fem_dg_flow ) {
+        if( fem_dg_shock_persson ) {
+          solver[iMGlevel][FLOW_SOL] = new CFEM_DG_NSSolver(geometry[iMGlevel], config, iMGlevel);
+        }
+        else {
+          solver[iMGlevel][FLOW_SOL] = new CFEM_DG_EulerSolver(geometry[iMGlevel], config, iMGlevel);
+        }
+      }
+    }
+    if (fem_ns) {
+      if( fem_dg_flow )
+        solver[iMGlevel][FLOW_SOL] = new CFEM_DG_NSSolver(geometry[iMGlevel], config, iMGlevel);
+    }
+    if (fem_turbulent) {
+      SU2_MPI::Error("Finite element turbulence model not yet implemented.", CURRENT_FUNCTION);
+      
+      if(fem_transition)
+        SU2_MPI::Error("Finite element transition model not yet implemented.", CURRENT_FUNCTION);
+    }
+    if (heat_fvm) {
+      solver[iMGlevel][HEAT_SOL] = new CHeatSolverFVM(geometry[iMGlevel], config, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][HEAT_SOL]->GetnVar();
+    }
+    if (fem) {
+      solver[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FEA_SOL]->GetnVar();
+    }
+    
+    /*--- Allocate solution for adjoint problem ---*/
+    
+    if (adj_euler) {
+      if (compressible) {
+        solver[iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[iMGlevel], config, iMGlevel);
+      }
+      if (incompressible) {
+        SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
+      }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJFLOW_SOL]->GetnVar();
+    }
+    if (adj_ns) {
+      if (compressible) {
+        solver[iMGlevel][ADJFLOW_SOL] = new CAdjNSSolver(geometry[iMGlevel], config, iMGlevel);
+      }
+      if (incompressible) {
+        SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
+      }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJFLOW_SOL]->GetnVar();
+    }
+    if (adj_turb) {
+      solver[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJTURB_SOL]->GetnVar();
+    }
+    
+    if (disc_adj) {
+      solver[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJFLOW_SOL]->GetnVar();
+      if (disc_adj_turb) {
+        solver[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJTURB_SOL]->GetnVar();
+      }
+      if (heat_fvm) {
+        solver[iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJHEAT_SOL]->GetnVar();
+      }
+    }
+    
+    if (disc_adj_fem) {
+      solver[iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[iMGlevel], config, solver[iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJFEA_SOL]->GetnVar();
+    }
+    
+    if (disc_adj_heat) {
+      solver[iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJHEAT_SOL]->GetnVar();
+    }
+  }
+
+  /*--- Use the SortAdaptedSolution routines. ---*/
+  
+  bool update_geo = true;
+  if (config->GetFSI_Simulation()) update_geo = false;
+  
+  /*--- Load adapted solutions for any of the active solver containers. Note that
+   these restart routines fill the fine grid and interpolate to all MG levels. ---*/
+
+  if (euler || ns) {
+    solver[MESH_0][FLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (turbulent) {
+    solver[MESH_0][TURB_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (fem) {
+    if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+    solver[MESH_0][FEA_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (fem_euler || fem_ns) {
+    if (fem_dg_flow)
+      solver[MESH_0][FLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (heat_fvm) {
+    solver[MESH_0][HEAT_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+}
+
+if (restart) {
+  if (template_solver) {
+    no_restart = true;
+  }
+  if (heat_fvm) {
+    solver[MESH_0][HEAT_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (adj_euler || adj_ns) {
+    solver[MESH_0][ADJFLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (adj_turb) {
+    no_restart = true;
+  }
+  if (disc_adj) {
+    solver[MESH_0][ADJFLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+    if (disc_adj_turb)
+      solver[MESH_0][ADJTURB_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+    if (disc_adj_heat)
+      solver[MESH_0][ADJHEAT_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (disc_adj_fem) {
+      if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+      solver[MESH_0][ADJFEA_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  if (disc_adj_heat) {
+    solver[MESH_0][ADJHEAT_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
+  }
+  
+  /*--- Set up any necessary inlet profiles ---*/
+  
+  Inlet_Preprocessing(solver, geometry, config);
+
 }

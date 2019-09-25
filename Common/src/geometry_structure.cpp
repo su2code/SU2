@@ -3939,7 +3939,7 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
 
   }
   else{
-    Load_Adapted_Mesh_Parallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config);
+    LoadAdaptedMeshParallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config);
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -8296,7 +8296,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
+void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                                        vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                                        CConfig* config) {
 

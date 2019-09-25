@@ -13611,6 +13611,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
 }
 
+void CEulerSolver::SortAdaptedRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > SolAdap, 
+                                      int val_iter, bool val_update_geo) {
+  
+}
+
 void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
 
   unsigned long iPoint;
