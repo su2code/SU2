@@ -217,15 +217,5 @@ void CSU2BinaryFileWriter::Write_Data(){
   /*--- Compute and store the bandwidth ---*/
   
   Bandwidth = file_size/(1.0e6)/UsedTime;
-//  config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+Bandwidth);
-  
-//  if ((rank == MASTER_NODE) && (wrt_perf)) {
-//    cout << "Wrote " << file_size/1.0e6 << " MB to disk in ";
-//    cout << UsedTime << " s. (" << Bandwidth << " MB/s)." << endl;
-//  }
-  
-  /*--- Free temporary data buffer for writing the binary file. ---*/
-
-//  delete [] buf;
 
 }

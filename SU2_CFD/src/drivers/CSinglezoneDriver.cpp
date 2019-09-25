@@ -189,13 +189,25 @@ void CSinglezoneDriver::Update() {
 
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
-  
+  /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+    
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0], TimeIter, StopCalc);
   
   if (wrote_files){
-    /*--- Store output time and restart the timer for the compute phase. ---*/
+    
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -204,9 +216,6 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-    
-    
-    
 #ifndef HAVE_MPI
     StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -291,6 +300,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   /*--- Reset the inner convergence --- */
   
   output_container[ZONE_0]->SetConvergence(false);
+  
+  /*--- Increase the total iteration count --- */
+  
+  IterCount += config_container[ZONE_0]->GetInnerIter()+1;
 
   return StopCalc;
 }
