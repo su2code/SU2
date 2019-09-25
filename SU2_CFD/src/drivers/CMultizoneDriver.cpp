@@ -471,6 +471,18 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
   
+  /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
   
   bool wrote_files = false;
   
@@ -481,8 +493,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   }
   
   if (wrote_files){
-
-    /*--- Store output time and restart the timer for the compute phase. ---*/
+    
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -496,7 +507,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 #else
     StartTime = MPI_Wtime();
 #endif
-
+    config_container[ZONE_0]->Set_StartTime(StartTime);
   }
 
 }
