@@ -893,7 +893,7 @@ public:
    */
   void Adapted_Solver_Preprocessing(CConfig* config, 
                                     CGeometry **geometry,
-                                    CGeometry **&solver, 
+                                    CSolver **&solver, 
                                     vector<vector<passivedouble> > SolAdap);
 
 };

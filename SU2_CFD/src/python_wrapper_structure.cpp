@@ -1473,7 +1473,7 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
                                                 vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, 
                                                 vector<vector<unsigned long> > TetAdap, unsigned short val_nZone) {
 
-  unsigned short iMesh, requestedMGlevels = config_container[val_iZone]->GetnMGLevels();
+  unsigned short iMesh, requestedMGlevels = config->GetnMGLevels();
   bool fea = false;
 
   /*--- Definition of the geometry class to store the primal grid in the
@@ -1629,6 +1629,6 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
 
 }
 
-void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > PoiAdap) {
+void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > SolAdap) {
 
 }
