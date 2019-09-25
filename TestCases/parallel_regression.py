@@ -280,6 +280,17 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+
+    # SST Wall Function (Flat plate)
+    turb_SST_WF_flatplate           = TestCase('turb_SST-WF_flatplate')
+    turb_SST_WF_flatplate.cfg_dir   = "wall_functions"
+    turb_SST_WF_flatplate.cfg_file  = "turb_SST-WF_flatplate.cfg"
+    turb_SST_WF_flatplate.test_iter = 688
+    turb_SST_WF_flatplate.test_vals = [-0.919411, 1.532500, -0.000857, 0.000986] #last 4 columns
+    turb_SST_WF_flatplate.su2_exec  = "SU2_CFD"
+    turb_SST_WF_flatplate.timeout   = 1600
+    turb_SST_WF_flatplate.tol       = 0.00001
+    test_list.append(turb_SST_WF_flatplate)
     
     #################################
     ## Compressible RANS Restart  ###
