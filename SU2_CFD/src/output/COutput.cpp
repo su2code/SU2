@@ -65,6 +65,7 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
   fileWritingTable = new PrintingToolbox::CTablePrinter(&std::cout);
+  historyFileTable = new PrintingToolbox::CTablePrinter(&histFile, "");  
   
   /*--- Set default filenames ---*/
   
@@ -1031,7 +1032,6 @@ void COutput::PrepareHistoryFile(CConfig *config){
   
   /*--- Create and format the history file table ---*/
   
-  historyFileTable = new PrintingToolbox::CTablePrinter(&histFile, "");
   historyFileTable->SetInnerSeparator(historySep);
   historyFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   historyFileTable->SetPrintHeaderTopLine(false);
