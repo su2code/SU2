@@ -3825,6 +3825,22 @@ void CTurbSSTSolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver
       su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
       su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
       
+      su2double beta_1 = constants[4];
+      
+      Solution[0] = 0.0;
+      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+      
+      /*--- Set the solution values and zero the residual ---*/
+      node[iPoint]->SetSolution_Old(Solution);
+      node[iPoint]->SetSolution(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+      
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+
       /*--- Set K and Omega at the first point of the wall ---*/
       
       su2double eddy_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
