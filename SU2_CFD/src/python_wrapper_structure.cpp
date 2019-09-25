@@ -1627,6 +1627,28 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
     }
   }
 
+  /*--- Create the data structure for MPI point-to-point communications. ---*/
+  
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    geometry[iMesh]->PreprocessP2PComms(geometry[iMesh], config);
+
+  /*--- Perform a few preprocessing routines and communications. ---*/
+  
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    
+    /*--- Compute the max length. ---*/
+    
+    if ((rank == MASTER_NODE) && (!fea) && (iMesh == MESH_0)) cout << "Finding max control volume width." << endl;
+    geometry[ieEsh]->SetMaxLength(config);
+    
+    /*--- Communicate the number of neighbors. This is needed for
+         some centered schemes and for multigrid in parallel. ---*/
+    
+    if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (!fea) && (iMesh == MESH_0)) cout << "Communicating number of neighbors." << endl;
+    geometry[iMesh]->InitiateComms(geometry[iMesh], config, NEIGHBORS);
+    geometry[iMesh]->CompleteComms(geometry[iMesh], config, NEIGHBORS);
+  }
+
 }
 
 void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > SolAdap) {
