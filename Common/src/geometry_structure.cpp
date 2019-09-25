@@ -8290,68 +8290,7 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
     vector<passivedouble>().swap(PoiAdap[iPoint]);
   }
 
-  /*--- Load the elements in the file with two loops. The first builds 
-   the adjacency for ParMETIS (if parallel). The second stores the
-   elements. ---*/
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
-  adj_nodes.clear();
-  adj_nodes.resize(nPoint, vector<unsigned long>(0));
-
-  /*--- Store the adjacency structure. ---*/
-  /*--- 2D ---*/
-  if(nDim == 2) {
-    for(iElem = 0; iElem < nelem_triangle; iElem++){
-
-      for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
-                
-        local_index = TriAdap[iElem][i]-beg_node[rank];
-        
-        if ((local_index >= 0) && (local_index < (long)nPoint)) {
-          
-          /*--- Build adjacency assuming the VTK connectivity ---*/
-          for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
-            if (i != j) adj_nodes[local_index].push_back(TriAdap[iElem][j]);
-          }
-
-        }
-      }
-      
-    }
-  }
-
-  /*--- 3D ---*/
-  else {
-    for(iElem = 0; iElem < nelem_tetra; iElem++){
-
-      for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
-                
-        local_index = TetAdap[iElem][i]-beg_node[rank];
-        
-        if ((local_index >= 0) && (local_index < (long)nPoint)) {
-          
-          /*--- Build adjacency assuming the VTK connectivity ---*/
-          for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
-            if (i != j) adj_nodes[local_index].push_back(TetAdap[iElem][j]);
-          }
-
-        }
-      }
-    }
-    
-  }
-#endif
-#endif
-
-
-  /*--- Prepare the adjacency information that ParMETIS will need for
-   completing the graph partitioning in parallel. ---*/
-  
-  SortAdjacency(config);
-
-   /*--- Reset the global to local element mapping. ---*/
+  /*--- Reset the global to local element mapping. ---*/
   
   Global_to_Local_Elem.clear();
 
@@ -8391,6 +8330,108 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
       vector<unsigned long>().swap(TetAdap[iElem]);
     }
   }
+
+//   /*--- Load the elements in the file with two loops. The first builds 
+//    the adjacency for ParMETIS (if parallel). The second stores the
+//    elements. ---*/
+
+// #ifdef HAVE_MPI
+// #ifdef HAVE_PARMETIS
+//   /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
+//   adj_nodes.clear();
+//   adj_nodes.resize(nPoint, vector<unsigned long>(0));
+
+//   /*--- Store the adjacency structure. ---*/
+//   /*--- 2D ---*/
+//   if(nDim == 2) {
+//     for(iElem = 0; iElem < nelem_triangle; iElem++){
+
+//       for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
+                
+//         local_index = TriAdap[iElem][i]-beg_node[rank];
+        
+//         if ((local_index >= 0) && (local_index < (long)nPoint)) {
+          
+//           /*--- Build adjacency assuming the VTK connectivity ---*/
+//           for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
+//             if (i != j) adj_nodes[local_index].push_back(TriAdap[iElem][j]);
+//           }
+
+//         }
+//       }
+      
+//     }
+//   }
+
+//   /*--- 3D ---*/
+//   else {
+//     for(iElem = 0; iElem < nelem_tetra; iElem++){
+
+//       for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+                
+//         local_index = TetAdap[iElem][i]-beg_node[rank];
+        
+//         if ((local_index >= 0) && (local_index < (long)nPoint)) {
+          
+//           /*--- Build adjacency assuming the VTK connectivity ---*/
+//           for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+//             if (i != j) adj_nodes[local_index].push_back(TetAdap[iElem][j]);
+//           }
+
+//         }
+//       }
+//     }
+    
+//   }
+// #endif
+// #endif
+
+
+//   --- Prepare the adjacency information that ParMETIS will need for
+//    completing the graph partitioning in parallel. ---
+  
+//   SortAdjacency(config);
+
+//    /*--- Reset the global to local element mapping. ---*/
+  
+//   Global_to_Local_Elem.clear();
+
+//   /*--- Store the elements in the geometry structure. Here we assume
+//    that an initial partitioning performed in the python wrapper has
+//    assigned elements to processors that own at least one of its nodes.
+//    Note that the last 2 values for each element are the marker and
+//    global index. ---*/
+//   elem = new CPrimalGrid*[nElem];
+//   local_element_count = 0;
+//   /*--- 2D ---*/
+//   if(nDim == 2) {
+//     for(iElem = 0; iElem < nelem_triangle; iElem++){
+//       Global_to_Local_Elem[TriAdap[iElem][4]] = local_element_count;
+//       elem[local_element_count] = new CTriangle(TriAdap[iElem][0],
+//                                                 TriAdap[iElem][1],
+//                                                 TriAdap[iElem][2], 2);
+//       local_element_count++;
+
+//       /*--- Free memory ---*/
+//       vector<unsigned long>().swap(TriAdap[iElem]);
+
+
+//     }
+//   }
+//   /*--- 3D ---*/
+//   else {
+//     for(iElem = 0; iElem < nelem_tetra; iElem++){
+//       Global_to_Local_Elem[TetAdap[iElem][5]] = local_element_count;
+//       elem[local_element_count] = new CTetrahedron(TetAdap[iElem][0],
+//                                                    TetAdap[iElem][1],
+//                                                    TetAdap[iElem][2],
+//                                                    TetAdap[iElem][3]);
+//       local_element_count++;
+
+//       /*--- Free memory ---*/
+//       vector<unsigned long>().swap(TetAdap[iElem]);
+//     }
+//   }
 
   /*--- Reduce the global counts of all element types. ---*/
 #ifdef HAVE_MPI
@@ -8531,6 +8572,10 @@ void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedoub
   vector<vector<unsigned long> >().swap(EdgAdap);
   vector<vector<unsigned long> >().swap(TriAdap);
   vector<vector<unsigned long> >().swap(TetAdap);
+
+  /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
+  
+  PrepareAdjacency(config);
   
 }
 
