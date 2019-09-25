@@ -5434,7 +5434,7 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
   
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5508,7 +5508,7 @@ public:
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, int val_iter, string ext);
+  string GetUnsteady_FileName(string val_filename, long val_iter, string ext);
   
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.

@@ -55,10 +55,7 @@ CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config,
   
 }
 
-CMeshOutput::~CMeshOutput(void) {
-
-
-}
+CMeshOutput::~CMeshOutput(void) {}
 
 void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 

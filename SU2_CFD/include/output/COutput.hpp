@@ -132,10 +132,10 @@ protected:
     /*! \brief Default constructor. */
     HistoryOutputField() {}         
     /*! \brief Constructor to initialize all members. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, 
-                       unsigned short fieldtype, string description):
-      fieldName(fieldname), value(0.0), screenFormat(screenformat),
-      outputGroup(historyoutputgroup), fieldType(fieldtype), description(description){}
+    HistoryOutputField(string fieldName_, unsigned short screenFormat_, string OutputGroup_, 
+                       unsigned short fieldType_, string description_):
+      fieldName(std::move(fieldName_)), value(0.0), screenFormat(screenFormat_),
+      outputGroup(std::move(OutputGroup_)), fieldType(fieldType_), description(std::move(description_)){}
   };
 
   /*! \brief Associative map to access data stored in the history output fields by a string identifier. */
@@ -158,7 +158,10 @@ protected:
 
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
+  PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
+  PrintingToolbox::CTablePrinter* fileWritingTable;     //!< File writing header
   std::string multiZoneHeaderString;                    //!< Multizone header string
+  bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
   
   //! Structure to store the value of the running averages
   map<string, Signal_Processing::RunningAverage> runningAverages; 
@@ -194,8 +197,9 @@ protected:
     /*! \brief Default constructor. */
     VolumeOutputField () {}
     /*! \brief Constructor to initialize all members. */    
-    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup, string description):
-      fieldName(fieldname), offset(offset), outputGroup(volumeoutputgroup), description(description){}
+    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
+      fieldName(std::move(fieldName_)), offset(std::move(offset_)), 
+      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
   };
   
   /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */  
@@ -280,12 +284,7 @@ public:
    * \param[in] time_dep - Indicates whether time dependent files should be written.   
    */
   void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
-  
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   */
-  void DeallocateData_Parallel();
-    
+
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
@@ -621,7 +620,6 @@ protected:
   /*!
    * \brief Postprocess_HistoryData
    * \param[in] config - Definition of the particular problem.
-   * \param[in] dualtime - TODO: REMOVE PARAMETER
    */
   void Postprocess_HistoryData(CConfig *config);
 
@@ -685,7 +683,7 @@ protected:
   virtual bool WriteScreen_Output(CConfig *config);
 
   /*!
-   * \brief Determines if the screen header should be written.
+   * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    */
@@ -771,6 +769,12 @@ protected:
    */
   inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
   
+  /*!
+   * \brief Write any additional files defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
   inline virtual void WriteAdditionalFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container){}
 
 };

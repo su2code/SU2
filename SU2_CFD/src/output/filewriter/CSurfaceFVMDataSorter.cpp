@@ -19,7 +19,7 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
   
   if (linearPartitioner != NULL) delete linearPartitioner;
-  if (dataBuffer != NULL) delete [] dataBuffer;
+  delete [] passiveDoubleBuffer;
   
 }
 
@@ -412,14 +412,14 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we can allocate the new data structure to hold these points alone. Here,
    we also copy the data for those points from our volume data structure. ---*/
   
-  if (dataBuffer == nullptr){
-    dataBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  if (passiveDoubleBuffer == nullptr){
+    passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
   }
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
     count = 0;
     for (int ii = 0; ii < (int)volume_sorter->GetnPoints(); ii++) {
       if (surfPoint[ii] !=-1) {
-        dataBuffer[count*VARS_PER_POINT + jj] = volume_sorter->GetData(jj,ii);
+        passiveDoubleBuffer[count*VARS_PER_POINT + jj] = volume_sorter->GetData(jj,ii);
         count++;
       }
     }
@@ -1074,11 +1074,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
-  
-  
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
-  
+
   SortSurfaceConnectivity(config, geometry, LINE         );
   SortSurfaceConnectivity(config, geometry, TRIANGLE     );
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   

@@ -89,7 +89,10 @@ protected:
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
-  passivedouble *dataBuffer;
+  passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types 
+  su2double     *doubleBuffer;         //!< Buffer holding the sorted, partitioned data as su2double types 
+  /// Pointer used to allocate the memory used for ::passiveDoubleBuffer and ::doubleBuffer.
+  char *dataBuffer;                    
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
@@ -189,13 +192,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return dataBuffer[iPoint*GlobalField_Counter + iField];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
   
   /*!
    * \brief Get the pointer to the sorted linear partitioned data.
    * \return Pointer to the sorted data.
    */
-  passivedouble *GetData() {return dataBuffer;}
+  const passivedouble *GetData() {return passiveDoubleBuffer;}
   
   /*!
    * \brief Get the global index of a point.

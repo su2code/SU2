@@ -85,13 +85,7 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
 }
 
-CHeatOutput::~CHeatOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-}
+CHeatOutput::~CHeatOutput(void) {}
 
 void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
