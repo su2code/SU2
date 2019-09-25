@@ -1917,9 +1917,6 @@ void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry
   if (adj_euler || adj_ns) {
     solver[MESH_0][ADJFLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
   }
-  if (adj_turb) {
-    no_restart = true;
-  }
   if (disc_adj) {
     solver[MESH_0][ADJFLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
     if (disc_adj_turb)
