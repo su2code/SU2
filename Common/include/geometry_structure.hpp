@@ -1784,7 +1784,7 @@ public:
    */
   CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                     vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
-                    CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone);
+                    CConfig *config, unsigned short val_nDim, unsigned short val_nZone);
   
   /*!
    * \overload
@@ -2035,7 +2035,7 @@ public:
    */
   void Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                       vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
-                                      CConfig *config, unsigned short val_iZone);
+                                      CConfig *config);
 
   /*! 
    * \brief Find repeated nodes between two elements to identify the common face.

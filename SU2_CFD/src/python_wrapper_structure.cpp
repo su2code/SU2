@@ -1447,167 +1447,188 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     config_container[val_iZone]->SetiInst(iInst);
 
     /*--- Set number of markers to number in config before partitioning. ---*/
+
     config_container[val_iZone]->SetnMarker_All(config_container[val_iZone]->GetnMarker_CfgFile());
 
-    /*--- Definition of the geometry class to store the primal grid in the
-     partitioning process. ---*/
-
-    CGeometry *geometry_aux = NULL;
-
-    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-
-    geometry_aux = new CPhysicalGeometry(PoiAdap, EdgAdap, TriAdap, TetAdap, config_container[val_iZone], 
-                                         nDim, val_iZone, val_nZone);
-
-    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-
-    geometry_aux->SetColorGrid_Parallel(config_container[val_iZone]);
-
-    /*--- Re-allocate the memory of the current domain, and divide the grid
+    /*--- De-allocate the memory of the current domain and solver, and divide the grid
      between the ranks. ---*/
 
-    for(iMesh = 0; iMesh < config_container[val_iZone]->GetnMGLevels(); iMesh++) {
-      delete geometry_container[val_iZone][iInst][iMesh];
-    }
+    // for(iMesh = 0; iMesh < config_container[val_iZone]->GetnMGLevels(); iMesh++) {
+    //   delete geometry_container[val_iZone][iInst][iMesh];
+    // }
 
     delete [] geometry_container[val_iZone][iInst];
+    delete [] solver_container[val_iZone][iInst];
 
-    geometry_container[val_iZone][iInst] = new CGeometry*[config_container[val_iZone]->GetnMGLevels()+1];
+    Adapted_Geometrical_Preprocessing(config_container[val_iZone], geometry_container[val_iZone][iInst], 
+                                      PoiAdap, EdgAdap, TriAdap, TetAdap, val_nZone);
 
-    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
-      
-    geometry_container[val_iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[val_iZone]);
+    Adapted_Solver_Preprocessing(config_container[val_iZone], geometry_container[val_iZone][iInst], solver_container[val_iZone][iInst], SolAdap);
+    
+  }
 
-    /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
+}
 
-    delete geometry_aux;
+void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, vector<vector<passivedouble> > PoiAdap, 
+                                                vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, 
+                                                vector<vector<unsigned long> > TetAdap, unsigned short val_nZone) {
 
-    /*--- Add the Send/Receive boundaries ---*/
-    geometry_container[val_iZone][iInst][MESH_0]->SetSendReceive(config_container[val_iZone]);
+  unsigned short iMesh, requestedMGlevels = config_container[val_iZone]->GetnMGLevels();
+  bool fea = false;
 
-    /*--- Add the Send/Receive boundaries ---*/
-    geometry_container[val_iZone][iInst][MESH_0]->SetBoundaries(config_container[val_iZone]);
+  /*--- Definition of the geometry class to store the primal grid in the
+   partitioning process. ---*/
 
-    fea = ((config_container[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
+  CGeometry *geometry_aux = NULL;
+
+  /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+  geometry_aux = new CPhysicalGeometry(PoiAdap, EdgAdap, TriAdap, TetAdap, config, nDim, val_nZone);
+
+  /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+  geometry_aux->SetColorGrid_Parallel(config);
+
+
+  geometry = new CGeometry*[config->GetnMGLevels()+1];
+
+  /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+    
+  geometry[MESH_0] = new CPhysicalGeometry(geometry_aux, config);
+
+  /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
+
+  delete geometry_aux;
+
+  /*--- Add the Send/Receive boundaries ---*/
+  geometry[MESH_0]->SetSendReceive(config);
+
+  /*--- Add the Send/Receive boundaries ---*/
+  geometry[MESH_0]->SetBoundaries(config);
+
+  fea = ((config->GetKind_Solver() == FEM_ELASTICITY) ||
+        (config->GetKind_Solver() == DISC_ADJ_FEM));
+
+  /*--- Compute elements surrounding points, points surrounding points ---*/
   
-    /*--- Compute elements surrounding points, points surrounding points ---*/
+  if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
+  geometry[MESH_0]->SetPoint_Connectivity();
+  
+  /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+  
+  if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+  geometry[MESH_0]->SetRCM_Ordering(config);
+  
+  /*--- recompute elements surrounding points, points surrounding points ---*/
+  
+  if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+  geometry[MESH_0]->SetPoint_Connectivity();
+  
+  /*--- Compute elements surrounding elements ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+  geometry[MESH_0]->SetElement_Connectivity();
+  
+  /*--- Check the orientation before computing geometrical quantities ---*/
+  
+  geometry[MESH_0]->SetBoundVolume();
+  if (config->GetReorientElements()) {
+    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+    geometry[MESH_0]->Check_IntElem_Orientation(config);
+    geometry[MESH_0]->Check_BoundElem_Orientation(config);
+  }
+  
+  /*--- Create the edge structure ---*/
+  
+  if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
+  geometry[MESH_0]->SetEdges();
+  geometry[MESH_0]->SetVertex(config);
+  
+  /*--- Compute cell center of gravity ---*/
+  
+  if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
+  geometry[MESH_0]->SetCoord_CG();
+  
+  /*--- Create the control volume structures ---*/
+  
+  if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+  geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
+  geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  
+  /*--- Visualize a dual control volume if requested ---*/
+  
+  if ((config->GetVisualize_CV() >= 0) &&
+      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetnPointDomain()))
+    geometry[MESH_0]->VisualizeControlVolume(config, UPDATE);
+  
+  /*--- Identify closest normal neighbor ---*/
+  
+  if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
+  geometry[MESH_0]->FindNormal_Neighbor(config);
+  
+  /*--- Store the global to local mapping. ---*/
+  
+  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+  geometry[MESH_0]->SetGlobal_to_Local_Point();
+  
+  /*--- Compute the surface curvature ---*/
+  
+  if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
+  geometry[MESH_0]->ComputeSurf_Curvature(config);
+  
+  /*--- Check for periodicity and disable MG if necessary. ---*/
+  
+  if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+  geometry[MESH_0]->Check_Periodicity(config);
+  
+  geometry[MESH_0]->SetMGLevel(MESH_0);
+  if ((config->GetnMGLevels() != 0) && (rank == MASTER_NODE))
+    cout << "Setting the multigrid structure." << endl;
+  
+  /*--- Loop over all the new grid ---*/
+  
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     
-    if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetPoint_Connectivity();
+    /*--- Create main agglomeration structure ---*/
     
-    /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+    geometry[iMesh] = new CMultiGridGeometry(geometry, config, iMesh);
     
-    if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[val_iZone]);
+    /*--- Compute points surrounding points. ---*/
     
-    /*--- recompute elements surrounding points, points surrounding points ---*/
-    
-    if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetPoint_Connectivity();
-    
-    /*--- Compute elements surrounding elements ---*/
-    
-    if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetElement_Connectivity();
-    
-    /*--- Check the orientation before computing geometrical quantities ---*/
-    
-    geometry_container[val_iZone][iInst][MESH_0]->SetBoundVolume();
-    if (config_container[val_iZone]->GetReorientElements()) {
-      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
-      geometry_container[val_iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[val_iZone]);
-      geometry_container[val_iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[val_iZone]);
-    }
+    geometry[iMesh]->SetPoint_Connectivity(geometry[iMesh-1]);
     
     /*--- Create the edge structure ---*/
     
-    if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetEdges();
-    geometry_container[val_iZone][iInst][MESH_0]->SetVertex(config_container[val_iZone]);
-    
-    /*--- Compute cell center of gravity ---*/
-    
-    if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetCoord_CG();
+    geometry[iMesh]->SetEdges();
+    geometry[iMesh]->SetVertex(geometry[iMesh-1], config);
     
     /*--- Create the control volume structures ---*/
     
-    if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetControlVolume(config_container[val_iZone], ALLOCATE);
-    geometry_container[val_iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[val_iZone], ALLOCATE);
+    geometry[iMesh]->SetControlVolume(config, geometry[iMesh-1], ALLOCATE);
+    geometry[iMesh]->SetBoundControlVolume(config, geometry[iMesh-1], ALLOCATE);
+    geometry[iMesh]->SetCoord(geometry[iMesh-1]);
     
-    /*--- Visualize a dual control volume if requested ---*/
+    /*--- Find closest neighbor to a surface point ---*/
     
-    if ((config_container[val_iZone]->GetVisualize_CV() >= 0) &&
-        (config_container[val_iZone]->GetVisualize_CV() < (long)geometry_container[val_iZone][iInst][MESH_0]->GetnPointDomain()))
-      geometry_container[val_iZone][iInst][MESH_0]->VisualizeControlVolume(config_container[val_iZone], UPDATE);
+    geometry[iMesh]->FindNormal_Neighbor(config);
     
-    /*--- Identify closest normal neighbor ---*/
+    /*--- Store our multigrid index. ---*/
     
-    if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->FindNormal_Neighbor(config_container[val_iZone]);
+    geometry[iMesh]->SetMGLevel(iMesh);
     
-    /*--- Store the global to local mapping. ---*/
+    /*--- Protect against the situation that we were not able to complete
+       the agglomeration for this level, i.e., there weren't enough points.
+       We need to check if we changed the total number of levels and delete
+       the incomplete CMultiGridGeometry object. ---*/
     
-    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
-    
-    /*--- Compute the surface curvature ---*/
-    
-    if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->ComputeSurf_Curvature(config_container[val_iZone]);
-    
-    /*--- Check for periodicity and disable MG if necessary. ---*/
-    
-    if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
-    geometry_container[val_iZone][iInst][MESH_0]->Check_Periodicity(config_container[val_iZone]);
-    
-    geometry_container[val_iZone][iInst][MESH_0]->SetMGLevel(MESH_0);
-    if ((config_container[val_iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
-      cout << "Setting the multigrid structure." << endl;
-    
-    /*--- Loop over all the new grid ---*/
-    
-    for (iMesh = 1; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
-      
-      /*--- Create main agglomeration structure ---*/
-      
-      geometry_container[val_iZone][iInst][iMesh] = new CMultiGridGeometry(geometry_container[val_iZone][iInst], config_container[val_iZone], iMesh);
-      
-      /*--- Compute points surrounding points. ---*/
-      
-      geometry_container[val_iZone][iInst][iMesh]->SetPoint_Connectivity(geometry_container[val_iZone][iInst][iMesh-1]);
-      
-      /*--- Create the edge structure ---*/
-      
-      geometry_container[val_iZone][iInst][iMesh]->SetEdges();
-      geometry_container[val_iZone][iInst][iMesh]->SetVertex(geometry_container[val_iZone][iInst][iMesh-1], config_container[val_iZone]);
-      
-      /*--- Create the control volume structures ---*/
-      
-      geometry_container[val_iZone][iInst][iMesh]->SetControlVolume(config_container[val_iZone], geometry_container[val_iZone][iInst][iMesh-1], ALLOCATE);
-      geometry_container[val_iZone][iInst][iMesh]->SetBoundControlVolume(config_container[val_iZone], geometry_container[val_iZone][iInst][iMesh-1], ALLOCATE);
-      geometry_container[val_iZone][iInst][iMesh]->SetCoord(geometry_container[val_iZone][iInst][iMesh-1]);
-      
-      /*--- Find closest neighbor to a surface point ---*/
-      
-      geometry_container[val_iZone][iInst][iMesh]->FindNormal_Neighbor(config_container[val_iZone]);
-      
-      /*--- Store our multigrid index. ---*/
-      
-      geometry_container[val_iZone][iInst][iMesh]->SetMGLevel(iMesh);
-      
-      /*--- Protect against the situation that we were not able to complete
-         the agglomeration for this level, i.e., there weren't enough points.
-         We need to check if we changed the total number of levels and delete
-         the incomplete CMultiGridGeometry object. ---*/
-      
-      if (config_container[val_iZone]->GetnMGLevels() != requestedMGlevels) {
-        delete geometry_container[val_iZone][iInst][iMesh];
-        break;
-      }
+    if (config->GetnMGLevels() != requestedMGlevels) {
+      delete geometry[iMesh];
+      break;
     }
   }
+
+}
+
+void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > PoiAdap) {
 
 }

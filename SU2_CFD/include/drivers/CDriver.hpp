@@ -865,7 +865,7 @@ public:
                      unsigned short val_iSol);
 
   /*!
-   * \brief Preprocess the adapted geometry from the python wrapper.
+   * \brief Preprocess the adapted solution and geometry from the python wrapper.
    */
   void Adapted_Input_Preprocessing(SU2_Comm MPICommunicator,
                                    char* confFile,
@@ -876,6 +876,25 @@ public:
                                    vector<vector<unsigned long> > TetAdap,
                                    unsigned short val_iZone, 
                                    unsigned short val_nZone);
+
+  /*!
+   * \brief Preprocess the adapted geometry from the python wrapper.
+   */
+  void Adapted_Geometrical_Preprocessing(CConfig* config, 
+                                         CGeometry **&geometry, 
+                                         vector<vector<passivedouble> > PoiAdap, 
+                                         vector<vector<unsigned long> > EdgAdap, 
+                                         vector<vector<unsigned long> > TriAdap, 
+                                         vector<vector<unsigned long> > TetAdap, 
+                                         unsigned short val_nZone);
+
+  /*!
+   * \brief Preprocess the adapted geometry from the python wrapper.
+   */
+  void Adapted_Solver_Preprocessing(CConfig* config, 
+                                    CGeometry **geometry,
+                                    CGeometry **&solver, 
+                                    vector<vector<passivedouble> > SolAdap);
 
 };
 

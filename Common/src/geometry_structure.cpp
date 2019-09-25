@@ -3795,7 +3795,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
 CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                      vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
-                                     CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
+                                     CConfig *config, unsigned short val_nDim, unsigned short val_nZone) : CGeometry() {
   
   /*--- Get rank and size. ---*/
 
@@ -3939,7 +3939,7 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vec
 
   }
   else{
-    Load_Adapted_Mesh_Parallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config, val_iZone);
+    Load_Adapted_Mesh_Parallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config);
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -8298,7 +8298,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
 void CPhysicalGeometry::Load_Adapted_Mesh_Parallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
                                                        vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
-                                                       CConfig* config, unsigned short val_iZone) {
+                                                       CConfig* config) {
 
   string Marker_Tag;
   unsigned short nMarker_Max = config->GetnMarker_Max();
