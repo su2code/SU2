@@ -1914,15 +1914,6 @@ void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry
   if (heat_fvm) {
     solver[MESH_0][HEAT_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
   }
-}
-
-if (restart) {
-  if (template_solver) {
-    no_restart = true;
-  }
-  if (heat_fvm) {
-    solver[MESH_0][HEAT_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
-  }
   if (adj_euler || adj_ns) {
     solver[MESH_0][ADJFLOW_SOL]->SortAdaptedSolution(geometry, solver, config, SolAdap, val_iter, update_geo);
   }
