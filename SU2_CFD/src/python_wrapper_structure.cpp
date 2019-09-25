@@ -1470,6 +1470,8 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
       delete geometry_container[val_iZone][iInst][iMesh];
     }
 
+    delete [] geometry_container[val_iZone][iInst];
+
     geometry_container[val_iZone][iInst] = new CGeometry*[config_container[val_iZone]->GetnMGLevels()+1];
 
     /*--- Build the grid data structures using the ParMETIS coloring. ---*/
