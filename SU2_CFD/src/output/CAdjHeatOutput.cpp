@@ -92,13 +92,7 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
 
 }
 
-CAdjHeatOutput::~CAdjHeatOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-}
+CAdjHeatOutput::~CAdjHeatOutput(void) {}
 
 void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   

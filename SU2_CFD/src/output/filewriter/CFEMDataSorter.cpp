@@ -52,7 +52,6 @@ CFEMDataSorter::~CFEMDataSorter(){
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
   if (linearPartitioner != NULL) delete linearPartitioner;
-  if (dataBuffer != NULL) delete [] reinterpret_cast<su2double*>(dataBuffer);
   
 }
 
@@ -66,9 +65,6 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
-
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting volumetric grid connectivity." << endl;
   
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL);

@@ -1,8 +1,10 @@
 #include "../../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 
+const string CSU2BinaryFileWriter::fileExt = ".dat";
+
 CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim, 
                                            string fileName, CParallelDataSorter *dataSorter)  : 
-  CFileWriter(fields, fileName, dataSorter, ".dat", nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
@@ -76,16 +78,6 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   fwrite(dataSorter->GetData(), nParallel_Poin*GlobalField_Counter, sizeof(passivedouble), fhw);
   file_size += (su2double)nParallel_Poin*GlobalField_Counter*sizeof(passivedouble);
-
-  /*--- Write the external iteration. ---*/
-
-//  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
-//  file_size += (su2double)sizeof(int);
-
-  /*--- Write the metadata. ---*/
-
-//  fwrite(Restart_Metadata, 8, sizeof(passivedouble), fhw);
-//  file_size += (su2double)8*sizeof(passivedouble);
 
   /*--- Close the file. ---*/
 

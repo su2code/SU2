@@ -988,6 +988,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     output = new CBaselineOutput(config[iZone], geometry[iZone][INST_0]->GetnDim(), solver);
     output->PreprocessVolumeOutput(config[iZone]);
+    output->PreprocessHistoryOutput(config[iZone], false);
     
     /*--- Load the data --- */
     
@@ -1008,10 +1009,6 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
       if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
-    
-    /*--- Deallocate ---*/
-    
-    output->DeallocateData_Parallel();
     
     /*--- Free memory ---*/
     

@@ -13470,14 +13470,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     string::size_type position;
     
     Surface_file.open(cstr, ios::in);
-    
-    /*--- Read extra inofmration ---*/
-    
-//    getline(Surface_file, text_line);
-//    text_line.erase (0,9);
-//    su2double AoASens = atof(text_line.c_str());
-//    config->SetAoA_Sens(AoASens);
-    
+
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
@@ -13487,13 +13480,17 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     char delimiter = ',';
     split_line = PrintingToolbox::split(text_line, delimiter);
     
+    for (unsigned short iField = 0; iField < split_line.size(); iField++){
+      PrintingToolbox::trim(split_line[iField]);
+    }
+    
     std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
     
     if (it == split_line.end()){
       SU2_MPI::Error("Surface sensitivity not found in file.", CURRENT_FUNCTION);
     }
     
-    int sens_index = std::distance(split_line.begin(), it);
+    unsigned short sens_index = std::distance(split_line.begin(), it);
     
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
@@ -13533,23 +13530,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
-  bool sst = (config->GetKind_Turb_Model() == SST)  || (config->GetKind_Turb_Model() == SST_SUST);
-  bool sa  = (config->GetKind_Turb_Model() == SA)   || (config->GetKind_Turb_Model() == SA_NEG)  ||
-             (config->GetKind_Turb_Model() == SA_E) || (config->GetKind_Turb_Model() == SA_COMP) ||
-             (config->GetKind_Turb_Model() == SA_E_COMP);
-  bool grid_movement = config->GetGrid_Movement();
-  bool frozen_visc = config->GetFrozen_Visc_Disc();
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
-               (Kind_Solver == DISC_ADJ_RANS)           ||
-               (Kind_Solver == DISC_ADJ_NAVIER_STOKES)  ||
-               (Kind_Solver == DISC_ADJ_INC_EULER)          ||
-               (Kind_Solver == DISC_ADJ_INC_RANS)           ||
-               (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES)  ||
-               (Kind_Solver == ADJ_EULER)               ||
-               (Kind_Solver == ADJ_NAVIER_STOKES)       ||
-               (Kind_Solver == ADJ_RANS));
-  su2double Sens, dull_val, AoASens;
+
+  su2double AoASens;
   unsigned short nTimeIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
@@ -13867,9 +13849,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       }
     }
     
-    int sens_x_idx = std::distance(config->fields.begin(), itx);    
-    int sens_y_idx = std::distance(config->fields.begin(), ity);    
-    int sens_z_idx = 0;
+    unsigned short sens_x_idx = std::distance(config->fields.begin(), itx);    
+    unsigned short sens_y_idx = std::distance(config->fields.begin(), ity);    
+    unsigned short sens_z_idx = 0;
     if (nDim == 3)
       sens_z_idx = std::distance(config->fields.begin(), itz);    
 
@@ -14001,6 +13983,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   vector<string> fields = PrintingToolbox::split(text_line, ',');
   
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
+    PrintingToolbox::trim(fields[iField]);
+  }
+  
   std::vector<string>::iterator itx = std::find(fields.begin(), fields.end(), "\"Sensitivity_x\"");
   std::vector<string>::iterator ity = std::find(fields.begin(), fields.end(), "\"Sensitivity_y\"");
   std::vector<string>::iterator itz = std::find(fields.begin(), fields.end(), "\"Sensitivity_z\"");
@@ -14017,9 +14003,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     }
   }
   
-  int sens_x_idx = std::distance(fields.begin(), itx);    
-  int sens_y_idx = std::distance(fields.begin(), ity);    
-  int sens_z_idx = 0;
+  unsigned short sens_x_idx = std::distance(fields.begin(), itx);    
+  unsigned short sens_y_idx = std::distance(fields.begin(), ity);    
+  unsigned short sens_z_idx = 0;
   if (nDim == 3)
     sens_z_idx = std::distance(fields.begin(), itz);    
   

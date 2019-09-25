@@ -321,22 +321,8 @@ int main(int argc, char *argv[]) {
           
           for (iZone = 0; iZone < nZone; iZone++){
             
-//            /*--- Load history data (volume output might require some values) --- */
+            WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
             
-//            output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
-            
-//            /*--- Load the data --- */
-            
-//            output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
-            
-//            /*--- If requested, write the volume output for visualization purposes --- */
-            
-//            output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
-    
-//            /*--- Deallocate data --- */
-            
-//            output[iZone]->DeallocateData_Parallel();
-          
           }
         }
 
@@ -359,21 +345,7 @@ int main(int argc, char *argv[]) {
       }
       for (iZone = 0; iZone < nZone; iZone++){
         
-//        /*--- Load history data (volume output might require some values) --- */
-        
-//        output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], 0, 0, 0);
-        
-//        /*--- Load the data --- */
-        
-//        output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
-      
-//        /*--- If requested, write the volume output for visualization purposes --- */
-        
-//        output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), false);
-
-//        /*--- Deallocate data --- */
-        
-//        output[iZone]->DeallocateData_Parallel();
+        WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);      
         
       }
     }
@@ -470,21 +442,7 @@ int main(int argc, char *argv[]) {
         if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
         for (iZone = 0; iZone < nZone; iZone++){
           
-//          /*--- Load history data (volume output might require some values) --- */
-          
-//          output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
-          
-//          /*--- Load the data --- */
-          
-//          output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
-        
-//          /*--- If requested, write the volume output for visualization purposes --- */
-          
-//          output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
-  
-//          /*--- Deallocate data --- */
-          
-//          output[iZone]->DeallocateData_Parallel();
+          WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
           
         }
       }
@@ -541,6 +499,9 @@ int main(int argc, char *argv[]) {
                                                                                   TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter())))) {
 
                   solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
+                  output[iZone] = new CBaselineOutput(config_container[ZONE_0], geometry_container[ZONE_0][INST_0]->GetnDim(), solver_container[ZONE_0][INST_0]);
+                  output[iZone]->PreprocessVolumeOutput(config_container[ZONE_0]);
+                  output[iZone]->PreprocessHistoryOutput(config_container[ZONE_0], false);
                   SolutionInstantiated[iZone] = true;
                 }
                 solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone],
@@ -549,8 +510,13 @@ int main(int argc, char *argv[]) {
 
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
-//              output->SetBaselineResult_Files_FEM(solver_container, geometry_container, config_container, iExtIter, nZone);
-            }
+              
+              for (iZone = 0; iZone < nZone; iZone++){
+                
+                WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
+                
+              }
+        }
         
         TimeIter++;
         if (StopCalc) break;
@@ -564,12 +530,19 @@ int main(int argc, char *argv[]) {
       /*--- Definition of the solution class ---*/
 
       solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
+      output[iZone] = new CBaselineOutput(config_container[ZONE_0], geometry_container[ZONE_0][INST_0]->GetnDim(), solver_container[ZONE_0][INST_0]);
+      output[iZone]->PreprocessVolumeOutput(config_container[ZONE_0]);
+      output[iZone]->PreprocessHistoryOutput(config_container[ZONE_0], false);
       solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], 0, true);
     }
-
-//    output->SetBaselineResult_Files_FEM(solver_container, geometry_container, config_container, 0, nZone);
+    
+    for (iZone = 0; iZone < nZone; iZone++){
+      
+      WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);
+      
+    }   
     }
-
+    
   }
   else {
 
@@ -630,28 +603,17 @@ int main(int argc, char *argv[]) {
                   config_container[iZone]->SetiInst(INST_0);
                   solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], TimeIter, true);
               }
-
+              
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
+              
               for (iZone = 0; iZone < nZone; iZone++){
                 
-//                /*--- Load history data (volume output might require some values) --- */
+                WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
                 
-//                output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
-                
-//                /*--- Load the data --- */
-                
-//                output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
+              } 
               
-//                /*--- If requested, write the volume output for visualization purposes --- */
-                
-//                output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
-        
-//                /*--- Deallocate data --- */
-                
-//                output[iZone]->DeallocateData_Parallel();
-                
-              }
+              
         }
 
         TimeIter++;
@@ -682,21 +644,11 @@ int main(int argc, char *argv[]) {
             cout << "Storing the volume solution for time instance " << iInst << "." << endl;
           }
 
-//          /*--- Load history data (volume output might require some values) --- */
-          
-//          output[iZone]->SetHistory_Output(geometry_container[iZone][iInst], &solver_container[iZone][iInst], config_container[iZone], iInst, 0, 0);
+          for (iZone = 0; iZone < nZone; iZone++){
             
-//          /*--- Load the data --- */
-          
-//          output[iZone]->Load_Data(geometry_container[iZone][iInst], config_container[iZone], &solver_container[iZone][iInst]);
-          
-//          /*--- If requested, write the volume output for visualization purposes --- */
-          
-//          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst], config_container[iZone], config->GetOutput_FileFormat(), true);
-          
-//          /*--- Deallocate data --- */
-          
-//          output[iZone]->DeallocateData_Parallel();
+            WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], iInst);
+            
+          } 
           
           
         }
@@ -763,22 +715,8 @@ int main(int argc, char *argv[]) {
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
               for (iZone = 0; iZone < nZone; iZone++){
-
-//                /*--- Load history data (volume output might require some values) --- */
                 
-//                output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
-                                
-//                /*--- Load the data --- */
-                
-//                output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
-              
-//                /*--- If requested, write the volume output for visualization purposes --- */
-                
-//                output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
-        
-//                /*--- Deallocate data --- */
-                
-//                output[iZone]->DeallocateData_Parallel();
+                WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
                 
               }        
         }
@@ -803,26 +741,11 @@ int main(int argc, char *argv[]) {
         output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
         
       }
-      
       for (iZone = 0; iZone < nZone; iZone++){
-      
-//        /*--- Load history data (volume output might require some values) --- */
         
-//        output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], 0, 0, 0);
+        WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);
         
-//        /*--- Load the data --- */
-        
-//        output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
-        
-//        /*--- If requested, write the volume output for visualization purposes --- */
-        
-//        output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), false);
-        
-//        /*--- Deallocate data --- */
-        
-//        output[iZone]->DeallocateData_Parallel();
-        
-      }
+      }  
     }
     
   }
@@ -841,7 +764,7 @@ int main(int argc, char *argv[]) {
         }
       }
       if (geometry_container[iZone] != NULL)
-        delete geometry_container[iZone];
+        delete [] geometry_container[iZone];
     }
     delete [] geometry_container;
   }
@@ -855,7 +778,7 @@ int main(int argc, char *argv[]) {
         }
       }
       if (solver_container[iZone] != NULL)
-        delete solver_container[iZone];
+        delete [] solver_container[iZone];
     }
     delete [] solver_container;
   }
@@ -871,7 +794,14 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  if (output != NULL) delete output;
+  if (output != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output[iZone] != NULL) {
+        delete output[iZone];
+      }
+    }
+    delete [] output;
+  }
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
   
   /*--- Synchronization point after a single solver iteration. Compute the
@@ -903,4 +833,22 @@ int main(int argc, char *argv[]) {
 #endif
   
   return EXIT_SUCCESS;
+}
+
+void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput *output, unsigned long TimeIter){
+  
+  /*--- Load history data (volume output might require some values) --- */
+  
+  output->SetHistory_Output(geometry, solver_container, config, TimeIter, 0, 0);
+  
+  /*--- Load the data --- */
+  
+  output->Load_Data(geometry, config, solver_container);
+  
+  for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+    unsigned short* FileFormat = config->GetVolumeOutputFiles();
+    if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+      output->WriteToFile(config, geometry, FileFormat[iFile]);
+  }
+  
 }

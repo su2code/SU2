@@ -44,7 +44,6 @@ CFVMDataSorter::~CFVMDataSorter(){
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
   if (linearPartitioner != NULL) delete linearPartitioner;
-  if (dataBuffer != NULL) delete [] reinterpret_cast<su2double*>(dataBuffer);
   
 }
 
@@ -85,11 +84,6 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
-  
-  /*--- Sort volumetric grid connectivity. ---*/
-
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting volumetric grid connectivity." << endl;
   
   SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);

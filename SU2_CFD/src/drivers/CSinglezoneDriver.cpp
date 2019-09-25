@@ -64,7 +64,8 @@ void CSinglezoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Single-zone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
+      cout << "The simulation will run for " 
+           << driver_config->GetnTime_Iter() - config_container[ZONE_0]->GetRestart_Iter() << " time steps." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -147,8 +148,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Perform a dynamic mesh update if required. ---*/
-
-  DynamicMeshUpdate(TimeIter);
+  /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
+          mesh cordinates are read from the restart files. ---*/
+  if (!(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint()))
+    DynamicMeshUpdate(TimeIter);
 
 }
 

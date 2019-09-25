@@ -52,25 +52,26 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
-    requestedHistoryFields.push_back("RESIDUALS");
-    requestedHistoryFields.push_back("SENSITIVITY");
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RESIDUALS");
+    requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
   if (nRequestedScreenFields == 0){
-    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
-    requestedScreenFields.push_back("INNER_ITER");
-    requestedScreenFields.push_back("ADJOINT_DISP_X");
-    requestedScreenFields.push_back("ADJOINT_DISP_Y");
-    requestedScreenFields.push_back("SENS_E");
-    requestedScreenFields.push_back("SENS_NU");
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
+    requestedScreenFields.emplace_back("ADJOINT_DISP_X");
+    requestedScreenFields.emplace_back("ADJOINT_DISP_Y");
+    requestedScreenFields.emplace_back("SENS_E");
+    requestedScreenFields.emplace_back("SENS_NU");
     nRequestedScreenFields = requestedScreenFields.size();
   }
 
   if (nRequestedVolumeFields == 0){
-    requestedVolumeFields.push_back("COORDINATES");
-    requestedVolumeFields.push_back("SOLUTION");
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("SENSITIVITY");    
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -100,14 +101,7 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   
 }
 
-CAdjElasticityOutput::~CAdjElasticityOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-
-}
+CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
