@@ -6,7 +6,7 @@ const string CSU2MeshFileWriter::fileExt = ".su2";
 CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim,  
                                        string fileName, CParallelDataSorter *dataSorter,
                                        unsigned short iZone, unsigned short nZone) : 
-  iZone(iZone), nZone(nZone), CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
+   CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), iZone(iZone), nZone(nZone) {}
 
 
 CSU2MeshFileWriter::~CSU2MeshFileWriter(){

@@ -44,7 +44,6 @@ CFVMDataSorter::~CFVMDataSorter(){
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
   if (linearPartitioner != NULL) delete linearPartitioner;
-  if (dataBuffer != NULL) delete [] reinterpret_cast<su2double*>(dataBuffer);
   
 }
 
