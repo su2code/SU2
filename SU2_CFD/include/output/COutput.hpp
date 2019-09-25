@@ -679,7 +679,7 @@ protected:
   virtual bool WriteScreen_Output(CConfig *config);
 
   /*!
-   * \brief Determines if the screen header should be written.
+   * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    */
@@ -765,6 +765,12 @@ protected:
    */
   inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
   
+  /*!
+   * \brief Write any additional files defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
   inline virtual void WriteAdditionalFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container){}
 
 };
