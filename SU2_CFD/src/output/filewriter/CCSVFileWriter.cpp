@@ -3,7 +3,7 @@
 
 CCSVFileWriter::CCSVFileWriter(vector<string> fields, unsigned short nDim, 
                                string fileName, CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, ".csv", nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, std::move(".csv"), nDim){}
 
 
 CCSVFileWriter::~CCSVFileWriter(){
