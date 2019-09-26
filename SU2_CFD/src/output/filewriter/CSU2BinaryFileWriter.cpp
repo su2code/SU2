@@ -16,7 +16,6 @@ void CSU2BinaryFileWriter::Write_Data(){
   /*--- Local variables ---*/
 
   unsigned short iVar;
-  unsigned long iPoint;
   
   unsigned short GlobalField_Counter = fieldnames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
