@@ -631,7 +631,7 @@ protected:
    * \param[in] iFreq - Frequency of output printing.
    */
   inline bool PrintOutput(unsigned long iIter, unsigned long iFreq) {
-    if (iFreq == 0.0){
+    if (iFreq == 0){
       return false;
     }
     
