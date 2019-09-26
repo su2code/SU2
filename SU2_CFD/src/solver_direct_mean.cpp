@@ -7296,7 +7296,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   su2double Beta                = config->GetAoS();
   su2double dCL_dAlpha          = config->GetdCL_dAlpha();
   bool Update_AoA               = config->GetUpdate_AoA();
-  bool CL_Converged             = fabs(Total_CL - Target_CL) < config->GetCauchy_Eps();
+  bool CL_Converged             = fabs(Total_CL - Target_CL) < (config->GetCauchy_Eps()/2);
   End_AoA_FD                    = Start_AoA_FD && ((ExtIter - Iter_Update_AoA) == 
                                   Iter_dCL_dAlpha || ExtIter == config->GetnExtIter()- 1 );
 
@@ -7313,6 +7313,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
   AoA = config->GetAoA();
 
+  /* --- If AoA needs to be updated, calculate change in AoA --- */
+
   if (Update_AoA && Output) {
 
     /*--- Estimate the increment in AoA based on dCL_dAlpha (degrees) ---*/
@@ -7323,8 +7325,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     /*--- Output some information to the console with the headers ---*/
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
-      //Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      //if (CL_Converged) Old_AoA = config->GetAoA();
       cout.precision(7);
       cout.setf(ios::fixed, ios::floatfield);
       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
@@ -7342,6 +7342,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     }
 
   }
+
+  /* --- Start Finite-differencing routine --- */
 
   if (Start_AoA_FD && Output && ((ExtIter - 1) == Iter_Update_AoA)) {
 
@@ -7440,6 +7442,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
     }
   }
+
+  /* --- Ending finite-differening routine --- */
 	
   if (End_AoA_FD && 
     Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
@@ -7495,11 +7499,17 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
       /* --- C_L and solution are converged, start finite differencing --- */
 
-      if (fabs(Total_CL-Target_CL) < config->GetCauchy_Eps()){
+      if (fabs(Total_CL-Target_CL) < (config->GetCauchy_Eps()/2)) {
+
+        /* --- If no finite differencing required --- */
+
         if (Iter_dCL_dAlpha == 0){
           fixed_cl_conv = true;
           return fixed_cl_conv;
         }
+
+        /* --- Else, set up finite differencing routine ---*/
+        
         Iter_Update_AoA = curr_iter;
         Start_AoA_FD = true;
         fixed_cl_conv = false;
@@ -7537,13 +7547,12 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
     }
   }
 
-  /* --- Else in finite differencing mode, check for when to exit ---*/
+  /* --- Else if ending finite differencing mode, exit ---*/
   else if (End_AoA_FD){
 
-    /* --- Solution allowed to end only after finite differencing has been done --- */
+    /* --- Fixed CL mode was converged --- */
     if ((curr_iter - Iter_Update_AoA) == Iter_dCL_dAlpha){
-     End_AoA_FD = true;
-     fixed_cl_conv = true;
+      fixed_cl_conv = true;
     }
 
   }
