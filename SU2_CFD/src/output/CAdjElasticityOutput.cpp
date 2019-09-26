@@ -106,13 +106,13 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   // Residuals
-  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", FORMAT_FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", FORMAT_FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
   
   //Sensitivities
-  AddHistoryOutput("SENS_E", "Sens[E]",  FORMAT_FIXED, "SENSITIVITY", "");
-  AddHistoryOutput("SENS_NU","Sens[Nu]", FORMAT_FIXED, "SENSITIVITY", "");
+  AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::FIXED, "SENSITIVITY", "");
+  AddHistoryOutput("SENS_NU","Sens[Nu]", ScreenOutputFormat::FIXED, "SENSITIVITY", "");
 
   
 }

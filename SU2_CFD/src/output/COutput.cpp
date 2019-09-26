@@ -724,7 +724,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     
     /*--- Cauchy based convergence criteria ---*/
     
-    if (historyOutput_Map[convField].fieldType == TYPE_COEFFICIENT) {
+    if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
       
       if (Iteration == 0){
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++){
@@ -754,7 +754,8 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     
     /*--- Residual based convergence criteria ---*/
     
-    if (historyOutput_Map[convField].fieldType == TYPE_RESIDUAL || historyOutput_Map[convField].fieldType == TYPE_AUTO_RESIDUAL) {
+    if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL || 
+        historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL) {
       
       /*--- Check the convergence ---*/
       
@@ -825,7 +826,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
     for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       const string & requestedField = requestedHistoryFields[iReqField];   
       if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-        if (field.screenFormat == FORMAT_INTEGER) width = std::max((int)field.fieldName.size()+2, 10);  
+        if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);  
         else{ width = std::max((int)field.fieldName.size()+2, 18);}
         historyFileTable->AddColumn("\"" + field.fieldName + "\"", width);
       }
@@ -839,7 +840,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
       for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         const string &requestedField = requestedHistoryFields[iReqField];   
         if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-          if (field.screenFormat == FORMAT_INTEGER) width = std::max((int)field.fieldName.size()+2, 10);  
+          if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);  
           else{ width = std::max((int)field.fieldName.size()+2, 18);}
           historyFileTable->AddColumn("\"" + field.fieldName + "\"", width);          
         }
@@ -907,26 +908,26 @@ void COutput::SetScreen_Output(CConfig *config) {
     RequestedField = requestedScreenFields[iReqField]; 
     if (historyOutput_Map.count(RequestedField) > 0){  
       switch (historyOutput_Map[RequestedField].screenFormat) {
-        case FORMAT_INTEGER:
+        case ScreenOutputFormat::INTEGER:
           PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutput_Map[RequestedField].value), fieldWidth);
           break;
-        case FORMAT_FIXED:
+        case ScreenOutputFormat::FIXED:
           PrintingToolbox::PrintScreenFixed(out, historyOutput_Map[RequestedField].value, fieldWidth);
           break;
-        case FORMAT_SCIENTIFIC:
+        case ScreenOutputFormat::SCIENTIFIC:
           PrintingToolbox::PrintScreenScientific(out, historyOutput_Map[RequestedField].value, fieldWidth);
           break;      
       }
     }
     if (historyOutputPerSurface_Map.count(RequestedField) > 0){
       switch (historyOutputPerSurface_Map[RequestedField][0].screenFormat) {
-        case FORMAT_INTEGER:
+        case ScreenOutputFormat::INTEGER:
           PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutputPerSurface_Map[RequestedField][0].value), fieldWidth);
           break;
-        case FORMAT_FIXED:
+        case ScreenOutputFormat::FIXED:
           PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
           break;
-        case FORMAT_SCIENTIFIC:
+        case ScreenOutputFormat::SCIENTIFIC:
           PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
           break;   
       }
@@ -1268,7 +1269,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   unsigned long iVertex = 0;
   
   /*--- Reset the offset cache and index --- */
-  curFieldIndex = 0;
+  cachePosition = 0;
   fieldIndexCache.clear();
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
@@ -1312,7 +1313,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     }
     
     /*--- Reset the offset cache and index --- */
-    curFieldIndex = 0;
+    cachePosition = 0;
     fieldIndexCache.clear();
     curGetFieldIndex = 0;
     fieldGetIndexCache.clear();
@@ -1357,12 +1358,12 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     
     /*--- Use the offset cache for the access ---*/
     
-    const short Offset = fieldIndexCache[curFieldIndex++];
+    const short Offset = fieldIndexCache[cachePosition++];
     if (Offset != -1){
       volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
     }   
-    if (curFieldIndex == fieldIndexCache.size()){
-      curFieldIndex = 0;
+    if (cachePosition == fieldIndexCache.size()){
+      cachePosition = 0;
     }
   }
   
@@ -1429,7 +1430,7 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
     
     /*--- Use the offset cache for the access ---*/
     
-    const short Offset = fieldIndexCache[curFieldIndex++];
+    const short Offset = fieldIndexCache[cachePosition++];
     if (Offset != -1){
       
       const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
@@ -1437,8 +1438,8 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
       
       volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
     }   
-    if (curFieldIndex == fieldIndexCache.size()){
-      curFieldIndex = 0;
+    if (cachePosition == fieldIndexCache.size()){
+      cachePosition = 0;
     }
   }
   
@@ -1456,7 +1457,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     const string &fieldIdentifier = historyOutput_List[iField];
     const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
-    if (currentField.fieldType == TYPE_RESIDUAL){
+    if (currentField.fieldType == HistoryFieldType::RESIDUAL){
       if ( SetInit_Residuals(config) || (currentField.value > initialResiduals[fieldIdentifier]) ) {
         initialResiduals[fieldIdentifier] = currentField.value;
       }
@@ -1467,7 +1468,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       Average[currentField.outputGroup].second++;
            
     }
-    if (currentField.fieldType == TYPE_COEFFICIENT){
+    if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if(SetUpdate_Averages(config)){
         if (config->GetTime_Domain()){
           SetHistoryOutputValue("TAVG_" + fieldIdentifier,
@@ -1502,27 +1503,27 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     const string &fieldIdentifier = historyOutput_List[iField];    
     const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
-    if (currentField.fieldType == TYPE_RESIDUAL){
+    if (currentField.fieldType == HistoryFieldType::RESIDUAL){
       AddHistoryOutput("REL_" + fieldIdentifier, "rel" + currentField.fieldName, currentField.screenFormat,
-                       "REL_" + currentField.outputGroup,  "Relative residual.", TYPE_AUTO_RESIDUAL);
+                       "REL_" + currentField.outputGroup,  "Relative residual.", HistoryFieldType::AUTO_RESIDUAL);
       Average[currentField.outputGroup] = true;
     }
   }
   
   map<string, bool>::iterator it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
-    AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED,
-                     "AVG_" + it->first , "Average residual over all solution variables.", TYPE_AUTO_RESIDUAL);
+    AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", ScreenOutputFormat::FIXED,
+                     "AVG_" + it->first , "Average residual over all solution variables.", HistoryFieldType::AUTO_RESIDUAL);
   }  
   
   if (config->GetTime_Domain()){
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
       const string &fieldIdentifier = historyOutput_List[iField];    
       const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
-      if (currentField.fieldType == TYPE_COEFFICIENT){
+      if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
         AddHistoryOutput("TAVG_"   + fieldIdentifier, "tavg["  + currentField.fieldName + "]",
                          currentField.screenFormat, "TAVG_"   + currentField.outputGroup, "Time averaged values.", 
-                         TYPE_AUTO_COEFFICIENT);
+                         HistoryFieldType::AUTO_COEFFICIENT);
       }
     }
   }
@@ -1531,10 +1532,10 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
       const string &fieldIdentifier = historyOutput_List[iField];    
       const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
-      if (currentField.fieldType == TYPE_COEFFICIENT){
+      if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
         AddHistoryOutput("D_"      + fieldIdentifier, "d["     + currentField.fieldName + "]",
                          currentField.screenFormat, "D_"      + currentField.outputGroup, 
-                         "Derivative value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+                         "Derivative value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);  
       }
     }
   }
@@ -1543,17 +1544,17 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
       const string &fieldIdentifier = historyOutput_List[iField];    
       const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
-      if (currentField.fieldType == TYPE_COEFFICIENT){
+      if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
         AddHistoryOutput("D_TAVG_" + fieldIdentifier, "dtavg[" + currentField.fieldName + "]",
                          currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
-                         "Derivative of the time averaged value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+                         "Derivative of the time averaged value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);  
       }
     }
   }
   
-  if (historyOutput_Map[convField].fieldType == TYPE_COEFFICIENT){
-    AddHistoryOutput("CAUCHY", "C["  + historyOutput_Map[convField].fieldName + "]", FORMAT_SCIENTIFIC, "CAUCHY",
-                     "Cauchy residual value of field set with CONV_FIELD." ,TYPE_AUTO_COEFFICIENT);
+  if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT){
+    AddHistoryOutput("CAUCHY", "C["  + historyOutput_Map[convField].fieldName + "]", ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
+                     "Cauchy residual value of field set with CONV_FIELD." ,HistoryFieldType::AUTO_COEFFICIENT);
   }
 
 }
@@ -1697,21 +1698,21 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER", "Time iteration index"); 
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Time iteration index"); 
   /// DESCRIPTION: The outer iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER", "Outer iteration index"); 
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index"); 
   /// DESCRIPTION: The inner iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER", "Inner iteration index"); 
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index"); 
   /// END_GROUP
   
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
   /// Description: The current time
-  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_SCIENTIFIC, "TIME_DOMAIN", "Current physical time (s)");
+  AddHistoryOutput("CUR_TIME", "Cur_Time", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current physical time (s)");
   /// Description: The current time step
-  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
+  AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
  
   /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(sec)", FORMAT_SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
+  AddHistoryOutput("PHYS_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
   
 }
 
@@ -1781,13 +1782,15 @@ void COutput::PrintHistoryFields(){
       
       HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField]];
       
-      if (Field.fieldType == TYPE_DEFAULT || Field.fieldType == TYPE_COEFFICIENT || Field.fieldType == TYPE_RESIDUAL){
+      if (Field.fieldType == HistoryFieldType::DEFAULT 
+          || Field.fieldType == HistoryFieldType::COEFFICIENT
+          || Field.fieldType == HistoryFieldType::RESIDUAL){
         string type;
         switch (Field.fieldType) {
-          case TYPE_COEFFICIENT:
+          case HistoryFieldType::COEFFICIENT:
             type = "C";
             break;
-          case TYPE_RESIDUAL:
+          case HistoryFieldType::RESIDUAL:
             type = "R";
             break;
           default:
@@ -1822,13 +1825,14 @@ void COutput::PrintHistoryFields(){
       
       HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField]];
       
-      if ((Field.fieldType == TYPE_AUTO_COEFFICIENT || Field.fieldType == TYPE_AUTO_RESIDUAL) && (GroupVisited.count(Field.outputGroup) == 0)){
+      if ((Field.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
+           Field.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(Field.outputGroup) == 0)){
         string type;
         switch (Field.fieldType) {
-          case TYPE_AUTO_COEFFICIENT:
+          case HistoryFieldType::AUTO_COEFFICIENT:
             type = "AC";
             break;
-          case TYPE_AUTO_RESIDUAL:
+          case HistoryFieldType::AUTO_RESIDUAL:
             type = "AR";
             break;
           default:

@@ -95,19 +95,19 @@ protected:
    ofstream histFile;
   
   /** \brief Enum to identify the screen output format. */
-  enum ScreenOutputFormat {           
-    FORMAT_INTEGER,         /*!< \brief Integer format. Example: 34 */
-    FORMAT_FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
-    FORMAT_SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  enum class ScreenOutputFormat {           
+    INTEGER,         /*!< \brief Integer format. Example: 34 */
+    FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
   
   /** \brief Enum to identify the screen/history field type. */  
-  enum HistoryFieldType {           
-    TYPE_RESIDUAL,         /*!< \brief A user-defined residual field type*/
-    TYPE_AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
-    TYPE_COEFFICIENT,      /*!< \brief User defined coefficient field type  */
-    TYPE_AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
-    TYPE_DEFAULT           /*!< \brief Default field type */  
+  enum class HistoryFieldType {           
+    RESIDUAL,         /*!< \brief A user-defined residual field type*/
+    AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
+    COEFFICIENT,      /*!< \brief User defined coefficient field type  */
+    AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
+    DEFAULT           /*!< \brief Default field type */  
   };
   
   /** \brief Structure to store information for a history output field.
@@ -121,18 +121,18 @@ protected:
     /*! \brief The value of the field. */
     su2double           value = 0.0;
     /*! \brief The format that is used to print this value to screen. */
-    unsigned short      screenFormat = FORMAT_FIXED; 
+    ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED; 
     /*! \brief The group this field belongs to. */
     string              outputGroup  ="";  
     /*! \brief The field type*/
-    unsigned short      fieldType = TYPE_DEFAULT;
+    HistoryFieldType     fieldType = HistoryFieldType::DEFAULT;
     /*! \brief String containing the description of the field */
     string              description = "";
     /*! \brief Default constructor. */
     HistoryOutputField() {}         
     /*! \brief Constructor to initialize all members. */
-    HistoryOutputField(string fieldName_, unsigned short screenFormat_, string OutputGroup_, 
-                       unsigned short fieldType_, string description_):
+    HistoryOutputField(string fieldName_, ScreenOutputFormat screenFormat_, string OutputGroup_, 
+                       HistoryFieldType fieldType_, string description_):
       fieldName(std::move(fieldName_)), value(0.0), screenFormat(screenFormat_),
       outputGroup(std::move(OutputGroup_)), fieldType(fieldType_), description(std::move(description_)){}
   };
@@ -188,7 +188,7 @@ protected:
     /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
     string fieldName;
     /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    int    offset; 
+    short  offset; 
     /*! \brief The group this field belongs to. */
     string outputGroup;
     /*! \brief String containing the description of the field */
@@ -209,7 +209,7 @@ protected:
   /*! \brief Vector to cache the positions of the field in the data array */
   std::vector<short>                            fieldIndexCache;
   /*! \brief Current value of the cache index */  
-  unsigned short                                curFieldIndex;
+  unsigned short                                cachePosition;
   /*! \brief Boolean to store whether the field index cache should be build. */    
   bool                                          buildFieldIndexCache;
   /*! \brief Vector to cache the positions of the field in the data array */
@@ -496,7 +496,9 @@ protected:
    * \param[in] description - A description of the field.
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
-  inline void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, string description, unsigned short field_type = TYPE_DEFAULT ){
+  inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
+                               string groupname, string description, 
+                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
     historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     historyOutput_List.push_back(name);
   }
@@ -523,7 +525,9 @@ protected:
    * \param[in] marker_names - A list of markers. For every marker in this list a new field is created with "field_name + _marker_names[i]".
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
-  inline void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names, unsigned short field_type = TYPE_DEFAULT){
+  inline void AddHistoryOutputPerSurface(string name, string field_name, ScreenOutputFormat format, 
+                                         string groupname, vector<string> marker_names, 
+                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT){
     if (marker_names.size() != 0){
       historyOutputPerSurface_List.push_back(name);
       for (unsigned short i = 0; i < marker_names.size(); i++){
