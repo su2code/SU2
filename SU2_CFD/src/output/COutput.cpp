@@ -1319,18 +1319,20 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     fieldGetIndexCache.clear();
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-        
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- Load the surface data into the data sorter. --- */
-  
-        if(geometry->node[iPoint]->GetDomain()){
+      if (config->GetSolid_Wall(iMarker)){
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
           
-          buildFieldIndexCache = fieldIndexCache.empty();
-   
-          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
+          /*--- Load the surface data into the data sorter. --- */
+          
+          if(geometry->node[iPoint]->GetDomain()){
+            
+            buildFieldIndexCache = fieldIndexCache.empty();
+            
+            LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+            
+          }
         }
       }   
     }
