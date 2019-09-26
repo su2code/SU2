@@ -57,19 +57,19 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned 
   }
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
+    requestedHistoryFields.emplace_back("ITER");
     for (iZone = 0; iZone < nZone; iZone++){
-      requestedHistoryFields.push_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");      
-      requestedHistoryFields.push_back("AVG_RES[" + PrintingToolbox::to_string(iZone) + "]");
+      requestedHistoryFields.emplace_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");      
+      requestedHistoryFields.emplace_back("AVG_RES[" + PrintingToolbox::to_string(iZone) + "]");
     }
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    if (config[ZONE_0]->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");    
-    requestedScreenFields.push_back("OUTER_ITER");
+    if (config[ZONE_0]->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");    
+    requestedScreenFields.emplace_back("OUTER_ITER");
     for (iZone = 0; iZone < nZone; iZone++){
-      requestedScreenFields.push_back("AVG_" + bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]"); 
+      requestedScreenFields.emplace_back("AVG_" + bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]"); 
     }
     nRequestedScreenFields = requestedScreenFields.size();
   }
@@ -164,13 +164,18 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
 
 bool CDriverOutput::WriteScreen_Header(CConfig *config) {
 
-  bool write_header = true;
-
-  /*--- If the outer iteration is zero ---*/
-  write_header = (write_header && (curOuterIter == 0)) || write_zone;
-
-  return write_header;
-
+  /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
+  
+  return curOuterIter == 0 || write_zone;
+  
+  /*--- Always print header if it is forced ---*/
+  
+  if (headerNeeded){
+    headerNeeded = false;
+    return true;
+  }  
+  
+  return false;
 }
 
 bool CDriverOutput::WriteScreen_Output(CConfig *config) {

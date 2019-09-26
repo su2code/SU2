@@ -52,35 +52,35 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
-    requestedHistoryFields.push_back("RMS_RES");
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   /*--- Default fields for screen output ---*/
   if (nRequestedScreenFields == 0){
-    if (dynamic) requestedScreenFields.push_back("TIME_ITER");
-    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
-    requestedScreenFields.push_back("INNER_ITER");
+    if (dynamic) requestedScreenFields.emplace_back("TIME_ITER");
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
     if(linear_analysis){
-      requestedScreenFields.push_back("RMS_DISP_X");
-      requestedScreenFields.push_back("RMS_DISP_Y");
-      requestedScreenFields.push_back("RMS_DISP_Z");
+      requestedScreenFields.emplace_back("RMS_DISP_X");
+      requestedScreenFields.emplace_back("RMS_DISP_Y");
+      requestedScreenFields.emplace_back("RMS_DISP_Z");
     }
     if(nonlinear_analysis){
-      requestedScreenFields.push_back("RMS_UTOL");
-      requestedScreenFields.push_back("RMS_RTOL");
-      requestedScreenFields.push_back("RMS_ETOL");
+      requestedScreenFields.emplace_back("RMS_UTOL");
+      requestedScreenFields.emplace_back("RMS_RTOL");
+      requestedScreenFields.emplace_back("RMS_ETOL");
     }
-    requestedScreenFields.push_back("VMS");
+    requestedScreenFields.emplace_back("VMS");
     nRequestedScreenFields = requestedScreenFields.size();
   }
   
   /*--- Default fields for volume output ---*/
   if (nRequestedVolumeFields == 0){
-    requestedVolumeFields.push_back("COORDINATES");
-    requestedVolumeFields.push_back("SOLUTION");
-    requestedVolumeFields.push_back("STRESS");    
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("STRESS");    
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
