@@ -14,6 +14,8 @@ CFileWriter::CFileWriter(vector<string> fields, string fileName,
   
   this->fileName += file_ext;
   
+  file_size = 0.0;
+  
 }
 
 

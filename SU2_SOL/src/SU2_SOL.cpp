@@ -845,9 +845,17 @@ void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container
   
   output->Load_Data(geometry, config, solver_container);
   
+  /*--- Set the filenames ---*/
+  
+  output->SetVolume_Filename(config->GetVolume_FileName());
+  
+  output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+  
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
     unsigned short* FileFormat = config->GetVolumeOutputFiles();
-    if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+    if (FileFormat[iFile] != RESTART_ASCII &&
+        FileFormat[iFile] != RESTART_BINARY &&
+        FileFormat[iFile] != CSV)
       output->WriteToFile(config, geometry, FileFormat[iFile]);
   }
   
