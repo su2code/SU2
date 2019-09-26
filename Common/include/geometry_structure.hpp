@@ -1887,14 +1887,14 @@ public:
    * \param[in] sendReq - Array of MPI recv requests.
    * \param[in] countPerElem - Pieces of data per element communicated.
    */
-  static void InitiateCommsAll(void *bufSend,
-                               int *nElemSend,
-                               SU2_MPI::Request *sendReq,
-                               void *bufRecv,
-                               int *nElemRecv,
-                               SU2_MPI::Request *recvReq,
-                               unsigned short countPerElem,
-                               unsigned short commType);
+  void InitiateCommsAll(void *bufSend,
+                        int *nElemSend,
+                        SU2_MPI::Request *sendReq,
+                        void *bufRecv,
+                        int *nElemRecv,
+                        SU2_MPI::Request *recvReq,
+                        unsigned short countPerElem,
+                        unsigned short commType);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
@@ -1903,10 +1903,10 @@ public:
    * \param[in] nRecvs - Number of receives to be completed.
    * \param[in] sendReq - Array of MPI recv requests.
    */
-  static void CompleteCommsAll(int nSends,
-                               SU2_MPI::Request *sendReq,
-                               int nRecvs,
-                               SU2_MPI::Request *recvReq);
+  void CompleteCommsAll(int nSends,
+                        SU2_MPI::Request *sendReq,
+                        int nRecvs,
+                        SU2_MPI::Request *recvReq);
 
   /*!
    * \brief Routine to compute the initial linear partitioning offset counts and store in persistent data structures.

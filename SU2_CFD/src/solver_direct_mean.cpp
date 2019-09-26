@@ -13769,11 +13769,11 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  CPhysicalGeometry::InitiateCommsAll(solSend, nSol_Send, solSendReq,
+  geometry[MESH_0]->InitiateCommsAll(solSend, nSol_Send, solSendReq,
                                      solRecv, nSol_Recv, solRecvReq,
                                      nVar, COMM_TYPE_DOUBLE);
 
-  CPhysicalGeometry::InitiateCommsAll(idSend, nSol_Send, idSendReq,
+  geometry[MESH_0]->InitiateCommsAll(idSend, nSol_Send, idSendReq,
                                      idRecv, nSol_Recv, idRecvReq,
                                      1, COMM_TYPE_UNSIGNED_LONG);
 
