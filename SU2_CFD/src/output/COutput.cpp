@@ -635,12 +635,19 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       fileWriter = NULL;
       break;
   } 
-  
-  /*--- Write data to file ---*/
-  
+    
   if (fileWriter != NULL){
     
+    /*--- Write data to file ---*/
+    
     fileWriter->Write_Data();
+    
+    /*--- Compute and store the bandwidth ---*/
+    
+    if (format == RESTART_BINARY){
+      su2double BandWidth = fileWriter->Get_Bandwidth();
+      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
+    }
     
     delete fileWriter;
    
@@ -1165,6 +1172,22 @@ void COutput::CheckHistoryOutput(){
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
 
+  /*---Coordinates and solution groups must be always in the output.
+   * If they are not requested, add them here. ---*/
+  
+  vector<string>::iterator itCoord = std::find(requestedVolumeFields.begin(),
+                                          requestedVolumeFields.end(), "COORDINATES");
+  if (itCoord == requestedVolumeFields.end()){
+    requestedVolumeFields.emplace_back("COORDINATES");
+    nRequestedVolumeFields++;
+  }
+  vector<string>::iterator itSol = std::find(requestedVolumeFields.begin(),
+                                          requestedVolumeFields.end(), "SOLUTION");
+  if (itSol == requestedVolumeFields.end()){
+    requestedVolumeFields.emplace_back("SOLUTION");
+    nRequestedVolumeFields++;    
+  }
+  
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   
   SetVolumeOutputFields(config);
@@ -1744,7 +1767,7 @@ void COutput::PrintHistoryFields(){
       }
     }
     
-    cout << "Available output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
+    cout << "Available screen/history output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
     
     HistoryFieldTable.AddColumn("Name", NameSize);
     HistoryFieldTable.AddColumn("Group Name", GroupSize);
@@ -1782,7 +1805,7 @@ void COutput::PrintHistoryFields(){
     
     cout << "Type legend: Default (D), Residual (R), Coefficient (C)" << endl;
     
-    cout << "Generated output fields (only first field of every group is shown):" << endl;
+    cout << "Generated screen/history fields (only first field of every group is shown):" << endl;
     
     PrintingToolbox::CTablePrinter ModifierTable(&std::cout);
     
@@ -1849,8 +1872,8 @@ void COutput::PrintVolumeFields(){
       }
     }
     
-    cout << "Available output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
-    
+    cout << "Available volume output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
+    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output." << endl;
     VolumeFieldTable.AddColumn("Name", NameSize);
     VolumeFieldTable.AddColumn("Group Name", GroupSize);
     VolumeFieldTable.AddColumn("Description", DescrSize);
