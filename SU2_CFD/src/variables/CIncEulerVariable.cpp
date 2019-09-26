@@ -44,6 +44,7 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   Primitive               = NULL;
   Gradient_Primitive      = NULL;
   Gradient_Reconstruction = NULL;
+  GradReconAllocated      = false;
   Limiter_Primitive       = NULL;
 
   Grad_AuxVar = NULL;
@@ -76,6 +77,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   Primitive               = NULL;
   Gradient_Primitive      = NULL;
   Gradient_Reconstruction = NULL;
+  GradReconAllocated      = false;
   Limiter_Primitive       = NULL;
 
   Grad_AuxVar = NULL;
@@ -171,11 +173,16 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  Gradient_Reconstruction = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Gradient_Reconstruction[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Reconstruction[iVar][iDim] = 0.0;
+  if (config->GetReconstructionGradientRequired()) {
+   GradReconAllocated = true;
+   Gradient_Reconstruction = new su2double* [nPrimVarGrad];
+   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+     Gradient_Reconstruction[iVar] = new su2double [nDim];
+     for (iDim = 0; iDim < nDim; iDim++)
+       Gradient_Reconstruction[iVar][iDim] = 0.0;
+   }
+  } else {
+   Gradient_Reconstruction = Gradient_Primitive;
   }
                                        
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
@@ -212,6 +219,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   Primitive               = NULL;
   Gradient_Primitive      = NULL;
   Gradient_Reconstruction = NULL;
+  GradReconAllocated      = false;
   Limiter_Primitive       = NULL;
 
   Grad_AuxVar = NULL;
@@ -300,11 +308,16 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  Gradient_Reconstruction = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Gradient_Reconstruction[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Reconstruction[iVar][iDim] = 0.0;
+  if (config->GetReconstructionGradientRequired()) {
+    GradReconAllocated = true;
+    Gradient_Reconstruction = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      Gradient_Reconstruction[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Reconstruction[iVar][iDim] = 0.0;
+    }
+  } else {
+    Gradient_Reconstruction = Gradient_Primitive;
   }
   
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
@@ -334,7 +347,7 @@ CIncEulerVariable::~CIncEulerVariable(void) {
     delete [] Gradient_Primitive;
   }
 
-  if (Gradient_Reconstruction != NULL) {
+  if (GradReconAllocated) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       if (Gradient_Reconstruction!=NULL) delete [] Gradient_Reconstruction[iVar];
     delete [] Gradient_Reconstruction;

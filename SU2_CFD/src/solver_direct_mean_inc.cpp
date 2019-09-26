@@ -342,7 +342,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
   
-  //if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
@@ -352,7 +352,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       Cvector[iVar] = new su2double [nDim];
     
- // }
+  }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
@@ -1566,17 +1566,13 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
     
     /*--- Gradient computation for MUSCL reconstruction. ---*/
-
-    SetPrimitive_Gradient_LS(geometry, config, true);
     
-    /*--- Gradient computation for all other terms. ---*/
-    
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config);
-    }
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
     
     /*--- Limiter computation ---*/
     
@@ -3524,6 +3520,10 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
+  /*--- Store the value of the residual. ---*/
+  
+  SetResLinSolver(System.GetResidual());
+  
   /*--- The the number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
@@ -3571,9 +3571,9 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       
       /* We impose a limit on the maximum percentage that the
-       pressure and temperature can change over a nonlinear iteration. */
+       temperature can change over a nonlinear iteration. */
       
-      if ( (config->GetEnergy_Equation() && (iVar == nVar-1))) {
+      if ((config->GetEnergy_Equation() && (iVar == nVar-1))) {
         const unsigned long index = iPoint*nVar + iVar;
         su2double ratio = fabs(LinSysSol[index])/(node[iPoint]->GetSolution(iVar)+EPS);
         if (ratio > allowableRatio) {
@@ -3602,7 +3602,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
   
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
   unsigned long iPoint, jPoint, iEdge, iVertex;
   unsigned short iDim, iVar, iMarker;
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
@@ -3681,7 +3681,10 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim)/Vol;
-        node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
+        if (reconstruction)
+          node[iPoint]->SetGradient_Reconstruction(iVar, iDim, Partial_Gradient);
+        else
+          node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
       }
     }
   }
@@ -3705,6 +3708,16 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
   su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
   su2double z11, z12, z13, z22, z23, z33, detR2;
   bool singular;
+  
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+  
+  bool weighted = true;
+  if (reconstruction) {
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      weighted = false;
+  } else if (config->GetKind_Gradient_Method() == LEAST_SQUARES) {
+    weighted = false;
+  }
   
   /*--- Loop over points of the grid ---*/
   
@@ -3739,12 +3752,12 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       
       PrimVar_j = node[jPoint]->GetPrimitive();
       
-      if (reconstruction) {
-        weight = 1.0;
-      } else {
+      if (weighted) {
         weight = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      } else {
+        weight = 1.0;
       }
       
       /*--- Sumations for entries of upper triangular matrix R ---*/
@@ -3863,9 +3876,10 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        node[iPoint]->SetGradient_Primitive(iVar, iDim, Cvector[iVar][iDim]);
         if (reconstruction)
           node[iPoint]->SetGradient_Reconstruction(iVar, iDim, Cvector[iVar][iDim]);
+        else
+          node[iPoint]->SetGradient_Primitive(iVar, iDim, Cvector[iVar][iDim]);
       }
     }
     
@@ -7554,9 +7568,15 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
   
   /*--- Compute gradient for MUSCL reconstruction. ---*/
-  
-  if ((config->GetMUSCL_Flow()) && (iMesh == MESH_0))
-    SetPrimitive_Gradient_LS(geometry, config, true);
+
+if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+  if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+    SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+  }
 
   /*--- Compute gradient of the primitive variables ---*/
   

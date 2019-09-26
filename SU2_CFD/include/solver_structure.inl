@@ -39,9 +39,17 @@
 
 inline void CSolver::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
 
+inline void CSolver::SetResLinSolver(su2double val_reslinsolver) { ResLinSolver = val_reslinsolver; }
+
 inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
+
+inline su2double CSolver::GetResLinSolver(void) { return ResLinSolver; }
+
+inline void CSolver::SetNonlinearResMonitor(su2double val_nonlinearResMonitor) { NonlinearResMonitor = val_nonlinearResMonitor; }
+
+inline su2double CSolver::GetNonlinearResMonitor(void) { return NonlinearResMonitor; }
 
 inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -102,7 +110,7 @@ inline su2double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
 
 inline su2double CSolver::GetPsiE_Inf(void) { return 0; }
 
-inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) { }
 
 inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) { }
 

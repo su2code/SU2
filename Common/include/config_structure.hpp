@@ -471,6 +471,7 @@ private:
   *Kind_SurfaceMovement,    /*!< \brief Kind of the static mesh movement. */
   nKind_SurfaceMovement,    /*!< \brief Kind of the dynamic mesh movement. */  
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
+  Kind_Gradient_Method_Recon,    /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
@@ -526,6 +527,8 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
+  bool LeastSquaresRequired;  /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -4013,10 +4016,28 @@ public:
   void SetKt_PolyCoeffND(su2double val_coeff, unsigned short val_index);
   
   /*!
-   * \brief Get the kind of method for computation of spatial gradients.
-   * \return Numerical method for computation of spatial gradients.
+   * \brief Get the kind of method for computation of spatial gradients used for viscous and source terms.
+   * \return Numerical method for computation of spatial gradients used for viscous and source terms.
    */
   unsigned short GetKind_Gradient_Method(void);
+  
+  /*!
+   * \brief Get the kind of method for computation of spatial gradients used for upwind reconstruction.
+   * \return Numerical method for computation of spatial gradients used for upwind reconstruction.
+   */
+  unsigned short GetKind_Gradient_Method_Recon(void);
+  
+  /*!
+   * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
+   * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
+   */
+  bool GetReconstructionGradientRequired(void);
+  
+  /*!
+   * \brief Get flag for whether a least-squares gradient method is being applied.
+   * \return <code>TRUE</code> means that a least-squares gradient method is being applied.
+   */
+  bool GetLeastSquaresRequired(void);
   
   /*!
    * \brief Get the kind of solver for the implicit solver.

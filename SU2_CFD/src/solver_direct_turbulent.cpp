@@ -163,8 +163,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Turbulent variables using gradient reconstruction and limiters ---*/
       
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
+      Gradient_i = node[iPoint]->GetGradient_Reconstruction();
+      Gradient_j = node[jPoint]->GetGradient_Reconstruction();
       if (limiter) {
         Limiter_i = node[iPoint]->GetLimiter();
         Limiter_j = node[jPoint]->GetLimiter();
@@ -395,7 +395,12 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*--- Solve or smooth the linear system ---*/
   
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  unsigned long IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SetIterLinSolver(IterLinSol);
+  
+  /*--- Store the value of the residual. ---*/
+  
+  SetResLinSolver(System.GetResidual());
   
   ComputeUnderRelaxationFactor(solver_container, config);
   
@@ -1028,14 +1033,13 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Computation of gradients by least squares ---*/
     
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    if (config->GetLeastSquaresRequired()) {
       /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
       Smatrix = new su2double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Smatrix[iDim] = new su2double [nDim];
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
-      
       Cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
         Cvector[iVar] = new su2double [nDim];
@@ -1205,10 +1209,18 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   Jacobian.SetValZero();
 
+  /*--- Upwind second order reconstruction and gradients ---*/
+
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-
-  /*--- Upwind second order reconstruction ---*/
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
 
@@ -3361,7 +3373,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Computation of gradients by least squares ---*/
   
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
@@ -3530,9 +3542,17 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Initialize the Jacobian matrices ---*/
   
   Jacobian.SetValZero();
-
-  /*--- Upwind second order reconstruction ---*/
   
+  /*--- Upwind second order reconstruction and gradients ---*/
+  
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 

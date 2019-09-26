@@ -45,6 +45,7 @@ CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
   ObjFuncSource = NULL;
   IntBoundary_Jump = NULL;
   HB_Source = NULL;
+  GradReconAllocated = false;
 
 }
 
@@ -63,6 +64,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
   ObjFuncSource = NULL;
   IntBoundary_Jump = NULL;
   HB_Source = NULL;
+  GradReconAllocated = false;
 
   /*--- Allocate residual structures ---*/
   Res_TruncError = new su2double [nVar];
@@ -117,6 +119,18 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 
   }
 
+ if (config->GetReconstructionGradientRequired()) {
+   GradReconAllocated = true;
+   Gradient_Reconstruction = new su2double*[nVar];
+   for (iVar = 0; iVar < nVar; iVar++) {
+     Gradient_Reconstruction[iVar] = new su2double[nDim];
+     for (iDim = 0; iDim < nDim; iDim++)
+       Gradient_Reconstruction[iVar][iDim] = 0.0;
+   }
+ } else {
+   Gradient_Reconstruction = Gradient;
+ }
+                                       
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
   Grad_AuxVar = new su2double [nDim];
 
@@ -153,6 +167,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
   ObjFuncSource = NULL;
   IntBoundary_Jump = NULL;
   HB_Source = NULL;
+  GradReconAllocated = false;
 
   /*--- Allocate residual structures ---*/
   Res_TruncError = new su2double [nVar];
@@ -202,6 +217,18 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
     }
   }
 
+  if (config->GetReconstructionGradientRequired()) {
+    GradReconAllocated = true;
+    Gradient_Reconstruction = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Gradient_Reconstruction[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Reconstruction[iVar][iDim] = 0.0;
+    }
+  } else {
+    Gradient_Reconstruction = Gradient;
+  }
+  
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
   Grad_AuxVar = new su2double [nDim];
 
@@ -232,6 +259,12 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   if (IntBoundary_Jump  != NULL) delete [] IntBoundary_Jump;
   if (HB_Source         != NULL) delete [] HB_Source;
 
+  if (GradReconAllocated) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      if (Gradient_Reconstruction!=NULL) delete [] Gradient_Reconstruction[iVar];
+    delete [] Gradient_Reconstruction;
+  }
+  
 }
 
 bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) {

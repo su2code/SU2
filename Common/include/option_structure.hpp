@@ -996,11 +996,15 @@ static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<stri
  * \brief types of schemes to compute the flow gradient
  */
 enum ENUM_FLOW_GRADIENT {
-  GREEN_GAUSS = 1,		/*!< \brief Gradients computation using Green Gauss theorem. */
-  WEIGHTED_LEAST_SQUARES = 2	/*!< \brief Gradients computation using Weighted Least Squares. */
+  NO_GRADIENT            = 0, /*!< \brief No gradient method. Only possible for reconstruction gradient, in which case, the option chosen for NUM_METHOD_GRAD is used. */
+  GREEN_GAUSS            = 1,	/*!< \brief Gradient computation using Green-Gauss theorem. */
+  LEAST_SQUARES          = 2, /*!< \brief Gradient computation using unweighted least squares. */
+  WEIGHTED_LEAST_SQUARES = 3	/*!< \brief Gradients computation using inverse-distance weighted least squares. */
 };
 static const map<string, ENUM_FLOW_GRADIENT> Gradient_Map = CCreateMap<string, ENUM_FLOW_GRADIENT>
+("NONE", NO_GRADIENT)
 ("GREEN_GAUSS", GREEN_GAUSS)
+("LEAST_SQUARES", LEAST_SQUARES)
 ("WEIGHTED_LEAST_SQUARES", WEIGHTED_LEAST_SQUARES);
 
 /*!

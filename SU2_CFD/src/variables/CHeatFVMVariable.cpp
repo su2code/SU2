@@ -42,13 +42,13 @@ CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
   Solution_BGS_k  = NULL;
-
+  GradReconAllocated = false;
 }
 
 CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar,
                                    CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 
-  unsigned short iVar, iMesh, nMGSmooth = 0;
+  unsigned short iDim, iVar, iMesh, nMGSmooth = 0;
   bool low_fidelity = false;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -57,6 +57,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
   Solution_BGS_k  = NULL;
+  GradReconAllocated = false;
 
   /*--- Initialization of heat variable ---*/
   Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
@@ -89,6 +90,18 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
     Undivided_Laplacian = new su2double [nVar];
   }
 
+  if (config->GetReconstructionGradientRequired()) {
+    GradReconAllocated = true;
+    Gradient_Reconstruction = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Gradient_Reconstruction[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Reconstruction[iVar][iDim] = 0.0;
+    }
+  } else {
+    Gradient_Reconstruction = Gradient;
+  }
+  
   if (multizone){
     Solution_BGS_k  = new su2double [1];
     Solution_BGS_k[0] = val_Heat;

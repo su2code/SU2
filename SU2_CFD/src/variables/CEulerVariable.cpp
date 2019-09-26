@@ -47,6 +47,7 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 
   Gradient_Primitive      = NULL;
   Gradient_Reconstruction = NULL;
+  GradReconAllocated      = false;
   Gradient_Secondary      = NULL;
 
   Limiter_Primitive = NULL;
@@ -86,6 +87,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 
   Gradient_Primitive      = NULL;
   Gradient_Reconstruction = NULL;
+  GradReconAllocated      = false;
   Gradient_Secondary      = NULL;
 
   Limiter_Primitive = NULL;
@@ -222,11 +224,16 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  Gradient_Reconstruction = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Gradient_Reconstruction[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Reconstruction[iVar][iDim] = 0.0;
+  if (config->GetReconstructionGradientRequired()) {
+    GradReconAllocated = true;
+    Gradient_Reconstruction = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      Gradient_Reconstruction[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Reconstruction[iVar][iDim] = 0.0;
+    }
+  } else {
+    Gradient_Reconstruction = Gradient_Primitive;
   }
   
   Gradient_Secondary = new su2double* [nSecondaryVarGrad];
@@ -267,6 +274,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 
   Gradient_Primitive      = NULL;
   Gradient_Reconstruction = NULL;
+  GradReconAllocated      = false;
   Gradient_Secondary      = NULL;
 
   Limiter_Primitive = NULL;
@@ -396,11 +404,16 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  Gradient_Reconstruction = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Gradient_Reconstruction[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Reconstruction[iVar][iDim] = 0.0;
+  if (config->GetReconstructionGradientRequired()) {
+    GradReconAllocated = true;
+    Gradient_Reconstruction = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      Gradient_Reconstruction[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Reconstruction[iVar][iDim] = 0.0;
+    }
+  } else {
+    Gradient_Reconstruction = Gradient_Primitive;
   }
   
   Gradient_Secondary = new su2double* [nSecondaryVarGrad];
@@ -436,7 +449,7 @@ CEulerVariable::~CEulerVariable(void) {
       if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-  if (Gradient_Reconstruction != NULL) {
+  if (GradReconAllocated) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       if (Gradient_Reconstruction[iVar] != NULL) delete [] Gradient_Reconstruction[iVar];
     delete [] Gradient_Reconstruction;

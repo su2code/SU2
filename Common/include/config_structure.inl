@@ -1001,6 +1001,12 @@ inline su2double CConfig::GetmaxTurkelBeta() { return  Max_Beta_RoeTurkel; }
 
 inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; }
 
+inline unsigned short CConfig::GetKind_Gradient_Method_Recon(void) { return Kind_Gradient_Method_Recon; }
+
+inline bool CConfig::GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+
+inline bool CConfig::GetLeastSquaresRequired(void) { return LeastSquaresRequired; }
+
 inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_Deform_Linear_Solver; }
