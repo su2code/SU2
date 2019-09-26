@@ -333,7 +333,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
   }
 
-  (*residual) = norm_r;
+  (*residual) = norm_r/norm0;
   return (unsigned long) i;
 
 }
@@ -489,7 +489,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   }
 
-  (*residual) = beta;
+  (*residual) = beta/norm0;
   return (unsigned long) i;
 
 }
@@ -646,7 +646,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   }
 
-  (*residual) = norm_r;
+  (*residual) = norm_r/norm0;
   return (unsigned long) i;
 }
 
@@ -749,7 +749,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
 
-  (*residual) = norm_r;
+  (*residual) = norm_r/norm0;
   return i;
 }
 

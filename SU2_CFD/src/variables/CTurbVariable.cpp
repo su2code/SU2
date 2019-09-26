@@ -41,17 +41,20 @@ CTurbVariable::CTurbVariable(void) : CVariable() {
 
   /*--- Array initialization ---*/
   HB_Source = NULL;
+  Gradient_Reconstruction = NULL;
+  GradReconAllocated = false;
 
 }
 
 CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 
-  unsigned short iVar;
+  unsigned short iVar, iDim;
 
   /*--- Array initialization ---*/
 
   HB_Source = NULL;
+  GradReconAllocated = false;
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
@@ -75,8 +78,27 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
     Solution_Min[iVar] = 0.0;
   }
 
+  if (config->GetReconstructionGradientRequired()) {
+    GradReconAllocated = true;
+    Gradient_Reconstruction = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Gradient_Reconstruction[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Reconstruction[iVar][iDim] = 0.0;
+    }
+  } else {
+    Gradient_Reconstruction = Gradient;
+  }
+  
 }
 
 CTurbVariable::~CTurbVariable(void) {
   if (HB_Source != NULL) delete [] HB_Source;
+  
+  if (GradReconAllocated) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      if (Gradient_Reconstruction!=NULL) delete [] Gradient_Reconstruction[iVar];
+    delete [] Gradient_Reconstruction;
+  }
+  
 }

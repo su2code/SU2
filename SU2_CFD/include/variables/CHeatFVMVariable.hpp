@@ -49,7 +49,9 @@ class CHeatFVMVariable : public CVariable {
 protected:
   su2double* Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
   su2double* Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
-
+  su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term */
+  bool GradReconAllocated;              /*!< \brief Flag indicating that separate memory was allocated for the MUSCL reconstruction gradient. */
+  
 public:
 
   /*!
@@ -71,4 +73,26 @@ public:
    */
   ~CHeatFVMVariable(void);
 
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double GetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim) {return Gradient_Reconstruction[val_var][val_dim]; }
+  
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  inline void SetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Reconstruction[val_var][val_dim] = val_value; }
+  
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double **GetGradient_Reconstruction(void) {return Gradient_Reconstruction; }
+  
 };

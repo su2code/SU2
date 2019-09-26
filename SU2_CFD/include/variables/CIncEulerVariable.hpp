@@ -54,6 +54,7 @@ protected:
   su2double *Primitive;  /*!< \brief Primitive variables (P, vx, vy, vz, T, rho ...) for incompressible flows. */
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables */
   su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  bool GradReconAllocated;              /*!< \brief Flag indicating that separate memory was allocated for the MUSCL reconstruction gradient. */
 
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables */
 

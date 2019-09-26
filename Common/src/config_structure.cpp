@@ -1554,6 +1554,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief NUM_METHOD_GRAD
    *  \n DESCRIPTION: Numerical method for spatial gradients \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: WEIGHTED_LEAST_SQUARES. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
+  /*!\brief NUM_METHOD_GRAD
+   *  \n DESCRIPTION: Numerical method for spatial gradients used only for upwind reconstruction \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: NO_GRADIENT. \ingroup Config*/
+  addEnumOption("NUM_METHOD_GRAD_RECON", Kind_Gradient_Method_Recon, Gradient_Map, NO_GRADIENT);
   /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
@@ -4510,6 +4513,52 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
   
+  /* 2nd-order MUSCL is not possible for the continuous adjoint
+   turbulence model. */
+  
+  if (MUSCL_AdjTurb) {
+    SU2_MPI::Error(string("MUSCL_ADJTURB= YES not currently supported.\n") +
+                   string("Please select MUSCL_ADJTURB= NO (first-order)."),
+                   CURRENT_FUNCTION);
+  }
+  
+  /* Check for whether we need a second gradient method to calculate
+   gradients for uwpind reconstruction. Set additional booleans to
+   minimize overhead as appropriate. */
+  
+  if (MUSCL_Flow || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
+    
+    ReconstructionGradientRequired = true;
+    
+    if ((Kind_Gradient_Method_Recon == NO_GRADIENT) ||
+        (Kind_Gradient_Method_Recon == Kind_Gradient_Method)) {
+
+      /* The default behavior if no reconstruction gradient is specified
+       is to use the same gradient as needed for the viscous/source terms
+       without recomputation. If they are using the same method, then
+       we also want to avoid recomputation. */
+
+      ReconstructionGradientRequired = false;
+      Kind_Gradient_Method_Recon     = Kind_Gradient_Method;
+    }
+    
+  }
+  
+  /* Simpler boolean to control allocation of least-squares memory. */
+  
+  if ((Kind_Gradient_Method_Recon == LEAST_SQUARES) ||
+      (Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES) ||
+      (Kind_Gradient_Method       == LEAST_SQUARES) ||
+      (Kind_Gradient_Method       == WEIGHTED_LEAST_SQUARES)) {
+    LeastSquaresRequired = true;
+  }
+  
+  if (Kind_Gradient_Method == LEAST_SQUARES) {
+    SU2_MPI::Error(string("LEAST_SQUARES gradient method not allowed for viscous / source terms.\n") +
+                   string("Please select either WEIGHTED_LEAST_SQUARES or GREEN_GAUSS."),
+                   CURRENT_FUNCTION);
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5912,9 +5961,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
        Kind_Solver != DISC_ADJ_FEM_EULER && Kind_Solver != DISC_ADJ_FEM_NS && 
        Kind_Solver != DISC_ADJ_FEM_RANS) {
       if (!fea){
+        switch (Kind_Gradient_Method_Recon) {
+          case GREEN_GAUSS: cout << "Gradient for upwind reconstruction: Green-Gauss." << endl; break;
+          case LEAST_SQUARES: cout << "Gradient for upwind reconstruction: unweighted Least-Squares." << endl; break;
+          case WEIGHTED_LEAST_SQUARES: cout << "Gradient for upwind reconstruction: inverse-distance weighted Least-Squares." << endl; break;
+        }
         switch (Kind_Gradient_Method) {
-          case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
-          case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+          case GREEN_GAUSS: cout << "Gradient for viscous and source terms: Green-Gauss." << endl; break;
+          case LEAST_SQUARES: cout << "Gradient for viscous and source terms: unweighted Least-Squares." << endl; break;
+          case WEIGHTED_LEAST_SQUARES: cout << "Gradient for viscous and source terms: inverse-distance weighted Least-Squares." << endl; break;
         }
       }
       else{

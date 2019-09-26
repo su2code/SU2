@@ -132,6 +132,14 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   VertexTraction = NULL;
   VertexTractionAdjoint = NULL;
 
+  /*--- Auxiliary data needed for CFL adaption. ---*/
+  
+  NonLinRes_Value = 0;
+  NonLinRes_Func = 0;
+  Old_Func = 0;
+  New_Func = 0;
+  NonLinRes_Counter = 0;
+  NonLinRes_Series.resize(50,0.0);
   
 }
 
@@ -1874,7 +1882,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_GRADIENT:
-      COUNT_PER_POINT  = nVar*nDim;
+      COUNT_PER_POINT  = nVar*nDim*2;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_GRADIENT:
@@ -2006,9 +2014,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = node[iPoint]->GetSensor();
             break;
           case SOLUTION_GRADIENT:
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
+            for (iVar = 0; iVar < nVar; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim+nDim*nVar] = node[iPoint]->GetGradient_Reconstruction(iVar, iDim);
+              }
+            }
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -2171,9 +2182,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
             node[iPoint]->SetSensor(bufDRecv[buf_offset]);
             break;
           case SOLUTION_GRADIENT:
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
+            for (iVar = 0; iVar < nVar; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
                 node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                node[iPoint]->SetGradient_Reconstruction(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim+nDim*nVar]);
+              }
+            }
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -2255,8 +2269,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
 }
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
-                             CSolver ***solver_container,
-                             CConfig *config) {
+                             CSolver   ***solver_container,
+                             CConfig   *config) {
   
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
@@ -2271,8 +2285,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     
     /* Store the mean flow, and turbulence solvers more clearly. */
     
-    const CSolver *solverFlow   = solver_container[iMesh][FLOW_SOL];
-    const CSolver *solverTurb   = solver_container[iMesh][TURB_SOL];
+    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
+    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
     
     /* Compute the reduction factor for CFLs on the coarse levels. */
     
@@ -2283,6 +2297,70 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
     }
     
+    /* Check whether we achieved the requested reduction in the linear
+     solver residual within the specified number of linear iterations. */
+
+    bool reduceCFL = false;
+//    unsigned short linIterFlow = solverFlow->GetIterLinSolver();
+//    su2double linResFlow = solverFlow->GetResLinSolver();
+//
+//    //if (rank == MASTER_NODE) cout << "   Iter Flow: " << linIterFlow << " Res FLow: " << linResFlow;
+//
+//    unsigned short linIterTurb = 0;
+//    su2double linResTurb = -1.0;
+//    if (config->GetKind_Turb_Model() != NONE) {
+//      linIterTurb = solverTurb->GetIterLinSolver();
+//      linResTurb = solverTurb->GetResLinSolver();
+//     //if (rank == MASTER_NODE) cout << " Iter Flow: " << linIterTurb << " Res FLow: " << linResTurb;
+//
+//    }
+//
+//    su2double maxLinResid = max(linResFlow, linResTurb);
+//    if (maxLinResid > 0.5) {
+//      reduceCFL = true;
+//     // if (rank == MASTER_NODE) cout << "  Decreasing CFL due to linear res tolerance not met." << endl;
+//    }
+//
+//    //if (rank == MASTER_NODE)cout << endl;
+//
+//    /* Check that we are meeting our nonlinear residual reduction target
+//     over time so that we do not get stuck in limit cycles. */
+//
+//    /*--- Initialize at the fist iteration ---*/
+//
+////    if (Iteration  == 0) {
+////      NonLinRes_Value = 0.0;
+////      NonLinRes_Counter = 0;
+////      for (unsigned short iCounter = 0; iCounter < 50; iCounter++)
+////        NonLinRes_Series[iCounter] = 0.0;
+////    }
+////
+//    Old_Func = New_Func;
+//    New_Func = GetRes_RMS(0);
+//    NonLinRes_Func = (New_Func - Old_Func);
+//
+//    NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
+//    NonLinRes_Counter++;
+//
+//    if (NonLinRes_Counter == 50) NonLinRes_Counter = 0;
+//
+//    NonLinRes_Value = -1.0;
+//    if (config->GetExtIter() >= 50) {
+//      NonLinRes_Value = 0.0;
+//      for (unsigned short iCounter = 0; iCounter < 50; iCounter++)
+//        NonLinRes_Value += NonLinRes_Series[iCounter];
+//    }
+//
+//    if (NonLinRes_Value > 0.0) { //> 0.01*GetRes_RMS(0)) {
+//      reduceCFL = true;
+//      NonLinRes_Counter = 0;
+//      for (unsigned short iCounter = 0; iCounter < 50; iCounter++)
+//        NonLinRes_Series[iCounter] = -1.0;
+//      if (rank == MASTER_NODE) cout << "  Decreasing CFL due to nonlinear res stall." << endl;
+//
+//    }
+//
+//
     /* Loop over all points on this grid and apply CFL adaption. */
     
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
@@ -2308,7 +2386,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
       
       su2double CFLFactor = 1.0;
-      if (underRelaxation < 0.1) {
+      if (reduceCFL || (underRelaxation < 0.1)) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
         CFLFactor = 1.0;
@@ -2805,7 +2883,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short iVar, iDim, iMarker;
   su2double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient,
@@ -2872,7 +2950,10 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++) {
         Gradient = node[iPoint]->GetGradient();
         Grad_Val = Gradient[iVar][iDim] / (Vol+EPS);
-        node[iPoint]->SetGradient(iVar, iDim, Grad_Val);
+        if (reconstruction)
+          node[iPoint]->SetGradient_Reconstruction(iVar, iDim, Grad_Val);
+        else
+          node[iPoint]->SetGradient(iVar, iDim, Grad_Val);
       }
     }
     
@@ -2885,7 +2966,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
   
   unsigned short iDim, jDim, iVar, iNeigh;
   unsigned long iPoint, jPoint;
@@ -2893,10 +2974,16 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
   su2double detR2, z11, z12, z13, z22, z23, z33;
   bool singular = false;
+
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
   
-  su2double **Cvector = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Cvector[iVar] = new su2double [nDim];
+  bool weighted = true;
+  if (reconstruction) {
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      weighted = false;
+  } else if (config->GetKind_Gradient_Method() == LEAST_SQUARES) {
+    weighted = false;
+  }
   
   /*--- Loop over points of the grid ---*/
   
@@ -2931,9 +3018,13 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       
       Solution_j = node[jPoint]->GetSolution();
 
-      weight = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      if (weighted) {
+        weight = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      } else {
+        weight = 1.0;
+      }
       
       /*--- Sumations for entries of upper triangular matrix R ---*/
       
@@ -3054,17 +3145,14 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        node[iPoint]->SetGradient(iVar, iDim, Cvector[iVar][iDim]);
+        if (reconstruction)
+          node[iPoint]->SetGradient_Reconstruction(iVar, iDim, Cvector[iVar][iDim]);
+        else
+          node[iPoint]->SetGradient(iVar, iDim, Cvector[iVar][iDim]);
       }
     }
     
   }
-  
-  /*--- Deallocate memory ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Cvector[iVar];
-  delete [] Cvector;
   
   /*--- Gradient MPI ---*/
   
@@ -3384,8 +3472,8 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
+      Gradient_i = node[iPoint]->GetGradient_Reconstruction();
+      Gradient_j = node[jPoint]->GetGradient_Reconstruction();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -3501,8 +3589,8 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
+      Gradient_i = node[iPoint]->GetGradient_Reconstruction();
+      Gradient_j = node[jPoint]->GetGradient_Reconstruction();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -3594,8 +3682,8 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
+      Gradient_i = node[iPoint]->GetGradient_Reconstruction();
+      Gradient_j = node[jPoint]->GetGradient_Reconstruction();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -3666,8 +3754,8 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
+      Gradient_i = node[iPoint]->GetGradient_Reconstruction();
+      Gradient_j = node[jPoint]->GetGradient_Reconstruction();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       

@@ -151,11 +151,15 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Computation of gradients by least squares ---*/
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
+    /*--- c vector := transpose(WA)*(Wb) ---*/
+    Cvector = new su2double* [nVar+1];
+    for (iVar = 0; iVar < nVar+1; iVar++)
+      Cvector[iVar] = new su2double [nDim];
   }
 
   Heat_Flux = new su2double[nMarker];
@@ -272,6 +276,11 @@ void CHeatSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Initialize the Jacobian matrices ---*/
   Jacobian.SetValZero();
 
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
@@ -592,8 +601,8 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
             Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Reconstruction();
             Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Reconstruction();
-            Temp_i_Grad = node[iPoint]->GetGradient();
-            Temp_j_Grad = node[jPoint]->GetGradient();
+            Temp_i_Grad = node[iPoint]->GetGradient_Reconstruction();
+            Temp_j_Grad = node[jPoint]->GetGradient_Reconstruction();
 
             /*Loop to correct the flow variables*/
             for (iVar = 0; iVar < nVarFlow; iVar++) {

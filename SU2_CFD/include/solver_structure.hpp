@@ -85,9 +85,17 @@ protected:
   size;       	/*!< \brief MPI Size. */
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
-  unsigned short nVar,          /*!< \brief Number of variables of the problem. */
-  nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-  nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
+  su2double NonlinearResMonitor; /*!< \brief Nonlinear residual monitor. */
+  su2double NonLinRes_Value,        /*!< \brief Summed value of the nonlinear residual indicator. */
+  NonLinRes_Func;      /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
+  unsigned short NonLinRes_Counter;  /*!< \brief Number of elements of the nonlinear residual indicator series. */
+  vector<su2double> NonLinRes_Series;      /*!< \brief Vector holding the nonlinear residual indicator series. */
+  su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
+  New_Func;      /*!< \brief Current value of the nonlinear residual indicator. */
+  unsigned short nVar,           /*!< \brief Number of variables of the problem. */
+  nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
+  nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                 /*!< \brief Number of variables for deallocating the LS Cvector. */
@@ -238,6 +246,12 @@ public:
   void SetIterLinSolver(unsigned short val_iterlinsolver);
   
   /*!
+   * \brief Set the final linear solver residual.
+   * \param[in] val_relinsolver - Value of final linear solver residual.
+   */
+  void SetResLinSolver(su2double val_reslinsolver);
+  
+  /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
@@ -284,6 +298,24 @@ public:
    * \return Number of linear solver iterations.
    */
   unsigned short GetIterLinSolver(void);
+  
+  /*!
+   * \brief Get the final linear solver residual.
+   * \return Value of final linear solver residual.
+   */
+  su2double GetResLinSolver(void);
+  
+  /*!
+   * \brief Set the nonlinear residual monitor.
+   * \param[in] val_nonlinearResMonitor - Value of the nonlinear residual monitor.
+   */
+  void SetNonlinearResMonitor(su2double val_nonlinearResMonitor);
+ 
+  /*!
+   * \brief Get the nonlinear residual monitor.
+   * \return Value of the nonlinear residual monitor.
+   */
+  su2double GetNonlinearResMonitor(void);
   
   /*!
    * \brief Get the value of the maximum delta time.
@@ -513,15 +545,18 @@ public:
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the Least Squares gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
@@ -1435,13 +1470,15 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
@@ -5056,14 +5093,16 @@ public:
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
@@ -7331,14 +7370,16 @@ public:
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
