@@ -1172,6 +1172,10 @@ void COutput::CheckHistoryOutput(){
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
 
+  /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
+  
+  SetVolumeOutputFields(config);
+  
   /*---Coordinates and solution groups must be always in the output.
    * If they are not requested, add them here. ---*/
   
@@ -1187,10 +1191,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields++;    
   }
-  
-  /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
-  
-  SetVolumeOutputFields(config);
    
   nVolumeFields = 0;
   
