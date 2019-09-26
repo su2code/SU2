@@ -5506,7 +5506,7 @@ public:
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, long val_iter, string ext);
+  string GetUnsteady_FileName(string val_filename, int val_iter, string ext);
   
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.
