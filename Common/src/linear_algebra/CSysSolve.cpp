@@ -490,7 +490,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   }
 
-  (*residual) = beta;
+  (*residual) = beta/norm0;
   return (unsigned long) i;
 
 }
@@ -647,7 +647,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   }
 
-  (*residual) = norm_r;
+  (*residual) = norm_r/norm0;
   return (unsigned long) i;
 }
 
