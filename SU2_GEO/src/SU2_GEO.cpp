@@ -61,7 +61,6 @@ int main(int argc, char *argv[]) {
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   vector<su2double> Xcoord_Fan, Ycoord_Fan, Zcoord_Fan;
   char config_file_name[MAX_STRING_SIZE];
- 	char *cstr;
   bool Local_MoveSurface, MoveSurface = false;
   ofstream Gradient_file, ObjFunc_file;
   int rank, size;
