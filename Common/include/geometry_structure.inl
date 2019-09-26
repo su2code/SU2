@@ -73,6 +73,20 @@ inline CMatchingFace::CMatchingFace(const CMatchingFace &other){Copy(other);}
 
 inline CMatchingFace& CMatchingFace::operator=(const CMatchingFace &other){Copy(other); return (*this);}
 
+inline void InitiateCommsAll(void *bufSend,
+                             int *nElemSend,
+                             SU2_MPI::Request *sendReq,
+                             void *bufRecv,
+                             int *nElemRecv,
+                             SU2_MPI::Request *recvReq,
+                             unsigned short countPerElem,
+                             unsigned short commType) { }
+
+inline void CompleteCommsAll(int nSends,
+                             SU2_MPI::Request *sendReq,
+                             int nRecvs,
+                             SU2_MPI::Request *recvReq) { }
+
 inline void CGeometry::SetGlobal_to_Local_Point(void) { }
 
 inline long CGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) { return 0; }
