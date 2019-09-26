@@ -60,8 +60,7 @@ using namespace std;
 
 /*! 
  * \class COutput
- * \brief Class for writing the flow, adjoint and linearized solver 
- *        solution (including the history solution, and parallel stuff).
+ * \brief Class for writing the convergence history and to write solution data to file.
  * \author T.Albring
  */
 class COutput {
@@ -256,10 +255,7 @@ public:
   void PreprocessVolumeOutput(CConfig *config);   
   
   /*!
-   * \brief Load the data from the solvers into the local data array and sort it for the linear partitioning.
-   * 
-   * After calling this method the data is distributed to all processors based on a linear partition 
-   * and is ready to be written in parallel to file using the SetVolume_Output or SetSurface_Output routines.
+   * \brief Load the data from the solvers into the data sorters and sort it for the linear partitioning.
    * 
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -267,24 +263,6 @@ public:
    */
   void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
   
-  /*!
-   * \brief Write the linear partitioned volume data in parallel to file. ::Load_Data() has to be called before!
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] format - The data format of the output files.
-   * \param[in] time_dep - Indicates whether time dependent files should be written.
-   */
-  void SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
-  
-  /*!
-   * \brief Write the linear partitioned surface data in parallel to file. ::Load_Data() has to be called before!
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] format - The data format of the output files.
-   * \param[in] time_dep - Indicates whether time dependent files should be written.   
-   */
-  void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
-
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
@@ -312,13 +290,11 @@ public:
   void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);  
   
-  
   /*!
-   * \brief Collects history data from the solvers and monitors the convergence.
-   * Does not write to screen or file.
-   * \param geometry
-   * \param solver_container
-   * \param config
+   * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
    */
   void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
   
@@ -461,7 +437,17 @@ public:
    */
   void PrintVolumeFields();
   
-  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing = false);
+  /*!
+   * \brief Loop through all requested output files and write the volume output data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] iter - The current time, outer or inner iteration index.
+   * \param[in] force_writing - If <TRUE>, writing of output files is forced without checking the output frequency.
+   * \return <TRUE> if output files have been written to disk.
+   */
+  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
+                       unsigned long iter, bool force_writing = false);
   
   /*!
    * \brief Allocates the appropriate file writer based on the chosen format and writes sorted data to file.
@@ -611,7 +597,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - The container holding all solution data.
    */
-  void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
+  void LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver);
       
   /*!
    * \brief Postprocess_HistoryData
@@ -649,6 +635,13 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void LoadCommonHistoryData(CConfig *config);
+  
+  /*!
+   * \brief Allocates the data sorters if necessary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void AllocateDataSorters(CConfig *config, CGeometry *geometry);
   
   /*--------------------------------- Virtual functions ---------------------------------------- */
 public:

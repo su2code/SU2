@@ -17,9 +17,6 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   unsigned short iVar;
   unsigned long iPoint;
-//  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-//                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-//  bool wrt_perf  = config->GetWrt_Performance();
   
   unsigned short GlobalField_Counter = fieldnames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
@@ -170,26 +167,6 @@ void CSU2BinaryFileWriter::Write_Data(){
   /*--- Reset the file view before writing the metadata. ---*/
 
   MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
-
-  /*--- Finally, the master rank writes the metadata. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    /*--- External iteration. ---*/
-
-//    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-//            GlobalField_Counter*dataSorter->GetnPointsGlobal()*sizeof(passivedouble));
-//    MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
-//    file_size += (su2double)sizeof(int);
-
-    /*--- Additional doubles for AoA, AoS, etc. ---*/
-
-//    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-//            GlobalField_Counter*dataSorter->GetnPointsGlobal()*sizeof(passivedouble) + 1*sizeof(int));
-//    MPI_File_write_at(fhw, disp, Restart_Metadata, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
-//    file_size += (su2double)8*sizeof(passivedouble);
-
-  }
 
   /*--- All ranks close the file after writing. ---*/
 

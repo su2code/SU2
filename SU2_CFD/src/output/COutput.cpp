@@ -360,11 +360,10 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig *config) {
   
 }
 
-void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
+void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
   
   /*---- Construct a data sorter object to partition and distribute
    *  the local data into linear chunks across the processors ---*/
-  
   
   if (femOutput){
     
@@ -385,9 +384,21 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
                                                   dynamic_cast<CFVMDataSorter*>(volumeDataSorter));  
     
   }
+  
+}
 
-  CollectVolumeData(config, geometry, solver_container);
+void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
+  
+  /*--- Check if the data sorters are allocated, if not, allocate them. --- */ 
+  
+  AllocateDataSorters(config, geometry);
+  
+  /*--- Loop over all points and store the requested volume output data into the data sorter objects ---*/
+  
+  LoadDataIntoSorter(config, geometry, solver_container);
 
+  /*--- Partition and sort the volume output data -- */
+  
   volumeDataSorter->SortOutputData();
   
 }
@@ -638,38 +649,21 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
 
 
-bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, unsigned long Iter, bool force_writing){
+bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, 
+                              unsigned long iter, bool force_writing){
+  
+  bool writeFiles = WriteVolume_Output(config, iter) || force_writing;
   
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */ 
   
-  if (femOutput){
-    
-    if (volumeDataSorter == nullptr)
-      volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
-    
-    if (surfaceDataSorter == nullptr)
-      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields, 
-                                                  dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
-    
-  }  else {
-   
-    if (volumeDataSorter == nullptr)    
-      volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
-    
-    if (surfaceDataSorter == nullptr)
-      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
-                                                  dynamic_cast<CFVMDataSorter*>(volumeDataSorter));  
-    
-  }
-  
-  bool writeFiles = WriteVolume_Output(config, Iter) || force_writing;
-  
+  AllocateDataSorters(config, geometry);
+
   /*--- Collect the volume data from the solvers.
    *  If time-domain is enabled, we also load the data although we don't output it,
    *  since we might want to do time-averaging. ---*/
   
   if (writeFiles || config->GetTime_Domain())
-    CollectVolumeData(config, geometry, solver_container);
+    LoadDataIntoSorter(config, geometry, solver_container);
   
   if (writeFiles){
     
@@ -686,7 +680,8 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);    
     }
     
-    /*--- Loop through all requested output files ---*/
+    /*--- Loop through all requested output files and write 
+     * the partitioned and sorted data stored in the data sorters. ---*/
     
     for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
       
@@ -699,7 +694,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
       headerNeeded = true;
     }
     
-    /*--- Write any additonal files ----*/
+    /*--- Write any additonal files defined in the child class ----*/
     
     WriteAdditionalFiles(config, geometry, solver_container);
     
@@ -1243,7 +1238,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   }
 }
 
-void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){
+void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver){
   
   unsigned short iMarker = 0;
   unsigned long iPoint = 0, jPoint = 0;
@@ -1285,8 +1280,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       
-      /*--- Check for halos & write only if requested ---*/
-      /*--- Load the volume data into the Local_Data() array. --- */
+      /*--- Load the volume data into the data sorter. --- */
       
       buildFieldIndexCache = fieldIndexCache.empty();
 
@@ -1302,7 +1296,10 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Load the surface data into the data sorter. --- */
   
         if(geometry->node[iPoint]->GetDomain()){
           
