@@ -43,14 +43,6 @@ void CSU2MeshFileWriter::Write_Data(){
     
     output_file << "NDIME= " << nDim << endl;
     
-//    /*--- Write the angle of attack offset. ---*/
-    
-//    output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
-    
-//    /*--- Write the angle of attack offset. ---*/
-    
-//    output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
-    
     output_file << "NELEM= " << dataSorter->GetnElem() << endl;
     
     output_file.close();
@@ -151,21 +143,19 @@ void CSU2MeshFileWriter::Write_Data(){
         /*--- Only write original domain points, i.e., exclude any periodic
          or halo nodes, even if they are output in the viz. files. ---*/
         
-//        if (Global_Index < geometry->GetGlobal_nPointDomain()) {
-          
-          /*--- Loop over the variables and write the values to file ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
-          }
-          
-          /*--- Write global index. (note outer loop over procs) ---*/
-          
-          output_file << Global_Index << "\t";
-          myPoint++;
-          
-          output_file << "\n";
-//        }
+        /*--- Loop over the variables and write the values to file ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
+        }
+        
+        /*--- Write global index. (note outer loop over procs) ---*/
+        
+        output_file << Global_Index << "\t";
+        myPoint++;
+        
+        output_file << "\n";
+        
       }
     }
     /*--- Flush the file and wait for all processors to arrive. ---*/
