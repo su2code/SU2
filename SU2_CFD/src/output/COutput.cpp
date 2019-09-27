@@ -1008,8 +1008,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     /*--- We use a fixed size of the file output summary table ---*/
     
     int total_width = 72;    
-    fileWritingTable->AddColumn("File Writing Summary", (total_width-1)/2); 
-    fileWritingTable->AddColumn("Filename", total_width/2);  
+    fileWritingTable->AddColumn("File Writing Summary", (total_width)/2-1); 
+    fileWritingTable->AddColumn("Filename", total_width/2-1);  
     fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     
     if (rank == MASTER_NODE && !noWriting){
@@ -1387,6 +1387,9 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     fieldGetIndexCache.clear();
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      /*--- We only want to have surface values on solid walls ---*/
+      
       if (config->GetSolid_Wall(iMarker)){
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
           
