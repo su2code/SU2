@@ -1350,7 +1350,7 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
       /*--- Steady problems ---*/
 
-      ((TimeIter % config->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
+      ((((TimeIter % config->GetWrt_Sol_Freq() == 0) && (TimeIter != 0)) || (config->GetnExtIter() - 1 == TimeIter)) &&
        ((config->GetUnsteady_Simulation() == STEADY) ||
         (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
         (config->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
