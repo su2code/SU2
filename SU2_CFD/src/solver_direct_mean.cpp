@@ -13737,9 +13737,9 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
       }
     }
-    vector<passivedouble>().swap(SolAdap[iSol]);
+    // vector<passivedouble>().swap(SolAdap[iSol]);
   }
-  vector<vector<passivedouble> >().swap(SolAdap);
+  // vector<vector<passivedouble> >().swap(SolAdap);
 
   /*--- Allocate the memory that we need for receiving the
    values and then cue up the non-blocking receives. Note that

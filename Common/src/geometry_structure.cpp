@@ -8378,7 +8378,7 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
     else node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], PoiAdap[iPoint][2], GlobalIndex, config);
 
     /*--- Free memory ---*/
-    vector<passivedouble>().swap(PoiAdap[iPoint]);
+    // vector<passivedouble>().swap(PoiAdap[iPoint]);
   }
 
   /*--- Reset the global to local element mapping. ---*/
@@ -8402,7 +8402,7 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
       local_element_count++;
 
       /*--- Free memory ---*/
-      vector<unsigned long>().swap(TriAdap[iElem]);
+      // vector<unsigned long>().swap(TriAdap[iElem]);
 
 
     }
@@ -8418,7 +8418,7 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
       local_element_count++;
 
       /*--- Free memory ---*/
-      vector<unsigned long>().swap(TetAdap[iElem]);
+      // vector<unsigned long>().swap(TetAdap[iElem]);
     }
   }
 
@@ -8498,7 +8498,7 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
         jElem_Bound[iMarker]++;
 
         /*--- Free memory ---*/
-        vector<unsigned long>().swap(EdgAdap[iElem]);
+        // vector<unsigned long>().swap(EdgAdap[iElem]);
       }
     }
 
@@ -8523,7 +8523,7 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
         jElem_Bound[iMarker]++;
 
         /*--- Free memory ---*/
-        vector<unsigned long>().swap(TriAdap[iElem]);
+        // vector<unsigned long>().swap(TriAdap[iElem]);
       }
     }
 
@@ -8557,10 +8557,10 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
   }
 
   /*--- Free memory ---*/
-  vector<vector<passivedouble> >().swap(PoiAdap);
-  vector<vector<unsigned long> >().swap(EdgAdap);
-  vector<vector<unsigned long> >().swap(TriAdap);
-  vector<vector<unsigned long> >().swap(TetAdap);
+  // vector<vector<passivedouble> >().swap(PoiAdap);
+  // vector<vector<unsigned long> >().swap(EdgAdap);
+  // vector<vector<unsigned long> >().swap(TriAdap);
+  // vector<vector<unsigned long> >().swap(TetAdap);
 
   /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
   
