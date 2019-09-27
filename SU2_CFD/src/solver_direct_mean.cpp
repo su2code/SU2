@@ -13611,7 +13611,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
 }
 
-void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > &SolAdap, 
+void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > const &SolAdap, 
                                       int val_iter, bool val_update_geo) {
 
   /*--- Compute the number of points that will be on each processor.

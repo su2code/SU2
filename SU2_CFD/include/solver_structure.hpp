@@ -3494,7 +3494,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   virtual void SortAdaptedSolution(CGeometry **geometry, CSolver ***solver,
-                                   CConfig *config, vector<vector<passivedouble> > &SolAdap,
+                                   CConfig *config, vector<vector<passivedouble> > const &SolAdap,
                                    int val_iter, bool val_update_geo);
 
   /*!
@@ -6639,7 +6639,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void SortAdaptedSolution(CGeometry **geometry, CSolver ***solver,
-                           CConfig *config, vector<vector<passivedouble> > &SolAdap,
+                           CConfig *config, vector<vector<passivedouble> > const &SolAdap,
                            int val_iter, bool val_update_geo);
 
   /*!
@@ -12850,7 +12850,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void SortAdaptedSolution(CGeometry **geometry, CSolver ***solver,
-                           CConfig *config, vector<vector<passivedouble> > &SolAdap,
+                           CConfig *config, vector<vector<passivedouble> > const &SolAdap,
                            int val_iter, bool val_update_geo);
   
   /*!
