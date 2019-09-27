@@ -13702,9 +13702,9 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
     solSend[iSend] = 0;
 
   unsigned long *idSend = NULL;
-  idSend = new unsigned long[nVar*nSol_Send[size]];
-  for (iSend = 0; iSend < nVar*nSol_Send[size]; iSend++)
-    solSend[iSend] = 0;
+  idSend = new unsigned long[nSol_Send[size]];
+  for (iSend = 0; iSend < nSol_Send[size]; iSend++)
+    idSend[iSend] = 0;
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
