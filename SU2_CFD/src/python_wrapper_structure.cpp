@@ -1420,9 +1420,9 @@ CSolver* CDriver::GetSolver(unsigned short val_iZone,
   return solver_container[val_iZone][val_iInst][val_iMesh][val_iSol];
 }
 
-void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile, vector<vector<passivedouble> > SolAdap,
-                                          vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
-                                          vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile, vector<vector<passivedouble> > &SolAdap,
+                                          vector<vector<passivedouble> > &PoiAdap, vector<vector<unsigned long> > &EdgAdap, 
+                                          vector<vector<unsigned long> > &TriAdap, vector<vector<unsigned long> > &TetAdap,
                                           unsigned short val_iZone, unsigned short val_nZone) {
 
   unsigned short iMesh, requestedMGlevels = config_container[val_iZone]->GetnMGLevels();
@@ -1453,10 +1453,6 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     /*--- De-allocate the memory of the current domain and solver, and divide the grid
      between the ranks. ---*/
 
-    // for(iMesh = 0; iMesh < config_container[val_iZone]->GetnMGLevels(); iMesh++) {
-    //   delete geometry_container[val_iZone][iInst][iMesh];
-    // }
-
     delete [] geometry_container[val_iZone][iInst];
     delete [] solver_container[val_iZone][iInst];
 
@@ -1469,9 +1465,9 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
 
 }
 
-void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, vector<vector<passivedouble> > PoiAdap, 
-                                                vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, 
-                                                vector<vector<unsigned long> > TetAdap, unsigned short val_nZone) {
+void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, vector<vector<passivedouble> > &PoiAdap, 
+                                                vector<vector<unsigned long> > &EdgAdap, vector<vector<unsigned long> > &TriAdap, 
+                                                vector<vector<unsigned long> > &TetAdap, unsigned short val_nZone) {
 
   unsigned short iMesh, requestedMGlevels = config->GetnMGLevels();
   bool fea = false;
@@ -1651,7 +1647,7 @@ void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&ge
 
 }
 
-void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > SolAdap) {
+void CDriver::Adapted_Solver_Preprocessing(CConfig* config, CGeometry **geometry, CSolver ***&solver, vector<vector<passivedouble> > &SolAdap) {
 
   unsigned short iSol;
   int val_iter = 0;

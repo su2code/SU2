@@ -869,11 +869,11 @@ public:
    */
   void Adapted_Input_Preprocessing(SU2_Comm MPICommunicator,
                                    char* confFile,
-                                   vector<vector<passivedouble> > SolAdap,
-                                   vector<vector<passivedouble> > PoiAdap,
-                                   vector<vector<unsigned long> > EdgAdap,
-                                   vector<vector<unsigned long> > TriAdap,
-                                   vector<vector<unsigned long> > TetAdap,
+                                   vector<vector<passivedouble> > &SolAdap,
+                                   vector<vector<passivedouble> > &PoiAdap,
+                                   vector<vector<unsigned long> > &EdgAdap,
+                                   vector<vector<unsigned long> > &TriAdap,
+                                   vector<vector<unsigned long> > &TetAdap,
                                    unsigned short val_iZone, 
                                    unsigned short val_nZone);
 
@@ -882,10 +882,10 @@ public:
    */
   void Adapted_Geometrical_Preprocessing(CConfig* config, 
                                          CGeometry **&geometry, 
-                                         vector<vector<passivedouble> > PoiAdap, 
-                                         vector<vector<unsigned long> > EdgAdap, 
-                                         vector<vector<unsigned long> > TriAdap, 
-                                         vector<vector<unsigned long> > TetAdap, 
+                                         vector<vector<passivedouble> > &PoiAdap, 
+                                         vector<vector<unsigned long> > &EdgAdap, 
+                                         vector<vector<unsigned long> > &TriAdap, 
+                                         vector<vector<unsigned long> > &TetAdap, 
                                          unsigned short val_nZone);
 
   /*!
@@ -894,7 +894,7 @@ public:
   void Adapted_Solver_Preprocessing(CConfig* config, 
                                     CGeometry **geometry,
                                     CSolver ***&solver, 
-                                    vector<vector<passivedouble> > SolAdap);
+                                    vector<vector<passivedouble> > &SolAdap);
 
 };
 
