@@ -8296,8 +8296,8 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > &PoiAdap, vector<vector<unsigned long> > &EdgAdap, 
-                                                       vector<vector<unsigned long> > &TriAdap, vector<vector<unsigned long> > &TetAdap,
+void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > const &PoiAdap, vector<vector<unsigned long> > const &EdgAdap, 
+                                                       vector<vector<unsigned long> > const &TriAdap, vector<vector<unsigned long> > const &TetAdap,
                                                        CConfig* config) {
 
   string Marker_Tag;
