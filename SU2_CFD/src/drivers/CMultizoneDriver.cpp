@@ -661,9 +661,10 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     MaxIterationsReached = OuterIter+1 >= nOuterIter;
         
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << nOuterIter << " )." << endl;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << " ) before convergence." << endl;
+      driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
     

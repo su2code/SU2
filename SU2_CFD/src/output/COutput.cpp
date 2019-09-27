@@ -257,6 +257,8 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
   
   Convergence_Monitoring(driver_config, curOuterIter);  
   
+  Postprocess_HistoryData(driver_config);
+  
   /*--- Output using only the master node ---*/
   
   if (rank == MASTER_NODE && !noWriting) {
@@ -735,16 +737,16 @@ void COutput::PrintConvergenceSummary(){
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     const string &convField = convFields[iField_Conv];
     if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
-      string convMark = "";
-      if ( historyOutput_Map["CAUCHY_" + convField].value < cauchyEps) convMark = "*";
+      string convMark = "No";
+      if ( historyOutput_Map["CAUCHY_" + convField].value < cauchyEps) convMark = "Yes";
       ConvSummary << historyOutput_Map["CAUCHY_" + convField].fieldName 
           <<  historyOutput_Map["CAUCHY_" + convField].value 
           << " < " + PrintingToolbox::to_string(cauchyEps) << convMark;
     }
     else if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL || 
         historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL)  {
-      string convMark = "";
-      if (historyOutput_Map[convField].value < minLogResidual) convMark = "*";
+      string convMark = "No";
+      if (historyOutput_Map[convField].value < minLogResidual) convMark = "Yes";
       ConvSummary << historyOutput_Map[convField].fieldName 
           << historyOutput_Map[convField].value 
           << " < " + PrintingToolbox::to_string(minLogResidual) << convMark;
@@ -1046,6 +1048,10 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
   
   SetMultizoneHistoryOutputFields(output, config);
   
+  /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
+ 
+  Postprocess_HistoryFields(config[ZONE_0]);
+  
   /*--- We use a fixed size of the file output summary table ---*/
   
   int total_width = 72;    
@@ -1055,10 +1061,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   if (rank == MASTER_NODE && !noWriting){
     
-    /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
-   
-    //Postprocess_HistoryFields(config[ZONE_0]);
-    
+
     /*--- Check for consistency and remove fields that are requested but not available --- */
     
     CheckHistoryOutput();
