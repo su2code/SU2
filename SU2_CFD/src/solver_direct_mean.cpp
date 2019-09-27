@@ -13667,7 +13667,7 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
     Global_Index = iSol + beg_node[rank];
     for(iProc = 0; iProc < size; ++iProc) {
       if(Global_Index >= beg_node[iProc] && Global_Index < end_node[iProc]) {
-        nSol_Send[iProc]++;
+        nSol_Send[iProc+1]++;
       }
     }
   }
