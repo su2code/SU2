@@ -13820,7 +13820,7 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
   /*--- Free temporary memory from communications ---*/
 
-  Local2GlobalElem.clear();
+  Global2Local.clear();
 
   if (solSendReq != NULL) delete [] solSendReq;
   if (idSendReq  != NULL) delete [] idSendReq;
