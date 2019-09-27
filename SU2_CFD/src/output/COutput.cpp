@@ -122,15 +122,28 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 
   noWriting = false;
 
-  cauchySerie = new su2double[config->GetCauchy_Elems()];
+  /*--- Initialize convergence monitoring structure ---*/
+  
+  nCauchy_Elems = config->GetCauchy_Elems();
+  cauchyEps = config->GetCauchy_Eps();
+  minLogResidual = config->GetMinLogResidual();
+  
+  for (unsigned short iField = 0; iField < config->GetnConv_Field(); iField++){
+    convFields.emplace_back(config->GetConv_Field(iField));
+  }
 
-  convField = config->GetConv_Field();
-
+  newFunc = vector<su2double>(convFields.size());
+  oldFunc = vector<su2double>(convFields.size());
+  cauchySerie = vector<vector<su2double>>(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
   cauchyValue = 0.0;
-  for (unsigned short iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-    cauchySerie[iCounter] = 0.0;
-
   convergence = false;
+
+  
+  /*--- Check that the number of cauchy elems is not too large ---*/
+  
+  if (nCauchy_Elems > 1000){
+    SU2_MPI::Error("Number of Cauchy Elems must be smaller than 1000", CURRENT_FUNCTION);    
+  }
   
   /*--- Initialize all convergence flags to false. ---*/
   
@@ -155,8 +168,6 @@ COutput::~COutput(void) {
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
-
-  delete [] cauchySerie;
   
   if (volumeDataSorter != nullptr)
     delete volumeDataSorter;
@@ -711,105 +722,147 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
   return false;
 }
 
+void COutput::PrintConvergenceSummary(){
+
+  PrintingToolbox::CTablePrinter  ConvSummary(&cout);
+  
+  ConvSummary.AddColumn("Convergence Field", 28);
+  ConvSummary.AddColumn("Value", 14);
+  ConvSummary.AddColumn("Criterion", 14);
+  ConvSummary.AddColumn("Converged",12);
+  ConvSummary.SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+  ConvSummary.PrintHeader();
+  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+    const string &convField = convFields[iField_Conv];
+    if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
+      string convMark = "";
+      if ( historyOutput_Map["CAUCHY_" + convField].value < cauchyEps) convMark = "*";
+      ConvSummary << historyOutput_Map["CAUCHY_" + convField].fieldName 
+          <<  historyOutput_Map["CAUCHY_" + convField].value 
+          << " < " + PrintingToolbox::to_string(cauchyEps) << convMark;
+    }
+    else if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL || 
+        historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL)  {
+      string convMark = "";
+      if (historyOutput_Map[convField].value < minLogResidual) convMark = "*";
+      ConvSummary << historyOutput_Map[convField].fieldName 
+          << historyOutput_Map[convField].value 
+          << " < " + PrintingToolbox::to_string(minLogResidual) << convMark;
+    }
+  }
+  ConvSummary.PrintFooter();
+}
 
 bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
   unsigned short iCounter;
     
-  convergence = false;
+  convergence = true;
   
-  if( historyOutput_Map.count(convField) > 0 ){
+  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     
-    su2double monitor = historyOutput_Map[convField].value;
+    bool fieldConverged = false;
     
-    /*--- Cauchy based convergence criteria ---*/
-    
-    if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
+    const string &convField = convFields[iField_Conv];
+    if (historyOutput_Map.count(convField) > 0){
+      su2double monitor = historyOutput_Map[convField].value;
       
-      if (Iteration == 0){
-        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++){
-          cauchySerie[iCounter] = 0.0;
+      /*--- Cauchy based convergence criteria ---*/
+      
+      if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
+        
+        if (Iteration == 0){
+          for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
+            cauchySerie[iField_Conv][iCounter] = 0.0;
+          }
+          newFunc[iField_Conv] = monitor;
         }
-        newFunc = monitor;
-      }
-      
-      oldFunc = newFunc;
-      newFunc = monitor;
-      cauchyFunc = fabs(newFunc - oldFunc);
-      
-      cauchySerie[Iteration % config->GetCauchy_Elems()] = cauchyFunc;
-      cauchyValue = 1.0;
-      if (Iteration >= config->GetCauchy_Elems()){     
+
+        oldFunc[iField_Conv] = newFunc[iField_Conv];
+        newFunc[iField_Conv] = monitor;
+        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
+        
+        cauchySerie[iField_Conv][Iteration % nCauchy_Elems] = cauchyFunc;
         cauchyValue = 0.0;
-        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-          cauchyValue += cauchySerie[iCounter];
+        for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++)
+          cauchyValue += cauchySerie[iField_Conv][iCounter];
+        
+        cauchyValue /= nCauchy_Elems;
+        
+        if (cauchyValue >= cauchyEps) { fieldConverged = false;}
+        else { fieldConverged = true;}
+        
+        /*--- Start monitoring only if the current iteration
+         *  is larger than the number of cauchy elements and
+         * the number of start-up iterations --- */
+        
+        if (Iteration < max(config->GetStartConv_Iter(), nCauchy_Elems)){
+          fieldConverged = false;
+        }
+            
+        SetHistoryOutputValue("CAUCHY_" + convField, cauchyValue);
+        
       }
       
-      if (cauchyValue >= config->GetCauchy_Eps()) { convergence = false;}
-      else { convergence = true; newFunc = 0.0;}
       
-      SetHistoryOutputValue("CAUCHY", cauchyValue);
+      /*--- Residual based convergence criteria ---*/
       
-    }
-    
-    /*--- Residual based convergence criteria ---*/
-    
-    if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL || 
-        historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL) {
+      if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL || 
+          historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL) {
+        
+        /*--- Check the convergence ---*/
+        
+        if (Iteration != 0 && (monitor <= minLogResidual)) { fieldConverged = true;  }
+        else { fieldConverged = false; }
+        
+      }
       
-      /*--- Check the convergence ---*/
-      
-      if (Iteration != 0 && (monitor <= config->GetMinLogResidual())) { convergence = true;  }
-      else { convergence = false; }
-      
-    }
-    
-    /*--- Do not apply any convergence criteria of the number
+      /*--- Do not apply any convergence criteria of the number
      of iterations is less than a particular value ---*/
-    
-    if (Iteration < config->GetStartConv_Iter()) {
-      convergence = false;
+      
+      if (Iteration < config->GetStartConv_Iter()) {
+        fieldConverged = false;
+      }
+      
+      convergence = fieldConverged && convergence;
     }
-    
-    /*--- Apply the same convergence criteria to all the processors ---*/
-    
-#ifdef HAVE_MPI
-    
-    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-    
-    /*--- Convergence criteria ---*/
-    
-    sbuf_conv[0] = convergence;
-    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-    
-    /*-- Compute global convergence criteria in the master node --*/
-    
-    sbuf_conv[0] = 0;
-    if (rank == MASTER_NODE) {
-      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-      else sbuf_conv[0] = 0;
-    }
-    
-    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (sbuf_conv[0] == 1) { convergence = true; }
-    else { convergence = false;  }
-    
-    delete [] sbuf_conv;
-    delete [] rbuf_conv;
-    
-#endif
-    
-    /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-    
-    if (monitor != monitor) {
-      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
-    }
-    
   }
-  return convergence;
+  if (convFields.empty()) convergence = false;
+   
+  /*--- Apply the same convergence criteria to all the processors ---*/
+  
+#ifdef HAVE_MPI
+  
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+  
+  /*--- Convergence criteria ---*/
+  
+  sbuf_conv[0] = convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  
+  /*-- Compute global convergence criteria in the master node --*/
+  
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+  
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  
+  if (sbuf_conv[0] == 1) { convergence = true; }
+  else { convergence = false;  }
+  
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+  
+#endif
+  
+  
+  
+    return convergence;
 }
 
 void COutput::SetHistoryFile_Header(CConfig *config) { 
@@ -1106,23 +1159,27 @@ void COutput::CheckHistoryOutput(){
   
   for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     const string &fieldReference = historyOutput_List[iField_Output];
-    const HistoryOutputField &field = historyOutput_Map[fieldReference];
-    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      requestedField = requestedHistoryFields[iReqField];   
-      if (requestedField == field.outputGroup){
-        FoundField[iReqField] = true;
+    if (historyOutput_Map.count(fieldReference) > 0){
+      const HistoryOutputField &field = historyOutput_Map[fieldReference];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        requestedField = requestedHistoryFields[iReqField];   
+        if (requestedField == field.outputGroup){
+          FoundField[iReqField] = true;
+        }
       }
     }
   }
   
   for (unsigned short iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    const string &fieldReference = historyOutputPerSurface_List[iField_Output];    
-    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldReference].size(); iMarker++){
-      const HistoryOutputField &Field = historyOutputPerSurface_Map[fieldReference][iMarker];
-      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        requestedField = requestedHistoryFields[iReqField];   
-        if (requestedField == Field.outputGroup){
-          FoundField[iReqField] = true;
+    const string &fieldReference = historyOutputPerSurface_List[iField_Output]; 
+    if (historyOutputPerSurface_Map.count(fieldReference) > 0){
+      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldReference].size(); iMarker++){
+        const HistoryOutputField &Field = historyOutputPerSurface_Map[fieldReference][iMarker];
+        for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+          requestedField = requestedHistoryFields[iReqField];   
+          if (requestedField == Field.outputGroup){
+            FoundField[iReqField] = true;
+          }
         }
       }
     }
@@ -1160,15 +1217,24 @@ void COutput::CheckHistoryOutput(){
       requestedField = requestedHistoryFields[iReqField];            
       cout << requestedHistoryFields[iReqField];
       if (iReqField != nRequestedHistoryFields - 1) cout << ", ";
-    }
+    } 
     cout << endl;
   }
   
   /*--- Check that the requested convergence monitoring field is available ---*/
-
-  if (historyOutput_Map.count(convField) == 0){
-    SU2_MPI::Error(string("Convergence monitoring field ") + convField + string(" not available"), CURRENT_FUNCTION);
+  bool removedField = false;
+  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+    if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
+      if (!removedField) {
+        cout << "Ignoring Convergence Fields: ";
+        removedField = true;
+      }
+      cout << convFields[iField_Conv] << " ";
+      convFields.erase(std::find(convFields.begin(),
+                                 convFields.end(), convFields[iField_Conv]));
+    }
   }
+  if (removedField) cout << endl;
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
@@ -1208,22 +1274,24 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++){
     
     const string &fieldReference = volumeOutput_List[iField_Output];
-    VolumeOutputField &Field = volumeOutput_Map[fieldReference];
-    
-    /*--- Loop through all fields specified in the config ---*/
-    
-    for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+    if (volumeOutput_Map.count(fieldReference) > 0){
+      VolumeOutputField &Field = volumeOutput_Map[fieldReference];
       
-      RequestedField = requestedVolumeFields[iReqField];  
-            
-      if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)){
-        Field.offset = nVolumeFields;
-        volumeFieldNames.push_back(Field.fieldName);
-        nVolumeFields++;
+      /*--- Loop through all fields specified in the config ---*/
+      
+      for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
         
-        FoundField[iReqField] = true;
-      }
-    }    
+        RequestedField = requestedVolumeFields[iReqField];  
+        
+        if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)){
+          Field.offset = nVolumeFields;
+          volumeFieldNames.push_back(Field.fieldName);
+          nVolumeFields++;
+          
+          FoundField[iReqField] = true;
+        }
+      }    
+    }
   }
   
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
@@ -1554,11 +1622,16 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     }
   }
   
-  if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT){
-    AddHistoryOutput("CAUCHY", "C["  + historyOutput_Map[convField].fieldName + "]", ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
-                     "Cauchy residual value of field set with CONV_FIELD." ,HistoryFieldType::AUTO_COEFFICIENT);
+  for (unsigned short iFieldConv = 0; iFieldConv < convFields.size(); iFieldConv++){
+    const string &convField = convFields[iFieldConv];
+    if (historyOutput_Map.count(convField) > 0){
+      if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT){
+        AddHistoryOutput("CAUCHY_" + convField, "Cauchy["  + historyOutput_Map[convField].fieldName + "]", ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
+                         "Cauchy residual value of field set with CONV_FIELD." ,HistoryFieldType::AUTO_COEFFICIENT);
+      }
+    }
   }
-
+  
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  

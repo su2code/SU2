@@ -90,7 +90,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_PRESSURE";
+  if (convFields.empty() ) convFields.emplace_back("RMS_PRESSURE");
 
 
 }

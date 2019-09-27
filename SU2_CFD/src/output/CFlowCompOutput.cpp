@@ -89,8 +89,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_DENSITY";
-
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
   
 }
 

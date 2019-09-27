@@ -99,7 +99,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_ADJ_PRESSURE";
+  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_PRESSURE");
 
 }
 
