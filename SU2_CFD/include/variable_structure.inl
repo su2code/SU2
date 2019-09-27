@@ -453,7 +453,11 @@ inline bool CVariable::SetStrainMag(void) { return false; }
 
 inline void CVariable::SetTauWall(su2double val_tau_wall) { }
 
+inline void CVariable::SetTauWall_Flag(bool val_tau_wall_flag) { }
+
 inline su2double CVariable::GetTauWall(void) { return 0; }
+
+inline bool CVariable::GetTauWall_Flag(void) { return false; }
 
 inline void CVariable::SetHeatFlux(su2double val_heat_flux) { }
 
@@ -942,6 +946,10 @@ inline void CNSVariable::SetdktdT_rho(su2double dktdT_rho) {
 inline void CNSVariable::SetTauWall(su2double val_tau_wall) { Tau_Wall = val_tau_wall; }
 
 inline su2double CNSVariable::GetTauWall(void) { return Tau_Wall; }
+
+inline void CNSVariable::SetTauWall_Flag(bool val_tau_wall_flag) { Tau_Wall_Flag = val_tau_wall_flag; }
+
+inline bool CNSVariable::GetTauWall_Flag(void) { return Tau_Wall_Flag; }
 
 inline void CNSVariable::SetHeatFlux(su2double val_heat_flux) { Heat_Flux = val_heat_flux; }
 

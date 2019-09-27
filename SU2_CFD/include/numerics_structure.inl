@@ -578,6 +578,14 @@ inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tau
   TauWall_j = val_tauwall_j;
 }
 
+inline void CNumerics::SetTauWall_Flag(bool val_tauwallflag_i, bool val_tauwallflag_j) { }
+
+inline void CAvgGrad_Base::SetTauWall_Flag(bool val_tauwallflag_i, bool val_tauwallflag_j) {
+  TauWallFlag_i = val_tauwallflag_i;
+  TauWallFlag_j = val_tauwallflag_j;
+}
+
+
 inline void CNumerics::SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j) { }
 
 inline void CAvgGrad_Base::SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j) {

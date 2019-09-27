@@ -9002,9 +9002,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
-        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+        /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
         
-        visc_numerics->SetTauWall(-1.0, -1.0);
+        visc_numerics->SetTauWall_Flag(false, false);
 
         /*--- Compute and update viscous residual ---*/
         
@@ -9489,9 +9489,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
-        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+        /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
         
-        visc_numerics->SetTauWall(-1.0, -1.0);
+        visc_numerics->SetTauWall_Flag(false, false);
 
         /*--- Compute and update residual ---*/
   
@@ -9999,7 +9999,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
           
-          visc_numerics->SetTauWall(-1.0, -1.0);
+          visc_numerics->SetTauWall_Flag(false, false);
 
           /*--- Compute and update residual ---*/
           
@@ -10894,7 +10894,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
         
-        visc_numerics->SetTauWall(-1.0, -1.0);
+        visc_numerics->SetTauWall_Flag(false, false);
 
         /*--- Compute and update residual ---*/
         
@@ -12450,8 +12450,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
-        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-        visc_numerics->SetTauWall(-1.0, -1.0);
+        /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
+        visc_numerics->SetTauWall_Flag(false, false);
         
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the 
               following routine based upon the velocity-component gradients. ---*/
@@ -12604,9 +12604,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
               if (config->GetKind_Turb_Model() == SST)
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
-              /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+              /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
               
-              visc_numerics->SetTauWall(-1.0, -1.0);
+              visc_numerics->SetTauWall_Flag(false, false);
 
               /*--- Compute and update residual ---*/
 
@@ -16459,6 +16459,7 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     
     /*--- Wall shear stress values (wall functions) ---*/
     
+    numerics->SetTauWall_Flag(node[iPoint]->GetTauWall_Flag(), node[jPoint]->GetTauWall_Flag());
     numerics->SetTauWall(node[iPoint]->GetTauWall(), node[jPoint]->GetTauWall());
     numerics->SetDirTan(node[iPoint]->GetDirTanWM(), node[jPoint]->GetDirTanWM());
     numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[jPoint]->GetDirNormalWM());
@@ -17697,6 +17698,8 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
         
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+        
+        visc_numerics->SetTauWall_Flag(node[iPoint]->GetTauWall_Flag(), node[iPoint]->GetTauWall_Flag());
         visc_numerics->SetTauWall(node[iPoint]->GetTauWall(),node[iPoint]->GetTauWall());
         visc_numerics->SetDirTan(node[iPoint]->GetDirTanWM(),node[iPoint]->GetDirTanWM());
         visc_numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[iPoint]->GetDirNormalWM());
@@ -18269,6 +18272,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
       visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
       
       /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+      visc_numerics->SetTauWall_Flag(node[iPoint]->GetTauWall_Flag(), node[iPoint]->GetTauWall_Flag());
       visc_numerics->SetTauWall(node[iPoint]->GetTauWall(),node[iPoint]->GetTauWall());
       visc_numerics->SetDirTan(node[iPoint]->GetDirTanWM(),node[iPoint]->GetDirTanWM());
       visc_numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[iPoint]->GetDirNormalWM());
@@ -18809,6 +18813,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           Y_Plus = 0.0; // to avoid warning
           
           su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
+          
+          //if (Y_Plus_Start < 5.0) node[iPoint]->SetTauWall_Flag(false);
+            
           while (abs(diff) > tol) {
             
             /*--- Friction velocity and u+ ---*/
@@ -18882,6 +18889,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           
           /*--- Store this value for the wall shear stress at the node.  ---*/
           // cout << Coord[0] << " " << Coord[1] << " " << Y_Plus_Start << " " << Y_Plus << " " << Tau_Wall << endl;
+          node[iPoint]->SetTauWall_Flag(true);
           node[iPoint]->SetTauWall(Tau_Wall);
           node[iPoint]->SetTemperature(T_Wall);
           node[iPoint]->SetDensity(Density_Wall);
@@ -19235,6 +19243,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           velWallTan /= solWall[0];
           
           /*--- Set tau wall and heat flux at the node. ---*/
+          node[iPoint]->SetTauWall_Flag(true);
           node[iPoint]->SetTauWall(tauWall);
           node[iPoint]->SetHeatFlux(qWall);
           node[iPoint]->SetDirTanWM(dirTan);

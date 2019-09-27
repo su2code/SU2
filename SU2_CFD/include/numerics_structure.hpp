@@ -1426,6 +1426,13 @@ public:
    * \param[in] val_tauwall_j - Tauwall at point j
    */
   virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+  
+  /*!
+   * \brief Set the value of the Tauwall
+   * \param[in] val_tauwall_i - Tauwall at point i
+   * \param[in] val_tauwall_j - Tauwall at point j
+   */
+  virtual void SetTauWall_Flag(bool val_tauwallflag_i, bool val_tauwallflag_j);
 
   /*!
    * \brief Set the value tangent direction of the Tauwall
@@ -3083,8 +3090,7 @@ class CAvgGrad_Base : public CNumerics {
   dist_ij_2,                   /*!< \brief Length of the edge and face, squared */
   *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Edge_Vector;                /*!< \brief Vector from point i to point j. */
-
-
+  bool TauWallFlag_i, TauWallFlag_j; /*!< \brief Wall shear stress at point i and j (wall functions/models). */
 
   /*!
    * \brief Add a correction using a Quadratic Constitutive Relation
@@ -3254,6 +3260,13 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+  
+  /*!
+   * \brief Set the value of the wall shear stress at point i and j (wall functions).
+   * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+   * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+   */
+  void SetTauWall_Flag(bool val_tauwallflag_i, bool val_tauwallflag_j);
 
   /*!
    * \brief Set the value of the tangent direction of the wall shear stress at point i and j (wall functions).

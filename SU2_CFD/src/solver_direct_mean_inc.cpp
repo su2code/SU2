@@ -5643,9 +5643,9 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
               if (config->GetKind_Turb_Model() == SST)
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
-              /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+              /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
               
-              visc_numerics->SetTauWall(-1.0, -1.0);
+              visc_numerics->SetTauWall_Flag(false, false);
 
               /*--- Compute and update residual ---*/
 

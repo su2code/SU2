@@ -5353,6 +5353,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
+  bool UseWallFunction = false;
 
   /*--- Normalized normal vector ---*/
   
@@ -5408,7 +5409,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Wall shear stress values (wall functions) ---*/
   /*--- TODO: - Fix this Mean values of shear stress when using wall functions. ---*/
   
-  if (TauWall_i > 0.0 && TauWall_j > 0.0){
+  if (TauWallFlag_i && TauWallFlag_j){
+    UseWallFunction = true;
     Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
     Mean_qWall   = 0.5*(qWall_i + qWall_j);
     for (iDim = 0; iDim < nDim; iDim++){
@@ -5417,7 +5419,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     }
 
   }
-  else if (TauWall_i > 0.0){
+  else if (TauWallFlag_i && !TauWallFlag_j){
+    UseWallFunction = true;
     Mean_TauWall = TauWall_i;
     Mean_qWall = qWall_i;
     for (iDim = 0; iDim < nDim; iDim++){
@@ -5425,7 +5428,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       Mean_DirNormal[iDim] = DirNormal_i[iDim];
     }
   } 
-  else if (TauWall_j > 0.0){
+  else if (!TauWallFlag_i && TauWallFlag_j){
+    UseWallFunction = true;
     Mean_TauWall = TauWall_j;
     Mean_qWall = qWall_j;
     for (iDim = 0; iDim < nDim; iDim++){
@@ -5434,7 +5438,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     }
   }
   else{
-    Mean_TauWall = -1.0;
+    UseWallFunction = false;
+    Mean_TauWall = 0.0;
     Mean_qWall = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
       Mean_DirTan[iDim] = 0.0;
@@ -5459,7 +5464,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
-  if (Mean_TauWall > 0){
+  if (UseWallFunction){
     if (config->GetWall_Models())
       ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
     else if (config->GetWall_Functions()){

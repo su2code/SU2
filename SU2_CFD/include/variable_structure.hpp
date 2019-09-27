@@ -2380,6 +2380,10 @@ public:
 
   virtual su2double GetTauWall();
   
+  virtual void SetTauWall_Flag(bool val_tau_wall_flag);
+
+  virtual bool GetTauWall_Flag();
+  
   virtual void SetHeatFlux(su2double val_heat_flux);
   
   virtual su2double GetHeatFlux();
@@ -3869,6 +3873,7 @@ private:
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
   su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
   su2double Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  bool      Tau_Wall_Flag;   /*!< \brief Flag for the use of wall shear stress from a wall function. */
   
 public:
   
@@ -4027,6 +4032,17 @@ public:
    * \return Value of the wall shear stress computed by a wall function/model.
    */
   su2double GetTauWall(void);
+  
+  /*!
+   * \brief Set the value of the wall shear stress computed by a wall function/model.
+   */
+  void SetTauWall_Flag(bool val_tau_wall_flag);
+  
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function/model.
+   * \return Value of the wall shear stress computed by a wall function/model.
+   */
+  bool GetTauWall_Flag(void);
 
   /*!
    * \brief Set the value of the heat flux computed by the wall model.
