@@ -2268,8 +2268,6 @@ inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_mar
 inline void CHeatSolverFVM::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
 
-inline su2double CHeatSolverFVM::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
-
 inline su2double CFEASolver::Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ 
   return MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar); }
 
