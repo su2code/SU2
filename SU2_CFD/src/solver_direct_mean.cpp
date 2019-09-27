@@ -13804,7 +13804,7 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
   map<unsigned long, unsigned long> Global2Local;
 
-  for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); ++iPoint) {
+  for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); ++iPoint) {
     Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
 
@@ -13820,8 +13820,13 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
   /*--- Free temporary memory from communications ---*/
 
+  Local2GlobalElem.clear();
+
   if (solSendReq != NULL) delete [] solSendReq;
+  if (idSendReq  != NULL) delete [] idSendReq;
+
   if (solRecvReq != NULL) delete [] solRecvReq;
+  if (idRecvReq  != NULL) delete [] idRecvReq;
 
   delete [] solSend;
   delete [] solRecv;
