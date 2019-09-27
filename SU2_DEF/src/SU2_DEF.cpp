@@ -338,10 +338,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node---*/
-  
-  bool NewFile = false;
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
-  
+
   for (iZone = 0; iZone < nZone; iZone++){
     
     /*--- Load the data --- */

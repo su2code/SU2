@@ -7508,7 +7508,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   return filename;
 }
 
-string CConfig::GetUnsteady_FileName(string val_filename, long val_iter, string ext) {
+string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) {
 
   string UnstExt="", UnstFilename = val_filename;
   char buffer[50];
