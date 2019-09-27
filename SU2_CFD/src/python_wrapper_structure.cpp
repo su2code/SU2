@@ -1463,6 +1463,8 @@ void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFi
     
   }
 
+  if(direct_output != NULL) delete direct_output;
+
 }
 
 void CDriver::Adapted_Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, vector<vector<passivedouble> > const &PoiAdap, 
