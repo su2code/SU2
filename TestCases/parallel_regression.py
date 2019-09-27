@@ -759,17 +759,29 @@ def main():
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
-    # Delayed Detached Eddy Simulation
-    ddes_flatplate        = TestCase('ddes_flatplate')
+    # Delayed Detached Eddy Simulation (SA)
+    ddes_flatplate        = TestCase('ddes_SA_flatplate')
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
-    ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
+    ddes_flatplate.cfg_file  = "ddes_SA_flatplate.cfg"
     ddes_flatplate.test_iter = 10
     ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783] #last 4 columns
-    ddes_flatplate.su2_exec  = "parallel_computation.py -f"
+    ddes_flatplate.su2_exec  = "SU2_CFD"
     ddes_flatplate.timeout   = 1600
     ddes_flatplate.tol       = 0.00001
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)    
+
+    # Improved Delayed Detached Eddy Simulation (SST)
+    iddes_flatplate        = TestCase('iddes_SST_flatplate')
+    iddes_flatplate.cfg_dir   = "ddes/flatplate"
+    iddes_flatplate.cfg_file  = "iddes_SST_flatplate.cfg"
+    iddes_flatplate.test_iter = 10
+    iddes_flatplate.test_vals = [-0.018657, 3.806793, -0.212368, 0.023950] #last 4 columns
+    iddes_flatplate.su2_exec  = "SU2_CFD"
+    iddes_flatplate.timeout   = 1600
+    iddes_flatplate.tol       = 0.00001
+    iddes_flatplate.unsteady  = True
+    test_list.append(iddes_flatplate)     
 
     ######################################
     ### NICFD                          ###
@@ -845,16 +857,16 @@ def main():
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
     
-    # 2D transonic stator restart
-    transonic_stator_rst           = TestCase('transonic_stator_restart')
-    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
-    transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-8.277744, -3.005768, 5.285371, 0.003100] #last 4 columns
-    transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
-    transonic_stator_rst.timeout   = 1600
-    transonic_stator_rst.tol       = 0.00001
-    test_list.append(transonic_stator_rst)
+    # # 2D transonic stator restart
+    # transonic_stator_rst           = TestCase('transonic_stator_restart')
+    # transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    # transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    # transonic_stator_rst.test_iter = 20
+    # transonic_stator_rst.test_vals = [-8.277744, -3.005768, 5.285371, 0.003100] #last 4 columns
+    # transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
+    # transonic_stator_rst.timeout   = 1600
+    # transonic_stator_rst.tol       = 0.00001
+    # test_list.append(transonic_stator_rst)
 
     ######################################
     ### Sliding Mesh                   ###
