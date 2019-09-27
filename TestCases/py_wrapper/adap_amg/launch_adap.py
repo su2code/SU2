@@ -421,6 +421,31 @@ def main():
                                           SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap,
                                           iZone, options.nZone)
 
+    del [SolAdap, PoiAdap, EdgAdap, TriAdap, TetAdap]
+
+  # Run one iteration of flow
+  TimeIter = 0
+  nTimeIter = 1
+
+  # Time loop is defined in Python so that we have access to SU2 functionalities at each time step
+  if rank == 0:
+    print("\n---------------------- Begin Flow Solver (Adapted) ----------------------\n")
+  sys.stdout.flush()
+  if options.with_MPI == True:
+    comm.Barrier()
+
+  while (TimeIter < nTimeIter):
+    # Time iteration preprocessing
+    stopCalc = SU2Driver.DirectIteration(TimeIter)
+    if (stopCalc == True):
+      break
+    # Update control parameters
+    TimeIter += 1
+
+  # Retrieve some control parameters from the driver
+  TimeAdjIter = 0
+  nTimeAdjIter = 1
+
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
 
