@@ -3793,8 +3793,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
-                                     vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > &PoiAdap, vector<vector<unsigned long> > &EdgAdap, 
+                                     vector<vector<unsigned long> > &TriAdap, vector<vector<unsigned long> > &TetAdap,
                                      CConfig *config, unsigned short val_nDim, unsigned short val_nZone) : CGeometry() {
   
   /*--- Get rank and size. ---*/
@@ -8296,8 +8296,8 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > PoiAdap, vector<vector<unsigned long> > EdgAdap, 
-                                                       vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > &PoiAdap, vector<vector<unsigned long> > &EdgAdap, 
+                                                       vector<vector<unsigned long> > &TriAdap, vector<vector<unsigned long> > &TetAdap,
                                                        CConfig* config) {
 
   string Marker_Tag;

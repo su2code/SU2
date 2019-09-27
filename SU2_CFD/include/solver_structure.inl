@@ -54,7 +54,7 @@ inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solv
 
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
-inline void CSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > SolAdap, int val_iter, bool val_update_geo) { }
+inline void CSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, CConfig *config, vector<vector<passivedouble> > &SolAdap, int val_iter, bool val_update_geo) { }
 
 inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) { }
 
