@@ -11332,7 +11332,7 @@ public:
 class CHeatSolverFVM : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
-  su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
+  su2double **HeatFlux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
             *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
             *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
@@ -11583,12 +11583,12 @@ public:
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
-   * \brief Get the heat flux at each surface node.
+   * \brief Get the heat flux.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat flux.
    */
-  su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);
+  su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);  
 
 };
 

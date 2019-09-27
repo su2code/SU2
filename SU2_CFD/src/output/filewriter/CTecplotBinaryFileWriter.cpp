@@ -105,16 +105,6 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   bool is_unsteady = false;
   passivedouble solution_time = 0.0;
-//  if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-//    is_unsteady = true;
-//    solution_time = SU2_TYPE::GetValue(config->GetDelta_UnstTime()*config->GetExtIter());
-//  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-//    is_unsteady = true;
-//    /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-//    passivedouble period = SU2_TYPE::GetValue(config->GetHarmonicBalance_Period());
-//    passivedouble deltaT = period/SU2_TYPE::GetValue(config->GetnTimeInstances());
-//    solution_time = deltaT*val_iZone;
-//  }
 
   if (timestep > 0.0){
     is_unsteady = true;
