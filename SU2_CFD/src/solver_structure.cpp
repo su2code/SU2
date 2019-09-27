@@ -2276,6 +2276,193 @@ void CSolver::CompleteComms(CGeometry *geometry,
   
 }
 
+void CSolver::InitiateCommsAll(void *bufSend,
+                               int *nElemSend,
+                               SU2_MPI::Request *sendReq,
+                               void *bufRecv,
+                               int *nElemRecv,
+                               SU2_MPI::Request *recvReq,
+                               unsigned short countPerElem,
+                               unsigned short commType) {
+
+  /*--- Local variables ---*/
+
+  int iMessage, iProc, offset, nElem, count, source, dest, tag;
+
+  /*--- Launch the non-blocking recv's first. ---*/
+
+  iMessage = 0;
+  for (iProc = 0; iProc < size; iProc++) {
+
+    /*--- Post recv's only if another proc is sending us data. We do
+     not communicate with ourselves or post recv's for zero length
+     messages to keep overhead down. ---*/
+
+    if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+
+      /*--- Compute our location in the recv buffer. ---*/
+
+      offset = countPerElem*nElemRecv[iProc];
+
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. ---*/
+
+      nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+
+      /*--- Total count can include multiple pieces of data per element. ---*/
+
+      count = countPerElem*nElem;
+
+      /*--- Post non-blocking recv for this proc. ---*/
+
+      source = iProc; tag = iProc + 1;
+
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Irecv(&(static_cast<su2double*>(bufRecv)[offset]),
+                         count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_LONG:
+          SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufRecv)[offset]),
+                         count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_LONG:
+          SU2_MPI::Irecv(&(static_cast<long*>(bufRecv)[offset]),
+                         count, MPI_LONG, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufRecv)[offset]),
+                         count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_CHAR:
+          SU2_MPI::Irecv(&(static_cast<char*>(bufRecv)[offset]),
+                         count, MPI_CHAR, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_SHORT:
+          SU2_MPI::Irecv(&(static_cast<short*>(bufRecv)[offset]),
+                         count, MPI_SHORT, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_INT:
+          SU2_MPI::Irecv(&(static_cast<int*>(bufRecv)[offset]),
+                         count, MPI_INT, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        default:
+          break;
+      }
+
+      /*--- Increment message counter. ---*/
+
+      iMessage++;
+
+    }
+  }
+
+  /*--- Launch the non-blocking sends next. ---*/
+
+  iMessage = 0;
+  for (iProc = 0; iProc < size; iProc++) {
+
+    /*--- Post sends only if we are sending another proc data. We do
+     not communicate with ourselves or post sends for zero length
+     messages to keep overhead down. ---*/
+
+    if ((nElemSend[iProc+1] > nElemSend[iProc]) && (iProc != rank)) {
+
+      /*--- Compute our location in the send buffer. ---*/
+
+      offset = countPerElem*nElemSend[iProc];
+
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to send. ---*/
+
+      nElem = nElemSend[iProc+1] - nElemSend[iProc];
+
+      /*--- Total count can include multiple pieces of data per element. ---*/
+
+      count = countPerElem*nElem;
+
+      /*--- Post non-blocking send for this proc. ---*/
+
+      dest = iProc; tag = rank + 1;
+
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Isend(&(static_cast<su2double*>(bufSend)[offset]),
+                         count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_LONG:
+          SU2_MPI::Isend(&(static_cast<unsigned long*>(bufSend)[offset]),
+                         count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_LONG:
+          SU2_MPI::Isend(&(static_cast<long*>(bufSend)[offset]),
+                         count, MPI_LONG, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSend)[offset]),
+                         count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_CHAR:
+          SU2_MPI::Isend(&(static_cast<char*>(bufSend)[offset]),
+                         count, MPI_CHAR, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_SHORT:
+          SU2_MPI::Isend(&(static_cast<short*>(bufSend)[offset]),
+                         count, MPI_SHORT, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_INT:
+          SU2_MPI::Isend(&(static_cast<int*>(bufSend)[offset]),
+                         count, MPI_INT, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        default:
+          break;
+      }
+
+      /*--- Increment message counter. ---*/
+
+      iMessage++;
+
+    }
+  }
+
+}
+
+void CSolver::CompleteCommsAll(int nSends,
+                               SU2_MPI::Request *sendReq,
+                               int nRecvs,
+                               SU2_MPI::Request *recvReq) {
+
+  /*--- Local variables ---*/
+
+  int ind, iSend, iRecv;
+  SU2_MPI::Status status;
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+
+  for (iSend = 0; iSend < nSends; iSend++)
+    SU2_MPI::Waitany(nSends, sendReq, &ind, &status);
+  
+  /*--- Wait for the non-blocking recvs to complete. ---*/
+  
+  for (iRecv = 0; iRecv < nRecvs; iRecv++)
+    SU2_MPI::Waitany(nRecvs, recvReq, &ind, &status);
+  
+}
+
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   

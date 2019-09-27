@@ -13769,13 +13769,13 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  geometry[MESH_0]->InitiateCommsAll(solSend, nSol_Send, solSendReq,
-                                     solRecv, nSol_Recv, solRecvReq,
-                                     nVar, COMM_TYPE_DOUBLE);
+  InitiateCommsAll(solSend, nSol_Send, solSendReq,
+                   solRecv, nSol_Recv, solRecvReq,
+                   nVar, COMM_TYPE_DOUBLE);
 
-  geometry[MESH_0]->InitiateCommsAll(idSend, nSol_Send, idSendReq,
-                                     idRecv, nSol_Recv, idRecvReq,
-                                     1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nSol_Send, idSendReq,
+                   idRecv, nSol_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -13797,8 +13797,8 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
 
   /*--- Complete the non-blocking communications. ---*/
 
-  geometry[MESH_0]->CompleteCommsAll(nSends, solSendReq, nRecvs, solRecvReq);
-  geometry[MESH_0]->CompleteCommsAll(nSends,  idSendReq, nRecvs,  idRecvReq);
+  CompleteCommsAll(nSends, solSendReq, nRecvs, solRecvReq);
+  CompleteCommsAll(nSends,  idSendReq, nRecvs,  idRecvReq);
 
   /*--- Prepare a mapping for local to global element index. ---*/
 
