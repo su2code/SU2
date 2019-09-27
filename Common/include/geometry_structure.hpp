@@ -2033,8 +2033,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Domain to be read from the grid file.
    */
-  void LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > &PoiAdap, vector<vector<unsigned long> > &EdgAdap, 
-                                      vector<vector<unsigned long> > &TriAdap, vector<vector<unsigned long> > &TetAdap,
+  void LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble> > const &PoiAdap, vector<vector<unsigned long> > const &EdgAdap, 
+                                      vector<vector<unsigned long> > const &TriAdap, vector<vector<unsigned long> > const &TetAdap,
                                       CConfig *config);
 
   /*! 
