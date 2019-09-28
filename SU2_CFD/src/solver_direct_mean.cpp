@@ -18890,8 +18890,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
 
   unsigned short iDim;
   unsigned long iPoint, iVertex, Point_Normal;
-  su2double Lam_Visc_Normal, Density_Normal;
-  su2double Vel[3] = {0.,0.,0.}, P_Normal, T_Normal;
+  su2double Lam_Visc_Normal, Vel[3] = {0.,0.,0.}, P_Normal, T_Normal;
   su2double VelTang[3] = {0.,0.,0.}, VelTangMod, VelNormal;
   su2double WallDist[3] = {0.,0.,0.}, WallDistMod;
   su2double *Coord, *Coord_Normal, Tau_Wall;
@@ -19029,7 +19028,6 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
 
               Lam_Visc_Normal = node[Point_Normal]->GetLaminarViscosity();
-              Density_Normal  = node[Point_Normal]->GetDensity();
 
               dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
               

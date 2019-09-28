@@ -2765,7 +2765,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall;
   su2double *Coord, *Coord_Normal;
   su2double diff, grad_diff, Delta;
-  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
+  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus = 0.0;
   su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
@@ -3747,7 +3747,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, nu = 0.0, beta_1;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3768,8 +3768,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
       density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
       laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-
-      nu = laminar_viscosity / density;
       
       beta_1 = constants[4];
       
@@ -3795,7 +3793,7 @@ void CTurbSSTSolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, nu = 0.0;
+  su2double distance;
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3814,10 +3812,8 @@ void CTurbSSTSolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver
       
       /*--- Set wall values ---*/
       
-      density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-
-      nu = laminar_viscosity / density;
+      su2double density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+      su2double laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       
       su2double Density_Wall  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
       su2double Tau_Wall      = solver_container[FLOW_SOL]->node[iPoint]->GetTauWall();
@@ -4555,7 +4551,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   unsigned long iPoint = 0, jPoint = 0;
   unsigned short iDim = 0, iNeigh = 0, nNeigh = 0;
   
-  su2double density, laminarViscosity, kinematicViscosity, strainmag, vorticitymag, strainvort,
+  su2double density, laminarViscosity, kinematicViscosity, strainvort,
   eddyViscosity, kinematicViscosityTurb, wallDistance, lengthScale = 0.0;
   
   su2double maxDelta = 0.0, r_d = 0.0, f_d = 0.0,
@@ -4569,7 +4565,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   
   /*--- Note that SST-DDES version uses different cofficients ---*/
   su2double cDES1 = 0.78, cDES2 = 0.61, cd1 = 20.0, cd2 = 3.0;
-  su2double f1_blend, f2_blend, cDES, turb_ke, turb_omega, lengthRANS, lengthLES;
+  su2double f1_blend, cDES, turb_ke, turb_omega, lengthRANS, lengthLES;
   
   /*--- Coefficients for SST IDDES and EIDDES ---*/
   su2double c_l2 = pow(5.0,2.0), c_t2 = pow(1.87,2.0), f_e1, h_max, alpha, alpha2, f_b, r_dl, fd_tilde;
@@ -4585,18 +4581,13 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     density                 = solver[FLOW_SOL]->node[iPoint]->GetDensity();
     laminarViscosity        = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     eddyViscosity           = solver[TURB_SOL]->node[iPoint]->GetmuT();
-    strainmag               = solver[TURB_SOL]->node[iPoint]->GetStrainMag();
     kinematicViscosity      = laminarViscosity/density;
     kinematicViscosityTurb  = eddyViscosity/density;
   
     f1_blend = solver[TURB_SOL]->node[iPoint]->GetF1blending();
-    f2_blend = solver[TURB_SOL]->node[iPoint]->GetF2blending();
     turb_ke  = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
     turb_omega    = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
-    
-    vorticitymag = sqrt(pow(vorticity[0],2.0) + pow(vorticity[1],2.0) + pow(vorticity[2],2.0));
-    //strainvort = sqrt(0.5 * (pow(strainmag,2.0) + pow(vorticitymag,2.0)));
-    
+        
     su2double uijuij = 0.0;
     for(iDim = 0; iDim < nDim; iDim++){
       for(unsigned short jDim = 0; jDim < nDim; jDim++){
