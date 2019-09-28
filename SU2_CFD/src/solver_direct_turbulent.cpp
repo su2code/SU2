@@ -2787,8 +2787,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   
   /*--- Typical constants from boundary layer theory ---*/
   
-  su2double kappa = 0.4;
-  su2double B = 5.5;
+  su2double kappa = 0.41;
+  su2double B = 5.0;
   
   /*--- Identify the boundary by string name ---*/
   
@@ -3841,6 +3841,9 @@ void CTurbSSTSolver::BC_HeatFlux_WallModel(CGeometry *geometry, CSolver **solver
         Jacobian.DeleteValsRowi(total_index);
       }
 
+      /*--- Check the wall function flag ---*/
+      if (!solver_container[FLOW_SOL]->node[iPoint]->GetTauWall_Flag()) continue;
+      
       /*--- Set K and Omega at the first point of the wall ---*/
       
       su2double eddy_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();

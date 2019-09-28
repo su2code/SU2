@@ -16523,6 +16523,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   bool QCR                  = config->GetQCR();
   bool axisymmetric         = config->GetAxisymmetric();
   bool wall_function        = config->GetWall_Functions();
+  bool wall_model           = config->GetWall_Models();
   
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -16567,6 +16568,8 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
     
@@ -16664,18 +16667,18 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         
         /*--- If Wall Model is used: Scale the viscous stress tensor ---*/
         
-//        if (wall_model){
-//          su2double norm = 0.0;
-//          for (iDim = 0 ; iDim < nDim; iDim++)
-//            for (jDim = 0 ; jDim < nDim; jDim++)
-//              norm += 0.5 * Tau[iDim][jDim] * Tau[iDim][jDim];
-//          norm = sqrt(norm);
-//          
-//          su2double TauWall = node[iPoint]->GetTauWall();
-//          for (iDim = 0 ; iDim < nDim; iDim++)
-//            for (jDim = 0 ; jDim < nDim; jDim++)
-//              Tau[iDim][jDim] = - Tau[iDim][jDim] * TauWall / norm;
-//        }
+        if (wall_model){
+          su2double norm = 0.0;
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              norm += 0.5 * Tau[iDim][jDim] * Tau[iDim][jDim];
+          norm = sqrt(norm);
+          
+          su2double TauWall = node[iPoint]->GetTauWall();
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              Tau[iDim][jDim] = - Tau[iDim][jDim] * TauWall / norm;
+        }
         
         /*--- Project Tau in each surface element ---*/
         
@@ -16698,7 +16701,8 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
         WallShearStress = sqrt(WallShearStress);
 
-        if (wall_function){
+        if (wall_function && node[iPoint]->GetTauWall_Flag()){
+          
           TauWall = node[iPoint]->GetTauWall();
           for (iDim = 0 ; iDim < nDim; iDim++)
             for (jDim = 0 ; jDim < nDim; jDim++)
@@ -16713,28 +16717,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         
           /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
-          TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-          WallShearStress = TauWall;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-            CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
-          }
-        }
-        
-        if (wall_function){
-          TauWall = node[iPoint]->GetTauWall();
-          for (iDim = 0 ; iDim < nDim; iDim++)
-            for (jDim = 0 ; jDim < nDim; jDim++)
-              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            TauElem[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++) {
-              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-            }
-          }
-
           TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
           WallShearStress = TauWall;
@@ -18641,6 +18623,10 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
 void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
+  /*---  The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
+   At this moment, the wall function is only available for adiabatic flows.
+   ---*/
+  
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
   
@@ -18688,6 +18674,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       
       string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       
+      /*--- Jump to another BC if it is not wall function ---*/
+      
+      if (config->GetWallFunction_Treatment(Marker_Tag) != STANDARD_WALL_FUNCTION)
+        continue;
+          
       /*--- Get the specified wall heat flux from config ---*/
       
       // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -18814,8 +18805,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           
           su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
           
-          //if (Y_Plus_Start < 5.0) node[iPoint]->SetTauWall_Flag(false);
-            
+          /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
+          
+          if (Y_Plus_Start < 5.0) {
+            node[iPoint]->SetTauWall_Flag(false);
+            continue;
+          }
+          
           while (abs(diff) > tol) {
             
             /*--- Friction velocity and u+ ---*/
@@ -18841,6 +18837,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
                                                kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
 
             /* --- Define function for Newton method to zero --- */
+            
             diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
             /* --- Gradient of function defined above --- */
@@ -18850,35 +18847,25 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
                       pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
             /* --- Newton Step --- */
+            
             U_Tau = U_Tau - diff / grad_diff;
 
-            
-            /*--- Calculate an updated value for the wall shear stress
-             using the y+ value, the definition of y+, and the definition of
-             the friction velocity. ---*/
-            
-            // Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
-            
-            /*--- Difference between the old and new Tau. Update old value. ---*/
-            
-            // diff = fabs(Tau_Wall-Tau_Wall_Old);
-            // Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
-            // if (Coord[0] < 0.01){
-            //   if (counter == 0) cout<<"x= "<< Coord[0] << " y= " << Coord[1]<< endl;
-            //   cout<< "Iteration= " << counter << " U_Tau= "<< U_Tau << " Gam= " << Gam << " Phi= "<< Phi << " Y_Plus_White= "<< Y_Plus_White << " Y_Plus= " << Y_Plus << " diff= " << diff << " grad_diff= "<< grad_diff<< endl;
-            // }
-            
             counter++;
             if (counter == max_iter) {
               cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
-              cout << Coord[0] << " " << Coord[1] << " " <<  Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall << " " << Y_Plus << " " << diff << " " << Y_Plus_Start << endl;
+              cout << rank << " " << iPoint;
+              for (iDim = 0; iDim < nDim; iDim++)
+                cout << " " << Coord[iDim];
+              cout << endl;
               converged = false;
+              node[iPoint]->SetTauWall_Flag(false);
               break;
             }
             
           }
-
-          if (!converged) Y_Plus = Y_Plus_Start;
+          /* --- If not converged jump to the next point. --- */
+          
+          if (!converged) continue;
           
           /*--- Calculate an updated value for the wall shear stress
             using the y+ value, the definition of y+, and the definition of
@@ -18886,9 +18873,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
           Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
-          
           /*--- Store this value for the wall shear stress at the node.  ---*/
-          // cout << Coord[0] << " " << Coord[1] << " " << Y_Plus_Start << " " << Y_Plus << " " << Tau_Wall << endl;
+
           node[iPoint]->SetTauWall_Flag(true);
           node[iPoint]->SetTauWall(Tau_Wall);
           node[iPoint]->SetTemperature(T_Wall);
@@ -18904,7 +18890,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
 
   unsigned short iDim;
   unsigned long iPoint, iVertex, Point_Normal;
-  su2double Lam_Visc_Normal, Density_Normal, Kin_Visc_Normal;
+  su2double Lam_Visc_Normal, Density_Normal;
   su2double Vel[3] = {0.,0.,0.}, P_Normal, T_Normal;
   su2double VelTang[3] = {0.,0.,0.}, VelTangMod, VelNormal;
   su2double WallDist[3] = {0.,0.,0.}, WallDistMod;
@@ -18964,6 +18950,11 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               
               Tau_Wall = node[iPoint]->GetTauWall();
               
+              /*--- Verify the wall function flag on the node. If false,
+               jump to the next iPoint.---*/
+              
+              if (!node[iPoint]->GetTauWall_Flag()) continue;
+              
               /*--- Get the velocity, pressure, and temperature at the nearest
                (normal) interior point. ---*/
               
@@ -19021,6 +19012,20 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               
               Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
               
+              /*--- If the Y+ defined by White & Christoph is too high so the eddy viscosity.
+                Disable the wall function calculation on this point and do not set the eddy viscosity
+                at the first point off the wall. ---*/
+              
+              if (Y_Plus_White > 1e4){
+                cout << "WARNING: Y+ is too high (>1e4). The muT computation at the 1st point off the wall is disable." << endl;
+                cout << rank << " " << iPoint;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  cout << " " << Coord[iDim];
+                cout << endl;
+                node[iPoint]->SetTauWall_Flag(false);
+                continue;
+              }
+              
               /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
 
               Lam_Visc_Normal = node[Point_Normal]->GetLaminarViscosity();
@@ -19033,8 +19038,6 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
                                          - Lam_Visc_Normal/Lam_Visc_Wall);
               
               node[Point_Normal]->SetEddyViscosity(Eddy_Visc);
-              
-              //if ((Coord[0] > 0.969) && (Coord[0] < 0.971)) cout << Coord[0] << " " << Coord[1] << " " << Eddy_Visc << endl;
               
             }
           }
