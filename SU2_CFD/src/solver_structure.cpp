@@ -139,7 +139,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Old_Func = 0;
   New_Func = 0;
   NonLinRes_Counter = 0;
-  NonLinRes_Series.resize(50,0.0);
   
 }
 
@@ -2301,66 +2300,69 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     bool reduceCFL = false;
-//    unsigned short linIterFlow = solverFlow->GetIterLinSolver();
-//    su2double linResFlow = solverFlow->GetResLinSolver();
-//
-//    //if (rank == MASTER_NODE) cout << "   Iter Flow: " << linIterFlow << " Res FLow: " << linResFlow;
-//
-//    unsigned short linIterTurb = 0;
-//    su2double linResTurb = -1.0;
-//    if (config->GetKind_Turb_Model() != NONE) {
-//      linIterTurb = solverTurb->GetIterLinSolver();
-//      linResTurb = solverTurb->GetResLinSolver();
-//     //if (rank == MASTER_NODE) cout << " Iter Flow: " << linIterTurb << " Res FLow: " << linResTurb;
-//
-//    }
-//
-//    su2double maxLinResid = max(linResFlow, linResTurb);
-//    if (maxLinResid > 0.5) {
-//      reduceCFL = true;
-//     // if (rank == MASTER_NODE) cout << "  Decreasing CFL due to linear res tolerance not met." << endl;
-//    }
-//
-//    //if (rank == MASTER_NODE)cout << endl;
-//
-//    /* Check that we are meeting our nonlinear residual reduction target
-//     over time so that we do not get stuck in limit cycles. */
-//
-//    /*--- Initialize at the fist iteration ---*/
-//
-////    if (Iteration  == 0) {
-////      NonLinRes_Value = 0.0;
-////      NonLinRes_Counter = 0;
-////      for (unsigned short iCounter = 0; iCounter < 50; iCounter++)
-////        NonLinRes_Series[iCounter] = 0.0;
-////    }
-////
-//    Old_Func = New_Func;
-//    New_Func = GetRes_RMS(0);
-//    NonLinRes_Func = (New_Func - Old_Func);
-//
-//    NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
-//    NonLinRes_Counter++;
-//
-//    if (NonLinRes_Counter == 50) NonLinRes_Counter = 0;
-//
-//    NonLinRes_Value = -1.0;
-//    if (config->GetExtIter() >= 50) {
-//      NonLinRes_Value = 0.0;
-//      for (unsigned short iCounter = 0; iCounter < 50; iCounter++)
-//        NonLinRes_Value += NonLinRes_Series[iCounter];
-//    }
-//
-//    if (NonLinRes_Value > 0.0) { //> 0.01*GetRes_RMS(0)) {
-//      reduceCFL = true;
-//      NonLinRes_Counter = 0;
-//      for (unsigned short iCounter = 0; iCounter < 50; iCounter++)
-//        NonLinRes_Series[iCounter] = -1.0;
-//      if (rank == MASTER_NODE) cout << "  Decreasing CFL due to nonlinear res stall." << endl;
-//
-//    }
-//
-//
+    su2double linResFlow = solverFlow->GetResLinSolver();
+    su2double linResTurb = -1.0;
+    if (config->GetKind_Turb_Model() != NONE) {
+      linResTurb = solverTurb->GetResLinSolver();
+    }
+
+    su2double maxLinResid = max(linResFlow, linResTurb);
+    if (maxLinResid > 0.5) {
+      reduceCFL = true;
+    }
+
+    /* Check that we are meeting our nonlinear residual reduction target
+     over time so that we do not get stuck in limit cycles. */
+
+    Old_Func = New_Func;
+    unsigned short Res_Count = 100;
+    if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
+    
+    /* Sum the RMS residuals for all equations. */
+    
+    New_Func = 0.0;
+    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+      New_Func += solverFlow->GetRes_RMS(iVar);
+    }
+    if (config->GetKind_Turb_Model() != NONE) {
+      for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+        New_Func += solverTurb->GetRes_RMS(iVar);
+      }
+    }
+    
+    /* Compute the difference in the nonlinear residuals between the
+     current and previous iterations. */
+    
+    NonLinRes_Func = (New_Func - Old_Func);
+    NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
+    
+    /* Increment the counter, if we hit the max size, then start over. */
+    
+    NonLinRes_Counter++;
+    if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
+
+    /* Sum the total change in nonlinear residuals over the previous
+     set of all stored iterations. */
+    
+    NonLinRes_Value = New_Func;
+    if (config->GetExtIter() >= Res_Count) {
+      NonLinRes_Value = 0.0;
+      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+        NonLinRes_Value += NonLinRes_Series[iCounter];
+    }
+
+    /* If the sum is larger than a small fraction of the current nonlinear
+     residual, then we are not decreasing the nonlinear residual at a high
+     rate. In this situation, we force a reduction of the CFL in all cells.
+     Reset the array so that we delay the next decrease for some iterations. */
+    
+    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+      reduceCFL = true;
+      NonLinRes_Counter = 0;
+      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+        NonLinRes_Series[iCounter] = New_Func;
+    }
+
     /* Loop over all points on this grid and apply CFL adaption. */
     
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
@@ -2386,7 +2388,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
       
       su2double CFLFactor = 1.0;
-      if (reduceCFL || (underRelaxation < 0.1)) {
+      if ((underRelaxation < 0.1)) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
         CFLFactor = 1.0;
@@ -2402,6 +2404,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       } else if (CFL*CFLFactor >= CFLMax) {
         CFL       = CFLMax;
         CFLFactor = 0.999*MGFactor[iMesh];
+      }
+      
+      /* If we detect a stalled nonlinear residual, then force the CFL
+       for all points to the minimum temporarily to restart the ramp. */
+      
+      if (reduceCFL) {
+        CFL       = CFLMin;
+        CFLFactor = 1.001*MGFactor[iMesh];
       }
       
       /* Apply the adjustment to the CFL and store local values. */

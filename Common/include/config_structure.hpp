@@ -1638,6 +1638,12 @@ public:
    * \brief Get the values of the CFL adapation.
    * \return Value of CFL adapation
    */
+  inline void SetCFL_AdaptParam(unsigned short val_index, su2double val_cfl_param) { CFL_AdaptParam[val_index] = val_cfl_param; }
+  
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
   bool GetCFL_Adapt(void);
   
   /*!
