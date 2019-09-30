@@ -55,6 +55,14 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 }
 
 void CSinglezoneDriver::StartSolver() {
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 

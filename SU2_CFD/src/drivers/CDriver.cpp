@@ -3754,8 +3754,11 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
   }
 
   if (driver_config->GetMultizone_Problem()){
+    if (rank == MASTER_NODE)
+      cout << endl <<"------------------- Output Preprocessing ( Multizone ) ------------------" << endl;
+    
     driver_output = new CMultizoneOutput(driver_config, config, nDim);
-    driver_output->PreprocessMultizoneHistoryOutput(output, config);
+    driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config);
   }
   
 
