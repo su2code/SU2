@@ -1,5 +1,5 @@
 /*!
- * \file output_driver.cpp
+ * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
  * \version 6.2.0 "Falcon"
@@ -35,9 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/CDriverOutput.hpp"
+#include "../../include/output/CMultizoneOutput.hpp"
 
-CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim, false) {
+CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim, false) {
 
   unsigned short iZone = 0;
   rank = SU2_MPI::GetRank();
@@ -87,14 +87,14 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config, unsigned 
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "AVG_BGS_RES[0]";
+  if (convFields.empty() ) convFields.emplace_back("AVG_BGS_RES[0]");
 
 }
 
-CDriverOutput::~CDriverOutput() {}
+CMultizoneOutput::~CMultizoneOutput() {}
 
 
-void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config) {
+void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config) {
 
   unsigned short iZone, iField, nField;
   string name, header;
@@ -127,7 +127,7 @@ void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config)
   }
 }
 
-void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {
+void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {
   
   unsigned short iZone, iField, nField;
   string name, header, group;
@@ -162,7 +162,7 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
   }
 }
 
-bool CDriverOutput::WriteScreen_Header(CConfig *config) {
+bool CMultizoneOutput::WriteScreen_Header(CConfig *config) {
 
   /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
   
@@ -178,7 +178,7 @@ bool CDriverOutput::WriteScreen_Header(CConfig *config) {
   return false;
 }
 
-bool CDriverOutput::WriteScreen_Output(CConfig *config) {
+bool CMultizoneOutput::WriteScreen_Output(CConfig *config) {
   
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
   unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);    
@@ -204,7 +204,7 @@ bool CDriverOutput::WriteScreen_Output(CConfig *config) {
   return true;
 }
 
-bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
+bool CMultizoneOutput::WriteHistoryFile_Output(CConfig *config){
   
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);    

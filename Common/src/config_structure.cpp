@@ -1506,7 +1506,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
   addDoubleOption("CONV_CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
-  addStringOption("CONV_FIELD", ConvField, "");
+  addStringListOption("CONV_FIELD", nConvField, ConvField);
 
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/

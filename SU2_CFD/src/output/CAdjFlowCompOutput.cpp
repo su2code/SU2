@@ -95,7 +95,7 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_ADJ_DENSITY";
+  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_DENSITY");
   
 }
 

@@ -41,9 +41,7 @@
 #include "../../include/solver_structure.hpp"
 
 CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
-  
-  cont_adj = config->GetContinuous_Adjoint();
-   
+     
   turb_model = config->GetKind_Turb_Model();
   
   heat = config->GetEnergy_Equation();
@@ -99,7 +97,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_ADJ_PRESSURE";
+  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_PRESSURE");
 
 }
 
@@ -118,7 +116,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("RMS_ADJ_HEAT", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", " Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
+  if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
@@ -146,7 +144,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("MAX_ADJ_HEAT", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
+  if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
@@ -174,7 +172,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: BGS residual of the temperature.
   AddHistoryOutput("BGS_ADJ_HEAT", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
+  if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: BGS residual of the adjoint nu tilde.
@@ -225,7 +223,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     if (nDim == 3) SetHistoryOutputValue("RMS_ADJ_HEAT",         log10(adjflow_solver->GetRes_RMS(4)));
     else           SetHistoryOutputValue("RMS_ADJ_HEAT",         log10(adjflow_solver->GetRes_RMS(3)));
   }
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
+  if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
@@ -250,7 +248,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     if (nDim == 3) SetHistoryOutputValue("MAX_ADJ_HEAT",         log10(adjflow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_ADJ_HEAT",         log10(adjflow_solver->GetRes_Max(3)));
   }
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
+  if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
@@ -277,7 +275,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       if (nDim == 3) SetHistoryOutputValue("BGS_ADJ_HEAT",         log10(adjflow_solver->GetRes_BGS(4)));
       else           SetHistoryOutputValue("BGS_ADJ_HEAT",         log10(adjflow_solver->GetRes_BGS(3)));
     }
-    if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
+    if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
       switch(turb_model){
       case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
         SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));

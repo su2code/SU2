@@ -72,10 +72,6 @@ CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* 
   
   surfaceFilename = "surface_baseline";
   
-  /*--- Conv field --- */
-  
-  convField = "NONE";
-  
 }
 
 CBaselineOutput::~CBaselineOutput(void) {}
