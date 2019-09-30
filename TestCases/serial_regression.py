@@ -102,8 +102,8 @@ def main():
     fixedCL_naca0012           = TestCase('fixedcl_naca0012')
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    fixedCL_naca0012.test_iter = 100
-    fixedCL_naca0012.test_vals = [-2.582897, 2.820443, 0.295158, 0.019324] #last 4 columns
+    fixedCL_naca0012.test_iter = 10
+    fixedCL_naca0012.test_vals = [-13.082182, -7.559617, 0.300000, 0.019389] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.new_output = True
     fixedCL_naca0012.timeout   = 1600
