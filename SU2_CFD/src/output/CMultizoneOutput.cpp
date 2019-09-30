@@ -99,12 +99,6 @@ void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **conf
   unsigned short iZone, iField, nField;
   string name, header;
 
-  if (config[ZONE_0]->GetTime_Domain()){
-    SetHistoryOutputValue("TIME_ITER", curTimeIter);
-  }
-  SetHistoryOutputValue("OUTER_ITER", curOuterIter);
-  
-  
   for (iZone = 0; iZone < nZone; iZone++){
     
     map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
@@ -131,12 +125,6 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
   
   unsigned short iZone, iField, nField;
   string name, header, group;
-
-  if (config[ZONE_0]->GetTime_Domain()){
-    AddHistoryOutput("TIME_ITER", "Time_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Time iteration index");
-  }
-  AddHistoryOutput("OUTER_ITER", "Outer_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Outer iteration index");
-  
   
   /*--- Set the fields ---*/
   for (iZone = 0; iZone < nZone; iZone++){
