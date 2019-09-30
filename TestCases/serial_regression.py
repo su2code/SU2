@@ -526,8 +526,8 @@ def main():
     contadj_naca0012           = TestCase('contadj_naca0012')
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    contadj_naca0012.test_iter = 6005
-    contadj_naca0012.test_vals = [-10.958367, -16.447969, 1.4538e+00, 5.7060e-03] #last 4 columns
+    contadj_naca0012.test_iter = 5
+    contadj_naca0012.test_vals = [-9.787554, -15.192510, 3.0092e-01, 1.9552e-02] #last 4 columns
     contadj_naca0012.su2_exec  = "SU2_CFD"
     contadj_naca0012.timeout   = 1600
     contadj_naca0012.tol       = 0.001
@@ -1098,7 +1098,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4000
-    dyn_fsi.test_vals = [-4.828422, -3.010379, -7.776602, -8.791331] #last 4 columns
+    dyn_fsi.test_vals = [-4.709724, -2.913229, -7.186948, -8.186820] #last 4 columns
     dyn_fsi.su2_exec  = "SU2_CFD"
     dyn_fsi.timeout   = 1600
     dyn_fsi.tol       = 0.00001
@@ -1108,8 +1108,8 @@ def main():
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
-    airfoilRBF.test_iter = 29
-    airfoilRBF.test_vals = [-13.119469, -3.766228, -11.642909, 1404500.000000] #last 4 columns
+    airfoilRBF.test_iter = 19
+    airfoilRBF.test_vals = [-10.592268, -6.311998, -16.845204, 1.3902e+06] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
     airfoilRBF.tol       = 0.00001
@@ -1416,7 +1416,7 @@ def main():
     shape_opt_euler_py.cfg_dir   = "optimization_euler/steady_naca0012"
     shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
     shape_opt_euler_py.test_iter = 1
-    shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
+    shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 0.003847] #last 4 columns
     shape_opt_euler_py.su2_exec  = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.tol       = 0.00001
@@ -1442,7 +1442,7 @@ def main():
     opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     opt_multiobj_py.test_iter  = 1
-    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
+    opt_multiobj_py.test_vals = [1.000000, 1.000000, 108.011100, 2.191747] #last 4 columns
     opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     opt_multiobj_py.timeout    = 1600
     opt_multiobj_py.tol       = 0.00001
@@ -1454,7 +1454,7 @@ def main():
     opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
     opt_multiobjcombo_py.test_iter  = 1
-    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+    opt_multiobjcombo_py.test_vals = [1.000000, 1.000000, 108.011100, 2.226539] #last 4 columns
     opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     opt_multiobjcombo_py.timeout    = 1600
     opt_multiobjcombo_py.tol       = 0.00001
@@ -1466,7 +1466,7 @@ def main():
     opt_multiobj1surf_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
     opt_multiobj1surf_py.test_iter  = 1
-    opt_multiobj1surf_py.test_vals = [1, 1, 3.083034E+01, 3.789380E+00] #last 4 columns
+    opt_multiobj1surf_py.test_vals = [1.000000, 1.000000, 30.371350, 2.226610] #last 4 columns
     opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
@@ -1478,7 +1478,7 @@ def main():
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1    
-    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005700, 0.000300] #last 4 columns
+    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005700, 0.000203] #last 4 columns
     opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001

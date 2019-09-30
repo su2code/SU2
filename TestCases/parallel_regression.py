@@ -527,8 +527,8 @@ def main():
     contadj_naca0012           = TestCase('contadj_naca0012')
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    contadj_naca0012.test_iter = 6005
-    contadj_naca0012.test_vals = [-10.930563, -16.398184, 1.4538e+00, 5.7060e-03] #last 4 columns
+    contadj_naca0012.test_iter = 5
+    contadj_naca0012.test_vals = [-9.783199, -15.190764, 3.0092e-01, 1.9552e-02] #last 4 columns
     contadj_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_naca0012.timeout   = 1600
     contadj_naca0012.tol       = 0.00001
@@ -1052,8 +1052,8 @@ def main():
     stat_fsi           = TestCase('stat_fsi')
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7000
-    stat_fsi.test_vals = [-6.762763, -6.522814, -9.205275, -10.113188] #last 4 columns
+    stat_fsi.test_iter = 5000
+    stat_fsi.test_vals = [-5.965844, -5.549896, -8.815105, -9.507963] #last 4 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.tol       = 0.00001
@@ -1064,7 +1064,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4000
-    dyn_fsi.test_vals = [-4.828420, -3.010379, -7.776603, -8.791332] #last 4 columns
+    dyn_fsi.test_vals = [-4.709724, -2.913229, -7.186948, -8.186820] #last 4 columns
     dyn_fsi.su2_exec  = "SU2_CFD"
     dyn_fsi.timeout   = 1600
     dyn_fsi.tol       = 0.00001
@@ -1105,7 +1105,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [-6.078642, -5.482895, 0.334875, 0.022224] #last 4 columns
+    pywrapper_naca0012.test_vals = [-7.123252, -6.535236, 0.333431, 0.021236] #last 4 columns
     pywrapper_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
@@ -1310,7 +1310,7 @@ def main():
     tutorial_design_multiobj.cfg_dir    = "../Tutorials/Multi_Objective_Shape_Design"
     tutorial_design_multiobj.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
     tutorial_design_multiobj.test_iter  = 0
-    tutorial_design_multiobj.test_vals  = [2.657569, -3.020563, 336750.000000, -0.000000] #last 4 columns
+    tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 324840.000000, 0.000000] #last 4 columns
     tutorial_design_multiobj.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_multiobj.timeout    = 1600
     tutorial_design_multiobj.tol        = 0.00001
