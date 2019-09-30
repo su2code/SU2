@@ -4641,9 +4641,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
     if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
-        (!fixed_cl && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
+        (!fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
-        (fixed_cl && (iExtIter == (config[val_iZone]->GetnExtIter()-2) ||
+        (fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2) ||
           (solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD() && 
           iExtIter == solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA())))) {
 
