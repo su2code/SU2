@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -37,6 +37,42 @@
  
 #pragma once
 
+inline CUnsignedLong2T::CUnsignedLong2T(){long0 = long1 = 0;}
+
+inline CUnsignedLong2T::CUnsignedLong2T(const unsigned long a, const unsigned long b){long0 = a; long1 = b;}
+
+inline CUnsignedLong2T::~CUnsignedLong2T(){}
+
+inline CUnsignedLong2T::CUnsignedLong2T(const CUnsignedLong2T &other){Copy(other);}
+
+inline CUnsignedLong2T& CUnsignedLong2T::operator=(const CUnsignedLong2T &other){Copy(other); return (*this);}
+
+inline CUnsignedShort2T::CUnsignedShort2T(){short0 = short1 = 0;}
+
+inline CUnsignedShort2T::CUnsignedShort2T(const unsigned short a, const unsigned short b){short0 = a; short1 = b;}
+
+inline CUnsignedShort2T::~CUnsignedShort2T(){}
+
+inline CUnsignedShort2T::CUnsignedShort2T(const CUnsignedShort2T &other){Copy(other);}
+
+inline CUnsignedShort2T& CUnsignedShort2T::operator=(const CUnsignedShort2T &other){Copy(other); return (*this);}
+
+inline CFaceOfElement::CFaceOfElement(const CFaceOfElement &other){Copy(other);}
+
+inline CFaceOfElement& CFaceOfElement::operator=(const CFaceOfElement &other){Copy(other); return (*this);}
+
+inline void CFaceOfElement::CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
+
+inline CBoundaryFace::CBoundaryFace(const CBoundaryFace &other){Copy(other);}
+
+inline CBoundaryFace& CBoundaryFace::operator=(const CBoundaryFace &other){Copy(other); return (*this);}
+
+inline bool CBoundaryFace::operator<(const CBoundaryFace &other) const {return (globalBoundElemID < other.globalBoundElemID);}
+
+inline CMatchingFace::CMatchingFace(const CMatchingFace &other){Copy(other);}
+
+inline CMatchingFace& CMatchingFace::operator=(const CMatchingFace &other){Copy(other); return (*this);}
+
 inline void CGeometry::SetGlobal_to_Local_Point(void) { }
 
 inline long CGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) { return 0; }
@@ -44,6 +80,8 @@ inline long CGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) { retu
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nPoint(void) { return 0; }
+
+inline void CGeometry::SetGlobal_nPointDomain(unsigned long val_global_npoint) { }
 
 inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
@@ -87,6 +125,8 @@ inline void CGeometry::SetColorGrid(CConfig *config) { }
 
 inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
 
+inline void CGeometry::SetColorFEMGrid_Parallel(CConfig *config) { }
+
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) { }
@@ -97,19 +137,7 @@ inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short 
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
-inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
+inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
@@ -263,9 +291,7 @@ inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
-inline void CGeometry::MatchInterface(CConfig *config) { }
-
-inline void CGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, unsigned short val_iZone, unsigned short val_nZone) { }
+inline void CGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
 
@@ -348,6 +374,10 @@ inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, u
 inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
 
 inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
+
+inline void CGeometry::SetMGLevel(unsigned short val_iMesh) { MGLevel = val_iMesh; }
+
+inline unsigned short CGeometry::GetMGLevel(void) { return MGLevel; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
@@ -442,7 +472,11 @@ inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { re
 
 inline void CGeometry::SetSensitivity(CConfig* config) {}
 
+inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}
+
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
+
+inline void CGeometry::ComputeMeshQualityStatistics(CConfig* config) {}
 
 inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
 

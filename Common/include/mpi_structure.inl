@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include "mpi_structure.hpp"
 #pragma once
 
 #ifdef HAVE_MPI
@@ -98,7 +98,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
     std::cout << std::endl << std::endl;    
   }
-  Abort(currentComm, 0);
+  Abort(currentComm, EXIT_FAILURE);
 }
 
 
@@ -250,11 +250,22 @@ inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
 }
 
+inline void CBaseMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                                   Comm comm) {
+  MPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, recvdispls, recvtype, comm);
+}
+
 inline void CBaseMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
                                   Datatype recvtype,int source, int recvtag,
                                   Comm comm, Status *status) {
   MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
+}
+
+inline void CBaseMPIWrapper::Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
+                                            Datatype datatype, Op op, Comm comm) {
+  MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);
 }
 
 inline void CBaseMPIWrapper::Waitany(int nrequests, Request *request,
@@ -275,6 +286,11 @@ inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
                  currentComm, &winMinRankError);
   winMinRankErrorInUse = true;
+}
+
+inline void CMediMPIWrapper::Init_AMPI(void) {
+  AMPI_Init_common();
+  MediTool::init();
 }
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
@@ -450,11 +466,24 @@ inline void CMediMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   AMPI_Alltoall(sendbuf, sendcount, convertDatatype(sendtype), recvbuf, recvcount, convertDatatype(recvtype), convertComm(comm));
 }
 
+inline void CMediMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                                   Comm comm) {
+  AMPI_Alltoallv(sendbuf, sendcounts, sdispls, convertDatatype(sendtype), recvbuf, recvcounts, recvdispls, convertDatatype(recvtype), comm);
+}
+
 inline void CMediMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
                                   Datatype recvtype,int source, int recvtag,
                                   Comm comm, Status *status) {
   AMPI_Sendrecv(sendbuf,sendcnt,convertDatatype(sendtype),dest,sendtag,recvbuf,recvcnt,convertDatatype(recvtype),source,recvtag,convertComm(comm),status);
+}
+
+inline void CMediMPIWrapper::Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
+                                            Datatype datatype, Op op, Comm comm) {
+  if(datatype == MPI_DOUBLE)
+    Error("Reduce_scatter not possible with MPI_DOUBLE", CURRENT_FUNCTION);
+  MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);
 }
 
 inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
@@ -574,10 +603,21 @@ inline void CBaseMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendt
 
 }
 
+inline void CBaseMPIWrapper::Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
+                                            Datatype datatype, Op op, Comm comm) {
+  CopyData(sendbuf, recvbuf, recvcounts[0], datatype);
+}
+
 inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
                                   void *recvbuf, int recvcount, Datatype recvtype,
                                   Comm comm){
   CopyData(sendbuf, recvbuf, recvcount, sendtype);
+}
+
+inline void CBaseMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                                   Comm comm) {
+  CopyData(sendbuf, recvbuf, recvcounts[0], recvtype);
 }
 
 inline void CBaseMPIWrapper::Probe(int source, int tag, Comm comm, Status *status){}

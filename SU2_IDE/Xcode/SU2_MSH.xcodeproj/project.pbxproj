@@ -19,6 +19,24 @@
 		05E6DC5117EB637300FA1F7E /* SU2_MSH.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */; };
 		E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */; };
+		E9611EFE21FBF03F00663714 /* printing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9611EFD21FBF03F00663714 /* printing_toolbox.cpp */; };
+		E96FAF6F218A048B0046BF5D /* element_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF5E218A04890046BF5D /* element_linear.cpp */; };
+		E96FAF70218A048B0046BF5D /* graph_coloring_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF5F218A048A0046BF5D /* graph_coloring_structure.cpp */; };
+		E96FAF71218A048B0046BF5D /* adt_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF60218A048A0046BF5D /* adt_structure.cpp */; };
+		E96FAF72218A048B0046BF5D /* geometry_structure_fem_part.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF61218A048A0046BF5D /* geometry_structure_fem_part.cpp */; };
+		E96FAF73218A048B0046BF5D /* fem_geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF62218A048A0046BF5D /* fem_geometry_structure.cpp */; };
+		E96FAF74218A048B0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF63218A048A0046BF5D /* fem_gauss_jacobi_quadrature.cpp */; };
+		E96FAF75218A048B0046BF5D /* element_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF64218A048A0046BF5D /* element_structure.cpp */; };
+		E96FAF76218A048B0046BF5D /* fem_cgns_elements.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF65218A048A0046BF5D /* fem_cgns_elements.cpp */; };
+		E96FAF77218A048B0046BF5D /* fem_wall_distance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF66218A048A0046BF5D /* fem_wall_distance.cpp */; };
+		E96FAF78218A048B0046BF5D /* gauss_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF67218A048A0046BF5D /* gauss_structure.cpp */; };
+		E96FAF79218A048B0046BF5D /* ad_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF68218A048A0046BF5D /* ad_structure.cpp */; };
+		E96FAF7A218A048B0046BF5D /* fem_standard_element.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF69218A048A0046BF5D /* fem_standard_element.cpp */; };
+		E96FAF7B218A048B0046BF5D /* fem_work_estimate_metis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF6A218A048A0046BF5D /* fem_work_estimate_metis.cpp */; };
+		E96FAF7C218A048B0046BF5D /* fem_integration_rules.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF6B218A048A0046BF5D /* fem_integration_rules.cpp */; };
+		E96FAF7D218A048B0046BF5D /* interpolation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF6C218A048B0046BF5D /* interpolation_structure.cpp */; };
+		E96FAF7E218A048B0046BF5D /* wall_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF6D218A048B0046BF5D /* wall_model.cpp */; };
+		E96FAF7F218A048B0046BF5D /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF6E218A048B0046BF5D /* blas_structure.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -48,7 +66,7 @@
 		05E6DAED17EB609A00FA1F7E /* config_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = config_structure.hpp; path = ../../Common/include/config_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DAEE17EB609A00FA1F7E /* dual_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = dual_grid_structure.hpp; path = ../../Common/include/dual_grid_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DAEF17EB609A00FA1F7E /* geometry_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = geometry_structure.hpp; path = ../../Common/include/geometry_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		05E6DAF017EB609A00FA1F7E /* grid_adaptation_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = grid_adaptation_structure.hpp; path = ../../Common/include/grid_adaptation_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		05E6DAF017EB609A00FA1F7E /* grid_adaptation_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = grid_adaptation_structure.hpp; path = ../../Common/include/grid_adaptation_structure.hpp; sourceTree = "<group>"; };
 		05E6DAF117EB609A00FA1F7E /* grid_movement_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = grid_movement_structure.hpp; path = ../../Common/include/grid_movement_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DAF217EB609A00FA1F7E /* linear_solvers_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = linear_solvers_structure.hpp; path = ../../Common/include/linear_solvers_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DAF317EB609A00FA1F7E /* matrix_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = matrix_structure.hpp; path = ../../Common/include/matrix_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -85,6 +103,45 @@
 		E941BC061B71DB57005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = primitive_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC071B71DB57005C6C06 /* linear_solvers_structure_b.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = linear_solvers_structure_b.hpp; path = ../../Common/include/linear_solvers_structure_b.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC081B71DB57005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9611EFD21FBF03F00663714 /* printing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = printing_toolbox.cpp; path = ../../Common/src/toolboxes/printing_toolbox.cpp; sourceTree = "<group>"; };
+		E9611EFF21FBF05500663714 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = printing_toolbox.hpp; path = ../../Common/include/toolboxes/printing_toolbox.hpp; sourceTree = "<group>"; };
+		E96FAF5E218A04890046BF5D /* element_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_linear.cpp; path = ../../Common/src/element_linear.cpp; sourceTree = "<group>"; };
+		E96FAF5F218A048A0046BF5D /* graph_coloring_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = graph_coloring_structure.cpp; path = ../../Common/src/graph_coloring_structure.cpp; sourceTree = "<group>"; };
+		E96FAF60218A048A0046BF5D /* adt_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = adt_structure.cpp; path = ../../Common/src/adt_structure.cpp; sourceTree = "<group>"; };
+		E96FAF61218A048A0046BF5D /* geometry_structure_fem_part.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = geometry_structure_fem_part.cpp; path = ../../Common/src/geometry_structure_fem_part.cpp; sourceTree = "<group>"; };
+		E96FAF62218A048A0046BF5D /* fem_geometry_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_geometry_structure.cpp; path = ../../Common/src/fem_geometry_structure.cpp; sourceTree = "<group>"; };
+		E96FAF63218A048A0046BF5D /* fem_gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_gauss_jacobi_quadrature.cpp; path = ../../Common/src/fem_gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
+		E96FAF64218A048A0046BF5D /* element_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_structure.cpp; path = ../../Common/src/element_structure.cpp; sourceTree = "<group>"; };
+		E96FAF65218A048A0046BF5D /* fem_cgns_elements.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_cgns_elements.cpp; path = ../../Common/src/fem_cgns_elements.cpp; sourceTree = "<group>"; };
+		E96FAF66218A048A0046BF5D /* fem_wall_distance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_wall_distance.cpp; path = ../../Common/src/fem_wall_distance.cpp; sourceTree = "<group>"; };
+		E96FAF67218A048A0046BF5D /* gauss_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gauss_structure.cpp; path = ../../Common/src/gauss_structure.cpp; sourceTree = "<group>"; };
+		E96FAF68218A048A0046BF5D /* ad_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ad_structure.cpp; path = ../../Common/src/ad_structure.cpp; sourceTree = "<group>"; };
+		E96FAF69218A048A0046BF5D /* fem_standard_element.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_standard_element.cpp; path = ../../Common/src/fem_standard_element.cpp; sourceTree = "<group>"; };
+		E96FAF6A218A048A0046BF5D /* fem_work_estimate_metis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_work_estimate_metis.cpp; path = ../../Common/src/fem_work_estimate_metis.cpp; sourceTree = "<group>"; };
+		E96FAF6B218A048A0046BF5D /* fem_integration_rules.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_integration_rules.cpp; path = ../../Common/src/fem_integration_rules.cpp; sourceTree = "<group>"; };
+		E96FAF6C218A048B0046BF5D /* interpolation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = interpolation_structure.cpp; path = ../../Common/src/interpolation_structure.cpp; sourceTree = "<group>"; };
+		E96FAF6D218A048B0046BF5D /* wall_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wall_model.cpp; path = ../../Common/src/wall_model.cpp; sourceTree = "<group>"; };
+		E96FAF6E218A048B0046BF5D /* blas_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = blas_structure.cpp; path = ../../Common/src/blas_structure.cpp; sourceTree = "<group>"; };
+		E96FAF80218A04AA0046BF5D /* gauss_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gauss_structure.hpp; path = ../../Common/include/gauss_structure.hpp; sourceTree = "<group>"; };
+		E96FAF81218A04AA0046BF5D /* fem_standard_element.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_standard_element.inl; path = ../../Common/include/fem_standard_element.inl; sourceTree = "<group>"; };
+		E96FAF82218A04AA0046BF5D /* adt_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = adt_structure.hpp; path = ../../Common/include/adt_structure.hpp; sourceTree = "<group>"; };
+		E96FAF83218A04AA0046BF5D /* interpolation_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = interpolation_structure.hpp; path = ../../Common/include/interpolation_structure.hpp; sourceTree = "<group>"; };
+		E96FAF84218A04AA0046BF5D /* ad_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ad_structure.hpp; path = ../../Common/include/ad_structure.hpp; sourceTree = "<group>"; };
+		E96FAF85218A04AA0046BF5D /* wall_model.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = wall_model.hpp; path = ../../Common/include/wall_model.hpp; sourceTree = "<group>"; };
+		E96FAF86218A04AA0046BF5D /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; };
+		E96FAF87218A04AA0046BF5D /* fem_gauss_jacobi_quadrature.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_gauss_jacobi_quadrature.hpp; path = ../../Common/include/fem_gauss_jacobi_quadrature.hpp; sourceTree = "<group>"; };
+		E96FAF88218A04AA0046BF5D /* ad_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ad_structure.inl; path = ../../Common/include/ad_structure.inl; sourceTree = "<group>"; };
+		E96FAF89218A04AA0046BF5D /* graph_coloring_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = graph_coloring_structure.hpp; path = ../../Common/include/graph_coloring_structure.hpp; sourceTree = "<group>"; };
+		E96FAF8A218A04AA0046BF5D /* blas_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = blas_structure.hpp; path = ../../Common/include/blas_structure.hpp; sourceTree = "<group>"; };
+		E96FAF8B218A04AA0046BF5D /* fem_geometry_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_geometry_structure.inl; path = ../../Common/include/fem_geometry_structure.inl; sourceTree = "<group>"; };
+		E96FAF8C218A04AB0046BF5D /* wall_model.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = wall_model.inl; path = ../../Common/include/wall_model.inl; sourceTree = "<group>"; };
+		E96FAF8D218A04AB0046BF5D /* gauss_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gauss_structure.inl; path = ../../Common/include/gauss_structure.inl; sourceTree = "<group>"; };
+		E96FAF8E218A04AB0046BF5D /* element_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = element_structure.hpp; path = ../../Common/include/element_structure.hpp; sourceTree = "<group>"; };
+		E96FAF8F218A04AB0046BF5D /* fem_geometry_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_geometry_structure.hpp; path = ../../Common/include/fem_geometry_structure.hpp; sourceTree = "<group>"; };
+		E96FAF90218A04AB0046BF5D /* element_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = element_structure.inl; path = ../../Common/include/element_structure.inl; sourceTree = "<group>"; };
+		E96FAF91218A04AB0046BF5D /* fem_gauss_jacobi_quadrature.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_gauss_jacobi_quadrature.inl; path = ../../Common/include/fem_gauss_jacobi_quadrature.inl; sourceTree = "<group>"; };
+		E96FAF92218A04AB0046BF5D /* fem_cgns_elements.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_cgns_elements.hpp; path = ../../Common/include/fem_cgns_elements.hpp; sourceTree = "<group>"; };
+		E96FAF93218A04AB0046BF5D /* fem_standard_element.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_standard_element.hpp; path = ../../Common/include/fem_standard_element.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,21 +158,34 @@
 		05AB07B713764A8B008163E7 /* Include */ = {
 			isa = PBXGroup;
 			children = (
-				05E6DC4F17EB636E00FA1F7E /* SU2_MSH.hpp */,
+				E96FAF84218A04AA0046BF5D /* ad_structure.hpp */,
+				E96FAF82218A04AA0046BF5D /* adt_structure.hpp */,
+				E96FAF8A218A04AA0046BF5D /* blas_structure.hpp */,
 				05E6DAED17EB609A00FA1F7E /* config_structure.hpp */,
-				05E6DAEE17EB609A00FA1F7E /* dual_grid_structure.hpp */,
-				05E6DAEF17EB609A00FA1F7E /* geometry_structure.hpp */,
-				05E6DAF017EB609A00FA1F7E /* grid_adaptation_structure.hpp */,
-				05E6DAF117EB609A00FA1F7E /* grid_movement_structure.hpp */,
-				05E6DAF217EB609A00FA1F7E /* linear_solvers_structure.hpp */,
-				E941BC071B71DB57005C6C06 /* linear_solvers_structure_b.hpp */,
-				05E6DAF317EB609A00FA1F7E /* matrix_structure.hpp */,
-				05E6DAF417EB609A00FA1F7E /* option_structure.hpp */,
-				05E6DAF517EB609A00FA1F7E /* primal_grid_structure.hpp */,
-				05E6DAF617EB609A00FA1F7E /* vector_structure.hpp */,
 				E941BBF91B71DB57005C6C06 /* datatype_structure.hpp */,
 				E941BBFA1B71DB57005C6C06 /* datatypes */,
+				05E6DAEE17EB609A00FA1F7E /* dual_grid_structure.hpp */,
+				E96FAF8E218A04AB0046BF5D /* element_structure.hpp */,
+				E96FAF92218A04AB0046BF5D /* fem_cgns_elements.hpp */,
+				E96FAF87218A04AA0046BF5D /* fem_gauss_jacobi_quadrature.hpp */,
+				E96FAF8F218A04AB0046BF5D /* fem_geometry_structure.hpp */,
+				E96FAF93218A04AB0046BF5D /* fem_standard_element.hpp */,
+				E96FAF80218A04AA0046BF5D /* gauss_structure.hpp */,
+				05E6DAEF17EB609A00FA1F7E /* geometry_structure.hpp */,
+				E96FAF89218A04AA0046BF5D /* graph_coloring_structure.hpp */,
+				05E6DAF017EB609A00FA1F7E /* grid_adaptation_structure.hpp */,
+				05E6DAF117EB609A00FA1F7E /* grid_movement_structure.hpp */,
+				E96FAF83218A04AA0046BF5D /* interpolation_structure.hpp */,
+				E941BC071B71DB57005C6C06 /* linear_solvers_structure_b.hpp */,
+				05E6DAF217EB609A00FA1F7E /* linear_solvers_structure.hpp */,
+				05E6DAF317EB609A00FA1F7E /* matrix_structure.hpp */,
 				E941BC081B71DB57005C6C06 /* mpi_structure.hpp */,
+				05E6DAF417EB609A00FA1F7E /* option_structure.hpp */,
+				05E6DAF517EB609A00FA1F7E /* primal_grid_structure.hpp */,
+				E9611EFF21FBF05500663714 /* printing_toolbox.hpp */,
+				05E6DC4F17EB636E00FA1F7E /* SU2_MSH.hpp */,
+				05E6DAF617EB609A00FA1F7E /* vector_structure.hpp */,
+				E96FAF85218A04AA0046BF5D /* wall_model.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -123,17 +193,25 @@
 		05AB07B813764A93008163E7 /* InLine */ = {
 			isa = PBXGroup;
 			children = (
+				E96FAF88218A04AA0046BF5D /* ad_structure.inl */,
+				E96FAF86218A04AA0046BF5D /* adt_structure.inl */,
 				05E6DA7B17EB5FC300FA1F7E /* config_structure.inl */,
+				E941BBF71B71DB3D005C6C06 /* datatype_structure.inl */,
 				05E6DA7C17EB5FC300FA1F7E /* dual_grid_structure.inl */,
+				E96FAF90218A04AB0046BF5D /* element_structure.inl */,
+				E96FAF91218A04AB0046BF5D /* fem_gauss_jacobi_quadrature.inl */,
+				E96FAF8B218A04AA0046BF5D /* fem_geometry_structure.inl */,
+				E96FAF81218A04AA0046BF5D /* fem_standard_element.inl */,
+				E96FAF8D218A04AB0046BF5D /* gauss_structure.inl */,
 				05E6DA7D17EB5FC300FA1F7E /* geometry_structure.inl */,
 				05E6DA7E17EB5FC300FA1F7E /* grid_adaptation_structure.inl */,
 				05E6DA7F17EB5FC300FA1F7E /* grid_movement_structure.inl */,
 				05E6DA8017EB5FC300FA1F7E /* linear_solvers_structure.inl */,
 				05E6DA8117EB5FC300FA1F7E /* matrix_structure.inl */,
+				E941BBF81B71DB3D005C6C06 /* mpi_structure.inl */,
 				05E6DA8217EB5FC300FA1F7E /* primal_grid_structure.inl */,
 				05E6DA8317EB5FC300FA1F7E /* vector_structure.inl */,
-				E941BBF71B71DB3D005C6C06 /* datatype_structure.inl */,
-				E941BBF81B71DB3D005C6C06 /* mpi_structure.inl */,
+				E96FAF8C218A04AB0046BF5D /* wall_model.inl */,
 			);
 			name = InLine;
 			sourceTree = "<group>";
@@ -153,6 +231,23 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				E96FAF68218A048A0046BF5D /* ad_structure.cpp */,
+				E96FAF60218A048A0046BF5D /* adt_structure.cpp */,
+				E96FAF6E218A048B0046BF5D /* blas_structure.cpp */,
+				E96FAF5E218A04890046BF5D /* element_linear.cpp */,
+				E96FAF64218A048A0046BF5D /* element_structure.cpp */,
+				E96FAF65218A048A0046BF5D /* fem_cgns_elements.cpp */,
+				E96FAF63218A048A0046BF5D /* fem_gauss_jacobi_quadrature.cpp */,
+				E96FAF62218A048A0046BF5D /* fem_geometry_structure.cpp */,
+				E96FAF6B218A048A0046BF5D /* fem_integration_rules.cpp */,
+				E96FAF69218A048A0046BF5D /* fem_standard_element.cpp */,
+				E96FAF66218A048A0046BF5D /* fem_wall_distance.cpp */,
+				E96FAF6A218A048A0046BF5D /* fem_work_estimate_metis.cpp */,
+				E96FAF67218A048A0046BF5D /* gauss_structure.cpp */,
+				E96FAF61218A048A0046BF5D /* geometry_structure_fem_part.cpp */,
+				E96FAF5F218A048A0046BF5D /* graph_coloring_structure.cpp */,
+				E96FAF6C218A048B0046BF5D /* interpolation_structure.cpp */,
+				E96FAF6D218A048B0046BF5D /* wall_model.cpp */,
 				05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */,
 				05E6DB4117EB61CC00FA1F7E /* config_structure.cpp */,
 				05E6DB4217EB61CC00FA1F7E /* dual_grid_structure.cpp */,
@@ -163,6 +258,7 @@
 				E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */,
 				05E6DB4717EB61CC00FA1F7E /* matrix_structure.cpp */,
 				05E6DB4817EB61CC00FA1F7E /* primal_grid_structure.cpp */,
+				E9611EFD21FBF03F00663714 /* printing_toolbox.cpp */,
 				05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */,
 				E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */,
 			);
@@ -252,15 +348,33 @@
 			files = (
 				E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */,
+				E96FAF77218A048B0046BF5D /* fem_wall_distance.cpp in Sources */,
 				05E6DB4A17EB61CC00FA1F7E /* config_structure.cpp in Sources */,
+				E96FAF79218A048B0046BF5D /* ad_structure.cpp in Sources */,
 				05E6DB4B17EB61CC00FA1F7E /* dual_grid_structure.cpp in Sources */,
+				E96FAF76218A048B0046BF5D /* fem_cgns_elements.cpp in Sources */,
+				E96FAF7E218A048B0046BF5D /* wall_model.cpp in Sources */,
 				05E6DB4C17EB61CC00FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB4D17EB61CC00FA1F7E /* grid_adaptation_structure.cpp in Sources */,
+				E96FAF73218A048B0046BF5D /* fem_geometry_structure.cpp in Sources */,
+				E96FAF7B218A048B0046BF5D /* fem_work_estimate_metis.cpp in Sources */,
+				E96FAF7F218A048B0046BF5D /* blas_structure.cpp in Sources */,
+				E96FAF7C218A048B0046BF5D /* fem_integration_rules.cpp in Sources */,
+				E96FAF78218A048B0046BF5D /* gauss_structure.cpp in Sources */,
 				05E6DB4E17EB61CC00FA1F7E /* grid_movement_structure.cpp in Sources */,
+				E96FAF75218A048B0046BF5D /* element_structure.cpp in Sources */,
+				E96FAF71218A048B0046BF5D /* adt_structure.cpp in Sources */,
 				05E6DB4F17EB61CC00FA1F7E /* linear_solvers_structure.cpp in Sources */,
+				E96FAF72218A048B0046BF5D /* geometry_structure_fem_part.cpp in Sources */,
 				05E6DB5017EB61CC00FA1F7E /* matrix_structure.cpp in Sources */,
+				E96FAF70218A048B0046BF5D /* graph_coloring_structure.cpp in Sources */,
+				E96FAF7A218A048B0046BF5D /* fem_standard_element.cpp in Sources */,
+				E96FAF6F218A048B0046BF5D /* element_linear.cpp in Sources */,
+				E96FAF74218A048B0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */,
 				05E6DB5117EB61CC00FA1F7E /* primal_grid_structure.cpp in Sources */,
+				E9611EFE21FBF03F00663714 /* printing_toolbox.cpp in Sources */,
 				05E6DB5217EB61CC00FA1F7E /* vector_structure.cpp in Sources */,
+				E96FAF7D218A048B0046BF5D /* interpolation_structure.cpp in Sources */,
 				05E6DC5117EB637300FA1F7E /* SU2_MSH.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

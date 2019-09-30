@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -149,5 +149,110 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
   }
   
   delete [] isHalo;
+  
+}
+
+void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
+  
+  /*--- This routine does a quick and dirty output of the total
+   vertices, ghost vertices, total elements, ghost elements, etc.,
+   so that we can analyze the partition quality. ---*/
+  
+  unsigned long nNeighSend = 0, nNeighRecv     = 0;
+  unsigned long nElemOwned = 0, nElemSendTotal = 0, nElemRecvTotal = 0;
+  unsigned long nDOFOwned  = 0, nDOFSendTotal  = 0, nDOFRecvTotal  = 0;
+  
+  int iRank;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
+  
+  /*--- Determine the number of owned elements and DOFs. ---*/
+  nElemOwned = nVolElemOwned;
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    nDOFOwned += volElem[l].nDOFsSol;
+  }
+  
+  /*--- Get the communication information from DG_Geometry. Note that for a
+   FEM DG discretization the communication entities of FEMGeometry contain
+   the volume elements. ---*/
+  const vector<int>                    &ranksSend    = DGGeometry->GetRanksSend();
+  const vector<int>                    &ranksRecv    = DGGeometry->GetRanksRecv();
+  const vector<vector<unsigned long> > &elementsSend = DGGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = DGGeometry->GetEntitiesRecv();
+  
+  nNeighSend = ranksSend.size();
+  nNeighRecv = ranksRecv.size();
+
+  /*--- Determine the total number of elements and DOFS to be send. ---*/
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    
+    const unsigned int nElemSend = (unsigned int)elementsSend[i].size();
+
+    nElemSendTotal += nElemSend;
+    
+    for(unsigned int j=0; j<nElemSend; ++j) {
+      const unsigned long jj = elementsSend[i][j];
+      nDOFSendTotal += volElem[jj].nDOFsSol;
+    }
+  }
+ 
+  /*--- Determine the total number of elements and DOFS to be received. ---*/
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+
+    const unsigned int nElemRecv = (unsigned int)elementsRecv[i].size();
+    
+    nElemRecvTotal += nElemRecv;
+
+    for(unsigned int j=0; j<nElemRecv; ++j) {
+      const unsigned long jj = elementsRecv[i][j];
+      nDOFRecvTotal += volElem[jj].nDOFsSol;
+    }
+    
+  }
+  
+  /*--- Now put this info into a CSV file for processing ---*/
+  
+  char cstr[200];
+  ofstream Profile_File;
+  strcpy (cstr, "partitioning.csv");
+  Profile_File.precision(15);
+  
+  if (rank == MASTER_NODE) {
+    /*--- Prepare and open the file ---*/
+    Profile_File.open(cstr, ios::out);
+    /*--- Create the CSV header ---*/
+    Profile_File << "\"Rank\", \"nNeighSend\",  \"nNeighRecv\", \"nElemOwned\", \"nElemSendTotal\", \"nElemRecvTotal\", \"nDOFOwned\", \"nDOFSendTotal\", \"nDOFRecvTotal\"" << endl;
+    Profile_File.close();
+  }
+#ifdef HAVE_MPI
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+  
+  /*--- Loop through the map and write the results to the file ---*/
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    if (rank == iRank) {
+      Profile_File.open(cstr, ios::out | ios::app);
+      Profile_File << rank << ", " << nNeighSend << ", " << nNeighRecv << ", " << nElemOwned << ", "
+                   << nElemSendTotal << ", " << nElemRecvTotal << ", " << nDOFOwned << ", " 
+                   << nDOFSendTotal << ", " << nDOFRecvTotal << endl;
+      Profile_File.close();
+    }
+#ifdef HAVE_MPI
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+  }
   
 }

@@ -24,6 +24,7 @@ C  tecio.for instead of tecio.inc.
       Dimension X(4,5), Y(4,5), P(4,5)
       Real*8    SolTime
       Integer*4 VIsDouble, FileType
+      Integer*4 FileFormat
       Integer*4 ZoneType,StrandID,ParentZn,IsBlock
       Integer*4 ICellMax,JCellMax,KCellMax,NFConns,FNMode,ShrConn
       POINTER   (NullPtr,Null)
@@ -32,6 +33,7 @@ C  tecio.for instead of tecio.inc.
       NULLCHR = CHAR(0)
       NullPtr = 0
       Debug   = 1
+      FileFormat = 0 ! 0 = PLT, 1 = SZPLT
       FileType = 0
       VIsDouble = 0
       IMax    = 4
@@ -52,10 +54,11 @@ C
 C... Open the file and write the tecplot datafile 
 C... header information.
 C
-      I = TecIni112('SIMPLE DATASET'//NULLCHR,
+      I = TecIni142('SIMPLE DATASET'//NULLCHR,
      &              'X Y P'//NULLCHR,
-     &              't.plt'//NULLCHR,
+     &              'simtestf-t.plt'//NULLCHR,
      &              '.'//NULLCHR,
+     &              FileFormat,
      &              FileType,
      &              Debug,
      &              VIsDouble)
@@ -69,7 +72,7 @@ C
 C
 C... Write the zone header information.
 C
-      I = TecZne112('Simple Zone'//NULLCHR,
+      I = TecZne142('Simple Zone'//NULLCHR,
      &              ZoneType,
      &              IMax,
      &              JMax,
@@ -94,10 +97,10 @@ C
 C... Write out the field data.
 C
       III = IMax*JMax
-      I   = TecDat112(III,X,0)
-      I   = TecDat112(III,Y,0)
-      I   = TecDat112(III,P,0)
+      I   = TecDat142(III,X,0)
+      I   = TecDat142(III,Y,0)
+      I   = TecDat142(III,P,0)
 
-      I = TecEnd112()
+      I = TecEnd142()
       Stop
       End

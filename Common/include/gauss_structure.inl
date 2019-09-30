@@ -2,7 +2,7 @@
  * \file gauss_structure.inl
  * \brief In-Line subroutines of the <i>gauss_structure.hpp</i> file.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -61,11 +61,41 @@ inline su2double CGaussVariable::GetJ_X(void) { return J_X; }
 
 inline su2double CGaussVariable::GetJ_x(void) { return J_x; }
 
-inline unsigned long CElementProperty::GetMat_Mod(void) { return iMat_Mod; }
+inline unsigned long CProperty::GetMat_Mod(void) { return 0; }
 
-inline unsigned long CElementProperty::GetMat_Prop(void) { return iMat_Prop; }
+inline unsigned long CProperty::GetMat_Prop(void) { return iMat_Prop; }
+
+inline unsigned long CProperty::GetElectric_Prop(void) { return 0; }
+
+inline unsigned long CProperty::GetDV(void) { return 0; }
+
+inline void CProperty::SetDesignDensity(su2double valDensity) { }
+
+inline su2double CProperty::GetDesignDensity(void) { return 0.0; }
+
+inline void CProperty::SetPhysicalDensity(su2double valDensity) { }
+
+inline su2double CProperty::GetPhysicalDensity(void) { return 0.0; }
+
+inline su2double CProperty::GetAdjointDensity(void) { return 0.0; }
+
+inline void CProperty::RegisterDensity(void) { }
+
+inline unsigned long CElementProperty::GetMat_Mod(void) { return iMat_Mod; }
 
 inline unsigned long CElementProperty::GetElectric_Prop(void) { return iElectric_Prop; }
 
 inline unsigned long CElementProperty::GetDV(void) { return iDV; }
+
+inline void CElementProperty::SetDesignDensity(su2double valDensity) { design_rho = valDensity; }
+
+inline su2double CElementProperty::GetDesignDensity(void) { return design_rho; }
+
+inline void CElementProperty::SetPhysicalDensity(su2double valDensity) { physical_rho = valDensity; }
+
+inline su2double CElementProperty::GetPhysicalDensity(void) { return physical_rho; }
+
+inline su2double CElementProperty::GetAdjointDensity(void) { return SU2_TYPE::GetDerivative(design_rho); }
+  
+inline void CElementProperty::RegisterDensity(void) { AD::RegisterInput(design_rho); }
 

@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -73,7 +73,7 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 6.1.0 \"Falcon\"                            |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 6.2.0 \"Falcon\"                            |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
@@ -92,7 +92,7 @@ def main():
     sys.stdout.write('| - Prof. Edwin van der Weide\' group at the University of Twente.       |\n')
     sys.stdout.write('| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |\n')
+    sys.stdout.write('| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |\n')
     sys.stdout.write('|                      Tim Albring, and the SU2 contributors.           |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')

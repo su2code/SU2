@@ -1,16 +1,23 @@
+<p align="center">
+<img width="250" height="152" src="Common/doc/logoSU2_v3.3_small.jpeg">
+</p>
+
 -----------------------------------------------------------
-  SU2 (ver. 6.1.0 "Falcon"): The Open-Source CFD Code
+  SU2 (ver. 6.2.0 "Falcon"): The Open-Source CFD Code
 -----------------------------------------------------------
 
-Computational analysis tools have revolutionized the way we design aerospace systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making computational analysis and design freely available as open-source software and involving everyone in its creation and development. 
+Computational analysis tools have revolutionized the way we design engineering systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making multiphysics analysis and design optimization freely available as open-source software and involving everyone in its creation and development. 
 
 For an overview of the technical details in SU2, please see the following AIAA Journal article:
 
 "SU2: An open-source suite for multiphysics simulation and design," AIAA Journal, 54(3):828-846, 2016. http://arc.aiaa.org/doi/10.2514/1.J053813
 
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+
+Continuous Integration:<br/>
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84504379514e446a8f6251e7499ecc86)](https://app.codacy.com/app/talbring/SU2?utm_source=github.com&utm_medium=referral&utm_content=su2code/SU2&utm_campaign=Badge_Grade_Settings)
 [![Build Status](https://travis-ci.org/su2code/SU2.svg?branch=develop)](https://travis-ci.org/su2code/SU2)
 
-Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
 
 ----------------------------------------------------------
   SU2 INTRODUCTION 
@@ -22,7 +29,6 @@ The primary applications are computational fluid dynamics and aerodynamic shape 
 
 You will find more information and the latest news in:
    - SU2 Home Page: https://su2code.github.io
-   - SU2 International Developers Society Home Page: www.su2devsociety.org
    - GitHub repository: https://github.com/su2code
    - CFD Online: http://www.cfd-online.com/Forums/su2/
    - Twitter: https://twitter.com/su2code
@@ -32,7 +38,7 @@ You will find more information and the latest news in:
   SU2 INSTALLATION
 ---------------------------------------------------
 
-To build SU2 from the source code, just open a terminal and run the './configure', 'make', and 'make install' commands in the root directory of the source distribution. You can provide an install location using the prefix option to configure. If there are issues with autotool version requirements, run the ./bootstrap script provided in the root directory in order to build local versions of the tools and reset the makefiles (before trying configure/make/make install again). Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
+To build SU2 from the source code, first open a terminal and execute the ./bootstrap script provided in the root directory of the source distribution in order to set the makefiles for your local system. Then, simply run the './configure', 'make', and 'make install' commands. You can provide an install location using the prefix option to configure. Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
 
 ----------------------------------------------------------
   SU2 PATH SETUP 
@@ -61,7 +67,7 @@ Thanks for building, and happy optimizing!
 
 SU2 is being developed by individuals and organized teams all around the world. 
 
-The current SU2 release has been coordinated by the SU2 International Developers Society <www.su2devsociety.org> with selected contributions from the open-source community.
+The current SU2 release has been coordinated by the SU2 International Developers Society with selected contributions from the open-source community.
 
 The main research teams contributing to the current release are:
 - Prof. Juan J. Alonso's group at Stanford University.
@@ -73,5 +79,5 @@ The main research teams contributing to the current release are:
 - Prof. Edwin van der Weide's group at the University of Twente.
 - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
 
-Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
+Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
 

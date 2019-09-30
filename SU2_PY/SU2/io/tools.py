@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -205,6 +205,7 @@ def get_headerMap(nZones = 1):
                  "AoA"             : "AOA"                     ,
                  "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
+                 "Buffet_Metric"   : "BUFFET"                  ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
@@ -293,6 +294,7 @@ optnames_aero = [ "LIFT"                        ,
                   "FORCE_Z"                     ,
                   "EFFICIENCY"                  ,
                   "FIGURE_OF_MERIT"             ,
+                  "BUFFET"                      ,
                   "TORQUE"                      ,
                   "THRUST"                      ,
                   "SURFACE_TOTAL_PRESSURE"      ,
@@ -629,6 +631,7 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                      : "ct"        ,
                  "TORQUE"                      : "cq"        ,
                  "FIGURE_OF_MERIT"             : "merit"     ,
+                 "BUFFET"                      : "buffet"    ,
                  "SURFACE_TOTAL_PRESSURE"      : "pt"        ,
                  "SURFACE_STATIC_PRESSURE"     : "pe"        ,
                  "SURFACE_MASSFLOW"            : "mfr"       ,
@@ -699,29 +702,40 @@ def add_suffix(base_name,suffix):
 def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
-    dv_map = { 1   : "HICKS_HENNE"           ,
-               2   : "SURFACE_BUMP"          ,
-               4   : "NACA_4DIGITS"          ,
-               5   : "TRANSLATION"           ,
-               6   : "ROTATION"              ,
-               7   : "FFD_CONTROL_POINT"     ,
-               8   : "FFD_DIHEDRAL_ANGLE"    ,
-               9   : "FFD_TWIST_ANGLE"       ,
-               10  : "FFD_ROTATION"          ,
-               11  : "FFD_CAMBER"            ,
-               12  : "FFD_THICKNESS"         ,
-               19  : "FFD_TWIST"             ,
-               22  : "FFD_NACELLE"           ,
-               23  : "FFD_GULL"              ,
-               25  : "FFD_ROTATION"          ,
-               15  : "FFD_CONTROL_POINT_2D"  ,
-               16  : "FFD_CAMBER_2D"         ,
-               17  : "FFD_THICKNESS_2D"      ,
-               20  : "FFD_TWIST_2D"          ,
-               50  : "CUSTOM"                ,
-               51  : "CST"                   ,
-               101 : "ANGLE_OF_ATTACK"       ,
-               102 : "FFD_ANGLE_OF_ATTACK"                    }
+    dv_map = { 0   : "NO_DEFORMATION"        ,
+               1   : "TRANSLATION"           ,
+               2   : "ROTATION"              ,
+               3   : "SCALE"                 ,
+               10  : "FFD_SETTING"           ,
+               11  : "FFD_CONTROL_POINT"     ,
+               12  : "FFD_NACELLE"           ,
+               13  : "FFD_GULL"              ,
+               14  : "FFD_CAMBER"            ,
+               15  : "FFD_TWIST"             ,
+               16  : "FFD_THICKNESS"         ,
+               18  : "FFD_ROTATION"          ,
+               19  : "FFD_CONTROL_POINT_2D"  ,
+               20  : "FFD_CAMBER_2D"         ,
+               21  : "FFD_THICKNESS_2D"      ,
+               22  : "FFD_TWIST_2D"          ,
+               23  : "FFD_CONTROL_SURFACE"   ,
+               24  : "FFD_ANGLE_OF_ATTACK"   ,
+               30  : "HICKS_HENNE"           ,
+               31  : "PARABOLIC"             ,
+               32  : "NACA_4DIGITS"          ,
+               33  : "AIRFOIL"               ,
+               34  : "CST"                   ,
+               35  : "SURFACE_BUMP"          ,
+               36  : "SURFACE_FILE"          ,
+               40  : "DV_EFIELD"             ,
+               41  : "DV_YOUNG"              ,
+               42  : "DV_POISSON"            ,
+               43  : "DV_RHO"                ,
+               44  : "DV_RHO_DL"             ,
+               50  : "TRANSLATE_GRID"        ,
+               51  : "ROTATE_GRID"           ,
+               52  : "SCALE_GRID"            ,
+               101 : "ANGLE_OF_ATTACK"       }
     
     return dv_map
 
@@ -767,7 +781,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     # handle plot formating
     if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header.append('VARIABLES=')
-    elif plot_format == 'PARAVIEW':
+    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -893,7 +907,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     # handle plot formating
     if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header_format = header_format + 'VARIABLES='
-    elif plot_format == 'PARAVIEW':
+    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -947,6 +961,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
 def get_extension(output_format):
   
     if (output_format == "PARAVIEW")        : return ".csv"
+    if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  
@@ -978,7 +993,7 @@ def get_specialCases(config):
     for key in all_special_cases:
         if key in config and config[key] == 'YES':
             special_cases.append(key)
-        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
+        if 'SOLVER' in config and config['SOLVER'] == key:
             special_cases.append(key)
             
     if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
@@ -1016,7 +1031,7 @@ def get_multizone(config):
     
     multizone = []
     for key in all_multizone_problems:
-        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
+        if 'SOLVER' in config and config['SOLVER'] == key:
             multizone.append(key)
             
     return multizone

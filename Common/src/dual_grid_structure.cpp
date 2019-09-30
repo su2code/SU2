@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -89,7 +89,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Boundary         = false;
   SolidBoundary    = false;
   PhysicalBoundary = false;
-
+  PeriodicBoundary = false;
 
   /*--- Set the global index in the parallel simulation ---*/
   GlobalIndex = val_globalindex;
@@ -103,26 +103,37 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     Coord_Sum = new su2double[nDim];
   }
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  bool dynamic_grid = config->GetDynamic_Grid();
+
+  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
+  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
+                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
+                             config->GetKind_Solver() == ADJ_RANS);
+
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
-  if ( config->GetGrid_Movement() ) {
+  if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) 
       GridVel[iDim] = 0.0;
 
+    if (continuous_adjoint){
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new su2double*[nDim];
+      GridVel_Grad = new su2double*[nDim];
 
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        GridVel_Grad[iDim][jDim] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GridVel_Grad[iDim] = new su2double[nDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          GridVel_Grad[iDim][jDim] = 0.0;
+      }
     }
 
     /*--- Structures for storing old node coordinates for computing grid 
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if ( config->GetUnsteady_Simulation() != NO ) {
+    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
+    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -132,6 +143,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
 
+  /*--- Intialize the value of the periodic volume. ---*/
+  Periodic_Volume = 0.0;
+  
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
@@ -182,6 +196,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Boundary         = false;
   SolidBoundary    = false;
   PhysicalBoundary = false;
+  PeriodicBoundary = false;
 
   /*--- Set the color for mesh partitioning ---*/
   color = 0;
@@ -195,23 +210,34 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
     Coord_Sum = new su2double[nDim];
   }
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  bool dynamic_grid = config->GetDynamic_Grid();
+
+  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
+  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
+                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
+                             config->GetKind_Solver() == ADJ_RANS);
+
   /*--- Storage of grid velocities for dynamic meshes ---*/
-  if ( config->GetGrid_Movement() ) {
+  if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
 
+    if (continuous_adjoint){
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        GridVel_Grad[iDim][jDim] = 0.0;
+      GridVel_Grad = new su2double*[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GridVel_Grad[iDim] = new su2double[nDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          GridVel_Grad[iDim][jDim] = 0.0;
+      }
     }
 
     /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if (config->GetUnsteady_Simulation() != NO) {
+    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
+    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -226,6 +252,9 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
 
+  /*--- Intialize the value of the periodic volume. ---*/
+  Periodic_Volume = 0.0;
+  
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
@@ -276,7 +305,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Boundary         = false;
   SolidBoundary    = false;
   PhysicalBoundary = false;
-
+  PeriodicBoundary = false;
 
   /*--- Set the color for mesh partitioning ---*/
   color = 0;
@@ -290,24 +319,35 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
     Coord_Sum = new su2double[nDim];
   }
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  bool dynamic_grid = config->GetDynamic_Grid();
+
+  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
+  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
+                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
+                             config->GetKind_Solver() == ADJ_RANS);
+
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
-  if (config->GetGrid_Movement()) {
+  if (dynamic_grid) {
     GridVel = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
 
+    if (continuous_adjoint){
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        GridVel_Grad[iDim][jDim] = 0.0;
+      GridVel_Grad = new su2double*[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GridVel_Grad[iDim] = new su2double[nDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          GridVel_Grad[iDim][jDim] = 0.0;
+      }
     }
 
     /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if ( config->GetUnsteady_Simulation() != NO ) {
+    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
+    if ( config->GetGrid_Movement() && (config->GetUnsteady_Simulation() != NO)) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -322,6 +362,9 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
 
+  /*--- Intialize the value of the periodic volume. ---*/
+  Periodic_Volume = 0.0;
+  
 }
 
 CPoint::~CPoint() {

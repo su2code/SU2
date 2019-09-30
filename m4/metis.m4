@@ -4,8 +4,7 @@
 AC_DEFUN([CONFIGURE_METIS],
 [
   AC_ARG_ENABLE(metis,
-                AC_HELP_STRING([--enable-metis],
-                               [build with Metis graph partitioning suppport]),
+                AC_HELP_STRING(),
 		[case "${enableval}" in
 		  yes)  enablemetis=yes ;;
 		   no)  enablemetis=no ;;

@@ -2,7 +2,7 @@
  * \file output_cgns.cpp
  * \brief Main subroutines for output solver information
  * \author T. Economon, M. Colonno
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -85,17 +85,15 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
     cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"end");
     if (cgns_err) cg_error_print();
-//    
-//    cgns_err = cg_goto(cgns_file, cgns_base, cgns_zone,"end");
-//    if (cgns_err) cg_error_print();
+
     
     /*--- write CGNS node coordinates ---*/
-    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"x", Coords[0], &cgns_coord);
+    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"CoordinateX", Coords[0], &cgns_coord);
     if (cgns_err) cg_error_print();
-    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"y", Coords[1], &cgns_coord);
+    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"CoordinateY", Coords[1], &cgns_coord);
     if (cgns_err) cg_error_print();
     if (geometry->GetnDim() == 3) {
-      cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"z", Coords[2], &cgns_coord);
+      cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"CoordinateZ", Coords[2], &cgns_coord);
       if (cgns_err) cg_error_print();
     }
     

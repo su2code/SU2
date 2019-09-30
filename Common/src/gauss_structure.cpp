@@ -2,7 +2,7 @@
  * \file gauss_structure.cpp
  * \brief Definition of the Gaussian Points structure for Finite Element applications
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -75,21 +75,42 @@ CGaussVariable::~CGaussVariable(void) {
 
 }
 
+CProperty::CProperty(void) {
+
+  iMat_Prop = 0;
+
+}
+
+CProperty::CProperty(unsigned long valMat_Prop) {
+
+  iMat_Prop = valMat_Prop;
+
+}
+
+CProperty::~CProperty(void) {
+
+}
+
+
 CElementProperty::CElementProperty(void) {
 
   iMat_Mod = 0;
   iMat_Prop = 0;
   iElectric_Prop = 0;
   iDV = 0;
+  design_rho = 1.0;
+  physical_rho = 1.0;
 
 }
 
-CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV) {
+CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity) : CProperty(valMat_Prop) {
 
   iMat_Mod = valMat_Model;
   iMat_Prop = valMat_Prop;
   iElectric_Prop = valElectric_Prop;
   iDV = valDV;
+  design_rho = valDensity;
+  physical_rho = valDensity;
 
 }
 

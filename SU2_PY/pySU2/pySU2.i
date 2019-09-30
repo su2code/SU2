@@ -4,7 +4,7 @@
 # \file pySU2.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -20,7 +20,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -48,12 +48,16 @@ threads="1"
 ) pysu2
 %{
 
-#include "../../SU2_CFD/include/driver_structure.hpp"
-
+#include "../../SU2_CFD/include/drivers/CDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+  
 %}
 
 // ----------- USED MODULES ------------
 %import "../../Common/include/datatypes/primitive_structure.hpp"
+%import "../../Common/include/datatype_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
 %include "std_vector.i"
@@ -94,4 +98,7 @@ const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. 
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
 // CDriver class
-%include "../../SU2_CFD/include/driver_structure.hpp"
+%include "../../SU2_CFD/include/drivers/CDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"

@@ -3,7 +3,7 @@
 ## \file parallel_computation_fsi.py
 #  \brief Python script for running FSI simulations using the SU2 suite.
 #  \author T. Economon, T. Lukaczyk, F. Palacios, H. Kline, R. Sanchez
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -95,9 +95,9 @@ def parallel_computation( filename           ,
     state.update(info)
 
     # Solution merging
-    if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
+    if config.SOLVER == 'FEM_ELASTICITY':
         config.SOLUTION_STRUCTURE_FILENAME = config.RESTART_STRUCTURE_FILENAME 
-    elif config.PHYSICAL_PROBLEM == 'FLUID_STRUCTURE_INTERACTION':
+    elif config.SOLVER == 'FLUID_STRUCTURE_INTERACTION':
         config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
         config.SOLUTION_STRUCTURE_FILENAME = config.RESTART_STRUCTURE_FILENAME  
 

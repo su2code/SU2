@@ -2,7 +2,7 @@
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CDiscAdjVariable.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
@@ -52,8 +53,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   string text_line, mesh_filename;
   ifstream restart_file;
   string filename, AdjExt;
-
-  bool fsi = config->GetFSI_Simulation();
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
@@ -86,7 +85,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
 
-  if (fsi){
+  if (config->GetMultizone_Residual()){
 
     Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
     Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
@@ -412,6 +411,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
+    case BUFFET_SENSOR:
+      ObjFunc_Value = direct_solver->GetTotal_Buffet_Metric();
+      break;
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()
@@ -529,7 +531,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-
+  
   /*--- Extract the adjoint values of the farfield values ---*/
 
   if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
@@ -684,8 +686,6 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
   }
 
-//  Set_MPI_CrossTerm(geometry, config);
-
 }
 
 void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {
@@ -780,12 +780,15 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 //        Solution_Geometry[iDim] += node[iPoint]->GetDual_Time_Derivative_Geometry(iDim);
 //      }
 //    }
+    for (iDim = 0; iDim < nDim; iDim++){
+      node[iPoint]->SetSensitivity(iDim, Solution_Geometry[iDim]);
+    }
     geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
   }
 
 }
 
-void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -931,10 +934,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   su2double Area_Children, Area_Parent, *Solution_Fine;
   ifstream restart_file;
   string restart_filename, filename, text_line;
-
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
+  
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_AdjFileName();
@@ -1036,7 +1039,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 }
 
-void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;

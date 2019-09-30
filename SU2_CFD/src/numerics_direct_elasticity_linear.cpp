@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity_linear.cpp
  * \brief This file contains the routines for setting the FEM elastic structural problem.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -37,6 +37,12 @@
 
 #include "../include/numerics_structure.hpp"
 #include <limits>
+
+CFEALinearElasticity::CFEALinearElasticity(void) : CFEAElasticity () {
+
+  nodalDisplacement = NULL;
+
+}
 
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
@@ -73,6 +79,17 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
+  
+  /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  AD::SetPreaccIn(Rho_s);
+  AD::SetPreaccIn(Rho_s_DL);
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
+  
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
@@ -199,6 +216,10 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
       element->Add_Kt_a(res_aux,iNode);
     }
   }
+  
+  /*--- Register the stress residual as preaccumulation output ---*/
+  element->SetPreaccOut_Kt_a();
+  AD::EndPreacc();
   
   delete[] res_aux;
 }

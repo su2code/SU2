@@ -3,13 +3,13 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
 # with selected contributions from the open-source community.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -410,6 +410,8 @@ def configure(argument_dict,
               made_adolc,
               made_codi):
 
+    # Boostrap to generate Makefile.in
+    bootstrap_command = './bootstrap'
     # Set the base command for running configure
     configure_base = '../configure'
 
@@ -426,6 +428,11 @@ def configure(argument_dict,
         configure_base = configure_base + ' --disable-tecio'
 
     build_dirs = ''
+   
+    print(  '\nPreparing build environment\n' \
+            '=====================================================================')
+
+    run_command(bootstrap_command, 'bootstrap.log', 'bootstrap.err', conf_environ)
 
     # Create the commands for the different configurations and run configure
     for key in modes:
@@ -550,7 +557,7 @@ def header():
 
     print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 6.1.0 \'Falcon\'                            | \n'\
+          '|   / __| | | |_  )   Release 6.2.0 \'Falcon\'                            | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -569,7 +576,7 @@ def header():
           '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       | \n'\
+          '| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       | \n'\
           '|                      Tim Albring, and the SU2 contributors.           | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\

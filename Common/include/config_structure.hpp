@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -47,6 +47,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <array>
 #include <stdlib.h>
 #include <cmath>
 #include <map>
@@ -72,6 +73,7 @@ class CConfig {
 private:
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;
+  bool base_config;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Ref_Inc_NonDim; /*!< \brief Kind of non dimensionalization.*/
@@ -125,7 +127,6 @@ private:
   Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
   Weakly_Coupled_Heat, /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
@@ -144,7 +145,10 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
+  su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
+  su2double Buffet_lambda; /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -200,7 +204,8 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
+  nMarker_Deform_Mesh,			/*!< \brief Number of deformable markers at the boundary. */
+  nMarker_Fluid_Load,				/*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -243,7 +248,8 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+  *Marker_Deform_Mesh,				/*!< \brief Deformable markers at the boundary. */
+  *Marker_Fluid_Load,				  /*!< \brief Markers in which the flow load is computed/employed. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -352,6 +358,9 @@ private:
   su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Outlet_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
+  su2double *Outlet_Density;    /*!< \brief Avg. density for outlet boundaries. */
+  su2double *Outlet_Area;    /*!< \brief Area for outlet boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Massflow at the boundaries. */
   su2double *Surface_Mach;    /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
@@ -392,13 +401,20 @@ private:
   unsigned long ExtIter;			/*!< \brief Current external iteration number. */
   unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
   unsigned long IntIter;			/*!< \brief Current internal iteration number. */
-  unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
+  unsigned long OuterIter;			/*!< \brief Current Outer Iteration for multizone problems. */
   unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
-  long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
+  long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  su2double PhysicalTime;                       /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
+  unsigned short nLevels_TimeAccurateLTS;       /*!< \brief Number of time levels for time accurate local time stepping. */
+  unsigned short nTimeDOFsADER_DG;              /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
+  su2double *TimeDOFsADER_DG;                   /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
+  unsigned short nTimeIntegrationADER_DG;       /*!< \brief Number of time integration points ADER-DG. */
+  su2double *TimeIntegrationADER_DG;            /*!< \brief The location of the ADER-DG time integration points on the interval [-1,1]. */
+  su2double *WeightsIntegrationADER_DG;         /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
   unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
@@ -417,10 +433,12 @@ private:
   nObj, nObjW;              /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
-  unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
+  string DV_Unordered_Sens_Filename;      /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
+  string DV_Sens_Filename;      /*!< \brief Filename of surface sensitivities written to an unordered ASCII format. */
+  unsigned short Sensitivity_FileFormat; /*!< \brief Format of the input volume sensitivity files (SU2_DOT). */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -440,15 +458,18 @@ private:
   su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
-  *Kind_Solver_PerZone,  /*!< \brief Kind of solvers for each zone Euler, NS, Continuous adjoint, etc.  */
+  Kind_MZSolver,         /*!< \brief Kind of multizone solver.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
+  Kind_ConductivityModel_Turb,      /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
   Kind_DensityModel,				/*!< \brief Kind of the density model for incompressible flows. */
-  *Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
+  Kind_GridMovement,    /*!< \brief Kind of the static mesh movement. */
+  *Kind_SurfaceMovement,    /*!< \brief Kind of the static mesh movement. */
+  nKind_SurfaceMovement,    /*!< \brief Kind of the dynamic mesh movement. */  
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
   Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
@@ -469,6 +490,8 @@ private:
   Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
   Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
+  Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
+  Kind_ADER_Predictor,          /*!< \brief Predictor step of the ADER-DG time integration scheme. */
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
@@ -478,6 +501,7 @@ private:
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
   Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+  Kind_ConvNumScheme_FEM_Flow,  /*!< \brief Finite element scheme for the flow equations. */
   Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
@@ -495,19 +519,24 @@ private:
   Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_Flow,                        /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_DG_Shock,      /*!< \brief Shock capturing method for the FEM DG solver. */
+  Kind_Matrix_Coloring,   /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_AdjTurb, 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  Use_Accurate_Jacobians;   /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  bool EulerPersson;        /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  ZoneSpecific_Problem;   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
+  Multizone_Problem;      /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
@@ -516,14 +545,19 @@ private:
   Kind_Struct_Solver,		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   Kind_DV_FEA;				/*!< \brief Kind of Design Variable for FEA problems.*/
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  unsigned short Kind_SGS_Model;                        /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
+  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Inc_Outlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
   unsigned short nInc_Inlet;  /*!< \brief Number of inlet boundary treatment types listed. */
+  unsigned short nInc_Outlet;  /*!< \brief Number of inlet boundary treatment types listed. */
+  su2double Inc_Inlet_Damping;  /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
+  su2double Inc_Outlet_Damping; /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
+  su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -553,7 +587,8 @@ private:
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
+  Kappa_4th_Heat,     /*!< \brief 4th order dissipation coefficient for heat equation. */
+  Cent_Jac_Fix_Factor;/*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes by this factor to make the global matrix more diagonal dominant. */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -561,6 +596,7 @@ private:
   unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
   GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  bool Deform_Mesh;    /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
@@ -636,6 +672,8 @@ private:
   *Marker_PyCustom,            /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
+  string *Config_Filenames;               /*!< \brief List of names for configuration files. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -649,6 +687,8 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_Deform_Mesh,     /*!< \brief Global index for deformable markers at the boundary. */
+  *Marker_All_Fluid_Load,       /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -661,6 +701,8 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_Deform_Mesh,     /*!< \brief Global index for deformable markers at the boundary. */
+  *Marker_CfgFile_Fluid_Load,       /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
@@ -690,6 +732,10 @@ private:
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
   nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
   nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
+  unsigned short nMesh_Box_Size;
+  short *Mesh_Box_Size;     /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  su2double* Mesh_Box_Length;       /*!< \brief Array containing the length in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  su2double* Mesh_Box_Offset;       /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
   Solution_FlowFileName,			/*!< \brief Flow solution input file. */
@@ -721,7 +767,8 @@ private:
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+  bool Low_MemoryOutput,      /*!< \brief Output less information for lower memory use */
+  Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -732,11 +779,14 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
+  Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,			/*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
@@ -772,6 +822,12 @@ private:
   Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,     /*!< \brief Reference S for Sutherland model.  */
   Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  *CpPolyCoefficients,   /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
+  *MuPolyCoefficients,   /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
+  *KtPolyCoefficients,   /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
+  *CpPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
+  *MuPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
+  *KtPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
@@ -842,55 +898,34 @@ private:
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
-  su2double *Motion_Origin_X, /*!< \brief X-coordinate of the mesh motion origin. */
-  *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
-  *Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-  *Translation_Rate_X,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *Translation_Rate_Y,        /*!< \brief Translational velocity of the mesh in the y-direction. */
-  *Translation_Rate_Z,        /*!< \brief Translational velocity of the mesh in the z-direction. */
-  *Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
-  *Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
-  *Pitching_Omega_X,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *Pitching_Omega_Y,          /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
-  *Pitching_Omega_Z,          /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
-  *Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
-  *Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
-  *Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
-  *Pitching_Phase_X,          /*!< \brief Pitching phase offset about the x-axis. */
-  *Pitching_Phase_Y,          /*!< \brief Pitching phase offset about the y-axis. */
-  *Pitching_Phase_Z,          /*!< \brief Pitching phase offset about the z-axis. */
-  *Plunging_Omega_X,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
-  *Plunging_Omega_Y,          /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
-  *Plunging_Omega_Z,          /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
-  *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
-  *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-  *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
-  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
-  unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
-  nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
-  nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
-  nTranslation_Rate_X,        /*!< \brief Number of Translational x-velocities for mesh motion. */
-  nTranslation_Rate_Y,        /*!< \brief Number of Translational y-velocities for mesh motion. */
-  nTranslation_Rate_Z,        /*!< \brief Number of Translational z-velocities for mesh motion. */
-  nRotation_Rate_X,           /*!< \brief Number of Angular velocities about the x-axis for mesh motion. */
-  nRotation_Rate_Y,           /*!< \brief Number of Angular velocities about the y-axis for mesh motion. */
-  nRotation_Rate_Z,           /*!< \brief Number of Angular velocities about the z-axis for mesh motion. */
-  nPitching_Omega_X,          /*!< \brief Number of Angular frequencies about the x-axis for pitching. */
-  nPitching_Omega_Y,          /*!< \brief Number of Angular frequencies about the y-axis for pitching. */
-  nPitching_Omega_Z,          /*!< \brief Number of Angular frequencies about the z-axis for pitching. */
-  nPitching_Ampl_X,           /*!< \brief Number of Pitching amplitudes about the x-axis. */
-  nPitching_Ampl_Y,           /*!< \brief Number of Pitching amplitudes about the y-axis. */
-  nPitching_Ampl_Z,           /*!< \brief Number of Pitching amplitudes about the z-axis. */
-  nPitching_Phase_X,          /*!< \brief Number of Pitching phase offsets about the x-axis. */
-  nPitching_Phase_Y,          /*!< \brief Number of Pitching phase offsets about the y-axis. */
-  nPitching_Phase_Z,          /*!< \brief Number of Pitching phase offsets about the z-axis. */
-  nPlunging_Omega_X,          /*!< \brief Number of Angular frequencies in the x-direction for plunging. */
-  nPlunging_Omega_Y,          /*!< \brief Number of Angular frequencies in the y-direction for plunging. */
-  nPlunging_Omega_Z,          /*!< \brief Number of Angular frequencies in the z-direction for plunging. */
-  nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
-  nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
-  nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+  
+  su2double *Motion_Origin, /*!< \brief Mesh motion origin. */
+  *Translation_Rate,        /*!< \brief Translational velocity of the mesh. */
+  *Rotation_Rate,           /*!< \brief Angular velocity of the mesh . */
+  *Pitching_Omega,          /*!< \brief Angular frequency of the mesh pitching. */
+  *Pitching_Ampl,           /*!< \brief Pitching amplitude. */ 
+  *Pitching_Phase,          /*!< \brief Pitching phase offset. */ 
+  *Plunging_Omega,          /*!< \brief Angular frequency of the mesh plunging. */ 
+  *Plunging_Ampl;           /*!< \brief Plunging amplitude. */
+  su2double *MarkerMotion_Origin, /*!< \brief Mesh motion origin of marker. */
+  *MarkerTranslation_Rate,        /*!< \brief Translational velocity of marker. */
+  *MarkerRotation_Rate,           /*!< \brief Angular velocity of marker. */
+  *MarkerPitching_Omega,          /*!< \brief Angular frequency of marker. */
+  *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude of marker. */ 
+  *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */ 
+  *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */ 
+  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
+  
+  unsigned short nMarkerMotion_Origin, /*!< \brief Number of values provided for mesh motion origin of marker. */
+  nMarkerTranslation,        /*!< \brief Number of values provided for translational velocity of marker. */
+  nMarkerRotation_Rate,           /*!< \brief Number of values provided for angular velocity of marker. */
+  nMarkerPitching_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
+  nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */ 
+  nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */ 
+  nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */ 
+  nMarkerPlunging_Ampl;           /*!< \brief Number of values provided for plunging amplitude of marker. */
+  su2double  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
+  unsigned short
   nOmega_HB,                /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
@@ -919,7 +954,6 @@ private:
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
-  bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
   su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
@@ -943,8 +977,14 @@ private:
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
+  bool Predictor,             /*!< \brief Determines whether a predictor step is used. */
+  Relaxation;                 /*!< \brief Determines whether a relaxation step is used. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
+  bool ConservativeInterpolation; /*!\brief Conservative approach for non matching mesh interpolation. */
+  unsigned short Kind_RadialBasisFunction; /*!\brief type of radial basis function to use for radial basis FSI. */
+  bool RadialBasisFunction_PolynomialOption; /*!\brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
+  su2double RadialBasisFunction_Parameter; /*!\brief Radial basis function parameter. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   string FEA_FileName;         /*!< \brief File name for element-based properties. */
@@ -994,20 +1034,85 @@ private:
   su2double *RampRotatingFrame_Coeff; /*!< \brief coefficient for Rotating frame ramp */
   su2double *RampOutletPressure_Coeff; /*!< \brief coefficient for outlet pressure ramp */
   su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
-  su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
+  su2double FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
   su2double *default_nacelle_location;        /*!< \brief Location of the nacelle. */
+  su2double *default_cp_polycoeffs;        /*!< \brief Array for specific heat polynomial coefficients. */
+  su2double *default_mu_polycoeffs;        /*!< \brief Array for viscosity polynomial coefficients. */
+  su2double *default_kt_polycoeffs;        /*!< \brief Array for thermal conductivity polynomial coefficients. */
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  bool topology_optimization; /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
+  string top_optim_output_file; /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
+  su2double simp_exponent; /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
+  su2double simp_minimum_stiffness; /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
+  unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
+                *top_optim_kernels, /*!< \brief The kernels to use. */
+                 top_optim_nKernelParams, /*!< \brief Number of kernel parameters specified. */
+                 top_optim_nRadius, /*!< \brief Number of radius values specified. */
+                 top_optim_search_lim; /*!< \brief Limit the maximum "logical radius" considered during filtering. */
+  su2double *top_optim_kernel_params, /*!< \brief The kernel parameters. */
+            *top_optim_filter_radius; /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
+  unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
+  su2double top_optim_proj_param;  /*!< \brief The value of the parameter for the projection function. */
+
+  unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
+  su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
+  su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
+  su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
+  su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
+  unsigned short byteAlignmentMatMul;        /*!< \brief Number of bytes in the vectorization direction for the matrix multiplication. Multipe of 64. */
+  unsigned short sizeMatMulPadding;          /*!< \brief The matrix size in the vectorization direction padded to a multiple of 8. Computed from byteAlignmentMatMul. */
+  bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
+  bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
+  bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
+  bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
+  unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
+  unsigned short Kind_Verification_Solution;  /*!< \brief Verification solution for accuracy assessment. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
+  bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
+  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
+  Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
+  Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
+  Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
+  su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
+  su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
+  bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
+  bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
+  Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
+  bool Multizone_Residual;      /*!< \brief Determines if memory should be allocated for the multizone residual. */
+  
+  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  su2double uq_delta_b;            /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
+  unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
+  su2double uq_urlx;            /*!< \brief Under-relaxation factor */
+  bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  unsigned long pastix_fact_freq; /*!< \brief (Re-)Factorization frequency for PaStiX */
+  unsigned short pastix_verb_lvl; /*!< \brief Verbosity level for PaStiX */
+  unsigned short pastix_fill_lvl; /*!< \brief Fill level for PaStiX ILU */
+
+
+  /*!
+   * \brief Set the default values of config options not set in the config file using another config object.
+   * \param config - Config object to use the default values from.
+   */
+  void SetDefaultFromConfig(CConfig *config);
+  
+  /*!
+   * \brief Set default values for all options not yet set.
+   */
+  void SetDefault();
+  
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -1167,6 +1272,13 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionFEMConvect(name, space_field, fem_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default) {
@@ -1300,7 +1412,12 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  
+  /*!
+   * \brief Constructor of the class which reads the input file and uses default options from another config.
+   */
+  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -1317,6 +1434,11 @@ public:
    */
   ~CConfig(void);
   
+ void SetnZone();
+ 
+ void SetnDim();
+ 
+ void SetHeader(unsigned short val_software);
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
@@ -1333,10 +1455,9 @@ public:
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
    * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] config - Definition of the particular problem.
    * \return Total number of zones in the grid file.
    */
-  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format);
   
   /*!
    * \brief Gets the number of dimensions in the mesh file
@@ -1345,15 +1466,6 @@ public:
    * \return Total number of domains in the grid file.
    */
   static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
-
-  /*!
-   * \brief Determine whether there are periodic BCs in the grid.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] config - Definition of the particular problem.
-   * \return Boolean for whether or not there are periodic BCs in the grid.
-   */
-  static bool GetPeriodic(string val_mesh_filename, unsigned short val_format, CConfig *config);
   
   /*!
    * \brief Initializes pointers to null
@@ -2241,10 +2353,12 @@ public:
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
+   * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, bool val_muscl);
-  
+                             unsigned short val_kind_upwind,        unsigned short val_kind_slopelimit,
+                             bool val_muscl,                        unsigned short val_kind_fem);
+
   /*!
    * \brief Get the value of limiter coefficient.
    * \return Value of the limiter coefficient.
@@ -2769,7 +2883,49 @@ public:
    * \return Number of Runge-Kutta steps.
    */
   unsigned short GetnRKStep(void);
-  
+
+  /*!
+   * \brief Get the number of time levels for time accurate local time stepping.
+   * \return Number of time levels.
+   */
+  unsigned short GetnLevels_TimeAccurateLTS(void);
+
+  /*!
+   * \brief Set the number of time levels for time accurate local time stepping.
+   * \param[in] val_nLevels - The number of time levels to be set.
+   */
+  void SetnLevels_TimeAccurateLTS(unsigned short val_nLevels);
+
+  /*!
+   * \brief Get the number time DOFs for ADER-DG.
+   * \return Number of time DOFs used in ADER-DG.
+   */
+  unsigned short GetnTimeDOFsADER_DG(void);
+
+  /*!
+   * \brief Get the location of the time DOFs for ADER-DG on the interval [-1..1].
+   * \return The location of the time DOFs used in ADER-DG.
+   */
+  su2double *GetTimeDOFsADER_DG(void);
+
+  /*!
+   * \brief Get the number time integration points for ADER-DG.
+   * \return Number of time integration points used in ADER-DG.
+   */
+  unsigned short GetnTimeIntegrationADER_DG(void);
+
+  /*!
+   * \brief Get the location of the time integration points for ADER-DG on the interval [-1..1].
+   * \return The location of the time integration points used in ADER-DG.
+   */
+  su2double *GetTimeIntegrationADER_DG(void);
+
+  /*!
+   * \brief Get the weights of the time integration points for ADER-DG.
+   * \return The weights of the time integration points used in ADER-DG.
+   */
+  su2double *GetWeightsIntegrationADER_DG(void);
+
   /*!
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
@@ -2801,10 +2957,16 @@ public:
   unsigned short GetnMarker_NearFieldBound(void);
   
   /*!
-   * \brief Get the total number of boundary markers.
-   * \return Total number of boundary markers.
+   * \brief Get the total number of deformable markers at the boundary.
+   * \return Total number of deformable markers at the boundary.
    */
-  unsigned short GetnMarker_InterfaceBound(void);
+  unsigned short GetnMarker_Deform_Mesh(void);
+
+  /*!
+   * \brief Get the total number of markers in which the flow load is computed/employed.
+   * \return Total number of markers in which the flow load is computed/employed.
+   */
+  unsigned short GetnMarker_Fluid_Load(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -2823,6 +2985,12 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_ActDiskOutlet(void);
+  
+  /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Outlet(void);
   
   /*!
    * \brief Get the total number of monitoring markers.
@@ -2956,7 +3124,7 @@ public:
    * \brief Set the current FSI iteration number.
    * \param[in] val_iter - Current FSI iteration number.
    */
-  void SetFSIIter(unsigned long val_iter);
+  void SetOuterIter(unsigned long val_iter);
   
   /*!
    * \brief Set the current internal iteration number.
@@ -2980,13 +3148,25 @@ public:
    * \brief Get the current FSI iteration number.
    * \return Current FSI iteration.
    */
-  unsigned long GetFSIIter(void);
+  unsigned long GetOuterIter(void);
   
   /*!
    * \brief Get the current internal iteration number.
    * \return Current internal iteration.
    */
   unsigned long GetIntIter(void);
+
+  /*!
+   * \brief Set the current physical time.
+   * \param[in] val_t - Current physical time.
+   */
+  void SetPhysicalTime(su2double val_t);
+  
+  /*!
+   * \brief Get the current physical time.
+   * \return Current physical time.
+   */
+  su2double GetPhysicalTime(void);
   
   /*!
    * \brief Get the frequency for writing the solution file.
@@ -3023,7 +3203,13 @@ public:
    * \return 	<code>TRUE</code> means that unsteady solution files will be written.
    */
   bool GetWrt_Unsteady(void);
-  
+
+  /*!
+   * \brief Get information about writing output files.
+   * \return <code>TRUE</code> means that output files will be written.
+   */
+  bool GetWrt_Output(void);
+
   /*!
    * \brief Get information about writing a volume solution file.
    * \return <code>TRUE</code> means that a volume solution file will be written.
@@ -3091,6 +3277,12 @@ public:
   bool GetWrt_Performance(void);
   
   /*!
+   * \brief Get information about writing the mesh quality metrics to the visualization files.
+   * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
+   */
+  bool GetWrt_MeshQuality(void);
+  
+  /*!
    * \brief Get information about writing a template inlet profile file.
    * \return <code>TRUE</code> means that a template inlet profile file will be written.
    */
@@ -3108,6 +3300,18 @@ public:
    */
   bool GetWrt_Slice(void);
 
+  /*!
+   * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
+   * \return <code>TRUE</code> means that projected sensitivities on surfaces in an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex will be written.
+   */
+  bool GetWrt_Projected_Sensitivity(void);
+  
+  /*!
+   * \brief Get information about the format for the input volume sensitvities.
+   * \return Format of the input volume sensitivities.
+   */
+  unsigned short GetSensitivity_Format(void);
+  
   /*!
    * \brief Get information about writing sectional force files.
    * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
@@ -3144,6 +3348,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker);
+  
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Outlet_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -3297,6 +3509,20 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
+   */
+  void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface);
+
+  /*!
+   * \brief Set if a in marker <i>val_marker</i> the flow load will be computed/employed.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker is or not a Fluid_Load marker.
+   */
+  void SetMarker_All_Fluid_Load(unsigned short val_marker, unsigned short val_interface);
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3420,6 +3646,20 @@ public:
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
 
   /*!
+   * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH marker
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the DEFORM_MESH subset.
+   * \return 0 or 1 depending if the marker belongs to the DEFORM_MESH subset.
+   */
+  unsigned short GetMarker_All_Deform_Mesh(unsigned short val_marker);
+
+  /*!
+   * \brief Get whether marker <i>val_marker</i> is a Fluid_Load marker
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the Fluid_Load subset.
+   * \return 0 or 1 depending if the marker belongs to the Fluid_Load subset.
+   */
+  unsigned short GetMarker_All_Fluid_Load(unsigned short val_marker);
+
+  /*!
    * \brief Get the Python customization for a marker <i>val_marker</i>.
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \return 0 or 1 depending if the marker is going to be customized in Python.
@@ -3439,7 +3679,7 @@ public:
    * \return Coordinate of the nacelle location.
    */
   su2double GetNacelleLocation(unsigned short val_index);
-
+  
   /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
    * \param[in] val_mesh - Index of the grid.
@@ -3514,6 +3754,12 @@ public:
    */
   void SetKind_Solver(unsigned short val_solver);
   
+  /*!
+   * \brief Kind of Multizone Solver.
+   * \return Governing equation that we are solving.
+   */
+  unsigned short GetKind_MZSolver(void);
+
   
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3590,9 +3836,15 @@ public:
   
   /*!
    * \brief Get the value of the thermal conductivity model.
-   * \return Connectivity model.
+   * \return Conductivity model.
    */
   unsigned short GetKind_ConductivityModel(void);
+  
+  /*!
+   * \brief Get the value of the turbulent thermal conductivity model.
+   * \return Turbulent conductivity model.
+   */
+  unsigned short GetKind_ConductivityModel_Turb(void);
   
   /*!
    * \brief Get the value of the constant viscosity.
@@ -3655,6 +3907,66 @@ public:
   su2double GetMu_SND(void);
   
   /*!
+   * \brief Get the number of coefficients in the temperature polynomial models.
+   * \return The the number of coefficients in the temperature polynomial models.
+   */
+  unsigned short GetnPolyCoeffs(void);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for specific heat Cp.
+   */
+  su2double GetCp_PolyCoeff(unsigned short val_index);
+
+  /*!
+   * \brief Get the temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for specific heat Cp.
+   */
+  su2double GetCp_PolyCoeffND(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for viscosity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for viscosity.
+   */
+  su2double GetMu_PolyCoeff(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for viscosity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Non-dimensional temperature polynomial coefficient for viscosity.
+   */
+  su2double GetMu_PolyCoeffND(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficients for viscosity.
+   * \return Non-dimensional temperature polynomial coefficients for viscosity.
+   */
+  su2double* GetMu_PolyCoeffND(void);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for thermal conductivity.
+   */
+  su2double GetKt_PolyCoeff(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Non-dimensional temperature polynomial coefficient for thermal conductivity.
+   */
+  su2double GetKt_PolyCoeffND(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficients for thermal conductivity.
+   * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
+   */
+  su2double* GetKt_PolyCoeffND(void);
+  
+  /*!
    * \brief Set the value of the non-dimensional constant viscosity.
    */
   void SetMu_ConstantND(su2double mu_const);
@@ -3678,6 +3990,27 @@ public:
    * \brief Set the value of the non-dimensional S for Sutherland model.
    */
   void SetMu_SND(su2double mu_s);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_coeff - Temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   */
+  void SetCp_PolyCoeffND(su2double val_coeff, unsigned short val_index);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficient for viscosity.
+   * \param[in] val_coeff - Non-dimensional temperature polynomial coefficient for viscosity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   */
+  void SetMu_PolyCoeffND(su2double val_coeff, unsigned short val_index);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_coeff - Non-dimensional temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   */
+  void SetKt_PolyCoeffND(su2double val_coeff, unsigned short val_index);
   
   /*!
    * \brief Get the kind of method for computation of spatial gradients.
@@ -3751,6 +4084,12 @@ public:
    * \return Restart frequency of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Restart_Frequency(void);
+  
+  /*!
+   * \brief Get the relaxation factor for iterative linear smoothers.
+   * \return Relaxation factor.
+   */
+  su2double GetLinear_Solver_Smoother_Relaxation(void) const;
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
@@ -3859,18 +4198,18 @@ public:
    * \return Number of nonlinear increments for mesh deformation.
    */
   unsigned long GetGridDef_Nonlinear_Iter(void);
+
+  /*!
+   * \brief Get information about whether the mesh will be deformed using pseudo linear elasticity.
+   * \return <code>TRUE</code> means that grid deformation is active.
+   */
+  bool GetDeform_Mesh(void);
   
   /*!
    * \brief Get information about writing grid deformation residuals to the console.
    * \return <code>TRUE</code> means that grid deformation residuals will be written to the console.
    */
   bool GetDeform_Output(void);
-  
-  /*!
-   * \brief Get factor to multiply smallest volume for deform tolerance.
-   * \return Factor to multiply smallest volume for deform tolerance.
-   */
-  su2double GetDeform_Tol_Factor(void);
   
   /*!
    * \brief Get factor to multiply smallest volume for deform tolerance.
@@ -3954,7 +4293,13 @@ public:
    * \return Kind of the transion model.
    */
   unsigned short GetKind_Trans_Model(void);
-  
+
+  /*!
+   * \brief Get the kind of the subgrid scale model.
+   * \return Kind of the subgrid scale model.
+   */
+  unsigned short GetKind_SGS_Model(void);
+
   /*!
    * \brief Get the kind of adaptation technique.
    * \return Kind of adaptation technique.
@@ -4056,6 +4401,12 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjTurb(void);
+  
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
+   * \return yes/no.
+   */
+  inline bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4065,7 +4416,14 @@ public:
    * \return Kind of integration scheme for the flow equations.
    */
   unsigned short GetKind_TimeIntScheme_Flow(void);
-  
+
+  /*!
+   * \brief Get the kind of scheme (aliased or non-aliased) to be used in the
+   *        predictor step of ADER-DG.
+   * \return Kind of scheme used in the predictor step of ADER-DG.
+   */
+  unsigned short GetKind_ADER_Predictor(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
@@ -4112,14 +4470,6 @@ public:
   unsigned short GetKind_SpaceIteScheme_FEA(void);
   
   /*!
-   * \brief Get the kind of transfer method we want to use for multiphysics problems
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of transfer method for multiphysics problems
-   */
-  unsigned short GetKind_TransferMethod(void);
-  
-  /*!
    * \brief Get the kind of convective numerical scheme for the flow
    *        equations (centered or upwind).
    * \note This value is obtained from the config file, and it is constant
@@ -4127,7 +4477,16 @@ public:
    * \return Kind of convective numerical scheme for the flow equations.
    */
   unsigned short GetKind_ConvNumScheme_Flow(void);
-  
+
+  /*!
+   * \brief Get the kind of convective numerical scheme for the flow
+   *        equations (finite element).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_ConvNumScheme_FEM_Flow(void);
+
   /*!
    * \brief Get the kind of convective numerical scheme for the template
    *        equations (centered or upwind).
@@ -4160,7 +4519,31 @@ public:
    * \return Kind of upwind convective numerical scheme for the flow equations.
    */
   unsigned short GetKind_Upwind_Flow(void);
-  
+
+  /*!
+   * \brief Get the kind of finite element convective numerical scheme for the flow equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of finite element convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_FEM_Flow(void);
+
+  /*!
+   * \brief Get the kind of shock capturing method in FEM DG solver.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of shock capturing method in FEM DG solver.
+   */
+  unsigned short GetKind_FEM_DG_Shock(void);
+
+  /*!
+   * \brief Get the kind of matrix coloring used for the sparse Jacobian computation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of matrix coloring used.
+   */
+  unsigned short GetKind_Matrix_Coloring(void);
+
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients.
@@ -4221,6 +4604,12 @@ public:
    * \return Calibrated constant for the JST-like method for the heat equation.
    */
   su2double GetKappa_4th_Heat(void);
+  
+  /*!
+   * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
+   * \return The factor.
+   */
+  inline su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4432,6 +4821,24 @@ public:
   bool GetInc_Inlet_UseNormal(void);
 
   /*!
+   * \brief Get the type of incompressible outlet from the list.
+   * \return Kind of the incompressible outlet.
+   */
+  unsigned short GetKind_Inc_Outlet(string val_marker);
+  
+  /*!
+   * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
+   * \return Damping factor applied to velocity updates at incompressible pressure inlets.
+   */
+  su2double GetInc_Inlet_Damping(void);
+  
+  /*!
+   * \brief Get the damping factor applied to pressure updates at incompressible mass flow outlet.
+   * \return Damping factor applied to pressure updates at incompressible mass flow outlet.
+   */
+  su2double GetInc_Outlet_Damping(void);
+  
+  /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
    * \return Kind of mixing process.
    */
@@ -4561,12 +4968,6 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void);
-
-  /*!
-   * \brief Verify if there are zone specific solvers entered in the config file.
-   * \return boolean.
-   */
-  bool GetBoolZoneSpecific(void);
   
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
@@ -5347,20 +5748,53 @@ public:
    * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
    */
   bool GetGrid_Movement(void);
+
+  /*!
+   * \brief Get information about dynamic grids.
+   * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
+   */
+  bool GetDynamic_Grid(void);
+
+  /*!
+   * \brief Get information about the volumetric movement.
+   * \return <code>TRUE</code> if there is a volumetric movement is required; otherwise <code>FALSE</code>.
+   */
+  bool GetVolumetric_Movement(void);
   
   /*!
-   * \brief Get the type of dynamic mesh motion.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \brief Get information about deforming markers.
+   * \param[in] kind_movement - Kind of surface movement.
+   * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
+   */
+  bool GetSurface_Movement(unsigned short kind_movement);
+
+  /*!
+   * \brief Set a surface movement marker.
+   * \param[in] iMarker - Moving marker.
+   * \param[in] kind_movement - Kind of surface movement.
+   * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
+   */
+  void SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement);
+  
+  /*!
+   * \brief Get the type of dynamic mesh motion. Each zone gets a config file.
    * \return Type of dynamic mesh motion.
    */
-  unsigned short GetKind_GridMovement(unsigned short val_iZone);
+  unsigned short GetKind_GridMovement();
   
   /*!
    * \brief Set the type of dynamic mesh motion.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
    */
-  void SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type);
+  void SetKind_GridMovement(unsigned short motion_Type);
+  
+  /*!
+   * \brief Get the type of surface motion.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving).
+   * \return Type of surface motion.
+   */
+  unsigned short GetKind_SurfaceMovement(unsigned short iMarkerMoving);
   
   /*!
    * \brief Get the mach number based on the mesh velocity and freestream quantities.
@@ -5369,207 +5803,159 @@ public:
   su2double GetMach_Motion(void);
   
   /*!
-   * \brief Get x-coordinate of the mesh motion origin.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return X-coordinate of the mesh motion origin.
+   * \brief Get the mesh motion origin.
+   * \param[in] iDim - spatial component
+   * \return The mesh motion origin.
    */
-  su2double GetMotion_Origin_X(unsigned short val_iZone);
+  su2double GetMotion_Origin(unsigned short iDim);
   
   /*!
-   * \brief Get y-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Y-coordinate of the mesh motion origin.
+   * \brief Set the mesh motion origin.
+   * \param[in] val - new value of the origin 
+   * \return The mesh motion origin.
    */
-  su2double GetMotion_Origin_Y(unsigned short val_iZone);
+  void SetMotion_Origin(su2double* val);
   
   /*!
-   * \brief Get z-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Z-coordinate of the mesh motion origin.
+   * \brief Get the mesh motion origin.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return The motion origin of the marker.
    */
-  su2double GetMotion_Origin_Z(unsigned short val_iZone);
+  su2double GetMarkerMotion_Origin(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Set x-coordinate of the mesh motion origin.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New x-coordinate of the mesh motion origin.
+   * \brief Set the mesh motion origin.
+   * \param[in] val - new value of the origin
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    */
-  void SetMotion_Origin_X(unsigned short val_iZone, su2double val_origin);
+  void SetMarkerMotion_Origin (su2double* val, unsigned short iMarkerMoving);
   
   /*!
-   * \brief Set y-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+   * \brief Get the translational velocity of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Translational velocity of the mesh.
    */
-  void SetMotion_Origin_Y(unsigned short val_iZone, su2double val_origin);
+  su2double GetTranslation_Rate(unsigned short iDim);
   
   /*!
-   * \brief Set z-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+   * \brief Get the translational velocity of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component    
+   * \return Translational velocity of the marker.
    */
-  void SetMotion_Origin_Z(unsigned short val_iZone, su2double val_origin);
+  su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the translational velocity of the mesh in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Translational velocity of the mesh in the x-direction.
+   * \brief Get the rotation rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Translational velocity of the mesh.
    */
-  su2double GetTranslation_Rate_X(unsigned short val_iZone);
+  su2double GetRotation_Rate(unsigned short iDim);
   
   /*!
-   * \brief Get the translational velocity of the mesh in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Translational velocity of the mesh in the y-direction.
+   * \brief Get the rotation rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \param[in] val - new value of the rotation rate.
+   * \return Translational velocity of the mesh.
    */
-  su2double GetTranslation_Rate_Y(unsigned short val_iZone);
+  void SetRotation_Rate(unsigned short iDim, su2double val);
   
   /*!
-   * \brief Get the translational velocity of the mesh in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Translational velocity of the mesh in the z-direction.
+   * \brief Get the rotation rate of the marker.
+   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component   
+   * \return Rotation velocity of the marker.
    */
-  su2double GetTranslation_Rate_Z(unsigned short val_iZone);
+  su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the angular velocity of the mesh about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the x-axis.
+   * \brief Get the pitching rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Angular frequency of the mesh pitching.
    */
-  su2double GetRotation_Rate_X(unsigned short val_iZone);
+  su2double GetPitching_Omega(unsigned short iDim);
   
   /*!
-   * \brief Get the angular velocity of the mesh about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the y-axis.
+   * \brief Get pitching rate of the marker.
+   * \param[in] iMarkerMoving - Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component  
+   * \return  Angular frequency of the marker pitching.
    */
-  su2double GetRotation_Rate_Y(unsigned short val_iZone);
+  su2double GetMarkerPitching_Omega(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the z-axis.
+   * \brief Get the pitching amplitude of the mesh.
+   * \param[in] iDim - spatial component   
+   * \return pitching amplitude of the mesh.
    */
-  su2double GetRotation_Rate_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the z-axis.
-   */
-  su2double GetFinalRotation_Rate_Z(unsigned short val_iZone);
+  su2double GetPitching_Ampl(unsigned short iDim);
 
+  /*!
+   * \brief Get pitching amplitude of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return  pitching amplitude of the marker.
+   */
+  su2double GetMarkerPitching_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
+
+  /*!
+   * \brief Get the pitching phase of the mesh.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \return pitching phase of the mesh.
+   */
+  su2double GetPitching_Phase(unsigned short iDim);
+  
+  /*!
+   * \brief Get pitching phase of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) \
+   * \param[in] iDim - spatial component
+   * \return pitching phase of the marker.
+   */
+  su2double GetMarkerPitching_Phase(unsigned short iMarkerMoving, unsigned short iDim);
+  
+  /*!
+   * \brief Get the plunging rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Angular frequency of the mesh plunging.
+   */
+  su2double GetPlunging_Omega(unsigned short iDim);
+  
+  /*!
+   * \brief Get plunging rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return Angular frequency of the marker plunging.
+   */
+  su2double GetMarkerPlunging_Omega(unsigned short iMarkerMoving, unsigned short iDim);
+  
+  /*!
+   * \brief Get the plunging amplitude of the mesh.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] iDim - spatial component
+   * \return Plunging amplitude of the mesh.
+   */
+  su2double GetPlunging_Ampl(unsigned short iDim);
+  
+  /*!
+   * \brief Get plunging amplitude of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return Plunging amplitude of the marker.
+   */
+  su2double GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
+  
+  /*!
+   * \brief Get the angular velocity of the mesh about the z-axis.
+   * \return Angular velocity of the mesh about the z-axis.
+   */
+  su2double GetFinalRotation_Rate_Z();
+  
   /*!
    * \brief Set the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
    */
-  void SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone);
-
-  /*!
-   * \brief Get the angular frequency of a mesh pitching about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh pitching about the x-axis.
-   */
-  su2double GetPitching_Omega_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh pitching about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh pitching about the y-axis.
-   */
-  su2double GetPitching_Omega_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh pitching about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh pitching about the z-axis.
-   */
-  su2double GetPitching_Omega_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching amplitude about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching amplitude about the x-axis.
-   */
-  su2double GetPitching_Ampl_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching amplitude about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching amplitude about the y-axis.
-   */
-  su2double GetPitching_Ampl_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching amplitude about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching amplitude about the z-axis.
-   */
-  su2double GetPitching_Ampl_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching phase offset about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching phase offset about the x-axis.
-   */
-  su2double GetPitching_Phase_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching phase offset about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching phase offset about the y-axis.
-   */
-  su2double GetPitching_Phase_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching phase offset about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching phase offset about the z-axis.
-   */
-  su2double GetPitching_Phase_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh plunging in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh plunging in the x-direction.
-   */
-  su2double GetPlunging_Omega_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh plunging in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh plunging in the y-direction.
-   */
-  su2double GetPlunging_Omega_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh plunging in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh plunging in the z-direction.
-   */
-  su2double GetPlunging_Omega_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the plunging amplitude in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Plunging amplitude in the x-direction.
-   */
-  su2double GetPlunging_Ampl_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the plunging amplitude in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Plunging amplitude in the y-direction.
-   */
-  su2double GetPlunging_Ampl_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the plunging amplitude in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Plunging amplitude in the z-direction.
-   */
-  su2double GetPlunging_Ampl_Z(unsigned short val_iZone);
+  void SetRotation_Rate_Z(su2double newRotation_Rate_Z);
   
   /*!
    * \brief Get the Harmonic Balance frequency pointer.
@@ -5661,7 +6047,7 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void);
-  
+    
   /*!
    * \brief Get information about the axisymmetric frame.
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
@@ -5698,6 +6084,24 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv);
+    
+  /*!
+   * \brief Provides the buffet monitoring information.
+   * \return Buffet monitoring information, if <code>TRUE</code> then the code will compute the buffet sensor.
+   */
+  bool GetBuffet_Monitoring(void);
+    
+  /*!
+   * \brief Get the buffet sensor sharpness coefficient.
+   * \return Sharpness coefficient for buffet sensor.
+   */
+  su2double GetBuffet_k(void);
+    
+  /*!
+   * \brief Get the buffet sensor offset parameter.
+   * \return Offset parameter for buffet sensor.
+   */
+  su2double GetBuffet_lambda(void);
   
   /*!
    * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.
@@ -5792,6 +6196,18 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
 
   /*!
+   * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
+   * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker);
+
+  /*!
+   * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
+   * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker);
+
+  /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -5809,6 +6225,33 @@ public:
    */
   int GetMarker_ZoneInterface(string val_marker);
   
+  /*!
+   * \brief  Get the name of the marker <i>val_iMarker</i>.
+   * \return The name of the marker in the interface
+   */
+  string GetMarkerTag_ZoneInterface(unsigned short val_iMarker);
+
+  /*!
+   * \brief  Get the number of markers in the multizone interface.
+   * \return The number markers in the multizone interface
+   */
+  unsigned short GetnMarker_ZoneInterface(void);
+
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a solid boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a solid boundary.
+   */
+  bool GetSolid_Wall(unsigned short iMarker);
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.
+   */
+  bool GetViscous_Wall(unsigned short iMarker);
+
   /*!
    * \brief Determines if problem is adjoint
    * \return true if Adjoint
@@ -6135,6 +6578,18 @@ public:
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Moving(string val_marker);
+
+  /*!
+   * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
+   * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Deform_Mesh(string val_marker);
+
+  /*!
+   * \brief Get the internal index for a Fluid_Load boundary <i>val_marker</i>.
+   * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Fluid_Load(string val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6143,6 +6598,22 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the DEFORM_MESH boundary defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Deform_Mesh_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the Fluid_Load boundary defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Fluid_Load_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6159,60 +6630,6 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Analyze_TagBound(unsigned short val_marker);
-  
-  /*!
-   * \brief Set the total number of SEND_RECEIVE periodic transformations.
-   * \param[in] val_index - Total number of transformations.
-   */
-  void SetnPeriodicIndex(unsigned short val_index);
-  
-  /*!
-   * \brief Get the total number of SEND_RECEIVE periodic transformations.
-   * \return Total number of transformations.
-   */
-  unsigned short GetnPeriodicIndex(void);
-  
-  /*!
-   * \brief Set the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] center - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicCenter(unsigned short val_index, su2double* center);
-  
-  /*!
-   * \brief Get the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing coordinates of the center point.
-   */
-  su2double* GetPeriodicCenter(unsigned short val_index);
-  
-  /*!
-   * \brief Set the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] rotation - Pointer to a vector containing the rotation angles.
-   */
-  void SetPeriodicRotation(unsigned short val_index, su2double* rotation);
-  
-  /*!
-   * \brief Get the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing the angles of rotation.
-   */
-  su2double* GetPeriodicRotation(unsigned short val_index);
-  
-  /*!
-   * \brief Set the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] translate - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
-  
-  /*!
-   * \brief Get the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return The translation vector.
-   */
-  su2double* GetPeriodicTranslate(unsigned short val_index);
   
   /*!
    * \brief Get the total temperature at a nacelle boundary.
@@ -7104,6 +7521,48 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
+  su2double GetOutlet_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_Density(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_Density(unsigned short val_imarker, su2double val_density);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_Area(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_Area(unsigned short val_imarker, su2double val_area);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
   void SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion);
   
   /*!
@@ -7671,9 +8130,21 @@ public:
   string GetDV_Filename(void);
   
   /*!
+   * \brief Get name of the unordered ASCII volume sensitivity file.
+   * \return File name of the unordered ASCII volume sensitivity file.
+   */
+  string GetDV_Unordered_Sens_Filename(void);
+  
+  /*!
+   * \brief Get name of the unordered ASCII surface sensitivity file.
+   * \return File name of the unordered ASCII surface sensitivity file.
+   */
+  string GetDV_Sens_Filename(void);
+  
+  /*!
    * \brief Set the config options.
    */
-  void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
+  void SetConfig_Options();
   
   /*!
    * \brief Set the config options.
@@ -8028,7 +8499,43 @@ public:
    * \returns The interpolated value of for x.
    */
   su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
-  
+
+  /*!
+   * \brief Start the timer for profiling subroutines.
+   * \param[in] val_start_time - the value of the start time.
+   */
+  void Tick(double *val_start_time);
+
+  /*!
+   * \brief Stop the timer for profiling subroutines and store results.
+   * \param[in] val_start_time - the value of the start time.
+   * \param[in] val_function_name - string for the name of the profiled subroutine.
+   * \param[in] val_group_id - string for the name of the profiled subroutine.
+   */
+  void Tock(double val_start_time, string val_function_name, int val_group_id);
+
+  /*!
+   * \brief Write a CSV file containing the results of the profiling.
+   */
+  void SetProfilingCSV(void);
+
+  /*!
+   * \brief Start the timer for profiling subroutines.
+   * \param[in] val_start_time - the value of the start time.
+   */
+  void GEMM_Tick(double *val_start_time);
+
+  /*!
+   * \brief Stop the timer for the GEMM profiling and store results.
+   * \param[in] val_start_time - The value of the start time.
+   * \param[in] M, N, K        - Matrix size of the GEMM call.
+   */
+  void GEMM_Tock(double val_start_time, int M, int N, int K);
+
+  /*!
+   * \brief Write a CSV file containing the results of the profiling.
+   */
+  void GEMMProfilingCSV(void);
 
   /*!
    *
@@ -8041,6 +8548,12 @@ public:
    * \brief Set freestream turbonormal for initializing solution.
    */
   su2double* GetFreeStreamTurboNormal(void);
+
+  /*!
+   *
+   * \brief Set multizone properties.
+   */
+  void SetMultizone(CConfig *driver_config, CConfig **config_container);
 
   /*!
    * \brief Get the verbosity level of the console output.
@@ -8117,13 +8630,6 @@ public:
    */
   
   bool GetPseudoStatic(void);
-  
-  /*!
-    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
-    * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
-    */
-  
-  bool GetMatchingMesh(void);
   
   /*!
    * \brief Identifies if we want to restart from a steady or an unsteady solution.
@@ -8306,18 +8812,60 @@ public:
     */
    su2double GetTotalDV_Penalty(void);
   
+   /*!
+    * \brief Get whether a predictor is used for FSI applications.
+    * \return  Bool: determines if predictor is used or not
+    */
+   bool GetPredictor(void);
+
   /*!
    * \brief Get the order of the predictor for FSI applications.
    * \return 	Order of predictor
    */
   unsigned short GetPredictorOrder(void);
-  
+
+  /*!
+   * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
+   * \return Boolean for using Persson's shock capturing method in Euler flow DG-FEM
+   */
+  bool GetEulerPersson(void);
+
+  /*!
+   * \brief Set boolean for using Persson's shock capturing method in Euler flow DG-FEM
+   * \param[in] val_EulerPersson - Boolean for using Persson's shock capturing method in Euler flow DG-FEM
+   */
+  void SetEulerPersson(bool val_EulerPersson);
+
+  /*!
+   * \brief Get whether a relaxation parameter is used for FSI applications.
+   * \return Bool: determines if relaxation parameter  is used or not
+   */
+  bool GetRelaxation(void);
+
   /*!
    * \brief Check if the simulation we are running is a FSI simulation
    * \return Value of the physical time in an unsteady simulation.
    */
   bool GetFSI_Simulation(void);
   
+  /*!
+   * \brief Set that the simulation we are running is a FSI simulation
+   * \param[in] FSI_sim - boolean that determines is FSI_Problem is true/false.
+   */
+  void SetFSI_Simulation(bool FSI_sim);
+
+  /*!
+   * \brief Set that the simulation we are running is a multizone simulation
+   * \param[in] MZ_problem - boolean that determines is Multizone_Problem is true/false.
+   */
+  void SetMultizone_Problem(bool MZ_problem);
+
+  /*!
+   * \brief Get whether the simulation we are running is a multizone simulation
+   * \return Multizone_Problem - boolean that determines is Multizone_Problem is true/false.
+   */
+  bool GetMultizone_Problem(void);
+
    /*!
     * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
     * \return ID
@@ -8347,11 +8895,121 @@ public:
    * \return Value of the relaxation method
    */
   unsigned short GetRelaxation_Method_FSI(void);
-  
+
+  /*!
+   * \brief Get the kind of Riemann solver for the DG method (FEM flow solver).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of Riemann solver for the DG method (FEM flow solver).
+   */
+  unsigned short GetRiemann_Solver_FEM(void);
+
+  /*!
+   * \brief Get the factor applied during quadrature of straight elements.
+   * \return The specified straight element quadrature factor.
+   */
+  su2double GetQuadrature_Factor_Straight(void);
+
+  /*!
+   * \brief Get the factor applied during quadrature of curved elements.
+   * \return The specified curved element quadrature factor.
+   */
+  su2double GetQuadrature_Factor_Curved(void);
+
+  /*!
+   * \brief Get the factor applied during time quadrature for ADER-DG.
+   * \return The specified ADER-DG time quadrature factor.
+   */
+  su2double GetQuadrature_Factor_Time_ADER_DG(void);
+
+  /*!
+   * \brief Function to make available the multiplication factor theta of the
+            symmetrizing terms in the DG discretization of the viscous terms.
+   * \return The specified factor for the DG discretization.
+   */
+  su2double GetTheta_Interior_Penalty_DGFEM(void);
+
+  /*!
+   * \brief Function to make available the matrix size in vectorization in
+            order to optimize the gemm performance.
+   * \return The matrix size in this direction.
+   */
+  unsigned short GetSizeMatMulPadding(void);
+
+  /*!
+   * \brief Function to make available whether or not the entropy must be computed.
+   * \return The boolean whether or not the entropy must be computed.
+   */
+  bool GetCompute_Entropy(void);
+
+  /*!
+   * \brief Function to make available whether or not the lumped mass matrix
+            must be used for steady computations.
+   * \return The boolean whether or not to use the lumped mass matrix.
+   */
+  bool GetUse_Lumped_MassMatrix_DGFEM(void);
+
+  /*!
+   * \brief Function to make available whether or not only the exact Jacobian
+            of the spatial discretization must be computed.
+   * \return The boolean whether or not the Jacobian must be computed.
+   */
+  bool GetJacobian_Spatial_Discretization_Only(void);
+
   /*!
    * \brief Get the interpolation method used for matching between zones.
    */
   inline unsigned short GetKindInterpolation(void);
+	
+	/*!
+	 * \brief Get option of whether to use conservative interpolation between zones.
+	 */
+  inline bool GetConservativeInterpolation(void);
+	
+  /*!
+   * \brief Get the basis function to use for radial basis function interpolation for FSI.
+   */
+  inline unsigned short GetKindRadialBasisFunction(void);
+	
+  /*!
+   * \brief Get option of whether to use polynomial terms in Radial Basis Function interpolation.
+   */
+  inline bool GetRadialBasisFunctionPolynomialOption(void);
+	
+  /*!
+   * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
+   */
+  inline su2double GetRadialBasisFunctionParameter(void);
+
+  /*!
+   * \brief Get information about using UQ methodology
+   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
+   */
+  bool GetUsing_UQ(void);
+
+  /*!
+   * \brief Get the amount of eigenvalue perturbation to be done
+   * \return Value of the uq_delta_b parameter
+   */
+  su2double GetUQ_Delta_B(void);
+
+  /*!
+   * \brief Get the kind of eigenspace perturbation to be done
+   * \return Value of the eig_val_comp
+   */
+  unsigned short GetEig_Val_Comp(void);
+
+  /*!
+   * \brief Get the underelaxation factor
+   * \return Value of the uq_urlx parameter
+   */
+  su2double GetUQ_URLX(void);
+
+  /*!
+   * \brief Get information about eigenspace perturbation
+   * \return <code>TRUE</code> means eigenspace perterturbation will be used
+   */
+  bool GetUQ_Permute(void);
   
   /*!
    * \brief Get information about whether to use wall functions.
@@ -8432,6 +9090,58 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux(void);
+  
+  /*!
+   * \brief Get Compute Average.
+   * \return YES if start computing averages
+   */
+  bool GetCompute_Average(void);
+
+  /*!
+   * \brief Get the verification solution.
+   * \return The verification solution to be used.
+   */
+  unsigned short GetVerification_Solution(void);
+  
+  /*!
+   * \brief Get topology optimization.
+   */
+  bool GetTopology_Optimization(void) const;
+
+  /*!
+   * \brief Get name of output file for topology optimization derivatives.
+   */
+  string GetTopology_Optim_FileName(void) const;
+
+  /*!
+   * \brief Get exponent for density-based stiffness penalization.
+   */
+  su2double GetSIMP_Exponent(void) const;
+
+  /*!
+   * \brief Get lower bound for density-based stiffness penalization.
+   */
+  su2double GetSIMP_MinStiffness(void) const;
+  
+  /*!
+   * \brief Number of kernels to use in filtering the design density field.
+   */
+  unsigned short GetTopology_Optim_Num_Kernels(void) const;
+  
+  /*!
+   * \brief Get the i'th kernel to use, its parameter, and the radius.
+   */
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+                                su2double &param, su2double &radius) const;
+  /*!
+   * \brief Get the maximum "logical radius" (degree of neighborhood) to consider in the neighbor search.
+   */
+  unsigned short GetTopology_Search_Limit(void) const;
+
+  /*!
+   * \brief Get the type and parameter for the projection function used in topology optimization
+   */
+  void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const;
 
   /*!
    * \brief Retrieve the ofstream of the history file for the current zone.
@@ -8442,6 +9152,139 @@ public:
    * \brief Set the ofstream of the history file for the current zone.
    */
   void SetHistFile(ofstream *HistFile);
+
+  /*!
+   * \brief Get the filenames of the individual config files
+   * \return File name of the config file for zone "index"
+   */
+  string GetConfigFilename(unsigned short index);
+
+  /*!
+   * \brief Get the number of config files
+   * \return Number of config filenames in CONFIG_LIST
+   */
+  unsigned short GetnConfigFiles(void);
+
+  /*!
+   * \brief Check if the multizone problem is solved for time domain.
+   * \return YES if time-domain is considered.
+   */
+  bool GetTime_Domain(void);
+
+  /*!
+   * \brief Get the number of inner iterations
+   * \return Number of inner iterations on each multizone block
+   */
+  unsigned long GetnInner_Iter(void);
+
+  /*!
+   * \brief Get the number of outer iterations
+   * \return Number of outer iterations for the multizone problem
+   */
+  unsigned long GetnOuter_Iter(void);
+
+  /*!
+   * \brief Get the number of time iterations
+   * \return Number of time steps run for the multizone problem
+   */
+  unsigned long GetnTime_Iter(void);
+
+  /*!
+   * \brief Get the number of pseudo-time iterations
+   * \return Number of pseudo-time steps run for the single-zone problem
+   */
+  unsigned long GetnIter(void);
+
+  /*!
+   * \brief Get the restart iteration
+   * \return Iteration for the restart of multizone problems
+   */
+  unsigned long GetRestart_Iter(void);
+
+  /*!
+   * \brief Get the time step for multizone problems
+   * \return Time step for multizone problems, it is set on all the zones
+   */
+  su2double GetTime_Step(void);
+
+  /*!
+   * \brief Get the maximum simulation time for time-domain problems
+   * \return Simulation time for multizone problems, it is set on all the zones
+   */
+  su2double GetMax_Time(void);
+
+  /*!
+   * \brief Get the level of MPI communications to be performed.
+   * \return Level of MPI communications.
+   */
+  unsigned short GetComm_Level(void);
+  
+  /*
+   * \brief Check if the mesh read supports multiple zones.
+   * \return YES if multiple zones can be contained in the mesh file.
+   */
+  bool GetMultizone_Mesh(void);
+
+  /*!
+   * \brief Check if the mesh read supports multiple zones.
+   * \return YES if multiple zones can be contained in the mesh file.
+   */
+  bool GetMultizone_Residual(void);
+
+  /*!
+   * \brief Check if the (new) single-zone driver is to be used (temporary)
+   * \return YES if the (new) single-zone driver is to be used.
+   */
+  bool GetSinglezone_Driver(void);
+
+  /*!
+   * \brief Check if the special output is written
+   * \return YES if the special output is written.
+   */
+  bool GetSpecial_Output(void);
+
+  /*!
+   * \brief Check if the forces breakdown file is written
+   * \return YES if the forces breakdown file is written.
+   */
+  bool GetWrt_ForcesBreakdown(void);
+  
+  /*!
+   * \brief Get the number of grid points in the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Number of grid points in the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  short GetMeshBoxSize(unsigned short val_iDim);
+  
+  /*!
+   * \brief Get the length of the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Length the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  su2double GetMeshBoxLength(unsigned short val_iDim);
+  
+  /*!
+   * \brief Get the offset from 0.0 of the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   * \return Offset from 0.0 the analytic RECTANGLE or BOX grid in the specified coordinate direction.
+   */
+  su2double GetMeshBoxOffset(unsigned short val_iDim);
+
+  /*!
+   * \brief Get the desired factorization frequency for PaStiX
+   * \return Number of calls to 'Build' that trigger re-factorization.
+   */
+  unsigned long GetPastixFactFreq(void);
+
+  /*!
+   * \brief Get the desired level of verbosity for PaStiX
+   * \return 0 - Quiet, 1 - During factorization and cleanup, 2 - Even more detail.
+   */
+  unsigned short GetPastixVerbLvl(void);
+
+  /*!
+   * \brief Get the desired level of fill for the PaStiX ILU
+   * \return Level of fill.
+   */
+  unsigned short GetPastixFillLvl(void);
+
 };
 
 #include "config_structure.inl"

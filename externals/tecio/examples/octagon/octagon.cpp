@@ -10,9 +10,11 @@
 int main()
 {
     /* DOCSTART:octagon_tecini.txt*/
-    INTEGER4 Debug     = 1;
-    INTEGER4 VIsDouble = 0;
-    INTEGER4 FileType  = 0;
+    INTEGER4 Debug      = 1;
+    INTEGER4 VIsDouble  = 0;
+    INTEGER4 FileType   = 0;
+    INTEGER4 FileFormat = 0; // 0 == PLT, 1 == SZPLT; Only PLT is currently
+                             // supported for polygonal zones.
     INTEGER4 I;             /* used to check return codes */
 
     /*
@@ -20,7 +22,7 @@ int main()
      * header information
      */
 
-    I = TECINI112((char*)"Octagon",
+    I = TECINI142((char*)"Octagon",
                   (char*)"X Y P",   /* Defines the variables for the data
                                      * file. Each zone must contain each
                                      * of the vars listed here. The order
@@ -31,8 +33,9 @@ int main()
                                      * TecIO functions, you will refer to
                                      * thevariable by its number.
                                      */
-                  (char*)"Octagon.plt",
+                  (char*)"octagon.plt",
                   (char*)".",       /* scratch directory */
+                  &FileFormat,
                   &FileType,
                   &Debug,
                   &VIsDouble);
@@ -71,7 +74,7 @@ int main()
 
     INTEGER4 ShrConn         = 0;
 
-    I = TECZNE112((char*)"Octagonal Zone",
+    I = TECZNE142((char*)"Octagonal Zone",
                   &ZoneType,
                   &NumNodes,
                   &NumElems,
@@ -90,9 +93,9 @@ int main()
                   &NumBConnections,
                   NULL,
                   NULL,  /* When Value Location is not specified,
-                        * Tecplot will treat all variables as
-                        * nodal variables.
-                        */
+                          * Tecplot will treat all variables as
+                          * nodal variables.
+                          */
                   NULL,
                   &ShrConn);
     /* DOCEND */
@@ -110,7 +113,7 @@ int main()
      * It is important that you refer to node numbers consistently.
      * The node numbers will be used later to define the
      * connectivity for each element.
-    */
+     */
 
     /* TECDAT Variables */
     /* Set up the variable values.  The variable values will be
@@ -159,9 +162,9 @@ int main()
     INTEGER4 DIsDouble = 0;  /* set IsDouble to 0 to use float
                             * variables. */
 
-    I   = TECDAT112(&NumNodes,  X,  &DIsDouble);
-    I   = TECDAT112(&NumNodes,  Y,  &DIsDouble);
-    I   = TECDAT112(&NumNodes,  P,  &DIsDouble);
+    I   = TECDAT142(&NumNodes,  X,  &DIsDouble);
+    I   = TECDAT142(&NumNodes,  Y,  &DIsDouble);
+    I   = TECDAT142(&NumNodes,  P,  &DIsDouble);
 
     delete X;
     delete Y;
@@ -195,7 +198,6 @@ int main()
         FaceNodes[2*ii+1] = ii + 2;
     }
     FaceNodes[15] = 1;
-
     /* DOCEND */
     /* Define the right and left elements of each face.
 
@@ -228,20 +230,18 @@ int main()
     /* DOCEND */
     /* Write the polyhedral data to the file.  */
     /* DOCSTART:octagon_tecpoly.txt*/
-    I = TECPOLY112(NULL,
-                   FaceNodes,
-                   FaceLeftElems,
-                   FaceRightElems,
-                   NULL,
-                   NULL,
-                   NULL);
+    I = TECPOLYFACE142(&NumFaces,
+                       NULL,
+                       FaceNodes,
+                       FaceLeftElems,
+                       FaceRightElems);
 
     delete FaceNodes;
     delete FaceLeftElems;
     delete FaceRightElems;
     /* DOCEND */
     /* DOCSTART:octagon_tecend.txt*/
-    I = TECEND112();
+    I = TECEND142();
     /* DOCEND */
 
     return 0;

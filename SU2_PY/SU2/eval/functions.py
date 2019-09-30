@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -424,6 +424,7 @@ def multipoint( config, state=None, step=1e-2 ):
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
+    outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
 
     func = []
     folder = []
@@ -470,6 +471,10 @@ def multipoint( config, state=None, step=1e-2 ):
     config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
     config.FREESTREAM_PRESSURE = freestream_press_list[0]
     config.TARGET_CL = target_cl_list[0]
+    orig_marker_outlet = config['MARKER_OUTLET']
+    orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
+    new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
+    config.MARKER_OUTLET = new_marker_outlet
 
     func[0] = aerodynamics(config,state)
 
@@ -538,6 +543,12 @@ def multipoint( config, state=None, step=1e-2 ):
           konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
           konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
           konfig.TARGET_CL = target_cl_list[i+1]
+
+          orig_marker_outlet = config['MARKER_OUTLET']
+          orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
+          new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[i+1] + ")"
+          konfig.MARKER_OUTLET = new_marker_outlet
+
           ztate.FUNCTIONS.clear()
             
           func[i+1] = aerodynamics(konfig,ztate)

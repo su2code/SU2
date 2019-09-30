@@ -3,7 +3,7 @@
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
 #  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -157,7 +157,7 @@ def main():
     # Set SU2 defaults units, if definitions are not included in the cfg file
     if 'SYSTEM_MEASUREMENTS' not in config:
         config.SYSTEM_MEASUREMENTS = 'SI'
-    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+    if config.SOLVER == 'NAVIER_STOKES':
         if 'REYNOLDS_LENGTH' not in config:
             config.REYNOLDS_LENGTH = 1.0
 
@@ -282,12 +282,12 @@ def main():
     f.write('\n%  ')
     line_text = 'Mach : %7.2f  ,  '%(config.MACH_NUMBER)
     f.write(line_text)
-    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+    if config.SOLVER == 'NAVIER_STOKES':
         line_text = 'Reynolds Number  :  %s   '%(config.REYNOLDS_NUMBER)
         f.write(line_text)
         line_text = 'Reynolds length :   %s   [ %s ] '%(config.REYNOLDS_LENGTH, length_dimension)
     else:
-        line_text = 'Physical problem : %s '%( config.PHYSICAL_PROBLEM)
+        line_text = 'Physical problem : %s '%( config.SOLVER)
     f.write(line_text)
     f.write('\n%  ')
     rho = float(config.FREESTREAM_PRESSURE)/\

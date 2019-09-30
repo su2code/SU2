@@ -2,7 +2,7 @@
  * \file primal_grid_structure.inl
  * \brief In-Line subroutines of the <i>primal_grid_structure.hpp</i> file.
  * \author F. Palacios
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -43,11 +43,35 @@ inline void CPrimalGrid::SetDomainElement(unsigned long val_domainelement) { Dom
 
 inline void CPrimalGrid::SetRotation_Type(unsigned short val_rotation_type) { }
 
+inline void CPrimalGrid::SetColor(unsigned long val_color) { }
+
+inline unsigned long CPrimalGrid::GetColor(void) { return -1; }
+
 inline unsigned short CPrimalGrid::GetRotation_Type(void) { return 0; }
 
 inline unsigned long CPrimalGrid::GetDomainElement(void) { return DomainElement; }
 
 inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
+
+inline su2double CPrimalGrid::GetLengthScale(void) { return LenScale; }
+
+inline void CPrimalGrid::SetLengthScale(su2double val_lenScale) { LenScale = val_lenScale; }
+
+inline unsigned short CPrimalGrid::GetTimeLevel(void) { return TimeLevel; }
+
+inline void CPrimalGrid::SetTimeLevel(unsigned short val_timeLevel) { TimeLevel = val_timeLevel; }
+
+inline bool CPrimalGrid::GetOwnerFace(unsigned short val_face) { return ElementOwnsFace[val_face]; }
+
+inline void CPrimalGrid::SetOwnerFace(bool val_owner, unsigned short val_face) { ElementOwnsFace[val_face] = val_owner; }
+
+inline short CPrimalGrid::GetPeriodicIndex(unsigned short val_face) {return PeriodIndexNeighbors[val_face];}
+
+inline void CPrimalGrid::SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face) {PeriodIndexNeighbors[val_face] = val_periodic; }
+
+inline bool CPrimalGrid::GetJacobianConstantFace(unsigned short val_face) { return JacobianFaceIsConstant[val_face]; }
+
+inline void CPrimalGrid::SetJacobianConstantFace(bool val_JacFaceIsConstant, unsigned short val_face) {JacobianFaceIsConstant[val_face] = val_JacFaceIsConstant; }
 
 inline long CPrimalGrid::GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
 
@@ -68,6 +92,38 @@ inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return GlobalIndex; }
 inline void CPrimalGrid::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
 
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
+
+inline void CPrimalGrid::GetCornerPointsAllFaces(unsigned short &nFaces,
+                                                 unsigned short nPointsPerFace[],
+                                                 unsigned long  faceConn[6][4]) { }
+
+inline unsigned long CPrimalGrid::GetGlobalElemID(void) { return 0; }
+
+inline unsigned long CPrimalGrid::GetGlobalOffsetDOFsSol(void) { return 0; }
+
+inline unsigned short CPrimalGrid::GetNPolyGrid(void) { return 0; }
+
+inline unsigned short CPrimalGrid::GetNPolySol(void) { return 0; }
+
+inline unsigned short CPrimalGrid::GetNDOFsGrid(void) { return 0; }
+
+inline unsigned short CPrimalGrid::GetNDOFsSol(void) { return 0; }
+
+inline bool CPrimalGrid::GetJacobianConsideredConstant(void) { return false; }
+
+inline void CPrimalGrid::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
+
+inline void CPrimalGrid::AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
+
+inline void CPrimalGrid::AddDonorWallFunctions(const unsigned long donorElement) {}
+
+inline unsigned short CPrimalGrid::GetNDonorsWallFunctions(void) {return 0;}
+
+inline unsigned long *CPrimalGrid::GetDonorsWallFunctions(void) {return NULL;}
+
+inline void CPrimalGrid::SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {}
+
+inline void CPrimalGrid::RemoveMultipleDonorsWallFunctions(void) {}
 
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
@@ -259,3 +315,89 @@ inline unsigned short CPyramid::GetVTK_Type(void) { return VTK_Type; }
 inline unsigned short CPyramid::GetMaxNodesFace(void) { return maxNodesFace; }
 
 inline unsigned short CPyramid::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+
+inline unsigned long CPrimalGridFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline unsigned short CPrimalGridFEM::GetnNodesFace(unsigned short val_face) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetFaces(unsigned short val_face, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetnNodes(void) { return nDOFsGrid; }
+
+inline unsigned short CPrimalGridFEM::GetnFaces(void) { return nFaces; }
+
+inline unsigned short CPrimalGridFEM::GetnNeighbor_Nodes(unsigned short val_node) { return -1; }
+
+inline void CPrimalGridFEM::Change_Orientation(void) {}
+
+inline unsigned long CPrimalGridFEM::GetGlobalElemID(void) { return elemIDGlobal; }
+
+inline unsigned long CPrimalGridFEM::GetGlobalOffsetDOFsSol(void) { return offsetDOFsSolGlobal; }
+
+inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return nFaces; }
+
+inline unsigned short CPrimalGridFEM::GetMaxNodesFace(void) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetVTK_Type(void) { return VTK_Type; }
+
+inline unsigned short CPrimalGridFEM::GetNPolyGrid(void) { return nPolyGrid; }
+
+inline unsigned short CPrimalGridFEM::GetNPolySol(void) { return nPolySol; }
+
+inline unsigned short CPrimalGridFEM::GetNDOFsGrid(void) { return nDOFsGrid; }
+
+inline unsigned short CPrimalGridFEM::GetNDOFsSol(void) { return nDOFsSol; }
+
+inline bool CPrimalGridFEM::GetJacobianConsideredConstant(void) { return JacobianConsideredConstant; }
+
+inline void CPrimalGridFEM::SetColor(unsigned long val_color) { color = val_color; }
+
+inline unsigned long CPrimalGridFEM::GetColor(void) { return color; }
+
+inline void CPrimalGridFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {JacobianConsideredConstant = val_JacobianConsideredConstant;}
+
+inline void CPrimalGridFEM::AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {offsetDOFsSolGlobal += val_offsetRank;}
+
+inline CPrimalGridBoundFEM::~CPrimalGridBoundFEM(){}
+
+inline unsigned long CPrimalGridBoundFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNodesFace(unsigned short val_face) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetFaces(unsigned short val_face, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNodes(void) { return nDOFsGrid; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnFaces(void) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNeighbor_Nodes(unsigned short val_node) { return -1; }
+
+inline void CPrimalGridBoundFEM::Change_Orientation(void) {}
+
+inline unsigned long CPrimalGridBoundFEM::GetGlobalElemID(void) { return boundElemIDGlobal; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNeighbor_Elements(void) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetMaxNodesFace(void) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetVTK_Type(void) { return VTK_Type; }
+
+inline unsigned short CPrimalGridBoundFEM::GetNPolyGrid(void) { return nPolyGrid; }
+
+inline unsigned short CPrimalGridBoundFEM::GetNDOFsGrid(void) { return nDOFsGrid; }
+
+inline bool CPrimalGridBoundFEM::GetJacobianConsideredConstant(void) {return JacobianConsideredConstant;}
+
+inline void CPrimalGridBoundFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {JacobianConsideredConstant = val_JacobianConsideredConstant;}
+
+inline void CPrimalGridBoundFEM::AddDonorWallFunctions(const unsigned long donorElement) {donorElementsWallFunctions.push_back(donorElement);}
+
+inline unsigned short CPrimalGridBoundFEM::GetNDonorsWallFunctions(void) {return donorElementsWallFunctions.size();}
+
+inline unsigned long *CPrimalGridBoundFEM::GetDonorsWallFunctions(void) {return donorElementsWallFunctions.data();}
+
+inline void CPrimalGridBoundFEM::SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {donorElementsWallFunctions = donorElements;}

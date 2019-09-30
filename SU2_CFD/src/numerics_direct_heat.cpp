@@ -2,7 +2,7 @@
  * \file numerics_direct_heat.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -41,7 +41,8 @@
 CUpwSca_Heat::CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  grid_movement   = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -65,7 +66,7 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
@@ -92,7 +93,8 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
 CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  grid_movement   = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   MeanVelocity = new su2double [nDim];
 
@@ -113,18 +115,19 @@ CCentSca_Heat::~CCentSca_Heat(void) {
 void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
+  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3);
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
+  AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
   /*--- Primitive variables at point i and j ---*/
 
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
-  DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
-  BetaInc2_i =    V_i[nDim+2];  BetaInc2_j = V_j[nDim+2];
+  DensityInc_i =  V_i[nDim+2];  DensityInc_j = V_j[nDim+2];
+  BetaInc2_i =    V_i[nDim+3];  BetaInc2_j = V_j[nDim+3];
 
   /*--- Projected velocities at the current edge ---*/
 

@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -97,4 +97,68 @@ void CIncIdealGas::SetTDState_T(su2double val_temperature) {
   Temperature  = val_temperature;
   Density      = Pressure/(Temperature*Gas_Constant);
 
+}
+
+CIncIdealGasPolynomial::CIncIdealGasPolynomial() : CFluidModel() {
+  Gas_Constant     = 0.0;
+  Pressure         = 0.0;
+  Gamma            = 0.0;
+  Cp               = 0.0;
+  Cv               = 0.0;
+  b                = NULL;
+}
+
+CIncIdealGasPolynomial::CIncIdealGasPolynomial(su2double val_gas_constant, su2double val_operating_pressure) : CFluidModel() {
+  
+  /*--- In the incompressible ideal gas model, the thermodynamic pressure
+   is decoupled from the governing equations and held constant. The
+   density is therefore only a function of temperature variations. We
+   also use a molecular weight (g/mol) and the universal gas constant to
+   compute the specific gas constant for the fluid. The
+   gas is incompressible, so Cp = Cv (gamma = 1). ---*/
+  
+  Gas_Constant     = val_gas_constant;
+  Pressure         = val_operating_pressure;
+  Gamma            = 1.0;
+
+  /*--- The polynomial is constructed later. ---*/
+  
+  nPolyCoeffs = 0;
+  b           = NULL;
+  
+}
+
+CIncIdealGasPolynomial::~CIncIdealGasPolynomial(void) {
+  if (b != NULL) delete [] b;
+}
+
+void CIncIdealGasPolynomial::SetCpModel(CConfig *config) {
+  
+  /*--- Set the coefficients from the config class. ---*/
+  
+  unsigned short iVar;
+  
+  nPolyCoeffs = config->GetnPolyCoeffs();
+  
+  b = new su2double[nPolyCoeffs];
+  for (iVar = 0; iVar < nPolyCoeffs; iVar++)
+    b[iVar] = config->GetCp_PolyCoeffND(iVar);
+
+}
+
+void CIncIdealGasPolynomial::SetTDState_T(su2double val_temperature) {
+  
+  /*--- The EoS only depends upon temperature. ---*/
+  
+  Temperature  = val_temperature;
+  Density      = Pressure/(Temperature*Gas_Constant);
+
+  /*--- Evaluate the new Cp from the coefficients and temperature. ---*/
+  
+  Cp = b[0];
+  for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
+    Cp += b[iVar]*pow(Temperature,iVar);
+
+  Cv = Cp/Gamma;
+  
 }
