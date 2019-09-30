@@ -220,6 +220,9 @@ def aerodynamics( config, state=None ):
     name = su2io.expand_part(name,config)
     link.extend(name)
     
+    if 'FLOW_META' in files:
+        pull.append(files['FLOW_META'])
+
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']
@@ -271,6 +274,9 @@ def aerodynamics( config, state=None ):
             # heat flux files to push
             if 'TARGET_HEATFLUX' in info.FILES:
                 push.append(info.FILES['TARGET_HEATFLUX'])
+                
+            if 'FLOW_META' in info.FILES:
+                push.append(info.FILES['FLOW_META'])
                 
     #: with output redirection
     su2io.update_persurface(config,state)

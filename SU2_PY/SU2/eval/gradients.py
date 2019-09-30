@@ -243,7 +243,10 @@ def adjoint( func_name, config, state=None ):
     name = su2io.expand_zones(name,config)
     name = su2io.expand_time(name,config)
     link.extend(name)
-
+    
+    if 'FLOW_META' in files:
+        pull.append(files['FLOW_META'])
+        
     # files: adjoint solution
     if ADJ_NAME in files:
         name = files[ADJ_NAME]
@@ -1041,6 +1044,10 @@ def directdiff( config, state=None ):
     name = files['MESH']
     name = su2io.expand_part(name,konfig)
     link.extend(name)
+
+    if 'FLOW_META' in files:
+        pull.append(files['FLOW_META'])
+
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']

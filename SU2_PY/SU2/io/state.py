@@ -356,6 +356,9 @@ class State(ordered_bunch):
         if 'INV_DESIGN_HEATFLUX' in special_cases:
             register_file('TARGET_HEATFLUX',targetheatflux_name)
         
+        # flow meta data file
+        register_file('FLOW_META', 'flow.meta')
+
         return
     
     def __setitem__(self,k,v):
