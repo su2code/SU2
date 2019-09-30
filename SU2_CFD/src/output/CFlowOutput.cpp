@@ -940,7 +940,7 @@ void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry){
   
   string filename = "flow";
   
-  filename = config->GetFilename(filename, "meta", curTimeIter);
+  filename = config->GetFilename(filename, ".meta", curTimeIter);
   
   /*--- All processors open the file. ---*/
 
