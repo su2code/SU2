@@ -7321,7 +7321,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   bool Update_AoA               = config->GetUpdate_AoA();
   bool CL_Converged             = fabs(Total_CL - Target_CL) < (config->GetCauchy_Eps()/2);
   End_AoA_FD                    = Start_AoA_FD && ((InnerIter - Iter_Update_AoA) == 
-                                  Iter_dCL_dAlpha || InnerIter == config->GetnExtIter()- 1 );
+                                  Iter_dCL_dAlpha || InnerIter == config->GetnInner_Iter()- 1 );
 
   if (InnerIter == 0) {
     Total_CD_Prev = 0.0;
@@ -7511,7 +7511,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
   su2double Target_CL = config->GetTarget_CL();
-  unsigned long curr_iter = config->GetExtIter();
+  unsigned long curr_iter = config->GetInnerIter();
   unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
   bool Update_AoA = false;
   bool fixed_cl_conv = false;
@@ -7560,7 +7560,7 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
     /* --- If the total iteration limit is reached, start finite differencing --- */
 
-    if (curr_iter == config->GetnExtIter() - Iter_dCL_dAlpha){
+    if (curr_iter == config->GetnInner_Iter() - Iter_dCL_dAlpha){
       if (Iter_dCL_dAlpha == 0){
         End_AoA_FD = true;
       }
