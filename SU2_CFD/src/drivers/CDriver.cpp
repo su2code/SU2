@@ -3754,7 +3754,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
   }
 
   if (driver_config->GetMultizone_Problem()){
-    driver_output = new CDriverOutput(driver_config, config, nDim);
+    driver_output = new CMultizoneOutput(driver_config, config, nDim);
     driver_output->PreprocessMultizoneHistoryOutput(output, config);
   }
   

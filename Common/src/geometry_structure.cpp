@@ -15456,7 +15456,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Write an output file---*/
     
-    if (config->GetTabular_FileFormat() == CSV) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Nacelle_File.open("nacelle_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;

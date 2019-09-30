@@ -270,9 +270,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
         
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " ) before convergence." << endl;
+      output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
     

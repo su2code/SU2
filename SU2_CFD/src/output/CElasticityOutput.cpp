@@ -102,7 +102,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_DISP_X";
+  if (convFields.empty() ) convFields.emplace_back("RMS_DISP_X");
 
 }
 
