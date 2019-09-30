@@ -102,7 +102,7 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
   Physical_Constants[1] = ModAmpl;
   
   /*--- For static FSI, we cannot apply the ramp like this ---*/
-  if ((flow_config->GetUnsteady_Simulation() == STEADY) && (struct_config->GetDynamic_Analysis() == STATIC)){
+  if ((!flow_config->GetTime_Domain())){
     Physical_Constants[1] = 1.0;
     if (Ramp_Load){
       CurrentTime = static_cast<su2double>(struct_config->GetOuterIter());

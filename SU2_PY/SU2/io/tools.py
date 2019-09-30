@@ -91,11 +91,11 @@ def read_plot( filename ):
         title = line.split('=')[1] .strip() # not used right now
         line = plot_file.readline()
 
-    # process header
-    if '=' in line:
-        line = line.split("=")[1].strip()
+    if line.startswith('VARIABLES'):
+          line = plot_file.readline()
+
     line = line.split(",")
-    Variables = [ x.strip('" ') for x in line ]
+    Variables = [ x.strip().strip('"') for x in line ]
     n_Vars = len(Variables)
     
     # initialize plot data dictionary
@@ -222,16 +222,16 @@ def get_headerMap(nZones = 1):
                  "ComboObj"        : "COMBO"                   ,
                  "Time(min)"       : "TIME"                    ,
                  'Time(min)"\n'    : "TIME"                    , # TDE hack for paraview
-                 "D(CL)"           : "D_LIFT"                  ,
-                 "D(CD)"           : "D_DRAG"                  ,
-                 "D(CSF)"          : "D_SIDEFORCE"             ,
-                 "D(CMx)"          : "D_MOMENT_X"              ,
-                 "D(CMy)"          : "D_MOMENT_Y"              ,
-                 "D(CMz)"          : "D_MOMENT_Z"              ,
-                 "D(CFx)"          : "D_FORCE_X"               ,
-                 "D(CFy)"          : "D_FORCE_Y"               ,
-                 "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "d[CL]"           : "D_LIFT"                  ,
+                 "d[CD]"           : "D_DRAG"                  ,
+                 "d[CSF]"          : "D_SIDEFORCE"             ,
+                 "d[CMx]"          : "D_MOMENT_X"              ,
+                 "d[CMy]"          : "D_MOMENT_Y"              ,
+                 "d[CMz]"          : "D_MOMENT_Z"              ,
+                 "d[CFx]"          : "D_FORCE_X"               ,
+                 "d[CFy]"          : "D_FORCE_Y"               ,
+                 "d[CFz]"          : "D_FORCE_Z"               ,
+                 "d[CEff]"        : "D_EFFICIENCY"            ,
                  "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
                  "D(HeatFlux_Total)" : "D_HEAT"                ,
                  "D(HeatFlux_Maximum)" : "D_HEAT_MAX"          ,
@@ -511,7 +511,7 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
         
         Outputs:
             dictionary with function keys and thier values
-            if special cases has 'UNSTEADY_SIMULATION', returns time averaged data
+            if special cases has 'TIME_MARCHING', returns time averaged data
             otherwise returns final value from history file
     """
     
@@ -528,7 +528,7 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
+    if 'TIME_MARCHING' in special_cases and not final_avg:
         for key,value in Func_Values.items():
             Func_Values[key] = sum(value)/len(value)
          
@@ -784,9 +784,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TECPLOT'): 
         header.append('VARIABLES=')
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -910,9 +910,9 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TECPLOT'): 
         header_format = header_format + 'VARIABLES='
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -968,11 +968,11 @@ def get_extension(output_format):
     if (output_format == "PARAVIEW")        : return ".csv"
     if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
-    if (output_format == "TECPLOT_BINARY")  : return ".plt"
+    if (output_format == "TECPLOT_BINARY")  : return ".szplt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  
     if (output_format == "CONFIG")          : return ".cfg"  
-
+    if (output_format == "CSV")         : return ".csv"
     # otherwise
     raise Exception("Output Format Unknown")
 
@@ -1001,19 +1001,16 @@ def get_specialCases(config):
         if 'SOLVER' in config and config['SOLVER'] == key:
             special_cases.append(key)
             
-    if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
-        special_cases.append('UNSTEADY_SIMULATION')
+    if config.get('TIME_MARCHING','NO') != 'NO':
+        special_cases.append('TIME_MARCHING')
      
     # no support for more than one special case
     if len(special_cases) > 1:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
         raise Exception(error_str)   
-    
-    if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
-        raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for harmonic balance
-    if 'UNSTEADY_SIMULATION' in config and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
+    if 'TIME_MARCHING' in config and config['TIME_MARCHING'] == 'HARMONIC_BALANCE':
         special_cases.append('HARMONIC_BALANCE')
 
     # Special case for rotating frame
@@ -1088,7 +1085,7 @@ def expand_part(name,config):
     return names
 
 def expand_time(name,config):
-    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
+    if 'TIME_MARCHING' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%05d')
@@ -1207,9 +1204,18 @@ def restart2solution(config,state={}):
 
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
-        restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME
+        restart  = config.RESTART_FILENAME
+        solution = config.SOLUTION_FILENAME
+        restart = restart.split('.')[0]
+        solution = solution.split('.')[0]
         
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
+            restart += '.csv'
+            solution += '.csv'
+        else:
+            restart += '.dat'
+            solution += '.dat'
+
         # expand zones
         restarts  = expand_zones(restart,config)
         solutions = expand_zones(solution,config)
@@ -1226,6 +1232,15 @@ def restart2solution(config,state={}):
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
+        restart = restart.split('.')[0]
+        solution = solution.split('.')[0]
+
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
+            restart += '.csv'
+            solution += '.csv'
+        else:
+            restart += '.dat'
+            solution += '.dat'
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
         suffix    = get_adjointSuffix(func_name)

@@ -265,6 +265,13 @@ def adjoint( func_name, config, state=None ):
     # files: target heat flux coefficient
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         pull.append(files['TARGET_HEATFLUX'])
+    
+    if not 'OUTPUT_FILES' in config:
+        config['OUTPUT_FILES'] = ['RESTART']
+
+    if not 'SURFACE_CSV' in config['OUTPUT_FILES']:
+      config['OUTPUT_FILES'].append('SURFACE_CSV')
+    
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
@@ -721,7 +728,7 @@ def findiff( config, state=None ):
 
     grad_filename  = config['GRAD_OBJFUNC_FILENAME']
     grad_filename  = os.path.splitext( grad_filename )[0]
-    output_format  = config['OUTPUT_FORMAT']
+    output_format  = config['TABULAR_FORMAT']
     plot_extension = su2io.get_extension(output_format)    
     grad_filename  = grad_filename + '_findiff' + plot_extension
 
@@ -1008,7 +1015,7 @@ def directdiff( config, state=None ):
 
     grad_filename  = config['GRAD_OBJFUNC_FILENAME']
     grad_filename  = os.path.splitext( grad_filename )[0]
-    output_format  = config['OUTPUT_FORMAT']
+    output_format  = config.get('TABULAR_FORMAT', 'CSV')
     plot_extension = su2io.get_extension(output_format)
     grad_filename  = grad_filename + '_directdiff' + plot_extension
 
