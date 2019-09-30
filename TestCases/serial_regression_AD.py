@@ -208,7 +208,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-2.641237, -3.110423, -7.0498e-04, 1.2996e-06] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-2.650611, -3.119337, -0.000687, 0.000001] #last 4 columns
     discadj_pitchingNACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -348,7 +348,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_flow.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 1000
-    pywrapper_FEA_AD_FlowLoad.test_vals     = [30, -2.4701936842091294, 1.4366255094753457, 0.0] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [30.000000, -2.518695, 1.390150, 0.000000] #last 4 columns
     pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.00001
