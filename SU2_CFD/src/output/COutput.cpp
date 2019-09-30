@@ -1326,6 +1326,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
                                           requestedVolumeFields.end(), FieldsToRemove[iReqField]));
   }
   
+  nRequestedVolumeFields = requestedVolumeFields.size();
+  
   if (rank == MASTER_NODE){
     cout <<"Volume output fields: ";
     for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
