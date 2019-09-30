@@ -526,21 +526,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
     Vol = geometry->node[iPoint]->GetVolume();
 
-	/*--- Modify matrix diagonal to assure diagonal dominance ---*/
-
-    if (node[iPoint]->GetDelta_Time() != 0.0) {
-      Delta = Vol / node[iPoint]->GetDelta_Time();
-      Jacobian.AddVal2Diag(iPoint, Delta);
-     }
-    else {
-      Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
-        local_Res_TruncError[iVar] = 0.0;
-      }
-    }
-
 	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
@@ -586,42 +571,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
 void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
-  unsigned long iPoint;
 
-  bool adjoint = false;//config->GetContinuous_Adjoint();
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-    if (config->GetnMGLevels() > 0) local_Res_TruncError[iVar] = 0.0;
-  }
-  /*--- Update the solution ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	Vol = geometry->node[iPoint]->GetVolume();
-    Delta = node[iPoint]->GetDelta_Time()/Vol;
-    
-    if (config->GetnMGLevels() > 0) local_Res_TruncError = node[iPoint]->GetResTruncError();
-    local_Residual = LinSysRes.GetBlock(iPoint);
-    
-    if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res = local_Residual[iVar] ;//+ local_Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-      }
-    }
-  }
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
 
 }
 
@@ -633,113 +583,7 @@ void CPoissonSolverFVM::Direct_Solve(CGeometry *geometry, CSolver **solver_conta
 void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh, unsigned long Iteration){
 							
-   unsigned short iDim, iMarker;
-   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
-   su2double *Normal, Area, Poisson_Coeff, Lambda;
-   su2double Global_Delta_Time, Local_Delta_Time,Vol, CFL_Reduction, delT, K_v=1.0;
-   su2double Edge_Vector[3],dist_ij_2,Volume;
-   su2double *Coord_i,*Coord_j,Mom_Coeff,Mom_Coeff_i[3],Mom_Coeff_j[3];
-   Normal = new su2double [nDim];
-     int ranknp = SU2_MPI::GetRank();
-
-   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;Global_Delta_Time = 1.E6;
-      
-   /*---------Compute eigen value-------------*/
    
-   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-       node[iPoint]->SetMax_Lambda_Visc(0.0);
-   }
-   /*--- Loop interior edges ---*/
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    Coord_j = geometry->node[jPoint]->GetCoord();
-    
-    /*--- Get the edge's normal vector to compute the edge's area ---*/
-    geometry->edge[iEdge]->GetNormal(Normal);
-    
-    Area = 0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-		Area += Normal[iDim]*Normal[iDim]; 
-	}
-    Area = sqrt(Area);
-    if (config->GetKind_Incomp_System() == PRESSURE_BASED ){
-		Poisson_Coeff = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) ;
-	        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) ;
-	        
-		    Poisson_Coeff += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
-		    Lambda = abs(Poisson_Coeff*Area);
-	    }
-    }
-    else {
-		Poisson_Coeff = 1.0;
-		Lambda = abs(Poisson_Coeff*Area);
-	}
-    
-    
-    
-    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);    
-   }
-    /*--- Loop boundary edges ---*/
-   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-      Volume = geometry->node[iPoint]->GetVolume(); 
-      
-      
-      Poisson_Coeff = 1.0;
-      if (config->GetKind_Incomp_System() == PRESSURE_BASED ){
-		Poisson_Coeff = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) ;
-			
-		    Poisson_Coeff += Mom_Coeff_i[iDim]*Normal[iDim];
-	    }
-       }
-    
-      Lambda = abs(Poisson_Coeff*Area);     
-      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);    
-      
-    }
-   }
-
-   /*--- Each element uses their own speed, steady state simulation ---*/
-   
- 
-   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    Vol = geometry->node[iPoint]->GetVolume();
-
-	if (Vol != 0.0) {
-		Local_Delta_Time = config->GetCFL(iMesh)*Vol*Vol*K_v/node[iPoint]->GetMax_Lambda_Visc();
-		/*--- Min-Max-Logic ---*/
-		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-		Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
-		if (Local_Delta_Time > config->GetMax_DeltaTime())
-			Local_Delta_Time = config->GetMax_DeltaTime();
-		node[iPoint]->SetDelta_Time(Local_Delta_Time);
-	}
-	else {
-		node[iPoint]->SetDelta_Time(0.0);
-	}
-
-   }
-   
-   delete [] Normal;
 }
 
 
