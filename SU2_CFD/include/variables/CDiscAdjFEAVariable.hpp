@@ -67,7 +67,6 @@ private:
   su2double* Geometry_CrossTerm_Derivative;
 
   su2double* Solution_BGS;
-  su2double* Solution_BGS_k;
 
 public:
   /*!
@@ -266,24 +265,10 @@ public:
   inline void Set_BGSSolution(unsigned short iDim, su2double val_solution) {Solution_BGS[iDim] = val_solution;}
 
   /*!
-   * \brief Set the value of the adjoint solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_k(void) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution_BGS_k[iDim] = Solution_BGS[iDim];
-  }
-
-  /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
   inline su2double Get_BGSSolution(unsigned short iDim) {return Solution_BGS[iDim];}
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 
   /*!
    * \brief Get whether this node is on the boundary

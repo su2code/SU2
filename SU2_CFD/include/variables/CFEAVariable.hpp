@@ -68,9 +68,6 @@ protected:
 
   su2double *Prestretch;          /*!< \brief Prestretch geometry */
 
-  su2double* Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
-
-
 public:
 
   /*!
@@ -491,19 +488,5 @@ public:
 	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
 	      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n[iVar]);
   }
-
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_k(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_BGS_k[iVar] = Solution[iVar];
-  }
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 
 };

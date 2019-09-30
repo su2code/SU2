@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
   
-  CLI11_PARSE(app, argc, argv);
+  CLI11_PARSE(app, argc, argv)
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   if (!dry_run){
     
     if (((config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint()))
-         && config->GetUnsteady_Simulation() != HARMONIC_BALANCE && (!turbo)) || (turbo && config->GetDiscrete_Adjoint())) {
+         && config->GetTime_Marching() != HARMONIC_BALANCE && (!turbo)) || (turbo && config->GetDiscrete_Adjoint())) {
       
       
       /*--- Single zone problem: instantiate the single zone driver class. ---*/
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
       
       driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
       
-    } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
       
       /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
       
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
       
     } else if ((nZone == 2) && fsi) {
       
-      bool stat_fsi = ((config->GetDynamic_Analysis() == STATIC) && (config->GetUnsteady_Simulation() == STEADY));
+      bool stat_fsi = ((!config->GetTime_Domain()));
       bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
       
       /*--- If the problem is a discrete adjoint FSI problem ---*/
@@ -149,10 +149,6 @@ int main(int argc, char *argv[]) {
         else {
           SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
         }
-      }
-      /*--- If the problem is a direct FSI problem ---*/
-      else{
-        driver = new CFSIDriver(config_file_name, nZone, MPICommunicator);
       }
       
     } else {

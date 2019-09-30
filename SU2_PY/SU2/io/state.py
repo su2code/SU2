@@ -240,8 +240,21 @@ class State(ordered_bunch):
         files = self.FILES
         
         mesh_name     = config.MESH_FILENAME
-        direct_name   = config.SOLUTION_FLOW_FILENAME
+        if config.get('READ_BINARY_RESTART', 'YES') == 'NO':
+            if not 'RESTART_ASCII' in config.get('OUTPUT_FILES',['RESTART']):
+                print ('RESTART_ASCII must be in OUTPUT_FILES if READ_BINARY_RESTART is set to NO')
+                sys.exit()
+  
+        direct_name   = config.SOLUTION_FILENAME
         adjoint_name  = config.SOLUTION_ADJ_FILENAME
+        
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART']):
+            direct_name = direct_name.split('.')[0] + '.csv'
+            adjoint_name = adjoint_name.split('.')[0] + '.csv'
+        else:
+            direct_name = direct_name.split('.')[0] + '.dat'
+            adjoint_name = adjoint_name.split('.')[0] + '.dat'
+
         targetea_name = 'TargetEA.dat'
         targetcp_name = 'TargetCp.dat'
         targetheatflux_name = 'TargetHeatFlux.dat'
