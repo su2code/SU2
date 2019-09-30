@@ -1800,7 +1800,7 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
  
   /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
+  AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time"); 
   
 }
 
@@ -1826,7 +1826,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   
   UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
   
-  SetHistoryOutputValue("PHYS_TIME", UsedTime);
+  SetHistoryOutputValue("WALL_TIME", UsedTime);
   
 }
 
