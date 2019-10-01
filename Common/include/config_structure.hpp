@@ -2936,10 +2936,28 @@ public:
   su2double *GetWeightsIntegrationADER_DG(void);
 
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers including send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void);
+
+  /*!
+   * \brief Get the total number of boundary markers in the config file.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_CfgFile(void);
+
+  /*!
+   * \brief Get the number of Euler boundary markers.
+   * \return Number of Euler boundary markers.
+   */
+  unsigned short GetnMarker_Euler(void);
+
+  /*!
+   * \brief Get the number of symmetry boundary markers.
+   * \return Number of symmetry boundary markers.
+   */
+  unsigned short GetnMarker_SymWall(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -6607,6 +6625,13 @@ public:
   unsigned short GetMarker_Moving(string val_marker);
 
   /*!
+   * \brief Get bool if marker is moving. <i>val_marker</i>.
+   * \param[in] val_marker - String of the marker to test.
+   * \return Bool if the marker is a moving boundary <i>val_marker</i>.
+   */
+  bool GetMarker_Moving_Bool(string val_marker);
+
+  /*!
    * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
@@ -6617,7 +6642,7 @@ public:
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Fluid_Load(string val_marker);
-  
+
   /*!
    * \brief Get the name of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
