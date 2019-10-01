@@ -7371,7 +7371,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   if (Start_AoA_FD && Output && ((InnerIter - 1) == Iter_Update_AoA)) {
 
     Wrt_Con_Freq = SU2_TYPE::Int(su2double(Iter_dCL_dAlpha)/10.0);
-    config->SetWrt_Con_Freq(Wrt_Con_Freq);
+    config->SetScreen_Wrt_Freq(2,Wrt_Con_Freq);
     Total_CD_Prev = Total_CD;
     Total_CL_Prev = Total_CL;
     Total_CMx_Prev = Total_CMx;
