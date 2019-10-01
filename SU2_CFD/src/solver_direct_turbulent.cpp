@@ -936,9 +936,34 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 #endif
     
     if (rank == MASTER_NODE){
-      cout << "Most Energetic wave number " << 2. * PI_NUMBER / global_lengthEnergetic[0] << endl;
-      cout << "Nyquist wave number " << 2. * PI_NUMBER / global_lengthEnergetic[1] << endl;
-      cout << "Maximum Velocity at the interface " <<  global_lengthEnergetic[2] << endl;
+      
+      vector<su2double> WaveNumbers;
+      vector<su2double> WaveNumbersFace;
+      
+      /*--- Calculate the local most energetic wave number.  --*/
+      su2double k_min = 2.0 * PI_NUMBER / global_lengthEnergetic[0];
+      
+      /*--- Calculate the local Nyquist wave number --*/
+      su2double k_cut = 2.0 * PI_NUMBER / global_lengthEnergetic[1];
+      
+      cout << "Most Energetic wave number: " << k_min << endl;
+      cout << "Nyquist wave number: " << k_cut << endl;
+      cout << "Maximum Velocity at the interface: " <<  global_lengthEnergetic[2] << endl;
+      
+      /*--- Wave numbers at faces---*/
+      su2double alpha = 0.01;
+      unsigned short iMode = -1;
+      while (k_min < 1.5*k_cut){
+        iMode += 1;
+        k_min = k_min * pow(alpha + 1.0, iMode);
+        WaveNumbersFace.push_back(k_min);
+      }
+      
+       /*--- Wave numbers at the center---*/
+      for(vector<int>::size_type jj = 0; jj != (WaveNumbersFace.size() - 1); jj++){
+        WaveNumbers.push_back(0.5 * (WaveNumbersFace[jj] + WaveNumbersFace[jj+1]));
+      }
+      cout << "Number of modes: " << WaveNumbers.size() << endl;
     }
     solver[MESH_0][FLOW_SOL]->SetLengthEnergetic(global_lengthEnergetic[0],global_lengthEnergetic[1],global_lengthEnergetic[2]);
   }

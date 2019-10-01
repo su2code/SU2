@@ -11544,10 +11544,10 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
                     MPI_INT, MPI_COMM_WORLD);
   
-  if (rank == MASTER_NODE){
-    //cout << "After AllGather: " << recvCounts.size() << endl;
-    for(std::vector<int>::size_type i = 0; i != recvCounts.size(); i++) cout << recvCounts[i] << endl;
-  }
+//  if (rank == MASTER_NODE){
+//    //cout << "After AllGather: " << recvCounts.size() << endl;
+//    for(std::vector<int>::size_type i = 0; i != recvCounts.size(); i++) cout << recvCounts[i] << endl;
+//  }
   
   /*--- Create the data for the vector displs from the known values of
      recvCounts. Also determine the total size of the data.   ---*/
@@ -11567,10 +11567,10 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   sort( STG_GlobalListCoordX.begin(), STG_GlobalListCoordX.end() );
   STG_GlobalListCoordX.erase(unique(STG_GlobalListCoordX.begin(), STG_GlobalListCoordX.end(), CompareWithGap), STG_GlobalListCoordX.end());
 
-  if (rank == MASTER_NODE){
-    //cout << "After AllGatherv: " << STG_GlobalListCoordX.size() << endl;
-    for(std::vector<int>::size_type i = 0; i != STG_GlobalListCoordX.size(); i++) cout << STG_GlobalListCoordX[i] << endl;
-  }
+//  if (rank == MASTER_NODE){
+//    //cout << "After AllGatherv: " << STG_GlobalListCoordX.size() << endl;
+//    for(std::vector<int>::size_type i = 0; i != STG_GlobalListCoordX.size(); i++) cout << STG_GlobalListCoordX[i] << endl;
+//  }
 #else
   cout <<"Number of SNG points: " << nSTGPts << endl;
   STG_GlobalListCoordX = STG_ListCoordX;

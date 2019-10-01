@@ -8350,26 +8350,37 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
   vector<su2double> ListCoordX = geometry->GetSTG_GlobalListCoordX();
   vector<su2double> AlphaX;
   
+//  if (config->GetKind_SyntheticTurbulence() == VOLUME_STG){
+//
+//    /*--- Piecewise linear function controlling the spatial distribution ---*/
+//    su2double AlphaX_Sum = 0.0;
+//    for(std::vector<int>::size_type ii = 0; ii != ListCoordX.size(); ii++) {
+//      if (ListCoordX[ii] <= p2[0]){
+//        su2double slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
+//        AlphaX.push_back(slope * ListCoordX[ii] - 2.0 * STGBox[0]);
+//        AlphaX_Sum += slope * ListCoordX[ii] - 2.0 * STGBox[0];
+//      }
+//      else{
+//        su2double slope = (p3[1] - p2[1]) / (p3[0] - p2[0]);
+//        AlphaX.push_back(slope * ListCoordX[ii] + 2.0 * STGBox[3]);
+//        AlphaX_Sum +=slope * ListCoordX[ii] + 2.0 * STGBox[3];
+//      }
+//    }
+//
+//    // Normalizing the spatial distribution
+//    for(std::vector<int>::size_type ii = 0; ii != AlphaX.size(); ii++) {
+//      AlphaX[ii] = AlphaX[ii] / AlphaX_Sum;
+//    }
+//  }
+
   if (config->GetKind_SyntheticTurbulence() == VOLUME_STG){
+  
+    /*--- Gaussian spatial distribution ---*/
+    std::nth_element(ListCoordX.begin(), ListCoordX.begin() + ListCoordX.size()/2, ListCoordX.end());
+    su2double median = ListCoordX[ListCoordX.size()/2];
     
-    /*--- Piecewise linear function controlling the spatial distribution ---*/
-    su2double AlphaX_Sum = 0.0;
-    for(std::vector<int>::size_type ii = 0; ii != ListCoordX.size(); ii++) {
-      if (ListCoordX[ii] <= p2[0]){
-        su2double slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
-        AlphaX.push_back(slope * ListCoordX[ii] - 2.0 * STGBox[0]);
-        AlphaX_Sum += slope * ListCoordX[ii] - 2.0 * STGBox[0];
-      }
-      else{
-        su2double slope = (p3[1] - p2[1]) / (p3[0] - p2[0]);
-        AlphaX.push_back(slope * ListCoordX[ii] + 2.0 * STGBox[3]);
-        AlphaX_Sum +=slope * ListCoordX[ii] + 2.0 * STGBox[3];
-      }
-    }
-    
-    // Normalizing the spatial distribution
-    for(std::vector<int>::size_type ii = 0; ii != AlphaX.size(); ii++) {
-      AlphaX[ii] = AlphaX[ii] / AlphaX_Sum;
+    for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
+      AlphaX.push_back(exp(- M_PI * pow(ListCoordX[kk] - median, 2.0) / (2. * pow(config->GetLength_Reynolds(), 2.))));
     }
   }
   
@@ -8559,8 +8570,10 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
       
       // Add the perturbations to the auxliar array of primitive variables
       for (iDim = 0; iDim < nDim; iDim++){
-        VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0;
+        VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0 / config->GetLength_Reynolds();
       }
+      
+      cout << Coord[0] << " " << Coord[1] << " " << Coord[2] <<  " " << VelTurb[0] << " " << VelTurb[1] << " " << VelTurb[2] << " " << AlphaX[indx] << endl;
     }
     else if (config->GetKind_SyntheticTurbulence() == INLET_STG){
       // Add the perturbations to the auxliar array of primitive variables
@@ -18627,6 +18640,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
    At this moment, the wall function is only available for adiabatic flows.
    ---*/
   
+  bool debug = false;
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
   
@@ -18852,11 +18866,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
             counter++;
             if (counter == max_iter) {
-              cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
-              cout << rank << " " << iPoint;
-              for (iDim = 0; iDim < nDim; iDim++)
-                cout << " " << Coord[iDim];
-              cout << endl;
+              if (debug){
+                cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
+                cout << rank << " " << iPoint;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  cout << " " << Coord[iDim];
+                cout << endl;
+              }
               converged = false;
               node[iPoint]->SetTauWall_Flag(false);
               break;

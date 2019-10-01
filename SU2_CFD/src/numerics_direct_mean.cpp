@@ -5836,8 +5836,8 @@ CSourceVolumeSTG::~CSourceVolumeSTG(void) {}
 void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config) {
   
   unsigned short iDim;
-  su2double Force_Ref = config->GetForce_Ref();
-  su2double C_bf = 1.1;
+  su2double Force_Ref = 1.0;
+  su2double C_bf = 1.0;
   
   su2double Fmomentum[3] = {V_i[1], V_i[2], V_i[3]};
   
@@ -5854,9 +5854,9 @@ void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config)
   /*--- Energy contribution ---*/
   
   val_residual[nDim+1] = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++){
-    val_residual[nDim+1] += -Volume * C_bf * U_i[iDim+1] * Fmomentum[iDim]/ Force_Ref;
-  }
+//  for (iDim = 0; iDim < nDim; iDim++){
+//    val_residual[nDim+1] += -Volume * C_bf * U_i[iDim+1] * Fmomentum[iDim]/ Force_Ref;
+//  }
 }
 
 CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
