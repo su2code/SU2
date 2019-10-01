@@ -45,79 +45,73 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    RequestedHistoryFields.push_back("SENSITIVITY");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
+    requestedHistoryFields.emplace_back("SENSITIVITY");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");    
-    RequestedScreenFields.push_back("RMS_ADJ_TEMPERATURE");
-    RequestedScreenFields.push_back("SENS_GEO");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");    
+    requestedScreenFields.emplace_back("RMS_ADJ_TEMPERATURE");
+    requestedScreenFields.emplace_back("SENS_GEO");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("SENSITIVITY");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Heat)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetAdj_FileName();
+  volumeFilename = config->GetAdj_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfAdjCoeff_FileName();
+  surfaceFilename = config->GetSurfAdjCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_AdjFileName();
+  restartFilename = config->GetRestart_AdjFileName();
   
   /*--- Add the obj. function extension --- */
   
-  RestartFilename = config->GetObjFunc_Extension(RestartFilename);
+  restartFilename = config->GetObjFunc_Extension(restartFilename);
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_ADJ_TEMPERATURE";
+  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_TEMPERATURE");
 
 }
 
-CAdjHeatOutput::~CAdjHeatOutput(void) {
-
-  if (rank == MASTER_NODE){
-    HistFile.close();
-  }
-
-}
+CAdjHeatOutput::~CAdjHeatOutput(void) {}
 
 void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
-  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", TYPE_RESIDUAL); 
+  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL); 
   /// END_GROUP
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", HistoryFieldType::COEFFICIENT); 
   /// END_GROUP
   
 }
@@ -130,7 +124,7 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
  
   SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
  
-  if (multizone)
+  if (multiZone)
     SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
     
   SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());

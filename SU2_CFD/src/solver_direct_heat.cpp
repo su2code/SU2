@@ -60,6 +60,9 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -155,12 +158,12 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
       Smatrix[iDim] = new su2double [nDim];
   }
 
-  Heat_Flux = new su2double[nMarker];
+  HeatFlux = new su2double*[nMarker];
   AvgTemperature = new su2double[nMarker];
   Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
   for(iMarker = 0; iMarker < nMarker; iMarker++) {
-    Heat_Flux[iMarker] = 0.0;
+    HeatFlux[iMarker] = new su2double[geometry->GetnVertex(iMarker)];
     AvgTemperature[iMarker] = 0.0;
   }
   for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
@@ -293,7 +296,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -907,7 +910,6 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   bool viscous              = config->GetViscous();
-  bool grid_movement        = config->GetGrid_Movement();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -953,7 +955,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-        if (grid_movement)
+        if (dynamic_grid)
           conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
         conv_numerics->SetTemperature(node[iPoint]->GetSolution(0), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
@@ -1024,8 +1026,6 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  
-  bool grid_movement        = config->GetGrid_Movement();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   su2double *Normal = new su2double[nDim];
@@ -1058,7 +1058,7 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
           conv_numerics->SetPrimitive(V_domain, V_outlet);
 
-          if (grid_movement)
+          if (dynamic_grid)
             conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
           conv_numerics->SetTemperature(node[iPoint]->GetSolution(0), node[Point_Normal]->GetSolution(0));
@@ -1204,8 +1204,6 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-    Heat_Flux[iMarker] = 0.0;
-
     if ( Boundary == ISOTHERMAL ) {
 
       Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
@@ -1240,7 +1238,11 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          
+          if (Monitoring){
+            AllBound_HeatFlux += HeatFlux[iMarker][iVertex];            
+          }
         }
       }
     }
@@ -1278,22 +1280,23 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
-
+          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          
+          if (Monitoring){
+            AllBound_HeatFlux += HeatFlux[iMarker][iVertex];            
+          }
+          
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
           if ( Boundary == HEAT_FLUX ) {
 
             AvgTemperature[iMarker] += Twall*config->GetTemperature_Ref()*Area;
           }
-
         }
       }
     }
 
     if (Monitoring == YES) {
-
-    AllBound_HeatFlux += Heat_Flux[iMarker];
-    AllBound_AvgTemperature += AvgTemperature[iMarker];
+      AllBound_AvgTemperature += AvgTemperature[iMarker];
     }
   }
 
@@ -1753,7 +1756,6 @@ void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
   su2double Volume_nP1, TimeStep;
 
   bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement  = config->GetGrid_Movement();
 
   /*--- Store the physical time step ---*/
 
@@ -1761,7 +1763,7 @@ void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
 
   /*--- Compute the dual time-stepping source term for static meshes ---*/
 
-  if (!grid_movement) {
+  if (!dynamic_grid) {
 
     /*--- Loop over all nodes (excluding halos) ---*/
 

@@ -1,4 +1,5 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
+#include <cassert>
 
 CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields){
   
@@ -22,15 +23,15 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   Conn_Tetr_Par = NULL;
   Conn_Tria_Par = NULL;
   Conn_Pyra_Par = NULL;
-  
-  Parallel_Data = NULL;
-  
+    
   nPoint_Send  = NULL;
   nPoint_Recv  = NULL;
   Index        = NULL;
   connSend     = NULL;
+  dataBuffer   = NULL;
+  passiveDoubleBuffer = NULL;
+  doubleBuffer = NULL;
   idSend       = NULL;
-  idRecv       = NULL;
   
   nSends = 0;
   nRecvs = 0;
@@ -38,14 +39,10 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   nLocalPoint_Sort  = 0;
   nGlobalPoint_Sort = 0;
   
-  nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
-  nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
+  nPoint_Send = new int[size+1]();
+  nPoint_Recv = new int[size+1](); 
   
-  for (int ii=0; ii < size; ii++) {
-    nPoint_Send[ii] = 0;
-    nPoint_Recv[ii] = 0;
-  }
-  nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
+  linearPartitioner = NULL;
 
 }
 
@@ -54,66 +51,21 @@ CParallelDataSorter::~CParallelDataSorter(){
   if (nPoint_Send != NULL) delete [] nPoint_Send;
   if (nPoint_Recv != NULL) delete [] nPoint_Recv;
   
-  DeallocateConnectivity();
+  /*--- Deallocate memory for connectivity data on each processor. ---*/
   
-  DeallocateData();
+  if (nParallel_Line > 0 && Conn_Line_Par != NULL) delete [] Conn_Line_Par;
+  if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+  if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+  if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+  if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+  if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+  if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   
+  if (connSend != NULL) delete [] connSend;
+  
+  if (dataBuffer != NULL) delete [] dataBuffer;
 }
 
-void CParallelDataSorter::CreateLinearPartition(unsigned long nGlobalPoint){
-    
-  /*--- Now that we know the actual number of points we need to output,
-   compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-
-  beg_node = new unsigned long[size];
-  end_node = new unsigned long[size];
-
-  nPoint_Lin = new unsigned long[size];
-  nPoint_Cum = new unsigned long[size+1];
-
-  unsigned long total_points = 0;
-  for (int ii = 0; ii < size; ii++) {
-    nPoint_Lin[ii] = nGlobalPoint/size;
-    total_points  += nPoint_Lin[ii];
-  }
-
-  /*--- Get the number of remainder points after the even division. ---*/
-
-  unsigned long remainder = nGlobalPoint - total_points;
-  for (unsigned long ii = 0; ii < remainder; ii++) {
-    nPoint_Lin[ii]++;
-  }
-
-  /*--- Store the local number of nodes on each proc in the linear
-   partitioning, the beginning/end index, and the linear partitioning
-   within an array in cumulative storage format. ---*/
-
-  beg_node[0] = 0;
-  end_node[0] = beg_node[0] + nPoint_Lin[0];
-  nPoint_Cum[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    beg_node[ii]   = end_node[ii-1];
-    end_node[ii]   = beg_node[ii] + nPoint_Lin[ii];
-    nPoint_Cum[ii] = nPoint_Cum[ii-1] + nPoint_Lin[ii-1];
-  }
-  nPoint_Cum[size] = nGlobalPoint;
-  
-}
-
-unsigned short CParallelDataSorter::FindProcessor(unsigned long global_index){
-  
-  unsigned short iProcessor = global_index/nPoint_Lin[0];
-  if (iProcessor >= (unsigned long)size)
-    iProcessor = (unsigned long)size-1;
-  if (global_index >= nPoint_Cum[iProcessor])
-    while(global_index >= nPoint_Cum[iProcessor+1]) iProcessor++;
-  else
-    while(global_index <  nPoint_Cum[iProcessor])   iProcessor--;
-  
-  return iProcessor;
-}
 
 unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
   
@@ -148,6 +100,170 @@ unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
   return 0;
 }
 
+void CParallelDataSorter::SortOutputData() {
+  
+  int VARS_PER_POINT = GlobalField_Counter;
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
+  int ind;
+#endif
+
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+
+  
+  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
+  
+#ifdef HAVE_MPI
+  /*--- We need double the number of messages to send both the conn.
+   and the global IDs. ---*/
+  
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
+  
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = VARS_PER_POINT*nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
+      int count  = VARS_PER_POINT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(doubleBuffer[ll]), count, MPI_DOUBLE, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = VARS_PER_POINT*nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count  = VARS_PER_POINT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Repeat the process to communicate the global IDs. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the global IDs. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+#endif
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  int mm = VARS_PER_POINT*nPoint_Recv[rank];
+  int ll = VARS_PER_POINT*nPoint_Send[rank];
+  int kk = VARS_PER_POINT*nPoint_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) doubleBuffer[mm] = connSend[nn];
+  
+  mm = nPoint_Recv[rank];
+  ll = nPoint_Send[rank];
+  kk = nPoint_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+  
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  
+#ifdef HAVE_MPI
+  int number = 2*nSends;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+  
+  number = 2*nRecvs;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+  
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+  
+  /*--- Note, passiveDoubleBuffer and doubleBuffer point to the same address.
+   * This is the reason why we have to do the following copy/reordering in two steps. ---*/
+  
+  /*--- Step 1: Extract the underlying double value --- */
+  
+  if (!std::is_same<su2double, passivedouble>::value){
+    for (int jj = 0; jj < VARS_PER_POINT*nPoint_Recv[size]; jj++){
+      const passivedouble tmpVal = SU2_TYPE::GetValue(doubleBuffer[jj]);
+      passiveDoubleBuffer[jj] = tmpVal;  
+      /*--- For some AD datatypes a call of the destructor is
+       *  necessary to properly delete the AD type ---*/
+      doubleBuffer[jj].~su2double();
+    } 
+  }
+  
+  /*--- Step 2: Reorder the data in the buffer --- */
+  
+  passivedouble *tmpBuffer = new passivedouble[nPoint_Recv[size]];
+  for (int jj = 0; jj < VARS_PER_POINT; jj++){
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      tmpBuffer[idRecv[ii]] = passiveDoubleBuffer[ii*VARS_PER_POINT+jj];
+    }
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+      passiveDoubleBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
+    }
+  }
+  
+  delete [] tmpBuffer;
+  
+  /*--- Store the total number of local points my rank has for
+   the current section after completing the communications. ---*/
+  
+  nParallel_Poin = nPoint_Recv[size];
+  
+  /*--- Reduce the total number of points we will write in the output files. ---*/
+
+#ifndef HAVE_MPI
+  nGlobal_Poin_Par = nParallel_Poin;
+#else
+  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  delete [] idRecv;
+}
 
 void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalID){
   
@@ -165,7 +281,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   
   for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++ ) {
     
-    iProcessor = FindProcessor(globalID[iPoint]);
+    iProcessor = linearPartitioner->GetRankContainingIndex(globalID[iPoint]);      
     
     /*--- If we have not visited this node yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -203,43 +319,45 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
    sending. ---*/
   
   connSend = NULL;
-  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
-    connSend[ii] = 0;
+  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
+  
+  /*--- Allocate the data buffer to hold the sorted data. We have to make it large enough
+   * to hold passivedoubles and su2doubles ---*/
+  unsigned short maxSize = max(sizeof(passivedouble), sizeof(su2double));
+  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize];
+  
+  /*--- doubleBuffer and passiveDouble buffer use the same memory allocated above using the dataBuffer. ---*/
+  
+  doubleBuffer = reinterpret_cast<su2double*>(dataBuffer);
+  passiveDoubleBuffer = reinterpret_cast<passivedouble*>(dataBuffer);
   
   /*--- Allocate arrays for sending the global ID. ---*/
   
-  idSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++)
-    idSend[ii] = 0;
-  
-  idRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    idRecv[ii] = 0;
-  
+  idSend = new unsigned long[nPoint_Send[size]]();
+
   /*--- Create an index variable to keep track of our index
    positions as we load up the send buffer. ---*/
   
-  unsigned long *index = new unsigned long[size];
+  unsigned long *index = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
   
-  unsigned long *idIndex = new unsigned long[size];
+  unsigned long *idIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
   
-  Index = new unsigned long[nLocalPoint_Sort];
+  Index = new unsigned long[nLocalPoint_Sort]();
 
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
   
   for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
     
-    iProcessor = FindProcessor(globalID[iPoint]);
+    iProcessor = linearPartitioner->GetRankContainingIndex(globalID[iPoint]);      
 
     /*--- Load the global ID (minus offset) for sorting the
          points once they all reach the correct processor. ---*/
     
     unsigned long nn = idIndex[iProcessor];
-    idSend[nn] = globalID[iPoint] - beg_node[iProcessor];
+    idSend[nn] = globalID[iPoint] - linearPartitioner->GetFirstIndexOnRank(iProcessor);
     
     /*--- Store the index this point has in the send buffer ---*/
     
@@ -292,28 +410,3 @@ unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned 
   return 0;
 }
 
-void CParallelDataSorter::DeallocateConnectivity() {
-  
-  /*--- Deallocate memory for connectivity data on each processor. ---*/
-  
-  if (nParallel_Line > 0 && Conn_Line_Par != NULL) delete [] Conn_Line_Par;
-  if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-  if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-  if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-  if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-  if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-  if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
-  
-  
-}
-
-void CParallelDataSorter::DeallocateData() {
-  
-  /*--- Deallocate memory for solution data ---*/
-  
-  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
-    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
-  }
-  if (Parallel_Data != NULL) delete [] Parallel_Data;
-
-}

@@ -43,42 +43,40 @@
 
 CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) : COutput(config, nDim, false) {
   
-  unsigned short iField = 0;
-
   /*--- Set the requested volume fields to all fields in the solver ---*/
   
-  RequestedVolumeFields = solver->GetSolutionFields();
+  requestedVolumeFields.clear();
   
-  /*--- remove the point ID from the fields --- */
+  requestedVolumeFields.emplace_back("COORDINATES");
+  requestedVolumeFields.emplace_back("SOLUTION");
   
-  RequestedVolumeFields.erase(RequestedVolumeFields.begin());
+  nRequestedVolumeFields = requestedVolumeFields.size();
   
-  nRequestedVolumeFields = RequestedVolumeFields.size();
-    
+  /*--- Get the fields from the solver ---*/
+  
+  fields = solver->GetSolutionFields();
+   
+  /*--- Remove point ID ---*/
+  
+  fields.erase(fields.begin());
+  
   /*--- Remove first and last character of the strings (the quotation marks) ---*/
   
-  for (iField = 0; iField < nRequestedVolumeFields; iField++){
-    RequestedVolumeFields[iField] = RequestedVolumeFields[iField].substr(1, RequestedVolumeFields[iField].size() - 2);
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
+    fields[iField] = fields[iField].substr(1, fields[iField].size() - 2);
   }
-     
+  
   /*--- Set the volume filename --- */
   
-  VolumeFilename = "baseline";
+  volumeFilename = "baseline";
   
   /*--- Set the surface filename ---*/
   
-  SurfaceFilename = "surface_baseline";
-  
-  /*--- Conv field --- */
-  
-  Conv_Field = "NONE";
+  surfaceFilename = "surface_baseline";
   
 }
 
-CBaselineOutput::~CBaselineOutput(void) {
-
-
-}
+CBaselineOutput::~CBaselineOutput(void) {}
 
 void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
 
@@ -86,25 +84,25 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
     
   /*--- The first three fields should be the coordinates, if not, something is wrong ---*/
   
-  if (RequestedVolumeFields[0] != "x" || RequestedVolumeFields[1] != "y"){
+  if (fields[0] != "x" || fields[1] != "y"){
     SU2_MPI::Error("No coordinates found in the restart file!!", CURRENT_FUNCTION);
   }
   if (nDim == 3){
-    if (RequestedVolumeFields[2] != "z"){
+    if (fields[2] != "z"){
       SU2_MPI::Error("No coordinates found in the restart file!!", CURRENT_FUNCTION);
     }
   }
   
   // Grid coordinates
-  AddVolumeOutput(RequestedVolumeFields[0], RequestedVolumeFields[0], "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput(RequestedVolumeFields[1], RequestedVolumeFields[1], "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput(fields[0], fields[0], "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput(fields[1], fields[1], "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput(RequestedVolumeFields[2], RequestedVolumeFields[2], "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput(fields[2], fields[2], "COORDINATES", "z-component of the coordinate vector");
 
   // Add all the remaining fields
   
-  for (iField = nDim; iField < nRequestedVolumeFields; iField++){
-    AddVolumeOutput(RequestedVolumeFields[iField], RequestedVolumeFields[iField], "SOLUTION","");
+  for (iField = nDim; iField < fields.size(); iField++){
+    AddVolumeOutput(fields[iField], fields[iField], "SOLUTION","");
   }
   
 }
@@ -113,7 +111,7 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   
   unsigned short iField = 0;
   
-  if (nRequestedVolumeFields != solver[0]->GetnVar()){
+  if ( fields.size() != solver[0]->GetnVar()){
     SU2_MPI::Error("Number of requested fields and number of variables do not match.", CURRENT_FUNCTION);
   }
   
@@ -121,8 +119,8 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   
   CVariable* Node_Sol  = solver[0]->node[iPoint];
    
-  for (iField = 0; iField < nRequestedVolumeFields; iField++){
-    SetVolumeOutputValue(RequestedVolumeFields[iField], iPoint, Node_Sol->GetSolution(iField));
+  for (iField = 0; iField < fields.size(); iField++){
+    SetVolumeOutputValue(fields[iField], iPoint, Node_Sol->GetSolution(iField));
   }
   
 }

@@ -1,8 +1,7 @@
 /*!
- * \file output_heat.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file CHeatOutput.hpp
+ * \brief  Headers of the heat output.
+ * \author R. Sanchez, T. Albring.
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -46,12 +45,8 @@
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CHeatOutput : public COutput {
-private:
-  bool multizone;
-
+class CHeatOutput final: public COutput {
 public:
-
 
   /*!
    * \brief Constructor of the class
@@ -62,33 +57,32 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CHeatOutput(void);
-
+  ~CHeatOutput(void) override;
+  
   /*!
-   * \brief Set the history file header
+   * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
   
   /*!
-   * \brief SetHistoryOutputFields
-   * \param config
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryOutputFields(CConfig *config);
-   
-  /*!
-   * \brief SetVolumeOutputFields
-   * \param config
-   */
-  void SetVolumeOutputFields(CConfig *config);
+  void SetVolumeOutputFields(CConfig *config) override;
   
   /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
- 
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override; 
+  
+  /*!
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryOutputFields(CConfig *config) override;
 };

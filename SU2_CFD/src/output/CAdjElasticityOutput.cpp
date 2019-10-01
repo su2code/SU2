@@ -52,73 +52,67 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RESIDUALS");
-    RequestedHistoryFields.push_back("SENSITIVITY");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RESIDUALS");
+    requestedHistoryFields.emplace_back("SENSITIVITY");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
   if (nRequestedScreenFields == 0){
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
-    RequestedScreenFields.push_back("ADJOINT_DISP_X");
-    RequestedScreenFields.push_back("ADJOINT_DISP_Y");
-    RequestedScreenFields.push_back("SENS_E");
-    RequestedScreenFields.push_back("SENS_NU");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
+    requestedScreenFields.emplace_back("ADJOINT_DISP_X");
+    requestedScreenFields.emplace_back("ADJOINT_DISP_Y");
+    requestedScreenFields.emplace_back("SENS_E");
+    requestedScreenFields.emplace_back("SENS_NU");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
 
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("SENSITIVITY");    
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
 
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetAdj_FileName();
+  volumeFilename = config->GetAdj_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfAdjCoeff_FileName();
+  surfaceFilename = config->GetSurfAdjCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_AdjFileName();
+  restartFilename = config->GetRestart_AdjFileName();
   
   /*--- Add the obj. function extension --- */
   
-  RestartFilename = config->GetObjFunc_Extension(RestartFilename);
+  restartFilename = config->GetObjFunc_Extension(restartFilename);
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "ADJOINT_DISP_X";
+  if (convFields.empty() ) convFields.emplace_back("ADJOINT_DISP_X");
   
 }
 
-CAdjElasticityOutput::~CAdjElasticityOutput(void) {
-
-  if (rank == MASTER_NODE){
-    HistFile.close();
-  }
-
-
-}
+CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   // Residuals
-  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", FORMAT_FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", FORMAT_FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
   
   //Sensitivities
-  AddHistoryOutput("SENS_E", "Sens[E]",  FORMAT_FIXED, "SENSITIVITY", "");
-  AddHistoryOutput("SENS_NU","Sens[Nu]", FORMAT_FIXED, "SENSITIVITY", "");
+  AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::FIXED, "SENSITIVITY", "");
+  AddHistoryOutput("SENS_NU","Sens[Nu]", ScreenOutputFormat::FIXED, "SENSITIVITY", "");
 
   
 }

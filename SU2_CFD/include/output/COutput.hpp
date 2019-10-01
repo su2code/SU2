@@ -1,8 +1,7 @@
 /*!
- * \file output.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file COutput.hpp
+ * \brief Headers of the output class.
+ * \author T.Albring
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -38,10 +37,9 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
-
 #include <fstream>
 #include <cmath>
+#include <map>
 #include <time.h>
 #include <sstream>
 #include <iomanip>
@@ -50,63 +48,67 @@
 
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/signal_processing_toolbox.hpp"
+#include "../../../Common/include/option_structure.hpp"
 
 class CGeometry;
 class CSolver;
 class CFileWriter;
 class CParallelDataSorter;
-
-#include "COutputLegacy.hpp"
-
+class CConfig;
+class CCatalystWriter;
 using namespace std;
 
 /*! 
  * \class COutput
- * \brief Class for writing the flow, adjoint and linearized solver 
- *        solution (including the history solution, and parallel stuff).
- * \author F. Palacios, T. Economon, M. Colonno.
+ * \brief Class for writing the convergence history and to write solution data to file.
+ * \author T.Albring
  */
 class COutput {
-
 protected:
   
-  CParallelDataSorter* data_sorter;
+  /*----------------------------- General ----------------------------*/  
+   
+  int rank,     /*!< \brief MPI Rank. */
+  size;         /*!< \brief MPI Size. */
+
+  unsigned short nDim;   /*!< \brief Physical Dimension */ 
   
-  COutputLegacy *output_legacy;
-
-  vector<string> Variable_Names;
-
-  su2double RhoRes_New, *RhoRes_Old;
-
-  bool no_writing;
-
-protected:
-
-  int rank, 	  /*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
-
-  unsigned short nDim;
+  bool multiZone,       /*!< \brief Boolean to store whether we are running a multizone problem */ 
+  gridMovement,         /*!< \brief Boolean to store whether we have grid movement enabled */ 
+  femOutput;            /*!< \brief Boolean to store whether we should use the FEM routines */ 
   
-  unsigned short GlobalField_Counter; /*!< \brief Number of fields in the volume output */ 
-
-  unsigned short field_width;         /*!< \brief Width of each column for the screen output (hardcoded for now) */
+  /*----------------------------- Screen and history output ----------------------------*/  
+  
+  string historySep;              /*!< \brief Character which separates values in the history file */  
+  unsigned short fieldWidth;      /*!< \brief Width of each column for the screen output (hardcoded for now) */
+  bool noWriting;                 /*!< \brief Boolean indicating whether a screen/history output should be written */
+  unsigned long curTimeIter,      /*!< \brief Current value of the time iteration index */
+  curAbsTimeIter,      /*!< \brief Current value of the time iteration index */  
+  curOuterIter,                   /*!< \brief Current value of the outer iteration index */
+  curInnerIter;                   /*!< \brief Current value of the inner iteration index */
+  
+  string historyFilename;       /*!< \brief The history filename*/
+  
+  /*! \brief Temporary variable to store the history filename */
+   char char_histfile[200];
+   /*! \brief Output file stream for the history */
+   ofstream histFile;
   
   /** \brief Enum to identify the screen output format. */
-  enum ScreenOutputFormat {           
-    FORMAT_INTEGER,         /*!< \brief Integer format. Example: 34 */
-    FORMAT_FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
-    FORMAT_SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  enum class ScreenOutputFormat {           
+    INTEGER,         /*!< \brief Integer format. Example: 34 */
+    FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
   
-  enum HistoryFieldType {           
-    TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
-    TYPE_AUTO_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
-    TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
-    TYPE_AUTO_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
-    TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  /** \brief Enum to identify the screen/history field type. */  
+  enum class HistoryFieldType {           
+    RESIDUAL,         /*!< \brief A user-defined residual field type*/
+    AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
+    COEFFICIENT,      /*!< \brief User defined coefficient field type  */
+    AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
+    DEFAULT           /*!< \brief Default field type */  
   };
-  
-  string HistorySep;                  /*!< \brief Character which separates values in the history file */
   
   /** \brief Structure to store information for a history output field.
    * 
@@ -114,82 +116,133 @@ protected:
    * Each individual instance represents a single field (i.e. column) in the history file or on screen.   
    */
   struct HistoryOutputField {
-    string              FieldName = "";    /*!< \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
-    su2double           Value = 0.0;        /*!< \brief The value of the field. */
-    unsigned short      ScreenFormat = FORMAT_FIXED; /*!< \brief The format that is used to print this value to screen. */
-    string              OutputGroup  ="";  /*!< \brief The group this field belongs to. */
-    unsigned short      FieldType = TYPE_DEFAULT;
-    string              Description = "";
-    HistoryOutputField() {}           /*!< \brief Default constructor. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype, string description):
-      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype), Description(description){}
+    /*! \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
+    string              fieldName = ""; 
+    /*! \brief The value of the field. */
+    su2double           value = 0.0;
+    /*! \brief The format that is used to print this value to screen. */
+    ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED; 
+    /*! \brief The group this field belongs to. */
+    string              outputGroup  ="";  
+    /*! \brief The field type*/
+    HistoryFieldType     fieldType = HistoryFieldType::DEFAULT;
+    /*! \brief String containing the description of the field */
+    string              description = "";
+    /*! \brief Default constructor. */
+    HistoryOutputField() {}         
+    /*! \brief Constructor to initialize all members. */
+    HistoryOutputField(string fieldName_, ScreenOutputFormat screenFormat_, string OutputGroup_, 
+                       HistoryFieldType fieldType_, string description_):
+      fieldName(std::move(fieldName_)), value(0.0), screenFormat(screenFormat_),
+      outputGroup(std::move(OutputGroup_)), fieldType(fieldType_), description(std::move(description_)){}
   };
+
+  /*! \brief Associative map to access data stored in the history output fields by a string identifier. */
+  std::map<string, HistoryOutputField >         historyOutput_Map;
+  /*! \brief Vector that contains the keys of the ::historyOutput_Map in the order of their insertion. */
+  std::vector<string>                           historyOutput_List;      
+  /*! \brief Associative map to access data stored in the history per surface output fields by a string identifier. */
+  std::map<string, vector<HistoryOutputField> > historyOutputPerSurface_Map;  
+  /*! \brief Vector that contains the keys of the ::historyOutputPerSurface_Map in the order of their insertion. */
+  std::vector<string>                           historyOutputPerSurface_List;  
+
+  /*! \brief Requested history field names in the config file. */      
+  std::vector<string> requestedHistoryFields;
+  /*! \brief Number of requested history field names in the config file. */  
+  unsigned short nRequestedHistoryFields;
+  /*! \brief Requested screen field names in the config file. */  
+  std::vector<string> requestedScreenFields;
+  /*! \brief Number of requested screen field names in the config file. */    
+  unsigned short nRequestedScreenFields;
+
+  PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
+  PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
+  PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
+  PrintingToolbox::CTablePrinter* fileWritingTable;     //!< File writing header
+  std::string multiZoneHeaderString;                    //!< Multizone header string
+  bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
   
+  //! Structure to store the value of the running averages
+  map<string, Signal_Processing::RunningAverage> runningAverages; 
+  
+  //! Structure to store the value initial residuals for relative residual computation
+  std::map<string, su2double> initialResiduals;
+  
+   /*----------------------------- Volume output ----------------------------*/     
+   
+   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+   
+   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
+   unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */ 
+  
+   string volumeFilename,               //!< Volume output filename
+   surfaceFilename,                     //!< Surface output filename
+   restartFilename;                     //!< Restart output filename
+   
   /** \brief Structure to store information for a volume output field.
    * 
    *  The stored information is used to create the volume solution file.   
    */
   struct VolumeOutputField {
-    string FieldName;          /*!< \brief The name of the field, i.e. the name that is printed in the file header.*/
-    int    Offset;             /*!< \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    string OutputGroup;        /*!< \brief The group this field belongs to. */
-    string Description;    
-    VolumeOutputField () {}    /*!< \brief Default constructor. */
-    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup, string description):
-      FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup), Description(description){}
+    /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
+    string fieldName;
+    /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
+    short  offset; 
+    /*! \brief The group this field belongs to. */
+    string outputGroup;
+    /*! \brief String containing the description of the field */
+    string description;
+    /*! \brief Default constructor. */
+    VolumeOutputField () {}
+    /*! \brief Constructor to initialize all members. */    
+    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
+      fieldName(std::move(fieldName_)), offset(std::move(offset_)), 
+      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
   };
-
-  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */
-  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */
-  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */
-  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */
-
-  std::map<string, VolumeOutputField >          VolumeOutput_Map;
-  std::vector<string>                           VolumeOutput_List;
-  std::vector<short>                            Offset_Cache;
-  unsigned short                                Offset_Cache_Index;
-  bool                                          Offset_Cache_Checked,
-                                                Build_Offset_Cache;
   
-  std::vector<string> RequestedHistoryFields;
-  unsigned short nRequestedHistoryFields;
-  std::vector<string> RequestedScreenFields;
-  unsigned short nRequestedScreenFields;
-  std::vector<string> RequestedVolumeFields;
+  /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */  
+  std::map<string, VolumeOutputField >          volumeOutput_Map;
+  /*! \brief Vector that contains the keys of the ::volumeOutput_Map in the order of their insertion. */  
+  std::vector<string>                           volumeOutput_List;
+  
+  /*! \brief Vector to cache the positions of the field in the data array */
+  std::vector<short>                            fieldIndexCache;
+  /*! \brief Current value of the cache index */  
+  unsigned short                                cachePosition;
+  /*! \brief Boolean to store whether the field index cache should be build. */    
+  bool                                          buildFieldIndexCache;
+  /*! \brief Vector to cache the positions of the field in the data array */
+  std::vector<short>                            fieldGetIndexCache;
+  /*! \brief Current value of the cache index */  
+  unsigned short                                curGetFieldIndex;
+
+  /*! \brief Requested volume field names in the config file. */    
+  std::vector<string> requestedVolumeFields;
+  /*! \brief Number of requested volume field names in the config file. */      
   unsigned short nRequestedVolumeFields;
-  char char_histfile[200];
-
-  ofstream HistFile;
-  
-  PrintingToolbox::CTablePrinter* ConvergenceTable;
-  PrintingToolbox::CTablePrinter* MultiZoneHeaderTable;
-  
-  std::string MultiZoneHeaderString;
-  
-  std::map<string, su2double> Init_Residuals;
-  
-  map<string, Signal_Processing::RunningAverage> RunningAverages;
-  
-  bool multizone, grid_movement, fem_output;
-  
-  string VolumeFilename, SurfaceFilename, RestartFilename, HistoryFilename;
-  
-  unsigned long curr_TimeIter, curr_OuterIter, curr_InnerIter;
     
-  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
-  bool Convergence,    /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
-  Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG;    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
-  su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
-  string Conv_Field;
+  /*----------------------------- Convergence monitoring ----------------------------*/     
+
+  su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
+  cauchyFunc;                    /*!< \brief Current value of the convergence indicator at one iteration. */
+  unsigned short Cauchy_Counter; /*!< \brief Number of elements of the Cauchy serial. */
+  vector<vector<su2double>> cauchySerie;        /*!< \brief Complete Cauchy serial. */
+  unsigned long nCauchy_Elems;  /*!< \brief Total number of cauchy elems to monitor */ 
+  su2double cauchyEps;           /*!< \brief Defines the threshold when to stop the solver. */   
+  su2double minLogResidual;     /*!< \brief Minimum value of the residual to reach */     
+  vector<su2double> oldFunc,             /*!< \brief Old value of the coefficient. */
+  newFunc;                       /*!< \brief Current value of the coefficient. */
+  bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
+  su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
+  vector<string> convFields;      /*!< \brief Name of the field to be monitored for convergence */
   
-  CFileWriter *catalyst_writer;
+  /*----------------------------- Adaptive CFL ----------------------------*/     
   
+  su2double rhoResNew,    /*!< New value of the residual for adaptive CFL routine */
+  rhoResOld;              /*!< Old value of the residual for adaptive CFL routine */
+
+  CCatalystWriter *catalyst_writer; 
 public:
   
   /*----------------------------- Public member functions ----------------------------*/
@@ -197,25 +250,16 @@ public:
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *config, unsigned short nDim, bool fem_output);
-  
-  /*! 
-   * \brief Destructor of the class. 
-   */
-  virtual ~COutput(void);  
+  COutput(CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Preprocess the volume output by setting the requested volume output fields.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
   void PreprocessVolumeOutput(CConfig *config);   
   
   /*!
-   * \brief Load the data from the solvers into the local data array and sort it for the linear partitioning.
-   * 
-   * After calling this method the data is distributed to all processors based on a linear partition 
-   * and is ready to be written in parallel to file using the SetVolume_Output or SetSurface_Output routines.
+   * \brief Load the data from the solvers into the data sorters and sort it for the linear partitioning.
    * 
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -223,27 +267,6 @@ public:
    */
   void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
   
-  /*!
-   * \brief Write the linear partitioned volume data in parallel to file. ::Load_Data() has to be called before!
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] format - The data format of the output files.
-   */
-  void SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
-  
-  /*!
-   * \brief Write the linear partitioned surface data in parallel to file. ::Load_Data() has to be called before!
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] format - The data format of the output files.
-   */
-  void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
-  
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   */
-  void DeallocateData_Parallel();
-    
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
@@ -253,93 +276,88 @@ public:
   
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] config - Definition of the particular problem per zone.
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt = true);  
-  
+  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, bool wrt = true);  
   
   /*!
-   * \brief SetHistory_Output
-   * \param geometry
-   * \param solver_container
-   * \param config
-   * \param TimeIter
-   * \param OuterIter
-   * \param InnerIter
+   * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);  
-  
+  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);  
   
   /*!
-   * \brief SetHistory_Output
-   * \param geometry
-   * \param solver_container
-   * \param config
-   * \param TimeIter
-   * \param OuterIter
-   * \param InnerIter
+   * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
    */
   void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
   
-  
-  void SetMultizoneHistory_Output(COutput** output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter);
-  
-  /*! 
-   * \brief Returns a pointer to the legacy output class needed for some old driver implementations.
-   * \return - Returns a pointer to the legacy output class.
+  /*!
+   *  Collects history data from the individual output per zone,
+   *  monitors the convergence and writes to screen and history file.
+   
+   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] driver_config - Base definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
    */
-  inline COutputLegacy* GetLegacyOutput(){return output_legacy;}
-
+  void SetMultizoneHistory_Output(COutput** output, CConfig **config, CConfig *driver_config, 
+                                  unsigned long TimeIter, unsigned long OuterIter);
+ 
   /*!
    * \brief Sets the volume output filename
    * \param[in] filename - the new filename
    */
-  inline void SetVolume_Filename(string filename) {VolumeFilename = filename;}
+  inline void SetVolume_Filename(string filename) {volumeFilename = filename;}
   
   /*!
    * \brief Sets the surface output filename
    * \param[in] filename - the new filename
    */
-  inline void SetSurface_Filename(string filename) {SurfaceFilename = filename;}
+  inline void SetSurface_Filename(string filename) {surfaceFilename = filename;}
   
   /*!
    * \brief Returns the current volume filename
    * \return - The current volume filename
    */
-  inline string GetVolume_Filename() {return VolumeFilename;}
+  inline string GetVolume_Filename() {return volumeFilename;}
   
   /*!
    * \brief Returns the current surface filename
    * \return - The current surface filename
    */
-  inline string GetSurface_Filename() {return SurfaceFilename;}
-  
+  inline string GetSurface_Filename() {return surfaceFilename;}
   
   /*!
    * \brief Sets the restart filename
    * \param[in] filename - the new filename
    */
-  inline void SetRestart_Filename(string filename) {RestartFilename = filename;}
+  inline void SetRestart_Filename(string filename) {restartFilename = filename;}
     
   /*!
    * \brief Returns the current restart filename
    * \return - The current restart filename
    */
-  inline string GetRestart_Filename() {return RestartFilename;}
+  inline string GetRestart_Filename() {return restartFilename;}
   
   /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the CFL number based on the current residuals
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
    */
-  void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);  
+  void SetCFL_Number(CSolver ****solver_container, CConfig *config);  
   
   /*!
    * \brief Set the current iteration indices
@@ -348,58 +366,111 @@ public:
    * \param[in] InnerIter - Inner iteration index
    */
   inline void SetIteration(unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter){
-    curr_TimeIter  = TimeIter;
-    curr_OuterIter = OuterIter;
-    curr_InnerIter = InnerIter;
+    curTimeIter  = TimeIter;
+    curOuterIter = OuterIter;
+    curInnerIter = InnerIter;
   }
   
+  /*!
+   * \brief Get the value of particular history output field
+   * \param[in] field - Name of the field
+   * \return Value of the field
+   */
   su2double GetHistoryFieldValue(string field){
-    return HistoryOutput_Map[field].Value;
+    return historyOutput_Map[field].value;
   }
   
+  /*!
+   * \brief Get a vector with all output fields in a particular group
+   * \param groupname - Name of the history group
+   * \return Vector containing all output fields of a group 
+   */
   vector<HistoryOutputField> GetHistoryGroup(string groupname){
     vector<HistoryOutputField> HistoryGroup;  
-    for (unsigned short iField = 0; iField < HistoryOutput_Map.size(); iField++){   
-      if (HistoryOutput_Map[HistoryOutput_List[iField]].OutputGroup == groupname){
-        HistoryGroup.push_back((HistoryOutput_Map[HistoryOutput_List[iField]]));
+    for (unsigned short iField = 0; iField < historyOutput_Map.size(); iField++){   
+      if (historyOutput_Map[historyOutput_List[iField]].outputGroup == groupname){
+        HistoryGroup.push_back((historyOutput_Map[historyOutput_List[iField]]));
       }
     }
     return HistoryGroup;
   }
   
+  /*!
+   * \brief Get the list of all output fields
+   * \return Vector container all output fields
+   */
   vector<string> GetHistoryOutput_List(){
-    return HistoryOutput_List;
+    return historyOutput_List;
   }
   
+  /*!
+   * \brief Get the map containing all output fields
+   * \return Map containing all output fields
+   */
   map<string, HistoryOutputField> GetHistoryFields(){
-    return HistoryOutput_Map;
+    return historyOutput_Map;
   }
   
+  /*!
+   * \brief Monitor the convergence of an output field
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iteration - Index of the current iteration.
+   * \return Boolean indicating whether the problem is converged.
+   */
   bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
 
-  bool GetConvergence() {return Convergence;}
-
-  void SetConvergence(bool conv) {Convergence = conv;}
+  /*!
+   * \brief Print a summary of the convergence to screen.
+   */
+  void PrintConvergenceSummary();
   
+  /*!
+   * \brief Get convergence of the problem.
+   * \return Boolean indicating whether the problem is converged.
+   */
+  bool GetConvergence() {return convergence;}
+
+  /*!
+   * \brief Set the value of the convergence flag.
+   * \param[in] conv - New value of the convergence flag.
+   */
+  void SetConvergence(bool conv) {convergence = conv;}
+  
+  /*!
+   * \brief Print a list of all history output fields to screen.
+   */
   void PrintHistoryFields();
   
+  /*!
+   * \brief Print a list of all volume output fields to screen.
+   */
   void PrintVolumeFields();
-
+  
+  /*!
+   * \brief Loop through all requested output files and write the volume output data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] iter - The current time, outer or inner iteration index.
+   * \param[in] force_writing - If <TRUE>, writing of output files is forced without checking the output frequency.
+   * \return <TRUE> if output files have been written to disk.
+   */
+  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
+                       unsigned long iter, bool force_writing = false);
+  
+  /*!
+   * \brief Allocates the appropriate file writer based on the chosen format and writes sorted data to file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The output format.
+   * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
+   */
+  void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");  
+ 
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  
 
-  /*!
-   * \brief Allocates the appropriate file writer based on the chosen format.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] sorter - The parallel file sorter.
-   * \param[out] filewriter - The allocated filewriter.
-   * \param[in] format - The output format.
-   */
-  void SetFileWriter(CConfig *config, CGeometry *geomery, CParallelDataSorter *sorter, CFileWriter *&filewriter, unsigned short format);  
-  
-  
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
@@ -434,9 +505,11 @@ protected:
    * \param[in] description - A description of the field.
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
-  inline void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, string description, unsigned short field_type = TYPE_DEFAULT ){
-    HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
-    HistoryOutput_List.push_back(name);
+  inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
+                               string groupname, string description, 
+                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
+    historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
+    historyOutput_List.push_back(name);
   }
   
   /*!
@@ -445,8 +518,8 @@ protected:
    * \param[in] value - The new value of this field.
    */
   inline void SetHistoryOutputValue(string name, su2double value){
-    if (HistoryOutput_Map.count(name) > 0){
-      HistoryOutput_Map[name].Value = value;
+    if (historyOutput_Map.count(name) > 0){
+      historyOutput_Map[name].value = value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -461,11 +534,13 @@ protected:
    * \param[in] marker_names - A list of markers. For every marker in this list a new field is created with "field_name + _marker_names[i]".
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
-  inline void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names, unsigned short field_type = TYPE_DEFAULT){
+  inline void AddHistoryOutputPerSurface(string name, string field_name, ScreenOutputFormat format, 
+                                         string groupname, vector<string> marker_names, 
+                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT){
     if (marker_names.size() != 0){
-      HistoryOutputPerSurface_List.push_back(name);
+      historyOutputPerSurface_List.push_back(name);
       for (unsigned short i = 0; i < marker_names.size(); i++){
-        HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
+        historyOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
       }
     }
   }
@@ -477,8 +552,8 @@ protected:
    * \param[in] iMarker - The index of the marker.
    */
   inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker){
-    if (HistoryOutputPerSurface_Map.count(name) > 0){
-      HistoryOutputPerSurface_Map[name][iMarker].Value = value;
+    if (historyOutputPerSurface_Map.count(name) > 0){
+      historyOutputPerSurface_Map[name][iMarker].value = value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -492,9 +567,17 @@ protected:
    * \param[in] description - Description of the volume field.
    */
   inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
-    VolumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
-    VolumeOutput_List.push_back(name);
+    volumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
+    volumeOutput_List.push_back(name);
   }
+  
+  
+  /*!
+   * \brief Set the value of a volume output field
+   * \param[in] name - Name of the field.
+   * \param[in] value - The new value of this field.
+   */
+  su2double GetVolumeOutputValue(string name, unsigned long iPoint);
   
   /*!
    * \brief Set the value of a volume output field
@@ -502,17 +585,23 @@ protected:
    * \param[in] value - The new value of this field.
    */
   void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
-  
+
   /*!
-   * \brief CheckOffsetCache
+   * \brief Set the value of a volume output field
+   * \param[in] name - Name of the field.
+   * \param[in] value - The new value of this field.
    */
-  void CheckOffsetCache();
+  void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
   
   /*!
    * \brief CheckHistoryOutput
    */
   void CheckHistoryOutput();
   
+  /*!
+   * \brief Open the history file and write the header.
+   * \param[in] config - Definition of the particular problem.
+   */
   void PrepareHistoryFile(CConfig *config);
 
   /*!
@@ -521,12 +610,11 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - The container holding all solution data.
    */
-  void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
+  void LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver);
       
   /*!
    * \brief Postprocess_HistoryData
    * \param[in] config - Definition of the particular problem.
-   * \param[in] dualtime - TODO: REMOVE PARAMETER
    */
   void Postprocess_HistoryData(CConfig *config);
 
@@ -537,19 +625,46 @@ protected:
   void Postprocess_HistoryFields(CConfig *config);
   
   /*!
-   * \brief Create and write the file with the FSI convergence history.
+   * \brief Check whether we should print output.
    * \param[in] iIter - Current iteration.
    * \param[in] iFreq - Frequency of output printing.
    */
   inline bool PrintOutput(unsigned long iIter, unsigned long iFreq) {
-    if (iFreq == 0.0){
+    if (iFreq == 0){
       return false;
     }
     
     return (iIter % iFreq == 0);
   } 
   
+  /*!
+   * \brief Set the history fields common for all solvers.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCommonHistoryFields(CConfig *config);
+  
+  /*!
+   * \brief Load values of the history fields common for all solvers.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadCommonHistoryData(CConfig *config);
+  
+  /*!
+   * \brief Allocates the data sorters if necessary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void AllocateDataSorters(CConfig *config, CGeometry *geometry);
+  
   /*--------------------------------- Virtual functions ---------------------------------------- */
+public:
+  
+  /*! 
+   * \brief Destructor of the class. 
+   */
+  virtual ~COutput(void);  
+
+protected:
   
   /*!
    * \brief Determines if the history file output.
@@ -570,86 +685,99 @@ protected:
   virtual bool WriteScreen_Output(CConfig *config);
 
   /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
+   * \brief Determines if the the volume output should be written.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iter - Current iteration index.
+   */
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter);
+  
+  /*!
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
    */
   inline virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){}
   
   /*!
-   * \brief LoadVolumeDataFEM
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iElem
-   * \param index
-   * \param dof
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iElem - Index of the element.
+   * \param[in] index - Index of the value.
+   * \param[in] dof - Index of the local degree of freedom.
    */
-  inline virtual void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){}  
+  inline virtual void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, 
+                                        unsigned long iElem, unsigned long index, unsigned short dof){}  
   
   /*!
-   * \brief SetInit_Residuals
-   * \param config
-   * \return 
+   * \brief Check whether the base values for relative residuals should be initialized
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> if the residuals should be initialized.
    */
   inline virtual bool SetInit_Residuals(CConfig *config) {return false;}
   
   /*!
-   * \brief SetUpdate_Averages
-   * \param config
-   * \param dualtime
-   * \return 
+   * \brief Check whether the averaged values should be updated
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> averages should be updated.
    */
   inline virtual bool SetUpdate_Averages(CConfig *config){return false;}
   
   /*!
-   * \brief LoadSurfaceData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
-   * \param iMarker
-   * \param iVertex
+   * \brief Set the values of the volume output fields for a surface point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Index of the vertex on the marker.
    */
-  inline virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){}
+  inline virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
+                                      unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){}
   
   /*!
-   * \brief SetVolumeOutputFields
-   * \param config
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
   
   
   /*!
-   * \brief Load the output data to the containers in each subclass
+   * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
 
   /*!
-   * \brief Load the output data to the containers in each subclass
+   * \brief Load the multizone history output field values
+   * \param[in] output - Container holding the output instances per zone.   
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void LoadMultizoneHistoryData(COutput **output, CConfig **config) {}  
   
   /*!
-   * \brief SetHistoryOutputFields
-   * \param config
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetHistoryOutputFields(CConfig *config) {}
   
   /*!
-   * \brief SetMultizoneHistoryOutputFields
-   * \param output
-   * \param solver
-   * \param config
+   * \brief Set the available multizone history output fields
+   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] config - Definition of the particular problem per zone.
    */
   inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
-
-  inline void SetCommonHistoryFields(CConfig *config);
   
-  inline void LoadCommonHistoryData(CConfig *config);
+  /*!
+   * \brief Write any additional files defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
+  inline virtual void WriteAdditionalFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container){}
+
 };
 

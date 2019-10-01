@@ -93,7 +93,7 @@ def adjoint( config ):
     su2merge(konfig)
     
     # filenames
-    plot_format      = konfig['OUTPUT_FORMAT']
+    plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
     history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)

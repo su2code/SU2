@@ -1052,6 +1052,8 @@ inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Line
 
 inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_Nonlinear_Iter; }
 
+inline bool CConfig::GetDeform_Mesh(void) { return Deform_Mesh; }
+
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
@@ -1234,8 +1236,6 @@ inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingP
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
 
-inline bool CConfig::GetBoolZoneSpecific(void) { return ZoneSpecific_Problem;}
-
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
 inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
@@ -1334,6 +1334,10 @@ inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
+inline string CConfig::GetMarker_Deform_Mesh_TagBound(unsigned short val_marker) { return Marker_Deform_Mesh[val_marker]; }
+
+inline string CConfig::GetMarker_Fluid_Load_TagBound(unsigned short val_marker) { return Marker_Fluid_Load[val_marker]; }
+
 inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ return Marker_PyCustom[val_marker]; }
 
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
@@ -1373,6 +1377,10 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
+inline void CConfig::SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface) { Marker_All_Deform_Mesh[val_marker] = val_interface; }
+
+inline void CConfig::SetMarker_All_Fluid_Load(unsigned short val_marker, unsigned short val_interface) { Marker_All_Fluid_Load[val_marker] = val_interface; }
+
 inline void CConfig::SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
@@ -1407,6 +1415,10 @@ inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { ret
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_Deform_Mesh(unsigned short val_marker) { return Marker_All_Deform_Mesh[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_Fluid_Load(unsigned short val_marker) { return Marker_All_Fluid_Load[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker) { return Marker_All_PyCustom[val_marker];}
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
@@ -1416,6 +1428,10 @@ inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
+
+inline unsigned short CConfig::GetnMarker_Deform_Mesh(void) { return nMarker_Deform_Mesh; }
+
+inline unsigned short CConfig::GetnMarker_Fluid_Load(void) { return nMarker_Fluid_Load; }
 
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
@@ -1449,7 +1465,7 @@ inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
 
-inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
+inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
@@ -1567,6 +1583,12 @@ inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
 inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC)); }
 
+inline bool CConfig::GetDynamic_Grid(void) {
+  return (Kind_GridMovement != NO_MOVEMENT)
+      || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC))
+      || (Deform_Mesh && (Time_Domain));
+}
+
 inline unsigned short CConfig::GetKind_SurfaceMovement(unsigned short iMarkerMoving){return Kind_SurfaceMovement[iMarkerMoving];}
 
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }
@@ -1619,8 +1641,6 @@ inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
 
 inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
 
-inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
-
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
 
 inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
@@ -1642,6 +1662,8 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
+
+inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
 
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
 
@@ -1952,6 +1974,8 @@ inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsi
   radius = top_optim_filter_radius[iKernel];
 }
 
+inline unsigned short CConfig::GetTopology_Search_Limit(void) const { return top_optim_search_lim; }
+
 inline void CConfig::GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
   type = top_optim_proj_type;  param = top_optim_proj_param;
 }
@@ -2018,7 +2042,21 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
-inline string CConfig::GetConv_Field(){ return ConvField; }
+inline unsigned long CConfig::GetPastixFactFreq(void) { return pastix_fact_freq; }
+
+inline unsigned short CConfig::GetPastixVerbLvl(void) { return pastix_verb_lvl; }
+
+inline unsigned short CConfig::GetPastixFillLvl(void) { return pastix_fill_lvl; }
+
+inline short CConfig::GetMeshBoxSize(unsigned short val_iDim) { return Mesh_Box_Size[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mesh_Box_Length[val_iDim]; }
+
+inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
+
+inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
+
+inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
@@ -2028,4 +2066,10 @@ inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return H
 
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
 
+inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
 
+inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles;}
+
+inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
+
+inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}

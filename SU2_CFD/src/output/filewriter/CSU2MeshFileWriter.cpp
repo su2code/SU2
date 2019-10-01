@@ -1,18 +1,12 @@
 #include "../../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
+const string CSU2MeshFileWriter::fileExt = ".su2";
 
-
-
-CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim, unsigned short iZone, unsigned short nZone) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".su2";
-    
-  this->iZone = iZone;
-  this->nZone = nZone;
-  
-}
+CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim,  
+                                       string fileName, CParallelDataSorter *dataSorter,
+                                       unsigned short iZone, unsigned short nZone) : 
+   CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), iZone(iZone), nZone(nZone) {}
 
 
 CSU2MeshFileWriter::~CSU2MeshFileWriter(){
@@ -20,10 +14,8 @@ CSU2MeshFileWriter::~CSU2MeshFileWriter(){
 }
 
 
-void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
-  
-  filename += file_ext;
-  
+void CSU2MeshFileWriter::Write_Data(){
+    
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], offset, nElem;
   unsigned short iMarker, iDim, iChar, VTK_Type, nMarker_;
   short SendTo;
@@ -35,7 +27,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   ofstream output_file;
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   
-  strcpy (out_file, filename.c_str());
+  strcpy (out_file, fileName.c_str());
   strcpy (cstr, out_file); 
   
   if (rank == MASTER_NODE){
@@ -51,15 +43,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
     
     output_file << "NDIME= " << nDim << endl;
     
-//    /*--- Write the angle of attack offset. ---*/
-    
-//    output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
-    
-//    /*--- Write the angle of attack offset. ---*/
-    
-//    output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
-    
-    output_file << "NELEM= " << data_sorter->GetnElem() << endl;
+    output_file << "NELEM= " << dataSorter->GetnElem() << endl;
     
     output_file.close();
   }
@@ -71,59 +55,59 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      for (iElem = 0; iElem < data_sorter->GetnElem(TRIANGLE); iElem++) {
+      for (iElem = 0; iElem < dataSorter->GetnElem(TRIANGLE); iElem++) {
         output_file << "5\t";                
-        output_file << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
-      for (iElem = 0; iElem < data_sorter->GetnElem(QUADRILATERAL); iElem++) {
+      for (iElem = 0; iElem < dataSorter->GetnElem(QUADRILATERAL); iElem++) {
         output_file << "9\t";
-        output_file << data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
-      for (iElem = 0; iElem < data_sorter->GetnElem(TETRAHEDRON); iElem++) {
+      for (iElem = 0; iElem < dataSorter->GetnElem(TETRAHEDRON); iElem++) {
         output_file << "10\t";
-        output_file << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }  
-      for (iElem = 0; iElem < data_sorter->GetnElem(HEXAHEDRON); iElem++) {
+      for (iElem = 0; iElem < dataSorter->GetnElem(HEXAHEDRON); iElem++) {
         output_file << "12\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
-      for (iElem = 0; iElem < data_sorter->GetnElem(PRISM); iElem++) {
+      for (iElem = 0; iElem < dataSorter->GetnElem(PRISM); iElem++) {
         output_file << "13\t";
-        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 0) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 2) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 3) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 4) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 5) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, 0) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, 1) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, 2) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, 3) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, 4) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, 5) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
       
-      for (iElem = 0; iElem < data_sorter->GetnElem(PYRAMID); iElem++) {
+      for (iElem = 0; iElem < dataSorter->GetnElem(PYRAMID); iElem++) {
         output_file << "14\t";
-        output_file << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 2) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 3) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0) - 1 << "\t"; 
+        output_file << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3) - 1 << "\t";
+        output_file << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4) - 1 << "\t"; 
         output_file << nElem + offset << "\n"; nElem++;
       }
     }
@@ -137,9 +121,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   
   /*--- Write the node coordinates ---*/
   if (rank == MASTER_NODE){
-    output_file << "NPOIN= " << data_sorter->GetnPointsGlobal();
-//    if (geometry->GetGlobal_nPointDomain() != nGlobal_Poin_Par)
-//      output_file << "\t" << geometry->GetGlobal_nPointDomain();
+    output_file << "NPOIN= " << dataSorter->GetnPointsGlobal();
     output_file << endl;
     output_file.flush();    
   }
@@ -150,7 +132,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      for (iPoint = 0; iPoint <  data_sorter->GetnPoints(); iPoint++) {
+      for (iPoint = 0; iPoint <  dataSorter->GetnPoints(); iPoint++) {
         
         /*--- Global Index of the current point. (note outer loop over procs) ---*/
         
@@ -159,21 +141,19 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
         /*--- Only write original domain points, i.e., exclude any periodic
          or halo nodes, even if they are output in the viz. files. ---*/
         
-//        if (Global_Index < geometry->GetGlobal_nPointDomain()) {
-          
-          /*--- Loop over the variables and write the values to file ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            output_file << scientific << data_sorter->GetData(iDim, iPoint) << "\t";
-          }
-          
-          /*--- Write global index. (note outer loop over procs) ---*/
-          
-          output_file << Global_Index << "\t";
-          myPoint++;
-          
-          output_file << "\n";
-//        }
+        /*--- Loop over the variables and write the values to file ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
+        }
+        
+        /*--- Write global index. (note outer loop over procs) ---*/
+        
+        output_file << Global_Index << "\t";
+        myPoint++;
+        
+        output_file << "\n";
+        
       }
     }
     /*--- Flush the file and wait for all processors to arrive. ---*/

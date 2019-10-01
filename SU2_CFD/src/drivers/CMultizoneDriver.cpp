@@ -114,10 +114,10 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
       case RIGID_MOTION: 
-      case ELASTICITY:
         prefixed_motion[iZone] = true; break;
       case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
+      case ELASTICITY:
         prefixed_motion[iZone] = false; break;
     }
     if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
@@ -149,7 +149,15 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 }
 
 void CMultizoneDriver::StartSolver() {
-
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  driver_config->Set_StartTime(StartTime);
+  
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE)
@@ -186,7 +194,7 @@ void CMultizoneDriver::StartSolver() {
 
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(TimeIter);
+    StopCalc = Monitor(TimeIter);
 
     /*--- Output the solution in files. ---*/
 
@@ -321,9 +329,6 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
     }
 
-    /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
-    Monitor(iOuter_Iter);
-
     Convergence = OuterConvergence(iOuter_Iter);
 
     if (Convergence) break;
@@ -357,7 +362,7 @@ void CMultizoneDriver::Run_Jacobi() {
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
-        if (jZone != iZone && transfer_container[iZone][jZone] != NULL){
+        if (jZone != iZone && interface_container[iZone][jZone] != NULL){
           DeformMesh = Transfer_Data(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
@@ -400,13 +405,6 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 }
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Update the residual for the all the zones ---*/
   
@@ -471,124 +469,40 @@ void CMultizoneDriver::Update() {
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
+      if (integration_container[iZone][INST_0][iSol] != NULL){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
     }
   }
 
 }
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
-
-  unsigned short RestartFormat = SU2_RESTART_ASCII;
-  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  bool TimeDomain = driver_config->GetTime_Domain();
+  
+  /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  bool wrote_files = false;
   
   for (iZone = 0; iZone < nZone; iZone++){
+    wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                                            config_container[iZone],
+                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc);
+  }
+  
+  if (wrote_files){
     
-    bool Wrt_Surf = config_container[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Vol  = config_container[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_CSV  = config_container[iZone]->GetWrt_Csv_Sol();
-    
-    if (config_container[iZone]->GetWrt_Binary_Restart()){
-      RestartFormat = SU2_RESTART_BINARY;
-    }
-    
-    bool output_files = false;
-    
-    /*--- Determine whether a solution needs to be written
-   after the current iteration ---*/
-    
-    if (
-        
-        /*--- General if statements to print output statements ---*/
-        
-        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
-        
-        /*--- Unsteady problems ---*/
-        
-        (((config_container[iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-          (config_container[iZone]->GetTime_Marching() == TIME_STEPPING)) &&
-         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
-         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                              ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
-         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[iZone]->GetTime_Domain()) &&
-         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        /*--- No inlet profile file found. Print template. ---*/
-        
-        (config_container[iZone]->GetWrt_InletFile())
-        
-        ) {
-      
-      output_files = true;
-      
-    }
-    
-//    /*--- Determine whether a solution doesn't need to be written
-//   after the current iteration ---*/
-    
-//    if (config_container[iZone]->GetFixed_CL_Mode()) {
-//      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-//      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
-//    }
-    
-    /*--- write the solution ---*/
-    
-    if (output_files) {
-      
-      /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-      StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-      StopTime = MPI_Wtime();
-#endif
-      UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-      StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-      StartTime = MPI_Wtime();
-#endif
-      
-      if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-      
-      /*--- Execute the routine for writing restart, volume solution,
-       surface solution, and surface comma-separated value files. ---*/
-      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
-        
-        config_container[iZone]->SetiInst(iInst);
-        
-        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
-        
-        /*--- Write restart files ---*/
-        
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat, TimeDomain);
-        
-        /*--- Write visualization files ---*/
-        
-        if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
-        
-        if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
-        if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV, TimeDomain);    
-        
-        output_container[iZone]->DeallocateData_Parallel();
-        
-      }
-      
-      if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-      
-    }
-    /*--- Store output time and restart the timer for the compute phase. ---*/
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -602,7 +516,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 #else
     StartTime = MPI_Wtime();
 #endif
-
+    driver_config->Set_StartTime(StartTime);
   }
 
 }
@@ -624,9 +538,22 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
 
+  /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement()) {
   iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                                            config_container[val_iZone], 0, TimeIter);
+  }
+
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  if (config_container[ZONE_0]->GetDeform_Mesh()) {
+    iteration_container[val_iZone][INST_0]->SetMesh_Deformation(geometry_container[val_iZone][INST_0],
+                                                                solver_container[val_iZone][INST_0][MESH_0],
+                                                                numerics_container[val_iZone][INST_0][MESH_0],
+                                                                config_container[ZONE_0],
+                                                                NONE);
+  }
 
 }
 
@@ -636,53 +563,141 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
 
-  if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
-    
-    if (config_container[targetZone]->GetKind_Solver() == RANS || config_container[targetZone]->GetKind_Solver() == INC_RANS)
-      transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                         config_container[donorZone], config_container[targetZone]);
+  if (interface_types[donorZone][targetZone] == SLIDING_INTERFACE) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+    if (config_container[targetZone]->GetKind_Solver() == RANS ||
+        config_container[targetZone]->GetKind_Solver() == INC_RANS)
+      interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
+                                                                solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+                                                                geometry_container[donorZone][INST_0][MESH_0],
+                                                                geometry_container[targetZone][INST_0][MESH_0],
+                                                                config_container[donorZone],
+                                                                config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_LEGACY) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
     UpdateMesh = true;
   }
-  else if (transfer_types[donorZone][targetZone] == FLOW_TRACTION) {
-    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                       config_container[donorZone], config_container[targetZone]);
+  else if (interface_types[donorZone][targetZone] == BOUNDARY_DISPLACEMENTS) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+    UpdateMesh = true;
   }
-  else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
-           || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-           || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
+  else if (interface_types[donorZone][targetZone] == FLOW_TRACTION) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+  }
+  else if ((interface_types[donorZone][targetZone] == NO_TRANSFER)
+           || (interface_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
+           || (interface_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
   else {
     cout << "WARNING: One of the intended interface transfer routines is not known to the chosen driver and has not been executed." << endl;
   }
 
   return UpdateMesh;
+}
+
+bool CMultizoneDriver::Monitor(unsigned long TimeIter){
+  
+  unsigned long nOuterIter, OuterIter, nTimeIter;
+  su2double MaxTime, CurTime;
+  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
+  
+  OuterIter  = driver_config->GetOuterIter();
+  nOuterIter = driver_config->GetnOuter_Iter();
+  nTimeIter  = driver_config->GetnTime_Iter();
+  MaxTime    = driver_config->GetMax_Time();
+  CurTime    = driver_output->GetHistoryFieldValue("CUR_TIME");
+  
+  TimeDomain = driver_config->GetTime_Domain();
+  
+  
+  /*--- Check whether the inner solver has converged --- */
+
+  if (TimeDomain == NO){
+    
+    InnerConvergence     = driver_output->GetConvergence();    
+    MaxIterationsReached = OuterIter+1 >= nOuterIter;
+        
+    if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
+      driver_output->PrintConvergenceSummary();
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+    
+    StopCalc = MaxIterationsReached || InnerConvergence;
+  }
+
+
+  if (TimeDomain == YES) {
+    
+    /*--- Check whether the outer time integration has reached the final time ---*/
+  
+    FinalTimeReached     = CurTime >= MaxTime;
+    MaxIterationsReached = TimeIter+1 >= nTimeIter;    
+    
+    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;      
+    }
+    
+    StopCalc = FinalTimeReached || MaxIterationsReached;
+  }
+
+  return StopCalc;
+  
 }

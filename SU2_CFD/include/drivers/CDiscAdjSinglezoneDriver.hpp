@@ -61,7 +61,8 @@ protected:
   CGeometry *geometry;                          /*!< \brief Geometrical definition of the problem. */
   CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
   COutput *direct_output;
-
+  CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
+  
   COutputLegacy* output_legacy;
   
 public:

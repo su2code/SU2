@@ -133,8 +133,8 @@ class COutputLegacy {
   unsigned long *beg_node;
   unsigned long *end_node;
 
-  unsigned long *nPoint_Lin;
-  unsigned long *nPoint_Cum;
+  unsigned long *nPointLinear;
+  unsigned long *nPointCumulative;
   
   unsigned short nVar_Par;
   su2double **Local_Data;

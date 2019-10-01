@@ -42,7 +42,7 @@ env:
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-directdiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
@@ -72,11 +72,11 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone --depth=1 -b feature_input_output https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b feature_input_output https://github.com/su2code/su2code.github.io ./Tutorials
+    - git clone --depth=1 -b feature_input_output https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/

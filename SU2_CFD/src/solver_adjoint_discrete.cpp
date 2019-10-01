@@ -788,7 +788,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
 }
 
-void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -942,7 +942,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
   
-  restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+  restart_filename = config->GetFilename(restart_filename, "", val_iter);
   
 
   /*--- Read and store the restart metadata. ---*/

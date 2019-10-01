@@ -42,23 +42,20 @@ CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
-  RequestedVolumeFields.push_back("COORDINATES");
-  nRequestedVolumeFields = RequestedVolumeFields.size();
+  requestedVolumeFields.emplace_back("COORDINATES");
+  nRequestedVolumeFields = requestedVolumeFields.size();
     
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetMesh_Out_FileName();
+  volumeFilename = config->GetMesh_Out_FileName();
   
   /*--- Set the surface filename ---*/
   
-  SurfaceFilename = "surface_mesh";
+  surfaceFilename = "surface_mesh";
   
 }
 
-CMeshOutput::~CMeshOutput(void) {
-
-
-}
+CMeshOutput::~CMeshOutput(void) {}
 
 void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 

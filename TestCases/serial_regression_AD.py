@@ -199,6 +199,22 @@ def main():
     discadj_DT_1ST_cylinder.unsteady  = True
     test_list.append(discadj_DT_1ST_cylinder)
 
+    ######################################################
+    ### Unsteady Disc. adj. compressible pitching NACA ###
+    ######################################################
+
+    # compressible pitching NACA0012
+    discadj_pitchingNACA0012           = TestCase('pitchingNACA0012')
+    discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
+    discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
+    discadj_pitchingNACA0012.test_iter = 4
+    discadj_pitchingNACA0012.test_vals = [-1.161102, -1.630297, -2.1294e-02, 3.9226e-05] #last 4 columns
+    discadj_pitchingNACA0012.su2_exec  = "SU2_CFD_AD"
+    discadj_pitchingNACA0012.timeout   = 1600
+    discadj_pitchingNACA0012.tol       = 0.00001
+    discadj_pitchingNACA0012.unsteady  = True
+    test_list.append(discadj_pitchingNACA0012)
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
@@ -313,6 +329,32 @@ def main():
 #    discadj_multi_py.test_file  = "of_grad_combo.dat"
 #    pass_list.append(discadj_multi_py.run_filediff())
 #    test_list.append(discadj_multi_py)
+
+    # FEA AD Flow Load Sensitivity
+    pywrapper_FEA_AD_FlowLoad               = TestCase('pywrapper_FEA_AD_FlowLoad')
+    pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_fea/flow_load_sens"
+    pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
+    pywrapper_FEA_AD_FlowLoad.test_iter     = 100
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401579657, -0.585985886606256, -0.00036377840086080753, -0.0031005670174756375] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
+    pywrapper_FEA_AD_FlowLoad.timeout       = 1600
+    pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
+    test_list.append(pywrapper_FEA_AD_FlowLoad)
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+
+    # Flow AD Mesh Displacement Sensitivity
+    pywrapper_FEA_AD_FlowLoad               = TestCase('pywrapper_CFD_AD_MeshDisp')
+    pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
+    pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_flow.cfg"
+    pywrapper_FEA_AD_FlowLoad.test_iter     = 1000
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [30, -2.4701936842091294, 1.4366255094753457, 0.0] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
+    pywrapper_FEA_AD_FlowLoad.timeout       = 1600
+    pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
+    test_list.append(pywrapper_FEA_AD_FlowLoad)
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 
     # Tests summary
     print('==================================================================')

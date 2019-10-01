@@ -222,7 +222,11 @@ int main(int argc, char *argv[]) {
     
     /*--- Preprocess the volume output ---*/
     
-    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);    
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+    
+    /*--- Preprocess history --- */
+    
+    output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
     
 
   }
@@ -236,27 +240,27 @@ int main(int argc, char *argv[]) {
     
     for (iZone = 0; iZone < nZone; iZone++){
       
-      /*--- Load the data --- */
+//      /*--- Load the data --- */
       
-      output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], NULL);
+//      output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], NULL);
       
-      if (config_container[iZone]->GetVisualize_Volume_Def()){
+//      if (config_container[iZone]->GetVisualize_Volume_Def()){
         
-        /*--- If requested, write the volume output for visualization purposes --- */
+//        /*--- If requested, write the volume output for visualization purposes --- */
         
-        output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
+//        output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
       
-      } 
+//      } 
       
-      if (config_container[iZone]->GetVisualize_Surface_Def()){
+//      if (config_container[iZone]->GetVisualize_Surface_Def()){
         
-        /*--- If requested, write the volume output for visualization purposes --- */
+//        /*--- If requested, write the volume output for visualization purposes --- */
         
-        output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
+//        output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
         
-      }
+//      }
       
-      output[iZone]->DeallocateData_Parallel();
+//      output[iZone]->DeallocateData_Parallel();
       
     }
   }
@@ -334,47 +338,28 @@ int main(int argc, char *argv[]) {
   
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node---*/
-  
-  bool NewFile = false;
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
-  
+
   for (iZone = 0; iZone < nZone; iZone++){
     
     /*--- Load the data --- */
     
     output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], NULL);
     
-    /*--- Write the in the native su2 format ---*/
+    output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], MESH, config->GetMesh_Out_FileName());
     
-    output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], SU2_MESH, false);
+    /*--- Set the file names for the visualization files ---*/
     
+    output[iZone]->SetVolume_Filename("volume_deformed");
+    output[iZone]->SetSurface_Filename("surface_deformed");
     
     if (config_container[iZone]->GetVisualize_Volume_Def()){
-      
-      /*--- Add a deformed identifier to the filename --- */
-      
-      output[iZone]->SetVolume_Filename(output[iZone]->GetVolume_Filename() + string("_deformed"));    
-      
-      /*--- If requested, write the volume output for visualization purposes --- */
-      
-      output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
-    
+      for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
+        unsigned short* FileFormat = config_container[iZone]->GetVolumeOutputFiles();
+        if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+          output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
+      }
     } 
-    
-    if (config_container[iZone]->GetVisualize_Surface_Def()){
-      
-      /*--- Add a deformed identifier to the filename --- */
-      
-      output[iZone]->SetSurface_Filename(output[iZone]->GetSurface_Filename() + string("_deformed"));
-      
-      /*--- If requested, write the volume output for visualization purposes --- */
-      
-      output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
-      
-    }
-    
-    output[iZone]->DeallocateData_Parallel();
-    
+       
   }
 
   
@@ -434,9 +419,16 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
+  if (output != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output[iZone] != NULL) {
+        delete output[iZone];
+      }
+    }
+    delete [] output;
+  }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  if (output != NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the

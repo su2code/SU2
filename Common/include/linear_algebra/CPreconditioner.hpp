@@ -252,3 +252,50 @@ public:
     sparse_matrix->ComputeLineletPreconditioner(u, v, geometry, config);
   }
 };
+
+
+/*!
+ * \class CPastixPreconditioner
+ * \brief Specialization of preconditioner that uses PaStiX to factorize a CSysMatrix
+ */
+template<class ScalarType>
+class CPastixPreconditioner : public CPreconditioner<ScalarType> {
+private:
+  CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief Pointer to the matrix. */
+  CGeometry* geometry; /*!< \brief Geometry associated with the problem. */
+  CConfig* config; /*!< \brief Configuration of the problem. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner
+   * \param[in] geometry_ref - Associated geometry
+   * \param[in] config_ref - Problem configuration
+   */
+  inline CPastixPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
+                               CGeometry *geometry_ref, CConfig *config_ref) {
+    sparse_matrix = &matrix_ref;
+    geometry = geometry_ref;
+    config = config_ref;
+  }
+
+  /*!
+   * \brief Destructor of the class
+   */
+  ~CPastixPreconditioner() {}
+
+  /*!
+   * \brief Operator that defines the preconditioner operation
+   * \param[in] u - CSysVector that is being preconditioned
+   * \param[out] v - CSysVector that is the result of the preconditioning
+   */
+  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const {
+    if (sparse_matrix == NULL) {
+      cerr << "CPastixPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl;
+      cerr << "pointer to sparse matrix is NULL." << endl;
+      throw(-1);
+    }
+    sparse_matrix->ComputePastixPreconditioner(u, v, geometry, config);
+  }
+};

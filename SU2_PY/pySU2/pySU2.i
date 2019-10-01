@@ -57,6 +57,7 @@ threads="1"
 
 // ----------- USED MODULES ------------
 %import "../../Common/include/datatypes/primitive_structure.hpp"
+%import "../../Common/include/datatype_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
 %include "std_vector.i"

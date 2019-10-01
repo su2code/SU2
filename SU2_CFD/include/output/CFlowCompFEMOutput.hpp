@@ -1,8 +1,7 @@
 /*!
- * \file output_flow_fem.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file CFlowCompFEMOutput.hpp
+ * \brief  Headers of the compressible FEM flow output.
+ * \author R. Sanchez, T. Albring.
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -42,21 +41,16 @@
 
 class CVariable;
 
-/*! \class CFlowFEMOutput
- *  \brief Output class for compressible Flow problems.
+/*! \class CFlowCompFEMOutput
+ *  \brief Output class for the compressible FEM flow output.
  *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
-class CFlowCompFEMOutput : public CFlowOutput {
+class CFlowCompFEMOutput final: public CFlowOutput {
 private:
   
-  unsigned short nVar;
-
-  unsigned short turb_model;
-  
-  bool grid_movement;
-  
-  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+  unsigned short nVar; //!< Number of variables
+  unsigned short turb_model; //!< Kind of turbulence model
 
 public:
 
@@ -69,70 +63,71 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFlowCompFEMOutput(void);
+  ~CFlowCompFEMOutput(void) override;
 
   /*!
-   * \brief Set the history file header
+   * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
   
   /*!
-   * \brief LoadSurfaceData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
-   * \param iMarker
-   * \param iVertex
+   * \brief Set the values of the volume output fields for a surface point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Index of the vertex on the marker.
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, 
+                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;  
   
   /*!
-   * \brief SetVolumeOutputFields
-   * \param config
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields(CConfig *config);
+  void SetVolumeOutputFields(CConfig *config) override;
   
   /*!
-   * \brief LoadVolumeDataFEM
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iElem
-   * \param index
-   * \param dof
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iElem - Index of the element.
+   * \param[in] index - Index of the value.
+   * \param[in] dof - Index of the local degree of freedom.
    */
-  void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
+  void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, 
+                         unsigned long iElem, unsigned long index, unsigned short dof) override;
   
   /*!
-   * \brief SetHistoryOutputFields
-   * \param config
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config) override;
 
   /*!
-   * \brief GetQ_Criterion
-   * \param config
-   * \param geometry
-   * \param node_flow
-   * \return 
+   * \brief Compute value of the Q criteration for vortex idenfitication
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] node_flow - The flow variable node
+   * \return Value of the Q criteration at the node
    */
   su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
   
   /*!
-   * \brief SetInit_Residuals
-   * \param config
-   * \return 
+   * \brief Check whether the base values for relative residuals should be initialized
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInit_Residuals(CConfig *config);
+  bool SetInit_Residuals(CConfig *config) override;
   
   /*!
-   * \brief SetUpdate_Averages
-   * \param config
-   * \param dualtime
-   * \return 
+   * \brief Check whether the averaged values should be updated
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> averages should be updated.
    */
-  bool SetUpdate_Averages(CConfig *config);
+  bool SetUpdate_Averages(CConfig *config) override;
   
 };

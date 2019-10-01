@@ -1,21 +1,16 @@
 #include "../../../include/output/filewriter/CCSVFileWriter.hpp"
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 
-CCSVFileWriter::CCSVFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, nDim){
-
-  file_ext = ".csv";
-    
-}
+CCSVFileWriter::CCSVFileWriter(vector<string> fields, unsigned short nDim, 
+                               string fileName, CParallelDataSorter *dataSorter) : 
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, std::move(".csv"), nDim){}
 
 
 CCSVFileWriter::~CCSVFileWriter(){
   
 }
 
-void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
-  
-  filename += file_ext;
+void CCSVFileWriter::Write_Data(){
   
   /*--- Routine to write the surface CSV files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the
@@ -40,7 +35,7 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
    partitions so we can set up buffers. The master node will handle
    the writing of the CSV file after gathering all of the data. ---*/
   
-  nLocalVertex_Surface   = data_sorter->GetnPoints();
+  nLocalVertex_Surface   = dataSorter->GetnPoints();
   Buffer_Send_nVertex[0] = nLocalVertex_Surface;
   if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long[nProcessor];
   
@@ -56,10 +51,10 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
   
-  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldnames.size()];
+  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldnames.size()]();
   su2double *bufD_Recv = NULL;
   
-  unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface];
+  unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
   unsigned long *bufL_Recv = NULL;
   
   /*--- Load send buffers with the local data on this rank. ---*/
@@ -69,12 +64,12 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
     
     /*--- Global index values. ---*/
     
-    bufL_Send[iPoint] = data_sorter->GetGlobalIndex(iPoint);
+    bufL_Send[iPoint] = dataSorter->GetGlobalIndex(iPoint);
     
     /*--- Solution data. ---*/
     
     for (iVar = 0; iVar < fieldnames.size(); iVar++){
-      bufD_Send[index] = data_sorter->GetData(iVar, iPoint);
+      bufD_Send[index] = dataSorter->GetData(iVar, iPoint);
       index++;
     }
     
@@ -83,7 +78,7 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   /*--- Only the master rank allocates buffers for the recv. ---*/
   
   if (rank == MASTER_NODE) {
-    bufD_Recv = new su2double[nProcessor*MaxLocalVertex_Surface*fieldnames.size()];
+    bufD_Recv = new su2double[nProcessor*MaxLocalVertex_Surface*fieldnames.size()]();
     bufL_Recv = new unsigned long[nProcessor*MaxLocalVertex_Surface];
   }
   
@@ -101,7 +96,7 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
     
     /*--- Open the CSV file and write the header with variable names. ---*/
     
-    Surf_file.open(filename.c_str(), ios::out);
+    Surf_file.open(fileName.c_str(), ios::out);
     Surf_file << "\"Point\",";
     for (iVar = 0; iVar < fieldnames.size()-1; iVar++) {
       Surf_file << "\"" << fieldnames[iVar] << "\",";

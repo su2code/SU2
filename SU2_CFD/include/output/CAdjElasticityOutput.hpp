@@ -1,8 +1,7 @@
 /*!
- * \file output_fea_discadj.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file CAdjElasticityOutput.hpp
+ * \brief Headers of the adjoint elasticity output class.
+ * \author T. Albring, R. Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -40,19 +39,16 @@
 
 #include "COutput.hpp"
 
-/*! \class CDiscAdjFEAOutput
+/*! \class CAdjElasticityOutput
  *  \brief Output class for elasticity discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CAdjElasticityOutput : public COutput {
+class CAdjElasticityOutput final : public COutput {
 private:
-  unsigned short nVar_FEM;
+  unsigned short nVar_FEM; //!< Number of FEM variables
 
 public:
-
-  ofstream HistFile;
-
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
@@ -62,29 +58,33 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjElasticityOutput(void);
-
-  void SetHistoryOutputFields(CConfig *config);
-
+  ~CAdjElasticityOutput(void) override;
+  
   /*!
-   * \brief Set the history file header
+   * \brief Set the available history output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
+  void SetHistoryOutputFields(CConfig *config) override;
 
   /*!
-   * \brief SetVolumeOutputFields
+   * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields(CConfig *config);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
   /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  void SetVolumeOutputFields(CConfig *config) override;
+
+  /*!
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
 
 };

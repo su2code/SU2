@@ -4,7 +4,9 @@
 #include <set>
 
 
-CCatalystWriter::CCatalystWriter(vector<string> fields, unsigned short nDim) : CFileWriter(fields, nDim){
+CCatalystWriter::CCatalystWriter(vector<string> fields, unsigned short nDim, 
+                                 string fileName, CParallelDataSorter *dataSorter): 
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, "", nDim){
   
   Processor = vtkCPProcessor::New();
   Processor->Initialize();
@@ -16,7 +18,7 @@ CCatalystWriter::CCatalystWriter(vector<string> fields, unsigned short nDim) : C
 
 CCatalystWriter::~CCatalystWriter(){}
 
-void CCatalystWriter::Write_Data(unsigned long TimeStep, double time, CParallelDataSorter *data_sorter){
+void CCatalystWriter::Write_Data(unsigned long TimeStep, double time){
   LOG_SCOPE_FUNCTION(INFO);
   SU2_INFO << "Time Step: " << TimeStep << ", Time: " << time; 
   vtkNew<vtkCPDataDescription> dataDescription;
@@ -24,13 +26,13 @@ void CCatalystWriter::Write_Data(unsigned long TimeStep, double time, CParallelD
   dataDescription->SetTimeData(time, TimeStep);
   if (Processor->RequestDataDescription(dataDescription.GetPointer()) != 0){
     vtkCPInputDataDescription* idd = dataDescription->GetInputDescriptionByName("input");
-    BuildVTKDataStructures(idd, data_sorter);
+    BuildVTKDataStructures(idd, dataSorter);
     idd->SetGrid(VTKGrid);
     Processor->CoProcess(dataDescription.GetPointer());
   }
 }
 
-void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
+void CCatalystWriter::BuildVTKGrid()
 {
   LOG_SCOPE_FUNCTION(INFO);
   
@@ -44,13 +46,13 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   unsigned long nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long myElem, myElemStorage, GlobalElem, GlobalElemStorage;
   
-  unsigned long nParallel_Line = data_sorter->GetnElem(LINE),
-                nParallel_Tria = data_sorter->GetnElem(TRIANGLE),
-                nParallel_Quad = data_sorter->GetnElem(QUADRILATERAL),
-                nParallel_Tetr = data_sorter->GetnElem(TETRAHEDRON),
-                nParallel_Hexa = data_sorter->GetnElem(HEXAHEDRON),
-                nParallel_Pris = data_sorter->GetnElem(PRISM),
-                nParallel_Pyra = data_sorter->GetnElem(PYRAMID);
+  unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
+                nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
+                nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
+                nParallel_Tetr = dataSorter->GetnElem(TETRAHEDRON),
+                nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
+                nParallel_Pris = dataSorter->GetnElem(PRISM),
+                nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
   
   SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -82,10 +84,8 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   
   unsigned short iVar;
 //  NodePartitioner node_partitioner(num_nodes, size);
-  vector<passivedouble> halo_var_data;
-  vector<int> num_nodes_to_receive(size, 0);
-  vector<int> values_to_receive_displacements(size);
-  
+  num_nodes_to_receive.resize(size, 0);
+  values_to_receive_displacements.resize(size);
   halo_nodes.clear();
   sorted_halo_nodes.clear();
   
@@ -98,51 +98,47 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   /* Gather a list of nodes we refer to but are not outputting. */
 
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-    if (data_sorter->FindProcessor(data_sorter->GetElem_Connectivity(TRIANGLE, 0, i) -1) != rank)
-      halo_nodes.insert(data_sorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
+    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i) -1) != rank)
+      halo_nodes.insert(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-    if (data_sorter->FindProcessor(data_sorter->GetElem_Connectivity(QUADRILATERAL, 0, i) -1) != rank)
-      halo_nodes.insert(data_sorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
+    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i) -1) != rank)
+      halo_nodes.insert(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Tetr * N_POINTS_TETRAHEDRON; ++i)
-    if ((unsigned long)data_sorter->GetElem_Connectivity(TETRAHEDRON, 0, i)-1 < data_sorter->GetNodeBegin(rank) || 
-        data_sorter->GetNodeEnd(rank) <= (unsigned long)data_sorter->GetElem_Connectivity(TETRAHEDRON, 0, i)-1)
-      halo_nodes.insert(data_sorter->GetElem_Connectivity(TETRAHEDRON, 0, i)-1);
+    if ((unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i)-1 < dataSorter->GetNodeBegin(rank) || 
+        dataSorter->GetNodeEnd(rank) <= (unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i)-1)
+      halo_nodes.insert(dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Hexa * N_POINTS_HEXAHEDRON; ++i)
-    if ((unsigned long)data_sorter->GetElem_Connectivity(HEXAHEDRON, 0, i)-1 < data_sorter->GetNodeBegin(rank) || 
-        data_sorter->GetNodeEnd(rank) <= (unsigned long)data_sorter->GetElem_Connectivity(HEXAHEDRON, 0, i)-1)
-      halo_nodes.insert(data_sorter->GetElem_Connectivity(HEXAHEDRON, 0, i)-1);
+    if ((unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i)-1 < dataSorter->GetNodeBegin(rank) || 
+        dataSorter->GetNodeEnd(rank) <= (unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i)-1)
+      halo_nodes.insert(dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i)-1);
     
   for (unsigned long i = 0; i < nParallel_Pris * N_POINTS_PRISM; ++i)
-    if ((unsigned long)data_sorter->GetElem_Connectivity(PRISM, 0, i)-1 < data_sorter->GetNodeBegin(rank) || 
-        data_sorter->GetNodeEnd(rank) <= (unsigned long)data_sorter->GetElem_Connectivity(PRISM, 0, i)-1)
-      halo_nodes.insert(data_sorter->GetElem_Connectivity(PRISM, 0, i)-1);
+    if ((unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i)-1 < dataSorter->GetNodeBegin(rank) || 
+        dataSorter->GetNodeEnd(rank) <= (unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i)-1)
+      halo_nodes.insert(dataSorter->GetElem_Connectivity(PRISM, 0, i)-1);
   
   for (unsigned long i = 0; i < nParallel_Pyra * N_POINTS_PYRAMID; ++i)
-    if ((unsigned long)data_sorter->GetElem_Connectivity(PYRAMID, 0, i)-1 < data_sorter->GetNodeBegin(rank) || 
-        data_sorter->GetNodeEnd(rank) <= (unsigned long)data_sorter->GetElem_Connectivity(PYRAMID, 0, i)-1)
-      halo_nodes.insert(data_sorter->GetElem_Connectivity(PYRAMID, 0, i)-1);
+    if ((unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i)-1 < dataSorter->GetNodeBegin(rank) || 
+        dataSorter->GetNodeEnd(rank) <= (unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i)-1)
+      halo_nodes.insert(dataSorter->GetElem_Connectivity(PYRAMID, 0, i)-1);
 
   /* Sorted list of halo nodes for this MPI rank. */
   sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
       
-  /* Have to include all nodes our cells refer to or TecIO will barf, so add the halo node count to the number of local nodes. */
-  int64_t partition_num_nodes = data_sorter->GetNodeEnd(rank) - data_sorter->GetNodeBegin(rank) + static_cast<int64_t>(halo_nodes.size());
-  int64_t partition_num_cells = nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-
   /*--- We effectively tack the halo nodes onto the end of the node list for this partition.
     TecIO will later replace them with references to nodes in neighboring partitions. */
-  size_t num_halo_nodes = sorted_halo_nodes.size();
+  num_halo_nodes = sorted_halo_nodes.size();
   vector<int64_t> halo_node_local_numbers(max((size_t)1, num_halo_nodes)); /* Min size 1 to avoid crashes when we access these vectors below. */
   vector<int32_t> neighbor_partitions(max((size_t)1, num_halo_nodes));
   vector<int64_t> neighbor_nodes(max((size_t)1, num_halo_nodes));
   for(int64_t i = 0; i < static_cast<int64_t>(num_halo_nodes); ++i) {
-    halo_node_local_numbers[i] = data_sorter->GetNodeEnd(rank) - data_sorter->GetNodeBegin(rank) + i;
+    halo_node_local_numbers[i] = dataSorter->GetNodeEnd(rank) - dataSorter->GetNodeBegin(rank) + i;
     int owning_rank;
-    owning_rank = data_sorter->FindProcessor(sorted_halo_nodes[i]);
-    unsigned long node_number = sorted_halo_nodes[i] - data_sorter->GetNodeBegin(owning_rank);
+    owning_rank = dataSorter->FindProcessor(sorted_halo_nodes[i]);
+    unsigned long node_number = sorted_halo_nodes[i] - dataSorter->GetNodeBegin(owning_rank);
     neighbor_partitions[i] = owning_rank + 1; /* Partition numbers are 1-based. */
     neighbor_nodes[i] = static_cast<int64_t>(node_number);
   }
@@ -150,15 +146,15 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   /* Gather halo node data. First, tell each rank how many nodes' worth of data we need from them. */
   for (size_t i = 0; i < num_halo_nodes; ++i)
     ++num_nodes_to_receive[neighbor_partitions[i] - 1];
-  vector<int> num_nodes_to_send(size);
+  num_nodes_to_send.resize(size);
   SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, MPI_COMM_WORLD);
 
   /* Now send the global node numbers whose data we need,
      and receive the same from all other ranks.
      Each rank has globally consecutive node numbers,
      so we can just parcel out sorted_halo_nodes for send. */
-  vector<int> nodes_to_send_displacements(size);
-  vector<int> nodes_to_receive_displacements(size);
+  nodes_to_send_displacements.resize(size);
+  nodes_to_receive_displacements.resize(size);
   nodes_to_send_displacements[0] = 0;
   nodes_to_receive_displacements[0] = 0;
   for(int iRank = 1; iRank < size; ++iRank) {
@@ -166,8 +162,8 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
     nodes_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank - 1] + num_nodes_to_receive[iRank - 1];
   }
   int total_num_nodes_to_send = nodes_to_send_displacements[size - 1] + num_nodes_to_send[size - 1];
-  vector<unsigned long> nodes_to_send(max(1, total_num_nodes_to_send));
 
+  nodes_to_send.resize(max(1, total_num_nodes_to_send));
   /* The terminology gets a bit confusing here. We're sending the node numbers
      (sorted_halo_nodes) whose data we need to receive, and receiving
      lists of nodes whose data we need to send. */
@@ -177,11 +173,11 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
                      MPI_COMM_WORLD);
   
   /* Now actually send and receive the data */
-  vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
+  data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
   halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
-  vector<int> num_values_to_send(size);
-  vector<int> values_to_send_displacements(size);
-  vector<int> num_values_to_receive(size);
+  num_values_to_send.resize(size);
+  values_to_send_displacements.resize(size);
+  num_values_to_receive.resize(size);
   size_t index = 0;
   for(int iRank = 0; iRank < size; ++iRank) {
     /* We send and receive GlobalField_Counter values per node. */
@@ -191,8 +187,8 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
     values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
     for(iVar = 0; iVar < fieldnames.size(); ++iVar)
       for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
-        unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - data_sorter->GetNodeBegin(rank);
-        data_to_send[index++] = SU2_TYPE::GetValue(data_sorter->GetData(iVar,node_offset));
+        unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank);
+        data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));
       }
   }
   SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
@@ -200,22 +196,15 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
                      MPI_COMM_WORLD);
   
 
-  int additional_nodes = 0;
-  for (int iRank = 0; iRank < size; ++iRank) {
-    additional_nodes += num_nodes_to_receive[iRank];
-  }
-  for (int i = 0; i < sorted_halo_nodes.size(); i++){
-    cout << sorted_halo_nodes[i] << " " <<  data_sorter->GetNodeEnd(rank) << " " <<  data_sorter->GetNodeBegin(rank) << endl;
-  }
   // create the points information
   vtkNew<vtkDoubleArray> pointArray;
   pointArray->SetNumberOfComponents(3);
-  pointArray->SetNumberOfValues((data_sorter->GetnPoints()+num_halo_nodes)*NCOORDS);
+  pointArray->SetNumberOfValues((dataSorter->GetnPoints()+num_halo_nodes)*NCOORDS);
   int id = 0;
   for (int iRank = 0; iRank < size; ++iRank) {
     for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
       int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*0; 
-      pointArray->SetValue((data_sorter->GetnPoints() + id)*NCOORDS+0, halo_var_data[displ+i]);
+      pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+0, halo_var_data[displ+i]);
       id++;    
     }
   }
@@ -223,7 +212,7 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   for (int iRank = 0; iRank < size; ++iRank) {
     for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
       int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*1; 
-      pointArray->SetValue((data_sorter->GetnPoints() + id)*NCOORDS+1, halo_var_data[displ+i]);
+      pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+1, halo_var_data[displ+i]);
       id++;    
     }
   }
@@ -231,16 +220,16 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   for (int iRank = 0; iRank < size; ++iRank) {
     for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
       int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*2; 
-      if (nDim == 3) pointArray->SetValue((data_sorter->GetnPoints() + id)*NCOORDS+2, halo_var_data[displ+i]);
-      else {pointArray->SetValue((data_sorter->GetnPoints() + id)*NCOORDS+2, 0.0);}
+      if (nDim == 3) pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+2, halo_var_data[displ+i]);
+      else {pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+2, 0.0);}
       id++;    
     }
   }
   
-  for (unsigned long iPoint = 0; iPoint < data_sorter->GetnPoints(); iPoint++){
-    pointArray->SetValue(iPoint*NCOORDS+0, data_sorter->GetData(0,iPoint));
-    pointArray->SetValue(iPoint*NCOORDS+1, data_sorter->GetData(1,iPoint));
-    if (nDim == 3 ) pointArray->SetValue(iPoint*NCOORDS+2, data_sorter->GetData(2,iPoint));
+  for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++){
+    pointArray->SetValue(iPoint*NCOORDS+0, dataSorter->GetData(0,iPoint));
+    pointArray->SetValue(iPoint*NCOORDS+1, dataSorter->GetData(1,iPoint));
+    if (nDim == 3 ) pointArray->SetValue(iPoint*NCOORDS+2, dataSorter->GetData(2,iPoint));
     else pointArray->SetValue(iPoint*NCOORDS+2, 0);
   }
  
@@ -252,70 +241,70 @@ void CCatalystWriter::BuildVTKGrid(CParallelDataSorter *data_sorter)
   // create the cells
   VTKGrid->Allocate(static_cast<vtkIdType>(myElemStorage));
   
-#define MAKE_LOCAL(n) data_sorter->FindProcessor(n) == rank \
-  ? (int64_t)((unsigned long)n - data_sorter->GetNodeBegin(rank)) \
-  : GetHaloNodeNumber(n, data_sorter->GetNodeEnd(rank) - data_sorter->GetNodeBegin(rank), sorted_halo_nodes)
+#define MAKE_LOCAL(n) dataSorter->FindProcessor(n) == rank \
+  ? (int64_t)((unsigned long)n - dataSorter->GetNodeBegin(rank)) \
+  : GetHaloNodeNumber(n, dataSorter->GetNodeEnd(rank) - dataSorter->GetNodeBegin(rank), sorted_halo_nodes)
 
-#define ISN_LOCAL(n) (data_sorter->FindProcessor(n) != rank)
+#define ISN_LOCAL(n) (dataSorter->FindProcessor(n) != rank)
   
   for (unsigned long iElem = 0; iElem < nParallel_Line; iElem++) {
-    vtkIdType tmp[2] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(LINE, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(LINE, iElem, 1)-1))};
+    vtkIdType tmp[2] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(LINE, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(LINE, iElem, 1)-1))};
     VTKGrid->InsertNextCell(VTK_LINE, N_POINTS_LINE, tmp);    
   }
   
   
   for (unsigned long iElem = 0; iElem < nParallel_Tria; iElem++) {    
-    vtkIdType tmp[3] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1))};
+    vtkIdType tmp[3] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1))};
     VTKGrid->InsertNextCell(VTK_TRIANGLE, N_POINTS_TRIANGLE, tmp);   
   }
   
   for (unsigned long iElem = 0; iElem < nParallel_Quad; iElem++) {
-    vtkIdType tmp[4] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1))};
+    vtkIdType tmp[4] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1))};
     VTKGrid->InsertNextCell(VTK_QUAD, N_POINTS_QUADRILATERAL, tmp);    
   }
   
   for (unsigned long iElem = 0; iElem < nParallel_Tetr; iElem++) {
-    vtkIdType tmp[4] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1))};
+    vtkIdType tmp[4] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1))};
     VTKGrid->InsertNextCell(VTK_TETRA, N_POINTS_TETRAHEDRON, tmp);    
   }
   
   for (unsigned long iElem = 0; iElem < nParallel_Hexa; iElem++) {
-    vtkIdType tmp[8] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1))};
+    vtkIdType tmp[8] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1))};
     VTKGrid->InsertNextCell(VTK_HEXAHEDRON, N_POINTS_HEXAHEDRON, tmp);    
   }
   
   for (unsigned long iElem = 0; iElem < nParallel_Pris; iElem++) {
-    vtkIdType tmp[6] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PRISM, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PRISM, iElem, 1)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PRISM, iElem, 2)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PRISM, iElem, 3)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PRISM, iElem, 4)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PRISM, iElem, 5)-1))};
+    vtkIdType tmp[6] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 1)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 2)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 3)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 4)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 5)-1))};
     VTKGrid->InsertNextCell(VTK_WEDGE, N_POINTS_PRISM, tmp);    
   }
   
   for (unsigned long iElem = 0; iElem < nParallel_Pyra; iElem++) {
-    vtkIdType tmp[5] = {(vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1)),
-                        (vtkIdType)(MAKE_LOCAL(data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1))};
+    vtkIdType tmp[5] = {(vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1)),
+                        (vtkIdType)(MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1))};
     VTKGrid->InsertNextCell(VTK_PYRAMID, N_POINTS_PYRAMID, tmp);    
   }
 }
@@ -334,74 +323,11 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
     allocate = true;
     
   }  
+  
   unsigned short iVar;
-//  NodePartitioner node_partitioner(num_nodes, size);
-  vector<passivedouble> halo_var_data;
-  vector<int> num_nodes_to_receive(size, 0);
-  vector<int> values_to_receive_displacements(size);
-  
-  /* We output a single, partitioned zone where each rank outputs one partition. */
-  vector<int32_t> partition_owners;
-  partition_owners.reserve(size);
-  for (int32_t iRank = 0; iRank < size; ++iRank)
-    partition_owners.push_back(iRank);
-
-  /*--- We effectively tack the halo nodes onto the end of the node list for this partition.
-    TecIO will later replace them with references to nodes in neighboring partitions. */
-  size_t num_halo_nodes = sorted_halo_nodes.size();
-  vector<int64_t> halo_node_local_numbers(max((size_t)1, num_halo_nodes)); /* Min size 1 to avoid crashes when we access these vectors below. */
-  vector<int32_t> neighbor_partitions(max((size_t)1, num_halo_nodes));
-  vector<int64_t> neighbor_nodes(max((size_t)1, num_halo_nodes));
-  for(int64_t i = 0; i < static_cast<int64_t>(num_halo_nodes); ++i) {
-    halo_node_local_numbers[i] = data_sorter->GetNodeEnd(rank) - data_sorter->GetNodeBegin(rank) + i;
-    int owning_rank;
-    owning_rank = data_sorter->FindProcessor(sorted_halo_nodes[i]);
-    unsigned long node_number = sorted_halo_nodes[i] - data_sorter->GetNodeBegin(owning_rank);
-    neighbor_partitions[i] = owning_rank + 1; /* Partition numbers are 1-based. */
-    neighbor_nodes[i] = static_cast<int64_t>(node_number);
-  }
-
-  /* Gather halo node data. First, tell each rank how many nodes' worth of data we need from them. */
-  for (size_t i = 0; i < num_halo_nodes; ++i)
-    ++num_nodes_to_receive[neighbor_partitions[i] - 1];
-  vector<int> num_nodes_to_send(size);
-  SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, MPI_COMM_WORLD);
-
-  /* Now send the global node numbers whose data we need,
-     and receive the same from all other ranks.
-     Each rank has globally consecutive node numbers,
-     so we can just parcel out sorted_halo_nodes for send. */
-  vector<int> nodes_to_send_displacements(size);
-  vector<int> nodes_to_receive_displacements(size);
-  nodes_to_send_displacements[0] = 0;
-  nodes_to_receive_displacements[0] = 0;
-  for(int iRank = 1; iRank < size; ++iRank) {
-    nodes_to_send_displacements[iRank] = nodes_to_send_displacements[iRank - 1] + num_nodes_to_send[iRank - 1];
-    nodes_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank - 1] + num_nodes_to_receive[iRank - 1];
-  }
-  int total_num_nodes_to_send = nodes_to_send_displacements[size - 1] + num_nodes_to_send[size - 1];
-  vector<unsigned long> nodes_to_send(max(1, total_num_nodes_to_send));
-
-  /* The terminology gets a bit confusing here. We're sending the node numbers
-     (sorted_halo_nodes) whose data we need to receive, and receiving
-     lists of nodes whose data we need to send. */
-  SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
-                     &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
-  
-  /* Now actually send and receive the data */
-  vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
-  halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
-  vector<int> num_values_to_send(size);
-  vector<int> values_to_send_displacements(size);
-  vector<int> num_values_to_receive(size);
-  size_t index = 0;
+  unsigned long index= 0;
   for(int iRank = 0; iRank < size; ++iRank) {
-    /* We send and receive GlobalField_Counter values per node. */
-    num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldnames.size();
-    values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldnames.size();
-    num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldnames.size();
-    values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
+
     for(iVar = 0; iVar < fieldnames.size(); ++iVar)
       for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
         unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - data_sorter->GetNodeBegin(rank);
@@ -412,16 +338,34 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
                      &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
                      MPI_COMM_WORLD);
   
-  
+  unsigned long TotalnPoints = data_sorter->GetnPoints()+num_halo_nodes;
   for (unsigned short iField = nDim; iField < fieldnames.size(); iField++){
+    string fieldname = fieldnames[iField];
     
-    if (idd->IsFieldNeeded(fieldnames[iField].c_str(), vtkDataObject::POINT) == true){
+    bool output_variable = true, isVector = false;
+    size_t found = fieldnames[iField].find("_x");
+    if (found!=string::npos) {
+      output_variable = true;
+      isVector = true;
+    }
+    found = fieldnames[iField].find("_y");
+    if (found!=string::npos) {
+      //skip
+      output_variable = false;
+    }
+    found = fieldnames[iField].find("_z");
+    if (found!=string::npos) {
+      //skip
+      output_variable = false;
+    }
+    
+    if (idd->IsFieldNeeded(fieldnames[iField].c_str(), vtkDataObject::POINT) == true && !isVector && output_variable){
       if (allocate){
         
         vtkNew<vtkDoubleArray> array;
         array->SetName(fieldnames[iField].c_str());
         array->SetNumberOfComponents(1);
-        array->SetNumberOfValues(static_cast<vtkIdType>(data_sorter->GetnPoints()+num_halo_nodes));
+        array->SetNumberOfValues(static_cast<vtkIdType>(TotalnPoints));
         
         VTKGrid->GetPointData()->AddArray(array.GetPointer());
         
@@ -448,6 +392,62 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
         }
       }
     }
+    if (isVector && output_variable){
+      fieldname.erase(fieldname.end()-2,fieldname.end());
+      
+      if (idd->IsFieldNeeded(fieldname.c_str(), vtkDataObject::POINT) == true ){
+        if (allocate){
+          // velocity array
+           vtkNew<vtkDoubleArray> array;
+           array->SetName(fieldname.c_str());
+           array->SetNumberOfComponents(nDim);
+           array->SetNumberOfTuples(static_cast<vtkIdType>(TotalnPoints));
+           VTKGrid->GetPointData()->AddArray(array.GetPointer());
+           SU2_INFO << "Adding catalyst output " << fieldname.c_str();
+          
+        }
+        SU2_INFO << "Setting catalyst output " << fieldname;
+        
+        vtkDoubleArray* data =
+            vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray(fieldname.c_str()));
+        
+        for (vtkIdType i = 0; i < data_sorter->GetnPoints(); i++)
+        {            
+          data->SetValue(i*nDim + 0, data_sorter->GetData(iField+0, i));
+          data->SetValue(i*nDim + 1, data_sorter->GetData(iField+1, i));
+          if (nDim == 3){
+            data->SetValue(i*nDim + 2, data_sorter->GetData(iField+2, i));            
+          } 
+        }
+        int id = 0;
+        for (int iRank = 0; iRank < size; ++iRank) {
+          for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
+            int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*(iField+0); 
+            data->SetValue((dataSorter->GetnPoints() + id)*nDim+0, halo_var_data[displ+i]);
+            id++;    
+          }
+        }
+        id = 0;
+        for (int iRank = 0; iRank < size; ++iRank) {
+          for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
+            int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*(iField+1); 
+            data->SetValue((dataSorter->GetnPoints() + id)*nDim+1, halo_var_data[displ+i]);
+            id++;    
+          }
+        }
+        if (nDim == 3){
+          id = 0;
+          for (int iRank = 0; iRank < size; ++iRank) {
+            for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
+              int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*(iField+2); 
+              data->SetValue((dataSorter->GetnPoints() + id)*nDim+2, halo_var_data[displ+i]);
+              id++;    
+            }
+          }
+        }
+      }
+      
+    }
   }
 }
 
@@ -462,7 +462,7 @@ void CCatalystWriter::BuildVTKDataStructures(vtkCPInputDataDescription* idd, CPa
     // the first time it's needed. If we needed the memory
     // we could delete it and rebuild as necessary.
     VTKGrid = vtkUnstructuredGrid::New();
-    BuildVTKGrid(data_sorter);
+    BuildVTKGrid();
   }
   UpdateVTKAttributes(idd, data_sorter);
   

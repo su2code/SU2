@@ -1,7 +1,45 @@
+/*!
+ * \file CParallelDataSorter.hpp
+ * \brief Headers fo the data sorter class.
+ * \author T. Albring, T. Economon
+ * \version 6.2.0 "Falcon"
+ *
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
+ *
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ *
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include "../../../Common/include/mpi_structure.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 
 class CGeometry;
 class CConfig;
@@ -9,67 +47,85 @@ class CConfig;
 class CParallelDataSorter{
 protected:
   
-  int rank; 
+  /*!
+   * \brief The MPI rank
+   */
+  int rank;
+  
+  /*!
+   * \brief The MPI size, aka the number of processors.
+   */
   int size;
   
-  unsigned long nGlobal_Poin_Par;   // Global number of nodes with halos
-  unsigned long nGlobal_Elem_Par;  // Global number of elems without halos
-  unsigned long nParallel_Poin;
-  unsigned long nParallel_Line,
-  nParallel_Tria,
-  nParallel_Quad,
-  nParallel_Tetr,
-  nParallel_Hexa,
-  nParallel_Pris,
-  nParallel_Pyra;
-  int *Conn_Line_Par;
-  int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
-  int *Conn_Quad_Par;
-  int *Conn_Tetr_Par;
-  int *Conn_Hexa_Par;
-  int *Conn_Pris_Par;
-  int *Conn_Pyra_Par;
+  unsigned long nGlobal_Poin_Par;  //!< Global number of points without halos before sorting
+  unsigned long nGlobal_Elem_Par;  //!< Global number of elems without halos before sorting
+  unsigned long nParallel_Poin;    //!< Local number of points after sorting on this proc
+  unsigned long nParallel_Line,    //!< Local number of line elements after sorting on this proc
+  nParallel_Tria,                  //!< Local number of triangle elements after sorting on this proc
+  nParallel_Quad,                  //!< Local number of quad elements after sorting on this proc
+  nParallel_Tetr,                  //!< Local number of tetrahedral elements after sorting on this proc
+  nParallel_Hexa,                  //!< Local number of hexhedral elements after sorting on this proc
+  nParallel_Pris,                  //!< Local number of prism elements after sorting on this proc
+  nParallel_Pyra;                  //!< Local number of pyramid elements after sorting on this proc
+  int *Conn_Line_Par;              //!< Local connectivity of line elements after sorting on this proc
+  int *Conn_Tria_Par;              //!< Local connectivity of triangle elements after sorting on this proc
+  int *Conn_Quad_Par;              //!< Local connectivity of quad elements after sorting on this proc
+  int *Conn_Tetr_Par;              //!< Local connectivity of tetrahedral elements after sorting on this proc
+  int *Conn_Hexa_Par;              //!< Local connectivity of hexahedral elements after sorting on this proc
+  int *Conn_Pris_Par;              //!< Local connectivity of prism elements after sorting on this proc
+  int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements after sorting on this proc
   
-  unsigned long nGlobalPoint_Sort;
-  unsigned long nLocalPoint_Sort;
-  unsigned long nPoint_Restart;
+  unsigned long nGlobalPoint_Sort; //!< Global number of points without halos after sorting 
+  unsigned long nLocalPoint_Sort;  //!< Local number of points without halos after sorting on this proc
 
-  unsigned long *beg_node;
-  unsigned long *end_node;
-
-  unsigned long *nPoint_Lin;
-  unsigned long *nPoint_Cum;
   
-  unsigned short GlobalField_Counter;
+  CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
   
-  su2double** Parallel_Data;
+  unsigned short GlobalField_Counter;  //!< Number of output fields
   
-  bool connectivity_sorted; 
+  bool connectivity_sorted;            //!< Boolean to store information on whether the connectivity is sorted
   
-  int *nPoint_Send;
-  int *nPoint_Recv;
-  unsigned long *Index;
-  su2double *connSend;
-  unsigned long *idSend, *idRecv;
-  int nSends, nRecvs;
-
+  int *nPoint_Send;                    //!< Number of points this processor has to send to other processors
+  int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
+  unsigned long *Index;                //!< Index each point has in the send buffer
+  su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
+  passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types 
+  su2double     *doubleBuffer;         //!< Buffer holding the sorted, partitioned data as su2double types 
+  /// Pointer used to allocate the memory used for ::passiveDoubleBuffer and ::doubleBuffer.
+  char *dataBuffer;                    
+  unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
+  int nSends,                          //!< Number of sends
+  nRecvs;                              //!< Number of receives
+  
+  /*!
+   * \brief Prepare the send buffers by filling them with the global indices. 
+   * After calling this function, the data buffer for sending can be filled with the
+   * ::SetUnsorted_Data() routine.
+   * \param[in] globalID - Vector containing the global indices of the points
+   */
   void PrepareSendBuffers(std::vector<unsigned long>& globalID);  
 
 public:
   
+  /*!
+   * \brief Constructor
+   * \param[in] config - Pointer to the current config structure
+   * \param[in] nFields - Number of output fields
+   */
   CParallelDataSorter(CConfig *config, unsigned short nFields);
   
+  /*!
+   * \brief Destructor
+   */
   virtual ~CParallelDataSorter();
   
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  virtual void SortOutputData(CConfig *config, CGeometry *geometry){}
+  virtual void SortOutputData();
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \brief Sort the connectivities (volume and surface) into data structures.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
@@ -121,14 +177,14 @@ public:
    * \input rank - the processor rank.
    * \return The beginning node ID.
    */
-  unsigned long GetNodeBegin(unsigned short rank){return beg_node[rank];}
+  unsigned long GetNodeBegin(unsigned short rank){return linearPartitioner->GetFirstIndexOnRank(rank);}
   
   /*!
    * \brief Ending node ID of the linear partition owned by a specific processor.
    * \input rank - the processor rank.
    * \return The ending node ID.
    */
-  unsigned long GetNodeEnd(unsigned short rank){return end_node[rank];}
+  unsigned long GetNodeEnd(unsigned short rank){return linearPartitioner->GetLastIndexOnRank(rank);}
   
   /*!
    * \brief Get the value of the linear partitioned data.
@@ -136,9 +192,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  su2double GetData(unsigned short iField, unsigned long iPoint) {return Parallel_Data[iField][iPoint];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
   
-  su2double* GetData(unsigned short iField) {return Parallel_Data[iField];}
+  /*!
+   * \brief Get the pointer to the sorted linear partitioned data.
+   * \return Pointer to the sorted data.
+   */
+  const passivedouble *GetData() {return passiveDoubleBuffer;}
   
   /*!
    * \brief Get the global index of a point.
@@ -152,45 +212,36 @@ public:
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  unsigned long GetnPointCumulative(unsigned short rank){return nPoint_Cum[rank];}
+  unsigned long GetnPointCumulative(unsigned short rank){return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
   
   /*!
    * \brief Get the linear number of points
    * \input rank - the processor rank.
    * \return The linear number of points up to certain processor rank.
    */
-  unsigned long GetnPointLinear(unsigned short rank){return nPoint_Lin[rank];}  
+  unsigned long GetnPointLinear(unsigned short rank){return linearPartitioner->GetSizeOnRank(rank);}  
   
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
    * \return <TRUE> if the connectivity is sorted.
    */  
   bool GetConnectivitySorted(){return connectivity_sorted;}
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   */
-  void DeallocateData();
+  
+  unsigned short FindProcessor(unsigned long iPoint){return linearPartitioner->GetRankContainingIndex(iPoint);}
   
   /*!
-   * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
-   * \param[in] surf_sol - if <TRUE>, surface connectivity is deallocated, otherwise the volume connectivity.
+   * \brief Set the value of a specific field at a point.
+   * ::PrepareSendBuffers must be called before using this function.
+   * 
+   * \param[in] iPoint - ID of the point
+   * \param[in] iField - Index of the field
+   * \param[in] data - Value of the field
    */
-  void DeallocateConnectivity();
-  
-  /*!
-   * \brief CreateLinearPartition
-   */
-  void CreateLinearPartition(unsigned long nGlobalPoint);
-  
-  /*!
-   * \brief FindProcessor
-   * \param global_index
-   * \return 
-   */
-  unsigned short FindProcessor(unsigned long global_index);
-  
   void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
     connSend[Index[iPoint] + iField] = data;
+  }
+  
+  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
+    return connSend[Index[iPoint] + iField];
   }
 };

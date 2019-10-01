@@ -1,7 +1,6 @@
 /*!
- * \file output_fea.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ * \file CElasticityOutput.hpp
+ * \brief  Headers of the elasticity output.
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 6.2.0 "Falcon"
  *
@@ -40,21 +39,19 @@
 
 #include "COutput.hpp"
 
-/*! \class CFEAOutput
+/*! \class CElasticityOutput
  *  \brief Output class for FEA problems.
  *  \author R. Sanchez, T. Albring.
  *  \date May 24, 2018.
  */
-class CElasticityOutput : public COutput {
-private:
-
+class CElasticityOutput final: public COutput {
 protected:
 
-  unsigned short nVar_FEM;
-  bool linear_analysis,
-       nonlinear_analysis,
-       dynamic;
-
+  unsigned short nVar_FEM; //!< Number of FEM variables
+  bool linear_analysis,    //!< Boolean indicating a linear analysis
+       nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
+       dynamic;            //!< Boolean indicating a dynamic analysis
+ 
 public:
 
   /*!
@@ -66,33 +63,39 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CElasticityOutput(void);
+  ~CElasticityOutput(void) override;
 
   /*!
-   * \brief Set the history file header
+   * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
   /*!
-   * \brief SetHistoryOutputFields
-   * \param config
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config) override;
 
   /*!
-   * \brief SetVolumeOutputFields
-   * \param config
+   * \brief Set the available volume output fields
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields(CConfig *config);
+  void SetVolumeOutputFields(CConfig *config) override;
   
   /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
+   * \brief Set the values of the volume output fields for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
-
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
+  
+  /*!
+   * \brief Check whether the base values for relative residuals should be initialized
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> if the residuals should be initialized.
+   */
+  bool SetInit_Residuals(CConfig *config) override;
 };

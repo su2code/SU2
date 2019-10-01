@@ -52,68 +52,61 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("ITER");
-    RequestedHistoryFields.push_back("RMS_RES");
-    nRequestedHistoryFields = RequestedHistoryFields.size();
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
+    nRequestedHistoryFields = requestedHistoryFields.size();
   }
   
   /*--- Default fields for screen output ---*/
   if (nRequestedScreenFields == 0){
-    if (dynamic) RequestedScreenFields.push_back("TIME_ITER");
-    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
-    RequestedScreenFields.push_back("INNER_ITER");
+    if (dynamic) requestedScreenFields.emplace_back("TIME_ITER");
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
     if(linear_analysis){
-      RequestedScreenFields.push_back("RMS_DISP_X");
-      RequestedScreenFields.push_back("RMS_DISP_Y");
-      RequestedScreenFields.push_back("RMS_DISP_Z");
+      requestedScreenFields.emplace_back("RMS_DISP_X");
+      requestedScreenFields.emplace_back("RMS_DISP_Y");
+      requestedScreenFields.emplace_back("RMS_DISP_Z");
     }
     if(nonlinear_analysis){
-      RequestedScreenFields.push_back("RMS_UTOL");
-      RequestedScreenFields.push_back("RMS_RTOL");
-      RequestedScreenFields.push_back("RMS_ETOL");
+      requestedScreenFields.emplace_back("RMS_UTOL");
+      requestedScreenFields.emplace_back("RMS_RTOL");
+      requestedScreenFields.emplace_back("RMS_ETOL");
     }
-    RequestedScreenFields.push_back("VMS");
-    nRequestedScreenFields = RequestedScreenFields.size();
+    requestedScreenFields.emplace_back("VMS");
+    nRequestedScreenFields = requestedScreenFields.size();
   }
   
   /*--- Default fields for volume output ---*/
   if (nRequestedVolumeFields == 0){
-    RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("STRESS");    
-    nRequestedVolumeFields = RequestedVolumeFields.size();
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("STRESS");    
+    nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Structure)";
-  MultiZoneHeaderString = ss.str();
+  multiZoneHeaderString = ss.str();
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetVolume_FileName();
+  volumeFilename = config->GetVolume_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfCoeff_FileName();
+  surfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
 
-  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DISP_X";
+  if (convFields.empty() ) convFields.emplace_back("RMS_DISP_X");
 
 }
 
-CElasticityOutput::~CElasticityOutput(void) {
-
-  if (rank == MASTER_NODE){
-    HistFile.close();
-
-  }
-
-}
+CElasticityOutput::~CElasticityOutput(void) {}
 
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
@@ -131,14 +124,13 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
-    if (nDim == 3){
-      SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
-    }
+    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
+    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
+    SetHistoryOutputValue("RMS_ETOL", log10(dotProd(fea_solver->LinSysSol, fea_solver->LinSysRes)));
+    
   }
   
-  if (multizone){
+  if (multiZone){
     SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
     if (nDim == 3) SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));
@@ -148,29 +140,33 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
   
+  SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetLinSol_Residual()));
+  
 } 
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER",  "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL",  "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL",  "Residual of the linear solver.");
   
   // Residuals
 
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_UTOL",   "rms[U]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_RTOL",   "rms[R]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_ETOL",   "rms[E]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "", "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "", "LOAD_RAMP");
+  AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
+  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  ScreenOutputFormat::FIXED, "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
   
 }
 
@@ -245,6 +241,10 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
   
 }
-
+bool CElasticityOutput::SetInit_Residuals(CConfig *config){
+  
+  return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
+  
+}
 
 

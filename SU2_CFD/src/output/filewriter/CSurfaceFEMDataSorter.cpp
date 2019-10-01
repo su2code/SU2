@@ -33,25 +33,23 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 #else
   nGlobalPoint_Sort = nLocalPoint_Sort;
 #endif
+  
+  /*--- Create the linear partitioner --- */
+  
+  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
 
-  /*--- Set a final variable for the number of points in the restart
-   file. We do not write the periodic points for the FV solver, even if
-   they show up in the viz. files. ---*/
+}
 
-  nPoint_Restart = nGlobalPoint_Sort;
-  
-  
-  /*--- Create a linear partition --- */
-  
-  CreateLinearPartition(nGlobalPoint_Sort);
+CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
+
+  if (linearPartitioner != NULL) delete linearPartitioner;
+  delete [] passiveDoubleBuffer;
   
 }
 
-CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){}
 
 
-
-void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
+void CSurfaceFEMDataSorter::SortOutputData() {
   
   if (!connectivity_sorted){
     SU2_MPI::Error("Connectivity must be sorted before sorting output data", CURRENT_FUNCTION);
@@ -108,7 +106,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
 
     /* Search for the processor that owns this point. */
-    unsigned long iProcessor = FindProcessor(globalSurfaceDOFIDs[i]);
+    unsigned long iProcessor = linearPartitioner->GetRankContainingIndex(globalSurfaceDOFIDs[i]);
 
     /* Store the global ID in the send buffer for iProcessor. */
     sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
@@ -195,18 +193,18 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
 
   /* Allocate the memory for Parallel_Surf_Data. */
   nParallel_Poin = globalSurfaceDOFIDs.size();
-
-  Parallel_Data = new su2double*[VARS_PER_POINT];
-  for(int jj=0; jj<VARS_PER_POINT; jj++)
-    Parallel_Data[jj] = new su2double[nParallel_Poin];
-
+  
+  if (passiveDoubleBuffer == nullptr){
+    passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  }
+  
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nParallel_Poin; ++i) {
-    const unsigned long ii = globalSurfaceDOFIDs[i] - volume_sorter->GetnPointCumulative(rank);
+    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
-      Parallel_Data[jj][i] = volume_sorter->GetData(jj,ii);
+      passiveDoubleBuffer[i*VARS_PER_POINT+jj] = volume_sorter->GetData(jj,ii);
   }
 
   /*--- Reduce the total number of surf points we have. This will be
@@ -309,26 +307,21 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
 }
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
-
-  
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
-  
   
   SortSurfaceConnectivity(config, geometry, LINE         );
   SortSurfaceConnectivity(config, geometry, TRIANGLE     );
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
   
-    
-    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
+  
+  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
-    nGlobal_Elem_Par   = nTotal_Surf_Elem;
+  nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
-    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
-    connectivity_sorted = true;
-
+  
+  connectivity_sorted = true;
+  
 }
 
 
@@ -392,7 +385,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     /* Allocate the memory to store the connectivity if the size is
        larger than zero. */
     int *Conn_SubElem = NULL;
-    if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
+    if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
   
     /*--- Repeat the loop over the surface elements of the boundary markers
           that must be plotted, but now store the connectivity. ---*/
@@ -430,14 +423,17 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     switch (Elem_Type) {
       case LINE:
         nParallel_Line = nSubElem_Local;
+        if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
         Conn_Line_Par = Conn_SubElem;
         break;
       case TRIANGLE:
         nParallel_Tria = nSubElem_Local;
+        if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;        
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
         nParallel_Quad = nSubElem_Local;
+        if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;       
         Conn_Quad_Par = Conn_SubElem;
         break;
       default:
