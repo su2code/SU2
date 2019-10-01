@@ -47,10 +47,6 @@ inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
 inline su2double CSolver::GetResLinSolver(void) { return ResLinSolver; }
 
-inline void CSolver::SetNonlinearResMonitor(su2double val_nonlinearResMonitor) { NonlinearResMonitor = val_nonlinearResMonitor; }
-
-inline su2double CSolver::GetNonlinearResMonitor(void) { return NonlinearResMonitor; }
-
 inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 

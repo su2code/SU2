@@ -86,7 +86,6 @@ protected:
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
-  su2double NonlinearResMonitor; /*!< \brief Nonlinear residual monitor. */
   su2double NonLinRes_Value,        /*!< \brief Summed value of the nonlinear residual indicator. */
   NonLinRes_Func;      /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
   unsigned short NonLinRes_Counter;  /*!< \brief Number of elements of the nonlinear residual indicator series. */
@@ -304,19 +303,7 @@ public:
    * \return Value of final linear solver residual.
    */
   su2double GetResLinSolver(void);
-  
-  /*!
-   * \brief Set the nonlinear residual monitor.
-   * \param[in] val_nonlinearResMonitor - Value of the nonlinear residual monitor.
-   */
-  void SetNonlinearResMonitor(su2double val_nonlinearResMonitor);
- 
-  /*!
-   * \brief Get the nonlinear residual monitor.
-   * \return Value of the nonlinear residual monitor.
-   */
-  su2double GetNonlinearResMonitor(void);
-  
+
   /*!
    * \brief Get the value of the maximum delta time.
    * \return Value of the maximum delta time.
