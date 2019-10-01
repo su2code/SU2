@@ -430,6 +430,7 @@ private:
   su2double SmoothingParam; /*!< \brief Parameter for the Laplace part in gradient smoothing. */
   bool SepDim; /*!< \brief Flag for enabling separated calculation for every dimension. */
   bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
+  bool DebugMode; /*!< \brief temporary flag for some debuging stuff
 
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		/*!< \brief Number of design variables. */
@@ -2803,6 +2804,12 @@ public:
    * \return true means that smoothing is for each dimension separate
    */
   bool GetSepDim(void);
+
+  /*!
+   * \brief Check if we want some simplified debugging stuff
+   * \return true means that smoothing is for each dimension separate
+   */
+  bool GetSobDebugMode(void);
 
   /*!
    * \brief Check if we use second order numerical integration in FE

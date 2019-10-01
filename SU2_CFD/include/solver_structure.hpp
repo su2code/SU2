@@ -12191,6 +12191,10 @@ public:
 
   unsigned short dir;             /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
+  CSysVector<su2double> auxVecInp; /*!< \brief Auxiliar vectors for output and debugging */
+  CSysVector<su2double> auxVecRHS; /*!< \brief Auxiliar vectors for output and debugging */
+  CSysVector<su2double> auxVecOut; /*!< \brief Auxiliar vectors for output and debugging */
+
   /*!
    * \brief Constructor of the class.
    */

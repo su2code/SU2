@@ -131,6 +131,11 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config);
   }
 
+  // initialize auxiliar helper vectors
+  auxVecInp.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  auxVecRHS.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  auxVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
+
 }
 
 
@@ -168,20 +173,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
   dir = 0;
 
-    CSysVector<su2double> auxVec;
-    auxVec.Initialize(nPoint, nPointDomain, nDim, 0.0);
-
-    auxVec.SetValZero();
-    for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-        for(auto iDim=0; iDim<nDim; iDim++) {
-        auxVec.SetBlock(iPoint, iDim, solver->node[iPoint]->GetSensitivity(iDim));
-        }
-    }
-
-    ofstream input ("input.txt");
-    auxVec.printVec(input);
-    input.close();
-
   /*--- Initialize vector and sparse matrix ---*/
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
@@ -189,7 +180,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
   Compute_StiffMatrix(geometry, numerics, config);
 
-  ofstream matrix ("Omatrix.dat");
+  ofstream matrix ("matrix.dat");
   Jacobian.printMat(matrix);
   matrix.close();
 
@@ -197,15 +188,16 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
     for (dir = 0; dir < nDim ; dir++) {
 
+      for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+        auxVecInp.SetBlock(iPoint, dir, solver->node[iPoint]->GetSensitivity(dir));
+      }
+
       Compute_Residual(geometry, solver, config);
       Impose_BC(geometry, numerics, config);
 
-      ofstream matrix ("matrix.dat");
-      Jacobian.printMat(matrix);
-      matrix.close();
-      ofstream rhs ("rhs.txt");
-      LinSysRes.printVec(rhs);
-      rhs.close();
+      for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+        auxVecRHS.SetBlock(iPoint, dir, LinSysRes.GetBlock(iPoint,0));
+      }
 
       Solve_Linear_System(geometry, config);
       Set_Sensitivities(geometry, solver, config);
@@ -214,52 +206,83 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
       LinSysSol.printVec(result);
       result.close();
 
+      for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+        auxVecOut.SetBlock(iPoint, dir, solver->node[iPoint]->GetSensitivity(dir));
+      }
+
       LinSysSol.SetValZero();
       LinSysRes.SetValZero();
     }
 
+    ofstream input ("input.txt");
+    auxVecInp.printVec(input);
+    input.close();
+
+    ofstream rhs ("rhs.txt");
+    auxVecRHS.printVec(rhs);
+    rhs.close();
+
+    ofstream output ("output.txt");
+    auxVecOut.printVec(output);
+    output.close();
+
   } else {
+
+    for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+      for (auto iDim = 0; iDim < nDim ; iDim++) {
+        auxVecInp.SetBlock(iPoint, iDim,
+                           (-2*3.14159265359*3.14159265359*sin(3.14159265359*geometry->node[iPoint]->GetCoord(0))*sin(3.14159265359*geometry->node[iPoint]->GetCoord(1))) );
+      }
+    }
+
+    /*
+    -5.0 + (su2double) (rand() * 10.0) / RAND_MAX
+
+      if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+        for (auto iDim = 0; iDim < nDim ; iDim++) {
+          auxVecInp.SetBlock(iPoint, iDim, (su2double) 1.0);
+        }
+      } else {
+        for (auto iDim = 0; iDim < nDim ; iDim++) {
+          auxVecInp.SetBlock(iPoint, iDim, 1.0);
+        }
+      }
+    */
 
     Compute_Residual(geometry, solver, config);
 
     Impose_BC(geometry, numerics, config);
 
+    Solve_Linear_System(geometry, config);
+
+    Set_Sensitivities(geometry, solver, config);
+
+    for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+      for (auto iDim = 0; iDim < nDim ; iDim++) {
+        auxVecOut.SetBlock(iPoint, iDim, solver->node[iPoint]->GetSensitivity(iDim));
+      }
+    }
+
+    ofstream input ("input.txt");
+    auxVecInp.printVec(input);
+    input.close();
+
     ofstream rhs ("rhs.txt");
     LinSysRes.printVec(rhs);
     rhs.close();
 
-    ofstream matrix ("matrix.dat");
-    Jacobian.printMat(matrix);
-    matrix.close();
-
-    Solve_Linear_System(geometry, config);
-
-    ofstream result ("result.txt");
-    LinSysSol.printVec(result);
-    result.close();
-
-    Set_Sensitivities(geometry, solver, config);
+    ofstream output ("output.txt");
+    auxVecOut.printVec(output);
+    output.close();
 
   }
 
-  auxVec.SetValZero();
-  for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-      for(auto iDim=0; iDim<nDim; iDim++) {
-      auxVec.SetBlock(iPoint, iDim, solver->node[iPoint]->GetSensitivity(iDim));
-      }
-  }
-
-  ofstream output ("output.txt");
-  auxVec.printVec(output);
-  output.close();
-
-  /*
   for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++) {
 
     std::cout << "SU2 node "<< iPoint << " is mesh node " << geometry->node[iPoint]->GetGlobalIndex() << std::endl;
 
   }
-  */
+
 }
 
 
@@ -334,6 +357,17 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
         } else {
 
+          if (config->GetSobDebugMode()) {
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                Jacobian_ij[iDim][jDim] = DHiDHj[iDim][jDim];
+                }
+              //Jacobian_ij[iDim][iDim] += HiHj;
+            }
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+
+          } else {
           for (iDim = 0; iDim < nDim; iDim++) {
             for (jDim = 0; jDim < nDim; jDim++) {
               Jacobian_ij[iDim][jDim] = DHiDHj[iDim][jDim];
@@ -341,6 +375,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
             Jacobian_ij[iDim][iDim] += HiHj;
           }
           Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+          }
 
         }
       }
@@ -424,13 +459,34 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 
         if ( config->GetSepDim() ) {
 
-          Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(dir);
-          LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
+          if (config->GetSobDebugMode()) {
+            Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * auxVecInp.GetBlock(indexNode[iNode], dir); // solver->node[indexNode[iNode]]->GetSensitivity(dir);
+            std::cout << "Add Residual: " << iNode << " " << iGauss << " "
+                      <<  Weight << " " << Jac_X <<  " "
+                      << element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) << " "
+                      << auxVecInp.GetBlock(indexNode[iNode], dir) << " "
+                      << Residual[dir] << std::endl;
+            LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
+          } else {
+            Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(dir);
+            LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
+          }
 
         } else {
 
           for (iDim = 0; iDim < nDim; iDim++) {
-            Residual[iDim] += Weight * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(iDim);
+
+            if (config->GetSobDebugMode()) {
+
+              Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * auxVecInp.GetBlock(indexNode[iNode], iDim);
+              std::cout << "Add Residual: (" << iNode << ", " << iGauss << ", " << iDim << "): "
+                        <<  Weight << " " << Jac_X <<  " "
+                        << element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) <<  " "
+                        << auxVecInp.GetBlock(indexNode[iNode], iDim) << " "
+                        << Residual[iDim] << std::endl;
+            } else {
+              Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->node[indexNode[iNode]]->GetSensitivity(iDim);
+            }
           }
           LinSysRes.AddBlock(indexNode[iNode], Residual);
 
@@ -595,6 +651,9 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         solver->node[iPoint]->SetSensitivity(iDim,LinSysSol[total_index]);
+
+                std::cout << "Output " << iPoint << ", " << iDim << ", " << LinSysSol[total_index] << std::endl;
+
       }
     }
   }
