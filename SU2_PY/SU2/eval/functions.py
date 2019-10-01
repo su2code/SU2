@@ -439,7 +439,7 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FILENAME, config)
     restart_sol = config['RESTART_SOL']
     dv_value_old = config['DV_VALUE_OLD'];
 
@@ -451,6 +451,11 @@ def multipoint( config, state=None, step=1e-2 ):
 
     for i in range(len(weight_list)):
         folder[i] = 'MULTIPOINT_' + str(i)
+
+    opt_names = []
+    for key in su2io.historyOutFields:
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
 
     # ----------------------------------------------------
     #  Initialize
@@ -497,7 +502,7 @@ def multipoint( config, state=None, step=1e-2 ):
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
     config.MARKER_OUTLET = new_marker_outlet
-    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.SOLUTION_FILENAME = solution_flow_list[0]
 
     # If solution file for the first point is available, use it
     if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[0]: 
@@ -562,7 +567,7 @@ def multipoint( config, state=None, step=1e-2 ):
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
 
-        konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+        konfig.SOLUTION_FILENAME = solution_flow_list[i+1]
 
         # delete direct solution file from previous point
         if 'DIRECT' in ztate.FILES:
@@ -656,7 +661,7 @@ def multipoint( config, state=None, step=1e-2 ):
     # ----------------------------------------------------
         
     for derv_name in su2io.optnames_multi:
-        matches = [ k for k in su2io.optnames_aero if k in derv_name ]
+        matches = [ k for k in opt_names if k in derv_name ]
         if not len(matches) == 1: continue
         func_name = matches[0]
         obj_func = 0.0
