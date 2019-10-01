@@ -3322,19 +3322,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   else
     Rotating_Frame = false;
   
-  /*--- THIS IS A TEMPORARY WORKAROUND to run the new multizone driver without adapting the config file.
-   * Will be removed soon. ---*/
-  if (Multizone_Problem){
-    if (Unsteady_Simulation != STEADY || Time_Domain == YES){
-      if (Delta_UnstTime != 0){        
-        Time_Domain = YES;
-        Time_Iter  = nExtIter;   
-        Outer_Iter = Unst_nIntIter;
-        Inner_Iter = 1;
-        Time_Step = Delta_UnstTime;
-      }
-    }
-  }
+  // /*--- THIS IS A TEMPORARY WORKAROUND to run the new multizone driver without adapting the config file.
+  //  * Will be removed soon. ---*/
+  // if (Multizone_Problem){
+  //   if (Unsteady_Simulation != STEADY || Time_Domain == YES){
+  //     if (Delta_UnstTime != 0){        
+  //       Time_Domain = YES;
+  //       Time_Iter  = nExtIter;   
+  //       Outer_Iter = Unst_nIntIter;
+  //       Inner_Iter = 1;
+  //       Time_Step = Delta_UnstTime;
+  //     }
+  //   }
+  // }
   
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
