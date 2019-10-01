@@ -1835,17 +1835,47 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
 void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
 
-  unsigned short iVar,iDim;
+  unsigned short iVar,iDim,jVar,jDim;
   unsigned long iEdge, iPoint, jPoint;
-
-
-
+  
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool rotating_frame   = config->GetRotating_Frame();
   bool axisymmetric     = config->GetAxisymmetric();
   bool gravity          = (config->GetGravityForce() == YES);
+  su2double **Jacobian_Temp, *Residual_Temp;
+  
+  
+  
+  /*--- Add pressure contribution. ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-  /*--- Initialize the source residual to zero ---*/
+      /*--- Initialize residual to zero. ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+       Residual[iVar] = 0.0;
+      
+      /*--- Assign the pressure gradient to the residual. ---*/ 
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = geometry->node[iPoint]->GetVolume()*node[iPoint]->GetGradient_Primitive(0,iVar);
+       
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+  }
+  
+  /*--- Other source terms for body force, rotation etc ---*/
+
+  /*--- Initialize the temp jacobian and residual to zero. 
+   * We use temp jacobian and residual to make use of the 
+   * routines defined in density based version.  ---*/
+   
+  Jacobian_Temp = new su2double* [nDim+2];
+  for (iDim = 0; iDim < nDim+2; iDim++)
+	Jacobian_Temp[iDim] = new su2double [nDim+2];
+      
+  Residual_Temp = new su2double [nDim+2];
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
   if (rotating_frame) {
@@ -1858,14 +1888,22 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
       numerics->SetConservative(node[iPoint]->GetSolution(),
                                 node[iPoint]->GetSolution());
-
+      
       /*--- Load the volume of the dual mesh cell ---*/
 
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
       /*--- Compute the rotating frame source residual ---*/
 
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      numerics->ComputeResidual(Residual_Temp, Jacobian_Temp, config);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+          Residual[iDim] = Residual[iDim+1];
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+         for (jDim = 0; jDim < nDim; jDim++)
+             Jacobian_i[iDim][jDim] = Jacobian_Temp[iDim+1][jDim+1];
+      
 
       /*--- Add the source residual to the total ---*/
 
@@ -1912,7 +1950,7 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
       /*--- Compute Source term Residual ---*/
 
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      numerics->ComputeResidual(Residual_Temp, Jacobian_Temp, config);
 
       /*--- Add Residual ---*/
 
@@ -1947,7 +1985,7 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
       /*--- Compute Source term Residual ---*/
 
-      numerics->ComputeResidual(Residual, config);
+      numerics->ComputeResidual(Residual_Temp, config);
 
       /*--- Add Residual ---*/
 
@@ -1956,25 +1994,11 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
     }
 
   }
-  /*--- Add pressure contribution. ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Initialize residual to zero. ---*/
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-       Residual[iVar] = 0.0;
-      
-      /*--- Assign the pressure gradient to the residual. ---*/ 
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = geometry->node[iPoint]->GetVolume()*node[iPoint]->GetGradient_Primitive(0,iVar);
-       
-      /*--- Add Residual ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
-
-  }
   
+  delete [] Residual_Temp;
+  for (iDim = 0; iDim < nDim+2; iDim++)
+    delete [] Jacobian_Temp[iDim];
+  delete [] Jacobian_Temp;
 }
 
 
