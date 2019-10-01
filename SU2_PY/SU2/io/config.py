@@ -720,6 +720,15 @@ def read_config(filename):
         Outlet_Value_List +=  str(Outlet_Value)
       Outlet_Value_List += ")"
       data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
+
+    if 'MULTIPOINT_MESH_FILENAME' not in data_dict:
+      Mesh_Filename = data_dict['MESH_FILENAME']
+      Mesh_List = "("
+      for i in range(multipoints):
+        if i != 0: Mesh_List +=  ", "
+        Mesh_List +=  str(Mesh_Filename)
+      Mesh_List += ")"
+      data_dict['MULTIPOINT_MESH_FILENAME'] = Mesh_List  
       
 
     #

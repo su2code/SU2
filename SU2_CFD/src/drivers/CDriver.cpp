@@ -3833,10 +3833,12 @@ void CDriver::StartSolver(){
     PreprocessExtIter(ExtIter);
 
     /*--- Perform a dynamic mesh update if required. ---*/
-
-      if (!fem_solver && !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
-        DynamicMeshUpdate(ExtIter);
-      }
+    /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
+          mesh cordinates are read from the restart files. ---*/
+    if (!fem_solver &&
+        !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
+      DynamicMeshUpdate(ExtIter);
+    }
 
     /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
 
