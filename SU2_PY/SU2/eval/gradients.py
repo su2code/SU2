@@ -435,7 +435,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
-    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FILENAME, config)
     solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
     restart_sol = config['RESTART_SOL']
     grads = []
@@ -446,6 +446,11 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
     for i in range(len(weight_list)):
         folder[i] = 'MULTIPOINT_' + str(i)
+
+    opt_names = []
+    for key in su2io.historyOutFields:
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
     
     # ----------------------------------------------------
     #  Initialize
@@ -458,7 +463,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     special_cases = su2io.get_specialCases(config)
     
     # find base func name
-    matches = [ k for k in su2io.optnames_aero if k in func_name ]
+    matches = [ k for k in opt_names if k in func_name ]
     if not len(matches) == 1:
         raise Exception('could not find multipoint function name')
     base_name = matches[0]
@@ -492,7 +497,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
     config.FREESTREAM_PRESSURE = freestream_press_list[0]
     config.TARGET_CL = target_cl_list[0]
-    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.SOLUTION_FILENAME = solution_flow_list[0]
     config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
     if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][0]:
         state.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][0]
@@ -555,7 +560,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # Reset RESTART_SOL to original value
         konfig['RESTART_SOL'] = restart_sol
         # Set correct config option names
-        konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+        konfig.SOLUTION_FILENAME = solution_flow_list[i+1]
         konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
         
         # Delete file run in previous case
