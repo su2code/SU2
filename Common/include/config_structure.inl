@@ -2064,6 +2064,8 @@ inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return H
 
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
 
+inline void CConfig::SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter;}
+
 inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
 
 inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles;}

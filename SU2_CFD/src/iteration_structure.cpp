@@ -606,10 +606,10 @@ void CFluidIteration::Iterate(COutput *output,
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
-  if (config[val_iZone]->GetFixed_CL_Mode()){
-    bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], integration[val_iZone][INST_0][FLOW_SOL]->GetConvergence());
-    integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(fixed_cl_convergence);
-  }
+  //if (config[val_iZone]->GetFixed_CL_Mode()){
+    //bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], integration[val_iZone][INST_0][FLOW_SOL]->GetConvergence());
+    //integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(fixed_cl_convergence);
+  //}
   
 }
 
@@ -697,6 +697,13 @@ bool CFluidIteration::Monitor(COutput *output,
   if (config[val_iZone]->GetCFL_Adapt() == YES) {
       if (!(config[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
         output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
+  }
+  
+  /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
+
+  if (config[val_iZone]->GetFixed_CL_Mode()){
+    bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
+    output->SetConvergence(fixed_cl_convergence);
   }
 
   /*--- If convergence was reached --*/
