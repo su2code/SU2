@@ -48,7 +48,7 @@ from .. import io   as su2io
 from .. import eval as su2eval
 from .. import util as su2util
 from ..io import redirect_folder
-
+from ..io import historyOutFields
 from warnings import warn, simplefilter
 #simplefilter(Warning,'ignore')
 
@@ -133,6 +133,11 @@ class Project(object):
             config['OBJECTIVE_WEIGHT'] = ",".join(weights)
             config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
         
+        for this_obj in def_objs:
+            group = historyOutFields[this_obj]['GROUP']
+            if not group in config.HISTORY_OUTPUT:
+                config.HISTORY_OUTPUT.append(group)
+
         # setup state
         if state is None:
             state = su2io.State()

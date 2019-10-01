@@ -279,7 +279,7 @@ public:
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt = true);  
+  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, bool wrt = true);  
   
   /*!
    * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.

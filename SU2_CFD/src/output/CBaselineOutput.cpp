@@ -45,6 +45,8 @@ CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* 
   
   /*--- Set the requested volume fields to all fields in the solver ---*/
   
+  requestedVolumeFields.clear();
+  
   requestedVolumeFields.emplace_back("COORDINATES");
   requestedVolumeFields.emplace_back("SOLUTION");
   
