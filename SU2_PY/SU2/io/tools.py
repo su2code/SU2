@@ -42,6 +42,7 @@
 import os
 import shutil, glob
 from SU2.util import ordered_bunch
+from .historyMap import history_header_map as historyOutFields
 
 # -------------------------------------------------------------------
 #  Read SU2_DOT Gradient Values
@@ -158,16 +159,13 @@ def read_history( History_filename, nZones = 1):
     
     # initialize history data dictionary
     history_data = ordered_bunch()    
-    
-    # header name to config file name map
-    map_dict = get_headerMap(nZones)    
-    
+
     # map header names
     for key in plot_data.keys():
-        if key in map_dict:
-            var = map_dict[key]
-        else:
-            var = key
+        var = key
+        for field in historyOutFields:
+            if key == historyOutFields[field]['HEADER']:
+                var = field
         history_data[var] = plot_data[key]
     
     return history_data
@@ -182,88 +180,11 @@ def read_history( History_filename, nZones = 1):
 
 def get_headerMap(nZones = 1):
 
-    """ returns a dictionary that maps history file header names
-        to optimization problem function names
-    """
-    # header name to config file name map
-    history_header_map = { "Iteration"       : "ITERATION"               ,
-                 "CL"              : "LIFT"                    ,
-                 "CD"              : "DRAG"                    ,
-                 "CSF"             : "SIDEFORCE"               ,
-                 "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
-                 "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
-                 "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
-                 "HeatFlux_Maximum": "MAXIMUM_HEATFLUX"        ,
-                 "Temperature_Total": "TOTAL_TEMPERATURE"        ,
-                 "CMx"             : "MOMENT_X"                ,
-                 "CMy"             : "MOMENT_Y"                ,
-                 "CMz"             : "MOMENT_Z"                ,
-                 "CFx"             : "FORCE_X"                 ,
-                 "CFy"             : "FORCE_Y"                 ,
-                 "CFz"             : "FORCE_Z"                 ,
-                 "CL/CD"           : "EFFICIENCY"              ,
-                 "AoA"             : "AOA"                     ,
-                 "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
-                 "CMerit"          : "FIGURE_OF_MERIT"         ,
-                 "Buffet_Metric"   : "BUFFET"                  ,
-                 "CQ"              : "TORQUE"                  ,
-                 "CT"              : "THRUST"                  ,
-                 "CEquivArea"      : "EQUIVALENT_AREA"         ,
-                 "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "Avg_TotalPress"  : "SURFACE_TOTAL_PRESSURE"  ,
-                 "Avg_Press"       : "SURFACE_STATIC_PRESSURE" ,
-                 "Avg_MassFlow"    : "SURFACE_MASSFLOW"        ,
-                 "Avg_Mach"        : "SURFACE_MACH"            ,
-                 "Uniformity"                : "SURFACE_UNIFORMITY"            ,
-                 "Secondary_Strength"        : "SURFACE_SECONDARY"            ,
-                 "Momentum_Distortion"       : "SURFACE_MOM_DISTORTION"            ,
-                 "Secondary_Over_Uniformity" : "SURFACE_SECOND_OVER_UNIFORM"            ,
-                 "Pressure_Drop"        : "SURFACE_PRESSURE_DROP"            ,
-                 "ComboObj"        : "COMBO"                   ,
-                 "Time(min)"       : "TIME"                    ,
-                 'Time(min)"\n'    : "TIME"                    , # TDE hack for paraview
-                 "d[CL]"           : "D_LIFT"                  ,
-                 "d[CD]"           : "D_DRAG"                  ,
-                 "d[CSF]"          : "D_SIDEFORCE"             ,
-                 "d[CMx]"          : "D_MOMENT_X"              ,
-                 "d[CMy]"          : "D_MOMENT_Y"              ,
-                 "d[CMz]"          : "D_MOMENT_Z"              ,
-                 "d[CFx]"          : "D_FORCE_X"               ,
-                 "d[CFy]"          : "D_FORCE_Y"               ,
-                 "d[CFz]"          : "D_FORCE_Z"               ,
-                 "d[CEff]"        : "D_EFFICIENCY"            ,
-                 "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
-                 "D(HeatFlux_Total)" : "D_HEAT"                ,
-                 "D(HeatFlux_Maximum)" : "D_HEAT_MAX"          ,
-                 "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
-                 "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
-                 "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
-                 "FlowAngleOut_1"          : "FLOW_ANGLE_OUT"         ,
-                 "FlowAngleIn_1"           : "FLOW_ANGLE_IN"          ,
-                 "MassFlowIn_1"            : "MASS_FLOW_IN"           ,
-                 "MassFlowOut_1"           : "MASS_FLOW_OUT"          ,
-                 "PressureRatio_1"         : "PRESSURE_RATIO"         ,
-                 "TotalEfficiency_" + str(getTurboPerfIndex(nZones))  : "TOTAL_EFFICIENCY"       ,
-                 "TotalStaticEfficiency_3" : "TOTAL_STATIC_EFFICIENCY",
-                 "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
-                 "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
-                 "D(TotalPressureLoss_0)"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                 "D(KineticEnergyLoss_0)"     : "D_KINETIC_ENERGY_LOSS"    ,
-                 "D(TotalStaticEfficiency_0)" : "D_TOTAL_STATIC_EFFICIENCY",
-                 "D(FlowAngleOut_0)"          : "D_FLOW_ANGLE_OUT"         ,
-                 "D(FlowAngleIn_0)"           : "D_FLOW_ANGLE_IN"          ,
-                 "D(MassFlowIn_0)"            : "D_MASS_FLOW_IN"           ,
-                 "D(MassFlowOut_0)"           : "D_MASS_FLOW_OUT"          ,
-                 "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
-                 "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
-                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     ,
-                 "D(Uniformity)"                : "D_SURFACE_UNIFORMITY"            ,
-                 "D(Secondary_Strength)"        : "D_SURFACE_SECONDARY"             ,
-                 "D(Momentum_Distortion)"       : "D_SURFACE_MOM_DISTORTION"        ,
-                 "D(Secondary_Over_Uniformity)" : "D_SURFACE_SECOND_OVER_UNIFORM"   ,
-                 "D(Pressure_Drop)"             : "D_SURFACE_PRESSURE_DROP"         }
- 
-    return history_header_map        
+    headerMap = dict()
+    for outputField in historyOutFields:
+        headerMap[outputField] = historyOutFields[outputField]['HEADER']
+
+    return headerMap        
 
 def getTurboPerfIndex(nZones = 1):
 
@@ -281,54 +202,7 @@ def getTurboPerfIndex(nZones = 1):
 #  Optimizer Function Names
 # -------------------------------------------------------------------
 
-# Aerodynamic Optimizer Function Names
-
-optnames_aero = [ "LIFT"                        ,
-                  "DRAG"                        ,
-                  "SIDEFORCE"                   ,
-                  "MOMENT_X"                    ,
-                  "MOMENT_Y"                    ,
-                  "MOMENT_Z"                    ,
-                  "FORCE_X"                     ,
-                  "FORCE_Y"                     ,
-                  "FORCE_Z"                     ,
-                  "EFFICIENCY"                  ,
-                  "FIGURE_OF_MERIT"             ,
-                  "BUFFET"                      ,
-                  "TORQUE"                      ,
-                  "THRUST"                      ,
-                  "SURFACE_TOTAL_PRESSURE"      ,
-                  "SURFACE_STATIC_PRESSURE"     ,
-                  "SURFACE_MASSFLOW"            ,
-                  "SURFACE_MACH"                ,
-                  "SURFACE_UNIFORMITY"          ,
-                  "SURFACE_SECONDARY"           ,
-                  "SURFACE_MOM_DISTORTION"      ,
-                  "SURFACE_SECOND_OVER_UNIFORM" ,
-                  "SURFACE_PRESSURE_DROP"       ,
-                  "EQUIVALENT_AREA"             ,
-                  "NEARFIELD_PRESSURE"          ,
-                  "INVERSE_DESIGN_PRESSURE"     ,
-                  "INVERSE_DESIGN_HEATFLUX"     ,
-                  "TOTAL_HEATFLUX"              ,
-                  "MAXIMUM_HEATFLUX"            ,
-                  "CUSTOM_OBJFUNC"              ,
-                  "COMBO"]
-
-# Turbo performance optimizer Function Names
-optnames_turbo = ["TOTAL_PRESSURE_LOSS"     ,
-                  "KINETIC_ENERGY_LOSS"     ,
-                  "ENTROPY_GENERATION"      ,
-                  "EULERIAN_WORK"           ,
-                  "FLOW_ANGLE_IN"           ,
-                  "FLOW_ANGLE_OUT"          ,
-                  "MASS_FLOW_IN"            ,
-                  "MASS_FLOW_OUT"           ,
-                  "PRESSURE_RATIO"          ,
-                  "TOTAL_EFFICIENCY"        ,
-                  "TOTAL_STATIC_EFFICIENCY" ,
-                 ]
-#: optnames_aero
+#: optnames_stab
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_DRAG_D_ALPHA"               ,
@@ -408,68 +282,6 @@ optnames_geo.extend(PerStation)
                  
 #: optnames_geo
 
-grad_names_directdiff = ["D_LIFT",
-                         "D_DRAG",
-                         "D_SIDEFORCE",
-                         "D_MOMENT_X",
-                         "D_MOMENT_Y",
-                         "D_MOMENT_Z",
-                         "D_FORCE_X",
-                         "D_FORCE_Y",
-                         "D_FORCE_Z",
-                         "D_EFFICIENCY",
-                         "D_CUSTOM_OBJFUNC",
-                         "D_HEAT",
-                         "D_MAX_HEAT",
-                         "D_TOTAL_PRESSURE_LOSS",
-                         "D_TOTAL_EFFICIENCY",
-                         "D_TOTAL_PRESSURE_LOSS",
-                         "D_KINETIC_ENERGY_LOSS",
-                         "D_TOTAL_STATIC_EFFICIENCY",
-                         "D_FLOW_ANGLE_OUT",
-                         "D_FLOW_ANGLE_IN",
-                         "D_MASS_FLOW_IN",
-                         "D_MASS_FLOW_OUT",
-                         "D_PRESSURE_RATIO",
-                         "D_ENTHALPY_OUT",
-                         "D_TOTAL_ENTHALPY_OUT",
-                         "D_SURFACE_UNIFORMITY",
-                         "D_SURFACE_SECONDARY",
-                         "D_SURFACE_MOM_DISTORTION",
-                         "D_SURFACE_SECOND_OVER_UNIFORM",
-                         "D_SURFACE_PRESSURE_DROP"]
-
-grad_names_map = ordered_bunch()
-grad_names_map.MASS_FLOW_IN = "D_MASS_FLOW_IN"
-grad_names_map.MOMENT_Z = "D_MOMENT_Z"
-grad_names_map.FLOW_ANGLE_OUT = "D_FLOW_ANGLE_OUT"
-grad_names_map.MASS_FLOW_OUT = "D_MASS_FLOW_OUT"
-grad_names_map.FLOW_ANGLE_IN = "D_FLOW_ANGLE_IN"
-grad_names_map.FORCE_Z = "D_FORCE_Z"
-grad_names_map.FORCE_Y = "D_FORCE_Y"
-grad_names_map.FORCE_X = "D_FORCE_X"
-grad_names_map.TOTAL_EFFICIENCY = "D_TOTAL_EFFICIENCY"
-grad_names_map.TOTAL_STATIC_EFFICIENCY = "D_TOTAL_STATIC_EFFICIENCY"
-grad_names_map.PRESSURE_RATIO = "D_PRESSURE_RATIO"
-grad_names_map.EFFICIENCY = "D_EFFICIENCY"
-grad_names_map.DRAG = "D_DRAG"
-grad_names_map.LIFT = "D_LIFT"
-grad_names_map.TOTAL_ENTHALPY_OUT = "D_TOTAL_ENTHALPY_OUT"
-grad_names_map.TOTAL_PRESSURE_LOSS = "D_TOTAL_PRESSURE_LOSS"
-grad_names_map.MOMENT_Y = "D_MOMENT_Y"
-grad_names_map.MOMENT_X="D_MOMENT_X"
-grad_names_map.SIDEFORCE = "D_SIDEFORCE"
-grad_names_map.ENTHALPY_OUT = "D_ENTHALPY_OUT"
-grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
-grad_names_map.CUSTOM_OBJFUNC = "D_CUSTOM_OBJFUNC"
-grad_names_map.HEAT = "D_HEAT"
-grad_names_map.MAX_HEAT = "D_MAX_HEAT"
-grad_names_map.SURFACE_UNIFORMITY = "D_SURFACE_UNIFORMITY"
-grad_names_map.SURFACE_SECONDARY = "D_SURFACE_SECONDARY"
-grad_names_map.SURFACE_MOM_DISTORTION = "D_SURFACE_MOM_DISTORTION"
-grad_names_map.SURFACE_SECOND_OVER_UNIFORM = "D_SURFACE_SECOND_OVER_UNIFORM"
-grad_names_map.SURFACE_PRESSURE_DROP = "D_SURFACE_PRESSURE_DROP"
-
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
                   "DRAG"        :   "CD" ,
@@ -518,14 +330,12 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     # read the history data
     history_data = read_history(History_filename, nZones)
     
-    # list of functions to pull
-    func_names = optnames_aero + grad_names_directdiff + optnames_turbo
-
     # pull only these functions
     Func_Values = ordered_bunch()
-    for this_objfun in func_names:
+    for this_objfun in historyOutFields:
         if this_objfun in history_data:
-            Func_Values[this_objfun] = history_data[this_objfun] 
+            if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
+                Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
     if 'TIME_MARCHING' in special_cases and not final_avg:

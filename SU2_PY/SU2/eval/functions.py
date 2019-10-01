@@ -94,9 +94,13 @@ def function( func_name, config, state=None ):
     if not func_name_string in state['FUNCTIONS']:
 
         # Aerodynamics
-        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
+        if multi_objective or func_name == 'ALL':
             aerodynamics( config, state )
-            
+
+        elif func_name in su2io.historyOutFields:
+            if su2io.historyOutFields[func_name]['TYPE'] == 'COEFFICIENT' or su2io.historyOutFields[func_name]['TYPE'] == 'D_COEFFICIENT':
+                aerodynamics( config, state )
+
         # Stability
         elif func_name in su2io.optnames_stab:
             stability( config, state )
@@ -199,13 +203,17 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------    
     #  Direct Solution
     # ----------------------------------------------------    
-    
+    opt_names = []
+    for key in su2io.historyOutFields:
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
+
     # redundancy check
-    direct_done = all([key in state.FUNCTIONS for key in su2io.optnames_aero[:9]])
+    direct_done = all([key in state.FUNCTIONS for key in opt_names])
     if direct_done:
         # return aerodynamic function values
         aero = su2util.ordered_bunch()
-        for key in su2io.optnames_aero:
+        for key in opt_names:
             if key in state.FUNCTIONS:
                 aero[key] = state.FUNCTIONS[key]
         return copy.deepcopy(aero)    
@@ -282,7 +290,7 @@ def aerodynamics( config, state=None ):
     su2io.update_persurface(config,state)
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
+    for key in su2io.historyOutFields:
         if key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
             
