@@ -31,6 +31,7 @@ install_data(['SU2/io/config.py',
               'SU2/io/redirect.py',
               'SU2/io/state.py',
               'SU2/io/tools.py',
+              'SU2/io/historyMap.py',
               'SU2/io/__init__.py'], 
 	      install_dir: join_paths(get_option('bindir'), 'SU2/io'))
 

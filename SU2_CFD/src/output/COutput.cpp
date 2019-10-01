@@ -253,6 +253,8 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
   
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
   
+  LoadCommonHistoryData(driver_config);
+  
   LoadMultizoneHistoryData(output, config);
   
   Convergence_Monitoring(driver_config, curOuterIter);  
@@ -1035,22 +1037,24 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
       }
 
     }
-    
-
-    
+ 
 }
 
-void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt){
+void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig* driver_config, bool wrt){
     
   noWriting = !wrt;
-
+  
+  /*--- Set the common history fields for all solvers ---*/
+  
+  SetCommonHistoryFields(driver_config);
+  
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
   
   SetMultizoneHistoryOutputFields(output, config);
   
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
  
-  Postprocess_HistoryFields(config[ZONE_0]);
+  Postprocess_HistoryFields(driver_config);
   
   /*--- We use a fixed size of the file output summary table ---*/
   
@@ -1068,7 +1072,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
     
     /*--- Open history file and print the header ---*/
     
-    PrepareHistoryFile(config[ZONE_0]);
+    PrepareHistoryFile(driver_config);
     
     total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);    
     
@@ -1322,6 +1326,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
                                           requestedVolumeFields.end(), FieldsToRemove[iReqField]));
   }
   
+  nRequestedVolumeFields = requestedVolumeFields.size();
+  
   if (rank == MASTER_NODE){
     cout <<"Volume output fields: ";
     for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
@@ -1566,7 +1572,8 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     const su2double& value = it->second.first;
     const int& count = it->second.second;
     const su2double average = value/count;
-    SetHistoryOutputValue("AVG_" + it->first, average);
+    if (historyOutput_Map.count("AVG_" + it->first) > 0 )
+      SetHistoryOutputValue("AVG_" + it->first, average);
   }
   
 }
@@ -1588,8 +1595,10 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   
   map<string, bool>::iterator it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
-    AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", ScreenOutputFormat::FIXED,
-                     "AVG_" + it->first , "Average residual over all solution variables.", HistoryFieldType::AUTO_RESIDUAL);
+    if (AverageGroupName.count(it->first) > 0) {
+      AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", ScreenOutputFormat::FIXED,
+          "AVG_" + it->first , "Average residual over all solution variables.", HistoryFieldType::AUTO_RESIDUAL);
+    }
   }  
   
   if (config->GetTime_Domain()){
@@ -1793,7 +1802,7 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
  
   /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
+  AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time"); 
   
 }
 
@@ -1819,7 +1828,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   
   UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
   
-  SetHistoryOutputValue("PHYS_TIME", UsedTime);
+  SetHistoryOutputValue("WALL_TIME", UsedTime);
   
 }
 

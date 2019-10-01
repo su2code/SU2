@@ -110,7 +110,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.  
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_HEAT", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -139,7 +139,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat) 
-    AddHistoryOutput("MAX_HEAT", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -168,7 +168,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat) 
-    AddHistoryOutput("BGS_HEAT", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -276,22 +276,22 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
-    SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("RMS_TEMPERATURE",         log10(heat_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("MAX_TEMPERATURE",         log10(heat_solver->GetRes_Max(0)));
     if (multiZone) SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
   }
   if (heat){
     SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
-    if (nDim == 3) SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(4)));
-    else           SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(3)));
+    if (nDim == 3) SetHistoryOutputValue("RMS_TEMPERATURE",         log10(flow_solver->GetRes_RMS(4)));
+    else           SetHistoryOutputValue("RMS_TEMPERATURE",         log10(flow_solver->GetRes_RMS(3)));
     
-    if (nDim == 3) SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(4)));
-    else           SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(3)));
+    if (nDim == 3) SetHistoryOutputValue("MAX_TEMPERATURE",         log10(flow_solver->GetRes_Max(4)));
+    else           SetHistoryOutputValue("MAX_TEMPERATURE",         log10(flow_solver->GetRes_Max(3)));
     if (multiZone){
-      if (nDim == 3) SetHistoryOutputValue("BGS_HEAT",         log10(flow_solver->GetRes_BGS(4)));
-      else           SetHistoryOutputValue("BGS_HEAT",         log10(flow_solver->GetRes_BGS(3)));
+      if (nDim == 3) SetHistoryOutputValue("BGS_TEMPERATURE",         log10(flow_solver->GetRes_BGS(4)));
+      else           SetHistoryOutputValue("BGS_TEMPERATURE",         log10(flow_solver->GetRes_BGS(3)));
     }
 
   }  
