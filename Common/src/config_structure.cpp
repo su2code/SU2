@@ -8135,6 +8135,16 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
   return iMarker_Moving;
 }
 
+bool CConfig::GetMarker_Moving_Bool(string val_marker) {
+  unsigned short iMarker_Moving;
+
+  /*--- Find the marker for this moving boundary, if it exists. ---*/
+  for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
+    if (Marker_Moving[iMarker_Moving] == val_marker) return true;
+
+  return false;
+}
+
 unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) {
   unsigned short iMarker_Deform_Mesh;
 

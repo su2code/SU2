@@ -4650,87 +4650,6 @@ void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
 }
 
-void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  
-  unsigned short iDim, iVar, jVar;
-  unsigned long iPoint, iVertex;
-
-  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
-  
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool tkeNeeded = (((config->GetKind_Solver() == INC_RANS ) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) &&
-                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
-  
-  Normal     = new su2double[nDim];
-  NormalArea = new su2double[nDim];
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
-  
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
-      
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        NormalArea[iDim] = -Normal[iDim];
-      }
-
-      /*--- Compute the residual ---*/
-
-      Pressure = node[iPoint]->GetPressure();
-      Density  = node[iPoint]->GetDensity();
-
-      Residual[0] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = Pressure*NormalArea[iDim];
-      Residual[nDim+1] = 0.0;
-
-      /*--- Add the Reynolds stress tensor contribution ---*/
-
-      if (tkeNeeded) {
-        turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] += (2.0/3.0)*Density*turb_ke*NormalArea[iDim];
-      }
-
-      /*--- Add value to the residual ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Form Jacobians for implicit computations ---*/
-      
-      if (implicit) {
-        
-        /*--- Initialize Jacobian ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][0] = -Normal[iDim];
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      }
-    }
-  }
-  
-  delete [] Normal;
-  delete [] NormalArea;
-  
-}
 
 void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -5327,6 +5246,20 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
 }
 
+
+void CIncEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
+                                    CSolver        **solver_container,
+                                    CNumerics      *conv_numerics,
+                                    CNumerics      *visc_numerics,
+                                    CConfig        *config,
+                                    unsigned short val_marker) {
+
+  /*--- Call the equivalent symmetry plane boundary condition. ---*/
+  BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+
+}
+
+
 void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                    CSolver        **solver_container,
                                    CNumerics      *conv_numerics,
@@ -5337,74 +5270,93 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
+       viscous  = config->GetViscous();
   
   /*--- Allocation of variables necessary for convective fluxes. ---*/
-  su2double Area, ProjVelocity_i;
-  su2double *V_reflected, *V_domain;
-  su2double *Normal     = new su2double[nDim];
-  su2double *UnitNormal = new su2double[nDim];
+  su2double Area, ProjVelocity_i,
+            *V_reflected, 
+            *V_domain,
+            *Normal     = new su2double[nDim],
+            *UnitNormal = new su2double[nDim];
 
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
-  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad;
-  su2double *Tangential      = new su2double[nDim];
-  su2double *GradNormVel     = new su2double[nDim];
-  su2double *GradTangVel     = new su2double[nDim];
+  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
+            *Tangential  = new su2double[nDim],
+            *GradNormVel = new su2double[nDim],
+            *GradTangVel = new su2double[nDim];
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
 
-  /*---------------------------------------------------------------------------------------------*/
-  /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
-  /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
-  /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
-  /*---                The "Normal" in SU2 isan Area-Normal and is most likely not constant   ---*/
-  /*---                on the symmetry-plane.                                                 ---*/
-  /*---------------------------------------------------------------------------------------------*/
-
-  /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-  geometry->vertex[val_marker][0]->GetNormal(Normal); 
-  for (iDim = 0; iDim < nDim; iDim++)
-    Normal[iDim] = -Normal[iDim];
-
-  /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt (Area);
-  
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = -Normal[iDim]/Area;
-
-  /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
-  if (config->GetViscous()) {
-    switch( nDim ) {
-      case 2: {
-        Tangential[0] = -UnitNormal[1];
-        Tangential[1] =  UnitNormal[0];
-        break;
-      }
-      case 3: {
-        /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
-        unsigned short Largest, Arbitrary, Zero;
-        if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
-                abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
-        else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
-                abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
-        else                                              {Largest=2;Arbitrary=1;Zero=0;}
-
-        Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-        Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-        Tangential[Zero] =  0.0;
-        break;
-      }
-    }
-  }
-  
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    if (iVertex == 0 || 
+        geometry->bound_is_straight[val_marker] != true) {
+
+      /*----------------------------------------------------------------------------------------------*/
+      /*--- Preprocessing:                                                                         ---*/
+      /*--- Compute the unit normal and (in case of viscous flow) a corresponding unit tangential  ---*/
+      /*--- to that normal. On a straight(2D)/plane(3D) boundary these two vectors are constant.   ---*/
+      /*--- This circumstance is checked in gemoetry->ComputeSurf_Straightness(...) and stored     ---*/
+      /*--- such that the recomputation does not occur for each node. On true symmetry planes, the ---*/
+      /*--- normal is constant but this routines is used for Symmetry, Euler-Wall in inviscid flow ---*/
+      /*--- and Euler Wall in viscous flow as well. In the latter curvy boundaries are likely to   ---*/
+      /*--- happen. In doubt, the conditional above which checks straightness can be thrown out    ---*/
+      /*--- such that the recomputation is done for each node (which comes with a tiny performance ---*/
+      /*--- penalty).                                                                              ---*/
+      /*----------------------------------------------------------------------------------------------*/
+
+      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
+      for (iDim = 0; iDim < nDim; iDim++)
+        Normal[iDim] = -Normal[iDim];
+
+      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity 
+            component gradients. ---*/
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+
+      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as 
+            t*n=0 && |t|_2 = 1 ---*/
+      if (viscous) {
+        switch( nDim ) {
+          case 2: {
+            Tangential[0] = -UnitNormal[1];
+            Tangential[1] =  UnitNormal[0];
+            break;
+          }
+          case 3: {
+            /*--- n = ai + bj + ck, if |b| > |c| ---*/
+            if( abs(UnitNormal[1]) > abs(UnitNormal[2])) {
+              /*--- t = bi + (c-a)j - bk  ---*/
+              Tangential[0] = UnitNormal[1];
+              Tangential[1] = UnitNormal[2] - UnitNormal[0];
+              Tangential[2] = -UnitNormal[1];
+            } else {
+              /*--- t = ci - cj + (b-a)k  ---*/
+              Tangential[0] = UnitNormal[2];
+              Tangential[1] = -UnitNormal[2];
+              Tangential[2] = UnitNormal[1] - UnitNormal[0];
+            }
+            /*--- Make it a unit vector. ---*/
+            TangentialNorm = sqrt(pow(Tangential[0],2) + pow(Tangential[1],2) + pow(Tangential[2],2));
+            Tangential[0] = Tangential[0] / TangentialNorm;
+            Tangential[1] = Tangential[1] / TangentialNorm;
+            Tangential[2] = Tangential[2] / TangentialNorm;
+            break;
+          }
+        }// switch
+      }//if viscous
+    }//if bound_is_straight
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -5420,7 +5372,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
       /*--- Allocate the reflected state at the symmetry boundary. ---*/
       V_reflected = GetCharacPrimVar(val_marker, iVertex);
-      
+
       /*--- Grid movement ---*/
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
@@ -5451,12 +5403,13 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
-
+      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), 
+                                  node[iPoint]->GetSecondary());
+      
       /*--- Compute the residual using an upwind scheme. ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
-      /*--- Update residual value ---*/     
+      /*--- Update residual value ---*/
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration. ---*/
@@ -5464,8 +5417,8 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
-      if (config->GetViscous()) {
-        
+      if (viscous) {
+
         /*-------------------------------------------------------------------------------*/
         /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
         /*---         Primitive variables and their gradients. The viscous numerics   ---*/
@@ -5476,12 +5429,14 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*-------------------------------------------------------------------------------*/
 
         /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), 
+                                geometry->node[iPoint]->GetCoord());
         visc_numerics->SetNormal(Normal);
         
-        /*--- Set the primitive and Secondary variables. ---*/  
+        /*--- Set the primitive and Secondary variables. ---*/
         visc_numerics->SetPrimitive(V_domain, V_reflected);
-        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), 
+                                    node[iPoint]->GetSecondary());
         
         /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
               1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
@@ -5489,7 +5444,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                  normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in 
                  normal direction is mirrored. ---*/
 
-        /*--- Get gradients of primitives of boundary cell ---*/ 
+        /*--- Get gradients of primitives of boundary cell ---*/
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
             Grad_Reflected[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
@@ -5563,9 +5518,9 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*--- Jacobian contribution for implicit integration. ---*/
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
-    }
-  }
+      }//if viscous
+    }//if GetDomain
+  }//for iVertex
   
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
@@ -5578,6 +5533,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
     delete [] Grad_Reflected[iVar];
   delete [] Grad_Reflected;
 }
+
 
 void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) {
