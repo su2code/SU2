@@ -7979,7 +7979,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
       /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
             velocity in normal direction: v_r = v - 2 (v*n)n ---*/
-      ProjVelocity_i = 0.0; snode->GetProjVel(iPoint,UnitNormal);
+      ProjVelocity_i = snode->GetProjVel(iPoint,UnitNormal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         V_reflected[iDim+1] = snode->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
