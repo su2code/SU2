@@ -55,7 +55,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 10
-    channel.test_vals = [-2.454049, 3.065639, -0.200679, 0.036298] #last 4 columns
+    channel.test_vals = [-2.475874, 3.046368, -0.203968, 0.036020] #last 4 columns
     channel.su2_exec  = "SU2_CFD"
     channel.timeout   = 1600
     channel.new_output = True
@@ -67,7 +67,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.047448, -3.538057, 0.338691, 0.023131] #last 4 columns
+    naca0012.test_vals = [-4.021036, -3.511771, 0.339316, 0.022257] #last 4 columns
     naca0012.su2_exec  = "SU2_CFD"
     naca0012.timeout   = 1600
     naca0012.new_output= True
@@ -79,7 +79,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.804690, 4.936631, -0.251188, 0.044255] #last 4 columns
+    wedge.test_vals = [-0.942862, 4.784581, -0.208106, 0.036665] #last 4 columns
     wedge.su2_exec  = "SU2_CFD"
     wedge.timeout   = 1600
     wedge.new_output= True
@@ -91,7 +91,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-10.384532, -9.835738, 0.282580, 0.012694] #last 4 columns
+    oneram6.test_vals = [-7.077986, -6.539796, 0.282344, 0.011807] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.new_output = True
@@ -117,7 +117,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.new_output= True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals = [-1.319488, 4.112397, 0.011954, 0.009584] #last 4 columns
+    polar_naca0012.test_vals = [-1.308958, 4.123692, 0.011587, 0.009698] #last 4 columns
     polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -129,7 +129,7 @@ def main():
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.new_output = True
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.626808, 7.014695, -0.000000, 1.648024] #last 4 columns
+    bluntbody.test_vals = [0.553700, 6.926057, -0.000000, 1.792561] #last 4 columns
     bluntbody.su2_exec  = "SU2_CFD"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001
@@ -347,7 +347,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-4.880274, -3.797906, 0.501143, 0.007051] #last 4 columns
+    inc_euler_naca0012.test_vals = [-4.858287, -3.810487, 0.491850, 0.007002] #last 4 columns
     inc_euler_naca0012.su2_exec  = "SU2_CFD"
     inc_euler_naca0012.new_output = True
     inc_euler_naca0012.timeout   = 1600
@@ -359,7 +359,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.799445, -4.785945, -0.000443, 0.124533] #last 4 columns
+    inc_nozzle.test_vals = [-5.971283, -4.911145, -0.000201, 0.121631] #last 4 columns
     inc_nozzle.su2_exec  = "SU2_CFD"
     inc_nozzle.new_output = True
     inc_nozzle.timeout   = 1600
@@ -411,7 +411,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.450832, -3.083603, -0.020698, -0.168320] #last 4 columns
+    inc_lam_bend.test_vals = [-3.450879, -3.083720, -0.020699, -0.168420] #last 4 columns
     inc_lam_bend.su2_exec  = "SU2_CFD"
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
@@ -564,7 +564,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.787554, -15.192510, 0.300920, 0.019552] #last 4 columns
+    contadj_naca0012.test_vals = [-9.787554, -15.192510, 3.0092e-01, 1.9552e-02] #last 4 columns
     contadj_naca0012.su2_exec  = "SU2_CFD"
     contadj_naca0012.new_output = True
     contadj_naca0012.timeout   = 1600
@@ -760,7 +760,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.test_vals = [-1.592454, 3.916019, -0.001014, 0.096794] #last 4 columns
     harmonic_balance.su2_exec  = "SU2_CFD"
     harmonic_balance.new_output = False
     harmonic_balance.timeout   = 1600
@@ -829,7 +829,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977531, 3.481790, -0.006222, -0.001342] #last 4 columns
+    sine_gust.test_vals = [-1.977545, 3.481778, 0.001295, -0.003793] #last 4 columns
     sine_gust.su2_exec  = "SU2_CFD"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -842,7 +842,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
+    aeroelastic.test_vals = [0.080202, 0.033233, -0.001666, -0.000155] #last 4 columns
     aeroelastic.su2_exec  = "SU2_CFD"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.00001
@@ -896,7 +896,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 20
-    edge_VW.test_vals = [-0.720910, 5.481122, -0.000853, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-0.711006, 5.491025, -0.000971, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "SU2_CFD"
     edge_VW.new_output = True
     edge_VW.timeout   = 1600
@@ -908,7 +908,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals = [-1.688033, 4.505202, 0.000916, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-1.671554, 4.521719, 0.001027, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "SU2_CFD"
     edge_PPR.new_output = True
     edge_PPR.timeout   = 1600
@@ -1504,7 +1504,7 @@ def main():
     shape_opt_euler_py.cfg_dir   = "optimization_euler/steady_naca0012"
     shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
     shape_opt_euler_py.test_iter = 1
-    shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
+    shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 0.003847] #last 4 columns
     shape_opt_euler_py.su2_exec  = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.new_output = True
@@ -1556,7 +1556,7 @@ def main():
     opt_multiobj1surf_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
     opt_multiobj1surf_py.test_iter  = 1
-    opt_multiobj1surf_py.test_vals = [1, 1, 3.083034E+01, 3.789380E+00] #last 4 columns
+    opt_multiobj1surf_py.test_vals = [1.000000, 1.000000, 30.371350, 2.226610] #last 4 columns
     opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
@@ -1568,7 +1568,7 @@ def main():
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1    
-    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005657, 0.000341] #last 4 columns
+    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005700, 0.000203] #last 4 columns
     opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001
@@ -1584,7 +1584,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 20
-    pywrapper_naca0012.test_vals = [-4.047448, -3.538057, 0.338691, 0.023131] #last 4 columns
+    pywrapper_naca0012.test_vals = [-4.021036, -3.511771, 0.339316, 0.022257] #last 4 columns
     pywrapper_naca0012.su2_exec  = "SU2_CFD.py -f"
     pywrapper_naca0012.new_output  = True
     pywrapper_naca0012.timeout   = 1600
@@ -1623,7 +1623,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
+    pywrapper_aeroelastic.test_vals = [0.080202, 0.033233, -0.001666, -0.000155] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py -f"
     pywrapper_aeroelastic.new_output  = True
     pywrapper_aeroelastic.timeout   = 1600

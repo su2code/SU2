@@ -715,7 +715,7 @@ def findiff( config, state=None ):
 
     # master redundancy check
     opt_names = []
-    for key in su2io.historyOutFields:
+    for key in sorted(su2io.historyOutFields):  
         if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
             opt_names.append(key)
     findiff_todo = all([key in state.GRADIENTS for key in opt_names])
@@ -1017,7 +1017,7 @@ def directdiff( config, state=None ):
 
     # master redundancy check
     opt_names = []
-    for key in su2io.historyOutFields:
+    for key in sorted(su2io.historyOutFields):
         if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
             opt_names.append(key)
 
