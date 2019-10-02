@@ -57,7 +57,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 20
-    channel.test_vals = [-2.652944, 2.813720, 0.033489, 0.002890] #last 4 columns
+    channel.test_vals = [-2.651955, 2.814536, 0.031770, 0.002870] #last 4 columns
     channel.su2_exec  = "parallel_computation.py -f"
     channel.timeout   = 1600
     channel.tol       = 0.00001
@@ -68,7 +68,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.080618, -3.586817, 0.337090, 0.022611] #last 4 columns
+    naca0012.test_vals = [-4.052370, -3.563380, 0.336120, 0.021570] #last 4 columns
     naca0012.su2_exec  = "parallel_computation.py -f"
     naca0012.timeout   = 1600
     naca0012.tol       = 0.00001
@@ -79,7 +79,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.816407, 4.925831, -0.251950, 0.044386] #last 4 columns
+    wedge.test_vals = [-0.941371, 4.787744, -0.208777, 0.036781] #last 4 columns
     wedge.su2_exec  = "parallel_computation.py -f"
     wedge.timeout   = 1600
     wedge.tol       = 0.00001
@@ -90,7 +90,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-10.392429, -9.840519, 0.282580, 0.012694] #last 4 columns
+    oneram6.test_vals = [-7.079068, -6.542899, 0.282322, 0.011804] #last 4 columns
     oneram6.su2_exec  = "parallel_computation.py -f"
     oneram6.timeout   = 3200
     oneram6.tol       = 0.00001
@@ -101,7 +101,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 100
-    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
+    fixedCL_naca0012.test_vals = [-2.437318, 2.967532, 0.290374, 0.019183] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -113,7 +113,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals = [-1.301350, 4.133308, -0.002728, 0.008768] #last 4 columns
+    polar_naca0012.test_vals = [-1.293870, 4.141024, -0.002288, 0.008868] #last 4 columns
     polar_naca0012.su2_exec  = "compute_polar.py -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -124,7 +124,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.626808, 7.014695, -0.000000, 1.648026] #last 4 columns
+    bluntbody.test_vals = [0.553700, 6.926057, -0.000000, 1.792561] #last 4 columns
     bluntbody.su2_exec  = "parallel_computation.py -f"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001
@@ -328,7 +328,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-4.821760, -3.785208, 0.505728, 0.007424] #last 4 columns
+    inc_euler_naca0012.test_vals = [-4.802192, -3.799720, 0.497093, 0.007515] #last 4 columns
     inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_euler_naca0012.timeout   = 1600
     inc_euler_naca0012.tol       = 0.00001
@@ -339,7 +339,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.852261, -4.818859, -0.000280, 0.124229] #last 4 columns
+    inc_nozzle.test_vals = [-5.959953, -4.932037, -0.000109, 0.121192] #last 4 columns
     inc_nozzle.su2_exec  = "parallel_computation.py -f"
     inc_nozzle.timeout   = 1600
     inc_nozzle.tol       = 0.00001
@@ -387,7 +387,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.437518, -3.087892, -0.022290, -0.172644] #last 4 columns
+    inc_lam_bend.test_vals = [-3.437567, -3.088005, -0.022291, -0.172738] #last 4 columns
     inc_lam_bend.su2_exec  = "mpirun -n 2 SU2_CFD"
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
@@ -486,11 +486,10 @@ def main():
     fem_ns_unsteady_cylinder           = TestCase('fem_ns_unsteady_cylinder')
     fem_ns_unsteady_cylinder.cfg_dir   = "hom_navierstokes/UnsteadyCylinder/nPoly4"
     fem_ns_unsteady_cylinder.cfg_file  = "fem_unst_cylinder.cfg"
-    fem_ns_unsteady_cylinder.test_iter = 11
+    fem_ns_unsteady_cylinder.test_iter = 10
     fem_ns_unsteady_cylinder.test_vals = [-3.558582,-3.014464,-0.038927,1.383983] #last 4 columns
     fem_ns_unsteady_cylinder.su2_exec  = "SU2_CFD"
     fem_ns_unsteady_cylinder.timeout   = 1600
-    fem_ns_unsteady_cylinder.unsteady  = True
     fem_ns_unsteady_cylinder.tol       = 0.00001
     test_list.append(fem_ns_unsteady_cylinder)
 
@@ -498,11 +497,10 @@ def main():
     fem_ns_unsteady_cylinder_ader           = TestCase('fem_ns_unsteady_cylinder_ader')
     fem_ns_unsteady_cylinder_ader.cfg_dir   = "hom_navierstokes/UnsteadyCylinder/nPoly4"
     fem_ns_unsteady_cylinder_ader.cfg_file  = "fem_unst_cylinder_ADER.cfg"
-    fem_ns_unsteady_cylinder_ader.test_iter = 11
+    fem_ns_unsteady_cylinder_ader.test_iter = 10
     fem_ns_unsteady_cylinder_ader.test_vals = [-35.000000,-35.000000,-0.041003,1.391339] #last 4 columns
     fem_ns_unsteady_cylinder_ader.su2_exec  = "SU2_CFD"
     fem_ns_unsteady_cylinder_ader.timeout   = 1600
-    fem_ns_unsteady_cylinder_ader.unsteady  = True
     fem_ns_unsteady_cylinder_ader.tol       = 0.00001
     test_list.append(fem_ns_unsteady_cylinder_ader)
 
@@ -530,7 +528,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.783199, -15.190764, 0.300920, 0.019552] #last 4 columns
+    contadj_naca0012.test_vals = [-9.783199, -15.190764, 3.0092e-01, 1.9552e-02] #last 4 columns
     contadj_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_naca0012.timeout   = 1600
     contadj_naca0012.tol       = 0.00001
@@ -625,7 +623,7 @@ def main():
     contadj_rans_naca0012_bin           = TestCase('contadj_rans_naca0012_bin')
     contadj_rans_naca0012_bin.cfg_dir   = "cont_adj_rans/naca0012"
     contadj_rans_naca0012_bin.cfg_file  = "turb_nasa_binary.cfg"
-    contadj_rans_naca0012_bin.test_iter = 18
+    contadj_rans_naca0012_bin.test_iter = 20
     contadj_rans_naca0012_bin.test_vals = [-0.794169, -5.761671, 19.214000, -0.000000] #last 4 columns
     contadj_rans_naca0012_bin.su2_exec  = "parallel_computation.py -f"
     contadj_rans_naca0012_bin.timeout   = 1600
@@ -711,11 +709,10 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.test_vals = [-1.592454, 3.916019, -0.001014, 0.096794] #last 4 columns
     harmonic_balance.su2_exec  = "parallel_computation.py -f"
     harmonic_balance.timeout   = 1600
     harmonic_balance.tol       = 0.00001
-    harmonic_balance.new_output = False
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
@@ -727,7 +724,6 @@ def main():
     hb_rans_preconditioning.su2_exec  = "parallel_computation.py -f"
     hb_rans_preconditioning.timeout   = 1600
     hb_rans_preconditioning.tol       = 0.00001
-    hb_rans_preconditioning.new_output = False
     test_list.append(hb_rans_preconditioning)
 
     ######################################
@@ -777,7 +773,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977531, 3.481790, -0.009981, -0.004663] #last 4 columns
+    sine_gust.test_vals = [-1.977545, 3.481778, -0.001297, -0.005845] #last 4 columns
     sine_gust.su2_exec  = "parallel_computation.py -f"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -789,10 +785,10 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.078210, 0.036447, -0.001685, -0.000113] #last 4 columns
+    aeroelastic.test_vals = [0.081587, 0.033262, -0.001666, -0.000155] #last 4 columns
     aeroelastic.su2_exec  = "parallel_computation.py -f"
     aeroelastic.timeout   = 1600
-    aeroelastic.tol       = 0.00001
+    aeroelastic.tol       = 0.000001
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -813,7 +809,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [-2.990702, -6.861616, 1.475736, 0.419771] #last 4 columns
+    unst_inc_turb_naca0015_sa.test_vals = [-3.735742, -7.020535, 1.185211, 0.283184] #last 4 columns
     unst_inc_turb_naca0015_sa.su2_exec  = "parallel_computation.py -f"
     unst_inc_turb_naca0015_sa.timeout   = 1600
     unst_inc_turb_naca0015_sa.tol       = 0.00001
@@ -829,7 +825,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-5.187663, 0.970512, -0.000009, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.192690, 0.944311, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "parallel_computation.py -f"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -840,7 +836,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-5.474846, 0.666610, -0.000037, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.387574, 0.753373, -0.000035, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "parallel_computation.py -f"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
@@ -858,7 +854,6 @@ def main():
     Jones_tc.test_vals = [-5.301576, 0.418692, 78.467450, 0.990201] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
-    Jones_tc.new_output = False
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
 
@@ -870,7 +865,6 @@ def main():
     Jones_tc_rst.test_vals = [-4.344743, -1.553291, 82.250600, 2.791916] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
-    Jones_tc_rst.new_output = False
     Jones_tc_rst.tol       = 0.00001
     test_list.append(Jones_tc_rst)
 
@@ -882,7 +876,6 @@ def main():
     axial_stage2D.test_vals = [-1.790261, 5.696650, 73.362820, 0.904306] #last 4 columns
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
-    axial_stage2D.new_output = False
     axial_stage2D.tol       = 0.00001
     test_list.append(axial_stage2D)
     
@@ -894,7 +887,6 @@ def main():
     transonic_stator.test_vals = [-1.198895, 6.148362, 96.766820, 0.063115] #last 4 columns
     transonic_stator.su2_exec  = "parallel_computation.py -f"
     transonic_stator.timeout   = 1600
-    transonic_stator.new_output = False
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
     
@@ -906,7 +898,6 @@ def main():
     transonic_stator_rst.test_vals = [-8.248805, -2.976199, 5.285722, 0.003100] #last 4 columns
     transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
     transonic_stator_rst.timeout   = 1600
-    transonic_stator_rst.new_output = False
     transonic_stator_rst.tol       = 0.00001
     test_list.append(transonic_stator_rst)
 
@@ -918,26 +909,24 @@ def main():
     uniform_flow         = TestCase('uniform_flow')
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
-    uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631539] #last 4 columns
+    uniform_flow.test_iter = 50
+    uniform_flow.test_vals = [-0.367892, 5.156945, 0.000000, 0.000000] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
-    uniform_flow.multizone = True
     test_list.append(uniform_flow) 
 
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
-    channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.400157, 0.352002, 0.407541] #last 4 columns
+    channel_2D.test_iter = 4
+    channel_2D.test_vals = [-1.655365, 4.263893, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
     channel_2D.unsteady  = True
-    channel_2D.multizone = True
     test_list.append(channel_2D)
 
     # Channel_3D
@@ -945,12 +934,11 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.626497, 0.511330, 0.422653] #last 4 columns
+    channel_3D.test_vals = [-1.996382, 3.963493, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
     channel_3D.unsteady  = True
-    channel_3D.multizone = True
     test_list.append(channel_3D)
 
     # Pipe
@@ -958,12 +946,11 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [0.112416, 0.486612, 0.617747, 0.950972, 1.018949] #last 4 columns
+    pipe.test_vals = [-3.504317, 3.194211, 0.000000, 0.000000] #last 4 columns
     pipe.su2_exec  = "parallel_computation.py -f"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
     pipe.unsteady  = True
-    pipe.multizone = True
     test_list.append(pipe)
 
     # Rotating cylinders
@@ -971,12 +958,11 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.716123, 1.095620, 1.136616] #last 4 columns
+    rotating_cylinders.test_vals = [-1.149775, 4.619484, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
     rotating_cylinders.unsteady  = True
-    rotating_cylinders.multizone  = True
     test_list.append(rotating_cylinders)
 
     # Supersonic vortex shedding
@@ -984,12 +970,11 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.208652, 1.128007] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-0.211187, 5.611098, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
     supersonic_vortex_shedding.unsteady  = True
-    supersonic_vortex_shedding.multizone  = True
     test_list.append(supersonic_vortex_shedding)
 
     # Bars_SST_2D
@@ -997,11 +982,10 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.719501, -1.608959] #last 4 columns
+    bars_SST_2D.test_vals = [-2.132032, 1.651883, -0.000830, 0.117497] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
-    bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
     
     # Sliding mesh with incompressible flows (steady)
@@ -1009,11 +993,10 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000,  -1.766116, -2.206522] #last 4 columns
+    slinc_steady.test_vals = [-4.214657, 1.265231, 0.000000, 0.000000] #last 4 columns
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
-    slinc_steady.multizone = True
     test_list.append(slinc_steady)
     
     # Sliding mesh with incompressible flows (unsteady)
@@ -1048,10 +1031,9 @@ def main():
     dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 6.6127e+04] #last 4 columns
+    dynbeam2d.test_vals = [-9.420641, -5.365871, -12.430382, 6.5210e+04] #last 4 columns
     dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
     dynbeam2d.timeout   = 1600
-    dynbeam2d.unsteady  = True
     dynbeam2d.tol       = 0.00001
     test_list.append(dynbeam2d)
 
@@ -1060,11 +1042,9 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
+    fsi2d.test_vals = [2.000000, 0.500000, -6.878089, -0.260608] #last 4 columns
     fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
     fsi2d.timeout   = 1600
-    fsi2d.multizone= True
-    fsi2d.unsteady = True
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)
     
@@ -1072,10 +1052,9 @@ def main():
     stat_fsi           = TestCase('stat_fsi')
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.307431, -4.955885, 4.1224e-08, 46.0000] #last 5 columns
-    stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
-    stat_fsi.multizone = True
+    stat_fsi.test_iter = 5000
+    stat_fsi.test_vals = [-5.965844, -5.549896, -8.815105, -9.507963] #last 4 columns
+    stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.tol       = 0.00001
     test_list.append(stat_fsi)
@@ -1084,11 +1063,9 @@ def main():
     dyn_fsi           = TestCase('dyn_fsi')
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
-    dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [ -4.413916, -4.837043, 4.7367e-08, 64.0000] #last 5 columns
-    dyn_fsi.multizone = True
-    dyn_fsi.unsteady  = True
-    dyn_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    dyn_fsi.test_iter = 4000
+    dyn_fsi.test_vals = [-4.709724, -2.913229, -7.186948, -8.186820] #last 4 columns
+    dyn_fsi.su2_exec  = "SU2_CFD"
     dyn_fsi.timeout   = 1600
     dyn_fsi.tol       = 0.00001
     test_list.append(dyn_fsi)
@@ -1097,10 +1074,9 @@ def main():
     stat_fsi_restart           = TestCase('stat_fsi_restart')
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-3.388879, -4.968790, 4.1230e-08, 46.00000] #last 5 columns
-    stat_fsi_restart.su2_exec  = "mpirun -n 2 SU2_CFD"
-    stat_fsi_restart.multizone = True
+    stat_fsi_restart.test_iter = 3000
+    stat_fsi_restart.test_vals = [-9.371585, -9.025672, -11.623159, -12.610272] #last 4 columns
+    stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
     stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)
@@ -1114,10 +1090,9 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [10.000000, -2.607260, -2.708775] #last 4 columns
-    cht_incompressible.su2_exec  = "mpirun -n 2 SU2_CFD"
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.813888, -2543.238968] #last 4 columns
+    cht_incompressible.su2_exec  = "parallel_computation.py -f"
     cht_incompressible.timeout   = 1600
-    cht_incompressible.multizone = True
     cht_incompressible.tol       = 0.00001
     test_list.append(cht_incompressible)
 
@@ -1130,7 +1105,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [-6.078642, -5.482895, 0.334875, 0.022224] #last 4 columns
+    pywrapper_naca0012.test_vals = [-7.123252, -6.535236, 0.333431, 0.021236] #last 4 columns
     pywrapper_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
@@ -1164,10 +1139,10 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.078210, 0.036447, -0.001685, -0.000113] #last 4 columns
+    pywrapper_aeroelastic.test_vals = [0.081587, 0.033262, -0.001666, -0.000155] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_aeroelastic.timeout   = 1600
-    pywrapper_aeroelastic.tol       = 0.00001
+    pywrapper_aeroelastic.tol       = 0.000001
     pywrapper_aeroelastic.unsteady  = True
     test_list.append(pywrapper_aeroelastic)
 
@@ -1176,11 +1151,9 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
+    pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -6.878089, -0.260608] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "mpirun -np 2 SU2_CFD.py --nZone 2 --fsi True --parallel -f"
     pywrapper_fsi2d.timeout   = 1600
-    pywrapper_fsi2d.unsteady  = True
-    pywrapper_fsi2d.multizone = True
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
 
@@ -1189,12 +1162,11 @@ def main():
     pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
     pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
     pywrapper_unsteadyCHT.test_iter     = 5
-    pywrapper_unsteadyCHT.test_vals     = [-1.598116, 2.263342, -0.000029, 0.145689] #last 4 columns
+    pywrapper_unsteadyCHT.test_vals     = [-1.598116, 2.263342, -0.000032, 0.145689] #last 4 columns
     pywrapper_unsteadyCHT.su2_exec      = "mpirun -np 2 python launch_unsteady_CHT_FlatPlate.py --parallel -f"
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
     pywrapper_unsteadyCHT.unsteady      = True
-    pywrapper_unsteadyCHT.new_output    = True
     test_list.append(pywrapper_unsteadyCHT)
 
     # Rigid motion
@@ -1218,7 +1190,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, -0.262268, 0.059163] #last 4 columns
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, -0.134610, 0.083745] #last 4 columns
     tutorial_inv_bump.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_bump.timeout    = 1600
     tutorial_inv_bump.tol        = 0.00001
@@ -1230,7 +1202,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.240968, 0.042348] #last 4 columns
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.266096, 0.046783] #last 4 columns
     tutorial_inv_wedge.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_wedge.timeout    = 1600
     tutorial_inv_wedge.tol        = 0.00001
@@ -1242,7 +1214,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.165766, 0.053239] #last 4 columns
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.256216, 0.122658] #last 4 columns
     tutorial_inv_onera.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_onera.timeout    = 1600
     tutorial_inv_onera.tol        = 0.00001
@@ -1306,6 +1278,7 @@ def main():
     tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
+    tutorial_turb_oneram6.no_restart = True
     test_list.append(tutorial_turb_oneram6)
 
     # Inviscid NACA 0012 Design
@@ -1313,7 +1286,7 @@ def main():
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.100830, 0.176231] #last 4 columns
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.086210, 0.174381] #last 4 columns
     tutorial_design_inv_naca0012.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_inv_naca0012.timeout    = 1600
     tutorial_design_inv_naca0012.tol        = 0.00001

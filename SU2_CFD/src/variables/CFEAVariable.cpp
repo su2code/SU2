@@ -48,7 +48,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   bool discrete_adjoint   = config->GetDiscrete_Adjoint();
   bool refgeom            = config->GetRefGeom(); // Reference geometry needs to be stored
   bool dynamic_analysis   = config->GetTime_Domain();
-  bool fsi_analysis       = (config->GetnMarker_Fluid_Load() > 0);
+  bool fsi_analysis       = config->GetFSI_Simulation();
 
   VonMises_Stress.resize(nPoint) = su2double(0.0);
 
