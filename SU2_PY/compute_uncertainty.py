@@ -89,8 +89,8 @@ def main():
         # send output to a folder
         folderName = str(comp)+'c/'
         if os.path.isdir(folderName):
-           os.system('rm -R '+folderName)
-        os.system('mkdir ' + folderName)
+           shutil.rmtree(folderName)
+        os.mkdir(folderName)
         sendOutputFiles(konfig, folderName)
 
         # run su2
@@ -116,8 +116,8 @@ def main():
     # send output to a folder
     folderName = 'p1c1/'
     if os.path.isdir(folderName):
-       os.system('rm -R '+folderName)
-    os.system('mkdir ' + folderName)
+        shutil.rmtree(folderName)
+    os.mkdir(folderName)
     sendOutputFiles(konfig, folderName)
 
     # run su2
@@ -142,8 +142,8 @@ def main():
     # send output to a folder
     folderName = 'p1c2/'
     if os.path.isdir(folderName):
-       os.system('rm -R '+folderName)
-    os.system('mkdir ' + folderName)
+        shutil.rmtree(folderName)
+    os.mkdir(folderName)
     sendOutputFiles(konfig, folderName)
 
     # run su2

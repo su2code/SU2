@@ -1432,6 +1432,12 @@ inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker)
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
+inline unsigned short CConfig::GetnMarker_CfgFile(void) { return nMarker_CfgFile; }
+
+inline unsigned short CConfig::GetnMarker_Euler(void) { return nMarker_Euler; }
+
+inline unsigned short CConfig::GetnMarker_SymWall(void) { return nMarker_SymWall; }
+
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
@@ -1910,7 +1916,7 @@ inline bool CConfig::GetEulerPersson(void) { return EulerPersson; }
 
 inline void CConfig::SetEulerPersson(bool val_EulerPersson) { EulerPersson = val_EulerPersson; }
 
-inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
+inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem || (nMarker_Fluid_Load > 0); }
 
 inline void CConfig::SetFSI_Simulation(bool FSI_sim) { FSI_Problem = FSI_sim; }
 

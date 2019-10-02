@@ -695,6 +695,20 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
   if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
   else Partition_Analysis(geometry[MESH_0], config);
 #endif
+
+  /*--- Check if Euler & Symmetry markers are straight/plane. This information
+        is used in the Euler & Symmetry boundary routines. ---*/
+  if((config_container[iZone]->GetnMarker_Euler() != 0 || 
+     config_container[iZone]->GetnMarker_SymWall() != 0) && 
+     !fem_solver) {
+
+    if (rank == MASTER_NODE)
+      cout << "Checking if Euler & Symmetry markers are straight/plane:" << endl;
+
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
+      geometry_container[iZone][iInst][iMesh]->ComputeSurf_Straightness(config_container[iZone], (iMesh==MESH_0) );
+
+  }
   
 }
 
@@ -3831,10 +3845,12 @@ void CDriver::StartSolver(){
     PreprocessExtIter(ExtIter);
 
     /*--- Perform a dynamic mesh update if required. ---*/
-
-      if (!fem_solver && !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
-        DynamicMeshUpdate(ExtIter);
-      }
+    /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
+          mesh cordinates are read from the restart files. ---*/
+    if (!fem_solver &&
+        !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
+      DynamicMeshUpdate(ExtIter);
+    }
 
     /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
 
