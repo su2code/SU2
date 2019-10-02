@@ -949,7 +949,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
   
-  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
+  bool fsi = config->GetFSI_Simulation();
   bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
                                   (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
   
@@ -2999,7 +2999,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   su2double TransferTime = 1.0;
 
   bool restart = config->GetRestart(); // Restart analysis
-  bool fsi = (config->GetnMarker_Fluid_Load() > 0);  // FSI simulation.
+  bool fsi = config->GetFSI_Simulation();
   bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
@@ -3931,7 +3931,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
+  bool fsi = config->GetFSI_Simulation();
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
@@ -4066,7 +4066,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
+  bool fsi = config->GetFSI_Simulation();
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double distance_sq = 0.0 ;
@@ -4437,7 +4437,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short nZone = geometry[MESH_0]->GetnZone();
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fluid_structure = (config->GetnMarker_Fluid_Load() > 0);
+  bool fluid_structure = config->GetFSI_Simulation();
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   if (dynamic) nSolVar = 3 * nVar;

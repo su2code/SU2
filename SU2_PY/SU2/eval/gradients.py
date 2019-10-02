@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os, sys, shutil, copy, subprocess
 from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
@@ -423,15 +423,17 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
-
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+    solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
+    restart_sol = config['RESTART_SOL']
     grads = []
     folder = []
     for i in range(len(weight_list)):
-      grads.append(0)
-      folder.append(0)
+        grads.append(0)
+        folder.append(0)
 
     for i in range(len(weight_list)):
-      folder[i] = 'MULTIPOINT_' + str(i)
+        folder[i] = 'MULTIPOINT_' + str(i)
     
     # ----------------------------------------------------
     #  Initialize
@@ -440,7 +442,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
-      state.FILES.MESH = config['MESH_FILENAME']
+        state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
     # find base func name
@@ -450,12 +452,13 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     base_name = matches[0]
     
     ADJ_NAME = 'ADJOINT_' + base_name
+    MULTIPOINT_ADJ_NAME = 'MULTIPOINT_' + ADJ_NAME
     
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
-      log_direct = 'log_Direct.out'
+        log_direct = 'log_Direct.out'
     else:
-      log_direct = None
+        log_direct = None
   
 #    # ----------------------------------------------------
 #    #  Update Mesh
@@ -469,14 +472,20 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # ----------------------------------------------------
     
     # will run in ADJOINT/
-
+    
     config.AOA = aoa_list[0]
     config.SIDESLIP_ANGLE = sideslip_list[0]
     config.MACH_NUMBER = mach_list[0]
     config.REYNOLDS_NUMBER = reynolds_list[0]
     config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
     config.FREESTREAM_PRESSURE = freestream_press_list[0]
-    config.TARGET_CL = target_cl_list[0]   
+    config.TARGET_CL = target_cl_list[0]
+    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+    if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][0]:
+        state.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][0]
+
+    #state.find_files(config)
 
     grads[0] = gradient(base_name,'DISCRETE_ADJOINT',config,state)
 
@@ -485,7 +494,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
 
     # ----------------------------------------------------
-    #  Run Forward Point
+    #  Run Multipoint
     # ----------------------------------------------------
     
     # files to pull
@@ -502,11 +511,12 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # files: adjoint solution
     if ADJ_NAME in files:
-      name = files[ADJ_NAME]
-      name = su2io.expand_time(name,config)
-      link.extend(name)
+        name = files[ADJ_NAME]
+        name = su2io.expand_time(name,config)
+        link.extend(name)
+        solution_adj_list[0] = files[ADJ_NAME]
     else:
-      config['RESTART_SOL'] = 'NO'
+        config['RESTART_SOL'] = 'NO'
 
     # files: target equivarea adjoint weights
     ## DO NOT PULL EQUIVAREA WEIGHTS, use the one in MULTIPOINT/
@@ -514,53 +524,118 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # pull needed files, start folder
     with redirect_folder( folder[0], pull, link ) as push:
         with redirect_output(log_direct):
-    
-          konfig = copy.deepcopy(config)
-          ztate  = copy.deepcopy(state)
-        
-          dst = os.getcwd()
-          dst = os.path.abspath(dst).rstrip('/')+'/'
 
-        # make unix link
-          string = "ln -s " + src + " " + dst
-          os.system(string)
+            konfig = copy.deepcopy(config)
+            ztate  = copy.deepcopy(state)
+
+            dst = os.getcwd()
+            dst = os.path.abspath(dst).rstrip('/')+'/'
+
+            # make unix link
+            string = "ln -s " + src + " " + dst
+            string_list = string.split()
+            subprocess.Popen(string_list)
 
     for i in range(len(weight_list)-1):
+        
+        konfig = copy.deepcopy(config)
+        ztate  = copy.deepcopy(state)
+        # Reset RESTART_SOL to original value
+        konfig['RESTART_SOL'] = restart_sol
+        # Set correct config option names
+        konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+        konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
+        
+        # Delete file run in previous case
+        if ADJ_NAME in ztate.FILES:
+            del ztate.FILES[ADJ_NAME]
+
+        # Update ADJOINT filename with MULTIPOINT_ADJOINT filename
+        if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][i+1]:
+            ztate.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][i+1]
+
+        if 'MULTIPOINT_MESH_FILENAME' in ztate.FILES:
+            if 'deform' in ztate.FILES.MESH:
+                ztate.FILES.MESH = su2io.add_suffix(ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1],'deform')
+                konfig.MESH_FILENAME= su2io.add_suffix(ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1],'deform')
+            else:
+                ztate.FILES.MESH = ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+                konfig.MESH_FILENAME= ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+
+        files = ztate.FILES
+        link = []
+        files['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
+
+        # files: mesh
+        name = files['MESH']
+        name = su2io.expand_part(name,konfig)
+        link.extend(name)
+
+        # files: direct solution
+        if 'DIRECT' in files:
+            name = files['DIRECT']
+            name = su2io.expand_time(name,konfig)
+            link.extend( name )
+
+        # files: adjoint solution
+        if ADJ_NAME in files:
+            name = files[ADJ_NAME]
+            name = su2io.expand_time(name,konfig)
+            link.extend(name)
+        else:
+            konfig['RESTART_SOL'] = 'NO'
 
       # pull needed files, start folder
-      with redirect_folder( folder[i+1], pull, link ) as push:
-        with redirect_output(log_direct):
-    
-          konfig = copy.deepcopy(config)
-          ztate  = copy.deepcopy(state)
-        
-          konfig.AOA = aoa_list[i+1]
-          konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
-          konfig.MACH_NUMBER = mach_list[i+1]
-          konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
-          konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
-          konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
-          konfig.TARGET_CL = target_cl_list[i+1]         
+        with redirect_folder( folder[i+1], pull, link ) as push:
+            with redirect_output(log_direct):
+                # Set the multipoint options   
+                konfig.AOA = aoa_list[i+1]
+                konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
+                konfig.MACH_NUMBER = mach_list[i+1]
+                konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
+                konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
+                konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
+                konfig.TARGET_CL = target_cl_list[i+1]     
  
-          # let's start somethin somthin
-          del ztate.GRADIENTS[base_name]
-          #ztate.find_files(konfig)
-            
-          # the gradient
-          grads[i+1] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
-        
+                # let's start somethin somthin
+                ztate.GRADIENTS.clear()
+
+                # the gradient
+                grads[i+1] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
+
+                # adjoint files to push
+                dst = os.getcwd()
+                dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES[ADJ_NAME]
+                name = ztate.FILES[ADJ_NAME]
+                solution_adj_list[i+1] = name
+                name = su2io.expand_zones(name,konfig)
+                name = su2io.expand_time(name,konfig)
+                push.extend(name)
+
+        # Link adjoint solution to MULTIPOINT_# folder
+        src = os.getcwd()
+        src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
+      
+        # make unix link
+        string = "ln -s " + src + " " + dst
+        string_list = string.split()
+        subprocess.Popen(string_list)
+    
+    # Update MULTPOINT_ADJOINT files in state.FILES
+    state.FILES[MULTIPOINT_ADJ_NAME] = solution_adj_list
+
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
     # ----------------------------------------------------
     
     grad = []
     for variable in range(len(grads[0])):
-      grad.append(0)
+        grad.append(0)
 
     for variable in range(len(grads[0])):
-      grad[variable] = 0.0
-      for point in range(len(weight_list)):
-        grad[variable] = grad[variable] + float(weight_list[point])*grads[point][variable]
+        grad[variable] = 0.0
+        for point in range(len(weight_list)):
+            grad[variable] = grad[variable] + float(weight_list[point])*grads[point][variable]
       
     state.GRADIENTS[func_name] = grad
     grads_out = su2util.ordered_bunch()

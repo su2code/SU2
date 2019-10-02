@@ -1904,7 +1904,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
 
   /*--- Problem dimension and physical time step ---*/
@@ -2067,7 +2067,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   
   /*--- Retrieve values from the config file ---*/
@@ -2214,7 +2214,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   
   /*--- Retrieve values from the config file ---*/
@@ -2346,7 +2346,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   
   /*--- Retrieve values from the config file ---*/
@@ -3435,38 +3435,40 @@ void CSurfaceMovement::CheckFFDDimension(CGeometry *geometry, CConfig *config, C
   
   OutOffLimits = false;
   for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-    switch ( config->GetDesign_Variable(iDV) ) {
-      case FFD_CONTROL_POINT_2D :
-        if (polar) {
+    if (config->GetFFDTag(iDV)== FFDBox->GetTag()){
+      switch ( config->GetDesign_Variable(iDV) ) {
+        case FFD_CONTROL_POINT_2D :
+          if (polar) {
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (kIndex > nDegree)) OutOffLimits = true;
+          }
+          else {
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
+          }
+          break;
+        case FFD_CAMBER :  case FFD_THICKNESS :
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
+          break;
+        case FFD_CAMBER_2D :  case FFD_THICKNESS_2D :
           iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (kIndex > nDegree)) OutOffLimits = true;
-        }
-        else {
+          if (iIndex > lDegree) OutOffLimits = true;
+          break;
+        case FFD_CONTROL_POINT :  case FFD_NACELLE :
           iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
-        }
-        break;
-      case FFD_CAMBER :  case FFD_THICKNESS :
-          iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
-        break;
-      case FFD_CAMBER_2D :  case FFD_THICKNESS_2D :
-        iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        if (iIndex > lDegree) OutOffLimits = true;
-        break;
-      case FFD_CONTROL_POINT :  case FFD_NACELLE :
-        iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-        kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 3)));
-        if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
-        break;
-      case FFD_GULL :  case FFD_TWIST :
-        jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        if (jIndex > mDegree) OutOffLimits = true;
-        break;
+          jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+          kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 3)));
+          if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
+          break;
+        case FFD_GULL :  case FFD_TWIST :
+          jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+          if (jIndex > mDegree) OutOffLimits = true;
+          break;
+      }
     }
   }
   
@@ -6347,7 +6349,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   su2double time_new, time_old;
   su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iDim = 0;
   
   /*--- Retrieve values from the config file ---*/
@@ -6441,7 +6443,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   string DV_Filename, UnstExt, text_line;
   ifstream surface_positions;
   bool unsteady = config->GetUnsteady_Simulation();
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   
   /*--- Load stuff from config ---*/
   
