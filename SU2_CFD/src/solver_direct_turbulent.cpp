@@ -471,6 +471,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
   
+  /* Only apply the turbulent under-relaxation to the SA variants. */
+  
+  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
+                   (config->GetKind_Turb_Model() == SA_E)      ||
+                   (config->GetKind_Turb_Model() == SA_COMP)   ||
+                   (config->GetKind_Turb_Model() == SA_E_COMP) ||
+                   (config->GetKind_Turb_Model() == SA_NEG));
+  
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
   
@@ -481,19 +489,21 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     localUnderRelaxation = 1.0;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      
-      /* We impose a limit on the maximum percentage that the
-       turbulence variables can change over a nonlinear iteration. */
-      
-      const unsigned long index = iPoint*nVar + iVar;
-      su2double ratio = LinSysSol[index]/(node[iPoint]->GetSolution(iVar)+EPS);
-      if (ratio > allowableIncrease) {
-        localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-      } else if (ratio < allowableDecrease) {
-        localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+    if (sa_model) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        
+        /* We impose a limit on the maximum percentage that the
+         turbulence variables can change over a nonlinear iteration. */
+        
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = LinSysSol[index]/(node[iPoint]->GetSolution(iVar)+EPS);
+        if (ratio > allowableIncrease) {
+          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+        } else if (ratio < allowableDecrease) {
+          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+        }
+        
       }
-      
     }
     
     /* Choose the minimum factor between mean flow and turbulence. */
