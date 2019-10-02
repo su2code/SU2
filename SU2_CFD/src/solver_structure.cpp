@@ -2302,7 +2302,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     bool reduceCFL = false;
     su2double linResFlow = solverFlow->GetResLinSolver();
     su2double linResTurb = -1.0;
-    if (config->GetKind_Turb_Model() != NONE) {
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
       linResTurb = solverTurb->GetResLinSolver();
     }
 
@@ -2324,7 +2324,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
       New_Func += solverFlow->GetRes_RMS(iVar);
     }
-    if (config->GetKind_Turb_Model() != NONE) {
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
       for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
         New_Func += solverTurb->GetRes_RMS(iVar);
       }
@@ -2378,7 +2378,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       
       su2double underRelaxationFlow = solverFlow->node[iPoint]->GetUnderRelaxation();
       su2double underRelaxationTurb = 1.0;
-      if (config->GetKind_Turb_Model() != NONE)
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
         underRelaxationTurb = solverTurb->node[iPoint]->GetUnderRelaxation();
       const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
       
@@ -2418,7 +2418,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       
       CFL *= CFLFactor;
       solverFlow->node[iPoint]->SetLocalCFL(CFL);
-      if (config->GetKind_Turb_Model() != NONE) {
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
         solverTurb->node[iPoint]->SetLocalCFL(CFL);
       }
       
