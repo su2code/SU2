@@ -74,7 +74,9 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {
