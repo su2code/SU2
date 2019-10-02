@@ -103,7 +103,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-4.017851, 1.517860, 0.300231, 0.019491] #last 4 columns
+    fixedCL_naca0012.test_vals = [-4.031390, 1.500719, 0.300135, 0.019485] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.new_output = True
     fixedCL_naca0012.timeout   = 1600
@@ -600,7 +600,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.340935, -5.166616, 0.265490, -0.000323] #last 4 columns
+    contadj_fixedCL_naca0012.test_vals = [0.340921, -5.166616, 0.265490, -0.000324] #last 4 columns
     contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
     contadj_fixedCL_naca0012.new_output= True
     contadj_fixedCL_naca0012.timeout   = 1600
@@ -990,7 +990,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.252668] #last 4 columns
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.254849] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1637,7 +1637,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641487] #last 4 columns
+    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123970] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.new_output  = True
     pywrapper_fsi2d.unsteady  = True
