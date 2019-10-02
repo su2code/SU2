@@ -710,6 +710,20 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
   if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
   else Partition_Analysis(geometry[MESH_0], config);
 #endif
+
+  /*--- Check if Euler & Symmetry markers are straight/plane. This information
+        is used in the Euler & Symmetry boundary routines. ---*/
+  if((config_container[iZone]->GetnMarker_Euler() != 0 || 
+     config_container[iZone]->GetnMarker_SymWall() != 0) && 
+     !fem_solver) {
+
+    if (rank == MASTER_NODE)
+      cout << "Checking if Euler & Symmetry markers are straight/plane:" << endl;
+
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
+      geometry_container[iZone][iInst][iMesh]->ComputeSurf_Straightness(config_container[iZone], (iMesh==MESH_0) );
+
+  }
   
 }
 
