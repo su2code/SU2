@@ -1692,6 +1692,12 @@ public:
   unsigned short GetMGLevel(void);
 
   /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void UpdateBoundaries(CConfig *config);
+
+  /*!
    * \brief A virtual member.
    * \param config - Config
    */
