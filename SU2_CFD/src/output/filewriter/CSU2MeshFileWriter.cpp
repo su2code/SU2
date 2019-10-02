@@ -122,8 +122,6 @@ void CSU2MeshFileWriter::Write_Data(){
   /*--- Write the node coordinates ---*/
   if (rank == MASTER_NODE){
     output_file << "NPOIN= " << dataSorter->GetnPointsGlobal();
-//    if (geometry->GetGlobal_nPointDomain() != nGlobal_Poin_Par)
-//      output_file << "\t" << geometry->GetGlobal_nPointDomain();
     output_file << endl;
     output_file.flush();    
   }

@@ -66,7 +66,7 @@
 #include "../output/COutputLegacy.hpp"
 
 #include "../output/COutput.hpp"
-#include "../output/CDriverOutput.hpp"
+#include "../output/CMultizoneOutput.hpp"
 #include "../output/CElasticityOutput.hpp"
 #include "../output/CAdjElasticityOutput.hpp"
 #include "../output/CFlowCompOutput.hpp"

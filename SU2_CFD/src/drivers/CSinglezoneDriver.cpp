@@ -55,6 +55,14 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 }
 
 void CSinglezoneDriver::StartSolver() {
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -270,9 +278,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
         
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " ) before convergence." << endl;
+      output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
     

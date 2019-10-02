@@ -80,7 +80,7 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_TEMPERATURE";
+  if (convFields.empty() ) convFields.emplace_back("RMS_TEMPERATURE");
 
 
 }

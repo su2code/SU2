@@ -1423,6 +1423,12 @@ inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker)
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
+inline unsigned short CConfig::GetnMarker_CfgFile(void) { return nMarker_CfgFile; }
+
+inline unsigned short CConfig::GetnMarker_Euler(void) { return nMarker_Euler; }
+
+inline unsigned short CConfig::GetnMarker_SymWall(void) { return nMarker_SymWall; }
+
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
@@ -2060,7 +2066,9 @@ inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mes
 
 inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
 
-inline string CConfig::GetConv_Field(){ return ConvField; }
+inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
+
+inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
