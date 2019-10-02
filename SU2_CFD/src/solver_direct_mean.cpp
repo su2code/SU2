@@ -8572,8 +8572,8 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
       for (iDim = 0; iDim < nDim; iDim++){
         VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0 / config->GetLength_Reynolds();
       }
-      
-      cout << Coord[0] << " " << Coord[1] << " " << Coord[2] <<  " " << VelTurb[0] << " " << VelTurb[1] << " " << VelTurb[2] << " " << AlphaX[indx] << endl;
+      if (debug_cout)
+        cout << Coord[0] << " " << Coord[1] << " " << Coord[2] <<  " " << VelTurb[0] << " " << VelTurb[1] << " " << VelTurb[2] << " " << AlphaX[indx] << endl;
     }
     else if (config->GetKind_SyntheticTurbulence() == INLET_STG){
       // Add the perturbations to the auxliar array of primitive variables
