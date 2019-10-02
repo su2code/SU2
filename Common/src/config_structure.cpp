@@ -2464,6 +2464,9 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
+  
+  /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
+  addPythonOption("MULTIPOINT_MESH_FILENAME");
 
   /*--- options that are used for the output ---*/
   /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
@@ -4488,11 +4491,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
-      if (GetGrid_Movement()) {
-        SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
+      if (GetKind_GridMovement() != RIGID_MOTION &&
+          GetKind_GridMovement() != NO_MOVEMENT) {
+        SU2_MPI::Error(string("Dynamic mesh movement currently only supported for the discrete adjoint solver for\n") + 
+                       string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
       }
 
+<<<<<<< HEAD
       if (Unst_AdjointIter- long(nTimeIter) < 0){
+=======
+      /*--- Quickfix to not trigger the error message below if SINGLEZONE_DRIVER is used.
+            Once the old driver (i.e. EXT_ITER with it) is removed, the Error conditional
+            can be changed. ---*/
+      if (SinglezoneDriver) nExtIter = Time_Iter;
+
+      if (Unst_AdjointIter- long(nExtIter) < 0){
+>>>>>>> feature_contiguous_cvariable_PR
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
                        string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
@@ -8068,6 +8082,16 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
     if (Marker_Moving[iMarker_Moving] == val_marker) break;
 
   return iMarker_Moving;
+}
+
+bool CConfig::GetMarker_Moving_Bool(string val_marker) {
+  unsigned short iMarker_Moving;
+
+  /*--- Find the marker for this moving boundary, if it exists. ---*/
+  for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
+    if (Marker_Moving[iMarker_Moving] == val_marker) return true;
+
+  return false;
 }
 
 unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) {
