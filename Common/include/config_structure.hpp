@@ -2963,12 +2963,6 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_Max(void);
-
-  /*!
-   * \brief Get the total number of boundary markers in the cfg file.
-   * \return Total number of boundary markers.
-   */
-  unsigned short GetnMarker_CfgFile(void);
   
   /*!
    * \brief Get the total number of boundary markers.

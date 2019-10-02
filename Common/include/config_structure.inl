@@ -1442,8 +1442,6 @@ inline unsigned short CConfig::GetnMarker_SymWall(void) { return nMarker_SymWall
 
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
-inline unsigned short CConfig::GetnMarker_CfgFile(void) { return nMarker_CfgFile; }
-
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
