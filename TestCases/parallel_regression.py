@@ -101,7 +101,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-13.122966, -7.573235, 0.300000, 0.019389] #last 4 columns
+    fixedCL_naca0012.test_vals = [-4.054559, 1.470661, 0.300113, 0.019483] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -563,7 +563,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 100
-    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
+    contadj_fixed_CL_naca0012.test_vals = [0.378722, -5.157473, 0.268300, -0.000151] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
@@ -919,7 +919,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631539] #last 4 columns
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631531] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -932,7 +932,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.400157, 0.352002, 0.407541] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.399698, 0.351908, 0.405704] #last 4 columns
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -945,7 +945,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.626497, 0.511330, 0.422653] #last 4 columns
+    channel_3D.test_vals = [2.000000, 0.000000, 0.624073, 0.502950, 0.417050] #last 4 columns
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -958,7 +958,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [0.112416, 0.486612, 0.617747, 0.950972, 1.018949] #last 4 columns
+    pipe.test_vals = [0.117226, 0.491935, 0.676389, 0.974442, 1.024041] #last 4 columns
     pipe.su2_exec  = "parallel_computation.py -f"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
@@ -971,7 +971,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.716123, 1.095620, 1.136616] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.754346, 1.111512, 1.194307] #last 4 columns
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -984,7 +984,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.208652, 1.128007] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.220915, 1.568306] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -1060,7 +1060,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
+    fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123968] #last 4 columns
     fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
     fsi2d.timeout   = 1600
     fsi2d.multizone= True
@@ -1073,7 +1073,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.307431, -4.955885, 4.1224e-08, 46.0000] #last 5 columns
+    stat_fsi.test_vals = [3.312222, -4.959311, 0.000000, 46.000000] #last 5 columns
     stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi.multizone = True
     stat_fsi.timeout   = 1600
@@ -1085,7 +1085,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [ -4.413916, -4.837043, 4.7367e-08, 64.0000] #last 5 columns
+    dyn_fsi.test_vals = [-4.389734, -4.060117, 0.000000, 64.000000] #last 5 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
@@ -1098,7 +1098,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-3.388879, -4.968790, 4.1230e-08, 46.00000] #last 5 columns
+    stat_fsi_restart.test_vals = [-3.422307, -4.212725, 0.000000, 46.000000] #last 5 columns
     stat_fsi_restart.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi_restart.multizone = True
     stat_fsi_restart.timeout   = 1600
@@ -1130,7 +1130,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [-7.123252, -6.535236, 0.333431, 0.021236] #last 4 columns
+    pywrapper_naca0012.test_vals = [ -6.078651, -5.482900, 0.334875, 0.022224] #last 4 columns
     pywrapper_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
@@ -1164,7 +1164,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.081587, 0.033262, -0.001666, -0.000155] #last 4 columns
+    pywrapper_aeroelastic.test_vals = [0.078209, 0.036447, -0.001686, -0.000113] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001

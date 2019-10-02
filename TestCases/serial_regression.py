@@ -103,7 +103,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-13.124577, -7.586825, 0.300000, 0.019389] #last 4 columns
+    fixedCL_naca0012.test_vals = [-4.017851, 1.517860, 0.300231, 0.019491] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.new_output = True
     fixedCL_naca0012.timeout   = 1600
@@ -600,7 +600,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.341038, -5.166613, 0.265510, -0.000322] #last 4 columns
+    contadj_fixedCL_naca0012.test_vals = [0.340935, -5.166616, 0.265490, -0.000323] #last 4 columns
     contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
     contadj_fixedCL_naca0012.new_output= True
     contadj_fixedCL_naca0012.timeout   = 1600
@@ -990,7 +990,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.253885] #last 4 columns
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.252668] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1003,7 +1003,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.400117, 0.352029, 0.407521] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.399677, 0.351915, 0.405680] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1016,7 +1016,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [1.000000, 0.000000, 0.649093, 0.797702, 0.718414] #last 5 columns
+    channel_3D.test_vals = [1.000000, 0.000000, 0.671143, 0.781742, 0.712844] #last 5 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -1029,7 +1029,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [0.486616, 0.617750, 0.950973, 1.018949] #last 4 columns
+    pipe.test_vals = [0.491948, 0.676394, 0.974444, 1.024041] #last 4 columns
     pipe.su2_exec  = "SU2_CFD"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
@@ -1042,7 +1042,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.716122, 1.095620, 1.136611] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.754350, 1.111514, 1.194297] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -1055,7 +1055,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.208652, 1.128008] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.220867, 1.568306] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -1144,7 +1144,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641487] #last 4 columns
+    fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123970] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.multizone = True
@@ -1157,7 +1157,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.316390, -4.968266, 4.1223e-08, 47] #last 5 columns
+    stat_fsi.test_vals = [-3.322483, -4.978664, 0.000000, 47.000000] #last 5 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.multizone = True
@@ -1169,7 +1169,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [ -3.384533, -5.026176, 4.1231e-08, 47] #last 5 columns
+    stat_fsi_restart.test_vals = [-3.407098, -4.248366, 0.000000, 47.000000] #last 5 columns
     stat_fsi_restart.multizone = True
     stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
@@ -1181,7 +1181,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [ -4.413915, -4.837076, 4.7367e-08, 59] #last 5 columns
+    dyn_fsi.test_vals = [-4.389732, -4.060110, 0.000000, 59.000000] #last 5 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "SU2_CFD"
@@ -1194,7 +1194,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 0
-    airfoilRBF.test_vals = [0.000000, 1.442130, -2.231734] #last 4 columns
+    airfoilRBF.test_vals = [0.000000, 1.440246, -2.236518] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
     airfoilRBF.multizone = True
