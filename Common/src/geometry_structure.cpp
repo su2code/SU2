@@ -13594,14 +13594,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     string::size_type position;
     
     Surface_file.open(cstr, ios::in);
-    
-    /*--- Read extra inofmration ---*/
-    
-//    getline(Surface_file, text_line);
-//    text_line.erase (0,9);
-//    su2double AoASens = atof(text_line.c_str());
-//    config->SetAoA_Sens(AoASens);
-    
+
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
@@ -13611,13 +13604,17 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     char delimiter = ',';
     split_line = PrintingToolbox::split(text_line, delimiter);
     
+    for (unsigned short iField = 0; iField < split_line.size(); iField++){
+      PrintingToolbox::trim(split_line[iField]);
+    }
+    
     std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
     
     if (it == split_line.end()){
       SU2_MPI::Error("Surface sensitivity not found in file.", CURRENT_FUNCTION);
     }
     
-    int sens_index = std::distance(split_line.begin(), it);
+    unsigned short sens_index = std::distance(split_line.begin(), it);
     
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
@@ -13657,22 +13654,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
-  bool sst = (config->GetKind_Turb_Model() == SST)  || (config->GetKind_Turb_Model() == SST_SUST);
-  bool sa  = (config->GetKind_Turb_Model() == SA)   || (config->GetKind_Turb_Model() == SA_NEG)  ||
-             (config->GetKind_Turb_Model() == SA_E) || (config->GetKind_Turb_Model() == SA_COMP) ||
-             (config->GetKind_Turb_Model() == SA_E_COMP);
-  bool frozen_visc = config->GetFrozen_Visc_Disc();
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
-               (Kind_Solver == DISC_ADJ_RANS)           ||
-               (Kind_Solver == DISC_ADJ_NAVIER_STOKES)  ||
-               (Kind_Solver == DISC_ADJ_INC_EULER)          ||
-               (Kind_Solver == DISC_ADJ_INC_RANS)           ||
-               (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES)  ||
-               (Kind_Solver == ADJ_EULER)               ||
-               (Kind_Solver == ADJ_NAVIER_STOKES)       ||
-               (Kind_Solver == ADJ_RANS));
-  su2double Sens, dull_val, AoASens;
+
+  su2double AoASens;
   unsigned short nTimeIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
@@ -13689,20 +13672,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (rank == MASTER_NODE)
     cout << "Reading in sensitivity at iteration " << nTimeIter-1 << "."<< endl;
   
-  unsigned short skipVar = nDim, skipMult = 1;
-
-  if (flow) {
-    skipVar += skipMult*(nDim+2);
-    if (sst && !frozen_visc) { skipVar += skipMult*2;}
-    if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  }
-  else if (Kind_Solver == DISC_ADJ_HEAT) {
-    skipVar += 1;
-  }
-  else {
-    cout << "WARNING: Reading in sensitivities not defined for specified solver!" << endl;
-  }
-
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
@@ -13987,6 +13956,28 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     delete [] displace;
     
 #endif
+    
+    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_x\"");
+    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_y\"");
+    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_z\"");
+    
+    if (itx == config->fields.end()){
+      SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);      
+    }
+    if (ity == config->fields.end()){
+      SU2_MPI::Error("Sensitivity y not found in file.", CURRENT_FUNCTION);      
+    }
+    if (nDim == 3){
+      if (itz == config->fields.end()){
+        SU2_MPI::Error("Sensitivity z not found in file.", CURRENT_FUNCTION);      
+      }
+    }
+    
+    unsigned short sens_x_idx = std::distance(config->fields.begin(), itx);    
+    unsigned short sens_y_idx = std::distance(config->fields.begin(), ity);    
+    unsigned short sens_z_idx = 0;
+    if (nDim == 3)
+      sens_z_idx = std::distance(config->fields.begin(), itz);    
 
     /*--- Load the data from the binary restart. ---*/
 
@@ -14003,9 +13994,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        index = counter*nFields + skipVar;
-        for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
-
+        index = counter*nFields + sens_x_idx - 1;
+        Sensitivity[iPoint_Local*nDim+0] = Restart_Data[index]; 
+        index = counter*nFields + sens_y_idx - 1;
+        Sensitivity[iPoint_Local*nDim+1] = Restart_Data[index]; 
+        
+        if (nDim == 3){
+          index = counter*nFields + sens_z_idx - 1;
+          Sensitivity[iPoint_Local*nDim+2] = Restart_Data[index]; 
+        }
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
       }
@@ -14108,11 +14105,40 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   getline (restart_file, text_line);
   
+  vector<string> fields = PrintingToolbox::split(text_line, ',');
+  
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
+    PrintingToolbox::trim(fields[iField]);
+  }
+  
+  std::vector<string>::iterator itx = std::find(fields.begin(), fields.end(), "\"Sensitivity_x\"");
+  std::vector<string>::iterator ity = std::find(fields.begin(), fields.end(), "\"Sensitivity_y\"");
+  std::vector<string>::iterator itz = std::find(fields.begin(), fields.end(), "\"Sensitivity_z\"");
+  
+  if (itx == fields.end()){
+    SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);      
+  }
+  if (ity ==fields.end()){
+    SU2_MPI::Error("Sensitivity y not found in file.", CURRENT_FUNCTION);      
+  }
+  if (nDim == 3){
+    if (itz == fields.end()){
+      SU2_MPI::Error("Sensitivity z not found in file.", CURRENT_FUNCTION);      
+    }
+  }
+  
+  unsigned short sens_x_idx = std::distance(fields.begin(), itx);    
+  unsigned short sens_y_idx = std::distance(fields.begin(), ity);    
+  unsigned short sens_z_idx = 0;
+  if (nDim == 3)
+    sens_z_idx = std::distance(fields.begin(), itz);    
+  
+  
   for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     getline (restart_file, text_line);
-
-  	istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -14120,13 +14146,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      point_line >> index;
-      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
-      for (iDim = 0; iDim < nDim; iDim++) {
-        point_line >> Sens;
-        Sensitivity[iPoint_Local*nDim+iDim] = Sens;
-      }
+      Sensitivity[iPoint_Local*nDim+0] = PrintingToolbox::stod(point_line[sens_x_idx]);
+      Sensitivity[iPoint_Local*nDim+1] = PrintingToolbox::stod(point_line[sens_y_idx]);
+      if (nDim == 3)
+        Sensitivity[iPoint_Local*nDim+2] = PrintingToolbox::stod(point_line[sens_z_idx]);
+      
     }
 
   }
@@ -15575,7 +15599,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Write an output file---*/
     
-    if (config->GetTabular_FileFormat() == CSV) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Nacelle_File.open("nacelle_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;

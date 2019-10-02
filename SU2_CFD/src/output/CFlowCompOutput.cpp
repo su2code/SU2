@@ -49,24 +49,24 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
-    requestedHistoryFields.push_back("RMS_RES");
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    if (config->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");
-    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
-    requestedScreenFields.push_back("INNER_ITER");
-    requestedScreenFields.push_back("RMS_DENSITY");
-    requestedScreenFields.push_back("RMS_MOMENTUM-X");
-    requestedScreenFields.push_back("RMS_MOMENTUM-Y");
-    requestedScreenFields.push_back("RMS_ENERGY");
+    if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
+    requestedScreenFields.emplace_back("RMS_DENSITY");
+    requestedScreenFields.emplace_back("RMS_MOMENTUM-X");
+    requestedScreenFields.emplace_back("RMS_MOMENTUM-Y");
+    requestedScreenFields.emplace_back("RMS_ENERGY");
     nRequestedScreenFields = requestedScreenFields.size();
   }
   if (nRequestedVolumeFields == 0){
-    requestedVolumeFields.push_back("COORDINATES");
-    requestedVolumeFields.push_back("SOLUTION");
-    requestedVolumeFields.push_back("PRIMITIVE");
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("PRIMITIVE");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
@@ -89,20 +89,11 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_DENSITY";
-
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
   
 }
 
-CFlowCompOutput::~CFlowCompOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-
-  }
-
-
-}
+CFlowCompOutput::~CFlowCompOutput(void) {}
 
 
 
@@ -111,26 +102,26 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
-  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the density.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
-  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
-  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the momentum y-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
-  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the energy.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
-    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;  
   case SST: case SST_SUST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
-    AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
-    AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
   }
@@ -138,26 +129,26 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
    
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the density.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum x-component. 
-  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum y-component. 
-  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum z-component. 
-  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED,"MAX_RES", "Maximum residual of the z-component.", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED,"MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
-  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the energy.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;  
   case SST: case SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", TYPE_RESIDUAL); 
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL); 
     break;
   default: break;
   }
@@ -165,26 +156,26 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  FORMAT_FIXED,   "BGS_RES", "BGS residual of the density.", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum x-component. 
-  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the momentum x-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum y-component. 
-  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the momentum y-component.",  TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the momentum y-component.",  HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum z-component. 
-  if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", FORMAT_FIXED, "BGS_RES", "BGS residual of the z-component.",  TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
-  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the energy.",  TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  HistoryFieldType::RESIDUAL);
     break;  
   case SST: case SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", TYPE_RESIDUAL); 
+    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL); 
     break;
   default: break;
   }
@@ -196,59 +187,59 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   }  
   /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
   /// DESCRIPTION: Aeroelastic plunge
-  AddHistoryOutputPerSurface("PLUNGE", "plunge", FORMAT_FIXED, "AEROELASTIC", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Aeroelastic pitch
-  AddHistoryOutputPerSurface("PITCH",  "pitch",  FORMAT_FIXED, "AEROELASTIC", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
    
 
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL", "Number of iterations of the linear solver.");
-  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", FORMAT_FIXED, "LINSOL", "Residual of the linear solver.");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
  
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
-  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Aero CD drag", TYPE_COEFFICIENT);
+  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Aero CD drag", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Solid CD drag  
-  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Solid CD drag ", TYPE_COEFFICIENT);
+  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Solid CD drag ", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Radial distortion 
-  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Radial distortion ", TYPE_COEFFICIENT);
+  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Radial distortion ", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Circumferential distortion
-  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Circumferential distortion", TYPE_COEFFICIENT);
+  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Circumferential distortion", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
   
   /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
   /// DESCRIPTION: Merit  
-  AddHistoryOutput("MERIT", "CMerit", FORMAT_SCIENTIFIC, "ROTATING_FRAME", "Merit", TYPE_COEFFICIENT);
+  AddHistoryOutput("MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: CT 
-  AddHistoryOutput("CT",    "CT",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", "CT", TYPE_COEFFICIENT);
+  AddHistoryOutput("CT",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: CQ  
-  AddHistoryOutput("CQ",    "CQ",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", "CQ", TYPE_COEFFICIENT);
+  AddHistoryOutput("CQ",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
   
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.  
   /// DESCRIPTION: Equivalent area    
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", TYPE_COEFFICIENT);
+  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function      
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", TYPE_COEFFICIENT);
+  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
+  AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Maximal heatflux  
-  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    FORMAT_SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
+  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Temperature
-  AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
+  AddHistoryOutput("TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
   
-  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+  AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
   
   if (config->GetDeform_Mesh()){
-    AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", FORMAT_SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
-    AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", FORMAT_SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
-    AddHistoryOutput("DEFORM_ITER", "DeformIter", FORMAT_INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
-    AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", FORMAT_FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");    
+    AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
+    AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
+    AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
+    AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");    
   }
   
   /*--- Add analyze surface history fields --- */
@@ -265,7 +256,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /*--- Add combo obj value --- */
   
-  AddHistoryOutput("COMBO", "ComboObj", FORMAT_SCIENTIFIC, "COMBO", "Combined obj. function value.", TYPE_COEFFICIENT);
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -391,9 +382,13 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3){
       AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
       AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
+      AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");      
     }
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
-    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");  
+  }
+  
+  if (config->GetTime_Domain()){
+    SetTimeAveragedFields();
   }
 }
 
@@ -437,9 +432,17 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
   
-  SetVolumeOutputValue("PRESSURE",    iPoint, Node_Flow->GetPressure(iPoint));
+  if (config->GetGrid_Movement()){
+    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel()[0]);
+    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel()[1]);
+    if (nDim == 3)
+      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
+  }
+  
+  SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
+
   su2double VelMag = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0); 
@@ -517,12 +520,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
-      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);      
+      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
+      SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
     } 
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);      
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));      
   }
   
+  if (config->GetTime_Domain()){
+    LoadTimeAveragedData(iPoint, Node_Flow);
+  }
 }
 
 void CFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
@@ -653,7 +659,7 @@ bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
 
 bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
   
-  return (config->GetTime_Marching() != STEADY && curInnerIter == 0);
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
       
 }
 

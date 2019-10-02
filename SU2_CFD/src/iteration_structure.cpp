@@ -454,9 +454,9 @@ void CIteration::Output(COutput *output,
     unsigned short val_iInst)      {
 
   
-  output->SetResult_Files(geometry[ZONE_0][INST_0][MESH_0],
-                          config[ZONE_0],
-                          solver[ZONE_0][INST_0][MESH_0], InnerIter);
+  output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0],
+                          config[val_iZone],
+                          solver[val_iZone][INST_0][MESH_0], InnerIter);
   
 
 }
@@ -2075,18 +2075,14 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
       LoadUnsteady_Solution(geometry, solver,config, val_iInst, val_iZone, Direct_Iter);
 
-    } else if ((ExtIter > 0) && dual_time) {
+    } else if ((TimeIter > 0) && dual_time) {
 
-<<<<<<< HEAD
-    if ((TimeIter > 0) && dual_time){
-=======
       /*--- 
       Here the primal solutions (only working variables) are loaded and put in the correct order
       into containers. For ALE the mesh coordinates have to be put into the 
       correct containers as well, i.e. follow the same logic for the solution. 
       Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
->>>>>>> feature_contiguous_cvariable_PR
 
       /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
       if (dual_time_1st){
@@ -2188,7 +2184,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     /*--- Compute & set Grid Velocity via finite differences of the Coordinates. ---*/
     if (grid_IsMoving)
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++)
-        geometry[val_iZone][val_iInst][iMesh]->SetGridVelocity(config[val_iZone], ExtIter);
+        geometry[val_iZone][val_iInst][iMesh]->SetGridVelocity(config[val_iZone], TimeIter);
 
   }//if unsteady
 

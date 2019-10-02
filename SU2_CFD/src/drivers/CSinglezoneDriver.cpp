@@ -55,6 +55,14 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 }
 
 void CSinglezoneDriver::StartSolver() {
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -64,7 +72,8 @@ void CSinglezoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Single-zone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
+      cout << "The simulation will run for " 
+           << driver_config->GetnTime_Iter() - config_container[ZONE_0]->GetRestart_Iter() << " time steps." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -188,13 +197,25 @@ void CSinglezoneDriver::Update() {
 
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
-  
+  /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+    
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0], TimeIter, StopCalc);
   
   if (wrote_files){
-    /*--- Store output time and restart the timer for the compute phase. ---*/
+    
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -203,9 +224,6 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-    
-    
-    
 #ifndef HAVE_MPI
     StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -260,9 +278,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
         
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " ) before convergence." << endl;
+      output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
     
@@ -290,6 +309,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   /*--- Reset the inner convergence --- */
   
   output_container[ZONE_0]->SetConvergence(false);
+  
+  /*--- Increase the total iteration count --- */
+  
+  IterCount += config_container[ZONE_0]->GetInnerIter()+1;
 
   return StopCalc;
 }

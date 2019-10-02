@@ -91,7 +91,8 @@ private:
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  string ConvField;
+  string* ConvField;
+  unsigned short nConvField;
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
@@ -5450,7 +5451,7 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
   
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -9171,9 +9172,17 @@ public:
   string GetVolumeOutput_Field(unsigned short iField);
 
   /*
-  * \brief Get the convergence field for monitoring
+  * \brief Get the convergence fields for monitoring
+  * \param[in] iField - Index of the field
+  * return Field name for monitoring convergence
   */
-  string GetConv_Field();
+  string GetConv_Field(unsigned short iField);
+  
+  /*
+  * \brief Get the number of convergence monitoring fields.
+  * return Number of convergence monitoring fields.
+  */
+  unsigned short GetnConv_Field();  
   
   /*!
    * \brief Set_StartTime

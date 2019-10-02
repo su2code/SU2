@@ -70,6 +70,7 @@ nobase_dist_mypkg_DATA= \
     SU2/io/redirect.py \
     SU2/io/state.py \
     SU2/io/tools.py \
+    SU2/io/historyMap.py \
     SU2/io/__init__.py \
     SU2/mesh/adapt.py \
     SU2/mesh/tools.py \

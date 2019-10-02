@@ -2253,6 +2253,8 @@ inline void CIncNSSolver::SetConjugateHeatVariable(unsigned short val_marker, un
 
 inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
+inline su2double CHeatSolverFVM::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+
 inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
 
 inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }

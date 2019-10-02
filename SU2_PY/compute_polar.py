@@ -399,7 +399,7 @@ def main():
                     command = 'cp '+caseName+'/'+config.SOLUTION_FILENAME+' .'
                     if options.verbose:
                         print(command)
-                    shutil.copy2(caseName+'/'+config.SOLUTION_FLOW_FILENAME, os.getcwd())
+                    shutil.copy2(caseName+'/'+config.SOLUTION_FILENAME, os.getcwd())
                     konfig.RESTART_SOL = 'YES'
                 else:
                     konfig.RESTART_SOL = 'NO'
@@ -464,7 +464,7 @@ def main():
             # save data
             SU2.io.save_data('results.pkl', results)
             shutil.copy2('results.pkl', 'DIRECT')
-            shutil.copy2(config.SOLUTION_FLOW_FILENAME, 'DIRECT')
+            shutil.copy2(config.SOLUTION_FILENAME, 'DIRECT')
 
             if os.path.isdir(caseName):
                 command = 'cat '+caseName+\
@@ -484,8 +484,8 @@ def main():
     f.close()
     if os.path.isdir('DIRECT'):
         shutil.rmtree('DIRECT')
-    if os.path.isfile(config.SOLUTION_FLOW_FILENAME):
-        os.remove(config.SOLUTION_FLOW_FILENAME)
+    if os.path.isfile(config.SOLUTION_FILENAME):
+        os.remove(config.SOLUTION_FILENAME)
     if os.path.isfile('results.pkl'):
         os.remove('results.pkl')
     print('Post sweep cleanup completed')

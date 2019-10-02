@@ -1506,7 +1506,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
   addDoubleOption("CONV_CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
-  addStringOption("CONV_FIELD", ConvField, "");
+  addStringListOption("CONV_FIELD", nConvField, ConvField);
 
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
@@ -2903,12 +2903,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
-#ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
-  }
-#endif
+//#ifndef HAVE_TECIO
+//  if (Output_FileFormat == TECPLOT_BINARY) {
+//    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
+//    Output_FileFormat = TECPLOT;
+//  }
+//#endif
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/
@@ -3102,7 +3102,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (TimeMarching == TIME_STEPPING){
       InnerIter = 1;
     }
-   VolumeWrtFreq = 1;
+    if (!OptionIsSet("OUTPUT_WRT_FREQ"))
+      VolumeWrtFreq = 1;
+    if (Restart == NO){
+      Restart_Iter = 0;
+    }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")){
+      HistoryWrtFreq[2] = 0;
+    }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")){
+      HistoryWrtFreq[1] = 0;
+    }
   }
   
   /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
@@ -4497,16 +4507,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                        string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
       }
 
-<<<<<<< HEAD
       if (Unst_AdjointIter- long(nTimeIter) < 0){
-=======
-      /*--- Quickfix to not trigger the error message below if SINGLEZONE_DRIVER is used.
-            Once the old driver (i.e. EXT_ITER with it) is removed, the Error conditional
-            can be changed. ---*/
-      if (SinglezoneDriver) nExtIter = Time_Iter;
-
-      if (Unst_AdjointIter- long(nExtIter) < 0){
->>>>>>> feature_contiguous_cvariable_PR
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
                        string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
@@ -7535,26 +7536,29 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     string multizone_filename = val_filename;
     char buffer[50];
     
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    
     if (GetnZone() > 1 ) {
-        unsigned short lastindex = multizone_filename.find_last_of(".");
-        multizone_filename = multizone_filename.substr(0, lastindex);
-        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer)+ext);
-    }
-    return multizone_filename;
-}
-
-string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone) {
-
-    string multizone_filename = val_filename;
-    char buffer[50];
-
-    if (GetnZone() > 1 ) {
-        unsigned short lastindex = multizone_filename.find_last_of(".");
-        multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
+    
+    multizone_filename += ext;    
+    return multizone_filename;
+}
+
+string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    if (GetnZone() > 1 ) {
+        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+        multizone_filename.append(string(buffer));
+    }
+    multizone_filename += ext;
     return multizone_filename;
 }
 

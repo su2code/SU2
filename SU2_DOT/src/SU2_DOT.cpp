@@ -988,22 +988,29 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     output = new CBaselineOutput(config[iZone], geometry[iZone][INST_0]->GetnDim(), solver);
     output->PreprocessVolumeOutput(config[iZone]);
+    output->PreprocessHistoryOutput(config[iZone], false);
     
-//    /*--- Load the data --- */
+    /*--- Load the data --- */
     
-//    output->Load_Data(geometry[iZone][INST_0], config[iZone], &solver);
+    output->Load_Data(geometry[iZone][INST_0], config[iZone], &solver);
 
-//    /*--- Set the surface filename ---*/
+    /*--- Set the surface filename ---*/
     
-//    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
+    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
     
-//    /*--- Write to file ---*/
+    /*--- Set the surface filename ---*/
     
-//    output->SetSurface_Output(geometry[iZone][INST_0], config[iZone], config[iZone]->GetOutput_FileFormat(), false);
-
-//    /*--- Deallocate ---*/
+    output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
     
-//    output->DeallocateData_Parallel();
+    /*--- Write to file ---*/
+    
+    for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
+      if (FileFormat[iFile] != RESTART_ASCII &&
+          FileFormat[iFile] != RESTART_BINARY &&
+          FileFormat[iFile] != CSV)
+        output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
+    }
     
     /*--- Free memory ---*/
     
