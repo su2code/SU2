@@ -97,7 +97,7 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "ADJOINT_DISP_X";
+  if (convFields.empty() ) convFields.emplace_back("ADJOINT_DISP_X");
   
 }
 

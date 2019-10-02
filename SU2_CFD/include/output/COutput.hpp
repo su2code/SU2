@@ -227,12 +227,15 @@ protected:
   su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
   cauchyFunc;                    /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter; /*!< \brief Number of elements of the Cauchy serial. */
-  su2double *cauchySerie;        /*!< \brief Complete Cauchy serial. */
-  su2double oldFunc,             /*!< \brief Old value of the coefficient. */
+  vector<vector<su2double>> cauchySerie;        /*!< \brief Complete Cauchy serial. */
+  unsigned long nCauchy_Elems;  /*!< \brief Total number of cauchy elems to monitor */ 
+  su2double cauchyEps;           /*!< \brief Defines the threshold when to stop the solver. */   
+  su2double minLogResidual;     /*!< \brief Minimum value of the residual to reach */     
+  vector<su2double> oldFunc,             /*!< \brief Old value of the coefficient. */
   newFunc;                       /*!< \brief Current value of the coefficient. */
-  bool convergence;              /*!< \brief To indicate if the solver  has converged or not. */
+  bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
-  string convField;              /*!< \brief Name of the field to be monitored for convergence */
+  vector<string> convFields;      /*!< \brief Name of the field to be monitored for convergence */
   
   /*----------------------------- Adaptive CFL ----------------------------*/     
   
@@ -276,7 +279,7 @@ public:
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt = true);  
+  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, bool wrt = true);  
   
   /*!
    * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
@@ -419,6 +422,11 @@ public:
    */
   bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
 
+  /*!
+   * \brief Print a summary of the convergence to screen.
+   */
+  void PrintConvergenceSummary();
+  
   /*!
    * \brief Get convergence of the problem.
    * \return Boolean indicating whether the problem is converged.

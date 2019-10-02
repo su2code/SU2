@@ -691,17 +691,17 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   /// DESCRIPTION: Sideforce coefficient   
   AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis    
-  AddHistoryOutput("MOMENT-X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis    
-  AddHistoryOutput("MOMENT-Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis      
-  AddHistoryOutput("MOMENT-Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in x direction    
-  AddHistoryOutput("FORCE-X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FORCE_X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in y direction    
-  AddHistoryOutput("FORCE-Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FORCE_Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in z direction      
-  AddHistoryOutput("FORCE-Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FORCE_Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
   AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// END_GROUP  
@@ -744,14 +744,14 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   if (nDim == 3)
     SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
   if (nDim == 3){
-    SetHistoryOutputValue("MOMENT-X", flow_solver->GetTotal_CMx());
-    SetHistoryOutputValue("MOMENT-Y", flow_solver->GetTotal_CMy());
+    SetHistoryOutputValue("MOMENT_X", flow_solver->GetTotal_CMx());
+    SetHistoryOutputValue("MOMENT_Y", flow_solver->GetTotal_CMy());
   }
-  SetHistoryOutputValue("MOMENT-Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputValue("FORCE-X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
+  SetHistoryOutputValue("MOMENT_Z", flow_solver->GetTotal_CMz());
+  SetHistoryOutputValue("FORCE_X", flow_solver->GetTotal_CFx());
+  SetHistoryOutputValue("FORCE_Y", flow_solver->GetTotal_CFy());
   if (nDim == 3)
-    SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
+    SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
   
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -940,7 +940,7 @@ void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry){
   
   string filename = "flow";
   
-  filename = config->GetFilename(filename, "meta", curTimeIter);
+  filename = config->GetFilename(filename, ".meta", curTimeIter);
   
   /*--- All processors open the file. ---*/
 

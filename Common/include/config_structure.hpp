@@ -91,7 +91,8 @@ private:
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  string ConvField;
+  string* ConvField;
+  unsigned short nConvField;
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
@@ -2920,10 +2921,28 @@ public:
   su2double *GetWeightsIntegrationADER_DG(void);
 
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers including send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void);
+
+  /*!
+   * \brief Get the total number of boundary markers in the config file.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_CfgFile(void);
+
+  /*!
+   * \brief Get the number of Euler boundary markers.
+   * \return Number of Euler boundary markers.
+   */
+  unsigned short GetnMarker_Euler(void);
+
+  /*!
+   * \brief Get the number of symmetry boundary markers.
+   * \return Number of symmetry boundary markers.
+   */
+  unsigned short GetnMarker_SymWall(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -6411,6 +6430,13 @@ public:
   unsigned short GetMarker_Moving(string val_marker);
 
   /*!
+   * \brief Get bool if marker is moving. <i>val_marker</i>.
+   * \param[in] val_marker - String of the marker to test.
+   * \return Bool if the marker is a moving boundary <i>val_marker</i>.
+   */
+  bool GetMarker_Moving_Bool(string val_marker);
+
+  /*!
    * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
@@ -6421,7 +6447,7 @@ public:
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Fluid_Load(string val_marker);
-  
+
   /*!
    * \brief Get the name of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
@@ -9165,9 +9191,17 @@ public:
   string GetVolumeOutput_Field(unsigned short iField);
 
   /*
-  * \brief Get the convergence field for monitoring
+  * \brief Get the convergence fields for monitoring
+  * \param[in] iField - Index of the field
+  * return Field name for monitoring convergence
   */
-  string GetConv_Field();
+  string GetConv_Field(unsigned short iField);
+  
+  /*
+  * \brief Get the number of convergence monitoring fields.
+  * return Number of convergence monitoring fields.
+  */
+  unsigned short GetnConv_Field();  
   
   /*!
    * \brief Set_StartTime

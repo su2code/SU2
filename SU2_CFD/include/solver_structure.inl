@@ -662,8 +662,12 @@ inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
 inline void CSolver::Solve_System(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-									 unsigned short val_marker) { }
+inline void CSolver::BC_Euler_Wall(CGeometry      *geometry, 
+                                   CSolver        **solver_container, 
+                                   CNumerics      *conv_numerics, 
+                                   CNumerics      *visc_numerics, 
+                                   CConfig        *config, 
+                                   unsigned short val_marker) { }
 
 inline void CSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
