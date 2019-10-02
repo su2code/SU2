@@ -836,15 +836,12 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
-  unsigned long index;
 
   unsigned short iVar;
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
   unsigned short file_format = config->GetRefGeom_FileFormat();
 
   string filename;
-  su2double dull_val;
   ifstream reference_file;
 
 
@@ -853,8 +850,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   filename = config->GetRefGeom_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".csv");
+  
+  filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
   reference_file.open(filename.data(), ios::in);
 
@@ -2951,13 +2948,8 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   su2double TransferTime = 1.0;
 
   bool restart = config->GetRestart(); // Restart analysis
-<<<<<<< HEAD
-  bool fsi = (config->GetnMarker_Fluid_Load() > 0);  // FSI simulation.
-  bool stat_fsi = !config->GetTime_Domain();
-=======
   bool fsi = config->GetFSI_Simulation();
-  bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
->>>>>>> feature_contiguous_cvariable_PR
+  bool stat_fsi = !config->GetTime_Domain();
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
   bool offset = (restart && fsi && (!stat_fsi));
@@ -4329,13 +4321,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   string filename;
 
-<<<<<<< HEAD
   bool dynamic = (config->GetTime_Domain());
-  bool fluid_structure = (config->GetnMarker_Fluid_Load() > 0);
-=======
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fluid_structure = config->GetFSI_Simulation();
->>>>>>> feature_contiguous_cvariable_PR
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   if (dynamic) nSolVar = 3 * nVar;

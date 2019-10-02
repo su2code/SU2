@@ -222,7 +222,11 @@ int main(int argc, char *argv[]) {
     
     /*--- Preprocess the volume output ---*/
     
-    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);    
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+    
+    /*--- Preprocess history --- */
+    
+    output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
     
 
   }
@@ -334,10 +338,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node---*/
-  
-  bool NewFile = false;
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
-  
+
   for (iZone = 0; iZone < nZone; iZone++){
     
     /*--- Load the data --- */
@@ -358,9 +359,7 @@ int main(int argc, char *argv[]) {
           output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
       }
     } 
-    
-    output[iZone]->DeallocateData_Parallel();
-    
+       
   }
 
   
@@ -420,9 +419,16 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
+  if (output != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output[iZone] != NULL) {
+        delete output[iZone];
+      }
+    }
+    delete [] output;
+  }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  if (output != NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the

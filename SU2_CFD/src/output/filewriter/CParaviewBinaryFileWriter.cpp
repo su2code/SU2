@@ -1,9 +1,10 @@
 #include "../../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 
+const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
 CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim, string fileName, 
                                                      CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, ".vtk", nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
@@ -29,12 +30,14 @@ void CParaviewBinaryFileWriter::Write_Data(){
 
   strcpy(fname, fileName.c_str());
   
-  /*--- Check for big endian. We have to swap bytes otherwise. ---*/
+  /* Check for big endian. We have to swap bytes otherwise. 
+   * Since size of character is 1 byte when the character pointer
+   *  is de-referenced it will contain only first byte of integer. ---*/
   
-  bool BigEndian;
-  union {int i; char c[4];} val;
-  val.i = 0x76543210;
-  if (val.c[0] == 0x10) BigEndian = false;
+  bool BigEndian = false;  
+  unsigned int i = 1;  
+  char *c = (char*)&i;
+  if (*c) BigEndian = false;
   else BigEndian = true;
   
   file_size = 0.0;
@@ -61,7 +64,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
   
   if (!fhw) {
     SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   filename, CURRENT_FUNCTION);
+                   fileName, CURRENT_FUNCTION);
   }
   
   /*--- File header written in ASCII. ---*/
@@ -98,7 +101,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       if (nDim == 2 && iDim == 2) {
         coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)SU2_TYPE::GetValue(dataSorter->GetData(iDim,iPoint));
+        float val = (float)dataSorter->GetData(iDim,iPoint);
         coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -371,7 +374,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
           if (nDim == 2 && iDim == 2) {
             vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+iDim,iPoint));
+            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
             vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
@@ -402,7 +405,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
        This will be replaced with a derived data type most likely. ---*/
       
       for (iPoint = 0; iPoint < GlobalPoint; iPoint++) {
-        float val = (float)SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
+        float val = (float)dataSorter->GetData(VarCounter,iPoint);
         scalar_buf[iPoint] = val;
       }
       if (!BigEndian)
@@ -535,7 +538,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       if (nDim == 2 && iDim == 2) {
         coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)SU2_TYPE::GetValue(dataSorter->GetData(iDim, iPoint));
+        float val = (float)dataSorter->GetData(iDim, iPoint);
         coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -928,7 +931,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
           if (nDim == 2 && iDim == 2) {
             vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+iDim,iPoint));
+            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
             vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
@@ -1003,7 +1006,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
        This will be replaced with a derived data type most likely. ---*/
       
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        float val = (float)SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
+        float val = (float)dataSorter->GetData(VarCounter,iPoint);
         scalar_buf[iPoint] = val;
       }
       if (!BigEndian) SwapBytes((char *)scalar_buf, sizeof(float), myPoint);

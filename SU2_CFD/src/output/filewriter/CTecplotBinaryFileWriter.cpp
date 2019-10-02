@@ -4,10 +4,12 @@
 #endif
 #include <set>
 
+const string CTecplotBinaryFileWriter::fileExt = ".szplt";
+
 CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim,
                                                    string fileName, CParallelDataSorter *dataSorter,
                                                    unsigned long time_iter, su2double timestep) : 
-  CFileWriter(fields, fileName, dataSorter, ".szplt", nDim), time_iter(time_iter), timestep(timestep){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
@@ -103,16 +105,6 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   bool is_unsteady = false;
   passivedouble solution_time = 0.0;
-//  if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-//    is_unsteady = true;
-//    solution_time = SU2_TYPE::GetValue(config->GetDelta_UnstTime()*config->GetExtIter());
-//  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-//    is_unsteady = true;
-//    /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-//    passivedouble period = SU2_TYPE::GetValue(config->GetHarmonicBalance_Period());
-//    passivedouble deltaT = period/SU2_TYPE::GetValue(config->GetnTimeInstances());
-//    solution_time = deltaT*val_iZone;
-//  }
 
   if (timestep > 0.0){
     is_unsteady = true;
@@ -250,7 +242,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       for(iVar = 0; iVar < fieldnames.size(); ++iVar)
         for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
           unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank) - 1;
-          data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));
+          data_to_send[index++] =dataSorter->GetData(iVar,node_offset);
         }
     }
     SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
@@ -269,7 +261,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     std::vector<passivedouble> values_to_write(dataSorter->GetnPoints());
     for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
       for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
-        values_to_write[i] = SU2_TYPE::GetValue(dataSorter->GetData(iVar, i));
+        values_to_write[i] = dataSorter->GetData(iVar, i);
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, dataSorter->GetnPoints(), &values_to_write[0]);
       if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
       for (int iRank = 0; err == 0 && iRank < size; ++iRank) {
@@ -296,14 +288,14 @@ void CTecplotBinaryFileWriter::Write_Data(){
             for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
               values_to_write.resize(rank_num_points);
               for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
-                values_to_write[i] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,i));
+                values_to_write[i] = dataSorter->GetData(iVar,i);
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]); 
               if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
             }
           }
           else { /* Receive data from other rank. */
             var_data.resize(max((int64_t)1, (int64_t)fieldnames.size() * rank_num_points));
-            SU2_MPI::Recv(&var_data[0], fieldnames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            CBaseMPIWrapper::Recv(&var_data[0], fieldnames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
@@ -322,10 +314,10 @@ void CTecplotBinaryFileWriter::Write_Data(){
       var_data.reserve(var_data_size);
       for (iVar = 0; err == 0 && iVar < fieldnames.size() ; iVar++)
           for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
-            var_data.push_back(SU2_TYPE::GetValue(dataSorter->GetData(iVar,i)));
+            var_data.push_back(dataSorter->GetData(iVar,i));
       
       if (var_data.size() > 0)
-        SU2_MPI::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
+        CBaseMPIWrapper::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
     }
   }
 
@@ -340,7 +332,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   for (iVar = 0; err == 0 && iVar <  fieldnames.size(); iVar++) {
     for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
-      var_data.push_back(SU2_TYPE::GetValue(dataSorter->GetData(iVar,i)));
+      var_data.push_back(dataSorter->GetData(iVar,i));
     err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, dataSorter->GetnPoints(), &var_data[iVar * dataSorter->GetnPoints()]);
     if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
   }

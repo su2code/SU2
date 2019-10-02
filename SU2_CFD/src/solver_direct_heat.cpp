@@ -157,12 +157,12 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
       Smatrix[iDim] = new su2double [nDim];
   }
 
-  Heat_Flux = new su2double[nMarker];
+  HeatFlux = new su2double*[nMarker];
   AvgTemperature = new su2double[nMarker];
   Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
   for(iMarker = 0; iMarker < nMarker; iMarker++) {
-    Heat_Flux[iMarker] = 0.0;
+    HeatFlux[iMarker] = new su2double[geometry->GetnVertex(iMarker)];
     AvgTemperature[iMarker] = 0.0;
   }
   for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
@@ -1201,8 +1201,6 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-    Heat_Flux[iMarker] = 0.0;
-
     if ( Boundary == ISOTHERMAL ) {
 
       Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
@@ -1237,7 +1235,11 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          
+          if (Monitoring){
+            AllBound_HeatFlux += HeatFlux[iMarker][iVertex];            
+          }
         }
       }
     }
@@ -1275,22 +1277,23 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
-
+          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          
+          if (Monitoring){
+            AllBound_HeatFlux += HeatFlux[iMarker][iVertex];            
+          }
+          
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
           if ( Boundary == HEAT_FLUX ) {
 
             AvgTemperature[iMarker] += Twall*config->GetTemperature_Ref()*Area;
           }
-
         }
       }
     }
 
     if (Monitoring == YES) {
-
-    AllBound_HeatFlux += Heat_Flux[iMarker];
-    AllBound_AvgTemperature += AvgTemperature[iMarker];
+      AllBound_AvgTemperature += AvgTemperature[iMarker];
     }
   }
 

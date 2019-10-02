@@ -1903,14 +1903,8 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
-<<<<<<< HEAD
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-=======
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
->>>>>>> feature_contiguous_cvariable_PR
-
 
   /*--- Problem dimension and physical time step ---*/
   nDim = geometry->GetnDim();
@@ -2071,14 +2065,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
-<<<<<<< HEAD
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-=======
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
->>>>>>> feature_contiguous_cvariable_PR
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
@@ -2223,14 +2211,8 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-<<<<<<< HEAD
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-=======
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
->>>>>>> feature_contiguous_cvariable_PR
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2360,14 +2342,8 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-<<<<<<< HEAD
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-=======
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
->>>>>>> feature_contiguous_cvariable_PR
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -6474,13 +6450,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   char buffer[50];
   string DV_Filename, UnstExt, text_line;
   ifstream surface_positions;
-<<<<<<< HEAD
   bool unsteady = config->GetTime_Marching();
-  bool adjoint = config->GetContinuous_Adjoint();
-=======
-  bool unsteady = config->GetUnsteady_Simulation();
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
->>>>>>> feature_contiguous_cvariable_PR
   
   /*--- Load stuff from config ---*/
   

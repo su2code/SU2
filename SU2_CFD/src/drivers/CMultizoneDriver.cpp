@@ -148,7 +148,15 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 }
 
 void CMultizoneDriver::StartSolver() {
-
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  driver_config->Set_StartTime(StartTime);
+  
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE)
@@ -471,6 +479,18 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
   
+  /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
   
   bool wrote_files = false;
   
@@ -481,8 +501,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   }
   
   if (wrote_files){
-
-    /*--- Store output time and restart the timer for the compute phase. ---*/
+    
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -496,7 +515,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 #else
     StartTime = MPI_Wtime();
 #endif
-
+    driver_config->Set_StartTime(StartTime);
   }
 
 }
@@ -650,9 +669,10 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     MaxIterationsReached = OuterIter+1 >= nOuterIter;
         
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << nOuterIter << " )." << endl;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
+      driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
     

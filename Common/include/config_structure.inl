@@ -2060,7 +2060,9 @@ inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mes
 
 inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
 
-inline string CConfig::GetConv_Field(){ return ConvField; }
+inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
+
+inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 

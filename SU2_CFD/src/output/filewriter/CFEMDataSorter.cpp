@@ -49,7 +49,6 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
 CFEMDataSorter::~CFEMDataSorter(){
 
-  if (connSend != NULL)    delete [] connSend;
   if (Index != NULL)       delete [] Index;
   if (idSend != NULL)      delete [] idSend;
   if (linearPartitioner != NULL) delete linearPartitioner;
@@ -57,166 +56,6 @@ CFEMDataSorter::~CFEMDataSorter(){
 }
 
 
-void CFEMDataSorter::SortOutputData() {
-
-  /* For convenience, set the total number of variables stored at each DOF. */
-
-  int VARS_PER_POINT = GlobalField_Counter;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
-  int ind;
-#endif
-
-  /*--- Allocate the memory that we need for receiving the conn
-   values and then cue up the non-blocking receives. Note that
-   we do not include our own rank in the communications. We will
-   directly copy our own data later. ---*/
-
-  su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]]();
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
-    connRecv[ii] = 0;
-
-  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    idRecv[ii] = 0;
-
-#ifdef HAVE_MPI
-  /*--- We need double the number of messages to send both the conn.
-   and the global IDs. ---*/
-
-  send_req = new SU2_MPI::Request[2*nSends];
-  recv_req = new SU2_MPI::Request[2*nRecvs];
-
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = VARS_PER_POINT*nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = VARS_PER_POINT*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = VARS_PER_POINT*nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = VARS_PER_POINT*kk;
-      int dest = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
-
-  /*--- Repeat the process to communicate the global IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the global IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-#endif
-
-  /*--- Copy my own rank's data into the recv buffer directly. ---*/
-
-  int mm = VARS_PER_POINT*nPoint_Recv[rank];
-  int ll = VARS_PER_POINT*nPoint_Send[rank];
-  int kk = VARS_PER_POINT*nPoint_Send[rank+1];
-
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
-
-  mm = nPoint_Recv[rank];
-  ll = nPoint_Send[rank];
-  kk = nPoint_Send[rank+1];
-
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-
-#ifdef HAVE_MPI
-  int number = 2*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-
-  number = 2*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-
-  delete [] send_req;
-  delete [] recv_req;
-#endif
-  
-  delete [] connSend;
-  connSend = NULL;
-
-  /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. First, allocate the
-   appropriate amount of memory for this section. ---*/
-
-  Parallel_Data = new su2double*[VARS_PER_POINT];
-  for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nPoint_Recv[size]]();
-    for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
-      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
-    }
-  }
-
-  /*--- Store the total number of local points my rank has for
-   the current section after completing the communications. ---*/
-
-  nParallel_Poin = nPoint_Recv[size];
-
-  /*--- Reduce the total number of points we will write in the output files. ---*/
-
-#ifndef HAVE_MPI
-  nGlobal_Poin_Par = nParallel_Poin;
-#else
-  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  /*--- Free temporary memory from communications ---*/
-
-  delete [] connRecv;
-  delete [] idRecv;
-  
-}
 
 
 void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
@@ -226,9 +65,6 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
-
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting volumetric grid connectivity." << endl;
   
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
@@ -353,26 +189,32 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
   switch (Elem_Type) {
     case TRIANGLE:
       nParallel_Tria = nSubElem_Local;
+      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;      
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nSubElem_Local;
+      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;            
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
       nParallel_Tetr = nSubElem_Local;
+      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;                  
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
       nParallel_Hexa = nSubElem_Local;
+      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;                        
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
       nParallel_Pris = nSubElem_Local;
+      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;                        
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
       nParallel_Pyra = nSubElem_Local;
+      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;                        
       Conn_Pyra_Par = Conn_SubElem;
       break;
     default:

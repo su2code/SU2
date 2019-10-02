@@ -46,19 +46,19 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
-    requestedHistoryFields.push_back("RMS_RES");
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    requestedScreenFields.push_back("OUTER_ITER");    
-    requestedScreenFields.push_back("INNER_ITER");
-    requestedScreenFields.push_back("RMS_TEMPERATURE");
+    requestedScreenFields.emplace_back("OUTER_ITER");    
+    requestedScreenFields.emplace_back("INNER_ITER");
+    requestedScreenFields.emplace_back("RMS_TEMPERATURE");
     nRequestedScreenFields = requestedScreenFields.size();
   }
   if (nRequestedVolumeFields == 0){
-    requestedVolumeFields.push_back("COORDINATES");
-    requestedVolumeFields.push_back("SOLUTION");
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
@@ -80,18 +80,12 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_TEMPERATURE";
+  if (convFields.empty() ) convFields.emplace_back("RMS_TEMPERATURE");
 
 
 }
 
-CHeatOutput::~CHeatOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-}
+CHeatOutput::~CHeatOutput(void) {}
 
 void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
@@ -113,16 +107,16 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
 
 void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Linear solver iterations");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL_ITER", "Linear solver iterations");
   
-  AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", FORMAT_FIXED, "RMS_RES", "Root mean square residual of the temperature", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_TEMPERATURE", "max[T]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the temperature", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", FORMAT_FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", HistoryFieldType::RESIDUAL);
   
-  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", TYPE_COEFFICIENT);
-  AddHistoryOutput("HEATFLUX_MAX", "MaxHF",    FORMAT_SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", TYPE_COEFFICIENT);
-  AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", FORMAT_SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", TYPE_COEFFICIENT);
-  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+  AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("HEATFLUX_MAX", "MaxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
   
 }
 
