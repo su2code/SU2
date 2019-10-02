@@ -919,7 +919,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631531] #last 4 columns
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631530] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1073,7 +1073,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [3.312222, -4.959311, 0.000000, 46.000000] #last 5 columns
+    stat_fsi.test_vals = [-3.312222, -4.959311, 0.000000, 46.000000] #last 5 columns
     stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi.multizone = True
     stat_fsi.timeout   = 1600
@@ -1130,7 +1130,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [ -6.078651, -5.482900, 0.334875, 0.022224] #last 4 columns
+    pywrapper_naca0012.test_vals = [-7.123252, -6.535236, 0.333431, 0.021236] #last 4 columns
     pywrapper_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
@@ -1164,7 +1164,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.078209, 0.036447, -0.001686, -0.000113] #last 4 columns
+    pywrapper_aeroelastic.test_vals = [0.081587, 0.033262, -0.001667, -0.000155] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001
@@ -1176,7 +1176,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
+    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123968] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "mpirun -np 2 SU2_CFD.py --nZone 2 --fsi True --parallel -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.unsteady  = True
