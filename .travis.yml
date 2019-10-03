@@ -18,7 +18,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - pcarruscag@gmail.com
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
@@ -72,7 +72,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone --depth=1 -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone --depth=1 -b feature_contiguous_cvariable https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
