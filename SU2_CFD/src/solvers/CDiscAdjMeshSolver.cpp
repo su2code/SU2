@@ -231,7 +231,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
   unsigned long iPoint;
   unsigned short iDim;
   su2double Sensitivity, eps;
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   /*--- Extract the sensitivities ---*/
   ExtractAdjoint_Solution(geometry, config);

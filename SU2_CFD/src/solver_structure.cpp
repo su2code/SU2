@@ -49,6 +49,7 @@
 #include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 
 CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
@@ -101,6 +102,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
+  valResidual = 0.0;
+  
 
   /*--- Inlet profile data structures. ---*/
 
@@ -139,6 +142,9 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Old_Func = 0;
   New_Func = 0;
   NonLinRes_Counter = 0;
+  
+  nPrimVarGrad = 0;
+  nPrimVar     = 0;
   
 }
 
@@ -1897,7 +1903,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_FEA:
-      if (config->GetDynamic_Analysis() == DYNAMIC)
+      if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
@@ -2039,7 +2045,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel(iVar);
                 bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel(iVar);
               }
@@ -2207,7 +2213,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 node[iPoint]->SetSolution_Vel(iVar, bufDRecv[buf_offset+nVar+iVar]);
                 node[iPoint]->SetSolution_Accel(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
@@ -2345,7 +2351,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      set of all stored iterations. */
     
     NonLinRes_Value = New_Func;
-    if (config->GetExtIter() >= Res_Count) {
+    if (config->GetTimeIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Value += NonLinRes_Series[iCounter];
@@ -2542,9 +2548,9 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
-      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
-    }
+//    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
+//      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+//    }
 
     SetRes_BGS(iVar, max(EPS*EPS, sqrt(GetRes_BGS(iVar)/geometry->GetnPoint())));
 
@@ -2573,11 +2579,11 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+//    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
 
-      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
+//      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
 
-    }
+//    }
 
     SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
 
@@ -3872,7 +3878,7 @@ void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nV
   
 }
 
-void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {
+void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long TimeIter) {
   
   /*--- Variables used for Aeroelastic case ---*/
   
@@ -3914,7 +3920,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             su2double Omega, dt, psi;
             dt = config->GetDelta_UnstTimeND();
             Omega  = (config->GetRotation_Rate(2)/config->GetOmega_Ref());
-            psi = Omega*(dt*ExtIter);
+            psi = Omega*(dt*TimeIter);
             
             /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
             if (Monitoring_Tag == "Airfoil1") {
@@ -3944,7 +3950,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
       }
       
       /*--- Compute the new surface node locations ---*/
-      surface_movement->AeroelasticDeform(geometry, config, ExtIter, iMarker, iMarker_Monitoring, structural_solution);
+      surface_movement->AeroelasticDeform(geometry, config, TimeIter, iMarker, iMarker_Monitoring, structural_solution);
       
     }
     
@@ -4156,13 +4162,10 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- This function is intended for dual time simulations ---*/
 
-  unsigned long index;
-
   int Unst_RestartIter;
   ifstream restart_file_n;
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-  string filename = config->GetSolution_FlowFileName();
+
+  string filename = config->GetSolution_FileName();
   string filename_n;
 
   /*--- Auxiliary vector for storing the coordinates ---*/
@@ -4175,18 +4178,13 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
   unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-
   /*--- First, we load the restart file for time n ---*/
 
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  filename_n = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
 
@@ -4207,7 +4205,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     
     getline (restart_file_n, text_line);
     
-    istringstream point_line(text_line);
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -4215,10 +4213,12 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
-
+      
+      Coord[0] = PrintingToolbox::stod(point_line[1]);
+      Coord[1] = PrintingToolbox::stod(point_line[2]);
+      if (nDim == 3){
+        Coord[2] = PrintingToolbox::stod(point_line[3]);          
+      } 
       geometry->node[iPoint_Local]->SetCoord_n(Coord);
 
       iPoint_Global_Local++;
@@ -4250,19 +4250,19 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+  if (config->GetTime_Marching() == DT_STEPPING_2ND) {
 
     ifstream restart_file_n1;
     string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    filename_n1 = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
 
-    restart_file_n.open(filename_n1.data(), ios::in);
-    if (restart_file_n.fail()) {
+    restart_file_n1.open(filename_n1.data(), ios::in);
+    if (restart_file_n1.fail()) {
         SU2_MPI::Error(string("There is no flow restart file ") + filename_n1, CURRENT_FUNCTION);
 
     }
@@ -4273,23 +4273,26 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
 
-    getline (restart_file_n, text_line);
+    getline (restart_file_n1, text_line);
 
     for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
       
-      getline (restart_file_n, text_line);
-      
-      istringstream point_line(text_line);
+      getline (restart_file_n1, text_line);
 
+      vector<string> point_line = PrintingToolbox::split(text_line, ',');
+      
       /*--- Retrieve local index. If this node from the restart file lives
        on the current processor, we will load and instantiate the vars. ---*/
 
       iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
       if (iPoint_Local > -1) {
-
-        if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-        if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
+        
+        Coord[0] = PrintingToolbox::stod(point_line[1]);
+        Coord[1] = PrintingToolbox::stod(point_line[2]);
+        if (nDim == 3){
+          Coord[2] = PrintingToolbox::stod(point_line[3]);          
+        } 
 
         geometry->node[iPoint_Local]->SetCoord_n1(Coord);
 
@@ -4334,15 +4337,19 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   ifstream restart_file;
   string text_line, Tag;
   unsigned short iVar;
-  long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   int counter = 0;
-  config->fields.clear();
+  fields.clear();
 
   Restart_Vars = new int[5];
+  
+  string error_string = "Note: ASCII restart files must be in CSV format since v7.0.\n"
+                        "Check https://su2code.github.io/docs/Guide-to-v7 for more information.";
 
   /*--- First, check that this is not a binary restart file. ---*/
 
   char fname[100];
+  val_filename += ".csv";
   strcpy(fname, val_filename.c_str());
   int magic_number;
 
@@ -4393,7 +4400,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
+    SU2_MPI::Error(string("SU2 ASCII restart file ") + string(fname) + string(" not found.\n") + error_string, 
+                   CURRENT_FUNCTION);
   }
 
   /*--- Have the master attempt to read the magic number. ---*/
@@ -4426,22 +4434,29 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- In case there is no restart file ---*/
 
   if (restart_file.fail()) {
-    SU2_MPI::Error(string("SU2 ASCII solution file  ") + string(fname) + string(" not found."), CURRENT_FUNCTION);
+    SU2_MPI::Error(string("SU2 ASCII restart file ") + string(fname) + string(" not found.\n") + error_string, 
+                   CURRENT_FUNCTION);
   }
 
   /*--- Identify the number of fields (and names) in the restart file ---*/
 
   getline (restart_file, text_line);
-  stringstream ss(text_line);
-  while (ss >> Tag) {
-    config->fields.push_back(Tag);
-    if (ss.peek() == ',') ss.ignore();
+  
+  char delimiter = ',';
+  fields = PrintingToolbox::split(text_line, delimiter);
+  
+  if (fields.size() <= 1) {
+    SU2_MPI::Error(string("Restart file does not seem to be a CSV file.\n") + error_string, CURRENT_FUNCTION);
+  }
+  
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
+    PrintingToolbox::trim(fields[iField]);
   }
 
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
 
-  Restart_Vars[1] = (int)config->fields.size() - 1;
+  Restart_Vars[1] = (int)fields.size() - 1;
 
   /*--- Allocate memory for the restart data. ---*/
 
@@ -4452,8 +4467,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -4461,15 +4476,11 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      /*--- The PointID is not stored --*/
-
-      point_line >> index;
-
+      
       /*--- Store the solution (starting with node coordinates) --*/
 
       for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
-        point_line >> Restart_Data[counter*Restart_Vars[1] + iVar];
+        Restart_Data[counter*Restart_Vars[1] + iVar] = SU2_TYPE::GetValue(PrintingToolbox::stod(point_line[iVar+1]));
 
       /*--- Increment our local point counter. ---*/
 
@@ -4484,10 +4495,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   unsigned short iVar;
+  val_filename += ".dat";  
   strcpy(fname, val_filename.c_str());
   int nRestart_Vars = 5, nFields;
   Restart_Vars = new int[5];
-  config->fields.clear();
+  fields.clear();
 
 #ifndef HAVE_MPI
 
@@ -4529,13 +4541,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    needed for when we read the strings later. We pad the beginning of the
    variable string vector with the Point_ID tag that wasn't written. ---*/
 
-  config->fields.push_back("Point_ID");
+  fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
     ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
     if (ret != (unsigned long)CGNS_STRING_SIZE) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
-    config->fields.push_back(str_buf);
+    fields.push_back(str_buf);
   }
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
@@ -4620,7 +4632,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
 
-  config->fields.push_back("Point_ID");
+  fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
     index = iVar*CGNS_STRING_SIZE;
     field_buf.append("\"");
@@ -4629,7 +4641,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
     }
     field_buf.append(str_buf);
     field_buf.append("\"");
-    config->fields.push_back(field_buf.c_str());
+    fields.push_back(field_buf.c_str());
     field_buf.clear();
   }
 
@@ -4701,346 +4713,99 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
  su2double dCMy_dCL_ = config->GetdCMy_dCL();
  su2double dCMz_dCL_ = config->GetdCMz_dCL();
   string::size_type position;
-	unsigned long ExtIter_ = 0;
+	unsigned long InnerIter_ = 0;
 	ifstream restart_file;
 	bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-
-	if (config->GetRead_Binary_Restart()) {
-
-		char fname[100];
-		strcpy(fname, val_filename.c_str());
-		int nVar_Buf = 5;
-		int var_buf[5];
-		int Restart_Iter = 0;
-		passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-		su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-
-#ifndef HAVE_MPI
-
-		/*--- Serial binary input. ---*/
-
-		FILE *fhw;
-		fhw = fopen(fname,"rb");
-    size_t ret;
-
-		/*--- Error check for opening the file. ---*/
-
-		if (!fhw) {
-      SU2_MPI::Error(string("Unable to open restart file ") + string(fname), CURRENT_FUNCTION);
-		}
-
-		/*--- First, read the number of variables and points. ---*/
-
-		ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
-    if (ret != (unsigned long)nVar_Buf) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  
+  /*--- Carry on with ASCII metadata reading. ---*/
+  
+  restart_file.open(val_filename.data(), ios::in);
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE) {
+      cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
+      cout << " Computation will continue without updating metadata parameters." << endl;
     }
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (var_buf[0] != 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
-    }
-
-    /*--- Compute (negative) displacements and grab the metadata. ---*/
-
-    ret = sizeof(int) + 8*sizeof(passivedouble);
-    fseek(fhw,-ret, SEEK_END);
-
-    /*--- Read the external iteration. ---*/
-
-    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-
-    /*--- Read the metadata. ---*/
-
-    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
-    if (ret != 8) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-
-    for (unsigned short iVar = 0; iVar < 8; iVar++)
-      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
-
-    /*--- Close the file. ---*/
-
-    fclose(fhw);
-
-#else
-
-		/*--- Parallel binary input using MPI I/O. ---*/
-
-		MPI_File fhw;
-		MPI_Offset disp;
-    int ierr;
-
-		/*--- All ranks open the file using MPI. ---*/
-
-		ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
-
-		/*--- Error check opening the file. ---*/
-
-		if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-		}
-
-		/*--- First, read the number of variables and points (i.e., cols and rows),
-     which we will need in order to read the file later. Also, read the
-     variable string names here. Only the master rank reads the header. ---*/
-
-		if (rank == MASTER_NODE)
-			MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
-
-		/*--- Broadcast the number of variables to all procs and store clearly. ---*/
-
-		SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (var_buf[0] != 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
-    }
-
-    /*--- Access the metadata. ---*/
-
-		if (rank == MASTER_NODE) {
-
-      /*--- External iteration. ---*/
-
-      disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[1]*var_buf[2]*sizeof(passivedouble));
-      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
-
-			/*--- Additional doubles for AoA, AoS, etc. ---*/
-
-      disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[1]*var_buf[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
-
-		}
-
-		/*--- Communicate metadata. ---*/
-
-		SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-		/*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
-              doesn't work with passive data)---*/
-
-		for (unsigned short iVar = 0; iVar < 8; iVar++)
-			Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
-
-		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
-		/*--- All ranks close the file after writing. ---*/
-
-		MPI_File_close(&fhw);
-
-#endif
-
-		/*--- Store intermediate vals from file I/O in correct variables. ---*/
-
-		ExtIter_  = Restart_Iter;
-		AoA_      = Restart_Meta[0];
-		AoS_      = Restart_Meta[1];
-		BCThrust_ = Restart_Meta[2];
-		dCD_dCL_  = Restart_Meta[3];
-  dCMx_dCL_  = Restart_Meta[4];
-  dCMy_dCL_  = Restart_Meta[5];
-  dCMz_dCL_  = Restart_Meta[6];
-
-	} else {
-
-    /*--- First, check that this is not a binary restart file. ---*/
-
-    char fname[100];
-    strcpy(fname, val_filename.c_str());
-    int magic_number;
-
-#ifndef HAVE_MPI
-
-    /*--- Serial binary input. ---*/
-
-    FILE *fhw;
-    fhw = fopen(fname,"rb");
-    size_t ret;
-
-    /*--- Error check for opening the file. ---*/
-
-    if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-    }
-
-    /*--- Attempt to read the first int, which should be our magic number. ---*/
-
-    ret = fread(&magic_number, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (magic_number == 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
-    }
-
-    fclose(fhw);
-
-#else
-
-    /*--- Parallel binary input using MPI I/O. ---*/
-
-    MPI_File fhw;
-    int ierr;
-
-    /*--- All ranks open the file using MPI. ---*/
-
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
-
-    /*--- Error check opening the file. ---*/
-
-    if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-    }
-
-    /*--- Have the master attempt to read the magic number. ---*/
-
-    if (rank == MASTER_NODE)
-      MPI_File_read(fhw, &magic_number, 1, MPI_INT, MPI_STATUS_IGNORE);
-
-    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
-
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- Check that this is an SU2 binary file. SU2 binary files
-     have the hex representation of "SU2" as the first int in the file. ---*/
-
-    if (magic_number == 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
-                     string("SU2 reads/writes binary restart files by default.\n") +
-                     string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+  } else {
+    
+    string text_line;
+    
+    /*--- Space for extra info (if any) ---*/
+    
+    while (getline (restart_file, text_line)) {
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
+      }
+      
+      /*--- Angle of attack ---*/
+      
+      position = text_line.find ("AOA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+      }
+      
+      /*--- Sideslip angle ---*/
+      
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+      }
+      
+      /*--- BCThrust angle ---*/
+      
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+      }
+      
+      if (adjoint_run) {
+        
+        if (config->GetEval_dOF_dCX() == true) {
+          
+          /*--- dCD_dCL coefficient ---*/
+          
+          position = text_line.find ("DCD_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          }
+          
+          /*--- dCMx_dCL coefficient ---*/
+          
+          position = text_line.find ("DCMX_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+          }
+          
+          /*--- dCMy_dCL coefficient ---*/
+          
+          position = text_line.find ("DCMY_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+          }
+          
+          /*--- dCMz_dCL coefficient ---*/
+          
+          position = text_line.find ("DCMZ_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+          }
+          
+        }
+        
+      }
+      
     }
     
-    MPI_File_close(&fhw);
     
-#endif
-
-    /*--- Carry on with ASCII metadata reading. ---*/
-
-		restart_file.open(val_filename.data(), ios::in);
-		if (restart_file.fail()) {
-			if (rank == MASTER_NODE) {
-				cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
-				cout << " Computation will continue without updating metadata parameters." << endl;
-			}
-		} else {
-
-			unsigned long iPoint_Global = 0;
-			string text_line;
-
-			/*--- The first line is the header (General description) ---*/
-
-			getline (restart_file, text_line);
-
-			/*--- Space for the solution ---*/
-
-			for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-				getline (restart_file, text_line);
-
-			}
-
-			/*--- Space for extra info (if any) ---*/
-
-			while (getline (restart_file, text_line)) {
-
-				/*--- External iteration ---*/
-
-				position = text_line.find ("EXT_ITER=",0);
-				if (position != string::npos) {
-					text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-				}
-
-				/*--- Angle of attack ---*/
-
-				position = text_line.find ("AOA=",0);
-				if (position != string::npos) {
-					text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-				}
-
-				/*--- Sideslip angle ---*/
-
-				position = text_line.find ("SIDESLIP_ANGLE=",0);
-				if (position != string::npos) {
-					text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-				}
-
-				/*--- BCThrust angle ---*/
-
-				position = text_line.find ("INITIAL_BCTHRUST=",0);
-				if (position != string::npos) {
-					text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-				}
-
-				if (adjoint_run) {
-
-					if (config->GetEval_dOF_dCX() == true) {
-
-						/*--- dCD_dCL coefficient ---*/
-
-       position = text_line.find ("DCD_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-       }
-       
-       /*--- dCMx_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMX_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
-       }
-       
-       /*--- dCMy_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMY_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
-       }
-       
-       /*--- dCMz_dCL coefficient ---*/
-       
-       position = text_line.find ("DCMZ_DCL_VALUE=",0);
-       if (position != string::npos) {
-         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
-       }
-       
-					}
-
-				}
-
-			}
-
-
-			/*--- Close the restart meta file. ---*/
-
-			restart_file.close();
-
-		}
-	}
+    /*--- Close the restart meta file. ---*/
+    
+    restart_file.close();
+    
+  }
+  
 
 	/*--- Load the metadata. ---*/
 
@@ -5184,7 +4949,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 	/*--- External iteration ---*/
 
   if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
-    config->SetExtIter_OffSet(ExtIter_);
+    config->SetExtIter_OffSet(InnerIter_);
 
 }
 
@@ -5322,9 +5087,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
   su2double Area_Children, Area_Parent, *Coord, dist, min_dist;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -5345,12 +5110,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone);
+    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ".dat");
 
   /*--- Modify file name for an unsteady restart ---*/
 
   if (dual_time || time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter);
+    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
   /*--- Open the file and check for problems. If a file can not be found,
    then a warning will be printed, but the calculation will continue
@@ -5783,6 +5548,46 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
   }
 }
 
+void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
+}
+
+
+void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    node[iPoint]->Set_BGSSolution_k();
+
+  }
+
+}
+
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
@@ -5799,7 +5604,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   /*--- Routines to access the number of variables and string names. ---*/
 
   SetOutputVariables(geometry, config);
-
+  
   /*--- Initialize a zero solution and instantiate the CVariable class. ---*/
 
   Solution = new su2double[nVar];
@@ -5816,14 +5621,16 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   
 }
 
-CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names) {
 
   unsigned long iPoint;
   unsigned short iVar;
   
+  nVar = val_nvar;
+  
   nPoint = geometry->GetnPoint();
 
-  config->fields = field_names;
+  fields = field_names;
 
   Solution = new su2double[nVar];
 
@@ -5853,12 +5660,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
-  string Tag, text_line, AdjExt, UnstExt;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
+  string Tag, text_line;
 
   ifstream restart_file;
   string filename;
@@ -5868,30 +5670,18 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst());
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
 
   /*--- Read only the number of variables in the restart file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
     char fname[100];
     strcpy(fname, filename.c_str());
@@ -5932,13 +5722,22 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Close the file. ---*/
 
     fclose(fhw);
+    
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
 
+    nVar = var_buf[1];
 #else
 
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
     int ierr;
+    MPI_Offset disp;
+    unsigned short iVar;
+    unsigned long index, iChar;
+    string field_buf;
+    char str_buf[CGNS_STRING_SIZE];
     
     /*--- All ranks open the file using MPI. ---*/
 
@@ -5972,18 +5771,53 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
-    /*--- All ranks close the file after writing. ---*/
-    
-    MPI_File_close(&fhw);
 
-#endif
 
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
     nVar = var_buf[1];
-
+    
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+  
+    char *mpi_str_buf = new char[nVar*CGNS_STRING_SIZE];
+    if (rank == MASTER_NODE) {
+      disp = nVar_Buf*sizeof(int);
+      MPI_File_read_at(fhw, disp, mpi_str_buf, nVar*CGNS_STRING_SIZE,
+                       MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+    
+    /*--- Broadcast the string names of the variables. ---*/
+  
+    SU2_MPI::Bcast(mpi_str_buf, nVar*CGNS_STRING_SIZE, MPI_CHAR,
+                   MASTER_NODE, MPI_COMM_WORLD);
+    
+    fields.push_back("Point_ID");
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      index = iVar*CGNS_STRING_SIZE;
+      field_buf.append("\"");
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
+        str_buf[iChar] = mpi_str_buf[index + iChar];
+      }
+      field_buf.append(str_buf);
+      field_buf.append("\"");
+      fields.push_back(field_buf.c_str());
+      field_buf.clear();
+    }
+    
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+    
+#endif
   } else {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    filename = config->GetFilename(filename, ".csv", config->GetTimeIter());
 
     /*--- First, check that this is not a binary restart file. ---*/
 
@@ -6078,12 +5912,12 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     getline (restart_file, text_line);
 
-    stringstream ss(text_line);
-    while (ss >> Tag) {
-      config->fields.push_back(Tag);
-      if (ss.peek() == ',') ss.ignore();
+    fields = PrintingToolbox::split(text_line, ',');
+    
+    for (unsigned short iField = 0; iField < fields.size(); iField++){
+      PrintingToolbox::trim(fields[iField]);
     }
-
+    
     /*--- Close the file (the solution date is read later). ---*/
     
     restart_file.close();
@@ -6091,11 +5925,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
-    nVar = config->fields.size() - 1;
-
-    /*--- Clear the fields vector since we'll read it again. ---*/
-
-    config->fields.clear();
+    nVar = fields.size() - 1;
 
   }
 
@@ -6107,14 +5937,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   string filename;
   unsigned long index;
-  string UnstExt, text_line, AdjExt;
-  ifstream solution_file;
   unsigned short iDim, iVar;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
   unsigned short iInst = config->GetiInst();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
@@ -6132,27 +5956,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1 )
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst());
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  filename = config->GetFilename(filename, "", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
@@ -6265,36 +6073,20 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   /*--- Restart the solution from file information ---*/
   string filename;
   unsigned long index;
-  string UnstExt, text_line, AdjExt;
-  ifstream solution_file;
   unsigned short iVar;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  filename = config->GetFilename(filename, "", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
@@ -6409,19 +6201,19 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
   string Tag, text_line, AdjExt, UnstExt;
-  unsigned long iExtIter = config->GetExtIter();
+  unsigned long TimeIter = config->GetTimeIter();
 
   ifstream restart_file;
   string filename;
 
   /*--- Retrieve filename from config ---*/
 
-  filename = config->GetSolution_FlowFileName();
+  filename = config->GetSolution_FileName();
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
-  if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  if (config->GetTime_Domain()) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(TimeIter), ".dat");
   }
 
   /*--- Read only the number of variables in the restart file. ---*/
@@ -6635,13 +6427,10 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short iVar;
   unsigned long index;
 
-  string UnstExt, text_line;
-  ifstream restart_file;
+  string restart_filename = config->GetSolution_FileName();
 
-  string restart_filename = config->GetSolution_FlowFileName();
-
-  if (config->GetWrt_Unsteady()) {
-    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter));
+  if (config->GetTime_Domain()) {
+    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), "");
   }
 
   int counter = 0;

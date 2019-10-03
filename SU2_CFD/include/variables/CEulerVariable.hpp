@@ -71,9 +71,6 @@ protected:
 
   su2double *Solution_New;
 
-  /*--- Old solution container for BGS iterations ---*/
-  su2double* Solution_BGS_k;
-
 public:
 
   /*!
@@ -540,17 +537,4 @@ public:
       WindGustDer[iDim] = val_WindGustDer[iDim];
   }
 
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_k(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_BGS_k[iVar] = Solution[iVar];
-  }
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 };

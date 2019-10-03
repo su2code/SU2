@@ -86,22 +86,13 @@ private:
   unsigned short nZoneSpecified; /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
-  su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_F; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_F; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_S; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_S; /*!< \brief Minimum value of the log residual. */
-  su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
-  su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
-  su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
-  su2double Res_FEM_ADJ;     /*!< \brief Convergence criteria for adjoint FEM. */
   su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
+  string* ConvField;
+  unsigned short nConvField;
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
@@ -120,7 +111,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
-  bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
+  su2double StartTime;
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -163,7 +154,7 @@ private:
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
-  unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  unsigned short TimeMarching;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -402,6 +393,8 @@ private:
   unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
   unsigned long IntIter;			/*!< \brief Current internal iteration number. */
   unsigned long OuterIter;			/*!< \brief Current Outer Iteration for multizone problems. */
+  unsigned long InnerIter;			/*!< \brief Current Outer Iteration for multizone problems. */
+  unsigned long TimeIter;			/*!< \brief Current Outer Iteration for multizone problems. */
   unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
@@ -649,7 +642,6 @@ private:
   Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
   Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
   Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
-  bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
@@ -715,7 +707,7 @@ private:
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
   unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
-  unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
+  unsigned short Tab_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -741,37 +733,24 @@ private:
   su2double* Mesh_Box_Offset;       /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
-  Solution_FlowFileName,			/*!< \brief Flow solution input file. */
+  Solution_FileName,			/*!< \brief Flow solution input file. */
   Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
-  Solution_FEMFileName,			/*!< \brief Solution input file for structural problem. */
-  Solution_AdjFEMFileName,     /*!< \brief Adjoint solution input file for structural problem. */
-  Flow_FileName,					/*!< \brief Flow variables output file. */
-  Structure_FileName,					/*!< \brief Structure variables output file. */
-  SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
-  AdjStructure_FileName,         /*!< \brief Structure variables output file. */
-  AdjSurfStructure_FileName,         /*!< \brief Surface structure variables output file. */
-  SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
-  Heat_FileName,					/*!< \brief Heat variables output file. */
+  Volume_FileName,					/*!< \brief Flow variables output file. */
   Residual_FileName,				/*!< \brief Residual variables output file. */
   Conv_FileName,					/*!< \brief Convergence history output file. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
-  Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
-  Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
-  Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
+  Restart_FileName,			/*!< \brief Restart file for flow variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
-  Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
-  Restart_AdjFEMFileName,      /*!< \brief Restart file for FEM elasticity. */
   Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
   ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
   ObjFunc_Value_FileName,			/*!< \brief Objective function. */
-  SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
+  SurfCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  bool Low_MemoryOutput,      /*!< \brief Output less information for lower memory use */
-  Wrt_Output,                 /*!< \brief Write any output files */
+  bool Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -1081,17 +1060,30 @@ private:
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
-  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
-  Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
-  Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
-  Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
+  unsigned long nOuterIter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
+  nInnerIter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
+  nTimeIter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  nIter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
+  su2double *default_wrt_freq;
+  unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
+                ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
+  unsigned long VolumeWrtFreq;    /*!< \brief Writing frequency for solution files. */
+  unsigned short* VolumeOutputFiles; /*!< \brief File formats to output */
+  unsigned short nVolumeOutputFiles; /*!< \brief Number of File formats to output */
+  
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
+  bool Wrt_ZoneHist;            /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
   Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
+  string *ScreenOutput,    /*!< \brief Kind of the screen output. */
+  *HistoryOutput, *VolumeOutput;                  /*!< \brief Kind of the output printed to the history file. */
+  unsigned short nScreenOutput,         /*!< \brief Number of screen output variables (max: 6). */
+  nHistoryOutput, nVolumeOutput;                       /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;      /*!< \brief Determines if memory should be allocated for the multizone residual. */
   
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
@@ -2982,7 +2974,6 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void);
-  
   /*!
    * \brief Get the total number of deformable markers at the boundary.
    * \return Total number of deformable markers at the boundary.
@@ -3074,12 +3065,6 @@ public:
   void SetnMarker_All(unsigned short val_nmarker);
   
   /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
-   */
-  unsigned long GetnExtIter(void);
-  
-  /*!
    * \brief Get the number of internal iterations.
    * \return Number of internal iterations.
    */
@@ -3090,12 +3075,6 @@ public:
    * \return Number of internal iterations.
    */
   unsigned long GetDyn_nIntIter(void);
-  
-  /*!
-   * \brief Get the restart iteration number for unsteady simulations.
-   * \return Restart iteration number for unsteady simulations.
-   */
-  long GetUnst_RestartIter(void);
   
   /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
@@ -3110,12 +3089,6 @@ public:
   unsigned long GetIter_Avg_Objective(void);
   
   /*!
-   * \brief Get the restart iteration number for dynamic structural simulations.
-   * \return Restart iteration number for dynamic structural simulations.
-   */
-  long GetDyn_RestartIter(void);
-
-  /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
    * \return: Number of periodic time instances for Harmonic Balance.
    */
@@ -3126,20 +3099,6 @@ public:
    * \return: Period for Harmonic Balance.
    */
   su2double GetHarmonicBalance_Period(void);
-  
-  /*!
-   * \brief Set the number of external iterations.
-   * \note This is important in no time depending methods, where only
-   *       one external iteration is needed.
-   * \param[in] val_niter - Set the number of external iterations.
-   */
-  void SetnExtIter(unsigned long val_niter);
-  
-  /*!
-   * \brief Set the current external iteration number.
-   * \param[in] val_iter - Current external iteration number.
-   */
-  void SetExtIter(unsigned long val_iter);
   
   /*!
    * \brief Set the current external iteration number.
@@ -3154,16 +3113,22 @@ public:
   void SetOuterIter(unsigned long val_iter);
   
   /*!
-   * \brief Set the current internal iteration number.
-   * \param[in] val_iter - Current external iteration number.
+   * \brief Set the current FSI iteration number.
+   * \param[in] val_iter - Current FSI iteration number.
    */
-  void SetIntIter(unsigned long val_iter);
+  void SetInnerIter(unsigned long val_iter);
   
   /*!
-   * \brief Get the current external iteration number.
-   * \return Current external iteration.
+   * \brief Set the current time iteration number.
+   * \param[in] val_iter - Current FSI iteration number.
    */
-  unsigned long GetExtIter(void);
+  void SetTimeIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Get the current time iteration number.
+   * \param[in] val_iter - Current time iterationnumber.
+   */
+  unsigned long GetTimeIter();
   
   /*!
    * \brief Get the current internal iteration number.
@@ -3178,11 +3143,11 @@ public:
   unsigned long GetOuterIter(void);
   
   /*!
-   * \brief Get the current internal iteration number.
-   * \return Current internal iteration.
+   * \brief Get the current FSI iteration number.
+   * \return Current FSI iteration.
    */
-  unsigned long GetIntIter(void);
-
+  unsigned long GetInnerIter(void);
+  
   /*!
    * \brief Set the current physical time.
    * \param[in] val_t - Current physical time.
@@ -3242,13 +3207,7 @@ public:
    * \return <code>TRUE</code> means that a volume solution file will be written.
    */
   bool GetWrt_Vol_Sol(void);
-  
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetLow_MemoryOutput(void);
-  
+
   /*!
    * \brief Get information about writing a surface solution file.
    * \return <code>TRUE</code> means that a surface solution file will be written.
@@ -4812,12 +4771,6 @@ public:
   bool GetFrozen_Limiter_Disc(void);
   
   /*!
-   * \brief Write convergence file for FSI problems
-   * \return <code>FALSE</code> means no file is written.
-   */
-  bool GetWrite_Conv_FSI(void);
-  
-  /*!
    * \brief Provides information about if the sharp edges are going to be removed from the sensitivity.
    * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.
    */
@@ -5223,7 +5176,7 @@ public:
    * \return The kind of time integration: Steady state, time stepping method (unsteady) or
    *         dual time stepping method (unsteady).
    */
-  unsigned short GetUnsteady_Simulation(void);
+  unsigned short GetTime_Marching(void);
   
   /*!
    * \brief Provides the number of chemical reactions in the chemistry model
@@ -5448,7 +5401,7 @@ public:
    * \brief Get the name of the file with the solution of the flow problem.
    * \return Name of the file with the solution of the flow problem.
    */
-  string GetSolution_FlowFileName(void);
+  string GetSolution_FileName(void);
   
   /*!
    * \brief Get the name of the file with the solution of the adjoint flow problem
@@ -5457,19 +5410,7 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the solution of the structural problem.
-   * \return Name of the file with the solution of the structural problem.
-   */
-  string GetSolution_FEMFileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the solution of the adjoint structural problem.
-   * \return Name of the file with the solution of the structural problem.
-   */
-  string GetSolution_AdjFEMFileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the residual of the problem.
    * \return Name of the file with the residual of the problem.
@@ -5486,7 +5427,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetOutput_FileFormat(void);
+  unsigned short GetTabular_FileFormat(void);
   
   /*!
    * \brief Get the format of the output solution.
@@ -5499,13 +5440,7 @@ public:
    * \return Name of the file with convergence history of the problem.
    */
   string GetConv_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the convergence history of the problem for FSI applications.
-   * \return Name of the file with convergence history of the problem.
-   */
-  string GetConv_FileName_FSI(void);
-  
+
   /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
    * \return Name of the file with forces breakdown of the problem.
@@ -5516,44 +5451,8 @@ public:
    * \brief Get the name of the file with the flow variables.
    * \return Name of the file with the primitive variables.
    */
-  string GetFlow_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
-  string GetStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
-  string GetSurfStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint structure variables.
-   * \return Name of the file with the adjoint structure variables.
-   */
-  string GetAdjStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint structure variables.
-   * \return Name of the file with the adjoint structure variables.
-   */
-  string GetAdjSurfStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
-  string GetSurfHeat_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the wave variables.
-   * \return Name of the file with the wave variables.
-   */
-  string GetHeat_FileName(void);
-  
+  string GetVolume_FileName(void);
+
   /*!
    * \brief Get the name of the restart file for the heat variables.
    * \return Name of the restart file for the flow variables.
@@ -5561,22 +5460,31 @@ public:
   string GetRestart_HeatFileName(void);
   
   /*!
+   * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] filename - the base filename.
+   * \param[in] ext - the extension to be added.
+   * \return The new filename
+   */
+  string GetFilename(string filename, string ext, unsigned long Iter);
+  
+  /*!
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_FileName(string val_filename, int val_iZone);
+  string GetMultizone_FileName(string val_filename, int val_iZone, string ext);
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
   
   /*!
    * \brief Append the instance index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_FileName(string val_filename, int val_iInst);
+  string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext);
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5588,26 +5496,14 @@ public:
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
-  string GetRestart_FlowFileName(void);
+  string GetRestart_FileName(void);
   
   /*!
    * \brief Get the name of the restart file for the adjoint variables (drag objective function).
    * \return Name of the restart file for the adjoint variables (drag objective function).
    */
   string GetRestart_AdjFileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the structural variables.
-   * \return Name of the restart file for the structural variables.
-   */
-  string GetRestart_FEMFileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the structural adjoint variables.
-   * \return Name of the restart file for the structural adjoint variables.
-   */
-  string GetRestart_AdjFEMFileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the adjoint variables.
    * \return Name of the file with the adjoint variables.
@@ -5630,7 +5526,7 @@ public:
    * \brief Get the name of the file with the surface information for the flow problem.
    * \return Name of the file with the surface information for the flow problem.
    */
-  string GetSurfFlowCoeff_FileName(void);
+  string GetSurfCoeff_FileName(void);
   
   /*!
    * \brief Get the name of the file with the surface information for the adjoint problem.
@@ -5656,7 +5552,7 @@ public:
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, int val_iter);
+  string GetUnsteady_FileName(string val_filename, int val_iter, string ext);
   
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.
@@ -6317,76 +6213,10 @@ public:
   unsigned short GetContainerPosition(unsigned short val_eqsystem);
   
   /*!
-   * \brief Value of the order of magnitude reduction of the residual.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual(void);
-  
-  /*!
    * \brief Value of the minimum residual value (log10 scale).
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the residual for FSI applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidualFSI(void);
-  
-  /*!
-   * \brief Value of the minimum residual value for FSI applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidualFSI(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual_BGS_F(void);
-  
-  /*!
-   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidual_BGS_F(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual_BGS_S(void);
-  
-  /*!
-   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidual_BGS_S(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_UTOL(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_RTOL(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_ETOL(void);
-  
-  /*!
-   * \brief Value of the maximum objective function for FEM elasticity adjoint (log10 scale).
-   * \return Value of Res_FEM_ADJ (log10 scale).
-   */
-  su2double GetCriteria_FEM_ADJ(void);
   
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
@@ -6525,7 +6355,7 @@ public:
    * \param[in] val_solver - Solver of the simulation.
    * \param[in] val_system - Runtime system that we are solving.
    */
-  void SetGlobalParam(unsigned short val_solver, unsigned short val_system, unsigned long val_extiter);
+  void SetGlobalParam(unsigned short val_solver, unsigned short val_system);
   
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
@@ -9237,10 +9067,16 @@ public:
 
   /*!
    * \brief Get the number of time iterations
-   * \return Number of time steps run for the multizone problem
+   * \return Number of time steps run 
    */
   unsigned long GetnTime_Iter(void);
 
+  /*!
+   * \brief Set the number of time iterations
+   * \param[in] val_iter - Number of time steps run 
+   */
+  void SetnTime_Iter(unsigned long val_iter);
+  
   /*!
    * \brief Get the number of pseudo-time iterations
    * \return Number of pseudo-time steps run for the single-zone problem
@@ -9290,6 +9126,19 @@ public:
   bool GetSinglezone_Driver(void);
 
   /*!
+   * \brief Check if the convergence history of each individual zone is written to screen
+   * \return YES if the zone convergence history of each individual zone must be written to screen
+   */
+  bool GetWrt_ZoneConv(void);
+
+  /*!
+   * \brief Check if the convergence history of each individual zone is written to file
+   * \return YES if the zone convergence history of each individual zone must be written to file
+   */
+  bool GetWrt_ZoneHist(void);
+
+
+  /*!
    * \brief Check if the special output is written
    * \return YES if the special output is written.
    */
@@ -9320,6 +9169,91 @@ public:
   su2double GetMeshBoxOffset(unsigned short val_iDim);
 
   /*!
+   * \brief Get the number of screen output variables requested (maximum 6)
+   */
+  unsigned short GetnScreenOutput(void);
+
+  /*
+  * \brief Get the screen output field iField
+  */
+  string GetScreenOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnHistoryOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetHistoryOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnVolumeOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetVolumeOutput_Field(unsigned short iField);
+
+  /*
+  * \brief Get the convergence fields for monitoring
+  * \param[in] iField - Index of the field
+  * return Field name for monitoring convergence
+  */
+  string GetConv_Field(unsigned short iField);
+  
+  /*
+  * \brief Get the number of convergence monitoring fields.
+  * return Number of convergence monitoring fields.
+  */
+  unsigned short GetnConv_Field();  
+  
+  /*!
+   * \brief Set_StartTime
+   * \param starttime
+   */
+  void Set_StartTime(su2double starttime);
+  
+  /*!
+   * \brief Get_StartTime
+   * \return 
+   */
+  su2double Get_StartTime();
+
+  /*!
+   * \brief GetHistory_Wrt_Freq_Inner
+   * \return 
+   */
+  unsigned long GetHistory_Wrt_Freq(unsigned short iter);
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq_Inner
+   * \return 
+   */
+  unsigned long GetScreen_Wrt_Freq(unsigned short iter);
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq_Inner
+   * \return 
+   */
+  unsigned long GetVolume_Wrt_Freq();
+  
+  /*!
+   * \brief GetVolumeOutputFiles
+   * \return 
+   */
+  unsigned short* GetVolumeOutputFiles();
+  
+  /*!
+   * \brief GetnVolumeOutputFiles
+   * \return 
+   */
+  unsigned short GetnVolumeOutputFiles();
+  
+  /*!
    * \brief Get the desired factorization frequency for PaStiX
    * \return Number of calls to 'Build' that trigger re-factorization.
    */
@@ -9337,6 +9271,12 @@ public:
    */
   unsigned short GetPastixFillLvl(void);
 
+  /*!
+   * \brief Check if an option is present in the config file
+   * \param[in] - Name of the option
+   * \return <TRUE> if option was set in the config file
+   */
+  bool OptionIsSet(string option);
 };
 
 #include "config_structure.inl"
