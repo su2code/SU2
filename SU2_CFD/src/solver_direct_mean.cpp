@@ -8373,16 +8373,6 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
 //    }
 //  }
 
-  if (config->GetKind_SyntheticTurbulence() == VOLUME_STG){
-  
-    /*--- Gaussian spatial distribution ---*/
-    std::nth_element(ListCoordX.begin(), ListCoordX.begin() + ListCoordX.size()/2, ListCoordX.end());
-    su2double median = ListCoordX[ListCoordX.size()/2];
-    
-    for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
-      AlphaX.push_back(exp(- M_PI * pow(ListCoordX[kk] - median, 2.0) / (2. * pow(config->GetLength_Reynolds(), 2.))));
-    }
-  }
   
   /*--- Load the STG points ---*/
   vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
@@ -8390,15 +8380,23 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
   // Resize the Velocity fluctuation vector;
   VSTG_VelFluct.resize(3*LocalPoints.size());
   
+  // Maximum Velocity Fluctuation (just to check)
+  su2double VelFluct_max = 0.0, Global_VelFluct_max=0.0;
+  su2double Alpha_max = 0.0, Global_Alpha_max=0.0;
+  su2double Alpha_min = 1.0, Global_Alpha_min=1.0;
+  
   /*--- Calculate the local most energetic wave number.  --*/
   su2double k_min = 2.0 * PI_NUMBER / global_lengthEnergetic[0];
   
   /*--- Calculate the local Nyquist wave number --*/
   const su2double k_cut = 2.0 * PI_NUMBER / global_lengthEnergetic[1];
   
+  // Integral time scale
+  //su2double IntTimeScale = config->GetLength_Reynolds() / U0;
+  su2double IntTimeScale = ( global_lengthEnergetic[1] / (2.0 * PI_NUMBER)) / U0;
+  
   if ( k_min > k_cut)
     SU2_MPI::Error("Most energetic wave number is greater than the Nyquist one. Please check inputs", CURRENT_FUNCTION);
-  
   
   /*--- Wave numbers at faces---*/
   su2double alpha = 0.01;
@@ -8418,6 +8416,17 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
   if (WaveNumbers.size() > PhaseMode.size())
     SU2_MPI::Error("Increase the number of initial modes! Please check inputs", CURRENT_FUNCTION);
 
+  if (config->GetKind_SyntheticTurbulence() == VOLUME_STG){
+  
+    /*--- Gaussian spatial distribution ---*/
+    std::nth_element(ListCoordX.begin(), ListCoordX.begin() + ListCoordX.size()/2, ListCoordX.end());
+    su2double median = ListCoordX[ListCoordX.size()/2];
+    
+    for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
+      AlphaX.push_back(exp(- M_PI * pow(ListCoordX[kk] - median, 2.0) / (2. * pow( global_lengthEnergetic[1] / (2.0 * PI_NUMBER), 2.))));
+    }
+  }
+  
 #ifndef HAVE_MPI
   cout << "Wave Numbers: " << WaveNumbers.size() << endl;
   ofstream STGData;
@@ -8561,6 +8570,7 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
     }
     
     if (config->GetKind_SyntheticTurbulence() == VOLUME_STG){
+      
       // Index
       unsigned short indx = -1;
       for(std::vector<int>::size_type kk = 0; kk != ListCoordX.size(); kk++) {
@@ -8570,16 +8580,25 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
       
       // Add the perturbations to the auxliar array of primitive variables
       for (iDim = 0; iDim < nDim; iDim++){
-        VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] * U0 / config->GetLength_Reynolds();
+        VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim] * AlphaX[indx] / IntTimeScale;
+        //VelFluct_max = max(abs(VelTurb[iDim]), VelFluct_max);
+        VelFluct_max = max(abs(VSTG_VelFluct[ii*nDim+iDim]), VelFluct_max);
       }
+      
+      Alpha_max = max(abs(AlphaX[indx]), Alpha_max);
+      Alpha_min = min(abs(AlphaX[indx]), Alpha_min);
+      
       if (debug_cout)
-        cout << Coord[0] << " " << Coord[1] << " " << Coord[2] <<  " " << VelTurb[0] << " " << VelTurb[1] << " " << VelTurb[2] << " " << AlphaX[indx] << endl;
+        cout << rank << " " << Coord[0] << " " << Coord[1] << " " << Coord[2] <<  " " << VelTurb[0] << " " << VelTurb[1] << " " << VelTurb[2] << " " << AlphaX[indx] << endl;
+    
     }
     else if (config->GetKind_SyntheticTurbulence() == INLET_STG){
+    
       // Add the perturbations to the auxliar array of primitive variables
       for (iDim = 0; iDim < nDim; iDim++){
         VSTG_VelFluct[ii*nDim+iDim] = VelTurb[iDim];
       }
+    
     }
     
 #ifndef HAVE_MPI
@@ -8591,6 +8610,21 @@ void CEulerSolver::SetSynthetic_Turbulence(CGeometry *geometry, CSolver **solver
   STGData.close();
 #endif
 
+#ifdef HAVE_MPI
+
+  if (config->GetKind_SyntheticTurbulence() == VOLUME_STG){
+    SU2_MPI::Allreduce(&VelFluct_max, &Global_VelFluct_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Alpha_max, &Global_Alpha_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Alpha_min, &Global_Alpha_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE){
+      cout << "Maximum Source Term STG: " << Global_VelFluct_max << endl;
+      cout << "Maximum Spatial Distribution STG: " << Global_Alpha_max << endl;
+      cout << "Minimum Spatial Distribution STG: " << Global_Alpha_min << endl;
+    }
+  }
+#endif
+  
 }
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
