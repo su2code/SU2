@@ -48,8 +48,7 @@
 class CHeatFVMVariable : public CVariable {
 protected:
   su2double* Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  su2double* Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
-  su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term */
+  su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term. */
   bool GradReconAllocated;              /*!< \brief Flag indicating that separate memory was allocated for the MUSCL reconstruction gradient. */
   
 public:

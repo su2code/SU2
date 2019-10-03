@@ -1,9 +1,9 @@
 /*!
- * \file output_structure.hpp
+ * \file output.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.2.0 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -49,28 +49,30 @@
 #include <fstream>
 #include <cmath>
 #include <time.h>
-#include <sstream>
-#include <iomanip>
-#include <limits>
+#include <fstream>
+#include <vector>
 
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/fem_standard_element.hpp"
-#include "../../Common/include/config_structure.hpp"
+//#include "../solver_structure.hpp"
+//#include "../integration_structure.hpp"
+//#include "../../../Common/include/geometry_structure.hpp"
+//#include "../../../Common/include/fem_geometry_structure.hpp"
+//#include "../../../Common/include/fem_standard_element.hpp"
 
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/option_structure.hpp"
+class CGeometry;
+class CConfig;
+class CSolver;
+class CIntegration;
 
 using namespace std;
 
 /*! 
- * \class COutput
+ * \class COutputLegacy
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
  */
-class COutput {
+class COutputLegacy {
 
   unsigned long nGlobal_Poin;   // Global number of nodes with halos
   unsigned long nSurf_Poin;   // Global number of nodes of the surface
@@ -219,12 +221,12 @@ public:
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *congig);
+  COutputLegacy(CConfig *congig);
 
   /*! 
    * \brief Destructor of the class. 
    */
-  ~COutput(void);
+  ~COutputLegacy(void);
 
   /*! 
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
@@ -529,103 +531,93 @@ public:
    */
   void SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
-  /*!
-   * \brief Write a Paraview ASCII solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+//  /*!
+//   * \brief Write a Paraview ASCII solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   */
+//  void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
 
-  /*!
-   * \brief Write a Paraview ASCII solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file);
+//  /*!
+//   * \brief Write a Paraview ASCII solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   */
+//  void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file);
 
-  /*!
-   * \brief Write a Paraview ASCII solution file with parallel output.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-   */
-  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+//  /*!
+//   * \brief Write a Paraview ASCII solution file with parallel output.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+//   */
+//  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
 
-  /*!
-   * \brief Write a Paraview binary solution file with parallel output.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-   */
-  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+//  /*!
+//   * \brief Write a Paraview binary solution file with parallel output.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+//   */
+//  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
-  /*!
-   * \brief Write a Tecplot ASCII solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+//  /*!
+//   * \brief Write a Tecplot ASCII solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   */
+//  void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
 
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
 
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   */
+//  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
   
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool surf_sol, bool new_file);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool surf_sol, bool new_file);
 
-  /*!
-   * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-   */
-  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
-
-  /*!
-   * \brief Write a Tecplot binary solution file with parallel output.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-   */
-  void WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+//  /*!
+//   * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+//   */
+//  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -659,79 +651,70 @@ public:
    */
   void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
-  /*!
-   * \brief Write a file with the adjoint sensitivities projected onto each surface node.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void WriteProjectedSensitivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+//  /*!
+//   * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
-  /*!
-   * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-   * \brief Write solution data to a Tecplot binary volume solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+//  /*!
+//   * \brief Write solution data to a Tecplot binary volume solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
-  /*!
-   * \brief Write solution data to a Tecplot binary surface solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+//  /*!
+//   * \brief Write solution data to a Tecplot binary surface solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
-  /*!
-   * \brief Write a Tecplot ASCII solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+//  /*!
+//   * \brief Write a Tecplot ASCII solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - Current zone.
+//   * \param[in] val_nZone - Total number of zones.
+//   */
+//  void SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
   
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetFieldViewASCII_Mesh(CConfig *config, CGeometry *geometry);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetFieldViewASCII_Mesh(CConfig *config, CGeometry *geometry);
   
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetFieldViewBinary_Mesh(CConfig *config, CGeometry *geometry);
+//  /*!
+//   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetFieldViewBinary_Mesh(CConfig *config, CGeometry *geometry);
   
-  /*!
-   * \brief Write solution data to a Tecplot binary volume solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+//  /*!
+//   * \brief Write solution data to a Tecplot binary volume solution file.
+//   * \param[in] config - Definition of the particular problem.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] val_iZone - iZone index.
+//   */
+//  void SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
    * \brief Deallocate temporary memory needed for merging and writing coordinates.
@@ -938,10 +921,9 @@ public:
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
+   * \param[in] val_nZone - iZone index.
    */
-  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort);
+  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
@@ -956,9 +938,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
-   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, bool val_sort);
+  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors (DG-FEM solver).
@@ -1068,4 +1049,4 @@ public:
 
 };
 
-#include "output_structure.inl"
+#include "output_structure_legacy.inl"

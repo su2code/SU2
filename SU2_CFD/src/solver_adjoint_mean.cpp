@@ -300,7 +300,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (restart && (iMesh == MESH_0)) {
     mesh_filename = config->GetSolution_AdjFileName();
     filename      = config->GetObjFunc_Extension(mesh_filename);
-    Read_SU2_Restart_Metadata(geometry, config, true, filename);
+//    Read_SU2_Restart_Metadata(geometry, config, true, filename);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -1579,14 +1579,14 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
   
 }
 
-void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar;
   su2double Area_Children, Area_Parent, *Solution, *Solution_Fine;
   
   bool restart = config->GetRestart();
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
@@ -1616,7 +1616,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   /*--- The value of the solution for the first iteration of the dual time ---*/
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      if ((ExtIter == 0) && (dual_time)) {
+      if ((TimeIter == 0) && (dual_time)) {
         solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->Set_Solution_time_n();
         solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
       }
@@ -1931,7 +1931,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   //  bool gravity        = (config->GetGravityForce() == YES);
-  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool harmonic_balance  = (config->GetTime_Marching() == HARMONIC_BALANCE);
   
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -2931,12 +2931,12 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
                                       CConfig *config, unsigned short iMesh, bool Output) {
   
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long ExtIter       = config->GetExtIter();
+  unsigned long InnerIter     = config->GetInnerIter();
   bool Update_AoA             = false;
   su2double dCL_dAlpha        = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   unsigned long Update_Alpha  = config->GetUpdate_Alpha();
   
-  if (ExtIter == 0) AoA_Counter = 0;
+  if (InnerIter == 0) AoA_Counter = 0;
   
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
@@ -2949,7 +2949,7 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     /*--- Reevaluate the lift derivative with respect to Angle of Attack
      at a fix number of iterations ---*/
     
-    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+    if ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0)) {
       AoA_Counter++;
       if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
       Update_AoA = true;
@@ -3015,7 +3015,7 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
   
   /*--- Output some information to the console with the headers ---*/
   
-  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
+  bool write_heads = ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0));
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     cout.precision(7);
     cout.setf(ios::fixed, ios::floatfield);
@@ -4764,9 +4764,9 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     
     /*--- Compute Residual ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Residual[iVar] = ( U_time_nP1[iVar]*Volume_nP1 - U_time_n[iVar]*Volume_n ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         Residual[iVar] = ( 3.0*U_time_nP1[iVar]*Volume_nP1 - 4.0*U_time_n[iVar]*Volume_n
                           +  1.0*U_time_nM1[iVar]*Volume_nM1 ) / (2.0*TimeStep);
     }
@@ -4779,9 +4779,9 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
         
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        if (config->GetTime_Marching() == DT_STEPPING_1ST)
           Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        if (config->GetTime_Marching() == DT_STEPPING_2ND)
           Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
       }
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -4796,19 +4796,13 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  string UnstExt, text_line, filename, restart_filename;
-  ifstream restart_file;
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
+  string filename, restart_filename;
 
   /*--- Restart the solution from file information ---*/
 
   filename         = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
+  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -4817,16 +4811,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
-
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (dual_time || time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -5125,7 +5109,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (restart && (iMesh == MESH_0)) {
     mesh_filename = config->GetSolution_AdjFileName();
     filename      = config->GetObjFunc_Extension(mesh_filename);
-    Read_SU2_Restart_Metadata(geometry, config, true, filename);
+//    Read_SU2_Restart_Metadata(geometry, config, true, filename);
   }
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/

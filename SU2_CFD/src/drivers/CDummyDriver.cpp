@@ -16,4 +16,9 @@ void CDummyDriver::StartSolver(){
     cout << "No solver started. DRY_RUN option enabled. " << endl;
     cout << "--------------------------------------------" << endl;
   }
+  
+  for (iZone = 0; iZone < nZone; iZone++){
+    output_container[iZone]->PrintVolumeFields();
+    output_container[iZone]->PrintHistoryFields();
+  }
 }

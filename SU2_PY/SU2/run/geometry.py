@@ -79,10 +79,17 @@ def geometry ( config , step = 1e-3 ):
     
     # unpack
     function_name = konfig['GEO_PARAM']
-
+    tabular_format = konfig.get('TABULAR_FORMAT', 'CSV')
     func_filename  = konfig['VALUE_OBJFUNC_FILENAME']
-
     grad_filename  = konfig['GRAD_OBJFUNC_FILENAME']
+
+    if tabular_format == 'CSV':
+        func_filename = func_filename.split('.')[0] + '.csv'
+        grad_filename = grad_filename.split('.')[0] + '.csv'
+    else:
+        func_filename = func_filename.split('.')[0] + '.dat'
+        grad_filename = grad_filename.split('.')[0] + '.dat'
+
 
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']

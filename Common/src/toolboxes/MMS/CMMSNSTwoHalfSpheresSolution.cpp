@@ -94,7 +94,7 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
     SU2_MPI::Error("Grid must be 3D for the MMS NS Two Half Spheres case",
                    CURRENT_FUNCTION);
 
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Two Half Spheres case",
                    CURRENT_FUNCTION);
 

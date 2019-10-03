@@ -1,7 +1,7 @@
 /*!
- * \file output_structure.inl
- * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
- * \author J. Smith
+ * \file CCSVFileWriter.hpp
+ * \brief Headers fo the CSV file writer class.
+ * \author T. Albring
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -36,11 +36,30 @@
  */
 
 #pragma once
+#include "CFileWriter.hpp"
 
-inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
+class CCSVFileWriter final: public CFileWriter{
+  
+public:
+  
+  /*!
+   * \brief Construct a file writer using field names, file extension and dimension.
+   * \param[in] fields - A list of field names
+   * \param[in] nDim - Physical dimension
+   */  
+  CCSVFileWriter(vector<string> fields, unsigned short nDim, string fileName, CParallelDataSorter* data_sorter);
+  
+  /*!
+   * \brief Destructor
+   */
+  ~CCSVFileWriter() override;
+  
+  /*!
+   * \brief Write sorted data to file in CSV file format
+   * \param[in] - The name of the file
+   * \param[in] - The parallel sorted data to write
+   */
+  void Write_Data() override;
+  
+};
 
-inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
-
-inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
-
-inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }
