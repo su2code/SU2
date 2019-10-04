@@ -107,11 +107,6 @@ public:
    */
   void Run();
 
-//  /*!
-//   * \brief Check the convergence at the outer level.
-//   */
-//  bool OuterConvergence(unsigned long OuterIter);
-
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
