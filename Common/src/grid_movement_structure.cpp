@@ -2714,12 +2714,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         if (rank == MASTER_NODE) {
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             unsigned short *FileFormat = config->GetVolumeOutputFiles();
-            if (FileFormat[iFile] == PARAVIEW) {
+            if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
               cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
               }
-            } else if (FileFormat[iFile] == TECPLOT) {
+            } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
               cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -2800,12 +2800,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           unsigned short *FileFormat = config->GetVolumeOutputFiles();
           
-          if (FileFormat[iFile] == PARAVIEW) {
+          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (FileFormat[iFile] == TECPLOT) {
+          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -2979,12 +2979,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             unsigned short *FileFormat = config->GetVolumeOutputFiles();
             
-            if (FileFormat[iFile] == PARAVIEW) {
+            if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
               cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
               }
-            } else if (FileFormat[iFile] == TECPLOT) {
+            } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
               cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
