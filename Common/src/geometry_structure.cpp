@@ -2707,8 +2707,9 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     if(config->GetMultiphysicsDiscrete_Adjoint()) {
       for (iDim = 0; iDim < nDim; iDim++) {
+//        In case we are dealing with mesh adjoints the following two lines might be needed
 //        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
-//        node[iPoint]->Set_AdjIndices(false);
+//        node[iPoint]->SetAdjIndices(false);
         AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
       }
     }

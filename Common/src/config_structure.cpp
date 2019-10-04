@@ -5147,16 +5147,16 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Add an extra check for DV_MARKER to make sure that any given marker
    name is recognized as an existing boundary in the problem. ---*/
   
-//  unsigned short markerCount = 0;
-//  for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
-//    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-//      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
-//        markerCount++;
-//    }
-//  }
-//  if ((nMarker_DV > 0) && (markerCount != nMarker_DV)) {
-//    SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
-//  }
+  unsigned short markerCount = 0;
+  for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
+        markerCount++;
+    }
+  }
+  if ((nMarker_DV > 0) && (markerCount != nMarker_DV)) {
+    SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+  }
   
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Moving[iMarker_CfgFile] = NO;
@@ -6243,8 +6243,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_CFD) {
 
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
-
-    cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
 
     cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
     cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
