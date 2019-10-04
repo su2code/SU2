@@ -2303,10 +2303,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
 
-//  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-  
-//  solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry[iZone][iInst][MESH_0], config[iZone]);
-
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
