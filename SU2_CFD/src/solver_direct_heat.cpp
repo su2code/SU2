@@ -1051,7 +1051,7 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
           V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
           for (iDim = 0; iDim < nDim; iDim++)
-            V_outlet[iDim+1] = solver_container[FLOW_SOL]->node->GetPrimitive(Point_Normal, iDim+1);
+            V_outlet[iDim+1] = solver_container[FLOW_SOL]->node->GetVelocity(Point_Normal, iDim);
 
           conv_numerics->SetPrimitive(V_domain, V_outlet);
 

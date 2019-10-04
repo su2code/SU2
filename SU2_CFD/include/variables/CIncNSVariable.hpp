@@ -119,7 +119,6 @@ public:
 
   /*!
    * \brief Get the value of the vorticity.
-   * \param[in] val_dim - Index of the dimension.
    * \return Value of the vorticity.
    */
   inline su2double *GetVorticity(Idx_t iPoint) override { return Vorticity[iPoint]; }

@@ -5092,7 +5092,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Neumann condition for the velocity. ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            V_outlet[iDim+1] = snode->GetPrimitive(iPoint,iDim+1);
+            V_outlet[iDim+1] = snode->GetVelocity(iPoint,iDim);
           }
           
           break;
@@ -5131,7 +5131,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Neumann condition for the velocity ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            V_outlet[iDim+1] = snode->GetPrimitive(iPoint,iDim+1);
+            V_outlet[iDim+1] = snode->GetVelocity(iPoint,iDim);
           }
           
           break;
