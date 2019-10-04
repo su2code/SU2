@@ -2470,7 +2470,7 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
-
+  
   /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
   addPythonOption("MULTIPOINT_MESH_FILENAME");
 
@@ -2909,12 +2909,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
-#ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
-  }
-#endif
+//#ifndef HAVE_TECIO
+//  if (Output_FileFormat == TECPLOT_BINARY) {
+//    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
+//    Output_FileFormat = TECPLOT;
+//  }
+//#endif
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/

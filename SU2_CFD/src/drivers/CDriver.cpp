@@ -4622,11 +4622,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
         for (iVar = 0; iVar < nVar; iVar++) {
 
           if (!adjoint) {
-            U[iVar] = solver_container[ZONE_0][jInst][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            U[iVar] = solver_container[ZONE_0][jInst][iMGlevel][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
             Source[iVar] += U[iVar]*D[iInst][jInst];
 
             if (implicit) {
-              U_old[iVar] = solver_container[ZONE_0][jInst][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              U_old[iVar] = solver_container[ZONE_0][jInst][iMGlevel][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, iVar);
               deltaU = U[iVar] - U_old[iVar];
               Source[iVar] += deltaU*D[iInst][jInst];
             }
@@ -4634,11 +4634,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
           }
 
           else {
-            Psi[iVar] = solver_container[ZONE_0][jInst][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            Psi[iVar] = solver_container[ZONE_0][jInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
             Source[iVar] += Psi[iVar]*D[jInst][iInst];
 
             if (implicit) {
-              Psi_old[iVar] = solver_container[ZONE_0][jInst][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              Psi_old[iVar] = solver_container[ZONE_0][jInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, iVar);
               deltaPsi = Psi[iVar] - Psi_old[iVar];
               Source[iVar] += deltaPsi*D[jInst][iInst];
             }
@@ -4648,10 +4648,10 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
         /*--- Store sources for current row ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
           if (!adjoint) {
-            solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iVar]);
+            solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iVar]);
           }
           else {
-            solver_container[ZONE_0][iInst][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iVar]);
+            solver_container[ZONE_0][iInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iVar]);
           }
         }
 
@@ -4675,14 +4675,14 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
-          U_Turb[iVar] = solver_container[ZONE_0][jInst][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
+          U_Turb[iVar] = solver_container[ZONE_0][jInst][MESH_0][TURB_SOL]->GetNodes()->GetSolution(iPoint, iVar);
           Source_Turb[iVar] += U_Turb[iVar]*D[iInst][jInst];
         }
       }
 
       /*--- Store sources for current iZone ---*/
       for (iVar = 0; iVar < nVar_Turb; iVar++)
-        solver_container[ZONE_0][iInst][MESH_0][TURB_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source_Turb[iVar]);
+        solver_container[ZONE_0][iInst][MESH_0][TURB_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source_Turb[iVar]);
     }
 
     delete [] U_Turb;
@@ -4723,7 +4723,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][iMGlevel]->GetnPoint(); iPoint++) {
 
       /*--- Get time step for current node ---*/
-      Delta = solver_container[ZONE_0][INST_0][iMGlevel][FLOW_SOL]->node[iPoint]->GetDelta_Time();
+      Delta = solver_container[ZONE_0][INST_0][iMGlevel][FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
 
       /*--- Setup stabilization matrix for this node ---*/
       for (iInst = 0; iInst < nInstHB; iInst++) {
@@ -4822,7 +4822,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
 
         /*--- Get current source terms (not yet preconditioned) and zero source array to prepare preconditioning ---*/
         for (iInst = 0; iInst < nInstHB; iInst++) {
-          Source_old[iInst] = solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->node[iPoint]->GetHarmonicBalance_Source(iVar);
+          Source_old[iInst] = solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->GetNodes()->GetHarmonicBalance_Source(iPoint, iVar);
           Source[iInst] = 0;
         }
 
@@ -4834,10 +4834,10 @@ void CHBDriver::StabilizeHarmonicBalance() {
 
           /*--- Store updated source terms for current node ---*/
           if (!adjoint) {
-            solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iInst]);
+            solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iInst]);
           }
           else {
-            solver_container[ZONE_0][iInst][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iInst]);
+            solver_container[ZONE_0][iInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iInst]);
           }
         }
 
@@ -5326,13 +5326,11 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-            if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
-            }
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
+          if (turbulent) {
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
           }
         }
       }
@@ -5345,11 +5343,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-            if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
-            }
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+          if (turbulent) {
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
           }
         }
       }
@@ -5370,11 +5366,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
-        for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-           solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_OldSolution();
-           if (turbulent){
-             solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_OldSolution();
-           }
+        solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_OldSolution();
+        if (turbulent){
+         solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_OldSolution();
         }
       }
 
@@ -5382,9 +5376,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
       for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
         for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->SetSolution(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_time_n());
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint));
           if (turbulent) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->SetSolution(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n());
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n(iPoint));
           }
         }
       }
@@ -5392,9 +5386,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
       /*--- Set Solution at timestep n-1 to the previously loaded solution ---*/
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
           for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_time_n1());
+            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
             if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n1());
+              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
             }
           }
         }
@@ -5403,18 +5397,18 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
         /*--- Set Solution at timestep n-1 to solution at n-2 ---*/
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
           for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_time_n1());
+            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
             if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n1());
+              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
             }
           }
         }
         /*--- Set Solution at timestep n-2 to the previously loaded solution ---*/
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
           for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_Old());
+            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
             if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_Old());
+              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->GetSolution_Old(iPoint));
             }
           }
         }
@@ -5431,12 +5425,12 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
     for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
       for (iPoint = 0; iPoint < geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint(); iPoint++) {
-        solver_container[ZONE_FLOW][INST_0][iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution());
+        solver_container[ZONE_FLOW][INST_0][iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution_Direct(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint));
       }
     }
     if (turbulent && !config_container[ZONE_FLOW]->GetFrozen_Visc_Disc()) {
       for (iPoint = 0; iPoint < geometry_container[ZONE_FLOW][INST_0][MESH_0]->GetnPoint(); iPoint++) {
-        solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[ZONE_FLOW][INST_0][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
+        solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->GetNodes()->SetSolution_Direct(iPoint, solver_container[ZONE_FLOW][INST_0][MESH_0][TURB_SOL]->GetNodes()->GetSolution(iPoint));
       }
     }
   }
@@ -5444,7 +5438,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
     /*--- Store geometry of the converged solution also in the adjoint solver in order to be able to reset it later ---*/
 
     for (iPoint = 0; iPoint < geometry_container[ZONE_FLOW][INST_0][MESH_0]->GetnPoint(); iPoint++){
-      solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetGeometry_Direct(geometry_container[ZONE_FLOW][INST_0][MESH_0]->node[iPoint]->GetCoord());
+      solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->SetGeometry_Direct(iPoint, geometry_container[ZONE_FLOW][INST_0][MESH_0]->node[iPoint]->GetCoord());
     }
 
   }
@@ -5474,21 +5468,15 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->Set_Solution_time_n();
-    }
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->Set_Solution_time_n();
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
-    }
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->SetSolution_Accel_time_n();
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
-    }
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->SetSolution_Vel_time_n();
 
     /*--- Load solution timestep n ---*/
 
@@ -5497,15 +5485,15 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
     /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
 
     for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint(); iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Direct(solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution());
+      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSolution_Direct(iPoint, solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint));
     }
 
     for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint(); iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Accel_Direct(solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Accel());
+      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSolution_Accel_Direct(iPoint, solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->GetSolution_Accel(iPoint));
     }
 
     for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint(); iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Vel_Direct(solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel());
+      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSolution_Vel_Direct(iPoint, solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->GetSolution_Vel(iPoint));
     }
 
   }
@@ -5516,7 +5504,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
     /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
 
     for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint(); iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Direct(solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution());
+      solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSolution_Direct(iPoint, solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint));
     }
 
   }
@@ -6252,9 +6240,8 @@ bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
                                                    unsigned short kind_recording){
 
   bool flow_convergence    = false,
-        struct_convergence  = false;
-
-  bool adjoint_convergence = false;
+       struct_convergence  = false,
+       adjoint_convergence = false;
 
 //  su2double residual_1, residual_2;
 

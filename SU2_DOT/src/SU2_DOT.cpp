@@ -937,10 +937,10 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver->node[iPoint]->SetSolution(iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
+        solver->GetNodes()->SetSolution(iPoint, iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
       }
       for (iVar = 0; iVar < nDim; iVar++) {
-        solver->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
+        solver->GetNodes()->SetSolution(iPoint, iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
       }
     }
     
@@ -980,7 +980,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
           
           Sens = Prod/Area;
           
-          solver->node[iPoint]->SetSolution(2*nDim, Sens);
+          solver->GetNodes()->SetSolution(iPoint, 2*nDim, Sens);
           
         }
       }
