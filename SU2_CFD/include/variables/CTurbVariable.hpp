@@ -47,38 +47,36 @@
  */
 class CTurbVariable : public CVariable {
 protected:
-  su2double muT;                /*!< \brief Eddy viscosity. */
-  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
+  VectorType muT;         /*!< \brief Eddy viscosity. */
+  MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
 
 public:
   /*!
    * \brief Constructor of the class.
-   */
-  CTurbVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbVariable(void);
+  virtual ~CTurbVariable() = default;
 
   /*!
    * \brief Get the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
    * \return the value of the eddy viscosity.
    */
-  inline su2double GetmuT() { return muT; }
+  inline su2double GetmuT(Idx_t iPoint) const final { return muT(iPoint); }
 
   /*!
    * \brief Set the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
    * \param[in] val_muT - Value of the eddy viscosity.
    */
-  inline void SetmuT(su2double val_muT) { muT = val_muT; }
+  inline void SetmuT(Idx_t iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
 };
 

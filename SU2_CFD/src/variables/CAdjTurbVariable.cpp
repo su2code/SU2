@@ -37,51 +37,22 @@
 
 #include "../../include/variables/CAdjTurbVariable.hpp"
 
-CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
 
-  /*--- Array initialization ---*/
-
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-
-}
-
-CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar,
-                                   CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-  unsigned short iVar;
-
-  /*--- Array initialization ---*/
-
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
+CAdjTurbVariable::CAdjTurbVariable(su2double psinu_inf, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+  : CVariable(npoint, ndim, nvar, config) {
 
   /*--- Initialization of variables ---*/
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_psinu_inf;
-    Solution_Old[iVar] = val_psinu_inf;
-  }
+  Solution = psinu_inf;
+  Solution_Old = psinu_inf;
 
-  Residual_Old = new su2double [nVar];
+  Residual_Old.resize(nPoint,nVar);
 
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
   
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
-}
-
-CAdjTurbVariable::~CAdjTurbVariable(void) {
-
-  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-  if (EddyViscSens  != NULL) delete [] EddyViscSens;
-
 }

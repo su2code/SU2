@@ -99,14 +99,14 @@ void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *do
   if (turbulent){
 
     /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
-    Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
-    Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
+    Donor_Variable[0] = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
+    Donor_Variable[1] = donor_solution->GetNodes()->GetSolution(Point_Donor,1);
 
   } else{
 
     /*---  Retrieve primitive variables and set them as the donor variables ---*/
     for (iVar = 0; iVar < nDonorVar; iVar++)
-      Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+      Donor_Variable[iVar] = donor_solution->GetNodes()->GetPrimitive(Point_Donor,iVar);
 
   }
 }

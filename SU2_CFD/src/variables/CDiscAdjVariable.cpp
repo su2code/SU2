@@ -37,137 +37,47 @@
 
 #include "../../include/variables/CDiscAdjVariable.hpp"
 
-CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
 
-  /*--- Initialize arrays to NULL ---*/
-
-  Solution_Direct = NULL;
-  External        = NULL;
-  Solution_Old    = NULL;
-  Sensitivity     = NULL;
-
-  DualTime_Derivative   = NULL;
-  DualTime_Derivative_n = NULL;
-
-  Geometry_Direct       = NULL;
-  Solution_Geometry     = NULL;
-  Solution_Geometry_Old = NULL;
-  Cross_Term_Derivative = NULL;
-
-  Solution_BGS            = NULL;
-  Solution_BGS_k          = NULL;
-  Solution_Geometry_BGS_k = NULL;
-
-  Geometry_CrossTerm_Derivative      = NULL;
-  Geometry_CrossTerm_Derivative_Flow = NULL;
-
-}
-
-CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim, unsigned short val_nvar,
-                                   CConfig *config) : CVariable(val_ndim, val_nvar, config) {
-
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST)
-      || (config->GetTime_Marching() == DT_STEPPING_2ND);
+CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+  : CVariable(npoint, ndim, nvar, config) {
+  
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
 
   bool fsi = config->GetFSI_Simulation();
 
-  /*--- Initialize arrays to NULL ---*/
-
-  Solution_Direct = NULL;
-  External        = NULL;
-  External_Old    = NULL;
-  Sensitivity     = NULL;
-
-  DualTime_Derivative   = NULL;
-  DualTime_Derivative_n = NULL;
-
-  Geometry_Direct       = NULL;
-  Solution_Geometry     = NULL;
-  Solution_Geometry_Old = NULL;
-  Cross_Term_Derivative = NULL;
-
-  Solution_BGS            = NULL;
-  Solution_Geometry_BGS_k = NULL;
-
-  Geometry_CrossTerm_Derivative      = NULL;
-  Geometry_CrossTerm_Derivative_Flow = NULL;
-
   if (dual_time) {
-    DualTime_Derivative = new su2double[nVar];
-    DualTime_Derivative_n = new su2double[nVar];
+    DualTime_Derivative.resize(nPoint,nVar) = su2double(0.0);
+    DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
+
+    Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
+    Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
   }
 
-  Solution_Direct = new su2double[nVar];
-  External        = new su2double[nVar];
-  External_Old    = new su2double[nVar];
+  Solution_Direct.resize(nPoint,nVar);
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
-  Sensitivity = new su2double[nDim];
+  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = sol[iVar];
+      
+  External = Solution;
+  External_Old.resize(nPoint,nVar);
 
-  unsigned short iVar,iDim;
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Sensitivity[iDim] = 0.0;
+  if (fsi) {
+    Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);
+    Solution_Geometry.resize(nPoint,nDim) = su2double(1e-16);
+    Solution_Geometry_Old.resize(nPoint,nDim) = su2double(0.0);
+    Cross_Term_Derivative.resize(nPoint,nVar) = su2double(0.0);
+    Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
+    Geometry_CrossTerm_Derivative_Flow.resize(nPoint,nDim) = su2double(0.0);
+    
+    Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
+    Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar]      = val_solution[iVar];
-    External[iVar]      = val_solution[iVar];
-  }
-
-  if (dual_time) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar]  = 0.0;
-      Solution_time_n1[iVar] = 0.0;
-      DualTime_Derivative[iVar] = 0.0;
-      DualTime_Derivative_n[iVar] = 0.0;
-    }
-  }
-
-  if (fsi){
-    Solution_Geometry       = new su2double[nDim];
-    Geometry_Direct         = new su2double[nDim];
-    Solution_Geometry_Old   = new su2double[nDim];
-    Geometry_CrossTerm_Derivative = new su2double[nDim];
-    Geometry_CrossTerm_Derivative_Flow = new su2double[nDim];
-    Cross_Term_Derivative   = new su2double[nVar];
-    Solution_BGS            = new su2double[nVar];
-    Solution_Geometry_BGS_k = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Geometry_Direct[iDim]       = 0.0;
-      Solution_Geometry[iDim]     = 1e-16;
-      Solution_Geometry_Old[iDim] = 0.0;
-      Solution_Geometry_BGS_k[iDim] = 0.0;
-      Geometry_CrossTerm_Derivative[iDim] = 0.0;
-      Geometry_CrossTerm_Derivative_Flow[iDim] = 0.0;
-    }
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Cross_Term_Derivative[iVar] = 0.0;
-      Solution_BGS[iVar]          = 0.0;
-    }
-  }
-  
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
-
 }
 
-CDiscAdjVariable::~CDiscAdjVariable() {
-
-  if (Geometry_Direct       != NULL) delete [] Geometry_Direct;
-  if (Solution_Geometry     != NULL) delete [] Solution_Geometry;
-  if (Solution_Geometry_Old != NULL) delete [] Solution_Geometry_Old;
-  if (Cross_Term_Derivative != NULL) delete [] Cross_Term_Derivative;
-  if (Geometry_CrossTerm_Derivative != NULL) delete [] Geometry_CrossTerm_Derivative;
-  if (Geometry_CrossTerm_Derivative_Flow != NULL) delete [] Geometry_CrossTerm_Derivative_Flow;
-  if (Solution_BGS          != NULL) delete [] Solution_BGS;
-  if (Solution_Geometry_BGS_k != NULL) delete [] Solution_Geometry_BGS_k;
-
-  if (Solution_Direct != NULL) delete [] Solution_Direct;
-  if (External        != NULL) delete [] External;
-  if (External_Old    != NULL) delete [] External_Old;
-  if (Sensitivity     != NULL) delete [] Sensitivity;
-
-  if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;
-  if (DualTime_Derivative_n != NULL) delete [] DualTime_Derivative_n;
-
-}
+void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }
