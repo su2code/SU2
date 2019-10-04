@@ -206,13 +206,13 @@ void CDiscAdjMultizoneDriver::Run() {
      *    If not, the whole tape of a coupled run will be created. ---*/
 
     if (retape) {
-      SetRecording(NONE, FULL_TAPE, ZONE_0);
-      SetRecording(FLOW_CONS_VARS, OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else if (RecordingState != FLOW_CONS_VARS) {
 
-      SetRecording(NONE, FULL_TAPE, ZONE_0);
-      SetRecording(FLOW_CONS_VARS, FULL_TAPE, ZONE_0);
+      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
     }
 
 
@@ -223,8 +223,8 @@ void CDiscAdjMultizoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
 
       if (retape) {
-        SetRecording(NONE, FULL_TAPE, ZONE_0);
-        SetRecording(FLOW_CONS_VARS, ZONE_SPECIFIC_TAPE, iZone);
+        SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+        SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
       /*--- Evaluate the objective function gradient w.rt. to solution contributions from iZone.
@@ -332,11 +332,11 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
        *    as argument ensures that all information from a previous recording is removed. ---*/
 
-      SetRecording(NONE, FULL_TAPE, ZONE_0);
+      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
 
       /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
 
-      SetRecording(MESH_COORDS, FULL_TAPE, ZONE_0);
+      SetRecording(MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
 
       /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
        *    of the current iteration. The values are passed to the AD tool. ---*/
@@ -397,7 +397,7 @@ void CDiscAdjMultizoneDriver::Run() {
   }
 }
 
-void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsigned short tape_type, unsigned short record_zone) {
+void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
 
   unsigned short iZone, jZone, iSol, UpdateMesh;
   unsigned long ExtIter = 0;
@@ -455,7 +455,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
   AD::Push_TapePosition();
 
-  if (tape_type != OBJECTIVE_FUNCTION_TAPE) {
+  if (tape_type != Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
 
     /*--- We do the communication here to not derive wrt updated boundary data. ---*/
 
@@ -482,8 +482,10 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
       AD::Push_TapePosition();
 
-      if (ZONE_SPECIFIC_TAPE && (iZone == record_zone)) {
-        DirectIteration(iZone, kind_recording);
+      if (tape_type == Kind_Tape::ZONE_SPECIFIC_TAPE) {
+        if (iZone == record_zone) {
+          DirectIteration(iZone, kind_recording);
+        }
       }
       else {
         DirectIteration(iZone, kind_recording);
