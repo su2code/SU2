@@ -234,7 +234,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       SetAdj_ObjFunction();
 
-      AD::ComputeAdjoint(3,0);
+      AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
 
       iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                   solver_container, numerics_container, config_container,
@@ -500,7 +500,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
 
-    //  AD::PrintStatistics();
+    if(config_container[record_zone]->GetWrt_AD_Statistics()) {
+
+      AD::PrintStatistics();
+    }
+
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
 
