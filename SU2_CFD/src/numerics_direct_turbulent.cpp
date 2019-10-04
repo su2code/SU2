@@ -45,7 +45,8 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  grid_movement   = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -67,7 +68,7 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
@@ -77,7 +78,7 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   Density_j = V_j[nDim+2];
 
   q_ij = 0.0;
-  if (grid_movement) {
+  if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
@@ -480,8 +481,8 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 CSourcePieceWise_TurbSA_E::CSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar,
                                                      CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
-    incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    rotating_frame = config->GetRotating_Frame();
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  rotating_frame = config->GetRotating_Frame();
     
     /*--- Spalart-Allmaras closure constants ---*/
     
@@ -624,7 +625,7 @@ CSourcePieceWise_TurbSA_COMP::CSourcePieceWise_TurbSA_COMP(unsigned short val_nD
                                                            CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
     incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    rotating_frame = config->GetRotating_Frame();
+  rotating_frame = config->GetRotating_Frame();
     
     /*--- Spalart-Allmaras closure constants ---*/
     
@@ -762,22 +763,22 @@ CSourcePieceWise_TurbSA_E_COMP::CSourcePieceWise_TurbSA_E_COMP(unsigned short va
                                                      CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
     incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    rotating_frame = config->GetRotating_Frame();
-    
-    /*--- Spalart-Allmaras closure constants ---*/
-    
-    cv1_3 = pow(7.1, 3.0);
-    k2    = pow(0.41, 2.0);
-    cb1   = 0.1355;
-    cw2   = 0.3;
-    ct3   = 1.2;
-    ct4   = 0.5;
-    cw3_6 = pow(2.0, 6.0);
-    sigma = 2./3.;
-    cb2   = 0.622;
-    cb2_sigma = cb2/sigma;
-    cw1 = cb1/k2+(1.0+cb2)/sigma;
-    
+  rotating_frame = config->GetRotating_Frame();
+  
+  /*--- Spalart-Allmaras closure constants ---*/
+  
+  cv1_3 = pow(7.1, 3.0);
+  k2    = pow(0.41, 2.0);
+  cb1   = 0.1355;
+  cw2   = 0.3;
+  ct3   = 1.2;
+  ct4   = 0.5;
+  cw3_6 = pow(2.0, 6.0);
+  sigma = 2./3.;
+  cb2   = 0.622;
+  cb2_sigma = cb2/sigma;
+  cw1 = cb1/k2+(1.0+cb2)/sigma;
+  
 }
 
 CSourcePieceWise_TurbSA_E_COMP::~CSourcePieceWise_TurbSA_E_COMP(void) { }
@@ -1122,6 +1123,10 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
   sigma_k2  = constants[1];
   sigma_om2 = constants[3];
   
+  F1_i = 0.0; F1_j = 0.0;
+  diff_kine = 0.0;
+  diff_omega = 0.0;
+  
 }
 
 CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {
@@ -1166,9 +1171,11 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
 }
 
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
-                                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+                                                   su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config)
+  : CNumerics(val_nDim, val_nVar, config) {
   
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible   = (config->GetKind_Regime()     == INCOMPRESSIBLE);
+  sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
   
   /*--- Closure constants ---*/
   beta_star     = constants[6];
@@ -1179,6 +1186,10 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
   alfa_1        = constants[8];
   alfa_2        = constants[9];
   a1            = constants[7];
+
+  /*--- Set the ambient values of k and omega to the free stream values. ---*/
+  kAmb     = val_kine_Inf;
+  omegaAmb = val_omega_Inf;
 }
 
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
@@ -1256,10 +1267,27 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    else {
      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
    }
-   pw = max(pw,0.0);
+   pw = alfa_blended*Density_i*max(pw,0.0);
+
+   /*--- Sustaining terms, if desired. Note that if the production terms are
+         larger equal than the sustaining terms, the original formulation is
+         obtained again. This is in contrast to the version in literature
+         where the sustaining terms are simply added. This latter approach could
+         lead to problems for very big values of the free-stream turbulence
+         intensity. ---*/
+
+   if ( sustaining_terms ) {
+     const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
+     const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
+
+     pk = max(pk, sust_k);
+     pw = max(pw, sust_w);
+   }
+
+   /*--- Add the production terms to the residuals. ---*/
 
    val_residual[0] += pk*Volume;
-   val_residual[1] += alfa_blended*Density_i*pw*Volume;
+   val_residual[1] += pw*Volume;
 
    /*--- Dissipation ---*/
 

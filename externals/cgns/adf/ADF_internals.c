@@ -187,6 +187,7 @@ bytes   start   end   description      range / format
 #else
 # include <unistd.h>
 # include <sys/param.h>
+# include <sys/stat.h>
 # define ACCESS access
 # define OPEN   open
 # define CLOSE  close
@@ -2841,6 +2842,7 @@ for( i=0, found = -1 ; i<(int)parent_node.num_sub_nodes ; i++ ) {
 
 if( found == -1 ) {
    *error_return = SUB_NODE_TABLE_ENTRIES_BAD ;
+   free(sub_node_table);
    return ;
 }
 
@@ -4884,7 +4886,6 @@ int        i ;
 
 
 *error_return = NO_ERROR ;
-*found = 0;
 
 if( (file_index == NULL) || (ID == NULL) || (found == NULL) ) {
    *error_return = NULL_POINTER ;
@@ -4896,6 +4897,7 @@ if( file_name == NULL ) {
    return ;
    } /* end if */
 
+*found = 0;
 for( i=0; i<maximum_files; i++ ) {
    if( ADF_file[i].in_use && ADF_file[i].file_name != NULL ) {
       if( strcmp( file_name, ADF_file[i].file_name ) == 0 ) {
@@ -7404,8 +7406,16 @@ if( (string == NULL) || (c_string == NULL) ) {
 
 *error_return = NO_ERROR ;
 
+	/** Search for early NULL termination **/
+for( iend=0; iend < string_length; iend++ ) {
+   if( string[ iend ] == '\0' ) {
+      break ;
+      } /* end if */
+   } /* end for */
+iend--;
+
 	/** Skip and trailing blanks **/
-for( iend=string_length-1; iend>=0; iend-- ) {
+for( ; iend>=0; iend-- ) {
    if( string[ iend ] != ' ' ) {
       break ;
       } /* end if */

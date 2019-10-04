@@ -75,6 +75,23 @@ CGaussVariable::~CGaussVariable(void) {
 
 }
 
+CProperty::CProperty(void) {
+
+  iMat_Prop = 0;
+
+}
+
+CProperty::CProperty(unsigned long valMat_Prop) {
+
+  iMat_Prop = valMat_Prop;
+
+}
+
+CProperty::~CProperty(void) {
+
+}
+
+
 CElementProperty::CElementProperty(void) {
 
   iMat_Mod = 0;
@@ -86,7 +103,7 @@ CElementProperty::CElementProperty(void) {
 
 }
 
-CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity) {
+CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity) : CProperty(valMat_Prop) {
 
   iMat_Mod = valMat_Model;
   iMat_Prop = valMat_Prop;

@@ -291,8 +291,6 @@ inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
-inline void CGeometry::MatchInterface(CConfig *config) { }
-
 inline void CGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
@@ -477,6 +475,8 @@ inline void CGeometry::SetSensitivity(CConfig* config) {}
 inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}
 
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
+
+inline void CGeometry::ComputeMeshQualityStatistics(CConfig* config) {}
 
 inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
 

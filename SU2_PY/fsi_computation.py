@@ -161,7 +161,7 @@ def main():
     comm.barrier()
 
   # --- Launch a steady or unsteady FSI computation --- #
-  if FSI_config['UNSTEADY_SIMULATION'] == "YES":
+  if FSI_config['TIME_MARCHING'] == "YES":
     try:
       FSIInterface.UnsteadyFSI(FSI_config, FluidSolver, SolidSolver)
     except NameError as exception:

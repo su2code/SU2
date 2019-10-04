@@ -347,7 +347,7 @@ public:
    * \brief Store the value of the identifier for the Dielectric Elastomers.
    * \param[in] val_iDe - identifier of the DE property.
    */
-  void Set_ElProperties(CElementProperty *element_property);
+  void Set_ElProperties(CProperty *element_property);
 
 	/*!
 	 * \brief Store the value of the identifier for the Dielectric Elastomers.

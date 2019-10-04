@@ -288,6 +288,11 @@ inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   winMinRankErrorInUse = true;
 }
 
+inline void CMediMPIWrapper::Init_AMPI(void) {
+  AMPI_Init_common();
+  MediTool::init();
+}
+
 inline void CMediMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
   AMPI_Comm_rank(convertComm(currentComm), &Rank);  

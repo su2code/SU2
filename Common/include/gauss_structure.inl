@@ -61,9 +61,27 @@ inline su2double CGaussVariable::GetJ_X(void) { return J_X; }
 
 inline su2double CGaussVariable::GetJ_x(void) { return J_x; }
 
-inline unsigned long CElementProperty::GetMat_Mod(void) { return iMat_Mod; }
+inline unsigned long CProperty::GetMat_Mod(void) { return 0; }
 
-inline unsigned long CElementProperty::GetMat_Prop(void) { return iMat_Prop; }
+inline unsigned long CProperty::GetMat_Prop(void) { return iMat_Prop; }
+
+inline unsigned long CProperty::GetElectric_Prop(void) { return 0; }
+
+inline unsigned long CProperty::GetDV(void) { return 0; }
+
+inline void CProperty::SetDesignDensity(su2double valDensity) { }
+
+inline su2double CProperty::GetDesignDensity(void) { return 0.0; }
+
+inline void CProperty::SetPhysicalDensity(su2double valDensity) { }
+
+inline su2double CProperty::GetPhysicalDensity(void) { return 0.0; }
+
+inline su2double CProperty::GetAdjointDensity(void) { return 0.0; }
+
+inline void CProperty::RegisterDensity(void) { }
+
+inline unsigned long CElementProperty::GetMat_Mod(void) { return iMat_Mod; }
 
 inline unsigned long CElementProperty::GetElectric_Prop(void) { return iElectric_Prop; }
 

@@ -133,7 +133,7 @@ class Solver:
 
     self.Mesh_file = self.Config['MESH_FILE']
     self.FSI_marker = self.Config['MOVING_MARKER']
-    self.Unsteady = (self.Config['UNSTEADY_SIMULATION']=="YES")
+    self.Unsteady = (self.Config['TIME_MARCHING']=="YES")
     if self.Unsteady:
       print('Dynamic computation.')
     if self.Config['STRUCT_TYPE'] == "AIRFOIL":
@@ -224,7 +224,7 @@ class Solver:
 	    break
 
 	  #string values
-	  if case("UNSTEADY_SIMULATION")	: pass
+	  if case("TIME_MARCHING")	: pass
 	  if case("MESH_FILE")			: pass
 	  if case("CSD_SOLVER")		      	: pass
 	  if case("MOVING_MARKER")		: pass
