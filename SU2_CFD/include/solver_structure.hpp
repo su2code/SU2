@@ -163,8 +163,6 @@ protected:
   
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
   
-  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
-  
 public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -307,7 +305,7 @@ public:
    * \brief Get the final linear solver residual.
    * \return Value of final linear solver residual.
    */
-  su2double GetResLinSolver(void);
+  inline su2double GetResLinSolver(void) { return ResLinSolver; }
 
   /*!
    * \brief Get the value of the maximum delta time.
@@ -4510,12 +4508,6 @@ public:
    * \return 
    */
   virtual su2double GetMaximum_Volume(){ return 0.0; }
-  
-  /*!
-   * \brief Get residual of the linear solver
-   * \return 
-   */
-  su2double GetLinSol_Residual(){ return valResidual; }
   
 protected:
   /*!

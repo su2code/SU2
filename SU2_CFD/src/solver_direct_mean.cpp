@@ -5215,10 +5215,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   SetIterLinSolver(IterLinSol);
   
   ComputeUnderRelaxationFactor(solver_container, config);
-
-  /*--- Set the residual --- */
-  
-  valResidual = System.GetResidual();
   
   /*--- Update solution (system written in terms of increments) ---*/
   

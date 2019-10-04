@@ -688,11 +688,6 @@ bool CFluidIteration::Monitor(COutput *output,
                               config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter());
   }
-  
-  if (config[val_iZone]->GetCFL_Adapt() == YES) {
-      if (!(config[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
-  }
 
   /*--- If convergence was reached --*/
   StopCalc =  output->GetConvergence();
