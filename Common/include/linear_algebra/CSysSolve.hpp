@@ -228,7 +228,7 @@ public:
   unsigned long CG_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                              PrecondType & precond, ScalarType tol, unsigned long m,
                              ScalarType *residual, bool monitoring, CConfig *config);
-	
+
   /*!
    * \brief Flexible Generalized Minimal Residual method
    * \param[in] b - the right hand size vector
@@ -244,7 +244,7 @@ public:
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                  PrecondType & precond, ScalarType tol, unsigned long m,
                                  ScalarType *residual, bool monitoring, CConfig *config);
-	
+
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
    * \param[in] b - the right hand size vector
@@ -276,7 +276,7 @@ public:
   unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                    PrecondType & precond, ScalarType tol, unsigned long m,
                                    ScalarType *residual, bool monitoring, CConfig *config);
-  
+
   /*!
    * \brief Solve the linear system using a Krylov subspace method
    * \param[in] Jacobian - Jacobian Matrix for the linear system
