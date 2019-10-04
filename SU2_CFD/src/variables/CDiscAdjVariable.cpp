@@ -149,6 +149,13 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
+  if (config->GetMultiphysicsDiscrete_Adjoint()) {
+    Solution_BGS            = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_BGS[iVar]          = 0.0;
+    }
+  }
+
 }
 
 CDiscAdjVariable::~CDiscAdjVariable() {
