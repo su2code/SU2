@@ -417,7 +417,6 @@ private:
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
-  CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
@@ -2759,13 +2758,6 @@ public:
    * \return CFL number for each grid.
    */
   su2double GetCFL(unsigned short val_mesh);
-
-  /*!
-   * \brief Get the Courant Friedrich Levi number for solid solvers.
-   * \param[in] val_mesh - Index of the mesh were the CFL is applied.
-   * \return CFL number for each grid.
-   */
-  su2double GetCFL_Solid(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for each grid.
