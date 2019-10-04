@@ -2272,6 +2272,10 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
 
+  /* DESCRIPTION: Use Robin (default) or Neumann BC at CHT interface. */
+  /*  Options: NO, YES \ingroup Config */
+  addBoolOption("CHT_ROBIN", CHT_Robin, true);
+
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
 

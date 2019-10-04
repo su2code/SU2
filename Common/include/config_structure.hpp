@@ -873,6 +873,7 @@ private:
   bool Sine_Load;             /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
+  bool CHT_Robin;             /*!< \brief Option for boundary condition method at CHT interfaces. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -8950,6 +8951,12 @@ public:
    * \return YES if weakly coupled heat equation for inc. flow is enabled.
    */
   bool GetWeakly_Coupled_Heat(void);
+
+  /*!
+   * \brief Get the boundary condition method for CHT.
+   * \return YES if Robin BC is used.
+   */
+  bool GetCHT_Robin(void);
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.

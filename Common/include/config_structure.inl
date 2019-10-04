@@ -1929,6 +1929,8 @@ inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacob
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
 
+inline bool CConfig::GetCHT_Robin(void) { return CHT_Robin; }
+
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
