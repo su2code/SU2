@@ -533,26 +533,26 @@ public:
   /*!
    * \brief Set the value of the auxiliary variable gradient.
    * \param[in] iPoint - Point index.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_gradient - Value of the gradient for the index <i>val_dim</i>.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] val_gradient - Value of the gradient for the index <i>iDim</i>.
    */
-  inline void SetAuxVarGradient(Idx_t iPoint, Idx_t val_dim, su2double val_gradient) { Grad_AuxVar(iPoint,val_dim) = val_gradient; }
+  inline void SetAuxVarGradient(Idx_t iPoint, Idx_t iDim, su2double val_gradient) { Grad_AuxVar(iPoint,iDim) = val_gradient; }
 
   /*!
    * \brief Add a value to the auxiliary variable gradient.
    * \param[in] iPoint - Point index.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient to be added for the index <i>val_dim</i>.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient to be added for the index <i>iDim</i>.
    */
-  inline void AddAuxVarGradient(Idx_t iPoint, Idx_t val_dim, su2double val_value) { Grad_AuxVar(iPoint,val_dim) += val_value;}
+  inline void AddAuxVarGradient(Idx_t iPoint, Idx_t iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) += val_value;}
 
   /*!
    * \brief Subtract a value to the auxiliary variable gradient.
    * \param[in] iPoint - Point index.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient to be subtracted for the index <i>val_dim</i>.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient to be subtracted for the index <i>iDim</i>.
    */
-  inline void SubtractAuxVarGradient(Idx_t iPoint, Idx_t val_dim, su2double val_value) { Grad_AuxVar(iPoint,val_dim) -= val_value; }
+  inline void SubtractAuxVarGradient(Idx_t iPoint, Idx_t iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) -= val_value; }
 
   /*!
    * \brief Get the gradient of the auxiliary variable.
@@ -564,10 +564,10 @@ public:
   /*!
    * \brief Get the gradient of the auxiliary variable.
    * \param[in] iPoint - Point index.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the gradient of the auxiliary variable for the dimension <i>val_dim</i>.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the gradient of the auxiliary variable for the dimension <i>iDim</i>.
    */
-  inline su2double GetAuxVarGradient(Idx_t iPoint, Idx_t val_dim) const { return Grad_AuxVar(iPoint,val_dim); }
+  inline su2double GetAuxVarGradient(Idx_t iPoint, Idx_t iDim) const { return Grad_AuxVar(iPoint,iDim); }
 
   /*!
    * \brief Add a value to the truncation error.
@@ -727,8 +727,7 @@ public:
 
   /*!
    * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
-   * \param[in] val_iDim - Index of the dimension.
-   * \param[in] val_jDim - Index of the dimension.
+   * \param[in] iPoint - Point index.
    * \return Value of the Rmatrix entry.
    */
   inline su2double **GetRmatrix(Idx_t iPoint) { return Rmatrix[iPoint]; }
@@ -1204,10 +1203,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the velocity for the dimension <i>val_dim</i>.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the velocity for the dimension <i>iDim</i>.
    */
-  inline virtual su2double GetVelocity(Idx_t iPoint, Idx_t val_dim) const { return 0.0; }
+  inline virtual su2double GetVelocity(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1839,26 +1838,26 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
+   * \param[in] iDim - Index of the dimension.
    * \param[in] val_value - Value to add to the gradient of the primitive variables.
    */
-  inline virtual void AddGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
+  inline virtual void AddGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
+   * \param[in] iDim - Index of the dimension.
    * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
    */
-  inline virtual void SubtractGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
+  inline virtual void SubtractGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
+   * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
    */
-  inline virtual su2double GetGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t val_dim) const { return 0.0; }
+  inline virtual su2double GetGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1870,10 +1869,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
+   * \param[in] iDim - Index of the dimension.
    * \param[in] val_value - Value of the gradient.
    */
-  inline virtual void SetGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
+  inline virtual void SetGradient_Primitive(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
@@ -1996,7 +1995,7 @@ public:
    * \brief A virtual member. Get the restart geometry (coordinate of the converged solution).
    * \return Coordinate of the direct solver restart for .
    */
-  inline virtual su2double GetGeometry_Direct(Idx_t iPoint, Idx_t val_dim) const { return 0.0; }
+  inline virtual su2double GetGeometry_Direct(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Get the geometry solution.
