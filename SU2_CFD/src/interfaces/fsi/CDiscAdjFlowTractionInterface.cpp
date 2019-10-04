@@ -58,7 +58,7 @@ void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-  struct_solution->node->Clear_FlowTraction();
+  struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
 

@@ -117,7 +117,7 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   
   /*--- Take the solver at index 0 --- */
   
-  CVariable* Node_Sol  = solver[0]->node;
+  CVariable* Node_Sol  = solver[0]->GetNodes();
 
   for (iField = 0; iField < fields.size(); iField++){
     SetVolumeOutputValue(fields[iField], iPoint, Node_Sol->GetSolution(iPoint, iField));

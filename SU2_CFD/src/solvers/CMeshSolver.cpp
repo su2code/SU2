@@ -79,24 +79,25 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     /*--- Initialize the node structure ---*/
 
     Coordinate = new su2double[nDim];
-    node = new CMeshBoundVariable(nPoint, nDim, config);
+    nodes = new CMeshBoundVariable(nPoint, nDim, config);
+    SetBaseClassPointerToNodes();
     
     /*--- Set which points are vertices and allocate boundary data. ---*/
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
       for (iDim = 0; iDim < nDim; ++iDim)
-        node->SetMesh_Coord(iPoint, iDim, geometry->node[iPoint]->GetCoord(iDim));
+        nodes->SetMesh_Coord(iPoint, iDim, geometry->node[iPoint]->GetCoord(iDim));
 
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex >= 0) {
-          node->Set_isVertex(iPoint,true);
+          nodes->Set_isVertex(iPoint,true);
           break;
         }
       }
     }
-    static_cast<CMeshBoundVariable*>(node)->AllocateBoundaryVariables(config);
+    static_cast<CMeshBoundVariable*>(nodes)->AllocateBoundaryVariables(config);
 
 
     /*--- Initialize the element structure ---*/
@@ -237,9 +238,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
       /*--- Compute the volume with the reference or with the current coordinates ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        if (updated) val_Coord = node->GetMesh_Coord(indexNode[iNode],iDim) 
-                               + node->GetSolution(indexNode[iNode],iDim);
-        else val_Coord = node->GetMesh_Coord(indexNode[iNode],iDim);
+        if (updated) val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim) 
+                               + nodes->GetSolution(indexNode[iNode],iDim);
+        else val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim);
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
@@ -340,7 +341,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
         for (iDim=0; iDim<nDim; ++iDim){
-          Coord_bound[ii++] = node->GetMesh_Coord(iPoint,iDim);
+          Coord_bound[ii++] = nodes->GetMesh_Coord(iPoint,iDim);
         }
       }
     }
@@ -371,9 +372,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     for(iPoint=0; iPoint< nPoint; ++iPoint) {
 
-      WallADT.DetermineNearestNode(node->GetMesh_Coord(iPoint), dist,
+      WallADT.DetermineNearestNode(nodes->GetMesh_Coord(iPoint), dist,
                                    pointID, rankID);
-      node->SetWallDistance(iPoint,dist);
+      nodes->SetWallDistance(iPoint,dist);
 
       MaxDistance = max(MaxDistance, dist);
 
@@ -398,8 +399,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   /*--- Normalize distance from 0 to 1 ---*/
   for (iPoint=0; iPoint < nPoint; ++iPoint) {
-    nodeDist = node->GetWallDistance(iPoint)/MaxDistance;
-    node->SetWallDistance(iPoint,nodeDist);
+    nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
+    nodes->SetWallDistance(iPoint,nodeDist);
   }
 
   /*--- Compute the element distances ---*/
@@ -421,7 +422,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     ElemDist = 0.0;
     for (iNodes = 0; iNodes < nNodes; iNodes++){
-      ElemDist += node->GetWallDistance(PointCorners[iNodes]);
+      ElemDist += nodes->GetWallDistance(PointCorners[iNodes]);
     }
     ElemDist = ElemDist/(su2double)nNodes;
 
@@ -457,7 +458,7 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
 
 void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
-  if (multizone) node->Set_BGSSolution_k();
+  if (multizone) nodes->Set_BGSSolution_k();
 
   /*--- Initialize sparse matrix ---*/
   Jacobian.SetValZero();
@@ -523,9 +524,9 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       /*--- Retrieve the displacement from the solution of the linear system ---*/
       val_disp = LinSysSol[total_index];
       /*--- Store the displacement of the mesh node ---*/
-      node->SetSolution(iPoint, iDim, val_disp);
+      nodes->SetSolution(iPoint, iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
-      val_coord = node->GetMesh_Coord(iPoint,iDim) + val_disp;
+      val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
       /*--- Update the geometry container ---*/
       geometry->node[iPoint]->SetCoord(iDim, val_coord);
     }
@@ -571,9 +572,9 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
 
-    Disp_nM1 = node->GetSolution_time_n1(iPoint);
-    Disp_n   = node->GetSolution_time_n(iPoint);
-    Disp_nP1 = node->GetSolution(iPoint);
+    Disp_nM1 = nodes->GetSolution_time_n1(iPoint);
+    Disp_n   = nodes->GetSolution_time_n(iPoint);
+    Disp_nP1 = nodes->GetSolution(iPoint);
 
     /*--- Unsteady time step ---*/
 
@@ -664,8 +665,8 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
 void CMeshSolver::SetDualTime_Mesh(void){
 
-  node->Set_Solution_time_n1();
-  node->Set_Solution_time_n();
+  nodes->Set_Solution_time_n1();
+  nodes->Set_Solution_time_n();
 }
 
 void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
@@ -717,8 +718,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
-        displ = curr_coord - node->GetMesh_Coord(iPoint_Local, iDim);
-        node->SetSolution(iPoint_Local, iDim, displ);
+        displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
+        nodes->SetSolution(iPoint_Local, iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -785,10 +786,10 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
         /*--- Store it into the current displacement.  ---*/
         for (iDim = 0; iDim < nDim; iDim++){
-          VarCoord[iDim] = node->GetSolution(iNode,iDim);
+          VarCoord[iDim] = nodes->GetSolution(iNode,iDim);
         }
 
-        node->SetBound_Disp(iNode,VarCoord);
+        nodes->SetBound_Disp(iNode,VarCoord);
 
       }
 
@@ -864,8 +865,8 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       index = counter*Restart_Vars[1];
       for (iDim = 0; iDim < nDim; iDim++){
         curr_coord = Restart_Data[index+iDim];
-        displ = curr_coord - node->GetMesh_Coord(iPoint_Local,iDim);
-        node->Set_Solution_time_n(iPoint_Local, iDim, displ);
+        displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
+        nodes->Set_Solution_time_n(iPoint_Local, iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -940,8 +941,8 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
         index = counter*Restart_Vars[1];
         for (iDim = 0; iDim < nDim; iDim++){
           curr_coord = Restart_Data[index+iDim];
-          displ = curr_coord - node->GetMesh_Coord(iPoint_Local, iDim);
-          node->Set_Solution_time_n1(iPoint_Local, iDim, displ);
+          displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
+          nodes->Set_Solution_time_n1(iPoint_Local, iDim, displ);
         }
         iPoint_Global_Local++;
 

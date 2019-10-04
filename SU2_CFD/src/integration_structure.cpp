@@ -444,8 +444,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
   unsigned long iPoint;
 
-  solver->node->Set_Solution_time_n1();
-  solver->node->Set_Solution_time_n();
+  solver->GetNodes()->Set_Solution_time_n1();
+  solver->GetNodes()->Set_Solution_time_n();
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     geometry->node[iPoint]->SetVolume_nM1();
@@ -531,9 +531,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 
-  solver->node->Set_Solution_time_n();
-  solver->node->SetSolution_Vel_time_n();
-  solver->node->SetSolution_Accel_time_n();
+  solver->GetNodes()->Set_Solution_time_n();
+  solver->GetNodes()->SetSolution_Vel_time_n();
+  solver->GetNodes()->SetSolution_Accel_time_n();
 
   bool fsi = config->GetFSI_Simulation();
 
@@ -570,9 +570,9 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
 
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
 
-  solver_container[FEA_SOL]->node->Set_Solution_time_n();
-  solver_container[FEA_SOL]->node->SetSolution_Vel_time_n();
-  solver_container[FEA_SOL]->node->SetSolution_Accel_time_n();
+  solver_container[FEA_SOL]->GetNodes()->Set_Solution_time_n();
+  solver_container[FEA_SOL]->GetNodes()->SetSolution_Vel_time_n();
+  solver_container[FEA_SOL]->GetNodes()->SetSolution_Accel_time_n();
 
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
 

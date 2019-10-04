@@ -110,21 +110,21 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   if (compressible_flow) {
 
-    Twall   = donor_solution->node->GetPrimitive(Point_Donor,0)*Temperature_Ref;
-    Tnormal = donor_solution->node->GetPrimitive(PointNormal,0)*Temperature_Ref;
+    Twall   = donor_solution->GetNodes()->GetPrimitive(Point_Donor,0)*Temperature_Ref;
+    Tnormal = donor_solution->GetNodes()->GetPrimitive(PointNormal,0)*Temperature_Ref;
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (incompressible_flow) {
 
-    Twall   = donor_solution->node->GetTemperature(Point_Donor)*Temperature_Ref;
-    Tnormal = donor_solution->node->GetTemperature(PointNormal)*Temperature_Ref;
+    Twall   = donor_solution->GetNodes()->GetTemperature(Point_Donor)*Temperature_Ref;
+    Tnormal = donor_solution->GetNodes()->GetTemperature(PointNormal)*Temperature_Ref;
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (flow || heat_equation) {
-    Twall   = donor_solution->node->GetSolution(Point_Donor,0)*Temperature_Ref;
-    Tnormal = donor_solution->node->GetSolution(PointNormal,0)*Temperature_Ref;
+    Twall   = donor_solution->GetNodes()->GetSolution(Point_Donor,0)*Temperature_Ref;
+    Tnormal = donor_solution->GetNodes()->GetSolution(PointNormal,0)*Temperature_Ref;
 
     //    for (iDim = 0; iDim < nDim; iDim++) {
     //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
@@ -152,7 +152,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
     iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
-    thermal_conductivityND  = donor_solution->node->GetThermalConductivity(iPoint);
+    thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
     thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
 
     switch (donor_config->GetKind_ConductivityModel()) {

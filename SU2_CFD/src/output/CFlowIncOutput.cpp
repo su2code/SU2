@@ -448,15 +448,15 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Flow = solver[FLOW_SOL]->node; 
+  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes(); 
   CVariable* Node_Heat = NULL; 
   CVariable* Node_Turb = NULL;
   
   if (config->GetKind_Turb_Model() != NONE){
-    Node_Turb = solver[TURB_SOL]->node; 
+    Node_Turb = solver[TURB_SOL]->GetNodes(); 
   }
   if (weakly_coupled_heat){
-    Node_Heat = solver[HEAT_SOL]->node;
+    Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
   
   CPoint*    Node_Geo  = geometry->node[iPoint];

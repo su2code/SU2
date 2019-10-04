@@ -39,6 +39,7 @@
 #pragma once
 
 #include "../solver_structure.hpp"
+#include "../variables/CDiscAdjMeshBoundVariable.hpp"
 
 /*!
  * \class CDiscAdjMeshSolver
@@ -50,6 +51,13 @@ class CDiscAdjMeshSolver : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
+
+  CDiscAdjMeshBoundVariable* nodes = nullptr;   /*!< \brief Variables of the discrete adjoint mesh solver. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 

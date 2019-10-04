@@ -207,12 +207,12 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             AxiFactor = 1.0;
           }
 
-          Density = solver->node->GetDensity(iPoint);
+          Density = solver->GetNodes()->GetDensity(iPoint);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
 
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->node->GetVelocity(iPoint,iDim);
+            Velocity[iDim] = solver->GetNodes()->GetVelocity(iPoint,iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim] * AxiFactor;
             MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
@@ -221,8 +221,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           Area       = sqrt (Area);
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
-          Pressure   = solver->node->GetPressure(iPoint);
-          SoundSpeed = solver->node->GetSoundSpeed(iPoint);
+          Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             TangVel[iDim] = Velocity[iDim] - Vn*Vector[iDim]*AxiFactor/Area;
@@ -231,21 +231,21 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
           if (incompressible){
             if (config->GetKind_DensityModel() == VARIABLE) {
-              Mach = sqrt(solver->node->GetVelocity2(iPoint))/
-              sqrt(solver->node->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->node->GetSpecificHeatCv(iPoint)*solver->node->GetDensity(iPoint)));
+              Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
+              sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
             } else {
-              Mach = sqrt(solver->node->GetVelocity2(iPoint))/
-              sqrt(config->GetBulk_Modulus()/(solver->node->GetDensity(iPoint)));
+              Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
+              sqrt(config->GetBulk_Modulus()/(solver->GetNodes()->GetDensity(iPoint)));
             }
-            Temperature       = solver->node->GetTemperature(iPoint);
-            Enthalpy          = solver->node->GetSpecificHeatCp(iPoint)*Temperature;
-            TotalTemperature  = Temperature + 0.5*Velocity2/solver->node->GetSpecificHeatCp(iPoint);
+            Temperature       = solver->GetNodes()->GetTemperature(iPoint);
+            Enthalpy          = solver->GetNodes()->GetSpecificHeatCp(iPoint)*Temperature;
+            TotalTemperature  = Temperature + 0.5*Velocity2/solver->GetNodes()->GetSpecificHeatCp(iPoint);
             TotalPressure     = Pressure + 0.5*Density*Velocity2;
           }
           else{
             Mach              = sqrt(Velocity2)/SoundSpeed;
             Temperature       = Pressure / (Gas_Constant * Density);
-            Enthalpy          = solver->node->GetEnthalpy(iPoint);
+            Enthalpy          = solver->GetNodes()->GetEnthalpy(iPoint);
             TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
           }
