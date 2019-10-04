@@ -45,8 +45,6 @@ inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iM
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
-inline su2double CSolver::GetResLinSolver(void) { return ResLinSolver; }
-
 inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 

@@ -102,7 +102,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
-  valResidual = 0.0;
+  ResLinSolver       = 0.0;
   
 
   /*--- Inlet profile data structures. ---*/

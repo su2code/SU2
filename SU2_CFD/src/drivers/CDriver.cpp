@@ -707,8 +707,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
   
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
-  if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
-  else Partition_Analysis(geometry[MESH_0], config);
+  if (!dummy){
+    if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
+    else Partition_Analysis(geometry[MESH_0], config);
+  }
 #endif
 
   /*--- Check if Euler & Symmetry markers are straight/plane. This information
@@ -4151,14 +4153,6 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetTimeIter(ExtIter);
   delete runtime;
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
-    }
-  }
 
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
