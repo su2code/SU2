@@ -45,19 +45,19 @@ protected:
   /*!
    * \brief Kinds of recordings (three different ones).
    */
-  enum ENUM_TAPE {
-    FULL_TAPE = 1,                /*!< \brief Entire derivative information for a coupled adjoint
-                                              solution update. */
-    OBJECTIVE_FUNCTION_TAPE = 2,  /*!< \brief Record only the dependence of the objective function
-                                              w.r.t. solver variables (from all zones). */
-    ZONE_SPECIFIC_TAPE = 3        /*!< \brief Record only the dependence of the solution update in a
-                                              specified zone w.r.t. solver variables (from all zones). */
+  enum class Kind_Tape {
+    FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint
+                                          solution update. */
+    OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
+                                          w.r.t. solver variables (from all zones). */
+    ZONE_SPECIFIC_TAPE        /*!< \brief Record only the dependence of the solution update in a
+                                          specified zone w.r.t. solver variables (from all zones). */
   };
 
   /*!
    * \brief Position markers within a tape.
    */
-  enum ENUM_TAPE_POSITIONS {
+  enum Tape_Positions {
     START = 0,                    /*!< \brief Beginning of the tape. */
     REGISTERED = 1,               /*!< \brief Solver variables are registered on the tape. */
     DEPENDENCIES = 2,             /*!< \brief Derived values (e.g. gradients) are set. */
@@ -68,7 +68,7 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  unsigned short RecordingState;  /*!< \brief The kind of recording that the tape currently holds. */
+  int RecordingState;             /*!< \brief The kind of recording that the tape currently holds. */
   bool retape;                    /*!< \brief Boolean whether a full tape can be kept in memory. */
 
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
@@ -115,10 +115,10 @@ public:
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
-   * \param[in] indicator which part of a solution update will be recorded
+   * \param[in] tape_type - indicator which part of a solution update will be recorded
    * \param[in] record_zone - zone where solution update will be recorded
    */
-  void SetRecording(unsigned short kind_recording, unsigned short tape_type, unsigned short record_zone);
+  void SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone);
 
   /*!
    * \brief Run one direct iteration in a zone.
