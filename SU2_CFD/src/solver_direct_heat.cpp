@@ -1105,8 +1105,8 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
   unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar, iMarker;
 
-  su2double Area, rho_cp_solid,
-      Temperature_Ref, Tinterface, T_Conjugate, Tnormal_Conjugate, Conductance, HeatFluxDensity, HeatFluxValue;
+  su2double thermal_diffusivity, rho_cp_solid, Temperature_Ref, T_Conjugate, Tinterface,
+      Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
@@ -1168,20 +1168,29 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
             for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
             Area = sqrt (Area);
 
-            Tinterface          = node[iPoint]->GetSolution(0);
-            Tnormal_Conjugate   = GetConjugateHeatVariable(iMarker, iVertex, 3)/Temperature_Ref;
-            Conductance         = GetConjugateHeatVariable(iMarker, iVertex, 2)/rho_cp_solid;
+            thermal_diffusivity = GetConjugateHeatVariable(iMarker, iVertex, 2)/rho_cp_solid;
 
-            HeatFluxDensity     = Conductance*(Tinterface - Tnormal_Conjugate);
+            if (config->GetCHT_Robin()) {
 
-            HeatFluxValue       = HeatFluxDensity * Area;
+              Tinterface        = node[iPoint]->GetSolution(0);
+              Tnormal_Conjugate = GetConjugateHeatVariable(iMarker, iVertex, 3)/Temperature_Ref;
 
-            Res_Visc[0] = -HeatFluxValue;
+              HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
+              HeatFlux          = HeatFluxDensity * Area;
+
+            }
+            else {
+
+              HeatFluxDensity = GetConjugateHeatVariable(iMarker, iVertex, 1)/rho_cp_solid;
+              HeatFlux        = HeatFluxDensity*Area;
+            }
+
+            Res_Visc[0] = -HeatFlux;
             LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
             if (implicit) {
 
-              Jacobian_i[0][0] = Conductance*Area;
+              Jacobian_i[0][0] = thermal_diffusivity*Area;
               Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
             }
           }
