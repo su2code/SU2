@@ -343,7 +343,7 @@ template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                       CMatrixVectorProduct<ScalarType> & mat_vec, CPreconditioner<ScalarType> & precond,
                                                       ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
-	
+
   int rank = SU2_MPI::GetRank();
 
   /*---  Check the subspace size ---*/
@@ -390,9 +390,9 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   W[0] -= b;
 
   ScalarType beta = W[0].norm();
-  
+
   if ((beta < tol*norm0) || (beta < eps)) {
-    
+
     /*---  System is already solved ---*/
 
     if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
@@ -499,7 +499,7 @@ template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                        CMatrixVectorProduct<ScalarType> & mat_vec, CPreconditioner<ScalarType> & precond,
                                                        ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
-  
+
   int rank = SU2_MPI::GetRank();
   ScalarType norm_r = 0.0, norm0 = 0.0;
   int i = 0;
