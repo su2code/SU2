@@ -62,7 +62,7 @@ void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeome
   unsigned short iVar;
 
   /*--- The displacements come from the predicted solution, but they are no longer incremental ---*/
-  DisplacementDonor = struct_solution->node->GetSolution_Pred(Point_Struct);
+  DisplacementDonor = struct_solution->GetNodes()->GetSolution_Pred(Point_Struct);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = DisplacementDonor[iVar];
@@ -75,6 +75,6 @@ void CDisplacementsInterface::SetTarget_Variable(CSolver *mesh_solver, CGeometry
 
   /*--- Impose the boundary displacements ---*/
 
-  mesh_solver->node->SetBound_Disp(Point_Mesh,Target_Variable);
+  mesh_solver->GetNodes()->SetBound_Disp(Point_Mesh,Target_Variable);
 
 }

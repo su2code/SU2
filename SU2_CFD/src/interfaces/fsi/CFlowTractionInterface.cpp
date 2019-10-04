@@ -84,7 +84,7 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-  struct_solution->node->Clear_FlowTraction();
+  struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
 
@@ -163,7 +163,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   // Retrieve the values of pressure
 
-  Pn = flow_solution->node->GetPressure(Point_Flow);
+  Pn = flow_solution->GetNodes()->GetPressure(Point_Flow);
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
   for (iVar = 0; iVar < nVar; iVar++)
@@ -173,11 +173,11 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   if ((incompressible || compressible) && viscous_flow) {
 
-    Viscosity = flow_solution->node->GetLaminarViscosity(Point_Flow);
+    Viscosity = flow_solution->GetNodes()->GetLaminarViscosity(Point_Flow);
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0 ; jVar < nVar; jVar++) {
-        Grad_Vel[iVar][jVar] = flow_solution->node->GetGradient_Primitive(Point_Flow, iVar+1, jVar);
+        Grad_Vel[iVar][jVar] = flow_solution->GetNodes()->GetGradient_Primitive(Point_Flow, iVar+1, jVar);
       }
     }
 
@@ -211,6 +211,6 @@ void CFlowTractionInterface::SetTarget_Variable(CSolver *fea_solution, CGeometry
 
   /*--- Add to the Flow traction. If nonconservative interpolation is in use,
         this is a stress and is integrated by the structural solver later on. ---*/
-  fea_solution->node->Add_FlowTraction(Point_Struct,Target_Variable);
+  fea_solution->GetNodes()->Add_FlowTraction(Point_Struct,Target_Variable);
 
 }

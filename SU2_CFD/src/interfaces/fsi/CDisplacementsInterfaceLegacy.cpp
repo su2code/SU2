@@ -66,9 +66,9 @@ void CDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_solution, 
   unsigned short iVar;
 
   /*--- The displacements come from the predicted solution ---*/
-  DisplacementDonor = struct_solution->node->GetSolution_Pred(Point_Struct);
+  DisplacementDonor = struct_solution->GetNodes()->GetSolution_Pred(Point_Struct);
 
-  DisplacementDonor_Prev = struct_solution->node->GetSolution_Pred_Old(Point_Struct);
+  DisplacementDonor_Prev = struct_solution->GetNodes()->GetSolution_Pred_Old(Point_Struct);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];

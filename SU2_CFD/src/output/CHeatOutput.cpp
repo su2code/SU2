@@ -140,7 +140,7 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
-  CVariable* Node_Heat = solver[HEAT_SOL]->node;
+  CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
   
   // Grid coordinates

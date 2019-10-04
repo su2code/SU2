@@ -172,7 +172,7 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
  
-  CVariable* Node_Struc = solver[FEA_SOL]->node; 
+  CVariable* Node_Struc = solver[FEA_SOL]->GetNodes(); 
   CPoint*    Node_Geo  = geometry->node[iPoint];
           
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  

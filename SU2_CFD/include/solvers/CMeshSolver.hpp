@@ -116,7 +116,7 @@ public:
    * \param[in] iDim - Dimension required.
    */
   inline su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {
-    return node->GetMesh_Coord(indexNode,iDim);
+    return nodes->GetMesh_Coord(indexNode,iDim);
   }
 
   /*!

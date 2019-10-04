@@ -168,7 +168,7 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
-  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->node; 
+  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes(); 
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
 

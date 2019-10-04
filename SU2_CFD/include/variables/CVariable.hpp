@@ -52,19 +52,6 @@
 
 using namespace std;
 
-/*--- Forward declarations of some derived CVariable classes ---*/
-/*---
- Derived CSolvers keep a private pointer of the safest type they can downcast to.
- This bypasses most of the virtual indirection (within that solver).
- These declarations avoid having to include all CVariable hpps in
- solver_structure.hpp, they will not be need when that file is split.
----*/
-class CEulerVariable;
-class CIncEulerVariable;
-class CTurbVariable;
-class CDiscAdjVariable;
-class CDiscAdjFEABoundVariable;
-
 /*!
  * \class CVariable
  * \brief Main class for defining the variables.

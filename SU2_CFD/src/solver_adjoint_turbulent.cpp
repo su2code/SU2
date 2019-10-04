@@ -124,7 +124,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Far-Field values and initizalization ---*/
   bool restart = config->GetRestart();
 
-  node = new CAdjTurbVariable(0.0, nPoint, nDim, nVar, config);
+  nodes = new CAdjTurbVariable(0.0, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
 
   if (restart && (iMesh == MESH_0)) {
     unsigned long index;
@@ -166,8 +167,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
         
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-        node->SetSolution(iPoint_Local,0,Solution[0]);
-        node->SetSolution_Old(iPoint_Local,0,Solution[0]);
+        nodes->SetSolution(iPoint_Local,0,Solution[0]);
+        nodes->SetSolution_Old(iPoint_Local,0,Solution[0]);
         iPoint_Global_Local++;
       }
 
@@ -199,6 +200,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 CAdjTurbSolver::~CAdjTurbSolver(void) {
+  if (nodes != nullptr) delete nodes;
 }
 
 void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -214,7 +216,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       Solution[0] = 0.0;
       
       /*--- Set the solution values and zero the residual ---*/
-      node->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -238,7 +240,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       Solution[0] = 0.0;
       
       /*--- Set the solution values and zero the residual ---*/
-      node->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -260,11 +262,11 @@ void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     conv_numerics->SetNormal(geometry->vertex[val_marker][iVertex]->GetNormal());
 
     /*--- Set Conservative variables (for convection) ---*/
-    su2double* U_i = solver_container[FLOW_SOL]->node->GetSolution(iPoint);
+    su2double* U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
     conv_numerics->SetConservative(U_i, NULL);
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    su2double* TurbPsi_i = node->GetSolution(iPoint);
+    su2double* TurbPsi_i = nodes->GetSolution(iPoint);
     conv_numerics->SetTurbAdjointVar(TurbPsi_i, NULL);
     
     /*--- Add Residuals and Jacobians ---*/
@@ -323,21 +325,21 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     /*--- Conservative variables w/o reconstruction ---*/
-    U_i = solver_container[FLOW_SOL]->node->GetSolution(iPoint);
-    U_j = solver_container[FLOW_SOL]->node->GetSolution(jPoint);
+    U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+    U_j = solver_container[FLOW_SOL]->GetNodes()->GetSolution(jPoint);
     numerics->SetConservative(U_i, U_j);
     
     /*--- Set normal vectors and length ---*/
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    TurbPsi_i = node->GetSolution(iPoint);
-    TurbPsi_j = node->GetSolution(jPoint);
+    TurbPsi_i = nodes->GetSolution(iPoint);
+    TurbPsi_j = nodes->GetSolution(jPoint);
     numerics->SetTurbAdjointVar(TurbPsi_i, TurbPsi_j);
     
     /*--- Gradient of turbulent variables w/o reconstruction ---*/
-    TurbVar_Grad_i = solver_container[TURB_SOL]->node->GetGradient(iPoint);
-    TurbVar_Grad_j = solver_container[TURB_SOL]->node->GetGradient(jPoint);
+    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
+    TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
     
 //    if (muscl) {
@@ -347,8 +349,8 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 //        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
 //        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
 //      }
-//      Gradient_i = solver_container[FLOW_SOL]->node->GetGradient(iPoint);
-//      Gradient_j = solver_container[FLOW_SOL]->node->GetGradient(jPoint);
+//      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient(iPoint);
+//      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient(jPoint);
 //      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
 //        Project_Grad_i = 0; Project_Grad_j = 0;
 //        for (iDim = 0; iDim < nDim; iDim++) {
@@ -418,16 +420,16 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Conservative variables w/o reconstruction, turbulent variables w/o reconstruction,
      and turbulent adjoint variables w/o reconstruction ---*/
-    numerics->SetConservative(solver_container[FLOW_SOL]->node->GetSolution(iPoint), solver_container[FLOW_SOL]->node->GetSolution(jPoint));
-    numerics->SetTurbVar(solver_container[TURB_SOL]->node->GetSolution(iPoint), solver_container[TURB_SOL]->node->GetSolution(jPoint));
-    numerics->SetTurbAdjointVar(node->GetSolution(iPoint), node->GetSolution(jPoint));
+    numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint), solver_container[FLOW_SOL]->GetNodes()->GetSolution(jPoint));
+    numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
+    numerics->SetTurbAdjointVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
     
     /*--- Viscosity ---*/
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node->GetLaminarViscosity(iPoint),
-                                  solver_container[FLOW_SOL]->node->GetLaminarViscosity(jPoint));
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint),
+                                  solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint));
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    numerics->SetTurbAdjointGradient(node->GetGradient(iPoint), node->GetGradient(jPoint));
+    numerics->SetTurbAdjointGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
     
     /*--- Compute residual in a non-conservative way, and update ---*/
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
@@ -454,31 +456,31 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
         
     /*--- Conservative variables w/o reconstruction ---*/
-    U_i = solver_container[FLOW_SOL]->node->GetSolution(iPoint);
+    U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
     numerics->SetConservative(U_i, NULL);
     
     /*--- Gradient of primitive variables w/o reconstruction ---*/
-    GradPrimVar_i = solver_container[FLOW_SOL]->node->GetGradient_Primitive(iPoint);
+    GradPrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     numerics->SetPrimVarGradient(GradPrimVar_i, NULL);
     
     /*--- Laminar viscosity of the fluid ---*/
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node->GetLaminarViscosity(iPoint), 0.0);
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint), 0.0);
     
     /*--- Turbulent variables w/o reconstruction ---*/
-    TurbVar_i = solver_container[TURB_SOL]->node->GetSolution(iPoint);
+    TurbVar_i = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint);
     numerics->SetTurbVar(TurbVar_i, NULL);
     
     /*--- Gradient of Turbulent Variables w/o reconstruction ---*/
-    TurbVar_Grad_i = solver_container[TURB_SOL]->node->GetGradient(iPoint);
+    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
     numerics->SetTurbVarGradient(TurbVar_Grad_i, NULL);
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    TurbPsi_i = node->GetSolution(iPoint);
+    TurbPsi_i = nodes->GetSolution(iPoint);
     numerics->SetTurbAdjointVar(TurbPsi_i, NULL);
     
     /*--- Gradient of Adjoint flow variables w/o reconstruction
      (for non-conservative terms depending on gradients of flow adjoint vars.) ---*/
-    PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->node->GetGradient(iPoint);
+    PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->GetNodes()->GetGradient(iPoint);
     numerics->SetAdjointVarGradient(PsiVar_Grad_i, NULL);
 
     /*--- Set volume and distances to the surface ---*/
@@ -503,13 +505,13 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    jPoint = geometry->edge[iEdge]->GetNode(1);
 //    
 //    /*--- Gradient of turbulent variables w/o reconstruction ---*/
-//    TurbVar_Grad_i = solver_container[TURB_SOL]->node->GetGradient(iPoint);
-//    TurbVar_Grad_j = solver_container[TURB_SOL]->node->GetGradient(jPoint);
+//    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
+//    TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
 //    second_numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
 //    
 //    /*--- Turbulent adjoint variables w/o reconstruction ---*/
-//    TurbPsi_i = node->GetSolution(iPoint);
-//    TurbPsi_j = node->GetSolution(jPoint);
+//    TurbPsi_i = nodes->GetSolution(iPoint);
+//    TurbPsi_j = nodes->GetSolution(jPoint);
 //    second_numerics->SetTurbAdjointVar(TurbPsi_i, TurbPsi_j);
 //    
 //    /*--- Set normal vectors and length ---*/
@@ -551,7 +553,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / (config->GetCFLRedCoeff_AdjTurb()*solver_container[FLOW_SOL]->node->GetDelta_Time(iPoint));
+    Delta = Vol / (config->GetCFLRedCoeff_AdjTurb()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     
     Jacobian.AddVal2Diag(iPoint, Delta);
     
@@ -585,7 +587,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++)
-      node->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
+      nodes->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
   }
   
   /*--- MPI solution ---*/
