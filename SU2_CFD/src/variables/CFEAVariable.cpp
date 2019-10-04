@@ -55,9 +55,6 @@ CFEAVariable::CFEAVariable(void) : CVariable() {
 
   Prestretch            = NULL;    // Prestretch geometry
   Reference_Geometry    = NULL;    // Reference geometry for optimization purposes
-
-  Solution_BGS_k        = NULL;    // Old solution stored to check convergence in the BGS loop
-
 }
 
 CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
@@ -73,8 +70,8 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
 
   bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
 
-  bool dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fsi_analysis = config->GetFSI_Simulation();
+  bool dynamic_analysis = (config->GetTime_Domain());
+  bool fsi_analysis = (config->GetnMarker_Fluid_Load() > 0);
 
   VonMises_Stress       = 0.0;
 
@@ -92,8 +89,6 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
 
   Prestretch            = NULL;    // Prestretch geometry
   Reference_Geometry    = NULL;    // Reference geometry for optimization purposes
-
-  Solution_BGS_k        = NULL;    // Old solution stored to check convergence in the BGS loop
 
   if      (nDim == 2) Stress = new su2double [3];
   else if (nDim == 3) Stress = new su2double [6];
@@ -115,15 +110,12 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
       Solution_Accel_time_n[iVar] = val_fea[iVar+2*nVar];
     }
   }
-
   if (fsi_analysis) {
     Solution_Pred       =  new su2double [nVar];
-    Solution_Pred_Old   =  new su2double [nVar];
-    Solution_BGS_k      =  new su2double [nVar];
+    Solution_Pred_Old     =  new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution_Pred[iVar]     = val_fea[iVar];
       Solution_Pred_Old[iVar] = val_fea[iVar];
-      Solution_BGS_k[iVar]    = 0.0;
     }
   }
 
@@ -151,7 +143,9 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   if (refgeom) Reference_Geometry = new su2double [nVar];
 
   if (prestretch_fem)  Prestretch = new su2double [nVar];
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CFEAVariable::~CFEAVariable(void) {
@@ -170,8 +164,6 @@ CFEAVariable::~CFEAVariable(void) {
 
   if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
   if (Prestretch            != NULL) delete [] Prestretch;
-
-  if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
 
 }
 

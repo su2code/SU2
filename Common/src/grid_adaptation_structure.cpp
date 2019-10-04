@@ -123,7 +123,7 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 
 	string text_line;
 		
-	string mesh_filename = config->GetSolution_FlowFileName();
+	string mesh_filename = config->GetSolution_FileName();
 	ifstream restart_file;
 
 	char *cstr = new char [mesh_filename.size()+1];
@@ -160,7 +160,7 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	su2double dummy;
 	string text_line;
 	
-	string mesh_filename = config->GetSolution_FlowFileName();
+	string mesh_filename = config->GetSolution_FileName();
 	ifstream restart_file;
 	
 	char *cstr = new char [mesh_filename.size()+1];

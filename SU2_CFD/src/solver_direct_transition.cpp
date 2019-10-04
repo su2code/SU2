@@ -165,7 +165,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     cout << "No LM restart yet!!" << endl; // TODO, Aniket
     int j;
     cin >> j;
-    string mesh_filename = config->GetSolution_FlowFileName();
+    string mesh_filename = config->GetSolution_FileName();
     cstr = new char [mesh_filename.size()+1];
     strcpy (cstr, mesh_filename.c_str());
     restart_file.open(cstr, ios::in);
@@ -182,6 +182,9 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
     restart_file.close();
   }
+
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "TRANS";
 
 }
 

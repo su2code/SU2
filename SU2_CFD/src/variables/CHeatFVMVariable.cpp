@@ -50,13 +50,11 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
 
   unsigned short iVar, iMesh, nMGSmooth = 0;
   bool low_fidelity = false;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool multizone = config->GetMultizone_Problem();
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
-  Solution_BGS_k  = NULL;
 
   /*--- Initialization of heat variable ---*/
   Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
@@ -88,15 +86,12 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     Undivided_Laplacian = new su2double [nVar];
   }
-
-  if (multizone){
-    Solution_BGS_k  = new su2double [1];
-    Solution_BGS_k[0] = val_Heat;
-  }
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+  
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
   if (Solution_Direct != NULL) delete [] Solution_Direct;
 }

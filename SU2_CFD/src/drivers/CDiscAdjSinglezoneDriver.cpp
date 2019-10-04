@@ -45,12 +45,14 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
-  nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
+  nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
+  
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
   iteration   = iteration_container[ZONE_0][INST_0];
   solver      = solver_container[ZONE_0][INST_0][MESH_0];
+  numerics    = numerics_container[ZONE_0][INST_0][MESH_0];
   geometry    = geometry_container[ZONE_0][INST_0][MESH_0];
   integration = integration_container[ZONE_0][INST_0];
 
@@ -59,24 +61,37 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
+  
+  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
+
+  /*--- Determine if the problem has a mesh deformation solver ---*/
+  bool mesh_def = config->GetDeform_Mesh();
 
   /*--- Initialize the direct iteration ---*/
 
   switch (config->GetKind_Solver()) {
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    if (turbo) direct_iteration = new CTurboIteration(config);
+    if (turbo) {
+      direct_iteration = new CTurboIteration(config);
+      output_legacy = new COutputLegacy(config_container[ZONE_0]);
+    }
     else       direct_iteration = new CFluidIteration(config);
+    if (compressible) direct_output = new CFlowCompOutput(config, nDim);
+    else direct_output = new CFlowIncOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
-    SecondaryVariables = MESH_COORDS;
+    if (mesh_def) SecondaryVariables = MESH_DEFORM;
+    else          SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
+    direct_output = new CFlowCompFEMOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -85,6 +100,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
+    direct_output = new CElasticityOutput(config, nDim);
     MainVariables = FEA_DISP_VARS;
     SecondaryVariables = NONE;
     break;
@@ -93,11 +109,14 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
+    direct_output = new CHeatOutput(config, nDim);    
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
   }
+  
+ direct_output->PreprocessHistoryOutput(config, false);
 
 }
 
@@ -106,17 +125,14 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-
-  /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-  /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-
-  config_container[ZONE_0]->SetExtIter(TimeIter);
+  
+  config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
 
   /*--- Preprocess the adjoint iteration ---*/
 
-  iteration->Preprocess(output, integration_container, geometry_container,
+  iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
@@ -142,21 +158,7 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- of the previous iteration. The values are passed to the AD tool.
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetIntIter(Adjoint_Iter);
-    if(!config->GetTime_Domain() && (MainVariables == FLOW_CONS_VARS))
-      config->SetExtIter(Adjoint_Iter);
-
-    /*--- Secondary sensitivities must be computed with a certain frequency. ---*/
-    /*--- It is also done at the beginning so all memory gets allocated.     ---*/
-    if ((Adjoint_Iter % config->GetWrt_Sol_Freq() == 0) && (SecondaryVariables != NONE)){
-
-      /*--- Computes secondary sensitivities ---*/
-      SecondaryRecording();
-
-      /*--- Recompute main sensitivities ---*/
-      MainRecording();
-
-    }
+    config->SetInnerIter(Adjoint_Iter);
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
@@ -170,23 +172,19 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-    iteration->Iterate(output, integration_container, geometry_container,
+    iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
-    StopCalc = iteration->Monitor(output, integration_container, geometry_container,
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-
-    if (config->GetTime_Domain())
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container,
-                                  true, 0.0, ZONE_0, INST_0);
-
+    
     if (StopCalc) break;
 
   }
@@ -195,24 +193,24 @@ void CDiscAdjSinglezoneDriver::Run() {
 
 void CDiscAdjSinglezoneDriver::Postprocess() {
 
+  switch(config->GetKind_Solver())
+  {
+    case DISC_ADJ_EULER :     case DISC_ADJ_NAVIER_STOKES :     case DISC_ADJ_RANS :
+    case DISC_ADJ_INC_EULER : case DISC_ADJ_INC_NAVIER_STOKES : case DISC_ADJ_INC_RANS :
 
+      /*--- Compute the geometrical sensitivities ---*/
+      SecondaryRecording();
+      break;
 
-  if (config->GetKind_Solver() == DISC_ADJ_EULER ||
-      config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-      config->GetKind_Solver() == DISC_ADJ_RANS){
+    case DISC_ADJ_FEM :
 
-    /*--- Compute the geometrical sensitivities ---*/
-    SecondaryRecording();
+      /*--- Apply the boundary condition to clamped nodes ---*/
+      iteration->Postprocess(output_container[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,
+                             config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
 
-  }
-
-  if (config->GetKind_Solver() == DISC_ADJ_FEM){
-
-    /*--- Apply the boundary condition to clamped nodes ---*/
-    iteration->Postprocess(output,integration_container,geometry_container,solver_container,numerics_container,
-                           config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
-
-  }
+      RecordingState = NONE;
+      break;
+  }//switch
 
 }
 
@@ -256,7 +254,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, output, ZONE_0, INST_0);
+  iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
 
@@ -268,13 +266,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
 
   if (time_stepping){
-    if (ExtIter < IterAvg_Obj){
+    if (TimeIter < IterAvg_Obj){
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
     else{
@@ -292,32 +289,36 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool heat         = (config->GetWeakly_Coupled_Heat());
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
+  
+  direct_output->SetHistory_Output(geometry, solver, config,
+                                   config->GetTimeIter(),
+                                   config->GetOuterIter(),
+                                   config->GetInnerIter());
 
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case EULER:                    case NAVIER_STOKES:                   case RANS:
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
-    if (config->GetnMarker_Analyze() != 0)
-      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
+//    if (config->GetnMarker_Analyze() != 0)
+//      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
 
-    if ((config->GetnMarker_Analyze() != 0) && compressible)
-      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
+//    if ((config->GetnMarker_Analyze() != 0) && compressible)
+//      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
 
-    if (config->GetnMarker_NearFieldBound() != 0)
-      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
+//    if (config->GetnMarker_NearFieldBound() != 0)
+//      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
 
-    if (config->GetPlot_Section_Forces())
-      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
+//    if (config->GetPlot_Section_Forces())
+//      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
 
     /*--- Surface based obj. function ---*/
 
@@ -337,19 +338,17 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     if (turbo){
 
       solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1,
-                                                                  config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1,
-                                                                    config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1,
-                                                                  config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
         break;
       default:
         break;
@@ -386,26 +385,21 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
+  /*--- Mesh movement ---*/
+
+  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+
   /*--- Zone preprocessing ---*/
 
-  direct_iteration->Preprocess(output, integration_container, geometry_container, solver_container,
-                               numerics_container, config_container, surface_movement, grid_movement,
-                               FFDBox, ZONE_0, INST_0);
-
-  /*--- Run one single iteration ---*/
-
-  config->SetIntIter(1);
+  direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(output, integration_container, geometry_container, solver_container, numerics_container,
-                            config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
 
-  direct_iteration->Postprocess(output, integration_container, geometry_container, solver_container,
-                                numerics_container, config_container, surface_movement, grid_movement,
-                                FFDBox, ZONE_0, INST_0);
+  direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Print the direct residual to screen ---*/
 
@@ -422,6 +416,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
     switch (config->GetKind_Solver()) {
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
            << ", log10[U(1)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(1))
@@ -516,8 +511,14 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ComputeAdjoint();
 
   /*--- Extract the computed sensitivity values. ---*/
-
-  solver[ADJFLOW_SOL]->SetSensitivity(geometry,config);
+  switch(SecondaryVariables){
+  case MESH_COORDS:
+    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
+    break;
+  case MESH_DEFORM:
+    solver[ADJMESH_SOL]->SetSensitivity(geometry, solver, config);
+    break;
+  }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

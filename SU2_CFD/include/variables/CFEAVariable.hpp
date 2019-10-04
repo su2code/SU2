@@ -68,9 +68,6 @@ protected:
 
   su2double *Prestretch;          /*!< \brief Prestretch geometry */
 
-  su2double* Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
-
-
 public:
 
   /*!
@@ -131,30 +128,6 @@ public:
    * \brief Get the body forces.
    */
   inline su2double Get_BodyForces_Res(unsigned short iVar) {return Residual_Ext_Body[iVar];}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = Solution[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(su2double *val_solution_time_n) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = val_solution_time_n[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(unsigned short val_var, su2double val_solution) {
-    Solution_time_n[val_var] = val_solution;
-  }
 
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
@@ -515,19 +488,5 @@ public:
 	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
 	      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n[iVar]);
   }
-
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_k(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_BGS_k[iVar] = Solution[iVar];
-  }
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 
 };

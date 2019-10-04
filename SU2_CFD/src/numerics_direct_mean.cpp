@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
@@ -42,7 +42,8 @@ CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar,
                 CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  grid_movement = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   fix_factor = config->GetCent_Jac_Fix_Factor();
 
   Gamma = config->GetGamma();
@@ -77,7 +78,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     AD::SetPreaccIn(Normal, nDim);
     AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
     AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
-    if (grid_movement) {
+    if (dynamic_grid) {
       AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
     }
   }
@@ -135,7 +136,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
 
   /*--- Adjustment due to grid motion ---*/
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
@@ -161,7 +162,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   
   /*--- Adjustment due to mesh motion ---*/
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     ProjVelocity_i -= ProjGridVel;
     ProjVelocity_j -= ProjGridVel;
   }
@@ -359,7 +360,7 @@ CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+  if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered by the CUSP scheme." << endl;
   
   /*--- Allocate some structures ---*/
@@ -501,7 +502,7 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+  if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -682,7 +683,7 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                              CNumerics(val_nDim, val_nVar, config) {
   
-  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+  if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -1445,7 +1446,8 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();
-  grid_movement = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   
   Gamma = config->GetGamma();
 
@@ -1542,7 +1544,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   ProjInterfaceVel = 0;
 
-  if (grid_movement) {
+  if (dynamic_grid) {
 
   for (iDim = 0; iDim < nDim; iDim++)
     ProjInterfaceVel += 0.5 * ( GridVel_i[iDim] + GridVel_j[iDim] )*UnitNormal[iDim];
@@ -1955,7 +1957,8 @@ CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned sho
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();
-  grid_movement = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   
   Gamma = config->GetGamma();
   
@@ -2062,7 +2065,7 @@ void CUpwGeneralHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **
 
   ProjInterfaceVel = 0;
 
-  if (grid_movement) {
+  if (dynamic_grid) {
 
   for (iDim = 0; iDim < nDim; iDim++)
     ProjInterfaceVel += 0.5 * ( GridVel_i[iDim] + GridVel_j[iDim] )*UnitNormal[iDim];
@@ -2834,7 +2837,8 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
                                    bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  grid_movement = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
   Gamma = config->GetGamma();
@@ -2894,7 +2898,7 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   if (roe_low_dissipation){
@@ -2973,7 +2977,7 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   for (iDim = 0; iDim < nDim; iDim++)
     ProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++)
       ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
     ProjVelocity -= ProjGridVel;
@@ -3027,7 +3031,7 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   
   /*--- Correct for grid motion ---*/
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjGridVel*Area * 0.5*(Conservatives_i[iVar]+Conservatives_j[iVar]);
       
@@ -3240,7 +3244,8 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  grid_movement = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
 
@@ -3289,7 +3294,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(S_i, 2); AD::SetPreaccIn(S_j, 2);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
@@ -3389,7 +3394,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   }
 
   /*--- Projected velocity adjustment due to mesh motion ---*/
-  if (grid_movement) {
+  if (dynamic_grid) {
     su2double ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
@@ -3464,7 +3469,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
     }
 
     /*--- Flux contribution due to grid motion ---*/
-    if (grid_movement) {
+    if (dynamic_grid) {
       ProjVelocity = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
@@ -3509,7 +3514,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
     }
 
     /*--- Jacobian contributions due to grid motion ---*/
-    if (grid_movement) {
+    if (dynamic_grid) {
       ProjVelocity = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
@@ -3570,7 +3575,7 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+  if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in the MSW scheme." << endl;
   
   /*--- Set booleans from CConfig settings ---*/
@@ -3787,7 +3792,8 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
 CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  grid_movement = config->GetGrid_Movement();
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -3913,7 +3919,7 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   }
   
   /*--- Projected velocity adjustment due to mesh motion ---*/
-  if (grid_movement) {
+  if (dynamic_grid) {
     su2double ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
@@ -3996,7 +4002,7 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   }
   
   /*--- Contributions due to mesh motion---*/
-  if (grid_movement) {
+  if (dynamic_grid) {
     ProjVelocity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];

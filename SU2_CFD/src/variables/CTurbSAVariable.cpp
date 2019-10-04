@@ -43,8 +43,8 @@ CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
 CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim,
                                  unsigned short val_nvar, CConfig *config) : CTurbVariable(val_nDim, val_nvar, config) {
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Initialization of S-A variables ---*/
   Solution[0] = val_nu_tilde;    Solution_Old[0] = val_nu_tilde;

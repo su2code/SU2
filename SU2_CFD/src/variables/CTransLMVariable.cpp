@@ -45,7 +45,9 @@ CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermi
   // Initialization of variables
   Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
   Solution[1] = val_REth;          Solution_Old[1] = val_REth;
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CTransLMVariable::~CTransLMVariable(void) { }

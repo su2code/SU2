@@ -47,9 +47,15 @@
 #include "../config_structure.hpp"
 #include "../geometry_structure.hpp"
 #include "CSysVector.hpp"
+#include "CPastixWrapper.hpp"
 
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
+#ifndef __INTEL_MKL__
+  #error Could not determine the MKL version
+#endif
+/*--- JIT is only available since 2019 ---*/
+#if __INTEL_MKL__ >= 2019
 #define USE_MKL
 /*---
  Lapack direct calls only seem to be created for Intel compilers, and it is not worthwhile
@@ -57,6 +63,9 @@
 ---*/
 #if defined(__INTEL_COMPILER) && defined(MKL_DIRECT_CALL_SEQ) && !defined(CODI_REVERSE_TYPE)
   #define USE_MKL_LAPACK
+#endif
+#else
+  #warning The current version of MKL does not support JIT gemm kernels
 #endif
 #endif
 
@@ -117,6 +126,10 @@ private:
   void * MatrixVectorProductTranspJitterBetaOne;               /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
   dgemm_jit_kernel_t MatrixVectorProductTranspKernelBetaOne;   /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
   lapack_int * mkl_ipiv;
+#endif
+
+#ifdef HAVE_PASTIX
+  CPastixWrapper pastix_wrapper;
 #endif
 
   /*!
@@ -626,6 +639,24 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
+
+  /*!
+   * \brief Factorize matrix using PaStiX.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] kind_fact - Type of factorization.
+   * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
+   */
+  void BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, unsigned short kind_fact, bool transposed = false);
+
+  /*!
+   * \brief Apply the PaStiX factorization to CSysVec.
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product M*vec.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
 
 };
 

@@ -46,17 +46,12 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 CNumerics ******numerics_container,
                                                 CConfig **config,
                                                 unsigned short RunTime_EqSystem,
-                                                unsigned long Iteration,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
-  unsigned short FinestMesh, iMGLevel = 0;
+  unsigned short FinestMesh;
   su2double monitor = 1.0;
   bool FullMG = false;
   
-  const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
-  const bool startup_multigrid = ((config[iZone]->GetRestart_Flow())     &&
-                                  (RunTime_EqSystem == RUNTIME_FLOW_SYS) &&
-                                  (Iteration == 0));
   const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
                        (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
@@ -75,24 +70,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   if (config[iZone]->GetMGCycle() == FULLMG_CYCLE) {
     RecursiveParam = V_CYCLE;
     FullMG = true;
-  }
-  
-  /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
-	/*-- Since the restart takes care of this I dont think is required, but we should check after the new restart routines are added ---*/
-  
-  if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid)
-  {
-    for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
-      
-      SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iInst][iMGLevel][SolContainer_Position],
-                             solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position],
-                             geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
-      
-      SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
-      
-      SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
-      
-    }
   }
 	
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
@@ -113,7 +90,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
-                  Iteration, iZone, iInst);
+                  iZone, iInst);
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
@@ -125,12 +102,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
                             numerics_container[iZone][iInst], config[iZone],
-                            FinestMesh, RunTime_EqSystem, Iteration, &monitor);
+                            FinestMesh, RunTime_EqSystem, &monitor);
   
-  /*--- Convergence strategy ---*/
-  
-  Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
-
 }
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
@@ -140,14 +113,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned short iMesh,
                                             unsigned short RecursiveParam,
                                             unsigned short RunTime_EqSystem,
-                                            unsigned long Iteration,
                                             unsigned short iZone,
                                             unsigned short iInst) {
   
   unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
-  
-  bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
-  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+    unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   
@@ -177,11 +147,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
         
-        solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
+        solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh,  config[iZone]->GetTimeIter());
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
         
-        Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
+        Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, config[iZone]->GetTimeIter(), iZone);
         
       }
       
@@ -191,7 +161,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       
-      Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
+      Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem);
       
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       
@@ -202,8 +172,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   }
   
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
-  
-  if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
+    if ( iMesh < config[iZone]->GetnMGLevels() ) {
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
@@ -223,8 +192,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Recursive call to MultiGrid_Cycle ---*/
     
     for (unsigned short imu = 0; imu <= RecursiveParam; imu++) {
-      if (iMesh == config[iZone]->GetnMGLevels()-2) MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone, iInst);
-      else MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, RecursiveParam, RunTime_EqSystem, Iteration, iZone, iInst);
+      if (iMesh == config[iZone]->GetnMGLevels()-2) MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, iZone, iInst);
+      else MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, RecursiveParam, RunTime_EqSystem, iZone, iInst);
     }
     
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
@@ -252,11 +221,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
           solver_container[iZone][iInst][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iInst][iMesh]);
           if (config[iZone]->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT)
             solver_container[iZone][iInst][iMesh][SolContainer_Position]->Set_NewSolution(geometry[iZone][iInst][iMesh]);
-          solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
+          solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh,  config[iZone]->GetTimeIter());
         }
         
         Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
-        Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
+        Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem);
         
         solver_container[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
         
@@ -721,11 +690,9 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
 }
 
 void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
-                                                      CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration,
+                                                      CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, 
                                                       su2double *monitor) {
-  
-  const unsigned short nDim = geometry[FinestMesh]->GetnDim();
-  
+    
   switch (RunTime_EqSystem) {
       
     case RUNTIME_FLOW_SYS:
@@ -742,22 +709,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
           solver_container[FinestMesh][FLOW_SOL]->Buffet_Monitoring(geometry[FinestMesh], config);
       }
       
-      /*--- Evaluate convergence monitor ---*/
-      
-      if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CD();
-        if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CL();
-        if (config->GetCauchy_Func_Flow() == NEARFIELD_PRESSURE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
-      }
-      
-      if (config->GetConvCriteria() == RESIDUAL) {
-        if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-        else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-          if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
-          else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
-        }
-      }
-      
       break;
       
     case RUNTIME_ADJFLOW_SYS:
@@ -771,21 +722,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       
       if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
-      /*--- Evaluate convergence monitor ---*/
-      
-      if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_AdjFlow() == SENS_GEOMETRY) (*monitor) = solver_container[FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
-        if (config->GetCauchy_Func_AdjFlow() == SENS_MACH) (*monitor) = solver_container[FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
-      }
-      
-      if (config->GetConvCriteria() == RESIDUAL) {
-        if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-        else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-          if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
-          else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
-        }
-      }
-      
       break;
           
   }
@@ -797,9 +733,8 @@ CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(c
 CSingleGridIntegration::~CSingleGridIntegration(void) { }
 
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
-                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst) {
+                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) {
   unsigned short iMesh;
-  su2double monitor = 0.0;
   
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
@@ -815,7 +750,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   
   /*--- Time step evaluation ---*/
   
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh, 0);
+  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh, config[iZone]->GetTimeIter());
   
   /*--- Space integration ---*/
   
@@ -825,26 +760,15 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   /*--- Time integration ---*/
   
   Time_Integration(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], NO_RK_ITER,
-                   RunTime_EqSystem, Iteration);
+                   RunTime_EqSystem);
   
   /*--- Postprocessing ---*/
   
   solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh);
   
-  /*--- Compute adimensional parameters and the convergence monitor ---*/
-  
-  switch (RunTime_EqSystem) {
-    case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][iInst][FinestMesh][FEA_SOL]->GetRes_RMS(0));     break;
-    case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
-  }
-  
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
     solver_container[iZone][iInst][FinestMesh][HEAT_SOL]->Heat_Fluxes(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone]);
   }
-  
-  /*--- Convergence strategy ---*/
-  
-  Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
   
@@ -946,37 +870,30 @@ CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(c
 CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
-                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst) {
+                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) {
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   /*--- Preprocessing ---*/
 
   solver_container[iZone][iInst][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0],
-      config[iZone], numerics_container[iZone][iInst][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+      config[iZone], numerics_container[iZone][iInst][MESH_0][SolContainer_Position], MESH_0, NO_RK_ITER, RunTime_EqSystem, false);
 
 
   /*--- Space integration ---*/
 
   Space_Integration_FEM(geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], numerics_container[iZone][iInst][MESH_0][SolContainer_Position],
-                    config[iZone], RunTime_EqSystem, Iteration);
+                    config[iZone], RunTime_EqSystem);
 
   /*--- Time integration ---*/
 
   Time_Integration_FEM(geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], numerics_container[iZone][iInst][MESH_0][SolContainer_Position],
-                config[iZone], RunTime_EqSystem, Iteration);
+                config[iZone], RunTime_EqSystem);
 
   /*--- Postprocessing ---*/
 
   solver_container[iZone][iInst][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0],
       config[iZone], numerics_container[iZone][iInst][MESH_0][SolContainer_Position],  MESH_0);
-
-  /*--- Convergence strategy ---*/
-
-  switch (RunTime_EqSystem) {
-    case RUNTIME_FEA_SYS: Convergence_Monitoring_FEM(geometry[iZone][iInst][MESH_0], config[iZone], solver_container[iZone][iInst][MESH_0][SolContainer_Position], Iteration); break;
-    case RUNTIME_ADJFEA_SYS: Convergence_Monitoring_FEM_Adj(geometry[iZone][iInst][MESH_0], config[iZone], solver_container[iZone][iInst][MESH_0][SolContainer_Position], Iteration); break;
-  }
 
 }
 
@@ -989,7 +906,6 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                CNumerics ******numerics_container,
                                                CConfig **config,
                                                unsigned short RunTime_EqSystem,
-                                               unsigned long Iteration,
                                                unsigned short iZone,
                                                unsigned short iInst) {
 
@@ -1027,8 +943,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         TimeSynSpecified to true, which leads to an outer loop in the
         algorithm below. ---*/
   bool TimeSyncSpecified   = false;
-  const su2double TimeSync = config[iZone]->GetDelta_UnstTimeND();
-  if(config[iZone]->GetUnsteady_Simulation() == TIME_STEPPING &&
+  const su2double TimeSync = config[iZone]->GetTime_Step()/config[iZone]->GetTime_Ref();
+  if(config[iZone]->GetTime_Marching() == TIME_STEPPING &&
      config[iZone]->GetUnst_CFL()            != 0.0           &&
      TimeSync                                != 0.0) TimeSyncSpecified = true;
 
@@ -1041,7 +957,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
     /* Compute the time step for stability. */
     solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh],
                                                                                solver_container[iZone][iInst][iMesh],
-                                                                               config[iZone], iMesh, Iteration);
+                                                                               config[iZone], iMesh, config[iZone]->GetTimeIter());
     /* Possibly overrule the specified time step when a synchronization time was
        specified and determine whether or not the time loop must be continued.
        When TimeSyncSpecified is false, the loop is always terminated. */
@@ -1077,7 +993,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
 
         /*--- Time integration, update solution using the old solution plus the solution increment ---*/
         Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                         config[iZone], iStep, RunTime_EqSystem, Iteration);
+                         config[iZone], iStep, RunTime_EqSystem);
 
         /*--- Postprocessing ---*/
         solver_container[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
@@ -1121,7 +1037,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
 }
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,
-                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+                                    unsigned short RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

@@ -52,9 +52,6 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
 
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
-
-  Solution_BGS_k = NULL;
-
 }
 
 CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature,
@@ -63,12 +60,10 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
-  bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time    = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                       (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
-  bool fsi          = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
 
@@ -174,16 +169,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
 
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-    Solution_BGS_k  = new su2double [nVar];
-    Solution_BGS_k[0] = val_pressure;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_BGS_k[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-    }
-    Solution_BGS_k[nDim+1] = val_temperature;
-  }
-
 }
 
 CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
@@ -191,12 +176,10 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
-  bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time    = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                      (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
-  bool fsi = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
 
@@ -294,15 +277,10 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
-
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-      Solution_BGS_k  = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_BGS_k[iVar] = val_solution[iVar];
-      }
-  }
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+  
 }
 
 CIncEulerVariable::~CIncEulerVariable(void) {
@@ -316,8 +294,6 @@ CIncEulerVariable::~CIncEulerVariable(void) {
       if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
 
 }
 

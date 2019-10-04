@@ -1,7 +1,7 @@
 /*!
  * \file CDiscAdjFEAVariable.hpp
  * \brief Main class for defining the variables of the adjoint solver.
- * \author F. Palacios, T. Economon
+ * \author T. Albring, R. Sanchez.
  * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
@@ -74,7 +74,6 @@ private:
   su2double* Geometry_CrossTerm_Derivative;
 
   su2double* Solution_BGS;
-  su2double* Solution_BGS_k;
 
 public:
   /*!
@@ -196,14 +195,6 @@ public:
   inline su2double GetSolution_Vel_time_n(unsigned short val_var) {return Solution_Vel_time_n[val_var]; }
 
   /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_time_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = Solution[iVar];
-  }
-
-  /*!
    * \brief Set the value of the acceleration (Structural Analysis - adjoint).
    * \param[in] val_solution - Solution of the problem (acceleration).
    */
@@ -281,23 +272,13 @@ public:
   inline void Set_BGSSolution(unsigned short iDim, su2double val_solution) {Solution_BGS[iDim] = val_solution;}
 
   /*!
-   * \brief Set the value of the adjoint solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_k(void) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution_BGS_k[iDim] = Solution_BGS[iDim];
-  }
-
-  /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
   inline su2double Get_BGSSolution(unsigned short iDim) {return Solution_BGS[iDim];}
 
   /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+   * \brief Get whether this node is on the boundary
    */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
-
+  inline virtual bool Get_isVertex(void) { return false; }
 };

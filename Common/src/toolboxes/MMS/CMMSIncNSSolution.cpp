@@ -72,15 +72,15 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
   epsilon = 0.001;
   
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
   
-  if(config->GetKind_Regime() != INCOMPRESSIBLE)
+  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
   
-  if(config->GetKind_Solver() != NAVIER_STOKES)
+  if(Kind_Solver != INC_NAVIER_STOKES)
     SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
   
