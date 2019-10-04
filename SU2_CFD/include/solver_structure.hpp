@@ -12842,8 +12842,8 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
-//  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
 };
 

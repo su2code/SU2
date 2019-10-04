@@ -1094,39 +1094,43 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 }
 
-//void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
-//  unsigned short iVar;
-//  unsigned long iPoint;
-//  su2double residual, bgs_sol;
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual, bgs_sol;
 
-//  /*--- Set Residuals to zero ---*/
+  /*--- Set Residuals to zero ---*/
 
-//  for (iVar = 0; iVar < nVar; iVar++){
-//      SetRes_BGS(iVar,0.0);
-//      SetRes_Max_BGS(iVar,0.0,0);
-//  }
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
 
-//  /*--- Compute the BGS solution (adding the cross term) ---*/
-//  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-//    for (iVar = 0; iVar < nVar; iVar++){
-//      bgs_sol = node[iPoint]->GetSolution(iVar) + node[iPoint]->GetCross_Term_Derivative(iVar);
-//      node[iPoint]->Set_BGSSolution(iVar, bgs_sol);
-//    }
-//  }
+  /*--- Compute the BGS solution (adding the cross term) ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      if(config->GetMultiphysicsDiscrete_Adjoint()) {
+        bgs_sol = node[iPoint]->GetSolution(iVar);
+      }
+      else {
+        bgs_sol = node[iPoint]->GetSolution(iVar) + node[iPoint]->GetCross_Term_Derivative(iVar);
+      }
+      node[iPoint]->Set_BGSSolution(iVar, bgs_sol);
+    }
+  }
 
-//  /*--- Set the residuals ---*/
+  /*--- Set the residuals ---*/
 
-//  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-//      for (iVar = 0; iVar < nVar; iVar++){
-//          residual = node[iPoint]->Get_BGSSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->Get_BGSSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
 
-//          AddRes_BGS(iVar,residual*residual);
-//          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-//      }
-//  }
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
 
-//  SetResidual_BGS(geometry, config);
+  SetResidual_BGS(geometry, config);
 
-//}
-
+}
