@@ -11009,6 +11009,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                     (config->GetKind_Turb_Model() == SST));
   su2double *Normal = new su2double[nDim];
   
+  bool force_inlet_profile = config->GetForce_Inlet_From_File();
   bool inlet_stg = (config->GetKind_SyntheticTurbulence() == INLET_STG);
   vector<unsigned long> LocalPoints;
   
@@ -11053,7 +11054,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       V_domain = node[iPoint]->GetPrimitive();
       
       /*--- If needed add the synthetic turbulence to the primitive variables ---*/
-      if (config->GetKind_SyntheticTurbulence() == INLET_STG){
+      if (force_inlet_profile){
         
         /*--- Retrieve the specified mass flow for the inlet. ---*/
         Density  = Inlet_Ttotal[val_marker][iVertex];
@@ -11069,17 +11070,21 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Pressure from the gas law ---*/
         Pressure = Density*Gas_Constant*Temperature;
         
-        /*--- Find the point in the STG vector ---*/
-        auto it = std::find(LocalPoints.begin(), LocalPoints.end(), iPoint);
-        if (it == LocalPoints.end())
-          SU2_MPI::Error("Point not found in the STG vector.", CURRENT_FUNCTION);
+        /*--- If needed add the synthetic turbulence to the primitive variables ---*/
+        if (inlet_stg){
         
-        // Get index of element from iterator
-        int index = std::distance(LocalPoints.begin(), it);
-        
-        /*--- Add the already computed synthetic velocities to the array ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] += VSTG_VelFluct[index*nDim+iDim];
+          /*--- Find the point in the STG vector ---*/
+          auto it = std::find(LocalPoints.begin(), LocalPoints.end(), iPoint);
+          if (it == LocalPoints.end())
+            SU2_MPI::Error("Point not found in the STG vector.", CURRENT_FUNCTION);
+          
+          // Get index of element from iterator
+          int index = std::distance(LocalPoints.begin(), it);
+          
+          /*--- Add the already computed synthetic velocities to the array ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            Velocity[iDim] += VSTG_VelFluct[index*nDim+iDim];
+        }
         
         /*--- Compute the energy from the specified state ---*/
         Velocity2 = 0.0;
@@ -11097,7 +11102,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
         
-        //cout << V_inlet[0] << " " << V_inlet[1] << " " <<  V_inlet[2] << " " << V_inlet[3] << " " <<  V_inlet[4] << " " << V_inlet[5] << " " << V_inlet[6] << endl;
       }
       else{
       

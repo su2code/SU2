@@ -1035,6 +1035,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
   addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
+  
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
   addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
@@ -1043,6 +1044,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * this tolerance will be used to match the coordinates in the input file to
    * the points on the grid. \n DEFAULT: 1E-6 \ingroup Config*/
   addDoubleOption("INLET_MATCHING_TOLERANCE", Inlet_Matching_Tol, 1e-6);
+  
+  /*!\brief FORCE_INLET_PROFILE \n DESCRIPTION: Force the imposition of the inlet profile \n DEFAULT: NO \ingroup Config*/
+  addBoolOption("FORCE_INLET_PROFILE", Force_Inlet_File, false);
+  
   /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is

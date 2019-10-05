@@ -234,6 +234,7 @@ private:
                              (note that using parallel computation this number can be different
                              from nMarker_All). */
   bool Inlet_From_File; /*!< \brief True if the inlet profile is to be loaded from a file. */
+  bool Force_Inlet_File; /*!< \brief True if the inlet profile is to strongly imposed. */
   string Inlet_Filename; /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string *Marker_Euler,			/*!< \brief Euler wall markers. */
@@ -4713,6 +4714,12 @@ public:
    * \return True if an input file is to be used for the inlet profile(s)
    */
   bool GetInlet_Profile_From_File(void);
+  
+  /*!
+   * \brief Check if the inlet profile(s) must be  strongly imposed.
+   * \return True if a strongly imposed the inlet profile(s)
+   */
+  bool GetForce_Inlet_From_File(void);
 
   /*!
    * \brief Get name of the input file for the specified inlet profile.
