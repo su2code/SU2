@@ -3487,8 +3487,6 @@ void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config
   //--- note: currently only implemented for Tet
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    //--- recompute primitive variables from communicated solution
-    dummy_bool = node[iPoint]->SetPrimVar(FluidModel);
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){

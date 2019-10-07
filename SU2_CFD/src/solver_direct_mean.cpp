@@ -5565,7 +5565,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         const su2double eddy_viscosity    = node[kNode]->GetEddyViscosity();
         const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
         
-        su2double Grad_Vel[2][2], tau[2][2];
+        su2double Grad_Vel[2][2], tau[2][2], delta[2][2] = {{1.0, 0.0},{0.0,1.0}};
         
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
@@ -5877,7 +5877,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         const su2double eddy_viscosity    = node[kNode]->GetEddyViscosity();
         const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
         
-        su2double Grad_Vel[3][3], tau[3][3];
+        su2double Grad_Vel[3][3], tau[3][3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
         
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
