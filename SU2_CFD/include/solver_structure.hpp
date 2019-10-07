@@ -1495,7 +1495,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver_flow - Pointer to the flow solver.
    */
-  virtual void SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_flow);
+  virtual void SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow);
 
   /*!
    * \brief A virtual member.
