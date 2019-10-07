@@ -148,16 +148,11 @@ void CDiscAdjMultizoneDriver::Run() {
   bool            checkSensitivity  = false;
   unsigned short  jZone             = 0,
                   wrt_sol_freq      = config_container[ZONE_0]->GetVolume_Wrt_Freq();
-  unsigned long   iIter             = 0,
-                  nIter             = 0,
+  unsigned long   nIter             = 0,
                   iOuter_Iter       = 0,
                   iInner_Iter       = 0;
 
-  if (nZone == 1) {
-    nIter = driver_config->GetnIter();
-  } else {
-    nIter = driver_config->GetnOuter_Iter();
-  }
+  nIter = driver_config->GetnOuter_Iter();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -170,21 +165,15 @@ void CDiscAdjMultizoneDriver::Run() {
     Set_BGSSolution(iZone);
   }
 
-  /*--- Loop over the number of inner (nZone = 1) or coupled outer iterations ---*/
+  /*--- Loop over the number of outer iterations. ---*/
 
-  for (iIter = 0; iIter < nIter; iIter++) {
+  for (iOuter_Iter = 0; iOuter_Iter < nIter; iOuter_Iter++) {
 
-    if (nZone == 1) {
-      iInner_Iter = iIter;
-      config_container[ZONE_0]->SetInnerIter(iInner_Iter);
+    for (iZone = 0; iZone < nZone; iZone++) {
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
     }
-    else {
-      iOuter_Iter = iIter;
-      for (iZone = 0; iZone < nZone; iZone++) {
-        config_container[iZone]->SetOuterIter(iOuter_Iter);
-        driver_config->SetOuterIter(iOuter_Iter);
-      }
-    }
+
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
      *    respect to the state (and possibly the mesh coordinate) variables.
@@ -284,7 +273,7 @@ void CDiscAdjMultizoneDriver::Run() {
         }
       }
 
-      // TODO: update the off-diagonals here
+      // TODO: Add an option to _already_ update off-diagonals here (i.e., in the zone-loop)
 
       /*--- Compute residual from Solution and Solution_BGS_k. ---*/
 
@@ -319,13 +308,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Compute the geometrical sensitivities and write them to file. ---*/
 
-    if (nZone == 1) {
-      checkSensitivity = ((iInner_Iter+1 >= nIter) ||
-                          (iInner_Iter % wrt_sol_freq == 0));
-    } else {
-      checkSensitivity = ((iOuter_Iter+1 >= nIter) ||
-                          (iOuter_Iter % wrt_sol_freq == 0));
-    }
+    checkSensitivity = ((iOuter_Iter+1 >= nIter) ||
+                        (iOuter_Iter % wrt_sol_freq == 0));
 
     if (checkSensitivity || StopCalc){
 
@@ -389,7 +373,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
         output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
                                                  config_container[iZone],
-                                                 solver_container[iZone][INST_0][MESH_0], iIter, StopCalc);
+                                                 solver_container[iZone][INST_0][MESH_0], iOuter_Iter, StopCalc);
       }
     }
 
