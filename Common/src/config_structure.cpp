@@ -63,7 +63,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high) {
   
   base_config = true;
   
@@ -72,8 +72,8 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  iZone = val_nZone;
-  nZone = val_nZone;
+  iZone = 0;
+  nZone = 1;
 
   /*--- Initialize pointers to Null---*/
 
@@ -90,6 +90,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   /*--- Set the default values for all of the options that weren't set ---*/
       
   SetDefault();
+  
+  /*--- Set number of zone ---*/
+  
+  SetnZone();
 
   /*--- Configuration file postprocessing ---*/
 
@@ -157,6 +161,8 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
   if ((rank == MASTER_NODE) && verb_high)
     SetOutput(val_software, val_iZone);
 
+  Multizone_Problem = config->GetMultizone_Problem();
+  
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
@@ -7496,7 +7502,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   filename = filename + string(ext);
   
   /*--- Append the zone number if multizone problems ---*/
-  if (GetnZone() > 1)
+  if (Multizone_Problem)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
 
   /*--- Append the zone number if multiple instance problems ---*/
@@ -7549,7 +7555,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
     
-    if (GetnZone() > 1 ) {
+    if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
@@ -7564,7 +7570,7 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     char buffer[50];
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
-    if (GetnZone() > 1 ) {
+    if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }

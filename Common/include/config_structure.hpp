@@ -1407,7 +1407,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
