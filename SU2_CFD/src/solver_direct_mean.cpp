@@ -5528,6 +5528,11 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
+  if(config->GetViscous()) {
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)  SetPrimitive_Gradient_LS(geometry, config);
+  }
+
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<3; ++iNode) {
       const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
@@ -5824,6 +5829,11 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoGrad(i+2, 0.);
       }
     }
+  }
+
+  if(config->GetViscous()) {
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)  SetPrimitive_Gradient_LS(geometry, config);
   }
 
   for (iElem=0; iElem<nElem; ++iElem) {

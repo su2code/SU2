@@ -800,8 +800,7 @@ void CErrorEstimationDriver::ComputeMetric() {
     //--- Volume flow grad
     if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
     solver_flow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
-                                     config[ZONE_0],
-                                     solver_turb);
+                                     config[ZONE_0]);
 
     //--- Volume flow Hess
     if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
@@ -811,8 +810,25 @@ void CErrorEstimationDriver::ComputeMetric() {
     //--- Volume adj grad
     if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
     solver_adjflow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
-                                    config[ZONE_0],
-                                    solver_adjturb);
+                                        config[ZONE_0]);
+
+    if(config[ZONE_0]->GetViscous()) {
+      //--- Volume turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
+      solver_turb->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                       config[ZONE_0],
+                                       solver_flow);
+
+      //--- Volume turb Hess
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
+      solver_turb->SetHessian_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                      config[ZONE_0]);
+
+      //--- Volume adj turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
+      solver_adjturb->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                          config[ZONE_0]);
+    }
 
     //--- Metric
     if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
@@ -824,8 +840,7 @@ void CErrorEstimationDriver::ComputeMetric() {
     //--- Volume flow grad
     if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
     solver_flow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
-                                     config[ZONE_0],
-                                     solver_turb);
+                                     config[ZONE_0]);
 
     //--- Volume flow Hess
     if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
@@ -835,8 +850,25 @@ void CErrorEstimationDriver::ComputeMetric() {
     //--- Volume adj grad
     if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
     solver_adjflow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
-                                    config[ZONE_0],
-                                    solver_adjturb);
+                                        config[ZONE_0]);
+
+    if(config[ZONE_0]->GetViscous()) {
+      //--- Volume turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
+      solver_turb->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                       config[ZONE_0],
+                                       solver_flow);
+
+      //--- Volume turb Hess
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
+      solver_turb->SetHessian_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                      config[ZONE_0]);
+
+      //--- Volume adj turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
+      solver_adjturb->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                          config[ZONE_0]);
+    }
 
     //--- Metric
     if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
@@ -845,7 +877,9 @@ void CErrorEstimationDriver::ComputeMetric() {
 }
 
 void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
-                                                 CSolver   *solver_adj,
+                                                 CSolver   *solver_turb,
+                                                 CSolver   *solver_adjflow,
+                                                 CSolver   *solver_adjturb,
                                                  CGeometry *geometry) {
 
   unsigned long iPoint, 
@@ -879,18 +913,37 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     for(unsigned short im = 0; im < nMetr; ++im)
       solver_flow->node[iPoint]->SetAnisoMetr(im, 0.0);
 
-    //--- perform summation of weighted Hessians
+    //--- perform summation of weighted mean flow Hessians
     for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
 
       for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
         const unsigned short ig = iVar*nDim + iFlux;
-        const su2double grad = solver_adj->node[iPoint]->GetAnisoGrad(ig);
+        const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
           const su2double hess = solver_flow->node[iPoint]->GetAnisoHess(ih);
           const su2double part = abs(grad)*hess;
           solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+        }
+      }
+    }
+
+    //--- add viscous Hessian terms
+    if(config[ZONE_0]->GetViscous()) {
+      const unsigned short nVarTurbMetr = solver_turb->GetnVar();
+      for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjturb->node[iPoint]->GetAnisoGrad(ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_turb->node[iPoint]->GetAnisoHess(ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+          }
         }
       }
     }
@@ -978,7 +1031,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 }
 
 void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
-                                                 CSolver   *solver_adj,
+                                                 CSolver   *solver_turb,
+                                                 CSolver   *solver_adjflow,
+                                                 CSolver   *solver_adjturb,
                                                  CGeometry *geometry) {
 
   unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
@@ -1011,18 +1066,37 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     for(unsigned short im = 0; im < nMetr; ++im)
       solver_flow->node[iPoint]->SetAnisoMetr(im, 0.0);
 
-    //--- perform summation of weighted Hessians
+    //--- perform summation of weighted mean flow Hessians
     for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
 
       for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
         const unsigned short ig = iVar*nDim + iFlux;
-        const su2double grad = solver_adj->node[iPoint]->GetAnisoGrad(ig);
+        const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
           const su2double hess = solver_flow->node[iPoint]->GetAnisoHess(ih);
           const su2double part = abs(grad)*hess;
           solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+        }
+      }
+    }
+
+    //--- add viscous Hessian terms
+    if(config[ZONE_0]->GetViscous()) {
+      const unsigned short nVarTurbMetr = solver_turb->GetnVar();
+      for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjturb->node[iPoint]->GetAnisoGrad(ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_turb->node[iPoint]->GetAnisoHess(ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+          }
         }
       }
     }

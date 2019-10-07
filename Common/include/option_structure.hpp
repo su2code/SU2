@@ -2014,7 +2014,8 @@ enum MPI_QUANTITIES {
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
   PRIMITIVE            = 30,  /*!< \brief Primitive variables. */
-  ANISO_GRADIENT       = 31   /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
+  ANISO_GRADIENT       = 31,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
+  ANISO_GRADIENT_EDDY  = 32   /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
 };
 
 /*!
