@@ -890,7 +890,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
   su2double localScale = 0.0,
             globalScale = 0.0,
-            p = 1.0, // For now, hardcode L1 metric
+            p = config[ZONE_0]->GetAdap_Norm(),
             eigmax = 1./(config[ZONE_0]->GetMesh_Hmin()*config[ZONE_0]->GetMesh_Hmin()),
             eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
@@ -1043,7 +1043,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
   su2double localScale = 0.0,
             globalScale = 0.0,
-            p = 1.0, // For now, hardcode L1 metric
+            p = config[ZONE_0]->GetAdap_Norm(),
             eigmax = 1./(config[ZONE_0]->GetMesh_Hmin()*config[ZONE_0]->GetMesh_Hmin()),
             eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity

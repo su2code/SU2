@@ -1100,7 +1100,8 @@ private:
   bool error_estimate;               /*!< \brief Determines if error estimation is taking place */
   unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
   bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
-  su2double Mesh_Hmax,               /*!< \brief Maximum cell size */
+  su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
+            Mesh_Hmax,               /*!< \brief Maximum cell size */
             Mesh_Hmin;               /*!< \brief Minimum cell size */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
@@ -9334,6 +9335,11 @@ public:
    * \return Flag for field variable to be used as sensor
    */
   unsigned short GetKind_Aniso_Sensor(void);
+
+  /*!
+   * \brief Get adaptation norm value (Lp)
+   */
+  su2double GetAdap_Norm(void);
 
   /*!
    * \brief Get maximum cell size

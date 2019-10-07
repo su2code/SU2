@@ -2495,6 +2495,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Sensor used to determine anisotropy */
   addBoolOption("WRT_ANISO_SENSOR", Wrt_Aniso_Sensor, false);
 
+  /* DESCRIPTION: Lp-norm for mesh adaptation */
+  addDoubleOption("ADAP_NORM", Adap_Norm, 1.0);
+
   /* DESCRIPTION: Constraint maximum cell size */
   addDoubleOption("MESH_HMAX", Mesh_Hmax, 10.0);
 
