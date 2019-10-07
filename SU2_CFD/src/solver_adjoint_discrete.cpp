@@ -1184,12 +1184,7 @@ void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   }
 }
 
-void CDiscAdjSolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_adjflow) { }
-
-
-void CDiscAdjSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
-
-}
+void CDiscAdjSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){ }
 
 void CDiscAdjSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 
@@ -1296,10 +1291,5 @@ void CDiscAdjSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   }
 }
 
-void CDiscAdjSolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_adjflow) { }
-
-
-void CDiscAdjSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
-
-}
+void CDiscAdjSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){ }
 
