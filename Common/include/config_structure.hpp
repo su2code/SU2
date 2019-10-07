@@ -977,7 +977,6 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,       /*!< \brief AD-based discrete adjoint mode. */
-  MultiphysicsDiscreteAdjoint,  /*!< \brief Use multiphysics discrete adjoint. */
   FullTape;                     /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
@@ -8442,17 +8441,6 @@ public:
   * \return the full tape indicator.
   */
   bool GetFull_Tape(void);
-
-  /*!
-   * \brief Set the indicator whether we are using the multiphysics discrete adjoint driver.
-   */
-  void SetMultiphysicsDiscrete_Adjoint(bool multi_disc_adj);
-
-  /*!
-   * \brief Get the indicator whether we are using the multiphysics discrete adjoint driver.
-   * \return the multiphysics discrete adjoint indicator.
-   */
-  bool GetMultiphysicsDiscrete_Adjoint(void);
   
   /*!
    * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
