@@ -5502,6 +5502,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned short iVar, iFlux;
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   su2double density, velocity[2], pressure, enthalpy;
+  su2double tau[2][2], Grad_Val[2][2];
   su2double vnx[3], vny[3];
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
@@ -5804,6 +5805,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   unsigned short iVar, iDim, iFlux;
   unsigned short nVarMetr = 5, nFluxMetr = 3;
   su2double density, velocity[3], pressure, enthalpy;
+  su2double tau[3][3], Grad_Val[3][3];
   su2double vnx[4], vny[4], vnz[4];
   su2double graTet[3];
   su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
