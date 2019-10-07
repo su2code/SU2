@@ -9196,6 +9196,13 @@ public:
    * \return 
    */
   unsigned long GetHistory_Wrt_Freq(unsigned short iter);
+
+    /*!
+   * \brief SetHistory_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
+   * \param[in] nIter: Number of iterations
+   */
+  void SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter);
   
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
