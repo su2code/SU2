@@ -87,7 +87,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
     Undivided_Laplacian = new su2double [nVar];
   }
   
-  if (config->GetMultizone_Problem() || config->GetMultiphysicsDiscrete_Adjoint())
+  if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
   
 }

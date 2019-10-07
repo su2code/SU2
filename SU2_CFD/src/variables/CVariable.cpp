@@ -95,7 +95,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution[iVar] = 0.0;
 
-  if (config->GetMultizone_Problem() || config->GetMultiphysicsDiscrete_Adjoint()){
+  if (config->GetMultizone_Problem()){
     Solution_BGS_k = new su2double[nVar]();
   }
 }
@@ -168,7 +168,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     }
   }
   
-  if(config->GetMultiphysicsDiscrete_Adjoint() && config->GetAD_Mode()) {
+  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     Input_AdjIndices = new int[nVar];
     Output_AdjIndices = new int[nVar];
 
@@ -178,7 +178,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     }
   }
 
-  if (config->GetMultizone_Problem() || config->GetMultiphysicsDiscrete_Adjoint()){
+  if (config->GetMultizone_Problem()){
     Solution_BGS_k = new su2double[nVar]();
   }
   
