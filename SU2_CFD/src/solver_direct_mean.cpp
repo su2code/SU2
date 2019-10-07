@@ -5551,6 +5551,44 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       Sens[iNode][1][1] = Sens[iNode][0][1]*velocity[0];
       Sens[iNode][2][1] = Sens[iNode][0][1]*velocity[1]+pressure;
       Sens[iNode][3][1] = Sens[iNode][0][1]*enthalpy;
+
+      if(viscous) {
+
+        //--- add viscous flux contribution
+
+        const su2double laminar_viscosity = node[kNode]->GetLaminarViscosity();
+        const su2double eddy_viscosity    = node[kNode]->GetEddyViscosity();
+        const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
+        
+        su2double Grad_Val[2][2];
+        
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+            Grad_Vel[iDim][jDim] = node[kNode]->GetGradient_Primitive(iDim+1, jDim);
+          }
+        }
+        
+        /*--- Divergence of the velocity ---*/
+        
+        su2double div_vel = 0.0; for (unsigned short iDim = 0 ; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+        
+        /*--- Compute the viscous stress tensor ---*/
+        
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+          }
+        }
+
+        Sens[iNode][1][0] -= tau[0][0];
+        Sens[iNode][2][0] -= tau[0][1];
+        Sens[iNode][3][0] -= velocity[0]*tau[0][0] + velocity[1]*tau[0][1];
+
+        Sens[iNode][1][1] -= tau[1][0];
+        Sens[iNode][2][1] -= tau[1][1];
+        Sens[iNode][3][1] -= velocity[0]*tau[1][0] + velocity[1]*tau[1][1];
+
+      }
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
@@ -5820,6 +5858,50 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       Sens[iNode][2][2] = Sens[iNode][0][2]*velocity[1];
       Sens[iNode][3][2] = Sens[iNode][0][2]*velocity[2]+pressure;
       Sens[iNode][4][2] = Sens[iNode][0][2]*enthalpy;
+
+      if(viscous) {
+
+        //--- add viscous flux contribution
+
+        const su2double laminar_viscosity = node[kNode]->GetLaminarViscosity();
+        const su2double eddy_viscosity    = node[kNode]->GetEddyViscosity();
+        const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
+        
+        su2double Grad_Val[3][3];
+        
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+            Grad_Vel[iDim][jDim] = node[kNode]->GetGradient_Primitive(iDim+1, jDim);
+          }
+        }
+        
+        /*--- Divergence of the velocity ---*/
+        
+        su2double div_vel = 0.0; for (unsigned short iDim = 0 ; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+        
+        /*--- Compute the viscous stress tensor ---*/
+        
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+          }
+        }
+
+        Sens[iNode][1][0] -= tau[0][0];
+        Sens[iNode][2][0] -= tau[0][1];
+        Sens[iNode][3][0] -= tau[0][2];
+        Sens[iNode][4][0] -= velocity[0]*tau[0][0] + velocity[1]*tau[0][1] + velocity[2]*tau[0][2];
+
+        Sens[iNode][1][1] -= tau[1][0];
+        Sens[iNode][2][1] -= tau[1][1];
+        Sens[iNode][3][1] -= tau[1][2];
+        Sens[iNode][4][1] -= velocity[0]*tau[1][0] + velocity[1]*tau[1][1] + velocity[2]*tau[1][2];
+
+        Sens[iNode][1][2] -= tau[2][0];
+        Sens[iNode][2][2] -= tau[2][1];
+        Sens[iNode][3][2] -= tau[2][2];
+        Sens[iNode][4][2] -= velocity[0]*tau[2][0] + velocity[1]*tau[2][1] + velocity[2]*tau[2][2];
+      }
     }
 
     //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
