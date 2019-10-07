@@ -2797,6 +2797,149 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   }
 }
 
+
+void CGeometry::ComputeSurf_Straightness(CConfig *config,
+                                         bool    print_on_screen) {
+
+  bool RefUnitNormal_defined;
+  unsigned short iDim,
+                 iMarker,
+                 iMarker_Global,
+                 nMarker_Global = config->GetnMarker_CfgFile();
+  unsigned long iVertex;
+  constexpr passivedouble epsilon = 1.0e-6;
+  su2double Area;
+  string Local_TagBound,
+         Global_TagBound;
+
+  vector<su2double> Normal(nDim),
+                    UnitNormal(nDim),
+                    RefUnitNormal(nDim);
+  
+  /*--- Assume now that this boundary marker is straight. As soon as one
+        AreaElement is found that is not aligend with a Reference then it is
+        certain that the boundary marker is not straight and one can stop
+        searching. Another possibility is that this process doesn't own
+        any nodes of that boundary, in that case we also have to assume the
+        boundary is straight.
+        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
+        the value false (or see cases specified in the conditional below)
+        which could be wrong. ---*/
+  bound_is_straight.resize(nMarker);
+  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+
+  /*--- Loop over all local markers ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Marker has to be Symmetry or Euler. Additionally marker can't be a 
+          moving surface and Grid Movement Elasticity is forbidden as well. All
+          other GridMovements are rigid. ---*/
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE || 
+         config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
+        config->GetMarker_Moving_Bool(Local_TagBound) == false &&
+        config->GetKind_GridMovement() != ELASTICITY) {
+
+      /*--- Loop over all global markers, and find the local-global pair via 
+            matching unique string tags. ---*/
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+        if (Local_TagBound == Global_TagBound) {
+
+          RefUnitNormal_defined = false;
+          iVertex = 0;
+
+          while(bound_is_straight[iMarker] == true &&
+                iVertex < nVertex[iMarker]) {
+
+            vertex[iMarker][iVertex]->GetNormal(Normal.data());
+            UnitNormal = Normal;
+
+            /*--- Compute unit normal. ---*/
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Negate for outward convention. ---*/
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitNormal[iDim] /= -Area;
+
+            /*--- Check if unit normal is within tolerance of the Reference unit normal. 
+                  Reference unit normal = first unit normal found. ---*/
+            if(RefUnitNormal_defined) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon ) {
+                  bound_is_straight[iMarker] = false;
+                  break;
+                }
+              }
+            } else {
+              RefUnitNormal = UnitNormal; //deep copy of values 
+              RefUnitNormal_defined = true;
+            }
+
+          iVertex++;
+          }//while iVertex
+        }//if Local == Global
+      }//for iMarker_Global
+    } else {
+      /*--- Enforce default value: false ---*/
+      bound_is_straight[iMarker] = false;
+    }//if sym or euler ...
+  }//for iMarker
+
+  /*--- Communicate results and print on screen. ---*/
+  if(print_on_screen) {
+
+    /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
+          on screen as nMarker (local) can vary across ranks. Default 'true' as it can
+          happen that a local rank does not contain an element of each surface marker.  ---*/
+    vector<bool> bound_is_straight_Global(nMarker_Global, true);
+    /*--- Match local with global tag bound and fill a Global Marker vector. ---*/
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+        if(Local_TagBound == Global_TagBound)
+          bound_is_straight_Global[iMarker_Global] = bound_is_straight[iMarker];
+
+      }//for iMarker_Global
+    }//for iMarker
+
+    vector<int> Buff_Send_isStraight(nMarker_Global),
+                Buff_Recv_isStraight(nMarker_Global);
+
+    /*--- Cast to int as std::vector<boolean> can be a special construct. MPI handling using <int>
+          is more straight-forward. ---*/
+    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
+      Buff_Send_isStraight[iMarker_Global] = static_cast<int> (bound_is_straight_Global[iMarker_Global]);
+
+    /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
+    SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), 
+                       nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
+
+    /*--- Print results on screen. ---*/
+    if(rank == MASTER_NODE) {
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
+          config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
+
+          cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
+          if(Buff_Recv_isStraight[iMarker_Global] == false) cout << " NOT";
+          if(nDim == 2) cout << " a single straight." << endl;
+          if(nDim == 3) cout << " a single plane." << endl;
+        }//if sym or euler
+      }//for iMarker_Global
+    }//if rank==MASTER
+  }//if print_on_scren
+
+}
+
+
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;

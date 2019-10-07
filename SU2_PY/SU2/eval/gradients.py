@@ -101,11 +101,13 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
               
             # Aerodynamics
-            if func_output in su2io.optnames_aero + su2io.optnames_turbo:
-                grads = adjoint( func_name, config, state )
+            if func_output in su2io.historyOutFields:
+                if su2io.historyOutFields[func_output]['TYPE'] == 'COEFFICIENT':
+                    grads = adjoint( func_name, config, state )
 
-            elif func_name in su2io.optnames_aero + su2io.optnames_turbo:
-                grads = adjoint( func_name, config, state )
+            elif func_name in su2io.historyOutFields:
+                if su2io.historyOutFields[func_name]['TYPE'] == 'COEFFICIENT':
+                    grads = adjoint( func_name, config, state )
                 
             # Stability
             elif func_output in su2io.optnames_stab:
@@ -712,7 +714,10 @@ def findiff( config, state=None ):
     # ----------------------------------------------------    
 
     # master redundancy check
-    opt_names = su2io.optnames_aero + su2io.optnames_geo 
+    opt_names = []
+    for key in sorted(su2io.historyOutFields):  
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
     findiff_todo = all([key in state.GRADIENTS for key in opt_names])
     if findiff_todo:
         grads = state['GRADIENTS']
@@ -752,8 +757,7 @@ def findiff( config, state=None ):
         dvs_base = konfig['DV_VALUE_NEW']
 
     # initialize gradients
-    func_keys = list(func_base.keys())
-    func_keys = ['VARIABLE'] + func_keys + ['FINDIFF_STEP']
+    func_keys = ['VARIABLE'] + opt_names + ['FINDIFF_STEP']
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
 
@@ -816,6 +820,12 @@ def findiff( config, state=None ):
                 meshfiles = this_state.FILES.MESH
                 meshfiles = su2io.expand_part(meshfiles,this_konfig)
                 for name in meshfiles: os.remove(name)
+                        
+                for key in grads.keys():
+                    if key == 'VARIABLE' or key == 'FINDIFF_STEP':
+                        pass
+                    elif not key in func_step:
+                        del grads[key]  
 
                 # calc finite difference and store
                 for key in grads.keys():
@@ -1006,7 +1016,11 @@ def directdiff( config, state=None ):
     # ----------------------------------------------------
 
     # master redundancy check
-    opt_names = su2io.optnames_aero + su2io.optnames_geo
+    opt_names = []
+    for key in sorted(su2io.historyOutFields):
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
+
     directdiff_todo = all([key in state.GRADIENTS for key in opt_names])
     if directdiff_todo:
         grads = state['GRADIENTS']
@@ -1032,7 +1046,7 @@ def directdiff( config, state=None ):
     n_dv = sum(Definition_DV['SIZE'])
 
     # initialize gradients
-    func_keys = list(su2io.grad_names_map.keys())
+    func_keys = opt_names
     func_keys = ['VARIABLE'] + func_keys
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
@@ -1090,15 +1104,19 @@ def directdiff( config, state=None ):
                 # Direct Solution
                 func_step = function( 'ALL', this_konfig, this_state )
 
+                # delete keys not returned by the solver
+                for key in grads.keys():
+                    if key == 'VARIABLE':
+                        pass
+                    elif not 'D_' + key in func_step:
+                        del grads[key]
+
                 # store
                 for key in grads.keys():
                     if key == 'VARIABLE':
                         grads[key].append(i_dv)
                     else:
-                        if su2io.grad_names_map[key] in func_step:
-                          this_grad = func_step[su2io.grad_names_map[key]]
-                        else:
-                          this_grad = 0.0
+                        this_grad = func_step['D_' + key]
                         grads[key].append(this_grad)
                 #: for each grad name
 
