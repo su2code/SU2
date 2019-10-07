@@ -787,8 +787,10 @@ void CErrorEstimationDriver::Solver_Restart(CSolver ****solver, CGeometry ***geo
 
 void CErrorEstimationDriver::ComputeMetric() {
 
-  CSolver *solver_flow = solver[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-          *solver_adj  = solver[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+  CSolver *solver_flow    = solver[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+          *solver_turb    = solver[ZONE_0][INST_0][MESH_0][TURB_SOL],
+          *solver_adjflow = solver[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL],
+          *solver_adjturb = solver[ZONE_0][INST_0][MESH_0][ADJTURB_SOL];
 
   if (rank == MASTER_NODE)
     cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
@@ -798,7 +800,8 @@ void CErrorEstimationDriver::ComputeMetric() {
     //--- Volume flow grad
     if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
     solver_flow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
-                                     config[ZONE_0]);
+                                     config[ZONE_0],
+                                     solver_turb);
 
     //--- Volume flow Hess
     if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
@@ -807,12 +810,13 @@ void CErrorEstimationDriver::ComputeMetric() {
 
     //--- Volume adj grad
     if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
-    solver_adj->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
-                                    config[ZONE_0]);
+    solver_adjflow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                    config[ZONE_0],
+                                    solver_adjturb);
 
     //--- Metric
     if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
-    SumWeightedHessian2(solver_flow, solver_adj, geometry[ZONE_0][INST_0][MESH_0]);
+    SumWeightedHessian2(solver_flow, solver_adjflow, geometry[ZONE_0][INST_0][MESH_0]);
   }
 
   //--- 3D
@@ -820,7 +824,8 @@ void CErrorEstimationDriver::ComputeMetric() {
     //--- Volume flow grad
     if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
     solver_flow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
-                                     config[ZONE_0]);
+                                     config[ZONE_0],
+                                     solver_turb);
 
     //--- Volume flow Hess
     if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
@@ -829,12 +834,13 @@ void CErrorEstimationDriver::ComputeMetric() {
 
     //--- Volume adj grad
     if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
-    solver_adj->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
-                                    config[ZONE_0]);
+    solver_adjflow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                    config[ZONE_0],
+                                    solver_adjturb);
 
     //--- Metric
     if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
-    SumWeightedHessian3(solver_flow, solver_adj, geometry[ZONE_0][INST_0][MESH_0]);
+    SumWeightedHessian3(solver_flow, solver_adjflow, geometry[ZONE_0][INST_0][MESH_0]);
   }
 }
 

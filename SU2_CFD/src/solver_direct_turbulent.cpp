@@ -3208,6 +3208,18 @@ void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
   
 }
 
+void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
+
+void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
+
+}
+
+void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
+
+void CTurbSASolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
+
+}
+
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
   
   /*--- Array initialization ---*/

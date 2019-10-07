@@ -110,9 +110,13 @@ inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
+
 inline void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
 
 inline void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config) { }
 

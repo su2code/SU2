@@ -5506,6 +5506,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
   bool dummy_bool;
+  bool viscous = config->GetViscous();
 
   /*--- MPI solution ---*/
   
@@ -5764,6 +5765,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   su2double graTet[3];
   su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
   bool dummy_bool;
+  bool viscous = config->GetViscous();
 
   /*--- MPI solution ---*/
 
