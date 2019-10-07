@@ -832,7 +832,7 @@ void CErrorEstimationDriver::ComputeMetric() {
 
     //--- Metric
     if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
-    SumWeightedHessian2(solver_flow, solver_adjflow, geometry[ZONE_0][INST_0][MESH_0]);
+    SumWeightedHessian2(solver_flow, solver_turb, solver_adjflow, solver_adjturb, geometry[ZONE_0][INST_0][MESH_0]);
   }
 
   //--- 3D
@@ -872,7 +872,7 @@ void CErrorEstimationDriver::ComputeMetric() {
 
     //--- Metric
     if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
-    SumWeightedHessian3(solver_flow, solver_adjflow, geometry[ZONE_0][INST_0][MESH_0]);
+    SumWeightedHessian3(solver_flow, solver_turb, solver_adjflow, solver_adjturb, geometry[ZONE_0][INST_0][MESH_0]);
   }
 }
 
