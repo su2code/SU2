@@ -896,10 +896,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /* Store the initial CFL number for all grid points. */
   
+  const su2double CFL = config->GetCFL(MGLevel);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
   }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";
@@ -3118,10 +3121,10 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool time_steping = config->GetTime_Marching() == TIME_STEPPING;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                        (config->GetTime_Marching() == DT_STEPPING_2ND));
   
   Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
   
@@ -3244,7 +3247,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
-  if (time_steping) {
+  if (time_stepping) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
@@ -3252,26 +3255,35 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-            
-            /*--- Sets the regular CFL equal to the unsteady CFL ---*/
-            config->SetCFL(iMesh,config->GetUnst_CFL());
-            
-            /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
-             it computes the time step based on the unsteady CFL ---*/
-            if (config->GetCFL(iMesh) == 0.0) {
-                node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
-            } else {
-                node[iPoint]->SetDelta_Time(Global_Delta_Time);
-            }
-        }
+    /*--- If the unsteady CFL is set to zero, it uses the defined
+     unsteady time step, otherwise it computes the time step based
+     on the unsteady CFL ---*/
+    
+    if (config->GetUnst_CFL() == 0.0) {
+      Global_Delta_Time = config->GetDelta_UnstTime();
+    }
+    config->SetDelta_UnstTimeND(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      
+      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+      
+      node[iPoint]->SetLocalCFL(config->GetUnst_CFL());
+      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      Min_Delta_Time = Global_Delta_Time;
+      Max_Delta_Time = Global_Delta_Time;
+      
+    }
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
    if the unsteady CFL is diferent from 0 ---*/
   
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+
+    Global_Delta_UnstTimeND = 1e30;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/node[iPoint]->GetLocalCFL());
+    }
     
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
@@ -14885,10 +14897,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /* Store the initial CFL number for all grid points. */
   
+  const su2double CFL = config->GetCFL(MGLevel);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
   }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";
@@ -15328,16 +15343,34 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    /*--- If the unsteady CFL is set to zero, it uses the defined
+     unsteady time step, otherwise it computes the time step based
+     on the unsteady CFL ---*/
     
+    if (config->GetUnst_CFL() == 0.0) {
+      Global_Delta_Time = config->GetDelta_UnstTime();
+    }
     config->SetDelta_UnstTimeND(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      
+      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+      
+      node[iPoint]->SetLocalCFL(config->GetUnst_CFL());
+      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      Min_Delta_Time = Global_Delta_Time;
+      Max_Delta_Time = Global_Delta_Time;
+      
+    }
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
    if the unsteady CFL is diferent from 0 ---*/
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+    
+    Global_Delta_UnstTimeND = 1e30;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/node[iPoint]->GetLocalCFL());
+    }
     
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;

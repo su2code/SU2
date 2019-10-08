@@ -103,6 +103,9 @@ protected:
   unsigned long nPointDomain;   /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time,  /*!< \brief Maximum value of the delta time for all the control volumes. */
   Min_Delta_Time;          /*!< \brief Minimum value of the delta time for all the control volumes. */
+  su2double Max_CFL_Local;  /*!< \brief Maximum value of the CFL across all the control volumes. */
+  su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
+  su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
   su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
   *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
   *Residual,            /*!< \brief Auxiliary nVar vector. */
@@ -330,6 +333,24 @@ public:
    * \return Value of the minimum delta time.
    */
   virtual su2double GetMin_Delta_Time(unsigned short val_Species);
+  
+  /*!
+   * \brief Get the value of the maximum local CFL number.
+   * \return Value of the maximum local CFL number.
+   */
+  inline su2double GetMax_CFL_Local(void) { return Max_CFL_Local; }
+  
+  /*!
+   * \brief Get the value of the minimum local CFL number.
+   * \return Value of the minimum local CFL number.
+   */
+  inline su2double GetMin_CFL_Local(void) { return Min_CFL_Local; }
+  
+  /*!
+   * \brief Get the value of the average local CFL number.
+   * \return Value of the average local CFL number.
+   */
+  inline su2double GetAvg_CFL_Local(void) { return Avg_CFL_Local; }
   
   /*!
    * \brief Get the number of variables of the problem.
