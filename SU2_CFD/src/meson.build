@@ -116,7 +116,6 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 
 if get_option('enable-normal')
-  message('Normal mode enabled.')
   su2_cfd = executable('SU2_CFD',
                        su2_cfd_src, 
       		       install : true, 
@@ -125,7 +124,6 @@ if get_option('enable-normal')
 endif
 
 if get_option('enable-autodiff')
-  message('Auto diff. mode enabled.')
   su2_cfd_ad = executable('SU2_CFD_AD',
                           su2_cfd_src,
 			  install : true, 
@@ -134,7 +132,6 @@ if get_option('enable-autodiff')
 endif
 
 if get_option('enable-directdiff')
-  message('Direct diff. mode enabled.')
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
                           su2_cfd_src,
 			  install : true, 
