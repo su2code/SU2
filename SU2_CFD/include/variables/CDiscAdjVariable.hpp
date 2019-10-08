@@ -183,7 +183,7 @@ public:
   }
 
   /*!
-   * \brief Add a valaue to the old External vector.
+   * \brief Add a value to the old External vector.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   inline void Add_ExternalOld(const su2double *val_sol) {

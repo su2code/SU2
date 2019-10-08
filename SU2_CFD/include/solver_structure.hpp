@@ -532,14 +532,12 @@ public:
   /*!
    * \brief Set the solution vector to solution in Solution_Old.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
    */
   void SetSolution_Old(CGeometry *geometry);
   
   /*!
    * \brief Add External_Old to Solution vector.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
    */
   void Add_ExternalOld_To_Solution(CGeometry *geometry);
 

@@ -96,7 +96,8 @@ namespace AD{
 
   /*!
    * \brief Extracts the adjoint value at index
-   * \param[in] index - position in the adjoint vector where the adjoint value will be extracted.
+   * \param[in] index - position in the adjoint vector where the derivative will be extracted.
+   * \return Derivative value.
    */
   double GetDerivative(int index);
 
