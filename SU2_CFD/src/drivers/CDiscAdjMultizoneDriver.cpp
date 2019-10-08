@@ -581,7 +581,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    nMarker_Analyze = config_container[iZone]->GetnMarker_Monitoring();
+    nMarker_Analyze = config_container[iZone]->GetnMarker_Analyze();
 
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 

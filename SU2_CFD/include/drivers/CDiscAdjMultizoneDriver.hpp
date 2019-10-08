@@ -100,12 +100,12 @@ public:
   /*!
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
-   * \brief Run an discrete adjoint update of all solvers within multiple zones.
+   * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
