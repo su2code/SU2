@@ -1152,11 +1152,14 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   SetImplicitPeriodic(true);
 
   /* Store the initial CFL number for all grid points. */
-  
+
+  const su2double CFL = config->GetCFL(MGLevel);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
   }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
   
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "SA";
@@ -3490,10 +3493,13 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       
   /* Store the initial CFL number for all grid points. */
   
+  const su2double CFL = config->GetCFL(MGLevel);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double CFL = config->GetCFL(MGLevel);
     node[iPoint]->SetLocalCFL(CFL);
   }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
       
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "K-W SST";

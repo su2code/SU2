@@ -237,8 +237,6 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   if (runtime_file) {
     if (all_options.find("TIME_ITER") == all_options.end())
       config->SetnTime_Iter(nTimeIter);
-    if (all_options.find("CFL_NUMBER") == all_options.end())
-      config->SetCFL(MESH_0, CFLFineGrid);
   }
 }
 
@@ -4609,6 +4607,33 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Gradient_Method == LEAST_SQUARES) {
     SU2_MPI::Error(string("LEAST_SQUARES gradient method not allowed for viscous / source terms.\n") +
                    string("Please select either WEIGHTED_LEAST_SQUARES or GREEN_GAUSS."),
+                   CURRENT_FUNCTION);
+  }
+  
+  /* Protect against using CFL adaption for non-flow or certain
+   unsteady flow problems. */
+  
+  bool fvm_flow = ((Kind_Solver == INC_EULER) ||
+                   (Kind_Solver == INC_NAVIER_STOKES) ||
+                   (Kind_Solver == INC_RANS) ||
+                   (Kind_Solver == EULER) ||
+                   (Kind_Solver == NAVIER_STOKES) ||
+                   (Kind_Solver == RANS) ||
+                   (Kind_Solver == DISC_ADJ_EULER) ||
+                   (Kind_Solver == DISC_ADJ_RANS) ||
+                   (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+                   (Kind_Solver == DISC_ADJ_INC_EULER) ||
+                   (Kind_Solver == DISC_ADJ_INC_RANS) ||
+                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
+  if (CFL_Adapt && !fvm_flow) {
+    SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
+                   string("Please select CFL_ADAPT = NO."),
+                   CURRENT_FUNCTION);
+  }
+  
+  if (CFL_Adapt && (TimeMarching == TIME_STEPPING)) {
+    SU2_MPI::Error(string("CFL adaption not available for TIME_STEPPING integration.\n") +
+                   string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
   }
   

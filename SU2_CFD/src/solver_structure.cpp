@@ -2371,6 +2371,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Loop over all points on this grid and apply CFL adaption. */
     
+    su2double myCFLMin = 1e30;
+    su2double myCFLMax = 0.0;
+    su2double myCFLSum = 0.0;
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
       
       /* Get the current local flow CFL number at this point. */
@@ -2428,7 +2431,36 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         solverTurb->node[iPoint]->SetLocalCFL(CFL);
       }
       
+      /* Store min and max CFL for reporting on fine grid. */
+      
+      myCFLMin = min(CFL,myCFLMin);
+      myCFLMax = max(CFL,myCFLMax);
+      myCFLSum += CFL;
+      
     }
+    
+    /* Reduce the min/max/avg local CFL numbers. */
+    
+    su2double rbuf_min, sbuf_min;
+    sbuf_min = myCFLMin;
+    SU2_MPI::Allreduce(&sbuf_min, &rbuf_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    Min_CFL_Local = rbuf_min;
+    
+    su2double rbuf_max, sbuf_max;
+    sbuf_max = myCFLMax;
+    SU2_MPI::Allreduce(&sbuf_max, &rbuf_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    Max_CFL_Local = rbuf_max;
+    
+    su2double rbuf_sum, sbuf_sum;
+    sbuf_sum = myCFLSum;
+    SU2_MPI::Allreduce(&sbuf_sum, &rbuf_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    Avg_CFL_Local = rbuf_sum;
+    
+    unsigned long Global_nPointDomain;
+    unsigned long Local_nPointDomain = geometry[iMesh]->GetnPointDomain();
+    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
+                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    Avg_CFL_Local /= (su2double)Global_nPointDomain;
     
   }
   
