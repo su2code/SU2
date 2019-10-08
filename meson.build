@@ -122,3 +122,15 @@ subdir('SU2_PY')
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
 endif
+
+message('''Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
+         and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
+
+         Based on the input to this configuration, add these lines to your .bashrc file:
+        
+         export SU2_RUN=@0@
+         export SU2_HOME=@1@
+         export PATH=$PATH:$SU2_RUN
+         export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+'''.format(get_option('prefix')+'/bin', meson.source_root()))
+        
