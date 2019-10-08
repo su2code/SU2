@@ -106,7 +106,6 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
   
-
   if (!dry_run){
     
     if (((config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint()))
