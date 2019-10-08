@@ -216,7 +216,7 @@ void CDiscAdjMultizoneDriver::Run() {
         SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
-      /*--- Evaluate the objective function gradient w.rt. to solution contributions from iZone.
+      /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone.
        *    (We always initialize from Solution_BGS_k and extract to Solution.) ---*/
 
       AD::ClearAdjoints();
@@ -280,7 +280,7 @@ void CDiscAdjMultizoneDriver::Run() {
       SetResidual_BGS(iZone);
 
       /*--- Save Solution to Solution_BGS_k for a next outer iteration.
-       *    (Might be overwritten when entering another zone.) ---*/
+       *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
     }
