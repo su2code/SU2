@@ -12990,27 +12990,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par +=1;
       Variable_Names.push_back("Roe_Dissipation");
     }
-
-    /*--- Plot the metric tensor. ---*/
-
-    if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
-
-      if(nDim == 2){
-        Variable_Names.push_back("Aniso_Metric[0]");
-        Variable_Names.push_back("Aniso_Metric[1]");
-        Variable_Names.push_back("Aniso_Metric[2]");
-        nVar_Par += 3;
-      }
-      else{
-        Variable_Names.push_back("Aniso_Metric[0]");
-        Variable_Names.push_back("Aniso_Metric[1]");
-        Variable_Names.push_back("Aniso_Metric[2]");
-        Variable_Names.push_back("Aniso_Metric[3]");
-        Variable_Names.push_back("Aniso_Metric[4]");
-        Variable_Names.push_back("Aniso_Metric[5]");
-        nVar_Par += 6;
-      }
-    }
     
     if (solver[FLOW_SOL]->VerificationSolution) {
       if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
@@ -13041,6 +13020,27 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 3) {
         nVar_Par +=1;
         Variable_Names.push_back("Q_Criterion");
+      }
+    }
+
+    /*--- Plot the metric tensor. ---*/
+
+    if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
+
+      if(nDim == 2){
+        Variable_Names.push_back("Aniso_Metric[0]");
+        Variable_Names.push_back("Aniso_Metric[1]");
+        Variable_Names.push_back("Aniso_Metric[2]");
+        nVar_Par += 3;
+      }
+      else{
+        Variable_Names.push_back("Aniso_Metric[0]");
+        Variable_Names.push_back("Aniso_Metric[1]");
+        Variable_Names.push_back("Aniso_Metric[2]");
+        Variable_Names.push_back("Aniso_Metric[3]");
+        Variable_Names.push_back("Aniso_Metric[4]");
+        Variable_Names.push_back("Aniso_Metric[5]");
+        nVar_Par += 6;
       }
     }
     
@@ -13282,20 +13282,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
         }
-
-        /*--- Load data for the metric. ---*/
-
-        if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
-
-          unsigned short iMetr, nMetr;
-          if(nDim == 2) nMetr = 3;
-          else          nMetr = 6;
-            
-          for(iMetr = 0; iMetr < nMetr; iMetr++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoMetr(iMetr);
-            iVar++;
-          }
-        }
         
         if (solver[FLOW_SOL]->VerificationSolution) {
           if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
@@ -13361,6 +13347,20 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
                 pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
             Local_Data[jPoint][iVar] = Q; iVar++;
+          }
+        }
+
+        /*--- Load data for the metric. ---*/
+
+        if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
+
+          unsigned short iMetr, nMetr;
+          if(nDim == 2) nMetr = 3;
+          else          nMetr = 6;
+            
+          for(iMetr = 0; iMetr < nMetr; iMetr++){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoMetr(iMetr);
+            iVar++;
           }
         }
         
