@@ -3622,7 +3622,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
     taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
 
     /*--- Calculate vib.-el. energies ---*/
-    estar[iSpecies] = var->CalcEve(config, T, iSpecies);
+    estar[iSpecies] = var->CalcEve(config, Tve, iSpecies);
 
     /*--- Add species contribution to residual ---*/
     val_residual[nEv] += rhos * (estar[iSpecies] -
