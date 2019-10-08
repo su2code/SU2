@@ -200,7 +200,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) &&
+      (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode())) {
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -14043,8 +14044,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) &&
+      (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode())) {
+    
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
     if (dual_time) {
