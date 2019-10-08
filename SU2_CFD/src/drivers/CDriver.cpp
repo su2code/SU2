@@ -5031,9 +5031,9 @@ void CHBDriver::ComputeHB_Operator() {
 
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
-                                     SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+                                     SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                          val_nZone,
-                                                                         MPICommunicator) {
+                                                                         MPICommunicator, false) {
 
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -5072,14 +5072,14 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
        case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
          direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
          nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
-//         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
-//         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
+         flow_criteria = -8.0;  // Temporarily hard coded until adapted into new structure
+         flow_criteria_rel = 3.0;
          break;
        case DISC_ADJ_FEM:
          direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
          nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
-//         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
-//         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
+         structure_criteria    = -8.0;
+         structure_criteria_rel = 3.0;
          break;
     }
   }
@@ -5212,10 +5212,6 @@ CDiscAdjFSIDriver::~CDiscAdjFSIDriver(void) {
 
 }
 
-void CDiscAdjFSIDriver::Update(){
-
-}
-
 void CDiscAdjFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 }
@@ -5230,12 +5226,11 @@ void CDiscAdjFSIDriver::Run( ) {
 
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetInnerIter(IntIter);
   unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
-  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
 
   ofstream myfile_struc, myfile_flow, myfile_geo;
 
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-
 
   for (iOuterIter = 0; iOuterIter < nOuterIter && !BGS_Converged; iOuterIter++){
 
@@ -5271,6 +5266,7 @@ void CDiscAdjFSIDriver::Run( ) {
 
     /*--- Check convergence of the BGS method ---*/
     BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
+
   }
 
 
@@ -6069,10 +6065,10 @@ void CDiscAdjFSIDriver::Iterate_Block(unsigned short ZONE_FLOW,
 
   switch (kind_recording){
   case FLOW_CONS_VARS:
-    nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
+    nIntIter = config_container[ZONE_FLOW]->GetnInner_Iter();
     break;
   case FEA_DISP_VARS:
-    nIntIter = config_container[ZONE_STRUCT]->GetDyn_nIntIter();
+    nIntIter = config_container[ZONE_STRUCT]->GetnInner_Iter();
     break;
   case MESH_COORDS:
   case FEM_CROSS_TERM_GEOMETRY:
