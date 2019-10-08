@@ -38,10 +38,11 @@
 #include "../include/drivers/CDiscAdjMultizoneDriver.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
-                                      unsigned short val_nZone,
-                                      SU2_Comm MPICommunicator) : CMultizoneDriver(confFile,
-                                                                                  val_nZone,
-                                                                                  MPICommunicator) {
+                                                 unsigned short val_nZone,
+                                                 SU2_Comm MPICommunicator)
+
+                        : CMultizoneDriver(confFile, val_nZone, MPICommunicator) {
+
   retape = !config_container[ZONE_0]->GetFull_Tape();
 
   RecordingState = NONE;
@@ -296,7 +297,8 @@ void CDiscAdjMultizoneDriver::Run() {
                                                  config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInner_Iter);
     }
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
+    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
+                                              driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
     /*--- Check for convergence. ---*/
 
