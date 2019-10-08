@@ -3707,56 +3707,56 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 
     case EULER: case NAVIER_STOKES: case RANS:
       if (rank == MASTER_NODE)
-        cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << "Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CFlowCompOutput(config[iZone], nDim);
       break;
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:  
       if (rank == MASTER_NODE)        
-        cout << ": Euler/Navier-Stokes/RANS output structure." << endl;        
+        cout << "Euler/Navier-Stokes/RANS output structure." << endl;        
       output[iZone] = new CFlowIncOutput(config[iZone], nDim);       
       break;
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
-        cout << ": heat output structure." << endl;
+        cout << "Heat output structure." << endl;
       output[iZone] = new CHeatOutput(config[iZone], nDim);
       break;
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
-        cout << ": FEM output structure." << endl;
+        cout << "FEM output structure." << endl;
       output[iZone] = new CElasticityOutput(config[iZone], nDim);
       break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << "Adjoint Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CAdjFlowCompOutput(config[iZone], nDim);
       break;
     case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << "Adjoint Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CAdjFlowIncOutput(config[iZone], nDim);
       break;
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint FEA output structure." << endl;
+        cout << "Discrete adjoint FEA output structure." << endl;
       output[iZone] = new CAdjElasticityOutput(config[iZone], nDim);
       break;
       
     case DISC_ADJ_HEAT:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint heat output structure." << endl;
+        cout << "Discrete adjoint heat output structure." << endl;
       output[iZone] = new CAdjHeatOutput(config[iZone], nDim);
       break;
       
     case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
       if (rank == MASTER_NODE)
-        cout << ": FEM output structure." << endl;
+        cout << "FEM output structure." << endl;
       output[iZone] = new CFlowCompFEMOutput(config[iZone], nDim);
       break;
       
     default:
       if (rank == MASTER_NODE)
-        cout << ": default output structure." << endl;
+        cout << "Default output structure." << endl;
       output[iZone] = new COutput(config[iZone], nDim, false);
       break;
     }
