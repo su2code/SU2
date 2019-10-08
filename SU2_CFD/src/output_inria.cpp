@@ -623,7 +623,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	
 	if ( nParallel_BoundTria > 0 ) {
 		
-		GmfSetKwd(OutMsh, GmfTriangles, nTri);
+		GmfSetKwd(OutMsh, GmfTriangles, nParallel_BoundTria);
 				
 		for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if(config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
