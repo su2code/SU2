@@ -894,6 +894,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
+  addBoolOption("ADJ_FSI", FSI_Problem, YES);  
+  
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -2863,8 +2865,7 @@ void CConfig::SetnZone(){
     
     nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
   
-  }
-  
+  }  
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -3130,21 +3131,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- All the other zones are structure.
    *--- This will allow us to define multiple physics structural problems */
 
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
+//  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
+//    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
 
-    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
-    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
-    // Discrete adjoint linear solver
-    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
-    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
+//    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
+//    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
+//    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+//    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
+//    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
+//    // Discrete adjoint linear solver
+//    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
+//    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
 
-    Multizone_Residual = true;
-  }
-  else { FSI_Problem = false; }
+//    Multizone_Residual = true;
+//  }
+//  else { FSI_Problem = false; }
   
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||

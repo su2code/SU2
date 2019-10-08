@@ -1108,9 +1108,10 @@ public:
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
-class CDiscAdjFSIDriver : public CDriver {
+class CDiscAdjFSIDriver : public CFluidDriver {
   
   COutputLegacy* output_legacy;
+  
   CIteration** direct_iteration;
   unsigned short RecordingState;
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */

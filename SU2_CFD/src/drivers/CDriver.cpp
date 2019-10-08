@@ -5031,10 +5031,9 @@ void CHBDriver::ComputeHB_Operator() {
 
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
-                                     SU2_Comm MPICommunicator) : CDriver(confFile,
+                                     SU2_Comm MPICommunicator) : CFluidDriver(confFile,
                                                                          val_nZone,
-                                                                         MPICommunicator,
-                                                                         false) {
+                                                                         MPICommunicator) {
 
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -5067,23 +5066,23 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   direct_iteration = new CIteration*[nZone];
 
   unsigned short iZone;
-//  for (iZone = 0; iZone < nZone; iZone++){
-//    switch (config_container[iZone]->GetKind_Solver()) {
-//      case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:      
-//       case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-//         direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
-//         nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_Solver()) {
+      case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:      
+       case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+         direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+         nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
 //         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
 //         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
-//         break;
-//       case DISC_ADJ_FEM:
-//         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
-//         nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
+         break;
+       case DISC_ADJ_FEM:
+         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
+         nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
 //         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
 //         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
-//         break;
-//    }
-//  }
+         break;
+    }
+  }
 
   init_res_flow   = new su2double[nVar_Flow];
   init_res_struct = new su2double[nVar_Struct];
@@ -5182,8 +5181,9 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
 
     myfile_res.close();
   }
+  output_legacy = new COutputLegacy(config_container[ZONE_0]);
 
-//  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
 //  config_container[ZONE_0]->SetnExtIter(1);
 //  config_container[ZONE_1]->SetnExtIter(1);
   ConvHist_file = NULL;
@@ -6334,9 +6334,8 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
   unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetOuterIter();
 
 
-//  if (rank == MASTER_NODE)  
-//    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
-//     output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Header(&ConvHist_file[ZONE_0][INST_0], config_container[ZONE_0], ZONE_0, INST_0);
+  if (rank == MASTER_NODE)  
+     output_legacy->SetConvHistory_Header(&ConvHist_file[ZONE_0][INST_0], config_container[ZONE_0], ZONE_0, INST_0);
 
   if (kind_recording == FLOW_CONS_VARS) {
 
@@ -6360,12 +6359,11 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
     }
   }
 
-//  if (kind_recording == FEA_DISP_VARS) {
-//    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
-//    /*--- Set the convergence criteria (only residual possible) ---*/
-//       output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
+  if (kind_recording == FEA_DISP_VARS) {
+    /*--- Set the convergence criteria (only residual possible) ---*/
+       output_legacy->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
 
-//  }
+  }
 
 
 }
