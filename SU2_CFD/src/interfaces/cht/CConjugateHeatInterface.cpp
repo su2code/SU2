@@ -61,16 +61,19 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   nDim = donor_geometry->GetnDim();
 
-  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall = 0.0, Tnormal = 0.0,
-      dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
+  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area,
+      Twall, Tnormal, dTdn, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity, thermal_conductivityND,
-      heat_flux_density, conductivity_over_dist, Temperature_Ref;
+      heat_flux_density, conductivity_over_dist;
+
+  Edge_Vector = new su2double[nDim];
+
   su2double Gamma = donor_config->GetGamma();
   su2double Gas_Constant = donor_config->GetGas_ConstantND();
   su2double Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
-  Edge_Vector = new su2double[nDim];
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
+
   bool flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
@@ -79,20 +82,17 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
                || (donor_config->GetKind_Solver() == INC_RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
-  bool incompressible_flow = (donor_config->GetEnergy_Equation()) && flow;
-  bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
-  Temperature_Ref   = donor_config->GetTemperature_Ref();
-  Prandtl_Lam       = donor_config->GetPrandtl_Lam();
-  laminar_viscosity = donor_config->GetMu_ConstantND(); // TDE check for consistency
-  cp_fluid          = donor_config->GetSpecific_Heat_Cp();
-  rho_cp_solid      = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
+  bool compressible_flow    = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
+  bool incompressible_flow  = (donor_config->GetEnergy_Equation()) && flow;
+  bool heat_equation        = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM
+                               || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
-  PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
   Coord         = donor_geometry->node[Point_Donor]->GetCoord();
-  Coord_Normal  = donor_geometry->node[PointNormal]->GetCoord();
+
   Normal        = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
+  PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
+  Coord_Normal  = donor_geometry->node[PointNormal]->GetCoord();
 
   dist2 = 0.0;
   Area = 0.0;
@@ -104,27 +104,28 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   dist = sqrt(dist2);
   Area = sqrt(Area);
 
-  /*--- Retrieve temperature solution (later set is as the first donor variable) and its gradient ---*/
+  /*--- Retrieve temperature solution and its gradient ---*/
 
-  dTdn = 0.0;
+  Twall = 0.0; Tnormal = 0.0; dTdn = 0.0;
 
   if (compressible_flow) {
 
-    Twall   = donor_solution->node[Point_Donor]->GetPrimitive(0)*Temperature_Ref;
-    Tnormal = donor_solution->node[PointNormal]->GetPrimitive(0)*Temperature_Ref;
+    Twall   = donor_solution->node[Point_Donor]->GetPrimitive(0);
+    Tnormal = donor_solution->node[PointNormal]->GetPrimitive(0);
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (incompressible_flow) {
 
-    Twall   = donor_solution->node[Point_Donor]->GetTemperature()*Temperature_Ref;
-    Tnormal = donor_solution->node[PointNormal]->GetTemperature()*Temperature_Ref;
+    Twall   = donor_solution->node[Point_Donor]->GetTemperature();
+    Tnormal = donor_solution->node[PointNormal]->GetTemperature();
 
     dTdn = (Twall - Tnormal)/dist;
   }
-  else if (flow || heat_equation) {
-    Twall   = donor_solution->node[Point_Donor]->GetSolution(0)*Temperature_Ref;
-    Tnormal = donor_solution->node[PointNormal]->GetSolution(0)*Temperature_Ref;
+  else if (heat_equation) {
+
+    Twall   = donor_solution->node[Point_Donor]->GetSolution(0);
+    Tnormal = donor_solution->node[PointNormal]->GetSolution(0);
 
     //    for (iDim = 0; iDim < nDim; iDim++) {
     //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
@@ -133,66 +134,79 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     dTdn = (Twall - Tnormal)/dist;
   }
   else {
+
     cout << "WARNING: Transfer of conjugate heat variables is called with non-supported donor solver!" << endl;
   }
 
-  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity)
-   *--- and set it as second donor variable ---*/
+  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) ---*/
+
   if (compressible_flow) {
 
-    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+    Prandtl_Lam             = donor_config->GetPrandtl_Lam();
+    laminar_viscosity       = donor_config->GetMu_ConstantND(); // TDE check for consistency
+    Cp                      = (Gamma / (Gamma - 1.0)) * Gas_Constant;
 
     thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
-    thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref();
+    heat_flux_density       = thermal_conductivityND*dTdn;
 
-    heat_flux_density       = thermal_conductivity*dTdn;
-    conductivity_over_dist  = thermal_conductivity/dist;
+    if (donor_config->GetCHT_Robin()) {
+
+      thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref();
+      conductivity_over_dist  = thermal_conductivity/dist;
+    }
   }
   else if (incompressible_flow) {
 
-    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
-
     thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
-    thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
+    heat_flux_density       = thermal_conductivityND*dTdn;
 
-    switch (donor_config->GetKind_ConductivityModel()) {
+    if (donor_config->GetCHT_Robin()) {
 
-      case CONSTANT_CONDUCTIVITY:
-        thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
-        break;
+      switch (donor_config->GetKind_ConductivityModel()) {
 
-      case CONSTANT_PRANDTL:
-        thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()
-                               *donor_config->GetViscosity_Ref();
-        break;
+        case CONSTANT_CONDUCTIVITY:
+          thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
+          break;
+
+        case CONSTANT_PRANDTL:
+          thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()
+                                 *donor_config->GetViscosity_Ref();
+          break;
+      }
+
+      conductivity_over_dist  = thermal_conductivity/dist;
     }
-
-    heat_flux_density       = thermal_conductivity*dTdn;
-    conductivity_over_dist  = thermal_conductivity/dist;
   }
-  else if (flow) {
+  else if (heat_equation) {
 
-    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
-
-    thermal_conductivityND  = laminar_viscosity/Prandtl_Lam;
-    thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref()*cp_fluid;
-
-    heat_flux_density       = thermal_conductivity*dTdn;
-    conductivity_over_dist  = thermal_conductivity/dist;
-  }
-  else {
+    /*--- Heat solver stand-alone case ---*/
 
     thermal_diffusivity     = donor_config->GetThermalDiffusivity_Solid();
-    heat_flux_density       = (thermal_diffusivity*dTdn)*rho_cp_solid;
-    conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
+    heat_flux_density       = thermal_diffusivity*dTdn;
+
+    if (donor_config->GetCHT_Robin()) {
+      rho_cp_solid            = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
+      conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
+    }
   }
 
-  Donor_Variable[0] = Twall;
-  Donor_Variable[1] = heat_flux_density;
-  Donor_Variable[2] = conductivity_over_dist;
-  Donor_Variable[3] = Tnormal;
+  /*--- Set the conjugate heat variables that are transferred by default ---*/
 
-  delete [] Edge_Vector;
+  Donor_Variable[0] = Twall*donor_config->GetTemperature_Ref();
+  Donor_Variable[1] = heat_flux_density*donor_config->GetHeat_Flux_Ref();
+
+  /*--- We only need these for the Robin BC option ---*/
+
+  if (donor_config->GetCHT_Robin()) {
+
+    Donor_Variable[2] = conductivity_over_dist;
+    Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
+  }
+
+  if (Edge_Vector != NULL) {
+
+    delete [] Edge_Vector;
+  }
 }
 
 void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
@@ -203,8 +217,12 @@ void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeom
                                             target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 1,
                                             target_config->GetRelaxation_Factor_CHT(), Target_Variable[1]);
-  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 2,
-                                            target_config->GetRelaxation_Factor_CHT(), Target_Variable[2]);
-  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 3,
-                                            target_config->GetRelaxation_Factor_CHT(), Target_Variable[3]);
+
+  if (target_config->GetCHT_Robin()) {
+
+    target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 2,
+                                              target_config->GetRelaxation_Factor_CHT(), Target_Variable[2]);
+    target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 3,
+                                              target_config->GetRelaxation_Factor_CHT(), Target_Variable[3]);
+  }
 }
