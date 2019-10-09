@@ -277,6 +277,10 @@ def amg ( config , kind='' ):
             #--- Load su2 mesh 
             
             mesh = su2amg.read_mesh(current_mesh, current_solution)
+
+            #--- Write initial solution
+            if global_iter == 0 :
+                su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
                                     
             if not amg_python : 
                 
