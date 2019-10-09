@@ -38,39 +38,28 @@
 
 #include "../../../include/interfaces/cht/CConjugateHeatInterface.hpp"
 
-CConjugateHeatInterface::CConjugateHeatInterface(void) : CInterface() {
-
-}
+CConjugateHeatInterface::CConjugateHeatInterface(void) : CInterface() { }
 
 CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                 CConfig *config) : CInterface(val_nVar, val_nConst, config) {
+                                                 CConfig *config) : CInterface(val_nVar, val_nConst, config) { }
 
-}
-
-CConjugateHeatInterface::~CConjugateHeatInterface(void) {
-
-}
+CConjugateHeatInterface::~CConjugateHeatInterface(void) { }
 
 void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                                 CConfig *donor_config, unsigned long Marker_Donor,
                                                 unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned long iPoint;
-  unsigned long PointNormal;
   unsigned short nDim, iDim;
-
-  nDim = donor_geometry->GetnDim();
+  unsigned long iPoint, PointNormal;
 
   su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area,
       Twall, Tnormal, dTdn, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity, thermal_conductivityND,
       heat_flux_density, conductivity_over_dist;
 
-  Edge_Vector = new su2double[nDim];
+  nDim = donor_geometry->GetnDim();
 
-  su2double Gamma = donor_config->GetGamma();
-  su2double Gas_Constant = donor_config->GetGas_ConstantND();
-  su2double Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
+  Edge_Vector = new su2double[nDim];
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
 
@@ -94,8 +83,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
   Coord_Normal  = donor_geometry->node[PointNormal]->GetCoord();
 
-  dist2 = 0.0;
-  Area = 0.0;
+  Twall = 0.0; Tnormal = 0.0; dTdn = 0.0; dist2 = 0.0; Area = 0.0;
+
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_Normal[iDim] - Coord[iDim];
     dist2 += Edge_Vector[iDim]*Edge_Vector[iDim];
@@ -105,8 +94,6 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   Area = sqrt(Area);
 
   /*--- Retrieve temperature solution and its gradient ---*/
-
-  Twall = 0.0; Tnormal = 0.0; dTdn = 0.0;
 
   if (compressible_flow) {
 
@@ -127,6 +114,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     Twall   = donor_solution->node[Point_Donor]->GetSolution(0);
     Tnormal = donor_solution->node[PointNormal]->GetSolution(0);
 
+    // TODO: Check if these improve accuracy, if needed at all
     //    for (iDim = 0; iDim < nDim; iDim++) {
     //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
     //    }
@@ -135,15 +123,19 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   }
   else {
 
-    cout << "WARNING: Transfer of conjugate heat variables is called with non-supported donor solver!" << endl;
+    SU2_MPI::Error("Transfer of conjugate heat variables failed (non-supported donor solver).", CURRENT_FUNCTION);
   }
 
   /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) ---*/
 
   if (compressible_flow) {
 
+    su2double Gamma         = donor_config->GetGamma();
+    su2double Gas_Constant  = donor_config->GetGas_ConstantND();
+    su2double Cp            = (Gamma / (Gamma - 1.0)) * Gas_Constant;
+
     Prandtl_Lam             = donor_config->GetPrandtl_Lam();
-    laminar_viscosity       = donor_config->GetMu_ConstantND(); // TDE check for consistency
+    laminar_viscosity       = donor_solution->node[Point_Donor]->GetLaminarViscosity(); // TDE check for consistency
     Cp                      = (Gamma / (Gamma - 1.0)) * Gas_Constant;
 
     thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
