@@ -15622,6 +15622,8 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   }
 
   nVar_First = solver[FirstIndex]->GetnVar();
+
+  //std::cout <<std::endl<< "Mutation nVar=" << nVar_First  << std::endl<< std::endl; 
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
 
@@ -15684,7 +15686,7 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   Variable_Names.push_back("Momentum_y");
   if (geometry->GetnDim() == 3) Variable_Names.push_back("Momentum_z");
   Variable_Names.push_back("Energy");
-  Variable_Names.push_back("Electronic Energy");
+  Variable_Names.push_back("Electronic_Energy");
   //nVar_Par += 1; Variable_Names.push_back("Temperature");
   //nVar_Par += 1; Variable_Names.push_back("Temperature_VE");
 
@@ -15700,7 +15702,7 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   }
 
   /*--- Total Density ---*/
-  nVar_Par += 1; Variable_Names.push_back("Total Density");
+  nVar_Par += 1; Variable_Names.push_back("Total_Density");
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -15772,6 +15774,8 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
 
 
     /*--- Add Pressure, Temperature, Cp, Mach. ---*/
+
+    //std::cout <<std::endl << "Mutation PASSO AQUI " << std::endl << std::endl;
 
     nVar_Par += 1;
     Variable_Names.push_back("Pressure");
@@ -16061,6 +16065,8 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
         Local_Data[jPoint][iVar] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())/solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         Local_Data[jPoint][iVar] = (solver[TNE2_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
 
+        //std::cout <<std::endl << "Mutation iVar= " << iVar<< std::endl << std::endl;
+
         if ((Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver == RANS)) {
 
           /*--- Load data for the laminar viscosity. ---*/
@@ -16115,6 +16121,8 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
          assuming they were registered above correctly. ---*/
 
       }
+
+      //std::cout <<std::endl << "Mutation iVar= " << iVar<< std::endl << std::endl;
 
       /*--- Increment the point counter, as there may have been halos we
        skipped over during the data loading. ---*/

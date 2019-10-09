@@ -6173,6 +6173,10 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
   Xs                  = new su2double[nSpecies];
 
+   /*--- Initialize Matrices ---*/
+  for (iVar = 0; iVar < nVar; iVar++) U_outlet[iVar] = 0.0;
+  for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = 0.0;
+
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
   conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
@@ -6223,7 +6227,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
   //Gamma = config->GetGamma();
   //Gamma     = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
-  Gamma_Minus_One = Gamma - 1.0;
+  //Gamma_Minus_One = Gamma - 1.0;
 
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -6256,6 +6260,10 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
       //V_domain = node[iPoint]-> GetPrimVar();
       //U_domain = node[iPoint]-> GetSolution();
+
+      /*--- Initialize solution at outlet ---*/
+      for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = 0.0;
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = 0.0;  
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
@@ -6337,7 +6345,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           rhoCvtr += Density* Ys[iSpecies] * Cvtr[iSpecies];
         }
 
-        SoundSpeed = sqrt((1.0 + Ru/V_outlet[RHOCVTR_INDEX ]*conc) * Pressure/Density);
+        SoundSpeed = sqrt((1.0 + (Ru/rhoCvtr)*conc) * Pressure/Density);
 
         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
         

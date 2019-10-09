@@ -3623,6 +3623,9 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     nVar = var_buf[1];
 
+    
+
+
   } else {
 
     /*--- First, check that this is not a binary restart file. ---*/
@@ -3732,6 +3735,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
      restart file (without including the PointID) ---*/
 
     nVar = config->fields.size() - 1;
+
 
     /*--- Clear the fields vector since we'll read it again. ---*/
 
@@ -4013,7 +4017,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       index = counter*Restart_Vars[1];
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
-     
+
+      
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
