@@ -218,6 +218,11 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS) idxVar += 1; // Add Roe dissipation
 
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      idxVar += nDim; // Add vorticity
+      if(nDim == 3) idxVar += 1; // Add Q-criterion
+    }
+
     TagBc[bcGoal] = idxVar;
     idxVar += 1; // Add adaptation parameter
   }
@@ -240,134 +245,10 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   /*--- Number of variables (1 for sensor files). ---*/
   NbrVar = 1;
   VarTyp[0]  = GmfSca;
-	
-  /*--- Open the restart file and write the solution. ---*/
-
-  if(config->GetWrt_Aniso_Sensor()){
-
-  /*--- Write MACH ---*/
-
-  SPRINTF (OutNam, "current.mach.solb");
-  OutMach = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
-	
-  if ( !OutMach ) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("Unable to open %s", OutNam);
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-  }	
-	
-  if ( !GmfSetKwd(OutMach, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("Unable to write Mach");
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-  }
-
-  myPoint = 0;
-  offset = 0;
-  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
-        
-        /*--- Global Index of the current point. (note outer loop over procs) ---*/
-        
-        Global_Index = iPoint + offset;
-        
-        /*--- Only write original domain points, i.e., exclude any periodic
-         or halo nodes, even if they are output in the viz. files. ---*/
-        
-        if (Global_Index < nPoint_Restart) {
-                    
-          myPoint++;
-          
-          /*--- Loop over the variables and write the values to file ---*/
-          
-          iVar = TagBc[bcMach];
-          bufDbl[0] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
-          GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
-        }
-      }
-    }
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
-    
-  }
-	
-  if ( !GmfCloseMesh(OutMach) ) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("Cannot close solution file");
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-  }
-	
-  /*--- Write PRES ---*/
-
-  SPRINTF (OutNam, "current.pres.solb");
-  OutPres = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
-	
-  if ( !OutPres ) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("Unable to open %s", OutNam);
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-  }
-	
-  if ( !GmfSetKwd(OutPres, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("Unable to write pressure");
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-  }
-
-  myPoint = 0;
-  offset = 0;
-  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
-        
-        /*--- Global Index of the current point. (note outer loop over procs) ---*/
-        
-        Global_Index = iPoint + offset;
-        
-        /*--- Only write original domain points, i.e., exclude any periodic
-         or halo nodes, even if they are output in the viz. files. ---*/
-        
-        if (Global_Index < nPoint_Restart) {
-                    
-          myPoint++;
-          
-          /*--- Loop over the variables and write the values to file ---*/
-          
-          iVar = TagBc[bcPres];
-          bufDbl[0] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
-          GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
-        }
-      }
-    }
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
-    
-  }
-		
-	/*--- Close files ---*/
-  	
-  if ( !GmfCloseMesh(OutPres) ) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("Cannot close solution file");
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-  }
-
-  } // End Wrt_Aniso_Sensor
 
   /*--- Write METR ---*/
 
-  if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
+  if(config->GetWrt_Aniso_Sensor() && (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET)){
 
     /*--- Write metric tensor ---*/
 
