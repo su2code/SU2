@@ -6021,10 +6021,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 	else {
 		if (Time_Domain) {
-			cout << "Static structural analysis." << endl; 
+            cout << "Dynamic structural analysis."<< endl;
+            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
 		 } else {
-			cout << "Dynamic structural analysis."<< endl;
-			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+            cout << "Static structural analysis." << endl;
 		}
 	}
 
