@@ -4451,9 +4451,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
-      if (GetGrid_Movement()) {
+      /*if (GetGrid_Movement()) {
         SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
-      }
+      }*/
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +

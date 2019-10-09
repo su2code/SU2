@@ -4195,8 +4195,16 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, ExtIter );
     }
+    /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+    /*--- Works if DEFORM_MESH = YES ---*/
+    else if (config_container[iZone]->GetDeform_Mesh()) {
+      iteration_container[iZone][INST_0]->SetMesh_Deformation(geometry_container[iZone][INST_0],
+                                                                  solver_container[iZone][INST_0][MESH_0],
+                                                                  numerics_container[iZone][INST_0][MESH_0],
+                                                                  config_container[iZone],
+                                                                  NONE);
+    }
   }
-
 }
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
@@ -5075,9 +5083,20 @@ void CFSIDriver::Run() {
     /*--------------------- Mesh deformation --------------------------*/
     /*-----------------------------------------------------------------*/
 
+  if (!config_container[ZONE_FLOW]->GetDeform_Mesh()) {
   iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
                                                            surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
                                                            solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
+  }
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  else {
+    iteration_container[ZONE_FLOW][INST_0]->SetMesh_Deformation(geometry_container[ZONE_FLOW][INST_0],
+                                                                  solver_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                  numerics_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                  config_container[ZONE_FLOW],
+                                                                  NONE);
+  }
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Fluid subiteration -------------------------*/
@@ -5217,10 +5236,17 @@ void CFSIDriver::Predict_Tractions(unsigned short donorZone, unsigned short targ
 
 void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
+  if (!config_container[donorZone]->GetDeform_Mesh()) {
+
   interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                      config_container[donorZone], config_container[targetZone]);
-
+  }
+  else {
+  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
+                                                                     geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                     config_container[donorZone], config_container[targetZone]);
+  }
 }
 
 void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
@@ -5393,10 +5419,20 @@ void CFSIDriver::Update() {
 
   /*-------------------- Set the grid movement -------------------------*/
 
-  
+  if (!config_container[ZONE_FLOW]->GetDeform_Mesh()) {
   iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
                                                            surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
                                                            solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
+  }
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  else {
+    iteration_container[ZONE_FLOW][INST_0]->SetMesh_Deformation(geometry_container[ZONE_FLOW][INST_0],
+                                                                  solver_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                  numerics_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                  config_container[ZONE_FLOW],
+                                                                  NONE);
+  }
 
   /*--- TODO: Temporary output of objective function for Flow OFs. Needs to be integrated into the refurbished output ---*/
 
@@ -6248,10 +6284,21 @@ void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsign
   /*---- as the flag Grid_Movement is set to false in this case -----*/
   /*-----------------------------------------------------------------*/
 
+  if (!config_container[ZONE_FLOW]->GetDeform_Mesh()) {
   direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
                                                                surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
                                                                solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
-
+  }
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  else {
+    iteration_container[ZONE_FLOW][INST_0]->SetMesh_Deformation(geometry_container[ZONE_FLOW][INST_0],
+                                                                  solver_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                  numerics_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                  config_container[ZONE_FLOW],
+                                                                  NONE);
+  }
+  
   geometry_container[ZONE_FLOW][INST_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);
 
   solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->InitiateComms(geometry_container[ZONE_STRUCT][INST_0][MESH_0], config_container[ZONE_STRUCT], SOLUTION_FEA);
