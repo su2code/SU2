@@ -35,10 +35,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../../include/output/COutputLegacy.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
 
-void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
+void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
   CFluidModel *FluidModel;
   unsigned short nDim = geometry->GetnDim();
@@ -61,7 +63,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   /*--- Compute BC imposed value for convergence monitoring ---*/
   for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
     for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP) + 1; iSpan++){
-      if(config->GetRampOutletPressure() && config->GetExtIter() > 0){
+      if(config->GetRampOutletPressure() && config->GetInnerIter() > 0){
         PressureOut_BC[iMarkerTP][iSpan] = config->GetMonitorOutletPressure()/config->GetPressure_Ref();
       }
       FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());

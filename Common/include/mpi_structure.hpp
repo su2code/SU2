@@ -331,6 +331,7 @@ public:
 #define MPI_MIN 9
 #define MPI_MAX 10
 #define MPI_INT 11
+#define MPI_PROD 12
 class CBaseMPIWrapper {
   
 public:

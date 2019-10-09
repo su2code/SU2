@@ -48,9 +48,9 @@ inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned lo
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
                                      unsigned short iMesh, unsigned short RunTime_EqSystem) { }
                                      
-inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
+inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) { }
 
-inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
+inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) { }
 
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
@@ -660,8 +660,12 @@ inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
 inline void CSolver::Solve_System(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-									 unsigned short val_marker) { }
+inline void CSolver::BC_Euler_Wall(CGeometry      *geometry, 
+                                   CSolver        **solver_container, 
+                                   CNumerics      *conv_numerics, 
+                                   CNumerics      *visc_numerics, 
+                                   CConfig        *config, 
+                                   unsigned short val_marker) { }
 
 inline void CSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
@@ -899,10 +903,6 @@ inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, 
 }
 
 inline su2double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
-
-inline void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] = val_residual; }
 
@@ -1157,6 +1157,8 @@ inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *conf
 inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_periodic = val_implicit_periodic; }
 
 inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
+
+inline string CSolver::GetSolverName(void) {return SolverName;}
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
@@ -2259,6 +2261,8 @@ inline void CIncNSSolver::SetConjugateHeatVariable(unsigned short val_marker, un
 
 inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
+inline su2double CHeatSolverFVM::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+
 inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
 
 inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
@@ -2504,3 +2508,5 @@ inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
 
 inline void CSolver::SetDualTime_Mesh(void){ }
+
+inline vector<string> CSolver::GetSolutionFields(){return fields;}

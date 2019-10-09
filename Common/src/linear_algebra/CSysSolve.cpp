@@ -44,6 +44,7 @@ CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false),
   mesh_deform = mesh_deform_mode;
   LinSysRes_ptr = NULL;
   LinSysSol_ptr = NULL;
+  Residual = 0.0;
 }
 
 template<class ScalarType>
@@ -489,7 +490,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   }
 
-  (*residual) = beta;
+  (*residual) = beta/norm0;
   return (unsigned long) i;
 
 }
@@ -646,7 +647,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   }
 
-  (*residual) = norm_r;
+  (*residual) = norm_r/norm0;
   return (unsigned long) i;
 }
 
