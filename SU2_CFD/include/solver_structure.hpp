@@ -2056,7 +2056,6 @@ public:
    */
   virtual bool GetEnd_AoA_FD(void);
 
-
   /*!
    * \brief A virtual member.
    * \return value for the last iteration that the AoA was updated
@@ -4859,10 +4858,10 @@ protected:
   *Secondary_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Secondary_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
-  su2double AoA_Prev;  /*!< \brief Old value of the angle of attack (monitored). */
-  bool Start_AoA_FD;  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
-  bool End_AoA_FD;    /*!< \brief Boolean for end of finite differencing for FixedCL mode */
-
+  su2double AoA_Prev; /*!< \brief Old value of the angle of attack (monitored). */
+  bool Start_AoA_FD,  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
+  End_AoA_FD,         /*!< \brief Boolean for end of finite differencing for FixedCL mode */
+  Update_AoA;         /*!< \brief Boolean to signal Angle of Attack Update */
   unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
