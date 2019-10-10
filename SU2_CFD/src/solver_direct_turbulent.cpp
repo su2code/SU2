@@ -3603,8 +3603,8 @@ void CTurbSASolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   unsigned short nVarMetr = 1, nFluxMetr = 3;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 6;
   su2double vnx[4], vny[4], vnz[4];
-  su2double hesTet[6];
-  su2double Crd[4][3], Grad[4][3][nVarMetr][nFluxMetr];
+  su2double hesTet[6], hesTetVisc[6];
+  su2double Crd[4][3], Grad[4][3][nVarMetr][nFluxMetr], GradVisc[4][3][nVarMetr][nFluxMetr];
 
   //--- note: currently only implemented for Tri
 
