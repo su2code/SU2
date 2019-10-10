@@ -38,8 +38,8 @@
 #include "../../include/variables/CEulerVariable.hpp"
 
 
-CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, Idx_t npoint,
-                               Idx_t ndim, Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
+                               unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -60,7 +60,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
-  for (Idx_t iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
       Residual_Sum.resize(nPoint,nVar);
       Residual_Old.resize(nPoint,nVar);
@@ -87,8 +87,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   su2double val_solution[5] = {su2double(1.0), velocity[0], velocity[1], energy, energy};
   if(nDim==3) val_solution[3] = velocity[2];
 
-  for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = density*val_solution[iVar];
 
   Solution_Old = Solution;
@@ -141,7 +141,7 @@ void CEulerVariable::SetGradient_PrimitiveZero() {
   Gradient_Primitive.storage.setConstant(0.0);
 }
 
-bool CEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
+bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   bool RightVol = true;
 
@@ -164,7 +164,7 @@ bool CEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
 
     /*--- Copy the old solution ---*/
 
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
 
     /*--- Recompute the primitive variables ---*/
@@ -189,7 +189,7 @@ bool CEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
   return RightVol;
 }
 
-void CEulerVariable::SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel) {
+void CEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 

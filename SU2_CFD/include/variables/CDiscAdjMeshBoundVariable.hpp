@@ -59,7 +59,7 @@ public:
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config);
+  CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -76,7 +76,7 @@ public:
    * \brief Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline const su2double* GetBoundDisp_Direct(Idx_t iPoint) const override {
+  inline const su2double* GetBoundDisp_Direct(unsigned long iPoint) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return nullptr;
     return Bound_Disp_Direct[iPoint];
   }
@@ -85,9 +85,9 @@ public:
    * \brief Set the solution for the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBoundDisp_Direct(Idx_t iPoint, const su2double *val_BoundDisp) override {
+  inline void SetBoundDisp_Direct(unsigned long iPoint, const su2double *val_BoundDisp) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Bound_Disp_Direct(iPoint,iDim) = val_BoundDisp[iDim];
   }
 
@@ -95,9 +95,9 @@ public:
    * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
    */
-  inline void SetBoundDisp_Sens(Idx_t iPoint, const su2double *val_sens) override {
+  inline void SetBoundDisp_Sens(unsigned long iPoint, const su2double *val_sens) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Bound_Disp_Sens(iPoint,iDim) = val_sens[iDim];
   }
 
@@ -106,7 +106,7 @@ public:
    * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
    * \return Value of the original Mesh_Coord_Sens iDim.
    */
-  inline su2double GetBoundDisp_Sens(Idx_t iPoint, Idx_t iDim) const override {
+  inline su2double GetBoundDisp_Sens(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Bound_Disp_Sens(iPoint,iDim);
   }
@@ -114,14 +114,14 @@ public:
   /*!
    * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override {
+  inline bool Get_isVertex(unsigned long iPoint) const override {
     return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
-  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
+  inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
     VertexMap.SetIsVertex(iPoint,isVertex);
   }
 
@@ -134,7 +134,7 @@ public:
    * \brief Get the value of the solution in the previous BGS subiteration.
    * \param[out] val_solution - solution in the previous BGS subiteration.
    */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const override {
+  inline su2double Get_BGSSolution_k(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Solution_BGS_k(iPoint,iDim);
   }

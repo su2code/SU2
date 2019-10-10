@@ -38,7 +38,7 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 
 
-CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, Idx_t npoint, Idx_t ndim, Idx_t nvar,
+CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar,
                                  CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
 
   Solution_Old = Solution = val_nu_tilde;
@@ -59,7 +59,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, Idx_
   Vortex_Tilting.resize(nPoint);
 }
 
-void CTurbSAVariable::SetVortex_Tilting(Idx_t iPoint, su2double **PrimGrad_Flow,
+void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow,
                                         su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];

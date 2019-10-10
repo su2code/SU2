@@ -38,7 +38,7 @@
 #include "../../include/variables/CAdjTurbVariable.hpp"
 
 
-CAdjTurbVariable::CAdjTurbVariable(su2double psinu_inf, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+CAdjTurbVariable::CAdjTurbVariable(su2double psinu_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
   /*--- Initialization of variables ---*/

@@ -56,7 +56,7 @@ public:
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config);
+  CMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -73,7 +73,7 @@ public:
    * \brief Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline su2double GetBound_Disp(Idx_t iPoint, Idx_t iDim) const override {
+  inline su2double GetBound_Disp(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Boundary_Displacement(iPoint,iDim);
   }
@@ -82,9 +82,9 @@ public:
    * \brief Set the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBound_Disp(Idx_t iPoint, const su2double *val_BoundDisp) override {
+  inline void SetBound_Disp(unsigned long iPoint, const su2double *val_BoundDisp) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) Boundary_Displacement(iPoint,iDim) = val_BoundDisp[iDim];
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Boundary_Displacement(iPoint,iDim) = val_BoundDisp[iDim];
   }
 
   /*!
@@ -92,7 +92,7 @@ public:
    * \param[in] iDim - Index of the dimension of interest.
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
-  inline void SetBound_Disp(Idx_t iPoint, Idx_t iDim, su2double val_BoundDisp) override {
+  inline void SetBound_Disp(unsigned long iPoint, unsigned long iDim, su2double val_BoundDisp) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     Boundary_Displacement(iPoint,iDim) = val_BoundDisp;
   }
@@ -106,9 +106,9 @@ public:
   /*!
    * \brief Recover the value of the adjoint of the boundary displacements.
    */
-  inline void GetAdjoint_BoundDisp(Idx_t iPoint, su2double *adj_disp) const override {
+  inline void GetAdjoint_BoundDisp(unsigned long iPoint, su2double *adj_disp) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
         adj_disp[iVar] = SU2_TYPE::GetDerivative(Boundary_Displacement(iPoint,iVar));
     }
   }
@@ -116,14 +116,14 @@ public:
   /*!
    * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override {
+  inline bool Get_isVertex(unsigned long iPoint) const override {
     return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
-  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
+  inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
     VertexMap.SetIsVertex(iPoint,isVertex);
   }
 

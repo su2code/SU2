@@ -38,5 +38,5 @@
 #include "../../include/variables/CAdjNSVariable.hpp"
 
 
-CAdjNSVariable::CAdjNSVariable(su2double psirho, const su2double *phi, su2double psie, Idx_t npoint, Idx_t ndim, Idx_t nvar,
+CAdjNSVariable::CAdjNSVariable(su2double psirho, const su2double *phi, su2double psie, unsigned long npoint, unsigned long ndim, unsigned long nvar,
                                CConfig *config) : CAdjEulerVariable(psirho, phi, psie, npoint, ndim, nvar, config) { }

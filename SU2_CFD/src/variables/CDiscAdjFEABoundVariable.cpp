@@ -38,7 +38,7 @@
 #include "../../include/variables/CDiscAdjFEABoundVariable.hpp"
 
 CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel,
-  const su2double *accel, Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config) :
+  const su2double *accel, unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config) :
     CDiscAdjFEAVariable(disp, vel, accel, npoint, ndim, nvar, unsteady, config) {
 
   VertexMap.Reset(nPoint);
@@ -50,7 +50,7 @@ void CDiscAdjFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Count number of vertices and build map ---*/
 
-  Idx_t nBoundPt = VertexMap.Build();
+  unsigned long nBoundPt = VertexMap.Build();
 
   /*--- Allocate ---*/
 

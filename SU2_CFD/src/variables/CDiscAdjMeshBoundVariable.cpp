@@ -38,7 +38,7 @@
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
 
-CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
+CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
 
   nDim = ndim;
@@ -52,7 +52,7 @@ void CDiscAdjMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Count number of vertices and build map ---*/
 
-  Idx_t nBoundPt = VertexMap.Build();
+  unsigned long nBoundPt = VertexMap.Build();
 
   /*--- Allocate ---*/
 

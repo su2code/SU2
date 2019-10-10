@@ -39,7 +39,7 @@
 
 
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                               Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) :
+                               unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
                                CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
@@ -49,7 +49,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 
 bool CIncNSVariable::SetVorticity_StrainMag() {
 
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     /*--- Vorticity ---*/
 
@@ -68,14 +68,14 @@ bool CIncNSVariable::SetVorticity_StrainMag() {
     AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
 
     su2double Div = 0.0;
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Div += Gradient_Primitive(iPoint,iDim+1,iDim);
 
     StrainMag(iPoint) = 0.0;
 
     /*--- Add diagonal part ---*/
 
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
       StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
     }
     if (nDim == 2) {
@@ -100,7 +100,7 @@ bool CIncNSVariable::SetVorticity_StrainMag() {
 }
 
 
-bool CIncNSVariable::SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;

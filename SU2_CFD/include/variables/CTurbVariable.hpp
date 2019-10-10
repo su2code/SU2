@@ -58,7 +58,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -70,13 +70,13 @@ public:
    * \param[in] iPoint - Point index.
    * \return the value of the eddy viscosity.
    */
-  inline su2double GetmuT(Idx_t iPoint) const final { return muT(iPoint); }
+  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
 
   /*!
    * \brief Set the value of the eddy viscosity.
    * \param[in] iPoint - Point index.
    * \param[in] val_muT - Value of the eddy viscosity.
    */
-  inline void SetmuT(Idx_t iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
 };
 

@@ -37,7 +37,7 @@
 
 #include "../../include/variables/CMeshBoundVariable.hpp"
 
-CMeshBoundVariable::CMeshBoundVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
+CMeshBoundVariable::CMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CMeshVariable(npoint, ndim, config) {
 
   VertexMap.Reset(nPoint);
@@ -49,7 +49,7 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Count number of vertices and build map ---*/
 
-  Idx_t nBoundPt = VertexMap.Build();
+  unsigned long nBoundPt = VertexMap.Build();
 
   /*--- Allocate ---*/
 
@@ -58,13 +58,13 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
 void CMeshBoundVariable::Register_BoundDisp(bool input) {
   if (input) {  
-    for (Idx_t iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
         AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
   }
   else {
-    for (Idx_t iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
         AD::RegisterOutput(Boundary_Displacement(iVertex,iVar));
   }
 }

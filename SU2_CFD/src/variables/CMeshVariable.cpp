@@ -37,7 +37,7 @@
 
 #include "../../include/variables/CMeshVariable.hpp"
 
-CMeshVariable::CMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
+CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
 
   /*--- Booleans that determine the kind of problems ---*/
@@ -59,13 +59,13 @@ CMeshVariable::CMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config) :
 
 void CMeshVariable::Register_MeshCoord(bool input) {
   if (input) {
-    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-      for (Idx_t iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
         AD::RegisterInput(Mesh_Coord(iPoint,iDim));
   }
   else {
-    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-      for (Idx_t iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
         AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
   }
 }

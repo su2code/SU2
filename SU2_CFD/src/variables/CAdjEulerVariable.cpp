@@ -38,8 +38,8 @@
 #include "../../include/variables/CAdjEulerVariable.hpp"
 
 
-CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie, Idx_t npoint, Idx_t ndim,
-                                     Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie, unsigned long npoint, unsigned long ndim,
+                                     unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -48,7 +48,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
-  for (Idx_t iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
       Residual_Sum.resize(nPoint,nVar);
       Residual_Old.resize(nPoint,nVar);
@@ -70,8 +70,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   su2double val_solution[5] = {psirho, phi[0], phi[1], psie, psie};
   if(nDim==3) val_solution[3] = phi[2];
   
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_solution[iVar];
 
   Solution_Old = Solution;
@@ -103,7 +103,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
 
 }
 
-bool CAdjEulerVariable::SetPrimVar(Idx_t iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar(unsigned long iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {
 
   bool RightVol = true;
 
@@ -117,7 +117,7 @@ bool CAdjEulerVariable::SetPrimVar(Idx_t iPoint, su2double SharpEdge_Distance, b
 
     /*--- Copy the old solution ---*/
 
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     RightVol = false;
