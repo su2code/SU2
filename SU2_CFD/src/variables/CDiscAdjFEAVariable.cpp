@@ -117,11 +117,9 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
       Geometry_CrossTerm_Derivative [iDim] = 0.0;
       Cross_Term_Derivative[iDim] = 0.0;
       Solution_BGS[iDim]          = 0.0;
+      Solution_BGS_k[iDim]        = 0.0;
     }
   }
-  
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
   
 }
 

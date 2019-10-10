@@ -137,11 +137,9 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     for (iVar = 0; iVar < nVar; iVar++) {
       Cross_Term_Derivative[iVar] = 0.0;
       Solution_BGS[iVar]          = 0.0;
+      Solution_BGS_k[iVar]        = 0.0;
     }
   }
-  
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
 
 }
 
