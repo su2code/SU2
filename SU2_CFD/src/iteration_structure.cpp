@@ -676,6 +676,7 @@ bool CFluidIteration::Monitor(COutput *output,
     unsigned short val_iInst)     {
 
   bool StopCalc = false;
+  CSolver* flow_solver= solver[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -702,7 +703,10 @@ bool CFluidIteration::Monitor(COutput *output,
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
   if (config[val_iZone]->GetFixed_CL_Mode()){
-    bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
+    bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
+    if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config[val_iZone]->GetInnerIter()){
+      if (rank == MASTER_NODE) output->PrintConvergenceSummary();
+    }
     output->SetConvergence(fixed_cl_convergence);
   }
 

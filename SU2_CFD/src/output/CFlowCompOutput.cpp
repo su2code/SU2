@@ -234,7 +234,8 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
-  
+  AddHistoryOutput("CL_CONVERGENCE", "CL_convergence", ScreenOutputFormat::SCIENTIFIC, "CL_CONVERGENCE", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
+
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
     AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
@@ -620,6 +621,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
   
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
+  SetHistoryOutputValue("CL_CONVERGENCE", fabs(flow_solver->GetTotal_CL() - config->GetTarget_CL()));
   
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
