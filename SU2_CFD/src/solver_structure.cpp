@@ -1936,6 +1936,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nDim*nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case ANISO_GRADIENT_VISC:
+      COUNT_PER_POINT  = nDim*nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -2083,6 +2087,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   bufDSend[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim] = node[iPoint]->GetAnisoGrad(jDim*nVar*nDim+iVar*nDim+iDim);
+            break;
+          case ANISO_GRADIENT_VISC:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim] = node[iPoint]->GetAnisoViscGrad(jDim*nVar*nDim+iVar*nDim+iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2255,6 +2265,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   node[iPoint]->SetAnisoGrad(jDim*nVar*nDim+iVar*nDim+iDim, bufDRecv[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim]);
+            break;
+          case ANISO_GRADIENT_VISC:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  node[iPoint]->SetAnisoViscGrad(jDim*nVar*nDim+iVar*nDim+iDim, bufDRecv[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

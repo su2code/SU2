@@ -56,8 +56,10 @@ CVariable::CVariable(void) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
-  AnisoGrad = NULL;  
-  AnisoHess = NULL; 
+  AnisoGrad = NULL;
+  AnisoViscGrad = NULL;
+  AnisoHess = NULL;
+  AnisoViscHess = NULL;
   AnisoMetr = NULL;
 
 }
@@ -80,8 +82,10 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
-  AnisoGrad = NULL;  
-  AnisoHess = NULL; 
+  AnisoGrad = NULL;
+  AnisoViscGrad = NULL;
+  AnisoHess = NULL;
+  AnisoViscHess = NULL;
   AnisoMetr = NULL;
 
   /*--- Initialize the number of solution variables. This version
@@ -118,8 +122,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
-  AnisoGrad = NULL;  
-  AnisoHess = NULL; 
+  AnisoGrad = NULL;
+  AnisoViscGrad = NULL;
+  AnisoHess = NULL;
+  AnisoViscHess = NULL;
   AnisoMetr = NULL;
 
   /*--- Initializate the number of dimension and number of variables ---*/
@@ -158,8 +164,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	}
 
   if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET || config->GetWrt_InriaMesh()){ 
-    AnisoGrad = new su2double[nDim*nVar*nDim];  
-    AnisoHess = new su2double[3*(nDim-1)*nVar*nDim];  
+    AnisoGrad = new su2double[nDim*nVar*nDim];
+    AnisoViscGrad = new su2double[nDim*nVar*nDim];
+    AnisoHess = new su2double[3*(nDim-1)*nVar*nDim];
+    AnisoViscHess = new su2double[3*(nDim-1)*nVar*nDim];  
     AnisoMetr = new su2double[3*(nDim-1)];  
   }
 
@@ -191,7 +199,9 @@ CVariable::~CVariable(void) {
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
   if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
   if (AnisoGrad           != NULL) delete [] AnisoGrad; 
+  if (AnisoViscGrad       != NULL) delete [] AnisoViscGrad; 
   if (AnisoHess           != NULL) delete [] AnisoHess; 
+  if (AnisoViscHess       != NULL) delete [] AnisoViscHess; 
   if (AnisoMetr           != NULL) delete [] AnisoMetr;
 
   if (Gradient != NULL) {
