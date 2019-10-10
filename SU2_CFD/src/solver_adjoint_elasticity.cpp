@@ -79,6 +79,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CS
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
 
+  adjoint = true;
+
   unsigned short iVar, iMarker, iDim;
 
   unsigned long iVertex, iPoint;

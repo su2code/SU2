@@ -42,6 +42,8 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
+  External        = NULL;
+  Solution_Old    = NULL;
   Sensitivity     = NULL;
 
   DualTime_Derivative   = NULL;
@@ -72,6 +74,8 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
+  External        = NULL;
+  External_Old    = NULL;
   Sensitivity     = NULL;
 
   DualTime_Derivative   = NULL;
@@ -94,6 +98,8 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
 
   Solution_Direct = new su2double[nVar];
+  External        = new su2double[nVar];
+  External_Old    = new su2double[nVar];
 
   Sensitivity = new su2double[nDim];
 
@@ -104,9 +110,9 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_solution[iVar];
+    Solution[iVar]      = val_solution[iVar];
+    External[iVar]      = val_solution[iVar];
   }
-
 
   if (dual_time) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -124,7 +130,6 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     Geometry_CrossTerm_Derivative = new su2double[nDim];
     Geometry_CrossTerm_Derivative_Flow = new su2double[nDim];
     Cross_Term_Derivative   = new su2double[nVar];
-    Solution_BGS            = new su2double[nVar];
     Solution_Geometry_BGS_k = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Geometry_Direct[iDim]       = 0.0;
@@ -136,15 +141,16 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     }
     for (iVar = 0; iVar < nVar; iVar++) {
       Cross_Term_Derivative[iVar] = 0.0;
-      Solution_BGS[iVar]          = 0.0;
-    }
-  }
-  if (config->GetMultizone_Problem()){
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_BGS_k[iVar] = 0.0;
     }
   }
 
+  if (config->GetMultizone_Problem()) {
+    Solution_BGS            = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_BGS[iVar]          = 0.0;
+      Solution_BGS_k[iVar]        = 0.0;
+    }
+  }
 }
 
 CDiscAdjVariable::~CDiscAdjVariable() {
@@ -159,6 +165,8 @@ CDiscAdjVariable::~CDiscAdjVariable() {
   if (Solution_Geometry_BGS_k != NULL) delete [] Solution_Geometry_BGS_k;
 
   if (Solution_Direct != NULL) delete [] Solution_Direct;
+  if (External        != NULL) delete [] External;
+  if (External_Old    != NULL) delete [] External_Old;
   if (Sensitivity     != NULL) delete [] Sensitivity;
 
   if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;

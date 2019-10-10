@@ -44,6 +44,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned long iPoint;
   unsigned short iDim, iVar, nLineLets;
 
+  adjoint = true;
+
   nDim = geometry->GetnDim();
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
