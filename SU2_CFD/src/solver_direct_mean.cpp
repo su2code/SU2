@@ -14031,6 +14031,43 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
   delete [] nSol_Send;
   delete [] Sol;
 
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  unsigned short iMesh, iMeshFine;
+  unsigned long iChildren, Point_Fine;
+  su2double Area_Children, Area_Parent, *Solution_Fine;
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+
 }
 
 void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
