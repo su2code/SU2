@@ -3221,11 +3221,6 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
   su2double nu_tilde, dnu_tilde[2];
   bool dummy_bool;
 
-  /*--- MPI solution ---*/
-  
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
-
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -3238,9 +3233,6 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
       }
     }
   }
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<3; ++iNode) {
@@ -3479,11 +3471,6 @@ void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config
   su2double nu_tilde, dnu_tilde[3];
   bool dummy_bool;
 
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
-
   //--- note: currently only implemented for Tet
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -3497,9 +3484,6 @@ void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config
       }
     }
   }
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<4; ++iNode) {

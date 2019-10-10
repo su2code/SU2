@@ -5508,16 +5508,9 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   bool dummy_bool;
   bool viscous = config->GetViscous();
 
-  /*--- MPI solution ---*/
-  
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    //--- recompute primitive variables from communicated solution
-    dummy_bool = node[iPoint]->SetPrimVar(FluidModel);
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
@@ -5526,11 +5519,6 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoGrad(i+1, 0.);
       }
     }
-  }
-
-  if(config->GetViscous()) {
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)  SetPrimitive_Gradient_LS(geometry, config);
   }
 
   for (iElem=0; iElem<nElem; ++iElem) {
@@ -5810,16 +5798,9 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   bool dummy_bool;
   bool viscous = config->GetViscous();
 
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
   //--- note: currently only implemented for Tet
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    //--- recompute primitive variables from communicated solution
-    dummy_bool = node[iPoint]->SetPrimVar(FluidModel);
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
@@ -5829,11 +5810,6 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoGrad(i+2, 0.);
       }
     }
-  }
-
-  if(config->GetViscous()) {
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)  SetPrimitive_Gradient_LS(geometry, config);
   }
 
   for (iElem=0; iElem<nElem; ++iElem) {

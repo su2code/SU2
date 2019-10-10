@@ -573,69 +573,8 @@ void CErrorEstimationDriver::Solver_Preprocessing(CSolver ****solver, CGeometry 
   /*--- Definition of the Class for the solution: solver[DOMAIN][INSTANCE][MESH_0][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
 
-
-  //   /*--- Allocate solution for a template problem ---*/
-
-  // if (template_solver) {
-  //   solver[val_iInst][MESH_0][TEMPLATE_SOL] = new CTemplateSolver(geometry[val_iInst][MESH_0], config);
-  //   DOFsPerPoint += solver[val_iInst][MESH_0][TEMPLATE_SOL]->GetnVar();
-  // }
-
-  //   /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
-  //   /*--- Note that we need both direct and adjoint for the error estimate ---*/
-
-  // if (euler || disc_adj) {
-  //   if (compressible) {
-  //     solver[val_iInst][MESH_0][FLOW_SOL] = new CEulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
-  //     solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  //   }
-  //   if (incompressible) {
-  //     solver[val_iInst][MESH_0][FLOW_SOL] = new CIncEulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
-  //     solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  //   }
-  //   DOFsPerPoint += solver[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
-  // }
-  // if (ns) {
-  //   if (compressible) {
-  //     solver[val_iInst][MESH_0][FLOW_SOL] = new CNSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
-  //   }
-  //   if (incompressible) {
-  //     solver[val_iInst][MESH_0][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
-  //   }
-  //   DOFsPerPoint += solver[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
-  // }
-  // if (turbulent) {
-  //   if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
-  //     solver[val_iInst][MESH_0][TURB_SOL] = new CTurbSASolver(geometry[val_iInst][MESH_0], config, MESH_0, solver[val_iInst][MESH_0][FLOW_SOL]->GetFluidModel() );
-  //     solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  //     solver[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0);
-  //   }
-  //   else if (menter_sst) {
-  //     solver[val_iInst][MESH_0][TURB_SOL] = new CTurbSSTSolver(geometry[val_iInst][MESH_0], config, MESH_0);
-  //     solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  //     solver[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0);
-  //     solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  //   }
-  //   DOFsPerPoint += solver[val_iInst][MESH_0][TURB_SOL]->GetnVar();
-  //   if (transition) {
-  //     solver[val_iInst][MESH_0][TRANS_SOL] = new CTransLMSolver(geometry[val_iInst][MESH_0], config, MESH_0);
-  //     DOFsPerPoint += solver[val_iInst][MESH_0][TRANS_SOL]->GetnVar();
-  //   }
-  // }
-
-  //   /*--- Allocate solution for adjoint problem ---*/
-
-  // if (disc_adj || euler || ns || turbulent) {
-  //   solver[val_iInst][MESH_0][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[val_iInst][MESH_0], config, solver[val_iInst][MESH_0][FLOW_SOL], RUNTIME_FLOW_SYS, MESH_0);
-  //   DOFsPerPoint += solver[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
-  //   if (disc_adj_turb || turbulent) {
-  //     solver[val_iInst][MESH_0][ADJTURB_SOL] = new CDiscAdjSolver(geometry[val_iInst][MESH_0], config, solver[val_iInst][MESH_0][TURB_SOL], RUNTIME_TURB_SYS, MESH_0);
-  //     DOFsPerPoint += solver[val_iInst][MESH_0][ADJTURB_SOL]->GetnVar();
-  //   }
-  // }  
-
-    /*--- Allocate solution for direct problem. ---*/
-    /*--- Note that we need both direct and adjoint for the error estimate ---*/
+  /*--- Allocate solution for direct problem. ---*/
+  /*--- Note that we need both direct and adjoint for the error estimate ---*/
 
   if (euler || disc_adj) {
     if (compressible) {
@@ -680,29 +619,6 @@ void CErrorEstimationDriver::Solver_Preprocessing(CSolver ****solver, CGeometry 
   if (config->GetFSI_Simulation()) update_geo = false;
 
   Solver_Restart(solver, geometry, config, update_geo, val_iInst);
-
-    /*--- Run the preprocessing and postprocessing ---*/
-    /*--- Note that we need both direct and adjoint for the error estimate ---*/
-
-  if (euler || ns || disc_adj) {
-    if (compressible) {
-      solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    }
-    if (incompressible) {
-      solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    }
-  }
-  if (turbulent) {
-    if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
-      solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      solver[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0);
-    }
-    else if (menter_sst) {
-      solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      solver[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0);
-      solver[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    }
-  }
 
 }
 
