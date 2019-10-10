@@ -1044,6 +1044,9 @@ CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short
   Kp = 0.25;
   Ku = 0.75;
   sigma = 1.0;
+
+  if (Minf < EPS)
+    SU2_MPI::Error("AUSM+Up requires a reference Mach number (\"MACH_NUMBER\") greater than 0.", CURRENT_FUNCTION);
 }
 
 CUpwAUSMPLUSUP_Flow::~CUpwAUSMPLUSUP_Flow(void) {
@@ -1269,6 +1272,9 @@ CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned sho
   Minf = config->GetMach();
   Kp = 0.25;
   sigma = 1.0;
+
+  if (Minf < EPS)
+    SU2_MPI::Error("AUSM+Up2 requires a reference Mach number (\"MACH_NUMBER\") greater than 0.", CURRENT_FUNCTION);
 }
 
 CUpwAUSMPLUSUP2_Flow::~CUpwAUSMPLUSUP2_Flow(void) {
