@@ -68,6 +68,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename, AdjExt;
   su2double myArea_Monitored, Area, *Normal;
 
+  adjoint = true;
+
   bool restart  = config->GetRestart();
 
   bool axisymmetric = config->GetAxisymmetric();

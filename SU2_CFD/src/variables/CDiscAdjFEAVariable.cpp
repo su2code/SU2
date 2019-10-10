@@ -110,18 +110,18 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
   Cross_Term_Derivative = NULL;
   Geometry_CrossTerm_Derivative = NULL;
   if (fsi){
-    Cross_Term_Derivative = new su2double[nDim];
+    Cross_Term_Derivative         = new su2double[nDim];
     Geometry_CrossTerm_Derivative = new su2double[nDim];
-    Solution_BGS          = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Geometry_CrossTerm_Derivative [iDim] = 0.0;
       Cross_Term_Derivative[iDim] = 0.0;
-      Solution_BGS[iDim]          = 0.0;
     }
   }
   if (config->GetMultizone_Problem()){
+    Solution_BGS  = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution_BGS_k[iVar] = 0.0;
+      Solution_BGS[iVar]   = 0.0;
     }
   }
   
@@ -202,16 +202,16 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
   if (fsi){
     Cross_Term_Derivative = new su2double[nDim];
     Geometry_CrossTerm_Derivative = new su2double[nDim];
-    Solution_BGS_k        = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Geometry_CrossTerm_Derivative [iDim] = 0.0;
       Cross_Term_Derivative[iDim] = 0.0;
-      Solution_BGS[iDim]          = 0.0;
     }
   }
   if (config->GetMultizone_Problem()){
+    Solution_BGS   = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution_BGS_k[iVar] = 0.0;
+      Solution_BGS[iDim]   = 0.0;
     }
   }
 
