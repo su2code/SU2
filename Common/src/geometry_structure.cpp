@@ -2686,7 +2686,7 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   bool input    = true;
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if(config->GetMultiphysicsDiscrete_Adjoint()) {
+    if(config->GetMultizone_Problem()) {
       for (iDim = 0; iDim < nDim; iDim++) {
         AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
         node[iPoint]->SetAdjIndices(input);
@@ -2705,7 +2705,7 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    if(config->GetMultiphysicsDiscrete_Adjoint()) {
+    if(config->GetMultizone_Problem()) {
       for (iDim = 0; iDim < nDim; iDim++) {
 //        In case we are dealing with mesh adjoints the following two lines might be needed
 //        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);

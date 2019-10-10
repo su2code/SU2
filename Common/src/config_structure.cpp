@@ -63,7 +63,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high) {
   
   base_config = true;
   
@@ -72,8 +72,8 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  iZone = val_nZone;
-  nZone = val_nZone;
+  iZone = 0;
+  nZone = 1;
 
   /*--- Initialize pointers to Null---*/
 
@@ -90,6 +90,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   /*--- Set the default values for all of the options that weren't set ---*/
       
   SetDefault();
+  
+  /*--- Set number of zone ---*/
+  
+  SetnZone();
 
   /*--- Configuration file postprocessing ---*/
 
@@ -157,6 +161,8 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
   if ((rank == MASTER_NODE) && verb_high)
     SetOutput(val_software, val_iZone);
 
+  Multizone_Problem = config->GetMultizone_Problem();
+  
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
@@ -874,8 +880,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
-  /*!\brief MULTIPHYSICS_DISCRETE_ADJOINT  \n DESCRIPTION: Boolean whether multiphysics adjoint shall be used \n Options: NO, YES \ingroup Config */
-  addBoolOption("MULTIPHYSICS_DISCRETE_ADJOINT", MultiphysicsDiscreteAdjoint, false);
   /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
   addBoolOption("FULL_TAPE", FullTape, YES);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -1793,6 +1797,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
+  /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
+  addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
   /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
   addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
@@ -7494,7 +7500,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   filename = filename + string(ext);
   
   /*--- Append the zone number if multizone problems ---*/
-  if (GetnZone() > 1)
+  if (Multizone_Problem)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
 
   /*--- Append the zone number if multiple instance problems ---*/
@@ -7547,7 +7553,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
     
-    if (GetnZone() > 1 ) {
+    if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
@@ -7562,7 +7568,7 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     char buffer[50];
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
-    if (GetnZone() > 1 ) {
+    if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }

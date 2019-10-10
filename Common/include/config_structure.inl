@@ -1667,6 +1667,8 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 
+inline bool CConfig::GetWrt_AD_Statistics(void) { return Wrt_AD_Statistics; }
+
 inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
 
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
@@ -1902,10 +1904,6 @@ inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_Lo
 inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
-
-inline void CConfig::SetMultiphysicsDiscrete_Adjoint(bool multi_disc_adj) { MultiphysicsDiscreteAdjoint = multi_disc_adj; }
-
-inline bool CConfig::GetMultiphysicsDiscrete_Adjoint() { return MultiphysicsDiscreteAdjoint; }
 
 inline bool CConfig::GetFull_Tape() { return FullTape; }
 

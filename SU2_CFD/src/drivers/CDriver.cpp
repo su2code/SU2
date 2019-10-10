@@ -570,7 +570,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
   
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false);  
+  driver_config = new CConfig(config_file_name, SU2_CFD, false);  
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -601,9 +601,6 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
-      if(driver_config->GetDiscrete_Adjoint()) {
-        config_container[iZone]->SetMultiphysicsDiscrete_Adjoint(true);
-      }
     }
   }
   

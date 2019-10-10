@@ -38,10 +38,11 @@
 #include "../../include/drivers/CDiscAdjMultizoneDriver.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
-                                      unsigned short val_nZone,
-                                      SU2_Comm MPICommunicator) : CMultizoneDriver(confFile,
-                                                                                  val_nZone,
-                                                                                  MPICommunicator) {
+                                                 unsigned short val_nZone,
+                                                 SU2_Comm MPICommunicator)
+
+                        : CMultizoneDriver(confFile, val_nZone, MPICommunicator) {
+
   retape = !config_container[ZONE_0]->GetFull_Tape();
 
   RecordingState = NONE;
@@ -148,16 +149,11 @@ void CDiscAdjMultizoneDriver::Run() {
   bool            checkSensitivity  = false;
   unsigned short  jZone             = 0,
                   wrt_sol_freq      = config_container[ZONE_0]->GetVolume_Wrt_Freq();
-  unsigned long   iIter             = 0,
-                  nIter             = 0,
+  unsigned long   nIter             = 0,
                   iOuter_Iter       = 0,
                   iInner_Iter       = 0;
 
-  if (nZone == 1) {
-    nIter = driver_config->GetnIter();
-  } else {
-    nIter = driver_config->GetnOuter_Iter();
-  }
+  nIter = driver_config->GetnOuter_Iter();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -170,21 +166,15 @@ void CDiscAdjMultizoneDriver::Run() {
     Set_BGSSolution(iZone);
   }
 
-  /*--- Loop over the number of inner (nZone = 1) or coupled outer iterations ---*/
+  /*--- Loop over the number of outer iterations. ---*/
 
-  for (iIter = 0; iIter < nIter; iIter++) {
+  for (iOuter_Iter = 0; iOuter_Iter < nIter; iOuter_Iter++) {
 
-    if (nZone == 1) {
-      iInner_Iter = iIter;
-      config_container[ZONE_0]->SetInnerIter(iInner_Iter);
+    for (iZone = 0; iZone < nZone; iZone++) {
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
     }
-    else {
-      iOuter_Iter = iIter;
-      for (iZone = 0; iZone < nZone; iZone++) {
-        config_container[iZone]->SetOuterIter(iOuter_Iter);
-        driver_config->SetOuterIter(iOuter_Iter);
-      }
-    }
+
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
      *    respect to the state (and possibly the mesh coordinate) variables.
@@ -227,14 +217,14 @@ void CDiscAdjMultizoneDriver::Run() {
         SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
-      /*--- Evaluate the objective function gradient w.rt. to solution contributions from iZone.
+      /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone.
        *    (We always initialize from Solution_BGS_k and extract to Solution.) ---*/
 
       AD::ClearAdjoints();
 
       SetAdj_ObjFunction();
 
-      AD::ComputeAdjoint(3,0);
+      AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
 
       iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                   solver_container, numerics_container, config_container,
@@ -284,14 +274,14 @@ void CDiscAdjMultizoneDriver::Run() {
         }
       }
 
-      // TODO: update the off-diagonals here
+      // TODO: Add an option to _already_ update off-diagonals here (i.e., in the zone-loop)
 
       /*--- Compute residual from Solution and Solution_BGS_k. ---*/
 
       SetResidual_BGS(iZone);
 
       /*--- Save Solution to Solution_BGS_k for a next outer iteration.
-       *    (Might be overwritten when entering another zone.) ---*/
+       *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
     }
@@ -307,7 +297,8 @@ void CDiscAdjMultizoneDriver::Run() {
                                                  config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInner_Iter);
     }
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
+    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
+                                              driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
     /*--- Check for convergence. ---*/
 
@@ -319,13 +310,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Compute the geometrical sensitivities and write them to file. ---*/
 
-    if (nZone == 1) {
-      checkSensitivity = ((iInner_Iter+1 >= nIter) ||
-                          (iInner_Iter % wrt_sol_freq == 0));
-    } else {
-      checkSensitivity = ((iOuter_Iter+1 >= nIter) ||
-                          (iOuter_Iter % wrt_sol_freq == 0));
-    }
+    checkSensitivity = ((iOuter_Iter+1 >= nIter) ||
+                        (iOuter_Iter % wrt_sol_freq == 0));
 
     if (checkSensitivity || StopCalc){
 
@@ -389,7 +375,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
         output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
                                                  config_container[iZone],
-                                                 solver_container[iZone][INST_0][MESH_0], iIter, StopCalc);
+                                                 solver_container[iZone][INST_0][MESH_0], iOuter_Iter, StopCalc);
       }
     }
 
@@ -500,7 +486,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
 
-    //  AD::PrintStatistics();
+    if(config_container[record_zone]->GetWrt_AD_Statistics()) {
+
+      AD::PrintStatistics();
+    }
+
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
 
@@ -593,7 +583,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    nMarker_Analyze = config_container[iZone]->GetnMarker_Monitoring();
+    nMarker_Analyze = config_container[iZone]->GetnMarker_Analyze();
 
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 

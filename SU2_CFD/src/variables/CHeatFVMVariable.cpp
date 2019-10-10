@@ -77,6 +77,6 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx
   Max_Lambda_Visc.resize(nPoint);
   Delta_Time.resize(nPoint);
 
-  if (config->GetMultizone_Problem() || config->GetMultiphysicsDiscrete_Adjoint())
+  if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 }

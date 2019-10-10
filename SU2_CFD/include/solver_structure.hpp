@@ -568,7 +568,6 @@ public:
   /*!
    * \brief Add External_Old to Solution vector.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
    */
   void Add_ExternalOld_To_Solution(CGeometry *geometry);
 
@@ -11158,7 +11157,7 @@ class CHeatSolverFVM : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
   su2double **HeatFlux, *HeatFlux_per_Marker, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
-            *AvgTemperature_per_Marker, Total_AvgTemperature, AllBound_AvgTemperature,
+            *AverageT_per_Marker, Total_AverageT, AllBound_AverageT,
             *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
   su2double ***ConjugateVar, ***InterfaceVar;
