@@ -95,7 +95,14 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     bool found = false;
     for (unsigned short iField = 0; iField < convFields.size(); iField++)
       if (convFields[iField] == "DELTA_CL") found = true;
-    if (!found) convFields.emplace_back("DELTA_CL");
+    if (!found) {
+      if (rank == MASTER_NODE) 
+        cout<<"  Fixed CL: Adding DELTA_CL as Convergence Field to ensure convergence to target CL"<<endl;
+      convFields.emplace_back("DELTA_CL");
+      newFunc.resize(convFields.size());
+      oldFunc.resize(convFields.size());
+      cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
+    }
   }
 }
 
