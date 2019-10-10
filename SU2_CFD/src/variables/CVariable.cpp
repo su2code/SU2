@@ -51,7 +51,7 @@ CVariable::CVariable(Idx_t npoint, Idx_t nvar, CConfig *config) {
    in the simulation ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetMultizone_Problem() || config->GetMultiphysicsDiscrete_Adjoint())
+  if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
@@ -90,12 +90,12 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
 
   Non_Physical.resize(nPoint) = false;
 
-  if(config->GetMultiphysicsDiscrete_Adjoint() && config->GetAD_Mode()) {
+  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     Input_AdjIndices.resize(nPoint,nVar) = -1;
     Output_AdjIndices.resize(nPoint,nVar) = -1;
   }
 
-  if (config->GetMultizone_Problem() || config->GetMultiphysicsDiscrete_Adjoint())
+  if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 

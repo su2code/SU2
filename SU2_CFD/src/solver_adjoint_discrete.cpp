@@ -266,7 +266,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  if(config->GetMultiphysicsDiscrete_Adjoint()) {
+  if(config->GetMultizone_Problem()) {
     direct_solver->GetNodes()->RegisterSolution_intIndexBased(input);
     direct_solver->GetNodes()->SetAdjIndices(input);
   } else {
@@ -380,7 +380,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration ---*/
   bool input = false;
 
-  if(config->GetMultiphysicsDiscrete_Adjoint()) {
+  if(config->GetMultizone_Problem()) {
     direct_solver->GetNodes()->RegisterSolution_intIndexBased(input);
     direct_solver->GetNodes()->SetAdjIndices(input);
   }
@@ -487,13 +487,13 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the old solution ---*/
 
-  if(!config->GetMultiphysicsDiscrete_Adjoint()) nodes->Set_OldSolution();
+  if(!config->GetMultizone_Problem()) nodes->Set_OldSolution();
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Extract the adjoint solution ---*/
     
-    if(config->GetMultiphysicsDiscrete_Adjoint()) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->GetAdjointSolution_intIndexBased(iPoint,Solution);
     }
     else {
@@ -751,7 +751,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetMultiphysicsDiscrete_Adjoint()) {
+      if(config->GetMultizone_Problem()) {
         Solution[iVar] = nodes->Get_BGSSolution_k(iPoint,iVar);
       }
       else {
@@ -768,7 +768,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
-    if(config->GetMultiphysicsDiscrete_Adjoint()) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->SetAdjointSolution_intIndexBased(iPoint,Solution);
     }
     else {
@@ -825,7 +825,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      if(config->GetMultiphysicsDiscrete_Adjoint()) {
+      if(config->GetMultizone_Problem()) {
         Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
       }
       else {
@@ -1087,7 +1087,7 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   /*--- Compute the BGS solution (adding the cross term) ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      if(config->GetMultiphysicsDiscrete_Adjoint()) {
+      if(config->GetMultizone_Problem()) {
         bgs_sol = nodes->GetSolution(iPoint,iVar);
       }
       else {

@@ -757,6 +757,7 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_AD_Statistics,          /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
@@ -976,7 +977,6 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,       /*!< \brief AD-based discrete adjoint mode. */
-  MultiphysicsDiscreteAdjoint,  /*!< \brief Use multiphysics discrete adjoint. */
   FullTape;                     /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
@@ -1406,7 +1406,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
@@ -3247,6 +3247,12 @@ public:
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
   bool GetWrt_Performance(void);
+
+  /*!
+   * \brief Get information about the computational graph (e.g. memory usage) when using AD in reverse mode.
+   * \return <code>TRUE</code> means that the tape statistics will be written after each recording.
+   */
+  bool GetWrt_AD_Statistics(void);
   
   /*!
    * \brief Get information about writing the mesh quality metrics to the visualization files.
@@ -8435,17 +8441,6 @@ public:
   * \return the full tape indicator.
   */
   bool GetFull_Tape(void);
-
-  /*!
-   * \brief Set the indicator whether we are using the multiphysics discrete adjoint driver.
-   */
-  void SetMultiphysicsDiscrete_Adjoint(bool multi_disc_adj);
-
-  /*!
-   * \brief Get the indicator whether we are using the multiphysics discrete adjoint driver.
-   * \return the multiphysics discrete adjoint indicator.
-   */
-  bool GetMultiphysicsDiscrete_Adjoint(void);
   
   /*!
    * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems

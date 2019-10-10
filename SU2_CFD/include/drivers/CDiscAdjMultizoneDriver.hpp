@@ -100,21 +100,16 @@ public:
   /*!
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
-   * \brief Run an discrete adjoint update of all solvers within multiple zones.
+   * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
-  void Run();
-
-//  /*!
-//   * \brief Check the convergence at the outer level.
-//   */
-//  bool OuterConvergence(unsigned long OuterIter);
+  void Run() override;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   * \param[in] kind_recording - Kind of variables with regard to which we are recording.
    * \param[in] tape_type - indicator which part of a solution update will be recorded
    * \param[in] record_zone - zone where solution update will be recorded
    */
@@ -122,11 +117,14 @@ public:
 
   /*!
    * \brief Run one direct iteration in a zone.
+   * \param[in] iZone - Zone in which we run an iteration.
+   * \param[in] kind_recording - Kind of variables with regard to which we are recording.
    */
   void DirectIteration(unsigned short iZone, unsigned short kind_recording);
 
   /*!
-   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   * \brief Set the objective function.
+   * \param[in] kind_recording - Kind of variables with regard to which we are recording.
    */
   void SetObjFunction(unsigned short kind_recording);
 

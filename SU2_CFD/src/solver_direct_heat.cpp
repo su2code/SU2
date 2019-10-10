@@ -158,13 +158,13 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
       Smatrix[iDim] = new su2double [nDim];
   }
 
-  HeatFlux_per_Marker       = new su2double[nMarker];
-  AvgTemperature_per_Marker = new su2double[nMarker];
-  Surface_Areas             = new su2double[config->GetnMarker_HeatFlux()];
+  HeatFlux_per_Marker = new su2double[nMarker];
+  AverageT_per_Marker = new su2double[nMarker];
+  Surface_Areas       = new su2double[config->GetnMarker_HeatFlux()];
 
   for(iMarker = 0; iMarker < nMarker; iMarker++) {
     HeatFlux_per_Marker[iMarker]        = 0.0;
-    AvgTemperature_per_Marker[iMarker]  = 0.0;
+    AverageT_per_Marker[iMarker]  = 0.0;
   }
   for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
     Surface_Areas[iMarker] = 0.0;
@@ -172,7 +172,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   Set_Heatflux_Areas(geometry, config);
 
-  /*--- Non-dimensionalization of heat equation */
+  /*--- Set the reference values for temperature ---*/
 
   su2double Temperature_FreeStream = config->GetInc_Temperature_Init();
   config->SetTemperature_FreeStream(Temperature_FreeStream);
@@ -191,10 +191,24 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
 
-  su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
+  /*--- Set the reference values for heat fluxes. If the heat solver runs stand-alone,
+   *    thermal conductivity is read directly from config file ---*/
+
+  if (heat_equation) {
+
+    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
+
+    config->SetThermalDiffusivity_Solid(config->GetThermalConductivity_Solid() / rho_cp);
+    config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);
+  }
+  else {
+
+    config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
+  }
 
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
-   used for IO with a donor cell ---*/
+   used for communications with donor cells ---*/
+
   unsigned short nConjVariables = 4;
 
   ConjugateVar = new su2double** [nMarker];
@@ -219,13 +233,6 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
       HeatFlux[iMarker][iVertex] = 0.0;
     }
   }
-  
-  /*--- If the heat solver runs stand-alone, we have to set the reference values ---*/
-  if(heat_equation) {
-    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
-    su2double thermal_diffusivity_solid = config->GetThermalConductivity_Solid() / rho_cp;
-    config->SetThermalDiffusivity_Solid(thermal_diffusivity_solid);
-  }
 
   if (multizone){
     /*--- Initialize the BGS residuals. ---*/
@@ -242,10 +249,13 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
-  if (flow)
+  if (flow) {
     nodes = new CHeatFVMVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
-  else
+  }
+  else {
+    su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
     nodes = new CHeatFVMVariable(Temperature_Solid_Freestream_ND, nPoint, nDim, nVar, config);
+  }
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -254,6 +264,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   CompleteComms(geometry, config, SOLUTION);
 
   /*--- Add the solver name (max 8 characters) ---*/
+
   SolverName = "HEAT";
 }
 
@@ -283,10 +294,12 @@ void CHeatSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Initialize the residual vector ---*/
+
     LinSysRes.SetBlock_Zero(iPoint);
   }
 
   /*--- Initialize the Jacobian matrices ---*/
+
   Jacobian.SetValZero();
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -298,6 +311,7 @@ void CHeatSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
+
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   
@@ -1175,11 +1189,10 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 
               HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
               HeatFlux          = HeatFluxDensity * Area;
-
             }
             else {
 
-              HeatFluxDensity = GetConjugateHeatVariable(iMarker, iVertex, 1)/rho_cp_solid;
+              HeatFluxDensity = GetConjugateHeatVariable(iMarker, iVertex, 1)/config->GetHeat_Flux_Ref();
               HeatFlux        = HeatFluxDensity*Area;
             }
 
@@ -1202,27 +1215,25 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iDim;
-  su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
-      thermal_conductivity, thermal_diffusivity;
+  su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, thermal_diffusivity;
   string Marker_Tag, HeatFlux_Tag;
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+
 #ifdef HAVE_MPI
-  su2double MyAllBound_HeatFlux, MyAllBound_AvgTemperature;
+  su2double MyAllBound_HeatFlux, MyAllBound_AverageT;
 #endif
 
-  cp_fluid = config->GetSpecific_Heat_Cp();
-  rho_cp_solid = config->GetSpecific_Heat_Cp_Solid()*config->GetDensity_Solid();
-
   AllBound_HeatFlux = 0.0;
-  AllBound_AvgTemperature = 0.0;
+  AllBound_AverageT = 0.0;
 
   for ( iMarker = 0; iMarker < nMarker; iMarker++ ) {
 
-    AvgTemperature_per_Marker[iMarker]  = 0.0;
-    HeatFlux_per_Marker[iMarker]        = 0.0;
+    AverageT_per_Marker[iMarker]  = 0.0;
+    HeatFlux_per_Marker[iMarker]  = 0.0;
 
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
@@ -1256,13 +1267,12 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
 
           if(flow) {
             thermal_diffusivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();
-            thermal_conductivity = thermal_diffusivity*config->GetViscosity_Ref()*cp_fluid;
           }
           else {
-            thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
+            thermal_diffusivity = config->GetThermalDiffusivity_Solid();
           }
 
-          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn; // TDE *config->GetHeat_Flux_Ref();
+          HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
           
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
           
@@ -1297,45 +1307,45 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
 
           if(flow) {
             thermal_diffusivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();
-            thermal_conductivity = thermal_diffusivity*config->GetViscosity_Ref()*cp_fluid;
           }
           else {
-            thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
+            thermal_diffusivity = config->GetThermalDiffusivity_Solid();
           }
 
-          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn; // TDE *config->GetHeat_Flux_Ref();
+          HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
           
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
 
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
+
           if ( Boundary == HEAT_FLUX ) {
 
-            AvgTemperature_per_Marker[iMarker] += Twall*config->GetTemperature_Ref()*Area;
+            AverageT_per_Marker[iMarker] += Twall*config->GetTemperature_Ref()*Area;
           }
         }
       }
     }
 
     if (Monitoring == YES) {
-      AllBound_HeatFlux       += HeatFlux_per_Marker[iMarker];
-      AllBound_AvgTemperature += AvgTemperature_per_Marker[iMarker];
+
+      AllBound_HeatFlux += HeatFlux_per_Marker[iMarker];
+      AllBound_AverageT += AverageT_per_Marker[iMarker];
     }
   }
 
 #ifdef HAVE_MPI
   MyAllBound_HeatFlux = AllBound_HeatFlux;
-  MyAllBound_AvgTemperature = AllBound_AvgTemperature;
+  MyAllBound_AverageT = AllBound_AverageT;
   SU2_MPI::Allreduce(&MyAllBound_HeatFlux, &AllBound_HeatFlux, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_AvgTemperature, &AllBound_AvgTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_AverageT, &AllBound_AverageT, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   if (Total_HeatFlux_Areas_Monitor != 0.0) {
-    Total_AvgTemperature = AllBound_AvgTemperature/Total_HeatFlux_Areas_Monitor;
+    Total_AverageT = AllBound_AverageT/Total_HeatFlux_Areas_Monitor;
   }
   else {
-    Total_AvgTemperature = 0.0;
+    Total_AverageT = 0.0;
   }
-
 
   Total_HeatFlux = AllBound_HeatFlux;
 }

@@ -95,7 +95,6 @@ public:
    * \param[in] iMarker - Index of the surface marker.
    * \param[in] iVertex - Index of the vertex on the marker.
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
-  
-
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint,
+                       unsigned short iMarker, unsigned long iVertex);
 };
