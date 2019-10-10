@@ -264,16 +264,16 @@ def main():
     ### Coupled FSI Adjoint         ###
     ###################################
    
-#    # Structural model
-#    discadj_fsi           = TestCase('discadj_fsi')
-#    discadj_fsi.cfg_dir   = "disc_adj_fsi"
-#    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
-#    discadj_fsi.test_iter = 3000
-#    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
-#    discadj_fsi.su2_exec  = "parallel_computation.py -f"
-#    discadj_fsi.timeout   = 1600
-#    discadj_fsi.tol       = 0.00001
-#    test_list.append(discadj_fsi)
+    # Structural model
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "config.cfg"
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
+    discadj_fsi.su2_exec  = "parallel_computation.py -f"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)
 
     ######################################
     ### RUN TESTS                      ###
