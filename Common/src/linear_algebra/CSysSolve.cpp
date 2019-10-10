@@ -242,7 +242,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     norm_r = r.norm();
     norm0  = b.norm();
-    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
@@ -391,7 +391,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType beta = W[0].norm();
 
-  if ( (beta < tol*norm0) || (beta < eps) ) {
+  if ((beta < tol*norm0) || (beta < eps)) {
 
     /*---  System is already solved ---*/
 
@@ -533,7 +533,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     norm_r = r.norm();
     norm0  = b.norm();
-    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
       return 0;
     }
