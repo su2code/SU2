@@ -68,7 +68,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNSVariable(su2double density, const su2double *velocity, su2double energy,
-              Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+              unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -78,21 +78,21 @@ public:
   /*!
    * \brief Set the laminar viscosity.
    */
-  inline void SetLaminarViscosity(Idx_t iPoint, su2double laminarViscosity) override {
+  inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
     Primitive(iPoint,nDim+5) = laminarViscosity;
   }
 
   /*!
    * \brief Set the laminar viscosity.
    */
-  inline void SetThermalConductivity(Idx_t iPoint, su2double thermalConductivity) override {
+  inline void SetThermalConductivity(unsigned long iPoint, su2double thermalConductivity) override {
     Primitive(iPoint,nDim+7) = thermalConductivity;
   }
 
   /*!
    * \brief Set the specific heat Cp.
    */
-  inline void SetSpecificHeatCp(Idx_t iPoint, su2double val_Cp) override { Primitive(iPoint,nDim+8) = val_Cp; }
+  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override { Primitive(iPoint,nDim+8) = val_Cp; }
 
   /*!
    * \brief Set the vorticity value.
@@ -103,36 +103,36 @@ public:
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
-  inline void SetEddyViscosity(Idx_t iPoint, su2double eddy_visc) override { Primitive(iPoint,nDim+6) = eddy_visc; }
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override { Primitive(iPoint,nDim+6) = eddy_visc; }
 
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+5); }
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+5); }
 
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+7); }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+7); }
 
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
-  inline su2double GetEddyViscosity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+6); }
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+6); }
 
   /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P  of the flow.
    */
-  inline su2double GetSpecificHeatCp(Idx_t iPoint) const override { return Primitive(iPoint,nDim+8); }
+  inline su2double GetSpecificHeatCp(unsigned long iPoint) const override { return Primitive(iPoint,nDim+8); }
 
   /*!
    * \brief Set the temperature at the wall
    */
-  inline void SetWallTemperature(Idx_t iPoint, su2double temperature_wall) override {
+  inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
     Primitive(iPoint,0) = temperature_wall;
   }
 
@@ -140,76 +140,76 @@ public:
    * \brief Get the value of the vorticity.
    * \return Value of the vorticity.
    */
-  inline su2double *GetVorticity(Idx_t iPoint) override { return Vorticity[iPoint]; }
+  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the value of the magnitude of rate of strain.
    * \return Value of the rate of strain magnitude.
    */
-  inline su2double GetStrainMag(Idx_t iPoint) const override { return StrainMag(iPoint); }
+  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set the derivative of temperature with respect to density (at constant internal energy).
    */
-  inline void SetdTdrho_e(Idx_t iPoint, su2double dTdrho_e) override { Secondary(iPoint,2) = dTdrho_e;}
+  inline void SetdTdrho_e(unsigned long iPoint, su2double dTdrho_e) override { Secondary(iPoint,2) = dTdrho_e;}
 
   /*!
    * \brief Set the derivative of temperature with respect to internal energy (at constant density).
    */
-  inline void SetdTde_rho(Idx_t iPoint, su2double dTde_rho) override { Secondary(iPoint,3) = dTde_rho;}
+  inline void SetdTde_rho(unsigned long iPoint, su2double dTde_rho) override { Secondary(iPoint,3) = dTde_rho;}
 
   /*!
    * \brief Set the derivative of laminar viscosity with respect to density (at constant temperature).
    */
-  inline void Setdmudrho_T(Idx_t iPoint, su2double dmudrho_T) override { Secondary(iPoint,4) = dmudrho_T;}
+  inline void Setdmudrho_T(unsigned long iPoint, su2double dmudrho_T) override { Secondary(iPoint,4) = dmudrho_T;}
 
   /*!
    * \brief Set the derivative of laminar viscosity with respect to temperature (at constant density).
    */
-  inline void SetdmudT_rho(Idx_t iPoint, su2double dmudT_rho) override { Secondary(iPoint,5) = dmudT_rho;}
+  inline void SetdmudT_rho(unsigned long iPoint, su2double dmudT_rho) override { Secondary(iPoint,5) = dmudT_rho;}
 
   /*!
    * \brief Set the derivative of thermal conductivity with respect to density (at constant temperature).
    */
-  inline void Setdktdrho_T(Idx_t iPoint, su2double dktdrho_T) override { Secondary(iPoint,6) = dktdrho_T;}
+  inline void Setdktdrho_T(unsigned long iPoint, su2double dktdrho_T) override { Secondary(iPoint,6) = dktdrho_T;}
 
   /*!
    * \brief Set the derivative of thermal conductivity with respect to temperature (at constant density).
    */
-  inline void SetdktdT_rho(Idx_t iPoint, su2double dktdT_rho) override { Secondary(iPoint,7) = dktdT_rho;}
+  inline void SetdktdT_rho(unsigned long iPoint, su2double dktdT_rho) override { Secondary(iPoint,7) = dktdT_rho;}
 
   /*!
    * \brief Set all the primitive variables for compressible flows
    */
-  bool SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
 
   /*!
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
-  void SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel) override;
+  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
   /*!
    * \brief Set the value of the wall shear stress computed by a wall function.
    */
-  inline void SetTauWall(Idx_t iPoint, su2double val_tau_wall) override { Tau_Wall(iPoint) = val_tau_wall; }
+  inline void SetTauWall(unsigned long iPoint, su2double val_tau_wall) override { Tau_Wall(iPoint) = val_tau_wall; }
 
   /*!
    * \brief Get the value of the wall shear stress computed by a wall function.
    * \return Value of the wall shear stress computed by a wall function.
    */
-  inline su2double GetTauWall(Idx_t iPoint) const override { return Tau_Wall(iPoint); }
+  inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
 
   /*!
    * \brief Get the DES length scale
    * \return Value of the DES length Scale.
    */
-  inline su2double GetDES_LengthScale(Idx_t iPoint) const override { return DES_LengthScale(iPoint); }
+  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
 
   /*!
    * \brief Set the DES Length Scale.
    */
-  inline void SetDES_LengthScale(Idx_t iPoint, su2double val_des_lengthscale) override {
+  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override {
     DES_LengthScale(iPoint) = val_des_lengthscale;
   }
 
@@ -218,24 +218,24 @@ public:
    * \param[in] val_delta - A scalar measure of the grid size
    * \param[in] val_const_DES - The DES constant (C_DES)
    */
-  void SetRoe_Dissipation_NTS(Idx_t iPoint, su2double val_delta, su2double val_const_DES) override;
+  void SetRoe_Dissipation_NTS(unsigned long iPoint, su2double val_delta, su2double val_const_DES) override;
 
   /*!
    * \brief Set the new solution for Roe Dissipation.
    */
-  void SetRoe_Dissipation_FD(Idx_t iPoint, su2double wall_distance) override;
+  void SetRoe_Dissipation_FD(unsigned long iPoint, su2double wall_distance) override;
 
   /*!
    * \brief Get the Roe Dissipation Coefficient.
    * \return Value of the Roe Dissipation.
    */
-  inline su2double GetRoe_Dissipation(Idx_t iPoint) const override { return Roe_Dissipation(iPoint); }
+  inline su2double GetRoe_Dissipation(unsigned long iPoint) const override { return Roe_Dissipation(iPoint); }
 
   /*!
    * \brief Set the Roe Dissipation Coefficient.
    * \param[in] val_dissipation - Value of the Roe dissipation factor.
    */
-  inline void SetRoe_Dissipation(Idx_t iPoint, su2double val_dissipation) override {
+  inline void SetRoe_Dissipation(unsigned long iPoint, su2double val_dissipation) override {
     Roe_Dissipation(iPoint) = val_dissipation;
   }
 

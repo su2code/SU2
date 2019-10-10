@@ -38,7 +38,7 @@
 #include "../../include/variables/CVariable.hpp"
 
 
-CVariable::CVariable(Idx_t npoint, Idx_t nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) {
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -55,7 +55,7 @@ CVariable::CVariable(Idx_t npoint, Idx_t nvar, CConfig *config) {
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
-CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;
@@ -125,38 +125,38 @@ void CVariable::Set_OldExternal() { External_Old = External; }
 
 void CVariable::RegisterSolution(bool input) {
   if (input) {
-    for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(Idx_t iVar=0; iVar<nVar; ++iVar)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+      for(unsigned long iVar=0; iVar<nVar; ++iVar)
         AD::RegisterInput(Solution(iPoint,iVar));
   }
   else {
-    for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(Idx_t iVar=0; iVar<nVar; ++iVar)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+      for(unsigned long iVar=0; iVar<nVar; ++iVar)
         AD::RegisterOutput(Solution(iPoint,iVar));
   }
 }
 
 void CVariable::RegisterSolution_time_n() {
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(Idx_t iVar=0; iVar<nVar; ++iVar)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n(iPoint,iVar));
 }
 
 void CVariable::RegisterSolution_time_n1() {
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(Idx_t iVar=0; iVar<nVar; ++iVar)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n1(iPoint,iVar));
 }
 
 void CVariable::RegisterSolution_intIndexBased(bool input) {
   if (input) {
-    for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(Idx_t iVar=0; iVar<nVar; ++iVar)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+      for(unsigned long iVar=0; iVar<nVar; ++iVar)
         AD::RegisterInput_intIndexBased(Solution(iPoint,iVar));
   }
   else {
-    for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(Idx_t iVar=0; iVar<nVar; ++iVar)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+      for(unsigned long iVar=0; iVar<nVar; ++iVar)
         AD::RegisterOutput(Solution(iPoint,iVar));
   }
 }
@@ -164,7 +164,7 @@ void CVariable::RegisterSolution_intIndexBased(bool input) {
 void CVariable::SetAdjIndices(bool input) {
   su2matrix<int>& indices = input? Input_AdjIndices : Output_AdjIndices;
   
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(Idx_t iVar=0; iVar < nVar; ++iVar)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for(unsigned long iVar=0; iVar < nVar; ++iVar)
       AD::SetAdjIndex(indices(iPoint,iVar), Solution(iPoint,iVar));
 }

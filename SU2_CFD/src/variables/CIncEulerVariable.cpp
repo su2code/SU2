@@ -38,8 +38,8 @@
 #include "../../include/variables/CIncEulerVariable.hpp"
 
 
-CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, Idx_t npoint,
-                                     Idx_t ndim, Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
+                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                       (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -56,7 +56,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
-  for (Idx_t iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
       Residual_Sum.resize(nPoint,nVar);
       Residual_Old.resize(nPoint,nVar);
@@ -84,8 +84,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   su2double val_solution[5] = {pressure, velocity[0], velocity[1], temperature, temperature};
   if(nDim==3) val_solution[3] = velocity[2];
 
-  for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_solution[iVar];
 
   Solution_Old = Solution;
@@ -126,9 +126,9 @@ void CIncEulerVariable::SetGradient_PrimitiveZero() {
   Gradient_Primitive.storage.setConstant(0.0);
 }
 
-bool CIncEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
+bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  Idx_t iVar;
+  unsigned long iVar;
   bool check_dens = false, check_temp = false, physical = true;
 
   /*--- Store the density from the previous iteration. ---*/

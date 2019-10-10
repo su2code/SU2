@@ -38,10 +38,10 @@
 #include "../../include/variables/CTurbSSTVariable.hpp"
 
 
-CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, Idx_t npoint, Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config)
+CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
-  for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution(iPoint,0) = kine;
     Solution(iPoint,1) = omega;
@@ -59,9 +59,8 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   muT.resize(nPoint) = mut;
 }
 
-void CTurbSSTVariable::SetBlendingFunc(Idx_t iPoint, su2double val_viscosity,
+void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
                                        su2double val_dist, su2double val_density) {
-  Idx_t iDim;
   su2double arg2, arg2A, arg2B, arg1;
 
   AD::StartPreacc();
@@ -73,7 +72,7 @@ void CTurbSSTVariable::SetBlendingFunc(Idx_t iPoint, su2double val_viscosity,
   /*--- Cross diffusion ---*/
 
   CDkw(iPoint) = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
   CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));

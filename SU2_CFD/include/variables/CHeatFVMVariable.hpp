@@ -58,7 +58,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

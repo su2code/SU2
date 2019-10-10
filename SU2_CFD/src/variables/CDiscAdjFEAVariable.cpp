@@ -38,8 +38,8 @@
 #include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
 
-CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel, Idx_t npoint,
-  Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel, unsigned long npoint,
+  unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool fsi = config->GetFSI_Simulation();
 
@@ -47,8 +47,8 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
 
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = disp[iVar];
 
   if (fsi) {
@@ -84,8 +84,8 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   Solution_Vel_time_n.resize(nPoint,nVar) = su2double(0.0);
   Solution_Accel_time_n.resize(nPoint,nVar) = su2double(0.0);
 
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
       Solution_Vel(iPoint,iVar) = vel[iVar];
       Solution_Accel(iPoint,iVar) = accel[iVar];
     }

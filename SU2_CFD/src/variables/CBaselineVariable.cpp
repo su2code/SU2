@@ -38,7 +38,7 @@
 #include "../../include/variables/CBaselineVariable.hpp"
 
 
-CBaselineVariable::CBaselineVariable(Idx_t npoint, Idx_t nvar, CConfig *config)
+CBaselineVariable::CBaselineVariable(unsigned long npoint, unsigned long nvar, CConfig *config)
   : CVariable(npoint,nvar,config) {
 
 }

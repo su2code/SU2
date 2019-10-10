@@ -38,7 +38,7 @@
 #include "../../include/variables/CHeatFVMVariable.hpp"
 
 
-CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
   bool low_fidelity = false;
@@ -56,7 +56,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
-  for (Idx_t iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if ((config->GetMG_CorrecSmooth(iMesh) > 0) || low_fidelity) {
       Residual_Sum.resize(nPoint,nVar);
       Residual_Old.resize(nPoint,nVar);

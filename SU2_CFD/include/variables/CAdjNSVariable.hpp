@@ -58,7 +58,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAdjNSVariable(su2double psirho, const su2double *phi, su2double psie,
-                 Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+                 unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -68,8 +68,8 @@ public:
   /*!
    * \brief Set the value of the force projection vector on the old solution vector.
    */
-  inline void SetVelSolutionDVector(Idx_t iPoint) override {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution(iPoint,iDim+1) = ForceProj_Vector(iPoint,iDim);
+  inline void SetVelSolutionDVector(unsigned long iPoint) override {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint,iDim+1) = ForceProj_Vector(iPoint,iDim);
   }
 
 };

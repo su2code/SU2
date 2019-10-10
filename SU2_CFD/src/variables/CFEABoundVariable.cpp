@@ -38,7 +38,7 @@
 #include "../../include/variables/CFEABoundVariable.hpp"
 
 
-CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CFEAVariable(val_fea, npoint, ndim, nvar, config) {
 
   VertexMap.Reset(nPoint);
@@ -50,7 +50,7 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Count number of vertices and build map ---*/
 
-  Idx_t nBoundPt = VertexMap.Build();
+  unsigned long nBoundPt = VertexMap.Build();
 
   /*--- Allocate ---*/
 
@@ -79,7 +79,7 @@ void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
 
 void CFEABoundVariable::RegisterFlowTraction() {
   if (!fsi_analysis) return;
-  for (Idx_t iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(FlowTraction(iVertex,iVar));
 }

@@ -61,7 +61,7 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTransLMVariable(su2double intermittency, su2double REth, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -71,16 +71,16 @@ public:
   /*!
    * \brief ________________.
    */
-  inline su2double GetIntermittency(Idx_t iPoint) const override { return Solution(iPoint,0); }
+  inline su2double GetIntermittency(unsigned long iPoint) const override { return Solution(iPoint,0); }
 
   /*!
    * \brief ________________.
    * \param[in] gamma_sep_in
    */
-  inline void SetGammaSep(Idx_t iPoint, su2double gamma_sep_in) override { gamma_sep(iPoint) = gamma_sep_in; }
+  inline void SetGammaSep(unsigned long iPoint, su2double gamma_sep_in) override { gamma_sep(iPoint) = gamma_sep_in; }
 
   /*!
    * \brief Correction for separation-induced transition.
    */
-  inline void SetGammaEff(Idx_t iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
+  inline void SetGammaEff(unsigned long iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
 };

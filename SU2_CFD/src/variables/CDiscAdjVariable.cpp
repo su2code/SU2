@@ -38,7 +38,7 @@
 #include "../../include/variables/CDiscAdjVariable.hpp"
 
 
-CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
   
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -57,8 +57,8 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndi
   Solution_Direct.resize(nPoint,nVar);
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = sol[iVar];
       
   External = Solution;

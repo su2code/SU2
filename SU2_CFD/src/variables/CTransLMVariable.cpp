@@ -38,10 +38,10 @@
 #include "../../include/variables/CTransLMVariable.hpp"
 
 
-CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, Idx_t npoint, Idx_t ndim,
-                                   Idx_t nvar, CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
+CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim,
+                                   unsigned long nvar, CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
 
-  for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution_Old(iPoint,0) = Solution(iPoint,0) = intermittency;
     Solution_Old(iPoint,1) = Solution(iPoint,1) = REth;

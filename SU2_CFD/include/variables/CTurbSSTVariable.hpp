@@ -66,8 +66,8 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSSTVariable(su2double kine, su2double omega, su2double mut, Idx_t npoint,
-                   Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config);
+  CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint,
+                   unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config);
                    
   /*!
    * \brief Destructor of the class.
@@ -80,20 +80,20 @@ public:
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
    */
-  void SetBlendingFunc(Idx_t iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) override;
+  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) override;
 
   /*!
    * \brief Get the first blending function.
    */
-  inline su2double GetF1blending(Idx_t iPoint) const override { return F1(iPoint); }
+  inline su2double GetF1blending(unsigned long iPoint) const override { return F1(iPoint); }
 
   /*!
    * \brief Get the second blending function.
    */
-  inline su2double GetF2blending(Idx_t iPoint) const override { return F2(iPoint); }
+  inline su2double GetF2blending(unsigned long iPoint) const override { return F2(iPoint); }
 
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
    */
-  inline su2double GetCrossDiff(Idx_t iPoint) const override { return CDkw(iPoint); }
+  inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
 };

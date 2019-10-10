@@ -65,7 +65,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                 Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+                 unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -75,7 +75,7 @@ public:
   /*!
    * \brief Set the laminar viscosity.
    */
-  inline void SetLaminarViscosity(Idx_t iPoint, su2double laminarViscosity) override {
+  inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
     Primitive(iPoint,nDim+4) = laminarViscosity;
   }
 
@@ -88,7 +88,7 @@ public:
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
-  inline void SetEddyViscosity(Idx_t iPoint, su2double eddy_visc) override {
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override {
     Primitive(iPoint,nDim+5) = eddy_visc;
   }
 
@@ -96,18 +96,18 @@ public:
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+4); }
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+4); }
 
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
-  inline su2double GetEddyViscosity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+5); }
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+5); }
 
   /*!
    * \brief Set the thermal conductivity.
    */
-  inline void SetThermalConductivity(Idx_t iPoint, su2double thermalConductivity) override {
+  inline void SetThermalConductivity(unsigned long iPoint, su2double thermalConductivity) override {
     Primitive(iPoint,nDim+6) = thermalConductivity;
   }
 
@@ -115,30 +115,30 @@ public:
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+6); }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+6); }
 
   /*!
    * \brief Get the value of the vorticity.
    * \return Value of the vorticity.
    */
-  inline su2double *GetVorticity(Idx_t iPoint) override { return Vorticity[iPoint]; }
+  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the value of the magnitude of rate of strain.
    * \return Value of the rate of strain magnitude.
    */
-  inline su2double GetStrainMag(Idx_t iPoint) const override { return StrainMag(iPoint); }
+  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
 
   /*!
    * \brief Set the DES Length Scale.
    */
-  inline void SetDES_LengthScale(Idx_t iPoint, su2double val_des_lengthscale) override {
+  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override {
     DES_LengthScale(iPoint) = val_des_lengthscale;
   }
 
@@ -146,6 +146,6 @@ public:
    * \brief Get the DES length scale
    * \return Value of the DES length Scale.
    */
-  inline su2double GetDES_LengthScale(Idx_t iPoint) const override { return DES_LengthScale(iPoint); }
+  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
 
 };

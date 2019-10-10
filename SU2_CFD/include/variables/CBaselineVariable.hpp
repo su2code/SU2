@@ -52,7 +52,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CBaselineVariable(Idx_t npoint, Idx_t nvar, CConfig *config);
+  CBaselineVariable(unsigned long npoint, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

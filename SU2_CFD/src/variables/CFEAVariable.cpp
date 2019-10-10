@@ -38,7 +38,7 @@
 #include "../../include/variables/CFEAVariable.hpp"
 
 
-CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
@@ -56,16 +56,16 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   else         Stress.resize(nPoint,6);
 
   /*--- Initialization of variables ---*/
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_fea[iVar];
 
   if (dynamic_analysis) {
     Solution_Vel.resize(nPoint,nVar);
     Solution_Accel.resize(nPoint,nVar);
     
-    for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint) {
-      for (Idx_t iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for (unsigned long iVar = 0; iVar < nVar; iVar++) {
         Solution_Vel(iPoint,iVar) = val_fea[iVar+nVar];
         Solution_Accel(iPoint,iVar) = val_fea[iVar+2*nVar];
       }
@@ -103,45 +103,45 @@ void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel
 void CFEAVariable::SetSolution_Accel_time_n() { Solution_Accel_time_n = Solution_Accel; }
 
 void CFEAVariable::Register_femSolution_time_n() {
-  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(Solution_time_n(iPoint,iVar));
 }
 
 void CFEAVariable::RegisterSolution_Vel(bool input) {
   if (input) {
-    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
         AD::RegisterInput(Solution_Vel(iPoint,iVar));
   }
   else {
-    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
         AD::RegisterOutput(Solution_Vel(iPoint,iVar));
   }
 }
 
 void CFEAVariable::RegisterSolution_Vel_time_n() {
-  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar));
 }
 
 void CFEAVariable::RegisterSolution_Accel(bool input) {
   if (input) {
-    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
         AD::RegisterInput(Solution_Accel(iPoint,iVar));
   }
   else {
-    for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-      for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
         AD::RegisterOutput(Solution_Accel(iPoint,iVar));
   }
 }
 
 void CFEAVariable::RegisterSolution_Accel_time_n() {
-  for (Idx_t iPoint = 0; iPoint < nPoint; iPoint++)
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar));
 }

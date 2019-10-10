@@ -69,7 +69,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel, const su2double *accel,
-                           Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config);
+                           unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -87,7 +87,7 @@ public:
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
-  inline void SetFlowTractionSensitivity(Idx_t iPoint, Idx_t iDim, su2double val) override {
+  inline void SetFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     FlowTraction_Sens(iPoint,iDim) = val;
   }
@@ -97,7 +97,7 @@ public:
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetFlowTractionSensitivity(Idx_t iPoint, Idx_t iDim) const override {
+  inline su2double GetFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return FlowTraction_Sens(iPoint,iDim);
   }
@@ -107,7 +107,7 @@ public:
    * \param[in] iDim - spacial component
    * \param[in] val - value of the source term
    */
-  inline void SetSourceTerm_DispAdjoint(Idx_t iPoint, Idx_t iDim, su2double val) override {
+  inline void SetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim, su2double val) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     SourceTerm_DispAdjoint(iPoint,iDim) = val;
   }
@@ -117,7 +117,7 @@ public:
    * \param[in] iDim - spacial component
    * \return value of the source term
    */
-  inline su2double GetSourceTerm_DispAdjoint(Idx_t iPoint, Idx_t iDim) const override {
+  inline su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SourceTerm_DispAdjoint(iPoint,iDim);
   }
@@ -125,14 +125,14 @@ public:
   /*!
    * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override {
+  inline bool Get_isVertex(unsigned long iPoint) const override {
     return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
    * \brief Set whether a node is on the boundary
    */
-  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
+  inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
     VertexMap.SetIsVertex(iPoint,isVertex);
   }
 

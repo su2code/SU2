@@ -38,7 +38,7 @@
 #include "../../include/variables/CTurbVariable.hpp"
 
 
-CTurbVariable::CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
   /*--- Allocate space for the harmonic balance source terms ---*/

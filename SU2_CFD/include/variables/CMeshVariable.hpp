@@ -52,7 +52,7 @@ protected:
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshVariable(Idx_t npoint, Idx_t ndim, CConfig *config);
+  CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config);
 
 public:
   /*!
@@ -65,20 +65,20 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the original coordinate iDim.
    */
-  inline su2double GetMesh_Coord(Idx_t iPoint, Idx_t iDim) const final { return Mesh_Coord(iPoint,iDim); }
+  inline su2double GetMesh_Coord(unsigned long iPoint, unsigned long iDim) const final { return Mesh_Coord(iPoint,iDim); }
 
   /*!
    * \brief Get the undeformed coordinates.
    * \return Pointer to the reference coordinates.
    */
-  inline const su2double *GetMesh_Coord(Idx_t iPoint) const final { return Mesh_Coord[iPoint]; }
+  inline const su2double *GetMesh_Coord(unsigned long iPoint) const final { return Mesh_Coord[iPoint]; }
 
   /*!
    * \brief Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
    */
-  inline void SetMesh_Coord(Idx_t iPoint, Idx_t iDim, su2double val_coord) final {
+  inline void SetMesh_Coord(unsigned long iPoint, unsigned long iDim, su2double val_coord) final {
     Mesh_Coord(iPoint,iDim) = val_coord;
   }
 
@@ -87,13 +87,13 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.
    */
-  inline su2double GetWallDistance(Idx_t iPoint) const final { return WallDistance(iPoint); }
+  inline su2double GetWallDistance(unsigned long iPoint) const final { return WallDistance(iPoint); }
 
   /*!
    * \brief Set the value of the wall distance in reference coordinates.
    * \param[in] val_dist - Value of wall distance.
    */
-  inline void SetWallDistance(Idx_t iPoint, su2double val_dist) final { WallDistance(iPoint) = val_dist; }
+  inline void SetWallDistance(unsigned long iPoint, su2double val_dist) final { WallDistance(iPoint) = val_dist; }
 
   /*!
    * \brief Register the reference coordinates of the mesh.
@@ -104,8 +104,8 @@ public:
   /*!
    * \brief Recover the value of the adjoint of the mesh coordinates.
    */
-  inline void GetAdjoint_MeshCoord(Idx_t iPoint, su2double *adj_mesh) const final {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+  inline void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) const final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
       adj_mesh[iDim] = SU2_TYPE::GetDerivative(Mesh_Coord(iPoint,iDim));
   }
 

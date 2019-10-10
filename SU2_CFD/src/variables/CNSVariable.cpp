@@ -39,7 +39,7 @@
 
 
 CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
-                         Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) :
+                         unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
                          CEulerVariable(density,velocity,energy,npoint,ndim,nvar,config) {
 
   inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
@@ -55,7 +55,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
 
 bool CNSVariable::SetVorticity_StrainMag() {
 
-  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     /*--- Vorticity ---*/
 
@@ -74,14 +74,14 @@ bool CNSVariable::SetVorticity_StrainMag() {
     AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
 
     su2double Div = 0.0;
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Div += Gradient_Primitive(iPoint,iDim+1,iDim);
 
     StrainMag(iPoint) = 0.0;
 
     /*--- Add diagonal part ---*/
 
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
       StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
     }
     if (nDim == 2) {
@@ -105,7 +105,7 @@ bool CNSVariable::SetVorticity_StrainMag() {
   return false;
 }
 
-void CNSVariable::SetRoe_Dissipation_NTS(Idx_t iPoint,
+void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
                                          su2double val_delta,
                                          su2double val_const_DES){
 
@@ -115,7 +115,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(Idx_t iPoint,
                          ch3 = 2.0,
                          sigma_max = 1.0;
 
-  Idx_t iDim;
+  unsigned long iDim;
   su2double Omega, Omega_2 = 0.0, Baux, Gaux, Lturb, Kaux, Aaux;
 
   AD::StartPreacc();
@@ -161,7 +161,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(Idx_t iPoint,
 
 }
 
-void CNSVariable::SetRoe_Dissipation_FD(Idx_t iPoint, su2double val_wall_dist){
+void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall_dist){
 
   /*--- Constants for Roe Dissipation ---*/
 
@@ -177,8 +177,8 @@ void CNSVariable::SetRoe_Dissipation_FD(Idx_t iPoint, su2double val_wall_dist){
 
   su2double uijuij = 0.0;
 
-  for(Idx_t iDim = 0; iDim < nDim; ++iDim)
-    for(Idx_t jDim = 0; jDim < nDim; ++jDim)
+  for(unsigned long iDim = 0; iDim < nDim; ++iDim)
+    for(unsigned long jDim = 0; jDim < nDim; ++jDim)
       uijuij += pow(Gradient_Primitive(iPoint,1+iDim,jDim),2);
 
   uijuij = max(sqrt(uijuij),1e-10);
@@ -193,7 +193,7 @@ void CNSVariable::SetRoe_Dissipation_FD(Idx_t iPoint, su2double val_wall_dist){
   AD::EndPreacc();
 }
 
-bool CNSVariable::SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
   bool RightVol = true;
 
@@ -216,7 +216,7 @@ bool CNSVariable::SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_k
 
     /*--- Copy the old solution ---*/
 
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute the primitive variables ---*/
@@ -261,7 +261,7 @@ bool CNSVariable::SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_k
   return RightVol;
 }
 
-void CNSVariable::SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel) {
+void CNSVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
     /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 

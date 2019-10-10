@@ -62,7 +62,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjTurbVariable(su2double psinu_inf, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CAdjTurbVariable(su2double psinu_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -73,8 +73,8 @@ public:
    * \brief Set the Eddy Viscosity Sensitivity of the problem.
    * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
    */
-  inline void SetEddyViscSens(Idx_t iPoint, const su2double *val_EddyViscSens, Idx_t numTotalVar) override {
-    for (Idx_t iVar = 0; iVar < numTotalVar; iVar++)
+  inline void SetEddyViscSens(unsigned long iPoint, const su2double *val_EddyViscSens, unsigned long numTotalVar) override {
+    for (unsigned long iVar = 0; iVar < numTotalVar; iVar++)
       EddyViscSens(iPoint,iVar) = val_EddyViscSens[iVar];
   }
 
@@ -82,5 +82,5 @@ public:
    * \brief Get the Eddy Viscosity Sensitivity of the problem.
    * \return Pointer to the Eddy Viscosity Sensitivity.
    */
-  inline su2double *GetEddyViscSens(Idx_t iPoint) override { return EddyViscSens[iPoint]; }
+  inline su2double *GetEddyViscSens(unsigned long iPoint) override { return EddyViscSens[iPoint]; }
 };
