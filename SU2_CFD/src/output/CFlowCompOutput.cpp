@@ -90,7 +90,13 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   /*--- Set the default convergence field --- */
 
   if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
-  
+
+  if (config->GetFixed_CL_Mode()) {
+    bool found = false;
+    for (unsigned short iField = 0; iField < convFields.size(); iField++)
+      if (convFields[iField] == "DELTA_CL") found = true;
+    if (!found) convFields.emplace_back("DELTA_CL");
+  }
 }
 
 CFlowCompOutput::~CFlowCompOutput(void) {}
@@ -234,7 +240,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
-  AddHistoryOutput("CL_CONVERGENCE", "CL_convergence", ScreenOutputFormat::SCIENTIFIC, "CL_CONVERGENCE", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("DELTA_CL", "Delta_CL", ScreenOutputFormat::SCIENTIFIC, "DELTA_CL", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
 
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
@@ -621,7 +627,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
   
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
-  SetHistoryOutputValue("CL_CONVERGENCE", fabs(flow_solver->GetTotal_CL() - config->GetTarget_CL()));
+  SetHistoryOutputValue("DELTA_CL", fabs(flow_solver->GetTotal_CL() - config->GetTarget_CL()));
   
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
