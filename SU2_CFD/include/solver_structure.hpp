@@ -3476,6 +3476,22 @@ public:
                         unsigned short val_kind_marker);
 
   /*!
+   * \brief Load a spanwise inlet profile data from file into a particular solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_kind_solver - Solver container position.
+   * \param[in] val_kind_marker - Kind of marker to apply the profiles.
+   */
+  void LoadSpanwiseInletProfile(CGeometry **geometry,
+                                CSolver ***solver,
+                                CConfig *config,
+                                int val_iter,
+                                unsigned short val_kind_solver,
+                                unsigned short val_kind_marker);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
