@@ -15526,9 +15526,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
         thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
-        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
-
         
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
@@ -15564,6 +15561,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           MomentZ_Force[1] += (Force[1]*Coord[0]);
           
         }
+        
+        HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
+        MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
         
       }
        
