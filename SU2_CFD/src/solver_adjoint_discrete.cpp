@@ -1067,13 +1067,26 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
           residual = node[iPoint]->Get_BGSSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
-
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
   }
 
   SetResidual_BGS(geometry, config);
+
+}
+
+void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  /*--- As there might be crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++)
+        node[iPoint]->Set_BGSSolution_k(iVar, node[iPoint]->Get_BGSSolution(iVar));
+  }
 
 }
 
