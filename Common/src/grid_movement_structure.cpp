@@ -138,7 +138,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
-
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
@@ -270,7 +269,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
               MaxIter = Smoothing_Iter - IterLinSol;
 
             IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
-
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }

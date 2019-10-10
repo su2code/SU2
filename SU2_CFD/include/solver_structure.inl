@@ -41,6 +41,8 @@ inline void CSolver::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLi
 
 inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
+inline bool CSolver::GetAdjoint(void) { return adjoint; }
+
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
 inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return 0; }
@@ -2263,7 +2265,7 @@ inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
 inline su2double CHeatSolverFVM::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
-inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
+inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AverageT; }
 
 inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
 
