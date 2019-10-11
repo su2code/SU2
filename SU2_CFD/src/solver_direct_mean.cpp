@@ -7329,7 +7329,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Total_CMx_Prev = 0.0;
     Total_CMy_Prev = 0.0;
     Total_CMz_Prev = 0.0;
-    AoA_Prev = 0.0;
+    AoA_Prev = config->GetAoA();
   }
   
   /*--- Retrieve the old AoA (degrees) ---*/
@@ -7579,10 +7579,9 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
   if (Start_AoA_FD){
     //Wrt_Con_Freq = Iter_dCL_dAlpha/10.0;
-    //config->SetScreen_Wrt_Freq(2,Wrt_Con_Freq);
-    //config->SetHistory_Wrt_Freq(2,0);
+    config->SetScreen_Wrt_Freq(2, Iter_dCL_dAlpha/10);
+    config->SetHistory_Wrt_Freq(2, 0);
   }
-  //config->SetFinite_Difference_Mode(Start_AoA_FD);
   return fixed_cl_conv;
   
 }

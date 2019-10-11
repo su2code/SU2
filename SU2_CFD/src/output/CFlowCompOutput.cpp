@@ -94,11 +94,11 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   if (config->GetFixed_CL_Mode()) {
     bool found = false;
     for (unsigned short iField = 0; iField < convFields.size(); iField++)
-      if (convFields[iField] == "DELTA_CL") found = true;
+      if (convFields[iField] == "LIFT") found = true;
     if (!found) {
       if (rank == MASTER_NODE) 
-        cout<<"  Fixed CL: Adding DELTA_CL as Convergence Field to ensure convergence to target CL"<<endl;
-      convFields.emplace_back("DELTA_CL");
+        cout<<"  Fixed CL: Adding LIFT as Convergence Field to ensure convergence to target CL"<<endl;
+      convFields.emplace_back("LIFT");
       newFunc.resize(convFields.size());
       oldFunc.resize(convFields.size());
       cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
@@ -247,8 +247,12 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
-  AddHistoryOutput("DELTA_CL", "Delta_CL", ScreenOutputFormat::SCIENTIFIC, "DELTA_CL", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
-
+  
+  if (config->GetFixed_CL_Mode()){
+    AddHistoryOutput("DELTA_CL", "Delta_CL", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("PREV_AOA", "Previous_AOA", ScreenOutputFormat::FIXED, "FIXED_CL", "Angle of Attack at the previous iteration of the Fixed CL driver");
+    AddHistoryOutput("DELTA_AOA", "Delta_AOA", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "Last change in Angle of Attack by Fixed CL Driver", HistoryFieldType::COEFFICIENT);
+  }
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
     AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
@@ -644,6 +648,12 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetLinSol_Residual()));    
+  }
+
+  if(config->GetFixed_CL_Mode()){
+    SetHistoryOutputValue("DELTA_CL", fabs(flow_solver->GetTotal_CL() - config->GetTarget_CL()));
+    SetHistoryOutputValue("PREV_AOA", flow_solver->GetPrevious_AoA());
+    SetHistoryOutputValue("DELTA_AOA", config->GetAoA()-flow_solver->GetPrevious_AoA());
   }
   
   /*--- Set the analyse surface history values --- */

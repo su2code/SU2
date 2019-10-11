@@ -4222,6 +4222,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /* --- Set Finite Difference mode to false by default --- */
+
+  Finite_Difference_Mode = false;
+
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
   if (Kind_Solver == RANS && Kind_Turb_Model != SST && Kind_Turb_Model != SST_SUST && using_uq){

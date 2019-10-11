@@ -2061,6 +2061,12 @@ public:
    * \return value for the last iteration that the AoA was updated
    */
   virtual unsigned long GetIter_Update_AoA();
+
+  /*!
+   * \brief A virtual member.
+   * \return value of the AoA before most recent update
+   */
+  virtual su2double GetPrevious_AoA();
   
   /*!
    * \brief A virtual member.
@@ -5512,6 +5518,12 @@ public:
    * \return value for the last iteration that the AoA was updated
    */
   unsigned long GetIter_Update_AoA();
+
+  /*!
+   * \brief A virtual member.
+   * \return value of the AoA before most recent update
+   */
+  su2double GetPrevious_AoA();
   
   /*!
    * \brief Update the solution using the explicit Euler scheme.
