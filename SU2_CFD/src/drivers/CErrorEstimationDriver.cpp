@@ -1063,7 +1063,8 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     //--- add viscous Hessian terms
     if(config[ZONE_0]->GetViscous()) {
-      for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
+      //--- viscous mass flux is 0, so start with momentum
+      for (unsigned short iVar = 1; iVar < nVarMetr; ++iVar) {
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;

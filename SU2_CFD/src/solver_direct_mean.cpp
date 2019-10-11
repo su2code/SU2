@@ -6262,7 +6262,8 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
       CVariable *var = node[iPoint];
 
-      for(iVar = 0; iVar < nVarMetr; iVar++){
+      //--- viscous mass flux is 0, so start with momentum
+      for(iVar = 1; iVar < nVarMetr; iVar++){
         for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
           const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
 
