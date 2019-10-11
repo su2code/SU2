@@ -5859,7 +5859,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
         
         su2double Grad_Vel[3][3], tau[3][3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-        su2double Grad_Temp[3], Head_Flux[3];
+        su2double Grad_Temp[3], Heat_Flux[3];
         
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
@@ -5888,7 +5888,6 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           Heat_Flux[iDim] = thermal_conductivity*Grad_Temp[iDim];
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
 
         SensVisc[iNode][0][0] = 0.;
         SensVisc[iNode][1][0] = tau[0][0];
