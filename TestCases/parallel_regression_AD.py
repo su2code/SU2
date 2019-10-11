@@ -57,7 +57,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606841, -9.035214, -0.000000, 0.005688] #last 4 columns
+    discadj_naca0012.test_vals = [-3.610567, -9.034912, -0.000000, 0.005621] #last 4 columns
     discadj_naca0012.su2_exec  = "parallel_computation.py -f"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -68,7 +68,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.719306, -4.038129, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.757340, -3.857847, 0.000000, 0.000000] #last 4 columns
     discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.228982, 1.717042, 4.7258e+04, 0.0000e+00] #last 4 columns
+    discadj_arina2k.test_vals    = [2.275220, 1.750269, 47258.000000, 0.000000] #last 4 columns
     discadj_arina2k.su2_exec     = "parallel_computation.py -f"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -120,7 +120,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.595580, -2.549720, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.566362, -2.541739, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -208,7 +208,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-2.638190, -3.106640, -7.0756e-04, 1.6333e-06] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.167347, -1.635137, -0.020862, 0.000050] #last 4 columns
     discadj_pitchingNACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -254,7 +254,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [3.183906, 0.923840, -223.200000, -2059.800000] #last 4 columns
+    discadj_heat.test_vals = [-2.281765, 0.706785, -0.743990, -6.866000] #last 4 columns
     discadj_heat.su2_exec  = "parallel_computation.py -f"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
@@ -274,6 +274,21 @@ def main():
 #    discadj_fsi.timeout   = 1600
 #    discadj_fsi.tol       = 0.00001
 #    test_list.append(discadj_fsi)
+
+    ###################################
+    ### Coupled CHT Adjoint         ###
+    ###################################
+
+    # Coupled discrete adjoint for heatflux in heated cylinder array
+    discadj_cht           = TestCase('discadj_cht')
+    discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
+    discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
+    discadj_cht.test_iter = 10
+    discadj_cht.test_vals = [-2.403180, -3.097866, -3.097837, -3.095571] #last 4 columns
+    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.timeout   = 1600
+    discadj_cht.tol       = 0.00001
+    test_list.append(discadj_cht)		
 
     ######################################
     ### RUN TESTS                      ###

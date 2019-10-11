@@ -4,7 +4,7 @@ const string CSU2FileWriter::fileExt = ".csv";
 
 CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim, 
                                string fileName, CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CSU2FileWriter::~CSU2FileWriter(){

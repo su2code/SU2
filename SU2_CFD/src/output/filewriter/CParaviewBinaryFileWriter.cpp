@@ -4,7 +4,7 @@ const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
 CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim, string fileName, 
                                                      CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
@@ -30,12 +30,14 @@ void CParaviewBinaryFileWriter::Write_Data(){
 
   strcpy(fname, fileName.c_str());
   
-  /*--- Check for big endian. We have to swap bytes otherwise. ---*/
+  /* Check for big endian. We have to swap bytes otherwise. 
+   * Since size of character is 1 byte when the character pointer
+   *  is de-referenced it will contain only first byte of integer. ---*/
   
-  bool BigEndian;
-  union {int i; char c[4];} val;
-  val.i = 0x76543210;
-  if (val.c[0] == 0x10) BigEndian = false;
+  bool BigEndian = false;  
+  unsigned int i = 1;  
+  char *c = (char*)&i;
+  if (*c) BigEndian = false;
   else BigEndian = true;
   
   file_size = 0.0;

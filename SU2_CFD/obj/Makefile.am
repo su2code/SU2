@@ -69,6 +69,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
+  ../src/drivers/CDiscAdjMultizoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \
@@ -119,7 +120,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CAdjHeatOutput.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
-  ../src/output/CDriverOutput.cpp \
+  ../src/output/CMultizoneOutput.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \

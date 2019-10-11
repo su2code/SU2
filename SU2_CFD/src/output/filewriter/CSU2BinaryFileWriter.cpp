@@ -4,7 +4,7 @@ const string CSU2BinaryFileWriter::fileExt = ".dat";
 
 CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim, 
                                            string fileName, CParallelDataSorter *dataSorter)  : 
-  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
@@ -16,10 +16,6 @@ void CSU2BinaryFileWriter::Write_Data(){
   /*--- Local variables ---*/
 
   unsigned short iVar;
-  unsigned long iPoint;
-//  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-//                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-//  bool wrt_perf  = config->GetWrt_Performance();
   
   unsigned short GlobalField_Counter = fieldnames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
@@ -78,16 +74,6 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   fwrite(dataSorter->GetData(), nParallel_Poin*GlobalField_Counter, sizeof(passivedouble), fhw);
   file_size += (su2double)nParallel_Poin*GlobalField_Counter*sizeof(passivedouble);
-
-  /*--- Write the external iteration. ---*/
-
-//  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
-//  file_size += (su2double)sizeof(int);
-
-  /*--- Write the metadata. ---*/
-
-//  fwrite(Restart_Metadata, 8, sizeof(passivedouble), fhw);
-//  file_size += (su2double)8*sizeof(passivedouble);
 
   /*--- Close the file. ---*/
 
@@ -181,26 +167,6 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
-  /*--- Finally, the master rank writes the metadata. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    /*--- External iteration. ---*/
-
-//    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-//            GlobalField_Counter*dataSorter->GetnPointsGlobal()*sizeof(passivedouble));
-//    MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
-//    file_size += (su2double)sizeof(int);
-
-    /*--- Additional doubles for AoA, AoS, etc. ---*/
-
-//    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-//            GlobalField_Counter*dataSorter->GetnPointsGlobal()*sizeof(passivedouble) + 1*sizeof(int));
-//    MPI_File_write_at(fhw, disp, Restart_Metadata, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
-//    file_size += (su2double)8*sizeof(passivedouble);
-
-  }
-
   /*--- All ranks close the file after writing. ---*/
 
   MPI_File_close(&fhw);
@@ -227,15 +193,5 @@ void CSU2BinaryFileWriter::Write_Data(){
   /*--- Compute and store the bandwidth ---*/
   
   Bandwidth = file_size/(1.0e6)/UsedTime;
-//  config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+Bandwidth);
-  
-//  if ((rank == MASTER_NODE) && (wrt_perf)) {
-//    cout << "Wrote " << file_size/1.0e6 << " MB to disk in ";
-//    cout << UsedTime << " s. (" << Bandwidth << " MB/s)." << endl;
-//  }
-  
-  /*--- Free temporary data buffer for writing the binary file. ---*/
-
-//  delete [] buf;
 
 }

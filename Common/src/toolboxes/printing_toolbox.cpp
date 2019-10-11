@@ -50,6 +50,7 @@ void PrintingToolbox::CTablePrinter::SetAlign(int align){
 
 void PrintingToolbox::CTablePrinter::SetPrecision(int precision){
   precision_ = precision;
+  out_stream_->precision(precision_);
 }
 
 void PrintingToolbox::CTablePrinter::AddColumn(const std::string & header_name, int column_width){

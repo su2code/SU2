@@ -420,8 +420,13 @@ def read_config(filename):
             
             if case("OUTPUT_FILES"):
                 data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
                 break
-
+            if case("HISTORY_OUTPUT"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
+            
             # unitary design variable definition
             if case("DEFINITION_DV"):
                 # remove white space
@@ -726,7 +731,18 @@ def read_config(filename):
         Outlet_Value_List +=  str(Outlet_Value)
       Outlet_Value_List += ")"
       data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
-      
+
+    if 'MULTIPOINT_MESH_FILENAME' not in data_dict:
+      Mesh_Filename = data_dict['MESH_FILENAME']
+      Mesh_List = "("
+      for i in range(multipoints):
+        if i != 0: Mesh_List +=  ", "
+        Mesh_List +=  str(Mesh_Filename)
+      Mesh_List += ")"
+      data_dict['MULTIPOINT_MESH_FILENAME'] = Mesh_List  
+
+    if 'HISTORY_OUTPUT' not in data_dict:
+        data_dict['HISTORY_OUTPUT'] = ['ITER', 'RMS_RES']
 
     #
     # Default values for optimization parameters (needed for some eval functions
@@ -845,6 +861,14 @@ def write_config(filename,param_dict):
                     if i_value+1 < n_lists:
                         output_file.write(", ")
                 output_file.write(")")
+                break
+            
+            if case("HISTORY_OUTPUT"):
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
                 break
 
             # semicolon delimited lists of comma delimited lists

@@ -49,24 +49,24 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : C
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
-    requestedHistoryFields.push_back("RMS_RES");
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    if (config->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");
-    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
-    requestedScreenFields.push_back("INNER_ITER");
-    requestedScreenFields.push_back("RMS_DENSITY");
-    requestedScreenFields.push_back("RMS_MOMENTUM-X");
-    requestedScreenFields.push_back("RMS_MOMENTUM-Y");
-    requestedScreenFields.push_back("RMS_ENERGY");
+    if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
+    requestedScreenFields.emplace_back("RMS_DENSITY");
+    requestedScreenFields.emplace_back("RMS_MOMENTUM-X");
+    requestedScreenFields.emplace_back("RMS_MOMENTUM-Y");
+    requestedScreenFields.emplace_back("RMS_ENERGY");
     nRequestedScreenFields = requestedScreenFields.size();
   }
   if (nRequestedVolumeFields == 0){
-    requestedVolumeFields.push_back("COORDINATES");
-    requestedVolumeFields.push_back("SOLUTION");
-    requestedVolumeFields.push_back("PRIMITIVE");
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");
+    requestedVolumeFields.emplace_back("PRIMITIVE");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
@@ -88,20 +88,11 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : C
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_DENSITY";
-
-
-}
-
-CFlowCompFEMOutput::~CFlowCompFEMOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-
-  }
-
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
 
 }
+
+CFlowCompFEMOutput::~CFlowCompFEMOutput(void) {}
 
 
 
@@ -109,34 +100,34 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
-  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the density.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
-  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the momentum x-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
-  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the momentum y-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED,   "RMS_RES",  "Root-mean square residual of the momentum z-component.", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", ScreenOutputFormat::FIXED,   "RMS_RES",  "Root-mean square residual of the momentum z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
-  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the energy.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
    
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the density.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum x-component. 
-  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum y-component. 
-  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum z-component. 
-  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the z-component.", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
-  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the energy.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
    
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
   
-  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+  AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
  
   /*--- Add analyze surface history fields --- */
   
@@ -278,39 +269,6 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   else {
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
-  }
-  
-  SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
-  SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
-  if (nDim == 3)
-    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
-  if (nDim == 3){
-    SetHistoryOutputValue("MOMENT-X", flow_solver->GetTotal_CMx());
-    SetHistoryOutputValue("MOMENT-Y", flow_solver->GetTotal_CMy());
-  }
-  SetHistoryOutputValue("MOMENT-Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputValue("FORCE-X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
-  if (nDim == 3)
-    SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
-  SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
-  
-  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3){
-      SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
-      SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
-    }
-    SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);   
-    
-    SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
   }
   
   SetHistoryOutputValue("AOA", config->GetAoA());

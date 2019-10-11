@@ -158,6 +158,49 @@ public:
   }
 
   /*!
+   * \brief Get the external contribution to a solution.
+   * \return Pointer to the External array.
+   */
+  inline su2double* Get_External(void) const { return External; }
+
+  /*!
+   * \brief Set external contributions to zero.
+   */
+  inline void SetExternalZero(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      External[iVar] = 0.0;
+    }
+  }
+
+  /*!
+   * \brief Add a value to the External vector.
+   * \param[in] val_sol - vector that has to be added component-wise
+   */
+  inline void Add_External(const su2double* val_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        External[iVar] += val_sol[iVar];
+      }
+  }
+
+  /*!
+   * \brief Add a value to the old External vector.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  inline void Add_ExternalOld(const su2double *val_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      External_Old[iVar] = External_Old[iVar] + val_sol[iVar];
+    }
+  }
+
+  /*!
+   * \brief Set old External to the value of the current variables.
+   */
+  inline void Set_OldExternal() {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      External_Old[iVar] = External[iVar];
+  }
+
+  /*!
    * \brief A virtual member. Get the geometry solution.
    * \param[in] val_var - Index of the variable.
    * \return Value of the solution for the index <i>val_var</i>.

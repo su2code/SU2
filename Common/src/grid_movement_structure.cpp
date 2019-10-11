@@ -138,7 +138,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
-
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
@@ -270,7 +269,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
               MaxIter = Smoothing_Iter - IterLinSol;
 
             IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
-
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -3447,38 +3445,40 @@ void CSurfaceMovement::CheckFFDDimension(CGeometry *geometry, CConfig *config, C
   
   OutOffLimits = false;
   for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-    switch ( config->GetDesign_Variable(iDV) ) {
-      case FFD_CONTROL_POINT_2D :
-        if (polar) {
+    if (config->GetFFDTag(iDV)== FFDBox->GetTag()){
+      switch ( config->GetDesign_Variable(iDV) ) {
+        case FFD_CONTROL_POINT_2D :
+          if (polar) {
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (kIndex > nDegree)) OutOffLimits = true;
+          }
+          else {
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
+          }
+          break;
+        case FFD_CAMBER :  case FFD_THICKNESS :
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
+          break;
+        case FFD_CAMBER_2D :  case FFD_THICKNESS_2D :
           iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (kIndex > nDegree)) OutOffLimits = true;
-        }
-        else {
+          if (iIndex > lDegree) OutOffLimits = true;
+          break;
+        case FFD_CONTROL_POINT :  case FFD_NACELLE :
           iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
-        }
-        break;
-      case FFD_CAMBER :  case FFD_THICKNESS :
-          iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
-        break;
-      case FFD_CAMBER_2D :  case FFD_THICKNESS_2D :
-        iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        if (iIndex > lDegree) OutOffLimits = true;
-        break;
-      case FFD_CONTROL_POINT :  case FFD_NACELLE :
-        iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-        kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 3)));
-        if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
-        break;
-      case FFD_GULL :  case FFD_TWIST :
-        jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        if (jIndex > mDegree) OutOffLimits = true;
-        break;
+          jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+          kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 3)));
+          if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
+          break;
+        case FFD_GULL :  case FFD_TWIST :
+          jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+          if (jIndex > mDegree) OutOffLimits = true;
+          break;
+      }
     }
   }
   

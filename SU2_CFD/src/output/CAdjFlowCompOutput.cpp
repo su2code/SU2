@@ -49,27 +49,27 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.push_back("ITER");
-    requestedHistoryFields.push_back("RMS_RES");
-    requestedHistoryFields.push_back("SENSITIVITY");
+    requestedHistoryFields.emplace_back("ITER");
+    requestedHistoryFields.emplace_back("RMS_RES");
+    requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
   if (nRequestedScreenFields == 0){
-    if (config->GetTime_Domain()) requestedScreenFields.push_back("TIME_ITER");    
-    if (multiZone) requestedScreenFields.push_back("OUTER_ITER");
-    requestedScreenFields.push_back("INNER_ITER");
-    requestedScreenFields.push_back("RMS_ADJ_DENSITY");
-    requestedScreenFields.push_back("RMS_ADJ_MOMENTUM-X");
-    requestedScreenFields.push_back("SENS_GEO");
-    requestedScreenFields.push_back("SENS_AOA");
+    if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");    
+    if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
+    requestedScreenFields.emplace_back("INNER_ITER");
+    requestedScreenFields.emplace_back("RMS_ADJ_DENSITY");
+    requestedScreenFields.emplace_back("RMS_ADJ_MOMENTUM-X");
+    requestedScreenFields.emplace_back("SENS_GEO");
+    requestedScreenFields.emplace_back("SENS_AOA");
     nRequestedScreenFields = requestedScreenFields.size();
   }
   
   if (nRequestedVolumeFields == 0){
-    requestedVolumeFields.push_back("COORDINATES");
-    requestedVolumeFields.push_back("SOLUTION");    
-    requestedVolumeFields.push_back("SENSITIVITY");
+    requestedVolumeFields.emplace_back("COORDINATES");
+    requestedVolumeFields.emplace_back("SOLUTION");    
+    requestedVolumeFields.emplace_back("SENSITIVITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
   
@@ -95,42 +95,36 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
 
   /*--- Set the default convergence field --- */
 
-  if (convField.size() == 0 ) convField = "RMS_ADJ_DENSITY";
+  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_DENSITY");
   
 }
 
-CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {
-
-  if (rank == MASTER_NODE){
-    histFile.close();
-  }
-
-}
+CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {}
 
 void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint density.
-  AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint density.", TYPE_RESIDUAL); 
+  AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint density.", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum x-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-X", "rms[A_RhoU]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum x-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_MOMENTUM-X", "rms[A_RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum y-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-Y", "rms[A_RhoV]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum y-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_MOMENTUM-Y", "rms[A_RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum z-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum z-component.", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint energy.
-  AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint energy.", TYPE_RESIDUAL); 
+  AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint energy.", HistoryFieldType::RESIDUAL); 
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
-      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", TYPE_RESIDUAL);      
+      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);      
       break;  
     case SST:
       /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
-      AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", TYPE_RESIDUAL);
+      AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
-      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", " Root-mean square residual of the adjoint dissipation.", TYPE_RESIDUAL);   
+      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", ScreenOutputFormat::FIXED, "RMS_RES", " Root-mean square residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);   
       break;
     default: break;
     }
@@ -139,26 +133,26 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the adjoint density.
-  AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint density.", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum x-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint momentum x-component", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the adjoint momentum y-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint momentum y-component", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_MOMENTUM-Y", "max[A_RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum y-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the adjoint momentum z-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint momentum z-component", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the adjoint energy.
-  AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint energy.", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint energy.", HistoryFieldType::RESIDUAL); 
   if (!config->GetFrozen_Visc_Disc()){  
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
-      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", TYPE_RESIDUAL);      
+      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);      
       break;  
     case SST:
       /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
-      AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", TYPE_RESIDUAL);
+      AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the adjoint dissipation.
-      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint dissipation.", TYPE_RESIDUAL); 
+      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL); 
       break;
     default: break;
     }
@@ -168,26 +162,26 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   ///  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The Block Gauss Seidel residuals of the SOLUTION variables. 
   /// DESCRIPTION: BGS residual of the adjoint density.
-  AddHistoryOutput("BGS_ADJ_DENSITY",    "bgs[A_Rho]",  FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint density.", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_ADJ_DENSITY",    "bgs[A_Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint momentum x-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-X", "bgs[A_RhoU]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint momentum x-component", TYPE_RESIDUAL); 
+  AddHistoryOutput("BGS_ADJ_MOMENTUM-X", "bgs[A_RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: BGS residual of the adjoint momentum y-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-Y", "bgs[A_RhoV]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint momentum y-component", TYPE_RESIDUAL); 
+  AddHistoryOutput("BGS_ADJ_MOMENTUM-Y", "bgs[A_RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum y-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: BGS residual of the adjoint momentum z-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", TYPE_RESIDUAL); 
+  AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL); 
   /// DESCRIPTION: BGS residual of the adjoint energy.
-  AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint energy.", TYPE_RESIDUAL); 
+  AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint energy.", HistoryFieldType::RESIDUAL); 
   if (!config->GetFrozen_Visc_Disc()){  
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: BGS residual of the adjoint nu tilde.
-      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", TYPE_RESIDUAL);      
+      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);      
       break;  
     case SST:
       /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
-      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", TYPE_RESIDUAL);
+      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: BGS residual of the adjoint dissipation.
-      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", TYPE_RESIDUAL); 
+      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL); 
       break;
     default: break;
     }
@@ -197,15 +191,15 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", HistoryFieldType::COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
-  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).", HistoryFieldType::COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the Mach number (only of compressible solver).
-  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the Mach number (only of compressible solver).", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the Mach number (only of compressible solver).", HistoryFieldType::COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field pressure.
-  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field pressure.", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_PRESS", "Sens_Press", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field pressure.", HistoryFieldType::COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
-  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field temperature.", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field temperature.", HistoryFieldType::COEFFICIENT); 
   /// END_GROUP
   
 }

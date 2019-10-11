@@ -42,7 +42,7 @@ CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
-  requestedVolumeFields.push_back("COORDINATES");
+  requestedVolumeFields.emplace_back("COORDINATES");
   nRequestedVolumeFields = requestedVolumeFields.size();
     
   /*--- Set the volume filename --- */
@@ -55,10 +55,7 @@ CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config,
   
 }
 
-CMeshOutput::~CMeshOutput(void) {
-
-
-}
+CMeshOutput::~CMeshOutput(void) {}
 
 void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 

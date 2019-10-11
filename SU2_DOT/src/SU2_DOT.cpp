@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, nZone, false);
+  driver_config = new CConfig(config_file_name, SU2_DOT, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -1007,7 +1007,9 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
       unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
-      if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+      if (FileFormat[iFile] != RESTART_ASCII &&
+          FileFormat[iFile] != RESTART_BINARY &&
+          FileFormat[iFile] != CSV)
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
     
