@@ -1102,11 +1102,6 @@ void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
 
-  /*--- MPI solution ---*/
-  
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -1194,11 +1189,6 @@ void CDiscAdjSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   su2double vnx[4], vny[4], vnz[4];
   su2double graTet[3];
   su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
-
-  /*--- MPI solution ---*/
-  
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
 
   //--- note: currently only implemented for Tet
 
