@@ -5865,7 +5865,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
           for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[kNode]->GetGradient_Primitive(iDim+1, jDim);
           }
-          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, jDim);
+          Grad_Temp[iDim] = node[kNode]->GetGradient_Primitive(0, iDim);
         }
         
         /*--- Divergence of the velocity ---*/
