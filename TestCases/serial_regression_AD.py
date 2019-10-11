@@ -275,7 +275,7 @@ def main():
     discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     discadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
     discadj_euler_py.test_iter = 10
-    discadj_euler_py.su2_exec  = "discrete_adjoint.py"
+    discadj_euler_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_euler_py.timeout   = 1600
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
@@ -287,7 +287,7 @@ def main():
     discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     discadj_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
     discadj_multiple_ffd_py.test_iter = 9
-    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py"
+    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_multiple_ffd_py.timeout   = 1600
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
@@ -299,7 +299,7 @@ def main():
     directdiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     directdiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
     directdiff_euler_py.test_iter = 10
-    directdiff_euler_py.su2_exec  = "direct_differentiation.py"
+    directdiff_euler_py.su2_exec  = "direct_differentiation.py -f"
     directdiff_euler_py.timeout   = 1600
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
@@ -311,7 +311,7 @@ def main():
     directdiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     directdiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
     directdiff_multiple_ffd_py.test_iter = 9
-    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py"
+    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py -f"
     directdiff_multiple_ffd_py.timeout   = 1600
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
