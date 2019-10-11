@@ -6,7 +6,7 @@ const string CSU2MeshFileWriter::fileExt = ".su2";
 CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim,  
                                        string fileName, CParallelDataSorter *dataSorter,
                                        unsigned short iZone, unsigned short nZone) : 
-  iZone(iZone), nZone(nZone), CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
+   CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), iZone(iZone), nZone(nZone) {}
 
 
 CSU2MeshFileWriter::~CSU2MeshFileWriter(){
@@ -42,14 +42,6 @@ void CSU2MeshFileWriter::Write_Data(){
     /*--- Write dimensions data. ---*/
     
     output_file << "NDIME= " << nDim << endl;
-    
-//    /*--- Write the angle of attack offset. ---*/
-    
-//    output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
-    
-//    /*--- Write the angle of attack offset. ---*/
-    
-//    output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
     
     output_file << "NELEM= " << dataSorter->GetnElem() << endl;
     
@@ -130,8 +122,6 @@ void CSU2MeshFileWriter::Write_Data(){
   /*--- Write the node coordinates ---*/
   if (rank == MASTER_NODE){
     output_file << "NPOIN= " << dataSorter->GetnPointsGlobal();
-//    if (geometry->GetGlobal_nPointDomain() != nGlobal_Poin_Par)
-//      output_file << "\t" << geometry->GetGlobal_nPointDomain();
     output_file << endl;
     output_file.flush();    
   }
@@ -151,21 +141,19 @@ void CSU2MeshFileWriter::Write_Data(){
         /*--- Only write original domain points, i.e., exclude any periodic
          or halo nodes, even if they are output in the viz. files. ---*/
         
-//        if (Global_Index < geometry->GetGlobal_nPointDomain()) {
-          
-          /*--- Loop over the variables and write the values to file ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
-          }
-          
-          /*--- Write global index. (note outer loop over procs) ---*/
-          
-          output_file << Global_Index << "\t";
-          myPoint++;
-          
-          output_file << "\n";
-//        }
+        /*--- Loop over the variables and write the values to file ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
+        }
+        
+        /*--- Write global index. (note outer loop over procs) ---*/
+        
+        output_file << Global_Index << "\t";
+        myPoint++;
+        
+        output_file << "\n";
+        
       }
     }
     /*--- Flush the file and wait for all processors to arrive. ---*/

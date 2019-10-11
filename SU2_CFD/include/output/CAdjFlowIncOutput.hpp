@@ -47,10 +47,8 @@
 class CAdjFlowIncOutput final: public COutput {
 private:
   
-  bool cont_adj; /*!< \brief Boolean indicating whether we run a cont. adjoint problem */ 
-
-  unsigned short turb_model; /*!< \brief Boolean indicating whether have a turbulence model*/ 
-  unsigned short rad_model;  /*!< \brief Boolean indicating whether have a radiation model*/ 
+  unsigned short turb_model; /*!< \brief The kind of turbulence model*/ 
+  unsigned short rad_model;  /*!< \brief The kind of radiation model */ 
   bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/ 
   weakly_coupled_heat; /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/ 
   

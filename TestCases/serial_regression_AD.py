@@ -57,7 +57,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606839, -9.035212, -0.000000, 0.005688] #last 4 columns
+    discadj_naca0012.test_vals = [-3.610567, -9.034912, -0.000000, 0.005621] #last 4 columns
     discadj_naca0012.su2_exec  = "SU2_CFD_AD"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -68,7 +68,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.724711, -4.052467, -0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.758796, -3.863529, -0.000000, 0.000000] #last 4 columns
     discadj_cylinder3D.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.206814, 1.674391, 4.7250e+04, 0.0000e+00]#last 4 columns
+    discadj_arina2k.test_vals    = [2.244006, 1.701303, 47250.000000, 0.000000]#last 4 columns
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -120,7 +120,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.633197, -2.544956, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.606555, -2.538181, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -208,7 +208,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-2.641237, -3.110423, -7.0498e-04, 1.2996e-06] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.170348, -1.639086, -0.020749, 0.000040] #last 4 columns
     discadj_pitchingNACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -239,7 +239,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [3.139355, 1.144919, -1040.600000, -2464.900000] #last 4 columns
+    discadj_heat.test_vals = [-2.271573, 0.671194, -3.172000, -8.231600] #last 4 columns
     discadj_heat.su2_exec  = "SU2_CFD_AD"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
@@ -258,7 +258,22 @@ def main():
 #    discadj_fsi.su2_exec  = "SU2_CFD_AD"
 #    discadj_fsi.timeout   = 1600
 #    discadj_fsi.tol       = 0.00001
-#    test_list.append(discadj_fsi)      
+#    test_list.append(discadj_fsi)
+
+    ###################################
+    ### Coupled CHT Adjoint         ###
+    ###################################
+
+    # Coupled discrete adjoint for heatflux in heated cylinder array
+    discadj_cht           = TestCase('discadj_cht')
+    discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
+    discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
+    discadj_cht.test_iter = 10
+    discadj_cht.test_vals = [-2.403785, -3.097865, -3.097836, -3.097833] #last 4 columns
+    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.timeout   = 1600
+    discadj_cht.tol       = 0.00001
+    test_list.append(discadj_cht)
 
     ######################################
     ### RUN TESTS                      ###
@@ -348,7 +363,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_flow.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 1000
-    pywrapper_FEA_AD_FlowLoad.test_vals     = [30, -2.4701936842091294, 1.4366255094753457, 0.0] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [30.000000, -2.518695, 1.390150, 0.000000] #last 4 columns
     pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001

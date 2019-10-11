@@ -1,4 +1,5 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
+#include <cassert>
 
 CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields){
   
@@ -28,6 +29,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   Index        = NULL;
   connSend     = NULL;
   dataBuffer   = NULL;
+  passiveDoubleBuffer = NULL;
+  doubleBuffer = NULL;
   idSend       = NULL;
   nSends = 0;
   nRecvs = 0;
@@ -59,15 +62,7 @@ CParallelDataSorter::~CParallelDataSorter(){
   
   if (connSend != NULL) delete [] connSend;
   
-  
-  /*--- Deallocate memory for solution data ---*/
-  
-//  if (Parallel_Data != NULL){
-//    for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
-//      if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
-//    }
-//    delete [] Parallel_Data;  
-//  }
+  if (dataBuffer != NULL) delete [] dataBuffer;
 }
 
 
@@ -113,11 +108,7 @@ void CParallelDataSorter::SortOutputData() {
   SU2_MPI::Status status;
   int ind;
 #endif
-  
-  /*--- Use the data buffer to temporarily hold data (using AD datatype) after receiving it ---*/
-  
-  su2double *tempRecvBuffer = reinterpret_cast<su2double*>(dataBuffer);
-  
+
   /*--- Allocate the memory that we need for receiving the conn
    values and then cue up the non-blocking receives. Note that
    we do not include our own rank in the communications. We will
@@ -141,7 +132,7 @@ void CParallelDataSorter::SortOutputData() {
       int count  = VARS_PER_POINT*kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(tempRecvBuffer[ll]), count, MPI_DOUBLE, source, tag,
+      SU2_MPI::Irecv(&(doubleBuffer[ll]), count, MPI_DOUBLE, source, tag,
                      MPI_COMM_WORLD, &(recv_req[iMessage]));
       iMessage++;
     }
@@ -202,7 +193,7 @@ void CParallelDataSorter::SortOutputData() {
   int ll = VARS_PER_POINT*nPoint_Send[rank];
   int kk = VARS_PER_POINT*nPoint_Send[rank+1];
   
-  for (int nn=ll; nn<kk; nn++, mm++) tempRecvBuffer[mm] = connSend[nn];
+  for (int nn=ll; nn<kk; nn++, mm++) doubleBuffer[mm] = connSend[nn];
   
   mm = nPoint_Recv[rank];
   ll = nPoint_Send[rank];
@@ -225,14 +216,18 @@ void CParallelDataSorter::SortOutputData() {
   delete [] recv_req;
 #endif
   
-  /*--- Note, dataBuffer and tempRecvBuffer point to the same address.
+  /*--- Note, passiveDoubleBuffer and doubleBuffer point to the same address.
    * This is the reason why we have to do the following copy/reordering in two steps. ---*/
   
   /*--- Step 1: Extract the underlying double value --- */
   
-  if (sizeof(passivedouble) != sizeof(su2double)){
+  if (!std::is_same<su2double, passivedouble>::value){
     for (int jj = 0; jj < VARS_PER_POINT*nPoint_Recv[size]; jj++){
-      dataBuffer[jj] = SU2_TYPE::GetValue(tempRecvBuffer[jj]);
+      const passivedouble tmpVal = SU2_TYPE::GetValue(doubleBuffer[jj]);
+      passiveDoubleBuffer[jj] = tmpVal;  
+      /*--- For some AD datatypes a call of the destructor is
+       *  necessary to properly delete the AD type ---*/
+      doubleBuffer[jj].~su2double();
     } 
   }
   
@@ -241,10 +236,10 @@ void CParallelDataSorter::SortOutputData() {
   passivedouble *tmpBuffer = new passivedouble[nPoint_Recv[size]];
   for (int jj = 0; jj < VARS_PER_POINT; jj++){
     for (int ii = 0; ii < nPoint_Recv[size]; ii++){
-      tmpBuffer[idRecv[ii]] = dataBuffer[ii*VARS_PER_POINT+jj];
+      tmpBuffer[idRecv[ii]] = passiveDoubleBuffer[ii*VARS_PER_POINT+jj];
     }
     for (int ii = 0; ii < nPoint_Recv[size]; ii++){
-      dataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
+      passiveDoubleBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
     }
   }
   
@@ -325,11 +320,15 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   connSend = NULL;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
   
+  /*--- Allocate the data buffer to hold the sorted data. We have to make it large enough
+   * to hold passivedoubles and su2doubles ---*/
+  unsigned short maxSize = max(sizeof(passivedouble), sizeof(su2double));
+  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize];
   
-  /*--- Allocate the data buffer to hold the sorted data.
-   * It should be big enough to also temporarily hold the data received using the AD type ---*/
+  /*--- doubleBuffer and passiveDouble buffer use the same memory allocated above using the dataBuffer. ---*/
   
-  dataBuffer = reinterpret_cast<passivedouble*>(new su2double[VARS_PER_POINT*nPoint_Recv[size]]());
+  doubleBuffer = reinterpret_cast<su2double*>(dataBuffer);
+  passiveDoubleBuffer = reinterpret_cast<passivedouble*>(dataBuffer);
   
   /*--- Allocate arrays for sending the global ID. ---*/
   

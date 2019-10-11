@@ -57,7 +57,8 @@ CVariable::CVariable(void) {
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
   Solution_BGS_k = NULL;
-
+  Input_AdjIndices = NULL;
+  Output_AdjIndices = NULL;
 }
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
@@ -79,6 +80,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
   Solution_BGS_k = NULL;
+  Input_AdjIndices = NULL;
+  Output_AdjIndices = NULL;
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -118,6 +121,8 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
   Solution_BGS_k = NULL;
+  Input_AdjIndices = NULL;
+  Output_AdjIndices = NULL;
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
@@ -163,6 +168,16 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     }
   }
   
+  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
+    Input_AdjIndices = new int[nVar];
+    Output_AdjIndices = new int[nVar];
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Input_AdjIndices[iVar] = -1;
+      Output_AdjIndices[iVar] = -1;
+    }
+  }
+
   if (config->GetMultizone_Problem()){
     Solution_BGS_k = new su2double[nVar]();
   }
@@ -188,6 +203,8 @@ CVariable::~CVariable(void) {
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
   if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
   if (Solution_BGS_k      != NULL) delete [] Solution_BGS_k;
+  if (Input_AdjIndices    != NULL) delete [] Input_AdjIndices;
+  if (Output_AdjIndices   != NULL) delete [] Output_AdjIndices;
 
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)

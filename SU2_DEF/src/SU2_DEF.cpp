@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DEF, nZone, false);
+  driver_config = new CConfig(config_file_name, SU2_DEF, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -338,10 +338,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node---*/
-  
-  bool NewFile = false;
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
-  
+
   for (iZone = 0; iZone < nZone; iZone++){
     
     /*--- Load the data --- */

@@ -4,7 +4,7 @@ const string CParaviewFileWriter::fileExt = ".vtk";
 
 CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim, 
                                          string fileName, CParallelDataSorter *dataSorter) : 
-  CFileWriter(fields, fileName, dataSorter, fileExt, nDim){}
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CParaviewFileWriter::~CParaviewFileWriter(){}

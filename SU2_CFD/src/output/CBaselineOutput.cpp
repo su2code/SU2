@@ -43,24 +43,29 @@
 
 CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) : COutput(config, nDim, false) {
   
-  unsigned short iField = 0;
-
   /*--- Set the requested volume fields to all fields in the solver ---*/
   
-  requestedVolumeFields = solver->GetSolutionFields();
+  requestedVolumeFields.clear();
   
-  /*--- remove the point ID from the fields --- */
-  
-  requestedVolumeFields.erase(requestedVolumeFields.begin());
+  requestedVolumeFields.emplace_back("COORDINATES");
+  requestedVolumeFields.emplace_back("SOLUTION");
   
   nRequestedVolumeFields = requestedVolumeFields.size();
-    
+  
+  /*--- Get the fields from the solver ---*/
+  
+  fields = solver->GetSolutionFields();
+   
+  /*--- Remove point ID ---*/
+  
+  fields.erase(fields.begin());
+  
   /*--- Remove first and last character of the strings (the quotation marks) ---*/
   
-  for (iField = 0; iField < nRequestedVolumeFields; iField++){
-    requestedVolumeFields[iField] = requestedVolumeFields[iField].substr(1, requestedVolumeFields[iField].size() - 2);
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
+    fields[iField] = fields[iField].substr(1, fields[iField].size() - 2);
   }
-     
+  
   /*--- Set the volume filename --- */
   
   volumeFilename = "baseline";
@@ -69,16 +74,9 @@ CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* 
   
   surfaceFilename = "surface_baseline";
   
-  /*--- Conv field --- */
-  
-  convField = "NONE";
-  
 }
 
-CBaselineOutput::~CBaselineOutput(void) {
-
-
-}
+CBaselineOutput::~CBaselineOutput(void) {}
 
 void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
 
@@ -86,25 +84,25 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
     
   /*--- The first three fields should be the coordinates, if not, something is wrong ---*/
   
-  if (requestedVolumeFields[0] != "x" || requestedVolumeFields[1] != "y"){
+  if (fields[0] != "x" || fields[1] != "y"){
     SU2_MPI::Error("No coordinates found in the restart file!!", CURRENT_FUNCTION);
   }
   if (nDim == 3){
-    if (requestedVolumeFields[2] != "z"){
+    if (fields[2] != "z"){
       SU2_MPI::Error("No coordinates found in the restart file!!", CURRENT_FUNCTION);
     }
   }
   
   // Grid coordinates
-  AddVolumeOutput(requestedVolumeFields[0], requestedVolumeFields[0], "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput(requestedVolumeFields[1], requestedVolumeFields[1], "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput(fields[0], fields[0], "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput(fields[1], fields[1], "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput(requestedVolumeFields[2], requestedVolumeFields[2], "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput(fields[2], fields[2], "COORDINATES", "z-component of the coordinate vector");
 
   // Add all the remaining fields
   
-  for (iField = nDim; iField < nRequestedVolumeFields; iField++){
-    AddVolumeOutput(requestedVolumeFields[iField], requestedVolumeFields[iField], "SOLUTION","");
+  for (iField = nDim; iField < fields.size(); iField++){
+    AddVolumeOutput(fields[iField], fields[iField], "SOLUTION","");
   }
   
 }
@@ -113,7 +111,7 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   
   unsigned short iField = 0;
   
-  if (nRequestedVolumeFields != solver[0]->GetnVar()){
+  if ( fields.size() != solver[0]->GetnVar()){
     SU2_MPI::Error("Number of requested fields and number of variables do not match.", CURRENT_FUNCTION);
   }
   
@@ -121,8 +119,8 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   
   CVariable* Node_Sol  = solver[0]->node[iPoint];
    
-  for (iField = 0; iField < nRequestedVolumeFields; iField++){
-    SetVolumeOutputValue(requestedVolumeFields[iField], iPoint, Node_Sol->GetSolution(iField));
+  for (iField = 0; iField < fields.size(); iField++){
+    SetVolumeOutputValue(fields[iField], iPoint, Node_Sol->GetSolution(iField));
   }
   
 }
