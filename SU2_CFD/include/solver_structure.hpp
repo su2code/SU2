@@ -3492,6 +3492,12 @@ public:
                                 unsigned short val_kind_marker);
 
   /*!
+   * \brief Prints the interpolated Inlet_Values to a file.
+   * \param[in] Inlet_Values - the container for inlet data
+   */
+  void PrintNewInletData(su2double *Inlet_Values);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

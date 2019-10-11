@@ -5113,6 +5113,28 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
   
 }
 
+void CSolver::PrintNewInletData (su2double *Inlet_Values)
+{
+ofstream myfile;
+string text_line;
+myfile.precision(15);
+myfile.open("interpolated_data.dat",ios_base::app);
+
+if (myfile.is_open())
+{         
+          for (int index = 0; index < (maxCol_InletFile+(nDim-1)); index++)
+            myfile<<Inlet_Values[index]<<'\t';
+
+          myfile<<endl;
+
+   myfile.close();
+}
+else
+cout<<"file cannot be opened"<<endl;
+
+}
+
+
  void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                                 CSolver ***solver,
                                 CConfig *config,
@@ -5229,10 +5251,10 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
                       Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
                       }
 
+                     PrintNewInletData(Inlet_Values);
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
                     }
                   }
-                  cout<<"Point: "<<iPoint<<" matches: "<<match<<" times"<<endl;  match=0;
                   if (Point_Match == false){
                     unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
                     cout<< "WARNING: Point in grid outside the inlet file radius range (extrapolation capability not yet added)" <<endl;
