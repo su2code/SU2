@@ -426,7 +426,7 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
-  inline void Add_ExternalOld(unsigned long iPoint, const su2double *val_sol) {
+  inline void Add_ExternalOld(unsigned long iPoint, const su2double* val_sol) {
     for(unsigned long iVar = 0; iVar < nVar; iVar++) External_Old(iPoint,iVar) += val_sol[iVar];
   }
 

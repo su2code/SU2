@@ -76,8 +76,10 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
 
-  if (config->GetMultizone_Problem())
+  if (config->GetMultizone_Problem()) {
+    Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
     Set_BGSSolution_k();
+  }
 }
 
 void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }
