@@ -378,6 +378,10 @@ public:
   su2double GetHistoryFieldValue(string field){
     return historyOutput_Map[field].value;
   }
+
+  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
+    return historyOutputPerSurface_Map[field][iMarker].value;
+  }
   
   /*!
    * \brief Get a vector with all output fields in a particular group
@@ -742,8 +746,8 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
-  
-  
+
+
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.

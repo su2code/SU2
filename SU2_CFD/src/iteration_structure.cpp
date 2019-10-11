@@ -2303,10 +2303,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
 
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-  
-  solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry[iZone][iInst][MESH_0], config[iZone]);
-
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
@@ -2443,7 +2439,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
-
+  solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0], config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   solver[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
   solver[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
 
@@ -2476,15 +2472,15 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   
   /*--- Register conservative variables as output of the iteration ---*/
   
-    solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],config[iZone]);
   
   }
   if (turbulent && !frozen_visc){
-    solver[iZone][iInst][MESH_0][TURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
+    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
                                                                  config[iZone]);
   }
   if (heat){
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
+    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
                                                                  config[iZone]);
   }
   if (interface_boundary){

@@ -83,6 +83,7 @@ class CSolver {
 protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
+  bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   unsigned short nVar,          /*!< \brief Number of variables of the problem. */
@@ -277,6 +278,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Get information whether the initialization is an adjoint solver or not.
+   * \return <code>TRUE</code> means that it is an adjoint solver.
+   */
+  bool GetAdjoint(void);
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -487,7 +494,14 @@ public:
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
-  
+
+    /*!
+   * \brief Set the value of the RMS residual respective solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetResidual_Solution(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -514,7 +528,49 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the solution vector to solution in Solution_Old.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void SetSolution_Old(CGeometry *geometry);
   
+  /*!
+   * \brief Add External_Old to Solution vector.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_ExternalOld_To_Solution(CGeometry *geometry);
+
+  /*!
+   * \brief Set the Solution vector to zero.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void SetSolution_Zero(CGeometry *geometry);
+
+  /*!
+   * \brief Set the External vector to zero.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void SetExternal_Zero(CGeometry *geometry);
+
+  /*!
+   * \brief Add the current Solution vector to External.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_Solution_To_External(CGeometry *geometry);
+
+  /*!
+   * \brief Add the current Solution vector to External_Old.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_Solution_To_ExternalOld(CGeometry *geometry);
+
+  /*!
+   * \brief Set External_Old to External.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Set_OldExternal(CGeometry *geometry);
+
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11346,8 +11402,8 @@ public:
 class CHeatSolverFVM : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
-  su2double **HeatFlux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
-            *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
+  su2double **HeatFlux, *HeatFlux_per_Marker, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
+            *AverageT_per_Marker, Total_AverageT, AllBound_AverageT,
             *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
   su2double ***ConjugateVar, ***InterfaceVar;
@@ -12805,7 +12861,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
+
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
 };

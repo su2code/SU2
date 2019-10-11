@@ -417,7 +417,6 @@ private:
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
-  CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
@@ -758,6 +757,7 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_AD_Statistics,          /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
@@ -874,6 +874,7 @@ private:
   bool Sine_Load;             /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
+  bool CHT_Robin;             /*!< \brief Option for boundary condition method at CHT interfaces. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -975,7 +976,8 @@ private:
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,       /*!< \brief AD-based discrete adjoint mode. */
+  FullTape;                     /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1412,7 +1414,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
@@ -2765,13 +2767,6 @@ public:
    * \return CFL number for each grid.
    */
   su2double GetCFL(unsigned short val_mesh);
-
-  /*!
-   * \brief Get the Courant Friedrich Levi number for solid solvers.
-   * \param[in] val_mesh - Index of the mesh were the CFL is applied.
-   * \return CFL number for each grid.
-   */
-  su2double GetCFL_Solid(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for each grid.
@@ -3260,6 +3255,12 @@ public:
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
   bool GetWrt_Performance(void);
+
+  /*!
+   * \brief Get information about the computational graph (e.g. memory usage) when using AD in reverse mode.
+   * \return <code>TRUE</code> means that the tape statistics will be written after each recording.
+   */
+  bool GetWrt_AD_Statistics(void);
   
   /*!
    * \brief Get information about writing the mesh quality metrics to the visualization files.
@@ -8517,6 +8518,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void);
+
+  /*!
+  * \brief Get the indicator whether we want to use full (coupled) tapes.
+  * \return the full tape indicator.
+  */
+  bool GetFull_Tape(void);
   
   /*!
    * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
@@ -9022,6 +9029,12 @@ public:
    * \return YES if weakly coupled heat equation for inc. flow is enabled.
    */
   bool GetWeakly_Coupled_Heat(void);
+
+  /*!
+   * \brief Get the boundary condition method for CHT.
+   * \return YES if Robin BC is used.
+   */
+  bool GetCHT_Robin(void);
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.

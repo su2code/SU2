@@ -60,7 +60,9 @@ class CVariable {
 protected:
 
   su2double *Solution,    /*!< \brief Solution of the problem. */
-  *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  *Solution_Old,      /*!< \brief Old solution of the problem R-K. */
+  *External,        /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
+  *External_Old;        /*!< \brief Old external (outer) contribution in discrete adjoint multizone problems. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -92,6 +94,11 @@ protected:
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  
+  int *Input_AdjIndices,          /*!< \brief Indices of Solution variables in the adjoint vector. */
+  *Output_AdjIndices;             /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  
+  /*--- Old solution container for BGS iterations ---*/
 
   su2double *Solution_BGS_k;
   
@@ -318,6 +325,16 @@ public:
   }
 
   /*!
+   * \brief Add a value to the solution.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  inline void AddSolution(su2double *val_solution) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Solution[iVar] = Solution[iVar] + val_solution[iVar];
+    }
+  }
+
+  /*!
    * \brief A virtual member.
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the old solution vector.
@@ -363,10 +380,30 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  inline virtual void SetExternalZero(void) {}
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_var - Number of the variable.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   inline virtual void AddSolution_New(unsigned short val_var, su2double val_solution) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void Add_External(const su2double* val_sol) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void Add_ExternalOld(const su2double* val_sol) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void Set_OldExternal(void) {}
 
   /*!
    * \brief Add a value to the solution, clipping the values.
@@ -410,6 +447,12 @@ public:
    * \return Pointer to the old solution vector.
    */
   inline su2double *GetSolution_Old(void) {return Solution_Old; }
+
+  /*!
+   * \brief Get the old external contributions of the problem.
+   * \return Pointer to the External_Old vector.
+   */
+  inline su2double *GetSolution_ExternalOld(void) {return External_Old; }
 
   /*!
    * \brief Get the solution at time n.
@@ -744,6 +787,11 @@ public:
    * \return Value of the min solution for the variable <i>val_var</i>.
    */
   inline su2double GetSolution_Min(unsigned short val_var) {return Solution_Min[val_var]; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double *Get_External(void) const { return NULL; }
 
   /*!
    * \brief Get the value of the preconditioner Beta.
@@ -2516,6 +2564,36 @@ public:
   }
 
   /*!
+   * \brief Register the variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  inline void RegisterSolution_intIndexBased(bool input) {
+    if (input) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput_intIndexBased(Solution[iVar]);
+    }
+    else { 
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Solution[iVar]);
+    }
+  }
+
+  /*!
+   * \brief Saving the adjoint vector position with respect to the solution variables.
+   * \param[in] input - input or output variables.
+   */
+  inline void SetAdjIndices(bool input) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      if (input) {
+        AD::SetAdjIndex(Input_AdjIndices[iVar], Solution[iVar]);
+      }
+      else {
+        AD::SetAdjIndex(Output_AdjIndices[iVar], Solution[iVar]);
+      }
+    }
+  }
+
+  /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
   inline void RegisterSolution_time_n(void) {
@@ -2541,12 +2619,32 @@ public:
   }
 
   /*!
+   * \brief Set the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  inline void SetAdjointSolution_intIndexBased(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AD::SetDerivative(Output_AdjIndices[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+    }
+  }
+
+  /*!
    * \brief Get the adjoint values of the solution.
    * \param[out] adj_sol - The adjoint values of the solution.
    */
   inline void GetAdjointSolution(su2double *adj_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution[iVar]);
+  }
+
+  /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  inline void GetAdjointSolution_intIndexBased(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      adj_sol[iVar] = AD::GetDerivative(Input_AdjIndices[iVar]);
+    }
   }
 
   /*!

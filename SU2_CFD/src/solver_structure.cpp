@@ -56,6 +56,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+  
+  adjoint = false;
 
   /*--- Set the multigrid level to the finest grid. This can be
         overwritten in the constructors of the derived classes. ---*/
@@ -2985,6 +2987,48 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, SOLUTION_GRADIENT);
   CompleteComms(geometry, config, SOLUTION_GRADIENT);
   
+}
+
+void CSolver::SetSolution_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolutionZero();
+  }
+}
+
+void CSolver::SetSolution_Old(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolution(node[iPoint]->GetSolution_Old());
+  }
+}
+
+void CSolver::Add_ExternalOld_To_Solution(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->AddSolution(node[iPoint]->GetSolution_ExternalOld());
+  }
+}
+
+void CSolver::SetExternal_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetExternalZero();
+  }
+}
+
+void CSolver::Add_Solution_To_External(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Add_External(node[iPoint]->GetSolution());
+  }
+}
+
+void CSolver::Add_Solution_To_ExternalOld(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Add_ExternalOld(node[iPoint]->GetSolution());
+  }
+}
+
+void CSolver::Set_OldExternal(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Set_OldExternal();
+  }
 }
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {

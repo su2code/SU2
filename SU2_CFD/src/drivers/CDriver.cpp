@@ -570,7 +570,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
   
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false);  
+  driver_config = new CConfig(config_file_name, SU2_CFD, false);  
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -1926,7 +1926,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS : compressible =true; fem_ns = true; break;
     case FEM_RANS : case DISC_ADJ_FEM_RANS : compressible =true; fem_ns = true; fem_turbulent = true; break;
     case FEM_LES :  compressible =true; fem_ns = true; break;
-    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT: heat_fvm = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
     case ADJ_EULER : compressible =true; euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : compressible =true; ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;

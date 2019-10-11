@@ -753,8 +753,6 @@ inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
 
 inline su2double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 
-inline su2double CConfig::GetCFL_Solid(void) {	return CFLSolid; }
-
 inline void CConfig::SetCFL(unsigned short val_mesh, su2double val_cfl) { CFL[val_mesh] = val_cfl; }
 
 inline su2double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
@@ -1704,6 +1702,8 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 
+inline bool CConfig::GetWrt_AD_Statistics(void) { return Wrt_AD_Statistics; }
+
 inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
 
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
@@ -1940,6 +1940,8 @@ inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
+inline bool CConfig::GetFull_Tape() { return FullTape; }
+
 inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}
 
 inline su2double CConfig::GetQuadrature_Factor_Straight(void) {return Quadrature_Factor_Straight;}
@@ -1959,6 +1961,8 @@ inline bool CConfig::GetUse_Lumped_MassMatrix_DGFEM(void) {return Use_Lumped_Mas
 inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacobian_Spatial_Discretization_Only;}
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
+
+inline bool CConfig::GetCHT_Robin(void) { return CHT_Robin; }
 
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
