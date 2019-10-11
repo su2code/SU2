@@ -5859,11 +5859,13 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
         
         su2double Grad_Vel[3][3], tau[3][3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+        su2double Grad_Temp[3], Head_Flux[3];
         
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[kNode]->GetGradient_Primitive(iDim+1, jDim);
           }
+          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, iDim);
         }
         
         /*--- Divergence of the velocity ---*/
@@ -5878,23 +5880,33 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
           }
         }
 
+        /*--- Compute the heat flux vector ---*/
+        const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+        const su2double prandtl_lam = config->GetPrandtl_Lam();
+        const su2double prandtl_turb = config->GetPrandtl_Turb();
+        su2double thermal_conductivity = Cp * (laminar_viscosity/prandtl_lam + eddy_viscosity/prandtl_turb);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Heat_Flux[iDim] = thermal_conductivity*Grad_Temp[iDim];
+        }
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
+
         SensVisc[iNode][0][0] = 0.;
         SensVisc[iNode][1][0] = tau[0][0];
         SensVisc[iNode][2][0] = tau[0][1];
         SensVisc[iNode][3][0] = tau[0][2];
-        SensVisc[iNode][4][0] = velocity[0]*tau[0][0] + velocity[1]*tau[0][1] + velocity[2]*tau[0][2];
+        SensVisc[iNode][4][0] = velocity[0]*tau[0][0] + velocity[1]*tau[0][1] + velocity[2]*tau[0][2] + Heat_Flux[0];
 
         SensVisc[iNode][0][1] = 0.;
         SensVisc[iNode][1][1] = tau[1][0];
         SensVisc[iNode][2][1] = tau[1][1];
         SensVisc[iNode][3][1] = tau[1][2];
-        SensVisc[iNode][4][1] = velocity[0]*tau[1][0] + velocity[1]*tau[1][1] + velocity[2]*tau[1][2];
+        SensVisc[iNode][4][1] = velocity[0]*tau[1][0] + velocity[1]*tau[1][1] + velocity[2]*tau[1][2] + Heat_Flux[1];
 
         SensVisc[iNode][0][2] = 0.;
         SensVisc[iNode][1][2] = tau[2][0];
         SensVisc[iNode][2][2] = tau[2][1];
         SensVisc[iNode][3][2] = tau[2][2];
-        SensVisc[iNode][4][2] = velocity[0]*tau[2][0] + velocity[1]*tau[2][1] + velocity[2]*tau[2][2];
+        SensVisc[iNode][4][2] = velocity[0]*tau[2][0] + velocity[1]*tau[2][1] + velocity[2]*tau[2][2] + Heat_Flux[2];
       }
     }
 
