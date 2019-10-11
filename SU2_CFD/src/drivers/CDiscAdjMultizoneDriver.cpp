@@ -251,10 +251,14 @@ void CDiscAdjMultizoneDriver::Run() {
         /*--- Add off-diagonal contribution (including the OF gradient) to Solution for next inner evaluation. ---*/
 
         Add_ExternalOld_To_Solution(iZone);
+
+        /*--- Print out the convergence data to screen and history file ---*/
+
+        output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
+                                                   config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInner_Iter);
       }
 
-
-      /*--- Off-diagonal (coupling term) update. ---*/
+      /*--- Off-diagonal (coupling term) update for next outer evaluation. ---*/
 
       for (jZone = 0; jZone < nZone; jZone++) {
 
@@ -270,13 +274,12 @@ void CDiscAdjMultizoneDriver::Run() {
           /*--- Add the cross derivatives from iZone<-jZone dependencies to the External vector. ---*/
 
           Add_Solution_To_External(jZone);
-
         }
       }
 
       // TODO: Add an option to _already_ update off-diagonals here (i.e., in the zone-loop)
 
-      /*--- Compute residual from Solution and Solution_BGS_k. ---*/
+      /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
 
       SetResidual_BGS(iZone);
 
@@ -290,12 +293,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     Set_OldExternal();
 
-    /*--- Print out the convergence data to screen and history file ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-      output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
-                                                 config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInner_Iter);
-    }
+    /*--- Set the multizone output. ---*/
 
     driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
                                               driver_config->GetTimeIter(), driver_config->GetOuterIter());
