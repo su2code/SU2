@@ -894,7 +894,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
-  addBoolOption("ADJ_FSI", FSI_Problem, YES);  
+  addBoolOption("ADJ_FSI", FSI_Problem, NO);
   
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
