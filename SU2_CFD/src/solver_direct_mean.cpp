@@ -5881,6 +5881,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         }
 
         /*--- Compute the heat flux vector ---*/
+        const su2double Gas_Constant = config->GetGas_ConstantND()
         const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
         const su2double prandtl_lam = config->GetPrandtl_Lam();
         const su2double prandtl_turb = config->GetPrandtl_Turb();
