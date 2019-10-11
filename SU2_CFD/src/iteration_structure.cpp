@@ -704,9 +704,17 @@ bool CFluidIteration::Monitor(COutput *output,
 
   if (config[val_iZone]->GetFixed_CL_Mode()){
     bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
+
+    /* --- If Fixed CL mode has ended and Finite Differencing has started, print convergence history and volume files. 
+            Additionally set config option so that volume output is disabled --- */
+
     if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config[val_iZone]->GetInnerIter()){
       if (rank == MASTER_NODE) output->PrintConvergenceSummary();
-      output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0],                                               config[val_iZone],                                                                 solver[val_iZone][INST_0][MESH_0], config[val_iZone]->GetInnerIter(), true);
+      
+      output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], 
+                              config[val_iZone], solver[val_iZone][INST_0][MESH_0], 
+                              config[val_iZone]->GetInnerIter(), true);
+
       config[val_iZone]->SetFinite_Difference_Mode(true);
     }
     output->SetConvergence(fixed_cl_convergence);
@@ -717,8 +725,8 @@ bool CFluidIteration::Monitor(COutput *output,
 
   return StopCalc;
 
-
 }
+
 void CFluidIteration::Postprocess(COutput *output,
                                   CIntegration ****integration,
                                   CGeometry ****geometry,
