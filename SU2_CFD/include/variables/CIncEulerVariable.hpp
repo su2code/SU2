@@ -55,10 +55,6 @@ protected:
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
-  /*--- Old solution container for BGS iterations ---*/
-
-  su2double* Solution_BGS_k;
-
   /*--- Old density for variable density turbulent flows (SST). ---*/
 
   su2double Density_Old;
@@ -319,21 +315,6 @@ public:
   inline su2double GetSpecificHeatCv(void) {return Primitive[nDim+8]; }
 
   /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_k(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_BGS_k[iVar] = Solution[iVar];
-  }
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution_k(unsigned short iDim) {
-    return Solution_BGS_k[iDim]; }
-
-  /*!
    * \brief Set the recovered pressure for streamwise periodic flow.
    * \param[in] val_pressure - pressure value.
    */
@@ -360,7 +341,7 @@ public:
    */
   inline su2double GetStreamwise_Periodic_RecoveredTemperature(void) {
     return Streamwise_Periodic_RecoveredTemperature; }
-
+//TK:: unclear during merge whether necessary
   inline void SetVelocity(su2double *val_velocity) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
        Solution[iDim+1] = val_velocity[iDim];

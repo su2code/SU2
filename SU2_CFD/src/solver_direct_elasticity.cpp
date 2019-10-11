@@ -39,6 +39,7 @@
 #include "../include/variables/CFEAFSIBoundVariable.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
 #include "../include/variables/CFEAVariable.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <algorithm>
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
@@ -58,6 +59,11 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   loadIncrement = 1.0;
   
   element_container = NULL;
+  unsigned short iTerm;  
+  element_container = new CElement** [MAX_TERMS]();
+  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
+  
   node = NULL;
   
   element_properties = NULL;
@@ -95,15 +101,17 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   iElem_iDe   = NULL;
   
   topol_filter_applied = false;
+  
+  element_based = false;
 }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   unsigned long iPoint;
   unsigned short iVar, jVar, iDim, jDim;
-  unsigned short iTerm, iKind;
+  unsigned short iTerm;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   
@@ -128,15 +136,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Here is where we assign the kind of each element ---*/
   
   /*--- First level: different possible terms of the equations ---*/
-  element_container = new CElement** [MAX_TERMS];
+  element_container = new CElement** [MAX_TERMS]();
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS];
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
   
-  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
-    for (iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
-      element_container[iTerm][iKind] = NULL;
-    }
-  }
   
   if (nDim == 2) {
 
@@ -430,8 +433,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     RelaxCoeff        = 1.0;
     ForceCoeff        = 1.0;
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
 
     /*--- Define some structures for locating max residuals ---*/
 
@@ -461,6 +464,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     CompleteComms(geometry, config, SOLUTION_FEA_OLD);
   }
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "FEA";
 }
 
 CFEASolver::~CFEASolver(void) {
@@ -485,11 +490,11 @@ CFEASolver::~CFEASolver(void) {
   }
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij[iVar];
+    if (Jacobian_s_ij!= NULL) delete [] Jacobian_s_ij[iVar];
     if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
-    delete [] mZeros_Aux[iVar];
-    delete [] mId_Aux[iVar];
-    delete [] stressTensor[iVar];
+    if (mZeros_Aux != NULL) delete [] mZeros_Aux[iVar];
+    if (mId_Aux != NULL) delete [] mId_Aux[iVar];
+    if (stressTensor!= NULL) delete [] stressTensor[iVar];
   }
   
   if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
@@ -502,15 +507,22 @@ CFEASolver::~CFEASolver(void) {
   delete [] GradN_X;
   delete [] GradN_x;
   
-  delete [] mZeros_Aux;
-  delete [] mId_Aux;
+  if (mZeros_Aux != NULL) delete [] mZeros_Aux;
+  if (mId_Aux != NULL) delete [] mId_Aux;
   
   delete [] nodeReactions;
   
   delete [] normalVertex;
-  delete [] stressTensor;
+  if (stressTensor != NULL) delete [] stressTensor;
+  
+  if (solutionPredictor != NULL) delete [] solutionPredictor;
   
   if (iElem_iDe != NULL) delete [] iElem_iDe;
+  
+  delete [] elProperties;
+  
+  if (Res_FSI_Cont != NULL) delete [] Res_FSI_Cont;
+  
 }
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
@@ -534,7 +546,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
@@ -672,7 +684,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
   
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
   
@@ -829,15 +841,12 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
-  unsigned long index;
 
   unsigned short iVar;
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
   unsigned short file_format = config->GetRefGeom_FileFormat();
 
   string filename;
-  su2double dull_val;
   ifstream reference_file;
 
 
@@ -846,8 +855,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   filename = config->GetRefGeom_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+  
+  filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
   reference_file.open(filename.data(), ios::in);
 
@@ -885,7 +894,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   getline (reference_file, text_line);
 
   while (getline (reference_file, text_line)) {
-    istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -895,9 +905,15 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
     iPoint_Local = Global2Local[iPoint_Global];
 
     if (iPoint_Local >= 0) {
-
-      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+      
+      if (nDim == 2){
+        Solution[0] = PrintingToolbox::stod(point_line[3]);
+        Solution[1] = PrintingToolbox::stod(point_line[4]);
+      } else {
+        Solution[0] = PrintingToolbox::stod(point_line[4]);
+        Solution[1] = PrintingToolbox::stod(point_line[5]);
+        Solution[2] = PrintingToolbox::stod(point_line[6]);        
+      }
 
       for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetReference_Geometry(iVar, Solution[iVar]);
 
@@ -939,14 +955,14 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   
   
   unsigned long iPoint;
-  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
-  bool first_iter = (config->GetIntIter() == 0);                          // Checks if it is the first iteration
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool initial_calc = (config->GetTimeIter() == 0) && (config->GetInnerIter() == 0);                  // Checks if it is the first calculation.
+  bool first_iter = (config->GetInnerIter() == 0);                          // Checks if it is the first iteration
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
   bool restart = config->GetRestart();                        // Restart analysis
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter()); // Initial calculation for restart
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetTimeIter()) ==SU2_TYPE::Int(config->GetRestart_Iter())); // Initial calculation for restart
   
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);     // Discrete adjoint FEM solver
   
@@ -1094,7 +1110,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
 void CFEASolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
-void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
   
   unsigned long iPoint, nPoint;
   bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
@@ -1110,7 +1126,7 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
   
 }
 
-void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
   
   unsigned long iPoint, nPoint;
   bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
@@ -1580,7 +1596,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   
   bool prestretch_fem = config->GetPrestretch();
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   
   bool topology_mode = config->GetTopology_Optimization();
   su2double simp_exponent = config->GetSIMP_Exponent();
@@ -1979,7 +1995,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *c
   
   unsigned long iPoint, iVertex;
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   Solution[0] = 0.0;
   Solution[1] = 0.0;
@@ -2015,7 +2031,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *c
 void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -2124,12 +2140,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   unsigned short iVar;
   unsigned long iPoint, total_index;
   
-  bool first_iter = (config->GetIntIter() == 0);
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  
-  su2double solNorm = 0.0, solNorm_recv = 0.0;
-  
+    
   if (disc_adj_fem) {
 
     if (nonlinear_analysis) {
@@ -2198,69 +2211,6 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   else {
     if (nonlinear_analysis){
 
-      /*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
-
-      /*--- UTOL = norm(Delta_U(k)) / norm(U(k)) --------------------------*/
-      /*--- RTOL = norm(Residual(k)) / norm(Residual(0)) ------------------*/
-      /*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
-
-      if (first_iter){
-        Conv_Ref[0] = 1.0;                                        // Position for the norm of the solution
-        Conv_Ref[1] = max(LinSysRes.norm(), EPS);                 // Position for the norm of the residual
-        Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);    // Position for the energy tolerance
-
-        /*--- Make sure the computation runs at least 2 iterations ---*/
-        Conv_Check[0] = 1.0;
-        Conv_Check[1] = 1.0;
-        Conv_Check[2] = 1.0;
-
-        /*--- If absolute, we check the norms ---*/
-        switch (config->GetResidual_Criteria_FEM()) {
-          case RESFEM_ABSOLUTE:
-            Conv_Check[0] = LinSysSol.norm();         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm();         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
-            break;
-        }
-      }
-      else {
-        /*--- Compute the norm of the solution vector Uk ---*/
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-          for (iVar = 0; iVar < nVar; iVar++){
-            solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
-          }
-        }
-
-        // We need to communicate the norm of the solution and compute the RMS throughout the different processors
-
-#ifdef HAVE_MPI
-        /*--- We sum the squares of the norms across the different processors ---*/
-        SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-        solNorm_recv         = solNorm;
-#endif
-
-        Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);           // Norm of the solution vector
-
-        switch (config->GetResidual_Criteria_FEM()) {
-          case RESFEM_RELATIVE:
-            Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
-            break;
-          case RESFEM_ABSOLUTE:
-            Conv_Check[0] = LinSysSol.norm();         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm();         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
-            break;
-          default:
-            Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
-            Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
-            Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
-            break;
-        }
-
-      }
 
       /*--- MPI solution ---*/
 
@@ -3021,13 +2971,13 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
   bool restart = config->GetRestart(); // Restart analysis
   bool fsi = (config->GetnMarker_Fluid_Load() > 0);  // FSI simulation.
-  bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
+  bool stat_fsi = !config->GetTime_Domain();
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
   bool offset = (restart && fsi && (!stat_fsi));
   su2double DeltaT = config->GetDelta_DynTime();
   su2double OffsetTime = 0.0;
-  OffsetTime = DeltaT * (config->GetDyn_RestartIter()-1);
+  OffsetTime = DeltaT * (config->GetRestart_Iter()-1);
 
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
 
@@ -3095,8 +3045,8 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool first_iter = (config->GetIntIter() == 0);
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool first_iter = (config->GetInnerIter() == 0);
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
@@ -3263,7 +3213,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());          // Dynamic simulations.
   
   /*--- Update solution ---*/
   
@@ -3329,7 +3279,7 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
   unsigned short iVar;
   unsigned long iPoint;
   su2double *valSolutionPred;
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   
   /*--- Update solution and set it to be the solution after applying relaxation---*/
   
@@ -3403,8 +3353,8 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool first_iter = (config->GetIntIter() == 0);
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool first_iter = (config->GetInnerIter() == 0);
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
@@ -3746,19 +3696,9 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
   su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
   su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
-  su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
   
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
-  
-  ofstream historyFile_FSI;
-  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-  if (writeHistFSI && (rank == MASTER_NODE)) {
-    char cstrFSI[200];
-    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
-    strcpy (cstrFSI, filenameHistFSI.data());
-    historyFile_FSI.open (cstrFSI, std::ios_base::app);
-  }
   
   
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
@@ -3766,29 +3706,19 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
     
     if (RelaxMethod_FSI == NO_RELAXATION) {
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
+      if (rank == MASTER_NODE) {
         
         SetWAitken_Dyn(1.0);
         
-        if (iOuterIter == 0) historyFile_FSI << " " << endl ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-        if (iOuterIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
-        else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 << "," ;
       }
       
     }
     else if (RelaxMethod_FSI == FIXED_PARAMETER) {
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
+      if (rank == MASTER_NODE) {
         
         SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
         
-        if (iOuterIter == 0) historyFile_FSI << " " << endl ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-        if (iOuterIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
-        else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
       }
       
     }
@@ -3804,12 +3734,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
         
         SetWAitken_Dyn(WAitkDyn);
-        if (writeHistFSI && (rank == MASTER_NODE)) {
-          if (iOuterIter == 0) historyFile_FSI << " " << endl ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-          historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
-        }
         
       }
       else {
@@ -3857,21 +3781,13 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         
         SetWAitken_Dyn(WAitkDyn);
         
-        if (writeHistFSI && (rank == MASTER_NODE)) {
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-          historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
-        }
-        
       }
       
     }
     else {
       if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
     }
-  
-  if (writeHistFSI && (rank == MASTER_NODE)) {historyFile_FSI.close();}
-  
+    
 }
 
 void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
@@ -3950,9 +3866,9 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
   unsigned long iPoint;
   unsigned long nTotalPoint = 1;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
-  unsigned long ExtIter = config->GetExtIter();
+  unsigned long TimeIter = config->GetTimeIter();
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
@@ -3996,7 +3912,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
   Total_OFRefGeom = objective_function_reduce + PenaltyValue;
 
   Global_OFRefGeom += Total_OFRefGeom;
-  objective_function_averaged = Global_OFRefGeom / (ExtIter + 1.0 + EPS);
+  objective_function_averaged = Global_OFRefGeom / (TimeIter + 1.0 + EPS);
 
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
@@ -4032,11 +3948,11 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
     if (fsi) {
       Total_ForwardGradient = local_forward_gradient;
-      averaged_gradient     = Total_ForwardGradient / (ExtIter + 1.0);
+      averaged_gradient     = Total_ForwardGradient / (TimeIter + 1.0);
     }
     else {
       Total_ForwardGradient += local_forward_gradient;
-      averaged_gradient      = Total_ForwardGradient / (ExtIter + 1.0);
+      averaged_gradient      = Total_ForwardGradient / (TimeIter + 1.0);
     }
 
     myfile_res << scientific << local_forward_gradient << "\t";
@@ -4085,9 +4001,9 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar;
   unsigned long iPoint;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
-  unsigned long ExtIter = config->GetExtIter();
+  unsigned long TimeIter = config->GetTimeIter();
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
@@ -4143,7 +4059,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
   Total_OFRefNode = objective_function_reduce + PenaltyValue;
 
   Global_OFRefNode += Total_OFRefNode;
-  objective_function_averaged = Global_OFRefNode / (ExtIter + 1.0 + EPS);
+  objective_function_averaged = Global_OFRefNode / (TimeIter + 1.0 + EPS);
 
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
@@ -4179,11 +4095,11 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
     if (fsi) {
       Total_ForwardGradient = local_forward_gradient;
-      averaged_gradient     = Total_ForwardGradient / (ExtIter + 1.0);
+      averaged_gradient     = Total_ForwardGradient / (TimeIter + 1.0);
     }
     else {
       Total_ForwardGradient += local_forward_gradient;
-      averaged_gradient      = Total_ForwardGradient / (ExtIter + 1.0);
+      averaged_gradient      = Total_ForwardGradient / (TimeIter + 1.0);
     }
 
     myfile_res << scientific << local_forward_gradient << "\t";
@@ -4221,7 +4137,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
       ofstream myfile_his;
       myfile_his.open ("history_refnode.dat",ios::app);
       myfile_his.precision(15);
-      myfile_his << ExtIter << "\t";
+      myfile_his << TimeIter << "\t";
       myfile_his << scientific << Total_OFRefNode << "\t";
       myfile_his << scientific << objective_function_averaged << "\t";
       myfile_his << scientific << difX_reduce << "\t";
@@ -4426,58 +4342,14 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
 }
 
-void CFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  /*--- Set Residuals to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
-          AddRes_BGS(iVar,residual*residual);
-          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-      }
-  }
-
-  SetResidual_BGS(geometry, config);
-
-}
-
-
-void CFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    node[iPoint]->Set_BGSSolution_k();
-
-  }
-
-}
-
 void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   unsigned short iVar, nSolVar;
   unsigned long index;
 
-  ifstream restart_file;
-  string restart_filename, filename, text_line;
+  string filename;
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[MESH_0]->GetnZone();
-
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   bool fluid_structure = (config->GetnMarker_Fluid_Load() > 0);
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
@@ -4492,16 +4364,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetSolution_FEMFileName();
-
-  /*--- If multizone, append zone name ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-
-  if (dynamic) {
-    filename = config->GetUnsteady_FileName(filename, val_iter);
-  }
+  filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- Read all lines in the restart file ---*/
 

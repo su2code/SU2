@@ -93,6 +93,8 @@ protected:
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
 
+  su2double *Solution_BGS_k;
+  
 public:
 
   /*!
@@ -671,6 +673,14 @@ public:
    * \return Value of the Rmatrix entry.
    */
   inline su2double GetRmatrix(unsigned short val_iDim, unsigned short val_jDim) {return Rmatrix[val_iDim][val_jDim]; }
+
+  /*!
+   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \return Value of the Rmatrix entry.
+   */
+  inline su2double **GetRmatrix(void) {return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -2010,27 +2020,37 @@ public:
    */
   inline virtual su2double Get_OldSolution_Geometry(unsigned short iDim) {return 0.0;}
 
-  /*!
+    /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   inline virtual void Set_BGSSolution(unsigned short iDim, su2double val_solution) {}
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline virtual void Set_BGSSolution_k(void) {}
+  inline void Set_BGSSolution_k(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_BGS_k[iVar] = Solution[iVar];
+  }
+  
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  inline void Set_BGSSolution_k(unsigned short iVar, su2double val_var) {
+      Solution_BGS_k[iVar] = val_var;
+  }
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
    * \param[out] val_solution - old adjoint solution for coordinate iDim
    */
   inline virtual su2double Get_BGSSolution(unsigned short iDim) {return 0.0;}
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution_k(unsigned short iDim) {return 0.0;}
 
   /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).

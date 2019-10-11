@@ -89,7 +89,17 @@ def direct_differentiation( filename           ,
     # State
     state = SU2.io.State()
     state.find_files(config)
+
+    foundDerivativeField = False
+    for fields in SU2.io.historyOutFields:
+        group = SU2.io.historyOutFields[fields]['GROUP']
+        if group in config.HISTORY_OUTPUT:
+            if SU2.io.historyOutFields[fields]['TYPE'] == 'D_COEFFICIENT':
+                foundDerivativeField = True
     
+    if not foundDerivativeField:
+        sys.exit('No derivative field found in HISTORY_OUTPUT')
+
     # Direct Differentiation Gradients
     SU2.eval.gradients.directdiff(config,state)
     
