@@ -270,7 +270,7 @@ def main():
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 3000
     discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
-    discadj_fsi.su2_exec  = "parallel_computation.py -f"
+    discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
     test_list.append(discadj_fsi)
@@ -305,7 +305,7 @@ def main():
     discadj_topol_optim.cfg_dir = "fea_topology"
     discadj_topol_optim.cfg_file  = "config.cfg"
     discadj_topol_optim.test_iter = 0
-    discadj_topol_optim.su2_exec  = "parallel_computation.py"
+    discadj_topol_optim.su2_exec  = "parallel_computation.py -f"
     discadj_topol_optim.timeout   = 1600
     discadj_topol_optim.reference_file = "grad_ref_node.dat.ref"
     discadj_topol_optim.test_file = "grad_ref_node.dat"
@@ -320,7 +320,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 0
-    discadj_fsi2.su2_exec  = "parallel_computation.py"
+    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.reference_file = "grad_young.opt.ref"
     discadj_fsi2.test_file = "grad_young.opt"
