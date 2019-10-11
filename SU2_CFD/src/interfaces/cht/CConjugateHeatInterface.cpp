@@ -149,6 +149,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   }
   else if (incompressible_flow) {
 
+    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+
     thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
     heat_flux_density       = thermal_conductivityND*dTdn;
 
