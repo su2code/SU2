@@ -5865,7 +5865,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
           for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[kNode]->GetGradient_Primitive(iDim+1, jDim);
           }
-          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, iDim);
+          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, jDim);
         }
         
         /*--- Divergence of the velocity ---*/
@@ -5885,7 +5885,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
         const su2double prandtl_lam = config->GetPrandtl_Lam();
         const su2double prandtl_turb = config->GetPrandtl_Turb();
-        su2double thermal_conductivity = Cp * (laminar_viscosity/prandtl_lam + eddy_viscosity/prandtl_turb);
+        const su2double thermal_conductivity = Cp * (laminar_viscosity/prandtl_lam + eddy_viscosity/prandtl_turb);
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           Heat_Flux[iDim] = thermal_conductivity*Grad_Temp[iDim];
         }
