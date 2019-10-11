@@ -2804,7 +2804,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 }
 
 
-bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter){
+bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
   
   if (config->GetTime_Domain()){
     if (((config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -2820,10 +2820,11 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter){
       return true;
     }
   } else {
-    return ((Iter > 0) && Iter % config->GetVolume_Wrt_Freq() == 0);
+    if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode()) return false;
+    return ((Iter > 0) && Iter % config->GetVolume_Wrt_Freq() == 0) || force_writing;
   }
   
-  return false;
+  return false || force_writing;
 }
 
 void CFlowOutput::SetTimeAveragedFields(){
