@@ -121,26 +121,37 @@ int main(int argc, char *argv[]) {
 
   if (!dry_run){
     
-    if (((config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint()))
-         && config->GetTime_Marching() != HARMONIC_BALANCE && (!turbo)) || (turbo && config->GetDiscrete_Adjoint())) {
-      
+    if ((!config->GetMultizone_Problem())
+        && (config->GetTime_Marching() != HARMONIC_BALANCE && (!turbo))
+        || (turbo && config->GetDiscrete_Adjoint())) {
       
       /*--- Single zone problem: instantiate the single zone driver class. ---*/
       
       if (nZone > 1 ) {
         SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
       }
-      if (config->GetDiscrete_Adjoint())
+      if (config->GetDiscrete_Adjoint()) {
+
         driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+      }
       else
         driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
       
     }
     else if (config->GetMultizone_Problem() && !turbo && !fsi) {
       
-      /*--- Multizone Driver. ---*/
+    /*--- Multizone Drivers. ---*/
+
+    if (config->GetDiscrete_Adjoint()) {
+
+      driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, MPICommunicator);
+
+    }
+    else {
       
       driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+
+    }
       
     } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
       
