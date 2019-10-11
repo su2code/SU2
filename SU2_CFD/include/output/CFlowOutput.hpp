@@ -115,8 +115,9 @@ protected:
    * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
+   * \param[in] force_writing - boolean that forces writing of volume output
    */
-  bool WriteVolume_Output(CConfig *config, unsigned long Iter) override;
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing) override;
   
   /*!
    * \brief Write the forces breakdown file

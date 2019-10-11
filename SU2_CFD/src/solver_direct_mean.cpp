@@ -7370,8 +7370,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   if (Start_AoA_FD && Output && ((InnerIter - 1) == Iter_Update_AoA)) {
 
-    AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
-        
+    // AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
+    AoA_inc = 0.001; 
     if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
       cout.precision(7);      
       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
@@ -7476,8 +7476,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Update angle of attack ---*/
 
-    //AoA = AoA_Prev;
-    //config->SetAoA(AoA);
+    AoA = AoA_Prev;
+    config->SetAoA(AoA);
 
     /*--- Set the value of the  dOF/dCL in the config file ---*/
 
@@ -7582,7 +7582,7 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
     //config->SetScreen_Wrt_Freq(2,Wrt_Con_Freq);
     //config->SetHistory_Wrt_Freq(2,0);
   }
-
+  //config->SetFinite_Difference_Mode(Start_AoA_FD);
   return fixed_cl_conv;
   
 }

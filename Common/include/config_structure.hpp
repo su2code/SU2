@@ -616,17 +616,17 @@ private:
   su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
   su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
-  unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_dCL_dAlpha;   /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
+  su2double dNetThrust_dBCThrust;        /*!< \brief value of dNetThrust/dBCThrust. */
   bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   unsigned long Update_AoA_Iter_Limit; /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode */
+  bool Finite_Difference_Mode;
   bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
   unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
@@ -8305,6 +8305,17 @@ public:
    * \return Number of maximum iterations between AoA updates
    */
   unsigned long GetUpdate_AoA_Iter_Limit(void);
+
+  /*!
+   * \brief Get whether at the end of finite differencing (Fixed CL mode)
+   * \return boolean indicating end of finite differencing mode (Fixed CL mode)
+   */
+  bool GetFinite_Difference_Mode(void);
+
+  /*!
+   * \brief Set whether at the end of finite differencing (Fixed CL mode)
+   */
+  void SetFinite_Difference_Mode(bool val_fd_mode);
   
   /*!
    * \brief Set the current number of non-physical nodes in the solution.

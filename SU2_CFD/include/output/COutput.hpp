@@ -687,8 +687,9 @@ protected:
    * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
+   * \param[in] force_writing - boolean that forces writing of volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter);
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing);
   
   /*!
    * \brief Set the values of the volume output fields for a point.
