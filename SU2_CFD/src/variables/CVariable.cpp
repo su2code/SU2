@@ -68,7 +68,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
    in the simulation ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 
-  Solution_Old.resize(nPoint,nVar);
+  Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
