@@ -5113,25 +5113,28 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
   
 }
 
-void CSolver::PrintNewInletData (su2double *Inlet_Values)
+void CSolver::PrintNewInletData (passivedouble *Inlet_InterpolatedData, unsigned long nVertex,string Marker_Tag)
 {
+
 ofstream myfile;
-string text_line;
 myfile.precision(15);
-myfile.open("interpolated_data.dat",ios_base::app);
+myfile.open("Interpolated_Data_"+Marker_Tag+".dat",ios_base::out);
+
 
 if (myfile.is_open())
-{         
-          for (int index = 0; index < (maxCol_InletFile+(nDim-1)); index++)
-            myfile<<Inlet_Values[index]<<'\t';
+{  
+            for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
 
-          myfile<<endl;
-
-   myfile.close();
+                  for  (unsigned long iVar=0; iVar < (maxCol_InletFile+(nDim-1)); iVar++)
+                    {
+                      myfile<<Inlet_InterpolatedData[iVertex*(maxCol_InletFile+(nDim-1))+iVar]<<"\t";
+                    }
+                  myfile<<endl;
+                }
+        myfile.close();
 }
-else
-cout<<"file cannot be opened"<<endl;
-
+  else
+    cout<<"file cannot be opened"<<endl;
 }
 
 
@@ -5152,13 +5155,13 @@ cout<<"file cannot be opened"<<endl;
   /*--- Local variables ---*/
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
-  unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
+  unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow, nVertex;
   su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
-  bool Point_Match = 0;
+  bool Point_Match = false;
   string UnstExt, text_line;
   ifstream restart_file;
 
@@ -5228,7 +5231,10 @@ cout<<"file cannot be opened"<<endl;
             /*--- Increment our counter for marker matches. ---*/
 
             Marker_Counter++;
+            
+            nVertex = geometry[MESH_0]->nVertex[iMarker];
 
+            Inlet_InterpolatedData = new passivedouble[nVertex*(maxCol_InletFile+(nDim-1))];
             /*--- Loop through the nodes on this marker. ---*/
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
@@ -5240,10 +5246,11 @@ cout<<"file cannot be opened"<<endl;
 
               for  (iVar=0; iVar < nDim; iVar++)
                 Inlet_Values[iVar]=Coord[iVar];
-
-              Point_Match = false;
+              
+              
               for (iRow = nRowCum_InletFile[jMarker]; iRow < nRowCum_InletFile[jMarker+1]; iRow++) {
                   if (Inlet_Data[maxCol_InletFile*iRow] <= Interp_Radius && Inlet_Data[maxCol_InletFile*(iRow+1)] >= Interp_Radius){
+                      
                       for (index=1; index<maxCol_InletFile; index++)
                       {
                       Point_Match = true;
@@ -5251,8 +5258,9 @@ cout<<"file cannot be opened"<<endl;
                       Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
                       }
 
-                     PrintNewInletData(Inlet_Values);
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
+                      for  (iVar=0; iVar < (maxCol_InletFile+(nDim-1)); iVar++)
+                        Inlet_InterpolatedData[iVertex*(maxCol_InletFile+(nDim-1))+iVar]=Inlet_Values[iVar];
                     }
                   }
                   if (Point_Match == false){
@@ -5267,11 +5275,15 @@ cout<<"file cannot be opened"<<endl;
                     break;
                 }
               }
+              if(Point_Match == true)
+                {PrintNewInletData(Inlet_InterpolatedData,nVertex,Marker_Tag);Point_Match = false;}
             }
           }
+        
         }
         if (local_failure > 0) break;
       }
+      
       maxCol_InletFile+=nDim-1;
     
 #ifdef HAVE_MPI
@@ -5343,6 +5355,7 @@ cout<<"file cannot be opened"<<endl;
     if (nRow_InletFile    != NULL) {delete [] nRow_InletFile;    nRow_InletFile    = NULL;}
     if (nCol_InletFile    != NULL) {delete [] nCol_InletFile;    nCol_InletFile    = NULL;}
     if (Inlet_Data        != NULL) {delete [] Inlet_Data;        Inlet_Data        = NULL;}
+    if(Inlet_InterpolatedData!= NULL){delete [] Inlet_InterpolatedData; Inlet_InterpolatedData=NULL;}
 
   } else {
 
