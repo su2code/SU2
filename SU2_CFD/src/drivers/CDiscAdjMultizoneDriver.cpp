@@ -531,6 +531,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
           cout << " Zone " << iZone << " (turb) - log10[RMS k]         : "
                << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
         }
+        break;
       case DISC_ADJ_HEAT:
         cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: "
              << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
