@@ -80,7 +80,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Solution initialization ---*/
-  
+
   su2double val_solution[5] = {pressure, velocity[0], velocity[1], temperature, temperature};
   if(nDim==3) val_solution[3] = velocity[2];
 
@@ -106,10 +106,14 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
 
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
+
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
 
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
-  
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 

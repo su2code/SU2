@@ -46,9 +46,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
   nPoint = npoint;
   nVar = nvar;
 
-  /*--- Allocate the solution array - here it is also possible
-   to allocate some extra flow variables that do not participate
-   in the simulation ---*/
+  /*--- Allocate the solution array. ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 
   if (config->GetMultizone_Problem())
@@ -62,15 +60,11 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   nDim = ndim;
   nVar = nvar;
 
-  /*--- Allocate solution, solution old, residual and gradient
-   which is common for all the problems, here it is also possible
-   to allocate some extra flow variables that do not participate
-   in the simulation ---*/
+  /*--- Allocate fields common to all problems. Do not allocate fields
+   that are specific to one solver, i.e. not common, in this class. ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
-
-  Gradient.resize(nPoint,nVar,nDim,0.0);
 
   if (config->GetTime_Marching() != NO) {
     Solution_time_n.resize(nPoint,nVar);
@@ -83,10 +77,6 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
 	  Solution_Adj_Old.resize(nPoint,nVar);
 	}
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
-  }
 
   Non_Physical.resize(nPoint) = false;
 
@@ -163,7 +153,7 @@ void CVariable::RegisterSolution_intIndexBased(bool input) {
 
 void CVariable::SetAdjIndices(bool input) {
   su2matrix<int>& indices = input? Input_AdjIndices : Output_AdjIndices;
-  
+
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar < nVar; ++iVar)
       AD::SetAdjIndex(indices(iPoint,iVar), Solution(iPoint,iVar));

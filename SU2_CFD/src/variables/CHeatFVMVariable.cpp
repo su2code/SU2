@@ -70,6 +70,13 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
     Solution_time_n1 = heat;
   }
 
+  /*--- Gradient related fields ---*/
+  Gradient.resize(nPoint,nVar,nDim,0.0);
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
+
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 

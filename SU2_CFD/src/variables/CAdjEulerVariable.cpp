@@ -56,6 +56,12 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
     }
   }
 
+  Gradient.resize(nPoint,nVar,nDim,0.0);
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
+
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
@@ -69,7 +75,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   /*--- Solution initialization ---*/
   su2double val_solution[5] = {psirho, phi[0], phi[1], psie, psie};
   if(nDim==3) val_solution[3] = phi[2];
-  
+
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_solution[iVar];
@@ -95,7 +101,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetTime_Marching() == HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
-  
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
