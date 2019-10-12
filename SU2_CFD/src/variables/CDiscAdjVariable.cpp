@@ -58,11 +58,11 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
       
   External = Solution;
-  External_Old.resize(nPoint,nVar);
+  External_Old.resize(nPoint,nVar) = su2double(0.0);
 
   if (fsi) {
     Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);
