@@ -335,8 +335,9 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     numerics->SetTransVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
     numerics->SetTransVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
     
-    numerics->SetConsVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient(iPoint),
-                                 solver_container[FLOW_SOL]->GetNodes()->GetGradient(jPoint));
+//    ToDo: The flow solvers do not use the conservative variable gradients
+//    numerics->SetConsVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient(iPoint),
+//                                 solver_container[FLOW_SOL]->GetNodes()->GetGradient(jPoint));
     
     
     /*--- Compute residual, and Jacobians ---*/
