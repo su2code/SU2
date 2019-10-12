@@ -311,8 +311,9 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
       if (iMGLevel != config[iZone]->GetnMGLevels()) {
         SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
-        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
-                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+//        ToDo: The flow solvers do not use the conservative variable gradients
+//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+//                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
       }
       
     }
