@@ -48,11 +48,19 @@ CAdjTurbVariable::CAdjTurbVariable(su2double psinu_inf, unsigned long npoint, un
 
   Residual_Old.resize(nPoint,nVar);
 
+  /*--- Gradient related fields. ---*/
+
+  Gradient.resize(nPoint,nVar,nDim,0.0);
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
+
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
   Limiter.resize(nPoint,nVar) = su2double(0.0);
-  
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 }

@@ -125,7 +125,11 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
         We need P, and rho for running the adjoint problem ---*/
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
