@@ -40,7 +40,7 @@
 
 CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
-  
+
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
 
@@ -60,7 +60,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
-      
+
   External = Solution;
   External_Old.resize(nPoint,nVar) = su2double(0.0);
 
@@ -71,7 +71,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Cross_Term_Derivative.resize(nPoint,nVar) = su2double(0.0);
     Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
     Geometry_CrossTerm_Derivative_Flow.resize(nPoint,nDim) = su2double(0.0);
-    
+
     Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
