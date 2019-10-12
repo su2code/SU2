@@ -5156,7 +5156,7 @@ if (myfile.is_open())
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow, nVertex;
-  su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius;
+  su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius, Theta, Vr, VTheta;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -5243,6 +5243,7 @@ if (myfile.is_open())
               Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
 
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
+              Theta = atan(Coord[0]/Coord[1]);
 
               for  (iVar=0; iVar < nDim; iVar++)
                 Inlet_Values[iVar]=Coord[iVar];
@@ -5258,10 +5259,36 @@ if (myfile.is_open())
                       Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
                       }
 
+                      Vr=Inlet_Values[nDim+2]; //for 1D linearly interpolated Vr
+                      VTheta=Inlet_Values[nDim+3]; //for 1D linearly interpolated VTheta
+
+                      switch(config->GetKindInletInterpolationType()){
+                      
+                        case(VR_VTHETA):
+                              cout<<"In VrVtheta case\n";
+                              Inlet_Values[nDim+2] = Vr*sin(Theta) + VTheta*cos(Theta); //for Vx
+                              Inlet_Values[nDim+3] = Vr*cos(Theta) - VTheta*sin(Theta); //for Vy
+                              //Inlet_Values[nDum+4] = sqrt(pow(Coord[0],2)+ pow(Coord[1],2)); //assuming Vz is given
+                              break;
+                        
+                        case(ALPHA_GAMMA):
+                              cout<<"In Alpha Gamma case\n";
+                              break;
+
+                        
+                        case(BETA_GAMMA):
+                              cout<<"In Beta Gamme case\n";
+                              break;
+                      }
+                  
+                  
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
+                  
                       for  (iVar=0; iVar < (maxCol_InletFile+(nDim-1)); iVar++)
                         Inlet_InterpolatedData[iVertex*(maxCol_InletFile+(nDim-1))+iVar]=Inlet_Values[iVar];
-                    }
+                  
+                  }
+                                            
                   }
                   if (Point_Match == false){
                     unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();

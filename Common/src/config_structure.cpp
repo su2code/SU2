@@ -2303,10 +2303,13 @@ void CConfig::SetConfig_Options() {
    * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
    * Sets Kind_InletInterpolation \ingroup Config
    */ 
-  addEnumOption("INLET_INTERPOLATION",Kind_InletInterpolation, Inlet_SpanwiseInterpolation_Map, NO_SURFACEINTERPOLATION);
-  
+  addEnumOption("INLET_INTERPOLATION_FUNCTION",Kind_InletInterpolationFunction, Inlet_SpanwiseInterpolation_Map, NO_SURFACEINTERPOLATION);
 
-
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */
+  addEnumOption("INLET_INTERPOLATION_DATA_TYPE", Kind_Inlet_InterpolationType, Inlet_SpanwiseInterpolationType_Map, VR_VTHETA);
 
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);

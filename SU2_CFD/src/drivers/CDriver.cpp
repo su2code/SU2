@@ -1353,14 +1353,14 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     bool no_profile = false;
 
     if (euler || ns || adj_euler || adj_ns || disc_adj) {
-      if(config->GetKindInletInterpolation() !=0)
+      if(config->GetKindInletInterpolationFunction() !=0)
         solver[MESH_0][FLOW_SOL]->LoadSpanwiseInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
 
       else
         solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
     }
     if (turbulent || adj_turb || disc_adj_turb) {
-      if(config->GetKindInletInterpolation() !=0)
+      if(config->GetKindInletInterpolationFunction() !=0)
         solver[MESH_0][FLOW_SOL]->LoadSpanwiseInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
 
       else

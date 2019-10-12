@@ -983,7 +983,8 @@ private:
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool ConservativeInterpolation; /*!\brief Conservative approach for non matching mesh interpolation. */
   unsigned short Kind_RadialBasisFunction; /*!\brief type of radial basis function to use for radial basis FSI. */
-  unsigned short Kind_InletInterpolation; /*!brief type of spanwise interpolation to use for the inlet face. */
+  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  unsigned short Kind_Inlet_InterpolationType; /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool RadialBasisFunction_PolynomialOption; /*!\brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
   su2double RadialBasisFunction_Parameter; /*!\brief Radial basis function parameter. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
@@ -8989,9 +8990,15 @@ public:
   bool GetUsing_UQ(void);
 
   /*!
-   * \brief Get the kind of inlet face interpolation.
+   * \brief Get the kind of inlet face interpolation function to use.
    */
-  inline unsigned short GetKindInletInterpolation(void);
+  inline unsigned short GetKindInletInterpolationFunction(void);
+
+
+   /*!
+   * \brief Get the kind of inlet face interpolation data type.
+   */
+  inline unsigned short GetKindInletInterpolationType(void);
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done

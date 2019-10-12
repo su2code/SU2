@@ -383,6 +383,21 @@ static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpo
 ("ONED_LINEAR_SPANWISE",ONED_LINEAR_SPANWISE)
 ("ONED_AKIMASPLINE_SPANWISE",ONED_AKIMASPLINE_SPANWISE);
 
+
+/*!
+ * \brief type of radial spanwise interpolation data type for the inlet face
+ */
+enum ENUM_INLET_INTERPOLATIONTYPE {
+  VR_VTHETA = 0,
+  ALPHA_GAMMA = 1,
+  BETA_GAMMA = 2,
+};
+
+static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = CCreateMap<string, ENUM_INLET_INTERPOLATIONTYPE> 
+("VR_VTHETA",VR_VTHETA)
+("ALPHA_GAMMA",ALPHA_GAMMA)
+("BETA_GAMMA",BETA_GAMMA);
+
 /*!
  * \brief types of (coupling) transfers between distinct physical zones
  */

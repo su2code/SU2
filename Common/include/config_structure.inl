@@ -1193,6 +1193,10 @@ inline string CConfig::GetInlet_FileName(void) { return Inlet_Filename; }
 
 inline su2double CConfig::GetInlet_Profile_Matching_Tolerance(void) { return Inlet_Matching_Tol; }
 
+inline unsigned short CConfig::GetKindInletInterpolationFunction(void) {return Kind_InletInterpolationFunction;}
+
+inline unsigned short CConfig::GetKindInletInterpolationType(void) {return Kind_Inlet_InterpolationType;}
+
 inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
 inline bool CConfig::GetInc_Inlet_UseNormal(void) { return Inc_Inlet_UseNormal;}
@@ -1923,8 +1927,6 @@ inline unsigned short CConfig::GetnID_DV(void) { return nID_DV; }
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
 
 inline unsigned short CConfig::GetKindRadialBasisFunction(void) { return Kind_RadialBasisFunction; }
-
-inline unsigned short CConfig::GetKindInletInterpolation(void) {return Kind_InletInterpolation;}
 
 inline bool CConfig::GetRadialBasisFunctionPolynomialOption(void) {return RadialBasisFunction_PolynomialOption; }
 
