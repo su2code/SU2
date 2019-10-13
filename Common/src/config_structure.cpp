@@ -781,8 +781,6 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_Simulation = false;
 
   nSpanMaxAllZones = 1;
-
-  Wrt_InletFile = false;
  
   Restart_Bandwidth_Agg = 0.0;
   
