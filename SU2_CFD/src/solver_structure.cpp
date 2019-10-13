@@ -2397,10 +2397,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       
       if (CFL*CFLFactor <= CFLMin) {
         CFL       = CFLMin;
-        CFLFactor = 1.001*MGFactor[iMesh];
+        CFLFactor = MGFactor[iMesh];
       } else if (CFL*CFLFactor >= CFLMax) {
         CFL       = CFLMax;
-        CFLFactor = 0.999*MGFactor[iMesh];
+        CFLFactor = MGFactor[iMesh];
       }
       
       /* If we detect a stalled nonlinear residual, then force the CFL
@@ -2408,7 +2408,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       
       if (reduceCFL) {
         CFL       = CFLMin;
-        CFLFactor = 1.001*MGFactor[iMesh];
+        CFLFactor = MGFactor[iMesh];
       }
       
       /* Apply the adjustment to the CFL and store local values. */
