@@ -296,7 +296,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
     iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
-                                                          grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
+                                                          grid_movement[ZONE_0][INST_0], numerics_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
                                                           config_container[ZONE_0], 0, ExtIter);
   }
 

@@ -97,7 +97,7 @@ public:
    * \param[in] ExtIter - Current physical time iteration number.
    */
   virtual void SetGrid_Movement(CGeometry **geometry, CSurfaceMovement *surface_movement,
-                      CVolumetricMovement *grid_movement,
+                      CVolumetricMovement *grid_movement, CNumerics ****numerics,
                       CSolver ***solver, CConfig *config, unsigned long IntIter, unsigned long ExtIter);
   /*!
    * \brief Run the mesh deformation algorithms.
