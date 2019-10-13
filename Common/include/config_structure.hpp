@@ -762,7 +762,6 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
-  Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
@@ -3267,18 +3266,6 @@ public:
    * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
    */
   bool GetWrt_MeshQuality(void);
-  
-  /*!
-   * \brief Get information about writing a template inlet profile file.
-   * \return <code>TRUE</code> means that a template inlet profile file will be written.
-   */
-  bool GetWrt_InletFile(void);
-
-  /*!
-   * \brief Set information about writing a template inlet profile file.
-   * \param[in] val_wrt_inletfile - flag for whether to write a template inlet profile file.
-   */
-  void SetWrt_InletFile(bool val_wrt_inletfile);
 
   /*!
    * \brief Get information about writing a 1D slice of a 2D cartesian solution.
