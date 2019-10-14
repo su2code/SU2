@@ -37,30 +37,24 @@
 
 #include "../../include/variables/CDiscAdjFEABoundVariable.hpp"
 
-CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable() : CDiscAdjFEAVariable(){
+CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel,
+  const su2double *accel, unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config) :
+    CDiscAdjFEAVariable(disp, vel, accel, npoint, ndim, nvar, unsteady, config) {
 
-  FlowTraction_Sens = NULL;
-  SourceTerm_DispAdjoint = NULL;
-
+  VertexMap.Reset(nPoint);
 }
 
-CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(su2double* val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CDiscAdjFEAVariable(val_solution, val_ndim, val_nvar, config){
+void CDiscAdjFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
+  if (VertexMap.GetIsValid()) return; // nothing to do
 
-  unsigned short iDim;
-  FlowTraction_Sens = new su2double[nDim];
-  SourceTerm_DispAdjoint = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    FlowTraction_Sens[iDim] = val_solution[iDim];
-    SourceTerm_DispAdjoint[iDim] = 0.0;
-  }
+  /*--- Count number of vertices and build map ---*/
 
-}
+  unsigned long nBoundPt = VertexMap.Build();
 
-CDiscAdjFEABoundVariable::~CDiscAdjFEABoundVariable(){
+  /*--- Allocate ---*/
 
-  if (FlowTraction_Sens != NULL) delete [] FlowTraction_Sens;
-  if (SourceTerm_DispAdjoint != NULL) delete [] SourceTerm_DispAdjoint;
+  FlowTraction_Sens.resize(nBoundPt,nDim) = su2double(0.0);
+  SourceTerm_DispAdjoint.resize(nBoundPt,nDim) = su2double(0.0);
 
 }

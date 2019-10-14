@@ -172,7 +172,7 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
  
-  CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint]; 
+  CVariable* Node_Struc = solver[FEA_SOL]->GetNodes(); 
   CPoint*    Node_Geo  = geometry->node[iPoint];
           
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
@@ -180,29 +180,29 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
   
-  SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(0));
-  SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(1));
-  if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(2));
+  SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
+  if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
   
   if(dynamic){
-    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(0));
-    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(1));
-    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(2));
+    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(iPoint, 0));
+    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(iPoint, 1));
+    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(iPoint, 2));
   
-    SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(0));
-    SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(1));
-    if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(2));
+    SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(iPoint, 0));
+    SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(iPoint, 1));
+    if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(iPoint, 2));
   }
   
-  SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM()[0]);
-  SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM()[1]);
-  SetVolumeOutputValue("STRESS-XY", iPoint, Node_Struc->GetStress_FEM()[2]);
+  SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM(iPoint)[0]);
+  SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM(iPoint)[1]);
+  SetVolumeOutputValue("STRESS-XY", iPoint, Node_Struc->GetStress_FEM(iPoint)[2]);
   if (nDim == 3){
-    SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM()[3]);
-    SetVolumeOutputValue("STRESS-XZ", iPoint, Node_Struc->GetStress_FEM()[4]);
-    SetVolumeOutputValue("STRESS-YZ", iPoint, Node_Struc->GetStress_FEM()[5]);
+    SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[3]);
+    SetVolumeOutputValue("STRESS-XZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[4]);
+    SetVolumeOutputValue("STRESS-YZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[5]);
   }
-  SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress());
+  SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress(iPoint));
   
 }
 

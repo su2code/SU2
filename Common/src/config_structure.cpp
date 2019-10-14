@@ -2476,7 +2476,7 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
-
+  
   /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
   addPythonOption("MULTIPOINT_MESH_FILENAME");
 
@@ -2916,11 +2916,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 #ifndef HAVE_TECIO
-  if (VolumeOutputFiles[1] == TECPLOT_BINARY ||
-      VolumeOutputFiles[2] == SURFACE_TECPLOT_BINARY) {
-    SU2_MPI::Error(string("Tecplot binary file requested but SU2 was built without TecIO support.\n") +
-                   string("You probably have to rebuild the code without the --disable-tecio flag during preconfigure.\n") +
-                   string("Or switch to TECPLOT_ASCII output.\n"), CURRENT_FUNCTION);
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
+    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
+    }
   }
 #endif
 
