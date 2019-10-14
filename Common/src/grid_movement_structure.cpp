@@ -5790,7 +5790,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config, //CSolver **solver, 
+void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config, 
                                            unsigned long iter, unsigned short iZone) {
   
   su2double deltaT, time_new, time_old, Lref;

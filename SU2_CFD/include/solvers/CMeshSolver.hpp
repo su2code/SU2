@@ -189,4 +189,5 @@ public:
       node[iPoint]->Set_OldSolution();
   }
 
+  // void Surface_Plunging(CGeometry *geometry, CConfig *config, CSolver **solver, unsigned long iter, unsigned short iZone);
 };

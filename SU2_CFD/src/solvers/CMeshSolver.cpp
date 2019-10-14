@@ -1082,3 +1082,128 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
 }
+
+// void Surface_Plunging(CGeometry *geometry, CConfig *config, CSolver **solver, unsigned long iter, unsigned short iZone) {
+
+// // surface_movement->Surface_Plunging(geometry[MESH_0],
+//       //                                    config, 
+//       //                                    solver[MESH_0], TimeIter, val_iZone);
+
+//       su2double deltaT, time_new, time_old, Lref;
+//       su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
+//       su2double DEG2RAD = PI_NUMBER/180.0;
+//       unsigned short iMarker, jMarker, Moving;
+//       unsigned long iPoint, iVertex;
+//       string Marker_Tag, Moving_Tag;
+//       unsigned short iDim;
+  
+//       /*--- Initialize the delta variation in coordinates ---*/
+//       VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+  
+//       /*--- Retrieve values from the config file ---*/
+  
+//       deltaT = config->GetDelta_UnstTimeND();
+//       Lref   = config->GetLength_Ref();
+  
+//       /*--- Compute delta time based on physical time step ---*/
+//       time_new = static_cast<su2double>(iter)*deltaT;
+//       if (iter == 0) {
+//         time_old = time_new;
+//       } else {
+//         time_old = static_cast<su2double>(iter-1)*deltaT;
+//       }
+  
+//       /*--- Store displacement of each node on the plunging surface ---*/
+//       /*--- Loop over markers and find the particular marker(s) (surface) to plunge ---*/
+  
+//       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//         Moving = config->GetMarker_All_Moving(iMarker);
+//         if (Moving == YES) {
+//           for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+        
+//             Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+//             Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        
+//             if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
+          
+//               /*--- Plunging frequency and amplitude from config. ---*/
+          
+//               for (iDim = 0; iDim < 3; iDim++){
+//                 Ampl[iDim]   = config->GetMarkerPlunging_Ampl(jMarker, iDim)/Lref;
+//                 Omega[iDim]  = config->GetMarkerPlunging_Omega(jMarker, iDim)/config->GetOmega_Ref();
+//                 Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+//               }
+//               /*--- Print some information to the console. Be verbose at the first
+//               iteration only (mostly for debugging purposes). ---*/
+//               // Note that the MASTER_NODE might not contain all the markers being moved.
+
+//               if (SU2_MPI::GetRank() == MASTER_NODE) {
+//                 cout << " Storing plunging displacement for marker: ";
+//                 cout << Marker_Tag << "." << endl;
+//                 if (iter == 0) {
+//                   cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
+//                   cout << ", " << Omega[2] << ") rad/s." << endl;
+//                   cout << " Plunging amplitude: (" << Ampl[0]/DEG2RAD;
+//                   cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+//                   cout << ") degrees."<< endl;
+//                 }
+//               }
+          
+//               /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+          
+//               VarCoord[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
+//               VarCoord[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
+//               VarCoord[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
+          
+//               for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            
+//                 if (!config->GetDeform_Mesh()) {
+                  
+//                   /*--- Set node displacement for volume deformation ---*/
+//                   geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+//                 }
+//                 else {
+
+//                   /*--- Get node index ---*/
+//                   iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+//                   solver[MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoord);
+//                 }
+            
+//               }
+//             }
+//           }
+//         }
+//       }
+  
+//       /*--- When updating the origins it is assumed that all markers have the
+//       same plunging movement, because we use the last VarCoord set ---*/
+  
+//       /*--- Set the mesh motion center to the new location after
+//       incrementing the position with the translation. This new
+//       location will be used for subsequent mesh motion for the given marker.---*/
+  
+//       for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+    
+//         /*-- Check if we want to update the motion origin for the given marker ---*/
+    
+//         if (config->GetMoveMotion_Origin(jMarker) == YES) {
+//           for (iDim = 0; iDim < 3; iDim++){
+//             Center[iDim] += VarCoord[iDim];
+//           }
+//           config->SetMarkerMotion_Origin(Center, jMarker);      
+//         }
+//       }
+  
+//       /*--- Set the moment computation center to the new location after
+//       incrementing the position with the plunging. ---*/
+  
+//       for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+//         Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
+//         Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
+//         Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
+//         config->SetRefOriginMoment_X(jMarker, Center[0]);
+//         config->SetRefOriginMoment_Y(jMarker, Center[1]);
+//         config->SetRefOriginMoment_Z(jMarker, Center[2]);
+//       }
+// }

@@ -1150,6 +1150,8 @@ inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, C
 
 inline void CSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 
+// inline void CSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, CSolver **solver, unsigned long iter, unsigned short iZone) { }
+
 inline void CSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }

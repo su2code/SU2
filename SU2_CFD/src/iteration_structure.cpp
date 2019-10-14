@@ -128,9 +128,14 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      // surface_movement->Surface_Plunging(geometry[MESH_0],
+      // if (!config->GetDeform_Mesh()) {
+      //   surface_movement->Surface_Plunging(geometry[MESH_0],
       //                                    config, 
-      //                                    solver[MESH_0], TimeIter, val_iZone);
+      //                                    ExtIter, val_iZone);
+      // }
+      // else {
+      //   //solver[MESH_0][MESH_SOL]->Surface_Plunging(geometry[MESH_0], config, solver[MESH_0], ExtIter, val_iZone);
+      // }
 
       su2double deltaT, time_new, time_old, Lref;
       su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
