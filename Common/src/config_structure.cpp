@@ -2916,9 +2916,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 #ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
+  if (VolumeOutputFiles[1] == TECPLOT_BINARY ||
+      VolumeOutputFiles[2] == SURFACE_TECPLOT_BINARY) {
+    SU2_MPI::Error(string("Tecplot binary file requested but SU2 was built without TecIO support.\n") +
+                   string("You probably have to rebuild the code without the --disable-tecio flag during preconfigure.\n") +
+                   string("Or switch to TECPLOT_ASCII output.\n"), CURRENT_FUNCTION);
   }
 #endif
 
