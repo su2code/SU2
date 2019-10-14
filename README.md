@@ -1,8 +1,3 @@
-<p align="center">
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
-<img width="250" height="152" src="Common/doc/logoSU2_v3.3_small.jpeg">
-</p>
-
 -----------------------------------------------------------
   SU2 (ver. 6.2.0 "Falcon"): The Open-Source CFD Code
 -----------------------------------------------------------
@@ -81,29 +76,3 @@ The main research teams contributing to the current release are:
 - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
 
 Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
-
-
-## Contributors ✨
-
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tr>
-    <td align="center"><a href="http://www.scicomp.uni-kl.de/team/albring"><img src="https://avatars3.githubusercontent.com/u/4933860?v=4" width="100px;" alt="Tim Albring"/><br /><sub><b>Tim Albring</b></sub></a><br /><a href="https://github.com/su2code/SU2/commits?author=talbring" title="Code">💻</a></td>
-  </tr>
-</table>
-
-<!-- markdownlint-enable -->
-<!-- prettier-ignore-end -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<!-- markdownlint-enable -->
-<!-- prettier-ignore-end -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
