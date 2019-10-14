@@ -1115,6 +1115,11 @@ void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
+  /*--- MPI solution not communicated when restart loaded, so communicate it now. ---*/
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<3; ++iNode) {
       const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
@@ -1203,6 +1208,11 @@ void CDiscAdjSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  /*--- MPI solution not communicated when restart loaded, so communicate it now. ---*/
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<4; ++iNode) {
