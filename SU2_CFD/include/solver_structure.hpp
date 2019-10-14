@@ -56,8 +56,6 @@
 #include "task_definition.hpp"
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
-#include "variables/CVariable.hpp"
-#include "variables/CMeshElement.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
@@ -70,6 +68,18 @@
 #include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_coloring_structure.hpp"
 #include "../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
+
+/*--- CVariable includes, ToDo: Once this file is split, one per class these includes can also be separated. ---*/
+#include "variables/CBaselineVariable.hpp"
+#include "variables/CEulerVariable.hpp"
+#include "variables/CIncEulerVariable.hpp"
+#include "variables/CTurbVariable.hpp"
+#include "variables/CAdjEulerVariable.hpp"
+#include "variables/CAdjTurbVariable.hpp"
+#include "variables/CHeatFVMVariable.hpp"
+#include "variables/CDiscAdjVariable.hpp"
+#include "variables/CDiscAdjFEABoundVariable.hpp"
+#include "variables/CMeshElement.hpp"
 
 using namespace std;
 
@@ -157,8 +167,29 @@ protected:
   
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
   
-  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
-  
+  su2double valResidual;  /*!< \brief Store the residual of the linear system solution. */
+
+  /*!
+   * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".
+   * \note Don't forget to call SetBaseClassPointerToNodes() in the constructor of the derived CSolver.
+   * \return Nodes of the solver, upcast to their base class (CVariable).
+   */
+  virtual CVariable* GetBaseClassPointerToNodes() = 0;
+
+  /*!
+   * \brief Call this method to set "base_nodes" after the "nodes" variable of the derived solver is instantiated.
+   * \note One could set base_nodes directly if it were not private but that could lead to confusion
+   */
+  inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
+
+private:
+
+  /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
+   most derived type possible, e.g. CEulerVariable has nodes of CEulerVariable* and not CVariable*.
+   This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
+   directly instead of calling GetBaseClassPointerToNodes() or doing something equivalent. ---*/
+  CVariable* base_nodes;  /*!< \brief Pointer to CVariable to allow polymorphic access to solver nodes. */
+
 public:
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -176,10 +207,7 @@ public:
   
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
-  
-  CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
-  CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
-  
+
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
   
   vector<string> fields;
@@ -192,7 +220,16 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CSolver(void);
-  
+
+  /*!
+   * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
+   * \return Nodes of the solver.
+   */
+  inline CVariable* GetNodes() {
+    assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return base_nodes;
+  }
+
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -268,9 +305,8 @@ public:
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -528,30 +564,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the solution vector to solution in Solution_Old.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void SetSolution_Old(CGeometry *geometry);
   
   /*!
    * \brief Add External_Old to Solution vector.
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void Add_ExternalOld_To_Solution(CGeometry *geometry);
-
-  /*!
-   * \brief Set the Solution vector to zero.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void SetSolution_Zero(CGeometry *geometry);
-
-  /*!
-   * \brief Set the External vector to zero.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void SetExternal_Zero(CGeometry *geometry);
 
   /*!
    * \brief Add the current Solution vector to External.
@@ -564,12 +582,6 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void Add_Solution_To_ExternalOld(CGeometry *geometry);
-
-  /*!
-   * \brief Set External_Old to External.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void Set_OldExternal(CGeometry *geometry);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
@@ -4550,8 +4562,16 @@ protected:
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
  */
-class CBaselineSolver : public CSolver {
-  
+class CBaselineSolver final : public CSolver {
+protected:
+
+  CBaselineVariable* nodes = nullptr;   /*!< \brief Variables of the baseline solver. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -4626,6 +4646,8 @@ protected:
 
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
 
+  CVariable* GetBaseClassPointerToNodes() {return nullptr;}
+  
 public:
 
   /*!
@@ -4949,6 +4971,13 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  CEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
@@ -7225,6 +7254,13 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
+  CIncEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -9376,11 +9412,20 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
-  
+
+  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  CTurbVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
@@ -10343,7 +10388,14 @@ protected:
   unsigned long AoA_Counter;
   su2double ACoeff, ACoeff_inc, ACoeff_old;
   bool Update_ACoeff;
-  
+
+  CAdjEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -10977,7 +11029,14 @@ private:
   
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
-  
+
+  CAdjTurbVariable* nodes = nullptr;          /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -11089,290 +11148,6 @@ public:
   
 };
 
-/*! \class CPoissonSolver
- *  \brief Main class for defining the poisson potential solver.
- *  \author F. Palacios
- *  \date May 3, 2010.
- */
-class CPoissonSolver : public CSolver {
-private:
-  su2double *Source_Vector;      /*!< \brief Auxiliary vector for storing element source vector. */
-  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  su2double **StiffMatrix_Node;  /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CPoissonSolver(void);
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CPoissonSolver(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver1_geometry - Geometrical definition of the problem.
-   * \param[in] solver1_solution - Container vector with all the solutions.
-   * \param[in] solver1_config - Definition of the particular problem.
-   * \param[in] solver2_geometry - Geometrical definition of the problem.
-   * \param[in] solver2_solution - Container vector with all the solutions.
-   * \param[in] solver2_config - Definition of the particular problem.
-   */
-  void Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config, CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CPoissonSolver(void);
-  
-  /*!
-   * \brief Integrate the Poisson equation using a Galerkin method.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                        unsigned short iMesh, unsigned short iRKStep);
-  
-  /*!
-   * \brief Integrate the Poisson equation using a Galerkin method.
-   * \param[in] StiffMatrix_Elem - Element stiffness matrix
-   */
-  void AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3);
-  
-  /*!
-   * \brief Compute the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iMesh);
-  
-  /*!
-   * \brief Impose via the residual the Dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
-  
-  /*!
-   * \brief Impose via the residual the Neumann boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
-  
-  /*!
-   * \brief Set residuals to zero.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-};
-
-/*! \class CWaveSolver
- *  \brief Main class for defining the wave solver.
- *  \author F. Palacios
- *  \date May 3, 2010.
- */
-class CWaveSolver : public CSolver {
-private:
-  su2double *CWave;  /*!< \brief Wave strength for each boundary. */
-  su2double AllBound_CWave;  /*!< \brief Total wave strength for all the boundaries. */
-  su2double Total_CWave; /*!< \brief Total wave strength for all the boundaries. */
-  
-  CSysMatrix<su2double> StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-  CSysMatrix<su2double> StiffMatrixTime;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-  
-  su2double **StiffMatrix_Elem,      /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  **StiffMatrix_Node;              /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CWaveSolver(void);
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CWaveSolver(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CWaveSolver(void);
-  
-  /*!
-   * \brief Integrate the Poisson equation using a Galerkin method.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                        unsigned short iMesh, unsigned short iRKStep);
-  
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Euler_Wall(CGeometry      *geometry,
-                     CSolver        **solver_container,
-                     CNumerics      *conv_numerics,
-                     CNumerics      *visc_numerics,
-                     CConfig        *config,
-                     unsigned short val_marker) override;
-  
-  /*!
-   * \brief Impose a Dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
-  
-  /*!
-   * \brief Set residuals to zero.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  /*!
-   * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
-  /*!
-   * \brief Compute the total wave strength coefficient.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Wave_Strength(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Build stiffness matrix in space.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSpace_Matrix(CGeometry *geometry,
-                       CConfig   *config);
-  
-  /*!
-   * \brief Provide the total wave strength.
-   * \return Value of the wave strength.
-   */
-  su2double GetTotal_CWave(void);
-  
-};
-
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
  *  \author O. Burghardt
@@ -11386,6 +11161,13 @@ protected:
             *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
   su2double ***ConjugateVar, ***InterfaceVar;
+
+  CHeatFVMVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 
@@ -11720,6 +11502,13 @@ protected:
   su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
   su2double *Res_Stress_i;        /*!< \brief Submatrix to store the nodal stress contribution of node i. */
+
+  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
@@ -12367,7 +12156,14 @@ public:
  */
 class CTemplateSolver : public CSolver {
 private:
-  
+
+  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -12598,7 +12394,14 @@ private:
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
-  
+
+  CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -12896,6 +12699,13 @@ private:
   su2double *DV_Val;            /*!< \brief Value of the design variables. */
   su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
   su2double *Total_Sens_DV;
+
+  CDiscAdjFEABoundVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
@@ -13429,6 +13239,9 @@ private:
 
   vector<CTaskDefinition> tasksList; /*!< \brief List of tasks to be carried out in the computationally
                                                  intensive part of the solver. */
+
+  CVariable* GetBaseClassPointerToNodes() {return nullptr;}
+
 public:
 
   /*!

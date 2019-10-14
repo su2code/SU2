@@ -116,7 +116,7 @@ public:
    * \param[in] iDim - Dimension required.
    */
   inline su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {
-    return node[indexNode]->GetMesh_Coord(iDim);
+    return nodes->GetMesh_Coord(indexNode,iDim);
   }
 
   /*!
@@ -155,12 +155,6 @@ public:
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
 
   /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Move the mesh in time.
    */
   void SetDualTime_Mesh(void);
@@ -180,14 +174,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the old displacement before a new deformation is done.
-   */
-  inline void SetSolution_Old(void){
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->Set_OldSolution();
-  }
 
   /*!
    * \brief Get minimun volume in the mesh
