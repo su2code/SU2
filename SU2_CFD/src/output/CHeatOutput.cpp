@@ -143,8 +143,7 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
-  CVariable* Node_Heat = solver[HEAT_SOL]->node[iPoint]; 
-  
+  CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
   
   // Grid coordinates
@@ -154,7 +153,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
  
   // SOLUTION
-  SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(0));
+  SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
   
   // Residuals    
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));

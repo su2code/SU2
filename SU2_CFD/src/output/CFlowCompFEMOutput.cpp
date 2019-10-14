@@ -285,35 +285,6 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   
 }
 
-su2double CFlowCompFEMOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
-  
-  unsigned short iDim, jDim;
-  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-      Grad_Vel[iDim][jDim] = node_flow->GetGradient_Primitive(iDim+1, jDim);
-      Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-      Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
-    }
-  }
-  
-  su2double OmegaMag = 0.0, StrainMag = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-      OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-    }
-  }
-  StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
-  
-  su2double Q = 0.5*(OmegaMag - StrainMag);
-  
-  return Q;
-}
-
-
 bool CFlowCompFEMOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
