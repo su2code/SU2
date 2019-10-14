@@ -78,7 +78,7 @@ void CDiscAdjDisplacementsInterfaceLegacy::GetDonor_Variable(CSolver *struct_sol
   Coord_Struct = struct_geometry->node[Point_Struct]->GetCoord();
 
   /*--- The displacements come from the predicted solution ---*/
-  Displacement_Struct = struct_solution->node[Point_Struct]->GetSolution();
+  Displacement_Struct = struct_solution->GetNodes()->GetSolution(Point_Struct);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
