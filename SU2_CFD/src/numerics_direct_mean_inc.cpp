@@ -1018,7 +1018,7 @@ CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) { }
 
 void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
                                                     su2double **Jacobian_i,
-                                                    CConfig *config) {
+                                                    CConfig   *config) {
 
   delta_p             = config->GetStreamwise_Periodic_PressureDrop();
   massflow            = config->GetStreamwise_Periodic_MassFlow();
