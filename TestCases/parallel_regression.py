@@ -376,7 +376,7 @@ def main():
     streamwise_periodic_cylinder.cfg_dir   = "incomp_navierstokes/streamwise_periodic/half_cylinder_2D"
     streamwise_periodic_cylinder.cfg_file  = "half_cylinder_2D.cfg"
     streamwise_periodic_cylinder.test_iter = 30
-    streamwise_periodic_cylinder.test_vals = [-7.852372, -0.944669, 0.016752, 0.019021] #last 4 lines
+    streamwise_periodic_cylinder.test_vals = [30, -7.852372, -6.781204, -7.011341] #last 4 lines
     streamwise_periodic_cylinder.su2_exec  = "parallel_computation.py -f"
     streamwise_periodic_cylinder.timeout   = 1600
     streamwise_periodic_cylinder.tol       = 0.00001
@@ -387,7 +387,7 @@ def main():
     streamwise_periodic_PipeSlice.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipe_slice_3D"
     streamwise_periodic_PipeSlice.cfg_file  = "pipe3Dslice.cfg"
     streamwise_periodic_PipeSlice.test_iter = 10
-    streamwise_periodic_PipeSlice.test_vals = [-10.352122, -10.185236, 0.000000, 0.000007] #last 4 lines
+    streamwise_periodic_PipeSlice.test_vals = [10, -10.352122, -10.185236, -10.185236] #last 4 lines
     streamwise_periodic_PipeSlice.su2_exec  = "parallel_computation.py -f"
     streamwise_periodic_PipeSlice.timeout   = 1600
     streamwise_periodic_PipeSlice.tol       = 0.00001
