@@ -874,8 +874,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
             eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
 
-  su2double localMinDensity = 1.E9, localMaxDensity = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E9, globalMaxDensity = 0., globalTotComplex = 0.;
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -1027,8 +1027,8 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
             eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
             outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
 
-  su2double localMinDensity = 1.E9, localMaxDensity = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E9, globalMaxDensity = 0., globalTotComplex = 0.;
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
