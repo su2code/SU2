@@ -4876,6 +4876,7 @@ protected:
   End_AoA_FD,         /*!< \brief Boolean for end of finite differencing for FixedCL mode */
   Update_AoA;         /*!< \brief Boolean to signal Angle of Attack Update */
   unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
+  su2double dCL_dAlpha; /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   unsigned short nSpanMax; /*!< \brief Max number of maximum span-wise sections for all zones */
