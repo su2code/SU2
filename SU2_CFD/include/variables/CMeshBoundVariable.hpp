@@ -39,39 +39,52 @@
 #pragma once
 
 #include "CMeshVariable.hpp"
+#include "../../../Common/include/toolboxes/CVertexMap.hpp"
 
-class CMeshBoundVariable : public CMeshVariable {
-protected:
+class CMeshBoundVariable final : public CMeshVariable {
+private:
 
-  su2double *Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
+  MatrixType Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
+
+  CVertexMap<unsigned> VertexMap;    /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
 
   /*!
    * \brief Constructor of the class.
    * \param[in] val_coor - Values of the coordinates (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+  CMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshBoundVariable(void);
+  ~CMeshBoundVariable() = default;
+  
+  /*!
+   * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AllocateBoundaryVariables(CConfig *config);
 
   /*!
    * \brief Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline su2double GetBound_Disp(unsigned short iDim) const final { return Boundary_Displacement[iDim]; }
+  inline su2double GetBound_Disp(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Boundary_Displacement(iPoint,iDim);
+  }
 
   /*!
    * \brief Set the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBound_Disp(const su2double *val_BoundDisp) final {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) Boundary_Displacement[iDim] = val_BoundDisp[iDim];
+  inline void SetBound_Disp(unsigned long iPoint, const su2double *val_BoundDisp) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Boundary_Displacement(iPoint,iDim) = val_BoundDisp[iDim];
   }
 
   /*!
@@ -79,37 +92,39 @@ public:
    * \param[in] iDim - Index of the dimension of interest.
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
-  inline void SetBound_Disp(unsigned short iDim, const su2double val_BoundDisp) final {
-    Boundary_Displacement[iDim] = val_BoundDisp;
+  inline void SetBound_Disp(unsigned long iPoint, unsigned long iDim, su2double val_BoundDisp) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Boundary_Displacement(iPoint,iDim) = val_BoundDisp;
   }
-
-  /*!
-   * \brief Determine whether the node is a moving vertex.
-   * \return True. The node is at the boundary.
-   */
-  inline bool Get_isVertex(void) const final { return true; }
 
   /*!
    * \brief Register the boundary displacements of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_BoundDisp(bool input) final {
-    if (input) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterInput(Boundary_Displacement[iVar]);
-    }
-    else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterOutput(Boundary_Displacement[iVar]);
-    }
-  }
+  void Register_BoundDisp(bool input) override;
 
   /*!
    * \brief Recover the value of the adjoint of the boundary displacements.
    */
-  inline void GetAdjoint_BoundDisp(su2double *adj_disp) final {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        adj_disp[iVar] = SU2_TYPE::GetDerivative(Boundary_Displacement[iVar]);
+  inline void GetAdjoint_BoundDisp(unsigned long iPoint, su2double *adj_disp) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+        adj_disp[iVar] = SU2_TYPE::GetDerivative(Boundary_Displacement(iPoint,iVar));
     }
+  }
+
+  /*!
+   * \brief Get whether a node is on the boundary
+   */
+  inline bool Get_isVertex(unsigned long iPoint) const override {
+    return VertexMap.GetIsVertex(iPoint);
+  }
+
+  /*!
+   * \brief Set whether a node is on the boundary
+   */
+  inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
+    VertexMap.SetIsVertex(iPoint,isVertex);
   }
 
 };

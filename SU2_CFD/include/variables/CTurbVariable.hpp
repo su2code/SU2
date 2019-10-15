@@ -47,63 +47,68 @@
  */
 class CTurbVariable : public CVariable {
 protected:
-  su2double muT;                /*!< \brief Eddy viscosity. */
-  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
-  su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term */
-  bool GradReconAllocated;              /*!< \brief Flag indicating that separate memory was allocated for the MUSCL reconstruction gradient. */
+  VectorType muT;         /*!< \brief Eddy viscosity. */
+  MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
+  
+  VectorOfMatrix Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term */
 
 public:
   /*!
    * \brief Constructor of the class.
-   */
-  CTurbVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbVariable(void);
+  virtual ~CTurbVariable() = default;
 
   /*!
    * \brief Get the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
    * \return the value of the eddy viscosity.
    */
-  inline su2double GetmuT() { return muT; }
+  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
 
   /*!
    * \brief Set the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
    * \param[in] val_muT - Value of the eddy viscosity.
    */
-  inline void SetmuT(su2double val_muT) { muT = val_muT; }
+  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+
+  /*!
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \return Value of the reconstruction variables gradient at a node.
+   */
+  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+    return Gradient_Reconstruction(iPoint,iVar,iDim);
+  }
   
   /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \param[in] iDim   - Index of the dimension.
    */
-  inline su2double GetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim) {return Gradient_Reconstruction[val_var][val_dim]; }
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+  }
   
   /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
+   * \brief Get the array of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \return Array of the reconstruction variables gradient at a node.
    */
-  inline void SetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Reconstruction[val_var][val_dim] = val_value; }
-  
-  /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double **GetGradient_Reconstruction(void) {return Gradient_Reconstruction; }
+  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
   
 };
 

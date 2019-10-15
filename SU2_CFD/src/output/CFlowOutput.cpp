@@ -122,7 +122,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
-  Enthalpy, Velocity[3], TangVel[3], Velocity2, MassFlow, Density, Area,
+  Enthalpy, Velocity[3] = {}, TangVel[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
   su2double Gas_Constant      = config->GetGas_ConstantND();
@@ -207,12 +207,12 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             AxiFactor = 1.0;
           }
 
-          Density = solver->node[iPoint]->GetDensity();
+          Density = solver->GetNodes()->GetDensity(iPoint);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
 
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
+            Velocity[iDim] = solver->GetNodes()->GetVelocity(iPoint,iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim] * AxiFactor;
             MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
@@ -221,8 +221,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           Area       = sqrt (Area);
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
-          Pressure   = solver->node[iPoint]->GetPressure();
-          SoundSpeed = solver->node[iPoint]->GetSoundSpeed();
+          Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             TangVel[iDim] = Velocity[iDim] - Vn*Vector[iDim]*AxiFactor/Area;
@@ -231,21 +231,21 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
           if (incompressible){
             if (config->GetKind_DensityModel() == VARIABLE) {
-              Mach = sqrt(solver->node[iPoint]->GetVelocity2())/
-              sqrt(solver->node[iPoint]->GetSpecificHeatCp()*config->GetPressure_ThermodynamicND()/(solver->node[iPoint]->GetSpecificHeatCv()*solver->node[iPoint]->GetDensity()));
+              Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
+              sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
             } else {
-              Mach = sqrt(solver->node[iPoint]->GetVelocity2())/
-              sqrt(config->GetBulk_Modulus()/(solver->node[iPoint]->GetDensity()));
+              Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
+              sqrt(config->GetBulk_Modulus()/(solver->GetNodes()->GetDensity(iPoint)));
             }
-            Temperature       = solver->node[iPoint]->GetTemperature();
-            Enthalpy          = solver->node[iPoint]->GetSpecificHeatCp()*Temperature;
-            TotalTemperature  = Temperature + 0.5*Velocity2/solver->node[iPoint]->GetSpecificHeatCp();
+            Temperature       = solver->GetNodes()->GetTemperature(iPoint);
+            Enthalpy          = solver->GetNodes()->GetSpecificHeatCp(iPoint)*Temperature;
+            TotalTemperature  = Temperature + 0.5*Velocity2/solver->GetNodes()->GetSpecificHeatCp(iPoint);
             TotalPressure     = Pressure + 0.5*Density*Velocity2;
           }
           else{
             Mach              = sqrt(Velocity2)/SoundSpeed;
             Temperature       = Pressure / (Gas_Constant * Density);
-            Enthalpy          = solver->node[iPoint]->GetEnthalpy();
+            Enthalpy          = solver->GetNodes()->GetEnthalpy(iPoint);
             TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
           }
@@ -922,6 +922,39 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
 }
 
+su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
+
+  /*--- Make a 3D copy of the gradient so we do not have worry about nDim ---*/
+
+  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+      Grad_Vel[iDim][jDim] = VelocityGradient[iDim][jDim];
+
+  /*--- Q Criterion Eq 1.2 of HALLER, G. (2005). An objective definition of a vortex.
+   Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
+
+  /*--- Components of the strain rate tensor (symmetric) ---*/
+  su2double s11 = Grad_Vel[0][0];
+  su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+  su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+  su2double s22 = Grad_Vel[1][1];
+  su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+  su2double s33 = Grad_Vel[2][2];
+
+  /*--- Components of the spin tensor (skew-symmetric) ---*/
+  su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+  su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+  su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+
+  /*--- Q = ||Omega|| - ||Strain|| ---*/
+  su2double Q = 2*(pow(omega12,2) + pow(omega13,2) + pow(omega23,2)) - 
+    (pow(s11,2) + pow(s22,2) + pow(s33,2) + 2*(pow(s12,2) + pow(s13,2) + pow(s23,2)));
+
+  return Q;
+}
+
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
   
   if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){
@@ -968,7 +1001,6 @@ void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry){
   }
   
   meta_file.close();
-  
 }
 
 void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container){
@@ -2853,22 +2885,22 @@ void CFlowOutput::SetTimeAveragedFields(){
 }
 
 void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flow){
-  SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity());
-  SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetVelocity(0));
-  SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(1));
+  SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
+  SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint,0));
+  SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
   if (nDim == 3)
-    SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(2));
+    SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
  
-  SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure());
+  SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
 
-  SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(0),2));
-  SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(1),2));
-  SetAvgVolumeOutputValue("RMS_UV", iPoint, Node_Flow->GetVelocity(0) * Node_Flow->GetVelocity(1));
-  SetAvgVolumeOutputValue("RMS_P", iPoint, pow(Node_Flow->GetPressure(),2));
+  SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
+  SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(iPoint,1),2));
+  SetAvgVolumeOutputValue("RMS_UV", iPoint, Node_Flow->GetVelocity(iPoint,0) * Node_Flow->GetVelocity(iPoint,1));
+  SetAvgVolumeOutputValue("RMS_P", iPoint, pow(Node_Flow->GetPressure(iPoint),2));
   if (nDim == 3){
-    SetAvgVolumeOutputValue("RMS_W", iPoint, pow(Node_Flow->GetVelocity(2),2));
-    SetAvgVolumeOutputValue("RMS_VW", iPoint, Node_Flow->GetVelocity(2) * Node_Flow->GetVelocity(1));
-    SetAvgVolumeOutputValue("RMS_UW", iPoint,  Node_Flow->GetVelocity(2) * Node_Flow->GetVelocity(0));
+    SetAvgVolumeOutputValue("RMS_W", iPoint, pow(Node_Flow->GetVelocity(iPoint,2),2));
+    SetAvgVolumeOutputValue("RMS_VW", iPoint, Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,1));
+    SetAvgVolumeOutputValue("RMS_UW", iPoint,  Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,0));
   }
   
   const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY-X", iPoint);

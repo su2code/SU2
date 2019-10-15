@@ -1456,6 +1456,18 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       Average[currentField.outputGroup].second++;
            
     }
+
+    for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
+      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
+        HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
+        if (Field.fieldType == HistoryFieldType::COEFFICIENT){
+          if (config->GetDirectDiff() != NO_DERIVATIVE){
+            SetHistoryOutputValue("D_" + historyOutputPerSurface_List[iField][iMarker], SU2_TYPE::GetDerivative(Field.value));
+          }
+        }
+      }
+    }
+
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if(SetUpdate_Averages(config)){
         if (config->GetTime_Domain()){
@@ -1539,6 +1551,15 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
         AddHistoryOutput("D_TAVG_" + fieldIdentifier, "dtavg[" + currentField.fieldName + "]",
                          currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
                          "Derivative of the time averaged value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);  
+      }
+    }
+  }
+
+  for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
+    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
+      HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
+      if (Field.fieldType == HistoryFieldType::COEFFICIENT){
+        AddHistoryOutput("D_"      + historyOutputPerSurface_List[iField][iMarker], "d["     + Field.fieldName + "]", Field.screenFormat, "D_"      + Field.outputGroup, "Derivative values for per-surface output.", HistoryFieldType::AUTO_COEFFICIENT);
       }
     }
   }
