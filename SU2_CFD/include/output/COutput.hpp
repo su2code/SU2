@@ -779,5 +779,11 @@ protected:
    */
   inline virtual void WriteAdditionalFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container){}
 
+  /*!
+   * \brief Write any additional output defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  inline virtual void SetAdditionalScreenOutput(CConfig *config){}
+
 };
 

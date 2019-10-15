@@ -603,14 +603,6 @@ void CFluidIteration::Iterate(COutput *output,
     }
     
   }
-
-  /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
-
-  //if (config[val_iZone]->GetFixed_CL_Mode()){
-    //bool fixed_cl_convergence = solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->FixedCL_Convergence(config[val_iZone], integration[val_iZone][INST_0][FLOW_SOL]->GetConvergence());
-    //integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(fixed_cl_convergence);
-  //}
-  
 }
 
 void CFluidIteration::Update(COutput *output,
