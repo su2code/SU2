@@ -90,9 +90,9 @@ protected:
   string historyFilename;       /*!< \brief The history filename*/
   
   /*! \brief Temporary variable to store the history filename */
-   char char_histfile[200];
-   /*! \brief Output file stream for the history */
-   ofstream histFile;
+  char char_histfile[200];
+  /*! \brief Output file stream for the history */
+  ofstream histFile;
   
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {           

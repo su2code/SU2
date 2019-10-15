@@ -538,7 +538,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
 
   /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
-  if (config_container[ZONE_0]->GetGrid_Movement()) {
+  if (config_container[ZONE_0]->GetGrid_Movement() || config_container[ZONE_0]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
   iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                                            config_container[val_iZone], 0, TimeIter);
