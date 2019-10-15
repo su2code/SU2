@@ -90,9 +90,9 @@ protected:
   string historyFilename;       /*!< \brief The history filename*/
   
   /*! \brief Temporary variable to store the history filename */
-   char char_histfile[200];
-   /*! \brief Output file stream for the history */
-   ofstream histFile;
+  char char_histfile[200];
+  /*! \brief Output file stream for the history */
+  ofstream histFile;
   
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {           
@@ -377,6 +377,10 @@ public:
    */
   su2double GetHistoryFieldValue(string field){
     return historyOutput_Map[field].value;
+  }
+
+  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
+    return historyOutputPerSurface_Map[field][iMarker].value;
   }
   
   /*!
@@ -743,8 +747,8 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
-  
-  
+
+
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.

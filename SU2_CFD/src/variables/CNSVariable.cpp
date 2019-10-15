@@ -38,102 +38,75 @@
 #include "../../include/variables/CNSVariable.hpp"
 
 
-CNSVariable::CNSVariable(void) : CEulerVariable() { }
+CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
+                         unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
+                         CEulerVariable(density,velocity,energy,npoint,ndim,nvar,config) {
 
-CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,
-                         unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-                         CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
+  inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
 
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-  Prandtl_Turb    = config->GetPrandtl_Turb();
-
-  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-  Roe_Dissipation = 0.0;
-  Vortex_Tilting  = 0.0;
-  Tau_Wall        = -1.0;
-
+  Vorticity.resize(nPoint,3) = su2double(0.0);
+  StrainMag.resize(nPoint) = su2double(0.0);
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Roe_Dissipation.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint) = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 }
 
-CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
-                         unsigned short val_nvar, CConfig *config) :
-                         CEulerVariable(val_solution, val_nDim, val_nvar, config) {
+bool CNSVariable::SetVorticity_StrainMag() {
 
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-  Prandtl_Turb    = config->GetPrandtl_Turb();
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
-  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-  Roe_Dissipation = 0.0;
-  Vortex_Tilting  = 0.0;
-  Tau_Wall        = -1.0;
+    /*--- Vorticity ---*/
 
-}
+    Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
 
-CNSVariable::~CNSVariable(void) { }
+    Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
 
-bool CNSVariable::SetVorticity(void) {
+    if (nDim == 3) {
+      Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
+      Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
+    }
 
-  Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+    /*--- Strain Magnitude ---*/
 
-  Vorticity[2] = Gradient_Primitive[2][0]-Gradient_Primitive[1][1];
+    AD::StartPreacc();
+    AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
 
-  if (nDim == 3) {
-    Vorticity[0] = Gradient_Primitive[3][1]-Gradient_Primitive[2][2];
-    Vorticity[1] = -(Gradient_Primitive[3][0]-Gradient_Primitive[1][2]);
+    su2double Div = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Div += Gradient_Primitive(iPoint,iDim+1,iDim);
+
+    StrainMag(iPoint) = 0.0;
+
+    /*--- Add diagonal part ---*/
+
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
+    }
+    if (nDim == 2) {
+      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
+    }
+
+    /*--- Add off diagonals ---*/
+
+    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,1) + Gradient_Primitive(iPoint,2,0)), 2);
+
+    if (nDim == 3) {
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,2) + Gradient_Primitive(iPoint,3,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,2,2) + Gradient_Primitive(iPoint,3,1)), 2);
+    }
+
+    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+
+    AD::SetPreaccOut(StrainMag(iPoint));
+    AD::EndPreacc();
   }
-
   return false;
-
 }
 
-bool CNSVariable::SetStrainMag(void) {
-
-  su2double Div;
-  unsigned short iDim;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(Gradient_Primitive, nDim+1, nDim);
-
-  Div = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Div += Gradient_Primitive[iDim+1][iDim];
-  }
-
-  StrainMag = 0.0;
-
-  /*--- Add diagonal part ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    StrainMag += pow(Gradient_Primitive[iDim+1][iDim] - 1.0/3.0*Div, 2.0);
-  }
-  if (nDim == 2) {
-    StrainMag += pow(1.0/3.0*Div, 2.0);
-  }
-
-  /*--- Add off diagonals ---*/
-
-  StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
-
-  if (nDim == 3) {
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]), 2.0);
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]), 2.0);
-  }
-
-  StrainMag = sqrt(2.0*StrainMag);
-
-  AD::SetPreaccOut(StrainMag);
-  AD::EndPreacc();
-
-  return false;
-
-}
-
-void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
+void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
+                                         su2double val_delta,
                                          su2double val_const_DES){
 
   static const su2double cnu = pow(0.09, 1.5),
@@ -142,20 +115,20 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
                          ch3 = 2.0,
                          sigma_max = 1.0;
 
-  unsigned short iDim;
-  su2double Omega, Omega_2 = 0, Baux, Gaux, Lturb, Kaux, Aaux;
+  unsigned long iDim;
+  su2double Omega, Omega_2 = 0.0, Baux, Gaux, Lturb, Kaux, Aaux;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(Vorticity, 3);
-  AD::SetPreaccIn(StrainMag);
+  AD::SetPreaccIn(Vorticity[iPoint], 3);
+  AD::SetPreaccIn(StrainMag(iPoint));
   AD::SetPreaccIn(val_delta);
   AD::SetPreaccIn(val_const_DES);
   /*--- Density ---*/
-  AD::SetPreaccIn(Solution[0]);
+  AD::SetPreaccIn(Solution(iPoint,0));
   /*--- Laminar viscosity --- */
-  AD::SetPreaccIn(Primitive[nDim+5]);
+  AD::SetPreaccIn(Primitive(iPoint,nDim+5));
   /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(Primitive[nDim+6]);
+  AD::SetPreaccIn(Primitive(iPoint,nDim+6));
 
   /*--- Central/upwind blending based on:
    * Zhixiang Xiao, Jian Liu, Jingbo Huang, and Song Fu.  "Numerical
@@ -165,86 +138,77 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
    * ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
-    Omega_2 += Vorticity[iDim]*Vorticity[iDim];
+    Omega_2 += pow(Vorticity(iPoint,iDim),2);
   }
   Omega = sqrt(Omega_2);
 
-  Baux = (ch3 * Omega * max(StrainMag, Omega)) /
-      max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
+  Baux = (ch3 * Omega * max(StrainMag(iPoint), Omega)) /
+      max((pow(StrainMag(iPoint),2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
 
-  Kaux = max(sqrt((Omega_2 + pow(StrainMag, 2))*0.5), 0.1 * inv_TimeScale);
+  Kaux = max(sqrt((Omega_2 + pow(StrainMag(iPoint), 2))*0.5), 0.1 * inv_TimeScale);
 
-  const su2double nu = GetLaminarViscosity()/GetDensity();
-  const su2double nu_t = GetEddyViscosity()/GetDensity();
+  const su2double nu = GetLaminarViscosity(iPoint)/GetDensity(iPoint);
+  const su2double nu_t = GetEddyViscosity(iPoint)/GetDensity(iPoint);
   Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
 
   Aaux = ch2*max((val_const_DES*val_delta/Lturb)/Gaux -  0.5, 0.0);
 
-  Roe_Dissipation = sigma_max * tanh(pow(Aaux, ch1));
+  Roe_Dissipation(iPoint) = sigma_max * tanh(pow(Aaux, ch1));
 
-  AD::SetPreaccOut(Roe_Dissipation);
+  AD::SetPreaccOut(Roe_Dissipation(iPoint));
   AD::EndPreacc();
 
 }
 
-void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
+void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall_dist){
 
   /*--- Constants for Roe Dissipation ---*/
 
-  static const su2double k2 = pow(0.41,2.0);
-
-  su2double uijuij = 0;
-  unsigned short iDim, jDim;
+  const passivedouble k2 = pow(0.41,2.0);
 
   AD::StartPreacc();
-  AD::SetPreaccIn(Gradient_Primitive, nVar, nDim);
+  AD::SetPreaccIn(Gradient_Primitive[iPoint], nVar, nDim);
   AD::SetPreaccIn(val_wall_dist);
   /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(Primitive[nDim+5]);
+  AD::SetPreaccIn(Primitive(iPoint,nDim+5));
   /*--- Laminar viscosity --- */
-  AD::SetPreaccIn(Primitive[nDim+6]);
+  AD::SetPreaccIn(Primitive(iPoint,nDim+6));
 
-  for(iDim=0;iDim<nDim;++iDim){
-    for(jDim=0;jDim<nDim;++jDim){
-      uijuij+= Gradient_Primitive[1+iDim][jDim]*Gradient_Primitive[1+iDim][jDim];
-    }
-  }
+  su2double uijuij = 0.0;
 
-  uijuij=sqrt(fabs(uijuij));
-  uijuij=max(uijuij,1e-10);
+  for(unsigned long iDim = 0; iDim < nDim; ++iDim)
+    for(unsigned long jDim = 0; jDim < nDim; ++jDim)
+      uijuij += pow(Gradient_Primitive(iPoint,1+iDim,jDim),2);
 
-  const su2double nu = GetLaminarViscosity()/GetDensity();
-  const su2double nu_t = GetEddyViscosity()/GetDensity();
-  const su2double r_d = (nu + nu_t)/(uijuij*k2*pow(val_wall_dist, 2.0));
+  uijuij = max(sqrt(uijuij),1e-10);
 
-  Roe_Dissipation = 1.0-tanh(pow(8.0*r_d,3.0));
+  const su2double nu = GetLaminarViscosity(iPoint)/GetDensity(iPoint);
+  const su2double nu_t = GetEddyViscosity(iPoint)/GetDensity(iPoint);
+  const su2double r_d = (nu + nu_t)/(uijuij*k2*pow(val_wall_dist,2));
 
-  AD::SetPreaccOut(Roe_Dissipation);
+  Roe_Dissipation(iPoint) = 1.0-tanh(pow(8.0*r_d,3.0));
+
+  AD::SetPreaccOut(Roe_Dissipation(iPoint));
   AD::EndPreacc();
-
 }
 
-bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
-    unsigned short iVar;
-  su2double density, staticEnergy;
-  bool check_dens = false, check_press = false, check_sos = false,
-  check_temp = false, RightVol = true;
+  bool RightVol = true;
 
-
-  SetVelocity(); // Computes velocity and velocity^2
-  density = GetDensity();
-  staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+  SetVelocity(iPoint); // Computes velocity and velocity^2
+  su2double density      = GetDensity(iPoint);
+  su2double staticEnergy = GetEnergy(iPoint)-0.5*Velocity2(iPoint) - turb_ke;
 
   /*--- Check will be moved inside fluid model plus error description strings ---*/
 
   FluidModel->SetTDState_rhoe(density, staticEnergy);
 
-  check_dens  = SetDensity();
-  check_press = SetPressure(FluidModel->GetPressure());
-  check_sos   = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-  check_temp  = SetTemperature(FluidModel->GetTemperature());
+  bool check_dens  = SetDensity(iPoint);
+  bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
+  bool check_sos   = SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
+  bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature());
 
   /*--- Check that the solution has a physical meaning ---*/
 
@@ -252,23 +216,23 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
 
     /*--- Copy the old solution ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute the primitive variables ---*/
 
-    SetVelocity(); // Computes velocity and velocity^2
-    density = GetDensity();
-    staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+    SetVelocity(iPoint); // Computes velocity and velocity^2
+    density      = GetDensity(iPoint);
+    staticEnergy = GetEnergy(iPoint)-0.5*Velocity2(iPoint) - turb_ke;
 
     /*--- Check will be moved inside fluid model plus error description strings ---*/
 
     FluidModel->SetTDState_rhoe(density, staticEnergy);
 
-    SetDensity();
-    SetPressure(FluidModel->GetPressure());
-    SetSoundSpeed(FluidModel->GetSoundSpeed2());
-    SetTemperature(FluidModel->GetTemperature());
+    SetDensity(iPoint);
+    SetPressure(iPoint, FluidModel->GetPressure());
+    SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
+    SetTemperature(iPoint, FluidModel->GetTemperature());
 
     RightVol = false;
 
@@ -276,45 +240,44 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
 
   /*--- Set enthalpy ---*/
 
-  SetEnthalpy();                                  // Requires pressure computation.
+  SetEnthalpy(iPoint); // Requires pressure computation.
 
   /*--- Set laminar viscosity ---*/
 
-  SetLaminarViscosity(FluidModel->GetLaminarViscosity());
+  SetLaminarViscosity(iPoint, FluidModel->GetLaminarViscosity());
 
   /*--- Set eddy viscosity ---*/
 
-  SetEddyViscosity(eddy_visc);
+  SetEddyViscosity(iPoint, eddy_visc);
 
   /*--- Set thermal conductivity ---*/
 
-  SetThermalConductivity(FluidModel->GetThermalConductivity());
+  SetThermalConductivity(iPoint, FluidModel->GetThermalConductivity());
 
   /*--- Set specific heat ---*/
 
-  SetSpecificHeatCp(FluidModel->GetCp());
+  SetSpecificHeatCp(iPoint, FluidModel->GetCp());
 
   return RightVol;
-
 }
 
-void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
+void CNSVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
     /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
-    SetdPdrho_e( FluidModel->GetdPdrho_e() );
-    SetdPde_rho( FluidModel->GetdPde_rho() );
+    SetdPdrho_e( iPoint, FluidModel->GetdPdrho_e() );
+    SetdPde_rho( iPoint, FluidModel->GetdPde_rho() );
 
-    SetdTdrho_e( FluidModel->GetdTdrho_e() );
-    SetdTde_rho( FluidModel->GetdTde_rho() );
+    SetdTdrho_e( iPoint, FluidModel->GetdTdrho_e() );
+    SetdTde_rho( iPoint, FluidModel->GetdTde_rho() );
 
     /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
-    Setdmudrho_T( FluidModel->Getdmudrho_T() );
-    SetdmudT_rho( FluidModel->GetdmudT_rho() );
+    Setdmudrho_T( iPoint, FluidModel->Getdmudrho_T() );
+    SetdmudT_rho( iPoint, FluidModel->GetdmudT_rho() );
 
-    Setdktdrho_T( FluidModel->Getdktdrho_T() );
-    SetdktdT_rho( FluidModel->GetdktdT_rho() );
+    Setdktdrho_T( iPoint, FluidModel->Getdktdrho_T() );
+    SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
 
 }
 
