@@ -518,11 +518,12 @@ virtual bool Monitor(COutput *output,
   /*!
    * \brief Fixed CL monitoring function
    * \author J. Mukhopadhaya
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] flow_solver - Pointer to the flow solver
    * \param[in] output - Pointer to the COutput class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Pointer to the flow solver
+   * \param[in] config - Definition of the particular problem.
    */
-  void MonitorFixed_CL(CConfig *config, CSolver *flow_solver, COutput *output);
+  void MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config);
 };
 
 

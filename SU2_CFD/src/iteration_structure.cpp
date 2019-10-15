@@ -668,7 +668,6 @@ bool CFluidIteration::Monitor(COutput *output,
     unsigned short val_iInst)     {
 
   bool StopCalc = false;
-  CSolver* flow_solver= solver[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -695,7 +694,7 @@ bool CFluidIteration::Monitor(COutput *output,
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
   if (config[val_iZone]->GetFixed_CL_Mode()){
-    MonitorFixed_CL(config, flow_solver, output);
+    MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
   }
 
   /*--- If convergence was reached --*/
@@ -1041,23 +1040,24 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long &nVortex, vecto
   
 }
 
-CFluidIteration::MonitorFixed_CL(CConfig *config, CSolver *flow_solver, COutput *output) {
+CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
 
-  bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
+  CSolver* flow_solver= solver[FLOW_SOL];
+
+  bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config, output->GetConvergence());
 
   /* --- If Fixed CL mode has ended and Finite Differencing has started: --- */
 
-  if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config[val_iZone]->GetInnerIter()){
+  if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config->GetInnerIter()){
     
     /* --- Print convergence history and volume files since fixed CL mode has converged--- */
     if (rank == MASTER_NODE) output->PrintConvergenceSummary();
     
-    output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], 
-                            config[val_iZone], solver[val_iZone][INST_0][MESH_0], 
-                            config[val_iZone]->GetInnerIter(), true);
+    output->SetResult_Files(geometry, config, solver, 
+                            config->GetInnerIter(), true);
 
     /* --- Set finite difference mode in config (disables output) --- */
-    config[val_iZone]->SetFinite_Difference_Mode(true);
+    config->SetFinite_Difference_Mode(true);
   }
 
   /* --- Set convergence based on fixed CL convergence  --- */
