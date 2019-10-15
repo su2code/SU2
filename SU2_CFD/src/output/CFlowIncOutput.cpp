@@ -47,6 +47,9 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   heat = config->GetEnergy_Equation();
   
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+
+  streamwise_periodic             = config->GetKind_Streamwise_Periodic();
+  streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
       
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
@@ -330,12 +333,16 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   // SOLUTION variables
   AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
+  if(streamwise_periodic)
+    AddVolumeOutput("RECOVERED_PRESSURE", "Recovered_Pressure", "SOLUTION", "Recovered physical pressure");
   AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3) 
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat) 
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
+  if (heat && streamwise_periodic && streamwise_periodic_temperature)
+    AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
   
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -444,6 +451,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     }
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
+
+  AddVolumeOutput("RANK", "rank", "SOLUTION", "rank of the MPI-partition");
+
 }
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -467,6 +477,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
   
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+  if(streamwise_periodic)
+    SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));
   SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
   if (nDim == 3){
@@ -475,6 +487,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   } else {
     if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 3));
   }
+  if (heat && streamwise_periodic && streamwise_periodic_temperature)
+    SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
   
   switch(config->GetKind_Turb_Model()){
@@ -580,6 +594,9 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     } 
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);      
   }
+
+  SetVolumeOutputValue("RANK", iPoint, rank);
+
 }
 
 void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

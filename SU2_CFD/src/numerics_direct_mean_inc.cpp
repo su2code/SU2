@@ -1044,7 +1044,7 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
 
   /*--- Compute the periodic temperature contribution to the energy equation, if energy equation is considered ---*/
   val_residual[nDim+1] = 0.0;
-  if (energy) {
+  if (energy && config->GetStreamwise_Periodic_Temperature()) {
     
     scalar_factor = integrated_heatflow * DensityInc_i / (massflow * norm2_translation);
     

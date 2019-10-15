@@ -1028,6 +1028,7 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
 
   unsigned short Kind_Streamwise_Periodic;          /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
+  bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or outlet source term. */
   su2double Streamwise_Periodic_PressureDrop,       /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
             Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
@@ -5972,6 +5973,12 @@ public:
    * \return Driving force identification.
    */
   unsigned short GetKind_Streamwise_Periodic(void);
+
+  /*!
+   * \brief Get information about the streamwise periodicity Energy equation handling.
+   * \return Real periodic treatment of energy equation.
+   */
+  bool GetStreamwise_Periodic_Temperature(void);
 
   /*!
    * \brief Get the value of the pressure delta from which body force vector is computed.

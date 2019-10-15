@@ -1621,6 +1621,9 @@ inline su2double* CConfig::GetPeriodicTranslation(unsigned short val_index) {
 inline unsigned short CConfig::GetKind_Streamwise_Periodic(void) {
   return Kind_Streamwise_Periodic; }
 
+inline bool CConfig::GetStreamwise_Periodic_Temperature(void) {
+  return Streamwise_Periodic_Temperature; }
+
 inline su2double CConfig::GetStreamwise_Periodic_PressureDrop(void) {
   return Streamwise_Periodic_PressureDrop; }
 

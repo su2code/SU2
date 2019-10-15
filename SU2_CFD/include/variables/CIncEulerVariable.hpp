@@ -331,28 +331,28 @@ public:
    * \brief Set the recovered pressure for streamwise periodic flow.
    * \param[in] val_pressure - pressure value.
    */
-  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) {
+  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) override {
     Streamwise_Periodic_RecoveredPressure(iPoint) =  val_pressure; }
   
   /*!
    * \brief Get the recovered pressure for streamwise periodic flow.
    * \return Recovered/Physical pressure for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const {
+  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const override {
     return Streamwise_Periodic_RecoveredPressure(iPoint); }
   
   /*!
    * \brief Set the recovered pressure for streamwise periodic flow.
    * \param[in] val_temperature - temperature value.
    */
-  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) {
+  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) override {
     Streamwise_Periodic_RecoveredTemperature(iPoint) = val_temperature; }
   
   /*!
    * \brief Get the recovered temperature for streamwise periodic flow.
    * \return Recovered/Physical temperature for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const {
+  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const override {
     return Streamwise_Periodic_RecoveredTemperature(iPoint); }
 
   //TK:: unclear during merge whether necessary

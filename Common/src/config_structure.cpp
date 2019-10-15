@@ -914,6 +914,8 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions (NONE, PRESSURE_DROP, MASSFLOW) */
   addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
+  /*!\brief STREAMWISE_PERIODIC_TEMPERATURE \n DESCRIPTION: Use real periodicty for temperature: NO, YES \ingroup Config */
+  addBoolOption("STREAMWISE_PERIODIC_TEMPERATURE", Streamwise_Periodic_Temperature, false);
   /* DESCRIPTION: Delta pressure on which basis body force will be computed, serves as initial value if MASSFLOW is chosen */
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Target Massflow, Delta P will be adapted until m_dot is met.  */

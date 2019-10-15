@@ -12170,7 +12170,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
     /*---         config container.                                                           ---*/
     /*-------------------------------------------------------------------------------------------*/
 
-    for (iPoint = 0; iPoint < size; iPoint++) { // loop over all vertices on that marker and fi
+    for (iPoint = 0; iPoint < static_cast<unsigned long>(size); iPoint++) { // loop over all vertices on that marker and fi
 
       /*--- Get the norm of the current Point. ---*/
       norm = 0.0;

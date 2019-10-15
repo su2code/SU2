@@ -2024,6 +2024,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   
   unsigned short iVar;
   unsigned long iPoint;
+
+  unsigned short iDim, iMarker;
+  unsigned long iVertex;
   
   bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool rotating_frame      = config->GetRotating_Frame();
@@ -2032,6 +2035,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool boussinesq          = (config->GetKind_DensityModel() == BOUSSINESQ);
   bool viscous             = config->GetViscous();
   bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
+  bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
 
   /*--- Initialize the source residual to zero ---*/
@@ -2074,6 +2078,92 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
+    }
+
+    if(!streamwise_periodic_temperature) {
+      //loop markers and find the "outlet marker"
+      
+      //compute "outlet" area
+      su2double Area_Local = 0.0, 
+                Area_Global = 0.0,
+                FaceArea, 
+                AxiFactor;
+
+      vector<su2double> AreaNormal(nDim);
+    
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+        /*--- Only "outlet"/donor periodic marker ---*/
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
+            config->GetMarker_All_PerBound(iMarker) == 2) {
+            
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    
+            if (geometry->node[iPoint]->GetDomain()) {
+              geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
+    
+              if (axisymmetric) {
+                if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                  AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+                else
+                  AxiFactor = 1.0;
+              } else {
+                AxiFactor = 1.0;
+              }
+    
+              /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
+              FaceArea = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
+              Area_Local += sqrt(FaceArea);
+    
+            } // if domain
+          } // loop vertices
+        } // loop periodic boundaries
+      } // loop MarkerAll
+    
+      // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflwo
+      SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      if(rank==MASTER_NODE) cout << "Source Res outlet area: " << Area_Global << endl;
+
+
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+        /*--- Only "outlet"/donor periodic marker ---*/
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
+            config->GetMarker_All_PerBound(iMarker) == 2) {
+            
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    
+            if (geometry->node[iPoint]->GetDomain()) {
+              geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
+    
+              if (axisymmetric) {
+                if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                  AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+                else
+                  AxiFactor = 1.0;
+              } else {
+                AxiFactor = 1.0;
+              }
+    
+              /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
+              FaceArea = 0.0; Area_Local = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
+              Area_Local += sqrt(FaceArea);
+
+              Residual[nDim+1] -= Area_Local/Area_Global * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+
+            } // if domain
+          } // loop vertices
+        } // loop periodic boundaries
+      } // loop MarkerAll
+      //add weighted heat sink to residual
+      
+
+      /*--- Add the source residual to the total ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
     }
   }
 
@@ -6373,9 +6463,9 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
   unsigned long iVertex, iPoint;
 
   bool axisymmetric = config->GetAxisymmetric();
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*1)) == 0) // TK output at every iteration
-                       && (config->GetInnerIter()!= 0))
-                      || (config->GetInnerIter() == 1));
+  //bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*1)) == 0) // TK output at every iteration
+  //                     && (config->GetInnerIter()!= 0))
+  //                    || (config->GetInnerIter() == 1));
 
   /*-------------------------------------------------------------------------------------------------*/
   /*--- 1. Evaluate Massflow [kg/s], area-averaged density [kg/m^3] and Area [m^2] at the         ---*/
@@ -7676,6 +7766,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
       Pressure_Recovered = nodes->GetSolution(iPoint, 0) - delta_p / norm2_translation * dot_product;
       nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
+      if (rank==MASTER_NODE && false) {
+        if (abs(Pressure_Recovered) > 1e-6) cout << "At iPoint: " << iPoint << " Pressure_Recovered " << Pressure_Recovered << endl;
+      } 
 
       if (energy && InnerIter > 0) { //ExtIter > 0, hen egg problem
         Temperature_Recovered  = nodes->GetSolution(iPoint, nDim+1);
@@ -8519,6 +8612,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool energy              = config->GetEnergy_Equation();
   bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
+  bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
   /*--- Variable allocation for streamwise periodicity ---*/
   su2double Cp, 
@@ -8530,7 +8624,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
             integratedHeatFlow;
 
   /*--- Variable initialization for streamwise periodicity ---*/
-  if(energy && streamwise_periodic) {
+  if(energy && streamwise_periodic && streamwise_periodic_temperature) {
     massflow = config->GetStreamwise_Periodic_MassFlow();
     integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
 
@@ -8613,13 +8707,13 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         
         /*--- With streamwise periodic BC and heatflux walls an additional
               term is introduced in the boundary formulation ---*/    
-        if (streamwise_periodic) {
+        if (streamwise_periodic && streamwise_periodic_temperature) {
           
           Cp = nodes->GetSpecificHeatCp(iPoint);
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
           /*--- Scalar part of the contribution ---*/
-          su2double scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
+          scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
           
           /*--- Scalar product ---*/
           dot_product = 0.0;
