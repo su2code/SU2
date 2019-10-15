@@ -514,6 +514,15 @@ virtual bool Monitor(COutput *output,
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
+
+  /*!
+   * \brief Fixed CL monitoring function
+   * \author J. Mukhopadhaya
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - Pointer to the flow solver
+   * \param[in] output - Pointer to the COutput class.
+   */
+  void MonitorFixed_CL(CConfig *config, CSolver *flow_solver, COutput *output);
 };
 
 

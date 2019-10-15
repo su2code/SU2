@@ -695,21 +695,7 @@ bool CFluidIteration::Monitor(COutput *output,
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
   if (config[val_iZone]->GetFixed_CL_Mode()){
-    bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
-
-    /* --- If Fixed CL mode has ended and Finite Differencing has started, print convergence history and volume files. 
-            Additionally set config option so that volume output is disabled --- */
-
-    if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config[val_iZone]->GetInnerIter()){
-      if (rank == MASTER_NODE) output->PrintConvergenceSummary();
-      
-      output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], 
-                              config[val_iZone], solver[val_iZone][INST_0][MESH_0], 
-                              config[val_iZone]->GetInnerIter(), true);
-
-      config[val_iZone]->SetFinite_Difference_Mode(true);
-    }
-    output->SetConvergence(fixed_cl_convergence);
+    MonitorFixed_CL(config, flow_solver, output);
   }
 
   /*--- If convergence was reached --*/
@@ -1055,6 +1041,29 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long &nVortex, vecto
   
 }
 
+CFluidIteration::MonitorFixed_CL(CConfig *config, CSolver *flow_solver, COutput *output) {
+
+  bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config[val_iZone], output->GetConvergence());
+
+  /* --- If Fixed CL mode has ended and Finite Differencing has started: --- */
+
+  if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config[val_iZone]->GetInnerIter()){
+    
+    /* --- Print convergence history and volume files since fixed CL mode has converged--- */
+    if (rank == MASTER_NODE) output->PrintConvergenceSummary();
+    
+    output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], 
+                            config[val_iZone], solver[val_iZone][INST_0][MESH_0], 
+                            config[val_iZone]->GetInnerIter(), true);
+
+    /* --- Set finite difference mode in config (disables output) --- */
+    config[val_iZone]->SetFinite_Difference_Mode(true);
+  }
+
+  /* --- Set convergence based on fixed CL convergence  --- */
+  output->SetConvergence(fixed_cl_convergence);
+
+}
 
 CTurboIteration::CTurboIteration(CConfig *config) : CFluidIteration(config) { }
 CTurboIteration::~CTurboIteration(void) { }
