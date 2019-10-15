@@ -138,4 +138,10 @@ public:
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetFixedCLScreenOutput(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config) override;
 };

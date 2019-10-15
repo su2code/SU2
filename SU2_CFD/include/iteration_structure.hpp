@@ -522,8 +522,9 @@ virtual bool Monitor(COutput *output,
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Pointer to the flow solver
    * \param[in] config - Definition of the particular problem.
+   * \return Boolean indicating weather calculation should be stopped  
    */
-  void MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config);
+  bool MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config);
 };
 
 

@@ -728,19 +728,18 @@ void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
 }
 
 void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
-  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
-  int total_width = 72;    
+  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);    
   
   if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
-    FixedCLSummary.AddColumn("Fixed CL Mode", (total_width)/2-1); 
-    FixedCLSummary.AddColumn("Value", total_width/2-1);  
+    FixedCLSummary.AddColumn("Fixed CL Mode", 40); 
+    FixedCLSummary.AddColumn("Value", 30);  
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     FixedCLSummary.PrintHeader();
     FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
     FixedCLSummary << "Target CL" << config->GetTarget_CL();
     FixedCLSummary << "Current AOA" << config->GetAoA();
     if (config->GetFinite_Difference_Mode())
-      FixedCLSummary << "Starting Finite Difference" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changing AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
     else 
       FixedCLSummary << "Changing AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
     FixedCLSummary.PrintFooter();
@@ -748,8 +747,8 @@ void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
   }
 
   else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
-    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", (total_width)/2-1); 
-    FixedCLSummary.AddColumn("Value", total_width/2-1);  
+    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40); 
+    FixedCLSummary.AddColumn("Value", 30);  
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     FixedCLSummary.PrintHeader();
     FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
@@ -761,4 +760,8 @@ void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
     FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
     FixedCLSummary.PrintFooter();
   }
+}
+
+bool CFlowCompOutput::WriteHistoryFile_Output(CConfig *config) {
+  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
 }

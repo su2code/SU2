@@ -7315,6 +7315,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   unsigned long InnerIter = config->GetInnerIter();
   su2double Beta = config->GetAoS();
 
+  /* --- Initialize values at first iteration --- */
+  
   if (InnerIter == 0) {
     Total_CD_Prev = 0.0;
     Total_CL_Prev = 0.0;
@@ -7325,7 +7327,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     dCL_dAlpha = config->GetdCL_dAlpha();
   }
   
-  /*--- Retrieve the old AoA (degrees) ---*/
+  /*--- Retrieve the AoA (degrees) ---*/
     
   AoA = config->GetAoA();
 
@@ -7462,19 +7464,32 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
     }
   }
 
+  /* --- If Finite Difference Mode has ended, end simulation --- */
 
   if (End_AoA_FD){
-    fixed_cl_conv = true;
+    //fixed_cl_conv = true;
+    return true;
   }
   
+  /* --- If starting Finite Difference Mode --- */
+
   if (Start_AoA_FD){
-    config->SetScreen_Wrt_Freq(2, Iter_dCL_dAlpha/10);
+    
+    /* --- Disable history writing --- */
+
     config->SetHistory_Wrt_Freq(2, 0);
-    End_AoA_FD = ((curr_iter - Iter_Update_AoA +1) == Iter_dCL_dAlpha || 
+    
+    /* --- End Finite Difference Mode if iteration limit is reached, so simualtion is converged --- */
+
+    End_AoA_FD = ((curr_iter - Iter_Update_AoA - 2) == Iter_dCL_dAlpha || 
       curr_iter == config->GetnInner_Iter()- 1 );
 
     if (convergence && (curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter())
       End_AoA_FD = true;
+
+    
+    /* --- If Finite Difference mode is ending, reset AoA and calculate Coefficient Gradients --- */
+
     if (End_AoA_FD){
       SetCoefficient_Gradients(config);
       config->SetAoA(AoA_Prev);
