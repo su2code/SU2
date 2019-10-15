@@ -639,7 +639,10 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if (config->GetMultizone_Problem())
+      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+    else
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
     /*--- Store the adjoint solution ---*/
 
@@ -713,7 +716,10 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if (config->GetMultizone_Problem())
+      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+    else
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
     for (iDim = 0; iDim < nDim; iDim++) nodes->SetGeometry_CrossTerm_Derivative(iPoint,iDim, Solution_Geometry[iDim]);
 
@@ -731,7 +737,10 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if (config->GetMultizone_Problem())
+      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+    else
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
     for (iDim = 0; iDim < nDim; iDim++) nodes->SetGeometry_CrossTerm_Derivative_Flow(iPoint,iDim, Solution_Geometry[iDim]);
 
