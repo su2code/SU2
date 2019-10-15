@@ -3125,27 +3125,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
       (TimeMarching == TIME_STEPPING)) { nMGLevels = 0; }
-
-  /*--- If Fluid Structure Interaction, set the solver for each zone.
-   *--- ZONE_0 is the zone of the fluid.
-   *--- All the other zones are structure.
-   *--- This will allow us to define multiple physics structural problems */
-
-//  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-//    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
-
-//    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
-//    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-//    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-//    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-//    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
-//    // Discrete adjoint linear solver
-//    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
-//    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
-
-//    Multizone_Residual = true;
-//  }
-//  else { FSI_Problem = false; }
   
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
