@@ -1518,7 +1518,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     }
 
     /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    //numerics->ComputeChemistry(Residual, Jacobian_i, config);
 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -1539,7 +1539,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    //numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
