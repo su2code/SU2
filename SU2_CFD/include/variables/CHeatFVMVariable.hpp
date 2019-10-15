@@ -45,53 +45,55 @@
  * \author O. Burghardt
  * \version 6.2.0 "Falcon"
  */
-class CHeatFVMVariable : public CVariable {
+class CHeatFVMVariable final : public CVariable {
 protected:
-  su2double* Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  su2double **Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term. */
-  bool GradReconAllocated;              /*!< \brief Flag indicating that separate memory was allocated for the MUSCL reconstruction gradient. */
-  
-public:
+  MatrixType Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
 
+  VectorOfMatrix Gradient_Reconstruction;  /*!< \brief Gradient of the variables for MUSCL reconstruction for the convective term */
+
+public:
   /*!
    * \brief Constructor of the class.
-   */
-  CHeatFVMVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] heat - Values of the Heat solution (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CHeatFVMVariable(void);
+  ~CHeatFVMVariable() = default;
 
   /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \return Value of the reconstruction variables gradient at a node.
    */
-  inline su2double GetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim) {return Gradient_Reconstruction[val_var][val_dim]; }
+  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+    return Gradient_Reconstruction(iPoint,iVar,iDim);
+  }
   
   /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \param[in] iDim   - Index of the dimension.
    */
-  inline void SetGradient_Reconstruction(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Reconstruction[val_var][val_dim] = val_value; }
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+  }
   
   /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \return Value of the primitive variables gradient.
+   * \brief Get the array of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(void) {return Gradient_Reconstruction; }
+  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
   
 };

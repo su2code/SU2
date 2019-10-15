@@ -86,6 +86,7 @@
 		E9225F761FCBC36D002F3682 /* solver_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */; };
 		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
 		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
+		E96008AA235557AA0002EADD /* signal_processing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96008A9235557A90002EADD /* signal_processing_toolbox.cpp */; };
 		E96FAF102189FE9C0046BF5D /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF0F2189FE9C0046BF5D /* blas_structure.cpp */; };
 		E96FAF142189FECA0046BF5D /* graph_coloring_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF112189FECA0046BF5D /* graph_coloring_structure.cpp */; };
 		E96FAF152189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */; };
@@ -145,8 +146,6 @@
 		E9D6EE682317B80600618E36 /* CDiscAdjMeshSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE662317B80600618E36 /* CDiscAdjMeshSolver.cpp */; };
 		E9D6EE6A2317B86300618E36 /* CFEAMeshElasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE692317B86300618E36 /* CFEAMeshElasticity.cpp */; };
 		E9D6EE722317B88F00618E36 /* CDiscAdjMeshBoundVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE6B2317B88F00618E36 /* CDiscAdjMeshBoundVariable.cpp */; };
-		E9D6EE732317B88F00618E36 /* CFEAFSIBoundVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE6C2317B88F00618E36 /* CFEAFSIBoundVariable.cpp */; };
-		E9D6EE742317B88F00618E36 /* CDiscAdjMeshVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE6D2317B88F00618E36 /* CDiscAdjMeshVariable.cpp */; };
 		E9D6EE752317B88F00618E36 /* CDiscAdjFEABoundVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE6E2317B88F00618E36 /* CDiscAdjFEABoundVariable.cpp */; };
 		E9D6EE762317B88F00618E36 /* CMeshElement.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE6F2317B88F00618E36 /* CMeshElement.cpp */; };
 		E9D6EE772317B88F00618E36 /* CMeshBoundVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D6EE702317B88F00618E36 /* CMeshBoundVariable.cpp */; };
@@ -333,6 +332,10 @@
 		E941BBA31B71D1AB005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = primitive_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBA51B71D1AB005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBA61B71D1AB005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E96008A6235557790002EADD /* CVertexMap.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CVertexMap.hpp; path = ../../Common/include/toolboxes/CVertexMap.hpp; sourceTree = "<group>"; };
+		E96008A7235557790002EADD /* signal_processing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = signal_processing_toolbox.hpp; path = ../../Common/include/toolboxes/signal_processing_toolbox.hpp; sourceTree = "<group>"; };
+		E96008A82355577A0002EADD /* C2DContainer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = C2DContainer.hpp; path = ../../Common/include/toolboxes/C2DContainer.hpp; sourceTree = "<group>"; };
+		E96008A9235557A90002EADD /* signal_processing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = signal_processing_toolbox.cpp; path = ../../Common/src/toolboxes/signal_processing_toolbox.cpp; sourceTree = "<group>"; };
 		E96FAF0F2189FE9C0046BF5D /* blas_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = blas_structure.cpp; path = ../../Common/src/blas_structure.cpp; sourceTree = "<group>"; };
 		E96FAF112189FECA0046BF5D /* graph_coloring_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = graph_coloring_structure.cpp; path = ../../Common/src/graph_coloring_structure.cpp; sourceTree = "<group>"; };
 		E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_gauss_jacobi_quadrature.cpp; path = ../../Common/src/fem_gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
@@ -458,8 +461,6 @@
 		E9D6EE662317B80600618E36 /* CDiscAdjMeshSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjMeshSolver.cpp; path = ../../SU2_CFD/src/solvers/CDiscAdjMeshSolver.cpp; sourceTree = "<group>"; };
 		E9D6EE692317B86300618E36 /* CFEAMeshElasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFEAMeshElasticity.cpp; path = ../../SU2_CFD/src/numerics/CFEAMeshElasticity.cpp; sourceTree = "<group>"; };
 		E9D6EE6B2317B88F00618E36 /* CDiscAdjMeshBoundVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjMeshBoundVariable.cpp; path = ../../SU2_CFD/src/variables/CDiscAdjMeshBoundVariable.cpp; sourceTree = "<group>"; };
-		E9D6EE6C2317B88F00618E36 /* CFEAFSIBoundVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFEAFSIBoundVariable.cpp; path = ../../SU2_CFD/src/variables/CFEAFSIBoundVariable.cpp; sourceTree = "<group>"; };
-		E9D6EE6D2317B88F00618E36 /* CDiscAdjMeshVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjMeshVariable.cpp; path = ../../SU2_CFD/src/variables/CDiscAdjMeshVariable.cpp; sourceTree = "<group>"; };
 		E9D6EE6E2317B88F00618E36 /* CDiscAdjFEABoundVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjFEABoundVariable.cpp; path = ../../SU2_CFD/src/variables/CDiscAdjFEABoundVariable.cpp; sourceTree = "<group>"; };
 		E9D6EE6F2317B88F00618E36 /* CMeshElement.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMeshElement.cpp; path = ../../SU2_CFD/src/variables/CMeshElement.cpp; sourceTree = "<group>"; };
 		E9D6EE702317B88F00618E36 /* CMeshBoundVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMeshBoundVariable.cpp; path = ../../SU2_CFD/src/variables/CMeshBoundVariable.cpp; sourceTree = "<group>"; };
@@ -468,11 +469,9 @@
 		E9D6EE7A2317B8B000618E36 /* CDiscAdjMeshSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDiscAdjMeshSolver.hpp; path = ../../SU2_CFD/include/solvers/CDiscAdjMeshSolver.hpp; sourceTree = "<group>"; };
 		E9D6EE7B2317B8B000618E36 /* CMeshSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMeshSolver.hpp; path = ../../SU2_CFD/include/solvers/CMeshSolver.hpp; sourceTree = "<group>"; };
 		E9D6EE7C2317B8CC00618E36 /* CMeshElement.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMeshElement.hpp; path = ../../SU2_CFD/include/variables/CMeshElement.hpp; sourceTree = "<group>"; };
-		E9D6EE7D2317B8CC00618E36 /* CDiscAdjMeshVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDiscAdjMeshVariable.hpp; path = ../../SU2_CFD/include/variables/CDiscAdjMeshVariable.hpp; sourceTree = "<group>"; };
 		E9D6EE7E2317B8CC00618E36 /* CDiscAdjFEABoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDiscAdjFEABoundVariable.hpp; path = ../../SU2_CFD/include/variables/CDiscAdjFEABoundVariable.hpp; sourceTree = "<group>"; };
 		E9D6EE7F2317B8CC00618E36 /* CMeshVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMeshVariable.hpp; path = ../../SU2_CFD/include/variables/CMeshVariable.hpp; sourceTree = "<group>"; };
 		E9D6EE802317B8CC00618E36 /* CDiscAdjMeshBoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDiscAdjMeshBoundVariable.hpp; path = ../../SU2_CFD/include/variables/CDiscAdjMeshBoundVariable.hpp; sourceTree = "<group>"; };
-		E9D6EE812317B8CC00618E36 /* CFEAFSIBoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFEAFSIBoundVariable.hpp; path = ../../SU2_CFD/include/variables/CFEAFSIBoundVariable.hpp; sourceTree = "<group>"; };
 		E9D6EE822317B8CC00618E36 /* CMeshBoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMeshBoundVariable.hpp; path = ../../SU2_CFD/include/variables/CMeshBoundVariable.hpp; sourceTree = "<group>"; };
 		E9D85B4B1C3F1B9E0077122F /* ad_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = ad_structure.cpp; path = ../../Common/src/ad_structure.cpp; sourceTree = "<group>"; };
 		E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = ad_structure.hpp; path = ../../Common/include/ad_structure.hpp; sourceTree = "<group>"; };
@@ -658,6 +657,7 @@
 				E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */,
 				E9FDF6EC1D2DD0860066E49C /* adt_structure.hpp */,
 				E96FAF1A2189FF620046BF5D /* blas_structure.hpp */,
+				E96008A82355577A0002EADD /* C2DContainer.hpp */,
 				E984B694234576EB00AEDA72 /* CAdjElasticityOutput.hpp */,
 				E984B68A234576E900AEDA72 /* CAdjFlowIncOutput.hpp */,
 				E984B68B234576EA00AEDA72 /* CAdjFlowOutput.hpp */,
@@ -673,14 +673,12 @@
 				E97429E72323596C006DA2D3 /* CDiscAdjFlowTractionInterface.hpp */,
 				E9D6EE802317B8CC00618E36 /* CDiscAdjMeshBoundVariable.hpp */,
 				E9D6EE7A2317B8B000618E36 /* CDiscAdjMeshSolver.hpp */,
-				E9D6EE7D2317B8CC00618E36 /* CDiscAdjMeshVariable.hpp */,
 				EB14FF9C22F790720045FB27 /* CDiscAdjSinglezoneDriver.hpp */,
 				E97429E92323596D006DA2D3 /* CDisplacementsInterface.hpp */,
 				E97429EA2323596D006DA2D3 /* CDisplacementsInterfaceLegacy.hpp */,
 				EB14FF9D22F790720045FB27 /* CDriver.hpp */,
 				E9D6EE5B23165FE400618E36 /* CDummyDriver.hpp */,
 				E984B687234576E900AEDA72 /* CElasticityOutput.hpp */,
-				E9D6EE812317B8CC00618E36 /* CFEAFSIBoundVariable.hpp */,
 				E9D6EE792317B8A100618E36 /* CFEAMeshElasticity.hpp */,
 				E984B696234576FE00AEDA72 /* CFEMDataSorter.hpp */,
 				E984B6A32345770000AEDA72 /* CFileWriter.hpp */,
@@ -734,6 +732,7 @@
 				E9C2835922A701B5007B4E59 /* CTGVSolution.hpp */,
 				E9C2835422A701B5007B4E59 /* CUserDefinedSolution.hpp */,
 				E9C2835522A701B5007B4E59 /* CVerificationSolution.hpp */,
+				E96008A6235557790002EADD /* CVertexMap.hpp */,
 				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
 				E941BB971B71D1AB005C6C06 /* datatypes */,
 				05E6DBB417EB627400FA1F7E /* definition_structure.hpp */,
@@ -759,6 +758,7 @@
 				05E6DACD17EB608000FA1F7E /* primal_grid_structure.hpp */,
 				400CEC2F21FA81B60019B790 /* printing_toolbox.hpp */,
 				355D2C9E2172BDE100C10535 /* sgs_model.hpp */,
+				E96008A7235557790002EADD /* signal_processing_toolbox.hpp */,
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
 				E90B501422DFE0CB000ED392 /* task_definition.hpp */,
@@ -863,6 +863,7 @@
 				052D51AB17A22E24003BE8B2 /* Output */,
 				400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */,
 				05F8F2662008A1AA000FEA01 /* Python */,
+				E96008A9235557A90002EADD /* signal_processing_toolbox.cpp */,
 				052D517F17A21FAC003BE8B2 /* Solver */,
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05F108A21978D2E500F2F288 /* TransportModel */,
@@ -910,11 +911,9 @@
 				E9D6EE6E2317B88F00618E36 /* CDiscAdjFEABoundVariable.cpp */,
 				E90B4FEB22DFDFE2000ED392 /* CDiscAdjFEAVariable.cpp */,
 				E9D6EE6B2317B88F00618E36 /* CDiscAdjMeshBoundVariable.cpp */,
-				E9D6EE6D2317B88F00618E36 /* CDiscAdjMeshVariable.cpp */,
 				E90B4FEA22DFDFE2000ED392 /* CDiscAdjVariable.cpp */,
 				E90B4FEF22DFDFE3000ED392 /* CEulerVariable.cpp */,
 				E90B4FF622DFDFE4000ED392 /* CFEABoundVariable.cpp */,
-				E9D6EE6C2317B88F00618E36 /* CFEAFSIBoundVariable.cpp */,
 				E90B4FF422DFDFE4000ED392 /* CFEAVariable.cpp */,
 				E90B4FEE22DFDFE3000ED392 /* CHeatFVMVariable.cpp */,
 				E90B4FE722DFDFE2000ED392 /* CIncEulerVariable.cpp */,
@@ -1125,7 +1124,6 @@
 				E9D6EE782317B88F00618E36 /* CMeshVariable.cpp in Sources */,
 				E9E51ADD22FAB11800773E0C /* CCGNSMeshReaderFVM.cpp in Sources */,
 				E9E674372302A92C009B6A25 /* CRectangularMeshReaderFVM.cpp in Sources */,
-				E9D6EE742317B88F00618E36 /* CDiscAdjMeshVariable.cpp in Sources */,
 				EB14FF9822F790500045FB27 /* CSinglezoneDriver.cpp in Sources */,
 				E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */,
 				E984B6692345765C00AEDA72 /* output_structure_legacy.cpp in Sources */,
@@ -1135,6 +1133,7 @@
 				05E6DC0417EB62A100FA1F7E /* integration_time.cpp in Sources */,
 				E9D6EE572316522800618E36 /* (null) in Sources */,
 				05F1089B1978D2AE00F2F288 /* fluid_model_ppr.cpp in Sources */,
+				E96008AA235557AA0002EADD /* signal_processing_toolbox.cpp in Sources */,
 				E984B66A2345765C00AEDA72 /* CBaselineOutput.cpp in Sources */,
 				E97429D423235901006DA2D3 /* CMixingPlaneInterface.cpp in Sources */,
 				E984B6842345767900AEDA72 /* CSurfaceFEMDataSorter.cpp in Sources */,
@@ -1244,7 +1243,6 @@
 				E984B65C2345765C00AEDA72 /* CMeshOutput.cpp in Sources */,
 				E90B4FFB22DFDFE4000ED392 /* CAdjNSVariable.cpp in Sources */,
 				E90B500F22DFE043000ED392 /* CSysVector.cpp in Sources */,
-				E9D6EE732317B88F00618E36 /* CFEAFSIBoundVariable.cpp in Sources */,
 				E90B4FDA22DFDF94000ED392 /* CNSUnitQuadSolution.cpp in Sources */,
 				E9C830802061E60E004417A9 /* fem_integration_rules.cpp in Sources */,
 				E90B501222DFE043000ED392 /* CSysSolve.cpp in Sources */,
@@ -1259,7 +1257,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -1274,6 +1272,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 6.2.0;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1315,7 +1314,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -1330,6 +1329,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CURRENT_PROJECT_VERSION = 6.2.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;

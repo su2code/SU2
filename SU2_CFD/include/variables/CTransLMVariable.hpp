@@ -46,46 +46,41 @@
  * \author A. Bueno.
  */
 
-class CTransLMVariable : public CTurbVariable {
+class CTransLMVariable final : public CTurbVariable {
 protected:
-  su2double gamma_sep;
+  VectorType gamma_sep;
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CTransLMVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
    * \param[in] val_intermittency
    * \param[in] val_REth
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
+   * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTransLMVariable(void);
+  ~CTransLMVariable() = default;
 
   /*!
    * \brief ________________.
    */
-  inline su2double GetIntermittency(void) { return Solution[0]; }
+  inline su2double GetIntermittency(unsigned long iPoint) const override { return Solution(iPoint,0); }
 
   /*!
    * \brief ________________.
    * \param[in] gamma_sep_in
    */
-  inline void SetGammaSep(su2double gamma_sep_in) {gamma_sep = gamma_sep_in;}
+  inline void SetGammaSep(unsigned long iPoint, su2double gamma_sep_in) override { gamma_sep(iPoint) = gamma_sep_in; }
 
   /*!
    * \brief Correction for separation-induced transition.
    */
-  inline void SetGammaEff(void) {Solution[0] = max(Solution[0], gamma_sep);}
+  inline void SetGammaEff(unsigned long iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
 };

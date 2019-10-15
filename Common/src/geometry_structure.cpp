@@ -2682,10 +2682,20 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
+
+  bool input    = true;
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
+        node[iPoint]->SetAdjIndices(input);
+      }
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }
@@ -2695,8 +2705,18 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
-      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+//        In case we are dealing with mesh adjoints the following two lines might be needed
+//        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+//        node[iPoint]->SetAdjIndices(false);
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }
