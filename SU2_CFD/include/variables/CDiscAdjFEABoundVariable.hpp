@@ -38,6 +38,7 @@
 #pragma once
 
 #include "CDiscAdjFEAVariable.hpp"
+#include "../../../Common/include/toolboxes/CVertexMap.hpp"
 
 /*!
  * \class CDiscAdjFEABoundVariable
@@ -46,55 +47,69 @@
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
-class CDiscAdjFEABoundVariable : public CDiscAdjFEAVariable {
-protected:
+class CDiscAdjFEABoundVariable final : public CDiscAdjFEAVariable {
+private:
 
-  su2double *FlowTraction_Sens;         /*!< \brief Adjoint of the flow tractions. */
-  su2double *SourceTerm_DispAdjoint;    /*!< \brief Source term applied into the displacement adjoint
-                                                    coming from external solvers. */
+  MatrixType FlowTraction_Sens;        /*!< \brief Adjoint of the flow tractions. */
+  MatrixType SourceTerm_DispAdjoint;   /*!< \brief Source term applied into the displacement
+                                                   adjoint coming from external solvers. */
+
+  CVertexMap<unsigned> VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CDiscAdjFEABoundVariable(void);
-
   /*!
    * \overload
-   * \param[in] val_fea - Values of the fea solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] disp - Pointer to the adjoint value (initialization value).
+   * \param[in] vel - Pointer to the adjoint value (initialization value).
+   * \param[in] accel - Pointer to the adjoint value (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
+   * \param[in] unsteady - Allocate velocity and acceleration.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel, const su2double *accel,
+                           unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEABoundVariable(void);
+  ~CDiscAdjFEABoundVariable() = default;
+  
+  /*!
+   * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AllocateBoundaryVariables(CConfig *config);
 
   /*!
    * \brief Set the FSI force sensitivity at the node
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
-  inline void SetFlowTractionSensitivity(unsigned short iDim, su2double val) { FlowTraction_Sens[iDim] = val; }
+  inline void SetFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    FlowTraction_Sens(iPoint,iDim) = val;
+  }
 
   /*!
    * \brief Get the FSI force sensitivity at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetFlowTractionSensitivity(unsigned short iDim) { return FlowTraction_Sens[iDim]; }
+  inline su2double GetFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return FlowTraction_Sens(iPoint,iDim);
+  }
 
   /*!
    * \brief Set the source term applied into the displacement adjoint coming from external solvers
    * \param[in] iDim - spacial component
    * \param[in] val - value of the source term
    */
-  inline void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val){
-    SourceTerm_DispAdjoint[iDim] = val;
+  inline void SetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    SourceTerm_DispAdjoint(iPoint,iDim) = val;
   }
 
   /*!
@@ -102,13 +117,23 @@ public:
    * \param[in] iDim - spacial component
    * \return value of the source term
    */
-  inline su2double GetSourceTerm_DispAdjoint(unsigned short iDim){
-    return SourceTerm_DispAdjoint[iDim];
+  inline su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return SourceTerm_DispAdjoint(iPoint,iDim);
   }
 
   /*!
-   * \brief Get whether this node is on the boundary
+   * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(void) { return true; }
+  inline bool Get_isVertex(unsigned long iPoint) const override {
+    return VertexMap.GetIsVertex(iPoint);
+  }
+
+  /*!
+   * \brief Set whether a node is on the boundary
+   */
+  inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
+    VertexMap.SetIsVertex(iPoint,isVertex);
+  }
 
 };

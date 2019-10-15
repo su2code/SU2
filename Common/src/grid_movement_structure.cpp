@@ -1904,7 +1904,6 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
-
   /*--- Problem dimension and physical time step ---*/
   nDim = geometry->GetnDim();
   dt   = config->GetDelta_UnstTimeND();
@@ -2066,7 +2065,6 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
@@ -2206,14 +2204,13 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
+  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2345,7 +2342,6 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();

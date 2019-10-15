@@ -65,7 +65,7 @@ void CConservativeVarsInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   unsigned short iVar;
 
   /*--- Retrieve solution and set it as the donor variable ---*/
-  Solution = donor_solution->node[Point_Donor]->GetSolution();
+  Solution = donor_solution->GetNodes()->GetSolution(Point_Donor);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = Solution[iVar];
@@ -76,6 +76,6 @@ void CConservativeVarsInterface::SetTarget_Variable(CSolver *target_solution, CG
                                                     unsigned long Vertex_Target, unsigned long Point_Target) {
 
   /*--- Set the target solution with the value of the Target Variable ---*/
-  target_solution->node[Point_Target]->SetSolution(Target_Variable);
+  target_solution->GetNodes()->SetSolution(Point_Target,Target_Variable);
 
 }
