@@ -690,15 +690,18 @@ bool CFluidIteration::Monitor(COutput *output,
       if (!(config[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
         output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
   }
+
+  /*--- If convergence was reached --*/
+  StopCalc =  output->GetConvergence();
   
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
   if (config[val_iZone]->GetFixed_CL_Mode()){
-    MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
+    StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
   }
 
   /*--- If convergence was reached --*/
-  StopCalc =  output->GetConvergence();
+  // StopCalc =  output->GetConvergence();
 
   return StopCalc;
 
@@ -1040,7 +1043,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long &nVortex, vecto
   
 }
 
-CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
+bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   CSolver* flow_solver= solver[FLOW_SOL];
 
@@ -1061,8 +1064,8 @@ CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver *
   }
 
   /* --- Set convergence based on fixed CL convergence  --- */
-  output->SetConvergence(fixed_cl_convergence);
-
+  //output->SetConvergence(fixed_cl_convergence);
+  return fixed_cl_convergence;
 }
 
 CTurboIteration::CTurboIteration(CConfig *config) : CFluidIteration(config) { }
