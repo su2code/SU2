@@ -184,6 +184,7 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+
   /*!
    * \brief Set the value of the pressure.
    * \param[in] iPoint - Point index.

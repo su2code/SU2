@@ -139,6 +139,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
       Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+
       if (limiter) {
         Limiter_i = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(iPoint);
         Limiter_j = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(jPoint);
@@ -166,6 +167,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
       if (limiter) {
         Limiter_i = nodes->GetLimiter(iPoint);
         Limiter_j = nodes->GetLimiter(jPoint);
@@ -497,7 +499,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
          turbulence variables can change over a nonlinear iteration. */
         
         const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = LinSysSol[index]/(node[iPoint]->GetSolution(iVar)+EPS);
+        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
         if (ratio > allowableIncrease) {
           localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
         } else if (ratio < allowableDecrease) {

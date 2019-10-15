@@ -72,7 +72,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
 
   /*--- Gradient related fields ---*/
   Gradient.resize(nPoint,nVar,nDim,0.0);
-    
+  
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Reconstruction.resize(nPoint,nVar,nDim,0.0);
   } else {

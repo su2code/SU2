@@ -1631,7 +1631,6 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
     
     physical = nodes->SetPrimVar(iPoint,FluidModel);
 
-
     /* Check for non-realizable states for reporting. */
     
     if (!physical) nonPhysicalPoints++;
@@ -3584,7 +3583,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
       
       if ((config->GetEnergy_Equation() && (iVar == nVar-1))) {
         const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index])/(node[iPoint]->GetSolution(iVar)+EPS);
+        su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
         }
@@ -4132,8 +4131,8 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      Gradient_i = nodes->GetGradient_Primitive(iPoint);
+      Gradient_j = nodes->GetGradient_Primitive(jPoint);
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -8101,8 +8100,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         
         thermal_conductivity       = nodes->GetThermalConductivity(iPoint);
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
-        HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
@@ -8136,6 +8133,9 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
           MomentZ_Force[0] += (-Force[0]*Coord[1]);
           MomentZ_Force[1] += (Force[1]*Coord[0]);
+          
+          HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
+          MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
           
         }
 

@@ -487,8 +487,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the old solution ---*/
 
-  if(!config->GetMultizone_Problem()) nodes->Set_OldSolution();
-  
+  nodes->Set_OldSolution();
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Extract the adjoint solution ---*/
