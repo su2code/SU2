@@ -760,7 +760,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetMultizone_Problem()) {
+      if(config->GetMultizone_Problem() && !config->GetFSI_Simulation()) {
         Solution[iVar] = nodes->Get_BGSSolution_k(iPoint,iVar);
       }
       else {
@@ -1096,7 +1096,7 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   /*--- Compute the BGS solution (adding the cross term) ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      if(config->GetMultizone_Problem()) {
+      if(config->GetMultizone_Problem() && !config->GetFSI_Simulation()) {
         bgs_sol = nodes->GetSolution(iPoint,iVar);
       }
       else {
