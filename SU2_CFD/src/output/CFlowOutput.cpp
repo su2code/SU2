@@ -734,7 +734,7 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   /// END_GROUP 
 
   /// DESCRIPTION: Angle of attack  
-  AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::SCIENTIFIC, "AOA", "Angle of attack");
+  AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
 }
 
 void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){

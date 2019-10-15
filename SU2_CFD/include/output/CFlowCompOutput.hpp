@@ -127,5 +127,15 @@ public:
    */
   bool SetUpdate_Averages(CConfig *config) override;
 
-  
+  /*!
+   * \brief Write any additional output defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void SetAdditionalScreenOutput(CConfig *config) override;
+
+  /*!
+   * \brief Write additional output for fixed CL mode.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void SetFixedCLScreenOutput(CConfig *config);
 };

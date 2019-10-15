@@ -7310,18 +7310,16 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag,
+  su2double AoA = 0.0, Vel_Infty[3], Vel_Infty_Mag,
   dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
   unsigned short iDim;
   
-  Target_CL = config->GetTarget_CL();
+  //Target_CL = config->GetTarget_CL();
   unsigned long InnerIter         = config->GetInnerIter();
-  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+  //unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
   su2double Beta                = config->GetAoS();
-  su2double dCL_dAlpha          = config->GetdCL_dAlpha();
-  bool CL_Converged             = fabs(Total_CL - Target_CL) < (config->GetCauchy_Eps()/2);
-  End_AoA_FD                    = Start_AoA_FD && ((InnerIter - Iter_Update_AoA) == 
-                                  Iter_dCL_dAlpha || InnerIter == config->GetnInner_Iter()- 1 );
+  //su2double dCL_dAlpha          = config->GetdCL_dAlpha();
+  //bool CL_Converged             = fabs(Total_CL - Target_CL) < (config->GetCauchy_Eps()/2);
 
   if (InnerIter == 0) {
     Total_CD_Prev = 0.0;
@@ -7331,6 +7329,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Total_CMz_Prev = 0.0;
     AoA_Prev = config->GetAoA();
   }
+  //AoA_inc = 0.0;
   
   /*--- Retrieve the old AoA (degrees) ---*/
     
@@ -7338,72 +7337,74 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   /* --- If AoA needs to be updated, calculate change in AoA --- */
 
-  if (Update_AoA && Output) {
+ // if (Update_AoA && Output) {
 
     /*--- Estimate the increment in AoA based on dCL_dAlpha (degrees) ---*/
-    if (!CL_Converged){
-      AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
-    }
+    //if (!CL_Converged){
+      //AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
+    //}
 
     /*--- Output some information to the console with the headers ---*/
     
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
-      cout.precision(7);
-      cout.setf(ios::fixed, ios::floatfield);
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-      cout << "CL: " << Total_CL;
-      cout << " (target: " << config->GetTarget_CL() <<")." << endl;
-      if (CL_Converged){
-        cout << "CL converged to within "<< config->GetCauchy_Eps() <<", not changing AoA" << endl;
-      }
-      else {
-        cout.precision(4);
-        cout << "Previous AoA: " << AoA << " deg";
-        cout << ", new AoA: " << AoA + AoA_inc << " deg." << endl;
-      }
-      cout << "-------------------------------------------------------------------------" << endl << endl;
-    }
+    //if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+      // cout.precision(7);
+      // cout.setf(ios::fixed, ios::floatfield);
+      // cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+      // cout << "CL: " << Total_CL;
+      // cout << " (target: " << config->GetTarget_CL() <<")." << endl;
+      // if (CL_Converged){
+      //   cout << "CL converged to within "<< config->GetCauchy_Eps() <<", not changing AoA" << endl;
+      // }
+      // else {
+      //   cout.precision(4);
+      //   cout << "Previous AoA: " << AoA << " deg";
+      //   cout << ", new AoA: " << AoA + AoA_inc << " deg." << endl;
+      // }
+      // cout << "-------------------------------------------------------------------------" << endl << endl;
+    //}
 
-  }
+  //}
 
   /* --- Start Finite-differencing routine --- */
 
-  if (Start_AoA_FD && Output && ((InnerIter - 1) == Iter_Update_AoA)) {
+  //if (Start_AoA_FD && Output && ((InnerIter - 1) == Iter_Update_AoA)) {
 
     // AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
-    AoA_inc = 0.001; 
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
-      cout.precision(7);      
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-      cout << " End of Fixed CL Mode. " << endl;
-      cout << " Change AoA by "<< AoA_inc <<" deg to evaluate gradient." << endl;
-      cout << "-------------------------------------------------------------------------" << endl << endl;
-    }
-  }
+    //AoA_inc = 0.001; 
+    // if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
+    //   cout.precision(7);      
+    //   cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+    //   cout << " End of Fixed CL Mode. " << endl;
+    //   cout << " Change AoA by "<< AoA_inc <<" deg to evaluate gradient." << endl;
+    //   cout << "-------------------------------------------------------------------------" << endl << endl;
+    // }
+  //}
 
 
   /* --- Set new AoA if needed --- */
 
-  if (fabs(AoA_inc) > 0.0) {
+  if (fabs(AoA_inc) > 0.0 && Output) {
     
     /* --- Calculate derivatives based on previous values --- */
 
-    su2double dCL = Total_CL - Total_CL_Prev;// + 1e-10;
-    dCL_dAlpha_   = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
-    dCD_dCL_      = (Total_CD-Total_CD_Prev)/dCL;
-    dCMx_dCL_     = (Total_CMx-Total_CMx_Prev)/dCL;
-    dCMy_dCL_     = (Total_CMy-Total_CMy_Prev)/dCL;
-    dCMz_dCL_     = (Total_CMz-Total_CMz_Prev)/dCL;
+    // su2double dCL = Total_CL - Total_CL_Prev;// + 1e-10;
+    // dCL_dAlpha_   = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
+    // dCD_dCL_      = (Total_CD-Total_CD_Prev)/dCL;
+    // dCMx_dCL_     = (Total_CMx-Total_CMx_Prev)/dCL;
+    // dCMy_dCL_     = (Total_CMy-Total_CMy_Prev)/dCL;
+    // dCMz_dCL_     = (Total_CMz-Total_CMz_Prev)/dCL;
 
-    /*--- Set the value of the  dOF/dCL in the config file ---*/
+    // --- Set the value of the  dOF/dCL in the config file ---
 
-    config->SetdCD_dCL(dCD_dCL_);
-    config->SetdCMx_dCL(dCMx_dCL_);
-    config->SetdCMy_dCL(dCMy_dCL_);
-    config->SetdCMz_dCL(dCMz_dCL_);
+    // config->SetdCD_dCL(dCD_dCL_);
+    // config->SetdCMx_dCL(dCMx_dCL_);
+    // config->SetdCMy_dCL(dCMy_dCL_);
+    // config->SetdCMz_dCL(dCMz_dCL_);
 
     /* --- Update *_Prev values with current coefficients --- */
 
+    SetCoefficient_Gradients(config);
+    
     Total_CD_Prev = Total_CD;
     Total_CL_Prev = Total_CL;
     Total_CMx_Prev = Total_CMx;
@@ -7463,53 +7464,52 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   /* --- Ending finite-differening routine --- */
 	
-  if (End_AoA_FD && 
-    Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  //if (End_AoA_FD && 
+    //Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
     /*--- Use finite differences to compute  ---*/
 
-    dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
-    dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
-    dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
-    dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
-    dCMz_dCL_   = (Total_CMz-Total_CMz_Prev)/(Total_CL-Total_CL_Prev);
+    // dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
+    // dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+    // dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
+    // dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
+    // dCMz_dCL_   = (Total_CMz-Total_CMz_Prev)/(Total_CL-Total_CL_Prev);
 
-    /*--- Update angle of attack ---*/
+    // /*--- Update angle of attack ---*/
 
-    AoA = AoA_Prev;
-    config->SetAoA(AoA);
+    // AoA = AoA_Prev;
+    // config->SetAoA(AoA);
 
-    /*--- Set the value of the  dOF/dCL in the config file ---*/
+    // /*--- Set the value of the  dOF/dCL in the config file ---*/
 
-    config->SetdCD_dCL(dCD_dCL_);
-    config->SetdCMx_dCL(dCMx_dCL_);
-    config->SetdCMy_dCL(dCMy_dCL_);
-    config->SetdCMz_dCL(dCMz_dCL_);
+    // config->SetdCD_dCL(dCD_dCL_);
+    // config->SetdCMx_dCL(dCMx_dCL_);
+    // config->SetdCMy_dCL(dCMy_dCL_);
+    // config->SetdCMz_dCL(dCMz_dCL_);
+    // config->SetdCL_dAlpha(dCL_dAlpha_);
 
-    config->SetdCL_dAlpha(dCL_dAlpha_);
-
-    if (rank == MASTER_NODE) {
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl << endl;
-      cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-      cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-      if (nDim == 3 ) {
-        cout << "Approx. Delta CMx / Delta CL: " << dCMx_dCL_ << ". " << endl;
-        cout << "Approx. Delta CMy / Delta CL: " << dCMy_dCL_ << ". " << endl;
-      }
-      cout << "Approx. Delta CMz / Delta CL: " << dCMz_dCL_ << ". " << endl;
-      cout << "-------------------------------------------------------------------------" << endl << endl;
-    }
+    // if (rank == MASTER_NODE) {
+    //   cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl << endl;
+    //   cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
+    //   cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
+    //   if (nDim == 3 ) {
+    //     cout << "Approx. Delta CMx / Delta CL: " << dCMx_dCL_ << ". " << endl;
+    //     cout << "Approx. Delta CMy / Delta CL: " << dCMy_dCL_ << ". " << endl;
+    //   }
+    //   cout << "Approx. Delta CMz / Delta CL: " << dCMz_dCL_ << ". " << endl;
+    //   cout << "-------------------------------------------------------------------------" << endl << endl;
+    // }
     
-  }
+  //}
 }
 
 bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
   su2double Target_CL = config->GetTarget_CL();
+  su2double dCL_dAlpha = config->GetdCL_dAlpha();
   unsigned long curr_iter = config->GetInnerIter();
   unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
-  Update_AoA = false;
   bool fixed_cl_conv = false;
-  unsigned long Wrt_Con_Freq;
+  AoA_inc = 0.0;
 
 
   /*--- if in Fixed CL mode, before finite differencing --- */
@@ -7533,7 +7533,7 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
         Iter_Update_AoA = curr_iter;
         Start_AoA_FD = true;
         fixed_cl_conv = false;
-        Update_AoA = false;      
+        AoA_inc = 0.001;
       }
 
       /* --- C_L is not converged to target value and some iterations 
@@ -7541,17 +7541,21 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
       else if ((curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter()){
         Iter_Update_AoA = curr_iter;
-        Update_AoA = true;
         fixed_cl_conv = false;
+        if (fabs(Total_CL-Target_CL) > (config->GetCauchy_Eps()/2)) {
+          AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
+        }
       }
     }
 
     /* --- If the iteration limit between AoA updates is met, so update AoA --- */
 
     else if ((curr_iter - Iter_Update_AoA) == config->GetUpdate_AoA_Iter_Limit()) {
-      Update_AoA = true;
       Iter_Update_AoA = curr_iter;
       fixed_cl_conv = false;
+      if (fabs(Total_CL-Target_CL) > (config->GetCauchy_Eps()/2)) {
+        AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
+      }
     }
 
     /* --- If the total iteration limit is reached, start finite differencing --- */
@@ -7563,27 +7567,71 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
       Iter_Update_AoA = curr_iter;
       Start_AoA_FD = true;
       fixed_cl_conv = false;
-      Update_AoA = false;
+      AoA_inc = 0.001;
     }
   }
 
   /* --- Else if ending finite differencing mode, exit ---*/
-  else if (End_AoA_FD){
+  //else if (End_AoA_FD){
 
     /* --- Fixed CL mode was converged --- */
-    if ((curr_iter - Iter_Update_AoA) == Iter_dCL_dAlpha){
-      fixed_cl_conv = true;
-    }
+    //if ((curr_iter - Iter_Update_AoA) == Iter_dCL_dAlpha){
+     // fixed_cl_conv = true;
+    //}
+  //}
 
+  if (End_AoA_FD){
+    //SetCoefficient_Gradients(config);
+    //config->SetAoA(AoA_Prev);
+    fixed_cl_conv = true;
   }
-
+  
   if (Start_AoA_FD){
-    //Wrt_Con_Freq = Iter_dCL_dAlpha/10.0;
     config->SetScreen_Wrt_Freq(2, Iter_dCL_dAlpha/10);
     config->SetHistory_Wrt_Freq(2, 0);
+    End_AoA_FD = ((curr_iter - Iter_Update_AoA +1) == Iter_dCL_dAlpha || 
+      curr_iter == config->GetnInner_Iter()- 1 );
+
+    if (convergence && (curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter())
+      End_AoA_FD = true;
+    if (End_AoA_FD){
+      SetCoefficient_Gradients(config);
+      config->SetAoA(AoA_Prev);
+    }
   }
+
+  //if (End_AoA_FD){
+    //SetCoefficient_Gradients(config);
+    //config->SetAoA(AoA_Prev);
+    //fixed_cl_conv = true;
+  //}
+
   return fixed_cl_conv;
   
+}
+
+void CEulerSolver::SetCoefficient_Gradients(CConfig *config){
+  su2double dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
+  su2double AoA = config->GetAoA();
+  dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
+  dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+  dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
+  dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
+  dCMz_dCL_   = (Total_CMz-Total_CMz_Prev)/(Total_CL-Total_CL_Prev);
+
+  /*--- Update angle of attack ---*/
+
+  //AoA = AoA_Prev;
+  //config->SetAoA(AoA);
+
+  /*--- Set the value of the  dOF/dCL in the config file ---*/
+
+  config->SetdCD_dCL(dCD_dCL_);
+  config->SetdCMx_dCL(dCMx_dCL_);
+  config->SetdCMy_dCL(dCMy_dCL_);
+  config->SetdCMz_dCL(dCMz_dCL_);
+  //config->SetdCL_dAlpha(dCL_dAlpha_);
+
 }
 
 void CEulerSolver::SetInletAtVertex(su2double *val_inlet,

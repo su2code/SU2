@@ -789,6 +789,8 @@ inline unsigned long CSolver::GetIter_Update_AoA(void) { return 0; }
 
 inline su2double CSolver::GetPrevious_AoA(void) { return 0.0; }
 
+inline su2double CSolver::GetAoA_inc(void) { return 0.0; }
+
 inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                          CConfig *config, unsigned short iMesh, bool Output) { }
 
@@ -1664,6 +1666,8 @@ inline bool CEulerSolver::GetEnd_AoA_FD(void) { return End_AoA_FD; }
 inline unsigned long CEulerSolver::GetIter_Update_AoA(void) { return Iter_Update_AoA; }
 
 inline su2double CEulerSolver::GetPrevious_AoA(void) { return AoA_Prev; }
+
+inline su2double CEulerSolver::GetAoA_inc(void) { return AoA_inc; }
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

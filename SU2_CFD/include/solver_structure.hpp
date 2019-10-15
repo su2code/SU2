@@ -2067,6 +2067,12 @@ public:
    * \return value of the AoA before most recent update
    */
   virtual su2double GetPrevious_AoA();
+
+  /*!
+   * \brief A virtual member.
+   * \return value of CL Driver control command (AoA_inc)
+   */
+  virtual su2double GetAoA_inc();
   
   /*!
    * \brief A virtual member.
@@ -4864,7 +4870,8 @@ protected:
   *Secondary_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Secondary_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
-  su2double AoA_Prev; /*!< \brief Old value of the angle of attack (monitored). */
+  su2double AoA_Prev, /*!< \brief Old value of the angle of attack (monitored). */
+  AoA_inc;
   bool Start_AoA_FD,  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
   End_AoA_FD,         /*!< \brief Boolean for end of finite differencing for FixedCL mode */
   Update_AoA;         /*!< \brief Boolean to signal Angle of Attack Update */
@@ -5520,10 +5527,22 @@ public:
   unsigned long GetIter_Update_AoA();
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the AoA before the most recent update
    * \return value of the AoA before most recent update
    */
   su2double GetPrevious_AoA();
+
+  /*!
+   * \brief Get the CL Driver's control command
+   * \return value of CL Driver control command (AoA_inc)
+   */
+  su2double GetAoA_inc();
+
+  /*!
+   * \brief Set gradients of coefficients for fixed CL mode
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCoefficient_Gradients(CConfig *config);
   
   /*!
    * \brief Update the solution using the explicit Euler scheme.

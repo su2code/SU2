@@ -991,6 +991,7 @@ void COutput::SetScreen_Output(CConfig *config) {
     }      
     (*convergenceTable) << out.str();
   }
+  SetAdditionalScreenOutput(config);
 }
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
