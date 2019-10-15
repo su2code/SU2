@@ -53,10 +53,10 @@ protected:
   MatrixType WindGustDer;   /*! < \brief Wind gust derivatives value */
 
   /*--- Primitive variable definition ---*/
-  MatrixType Primitive;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  VectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  MatrixType Primitive;                    /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   VectorOfMatrix Gradient_Reconstruction;  /*!< \brief Gradient of the primitive variables for MUSCL reconstruction for the convective term (T, vx, vy, vz, P, rho). */
-  MatrixType Limiter_Primitive;       /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */

@@ -1125,7 +1125,7 @@ void COutput::CheckHistoryOutput(){
   nRequestedHistoryFields = requestedHistoryFields.size();
   
   if (rank == MASTER_NODE){
-    cout <<"History output groups: ";
+    cout <<"History output group(s): ";
     for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       requestedField = requestedHistoryFields[iReqField];            
       cout << requestedHistoryFields[iReqField];
@@ -1136,18 +1136,30 @@ void COutput::CheckHistoryOutput(){
   
   /*--- Check that the requested convergence monitoring field is available ---*/
   bool removedField = false;
+  FieldsToRemove.clear();
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
       if (!removedField) {
-        cout << "Ignoring Convergence Fields: ";
+        cout << "Ignoring Convergence Field(s): ";
         removedField = true;
       }
       cout << convFields[iField_Conv] << " ";
-      convFields.erase(std::find(convFields.begin(),
-                                 convFields.end(), convFields[iField_Conv]));
+      FieldsToRemove.push_back(convFields[iField_Conv]);
     }
   }
   if (removedField) cout << endl;
+  for (unsigned short iField_Conv = 0; iField_Conv < FieldsToRemove.size(); iField_Conv++){
+    convFields.erase(std::find(convFields.begin(),
+                               convFields.end(), FieldsToRemove[iField_Conv]));
+  }
+  if (rank == MASTER_NODE){
+    cout <<"Convergence field(s): ";  
+    for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+      cout << convFields[iField_Conv];
+      if (iField_Conv != convFields.size() - 1) cout << ", ";      
+    }
+    cout << endl;    
+  }
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
@@ -1555,6 +1567,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     }
   }
 
+  if (config->GetDirectDiff()){
   for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
     for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
       HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
@@ -1562,6 +1575,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
         AddHistoryOutput("D_"      + historyOutputPerSurface_List[iField][iMarker], "d["     + Field.fieldName + "]", Field.screenFormat, "D_"      + Field.outputGroup, "Derivative values for per-surface output.", HistoryFieldType::AUTO_COEFFICIENT);
       }
     }
+  }
   }
   
   for (unsigned short iFieldConv = 0; iFieldConv < convFields.size(); iFieldConv++){
