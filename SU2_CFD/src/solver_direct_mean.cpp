@@ -7482,7 +7482,7 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
     /* --- End Finite Difference Mode if iteration limit is reached, so simualtion is converged --- */
 
     End_AoA_FD = ((curr_iter - Iter_Update_AoA - 2) == Iter_dCL_dAlpha || 
-      curr_iter == config->GetnInner_Iter()- 1 );
+      curr_iter == config->GetnInner_Iter()- 2 );
 
     if (convergence && (curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter())
       End_AoA_FD = true;
