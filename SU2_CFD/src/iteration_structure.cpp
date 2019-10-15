@@ -115,18 +115,152 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Translating(geometry[MESH_0],
-                                            config, ExtIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      // CVC: To do: For deformation with new mesh solver, need to access solver[MESH_0][MESH_SOL] for SetBound_Disp
+      // inside Surface_Movement functions, rest of code is identical to grid_movement_structure.cpp
+      // Either enable solver[MESH_0][MESH_SOL] inside grid_movement_structure.cpp 
+      // or move Surface_Movement functions to inside CMeshSolver
 
-      if (rank == MASTER_NODE)
+      // surface_movement->Surface_Translating(geometry[MESH_0],
+      //                                       config, ExtIter, val_iZone);
+
+      su2double deltaT, time_new, time_old, Lref, *Coord;
+      su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0}, VarCoordAbs[3] = {0.0, 0.0, 0.0};
+      su2double xDot[3] = {0.0,0.0,0.0};
+      unsigned short iMarker, jMarker, Moving;
+      unsigned long iPoint, iVertex;
+      string Marker_Tag, Moving_Tag;
+      unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();
+  
+      /*--- Initialize the delta variation in coordinates ---*/
+      VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+  
+      /*--- Retrieve values from the config file ---*/
+  
+      deltaT = config->GetDelta_UnstTimeND();
+  
+      /*--- Compute delta time based on physical time step ---*/
+      time_new = static_cast<su2double>(ExtIter)*deltaT;
+      if (ExtIter == 0) {
+        time_old = time_new;
+      } else {
+        time_old = static_cast<su2double>(ExtIter-1)*deltaT;
+      }
+  
+      /*--- Store displacement of each node on the translating surface ---*/
+      /*--- Loop over markers and find the particular marker(s) (surface) to translate ---*/
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Moving = config->GetMarker_All_Moving(iMarker);
+        if (Moving == YES) {
+          for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+            
+            Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+            Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+            
+            if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
+
+              for (iDim = 0; iDim < 3; iDim++){
+                xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
+                Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+              }
+              
+              /*--- Print some information to the console. Be verbose at the first
+              iteration only (mostly for debugging purposes). ---*/
+              // Note that the MASTER_NODE might not contain all the markers being moved.
+              
+              if (rank == MASTER_NODE) {
+                cout << " Storing translating displacement for marker: ";
+                cout << Marker_Tag << "." << endl;
+                if (ExtIter == 0) {
+                  cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+                  cout << ", " << xDot[2]*config->GetVelocity_Ref();
+                  if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
+                  else cout << ") ft/s." << endl;
+                }
+              }
+              
+              /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+              
+              VarCoord[0] = xDot[0]*(time_new-time_old);
+              VarCoord[1] = xDot[1]*(time_new-time_old);
+              VarCoord[2] = xDot[2]*(time_new-time_old);
+
+              for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+                
+                if (!config->GetDeform_Mesh()) {
+
+                  /*--- Set node displacement for volume deformation ---*/
+                  geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+                }
+                else {
+                  iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+                  for (iDim = 0; iDim < 3; iDim++){
+                    VarCoordAbs[iDim] = solver[MESH_0][MESH_SOL]->node[iPoint]->GetBound_Disp(iDim) + VarCoord[iDim];
+                  }
+                  
+                  solver[MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoordAbs);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      /*--- When updating the origins it is assumed that all markers have the
+            same translational velocity, because we use the last VarCoord set ---*/
+      
+      /*--- Set the mesh motion center to the new location after
+      incrementing the position with the translation. This new
+      location will be used for subsequent mesh motion for the given marker.---*/
+      
+      for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+        
+        /*-- Check if we want to update the motion origin for the given marker ---*/
+        
+        if (config->GetMoveMotion_Origin(jMarker) == YES) {
+          for (iDim = 0; iDim < 3; iDim++){
+            Center[iDim] += VarCoord[iDim];
+          }
+          config->SetMarkerMotion_Origin(Center, jMarker);      
+        }
+      }
+      
+      /*--- Set the moment computation center to the new location after
+      incrementing the position with the translation. ---*/
+      
+      for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+        Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
+        Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
+        Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
+        config->SetRefOriginMoment_X(jMarker, Center[0]);
+        config->SetRefOriginMoment_Y(jMarker, Center[1]);
+        config->SetRefOriginMoment_Z(jMarker, Center[2]);
+      }
+
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled independently ---*/
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Plunging ---*/
 
       /*--- Compute the new node locations for moving markers ---*/
+
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
 
       // if (!config->GetDeform_Mesh()) {
       //   surface_movement->Surface_Plunging(geometry[MESH_0],
@@ -137,13 +271,14 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       //   //solver[MESH_0][MESH_SOL]->Surface_Plunging(geometry[MESH_0], config, solver[MESH_0], ExtIter, val_iZone);
       // }
 
-      su2double deltaT, time_new, time_old, Lref;
-      su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
+      // su2double deltaT, time_new, time_old, Lref;
+      // su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], VarCoordAbs[3], VarCoordAbs[3] = {0.0, 0.0, 0.0};
+      su2double Omega[3], Ampl[3];
       su2double DEG2RAD = PI_NUMBER/180.0;
-      unsigned short iMarker, jMarker, Moving;
-      unsigned long iPoint, iVertex;
-      string Marker_Tag, Moving_Tag;
-      unsigned short iDim;
+      // unsigned short iMarker, jMarker, Moving;
+      // unsigned long iPoint, iVertex;
+      // string Marker_Tag, Moving_Tag;
+      // unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();
   
       /*--- Initialize the delta variation in coordinates ---*/
       VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
@@ -202,22 +337,24 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
               VarCoord[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
               VarCoord[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
               VarCoord[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
-          
+
               for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-            
+                
                 if (!config->GetDeform_Mesh()) {
                   
                   /*--- Set node displacement for volume deformation ---*/
                   geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
                 }
                 else {
-
-                  /*--- Get node index ---*/
+                  /* --- Get node index ---*/
                   iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-                  solver[MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoord);
+                  for (iDim = 0; iDim < 3; iDim++){
+                    VarCoordAbs[iDim] = solver[MESH_0][MESH_SOL]->node[iPoint]->GetBound_Disp(iDim) + VarCoord[iDim];
+                  }
+                  
+                  solver[MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoordAbs);
                 }
-            
               }
             }
           }
@@ -255,43 +392,455 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
         config->SetRefOriginMoment_Z(jMarker, Center[2]);
       }
 
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
 
-      if (rank == MASTER_NODE)
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled independently ---*/
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      if (!config->GetDeform_Mesh()) {
         grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
-      }
-      else {
-        SetMesh_Deformation(geometry, solver[MESH_0], numerics[MESH_0], config, NONE);
       }
 
       /*--- Pitching ---*/
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Pitching(geometry[MESH_0],
-                                         config, ExtIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
 
-      if (rank == MASTER_NODE)
+      // surface_movement->Surface_Pitching(geometry[MESH_0],
+      //                                    config, ExtIter, val_iZone);
+
+      //su2double deltaT, time_new, time_old, Lref, *Coord;
+      //su2double Center[3], VarCoord[3], Omega[3], Ampl[3], VarCoordAbs[3] = {0.0, 0.0, 0.0};
+      su2double Phase[3];
+      su2double rotCoord[3], r[3] = {0.0,0.0,0.0};
+      su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+      su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
+      su2double cosPhi, sinPhi, cosPsi, sinPsi;
+      //su2double DEG2RAD = PI_NUMBER/180.0;
+      //unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry[MESH_0]->GetnDim();
+      //unsigned long iPoint, iVertex;
+      //string Marker_Tag, Moving_Tag;
+      
+      /*--- Initialize the delta variation in coordinates ---*/
+      VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      
+      /*--- Retrieve values from the config file ---*/
+      
+      deltaT = config->GetDelta_UnstTimeND();
+      Lref   = config->GetLength_Ref();
+      
+      /*--- Compute delta time based on physical time step ---*/
+      time_new = static_cast<su2double>(ExtIter)*deltaT;
+      if (ExtIter == 0) {
+        time_old = time_new;
+      } else {
+        time_old = static_cast<su2double>(ExtIter-1)*deltaT;
+      }
+
+      /*--- Store displacement of each node on the pitching surface ---*/
+        /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
+
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Moving = config->GetMarker_All_Moving(iMarker);
+        if (Moving == YES) {
+          for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+            Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+            Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+            
+            if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
+              /*--- Pitching origin, frequency, and amplitude from config. ---*/
+              
+              for (iDim = 0; iDim < 3; iDim++){
+                Ampl[iDim]   = config->GetMarkerPitching_Ampl(jMarker, iDim)*DEG2RAD;
+                Omega[iDim]  = config->GetMarkerPitching_Omega(jMarker, iDim)/config->GetOmega_Ref();
+                Phase[iDim]  = config->GetMarkerPitching_Phase(jMarker, iDim)*DEG2RAD;
+                Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+              }
+              /*--- Print some information to the console. Be verbose at the first
+              iteration only (mostly for debugging purposes). ---*/
+              // Note that the MASTER_NODE might not contain all the markers being moved.
+
+              if (rank == MASTER_NODE) {
+                cout << " Storing pitching displacement for marker: ";
+                cout << Marker_Tag << "." << endl;
+                if (ExtIter == 0) {
+                  cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
+                  cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+                  cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+                  cout << " Pitching amplitude about origin: (" << Ampl[0]/DEG2RAD;
+                  cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+                  cout << ") degrees."<< endl;
+                  cout << " Pitching phase lag about origin: (" << Phase[0]/DEG2RAD;
+                  cout << ", " << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
+                  cout << ") degrees."<< endl;
+                }
+              }
+              
+              /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+              
+              dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0])
+                                - sin(Omega[0]*time_old + Phase[0]));
+              dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1])
+                                - sin(Omega[1]*time_old + Phase[1]));
+              dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2])
+                                - sin(Omega[2]*time_old + Phase[2]));
+              
+              /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+              
+              cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+              sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+              
+              /*--- Compute the rotation matrix. Note that the implicit
+              ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+              
+              rotMatrix[0][0] = cosPhi*cosPsi;
+              rotMatrix[1][0] = cosPhi*sinPsi;
+              rotMatrix[2][0] = -sinPhi;
+              
+              rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+              rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+              rotMatrix[2][1] = sinTheta*cosPhi;
+              
+              rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+              rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+              rotMatrix[2][2] = cosTheta*cosPhi;
+              
+              for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+                
+                /*--- Index and coordinates of the current point ---*/
+                
+                iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+                if (!config->GetDeform_Mesh()) {
+                  Coord  = geometry[MESH_0]->node[iPoint]->GetCoord();
+                }
+                else {
+                  Coord = solver[MESH_0][MESH_SOL]->node[iPoint]->GetMesh_Coord();
+                }
+
+                /*--- Calculate non-dim. position from rotation center ---*/
+                
+                for (iDim = 0; iDim < nDim; iDim++)
+                  r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+                if (nDim == 2) r[nDim] = 0.0;
+                
+                /*--- Compute transformed point coordinates ---*/
+                
+                rotCoord[0] = rotMatrix[0][0]*r[0]
+                            + rotMatrix[0][1]*r[1]
+                            + rotMatrix[0][2]*r[2] + Center[0];
+                
+                rotCoord[1] = rotMatrix[1][0]*r[0]
+                            + rotMatrix[1][1]*r[1]
+                            + rotMatrix[1][2]*r[2] + Center[1];
+                
+                rotCoord[2] = rotMatrix[2][0]*r[0]
+                            + rotMatrix[2][1]*r[1]
+                            + rotMatrix[2][2]*r[2] + Center[2];
+                
+                /*--- Calculate delta change in the x, y, & z directions ---*/
+                for (iDim = 0; iDim < nDim; iDim++)
+                  VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+                if (nDim == 2) VarCoord[nDim] = 0.0;
+
+                if (!config->GetDeform_Mesh()) {
+                  
+                  /*--- Set node displacement for volume deformation ---*/
+                  geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+                }
+                else {
+                  
+                  for (iDim = 0; iDim < 3; iDim++){
+                    VarCoordAbs[iDim] = solver[MESH_0][MESH_SOL]->node[iPoint]->GetBound_Disp(iDim) + VarCoord[iDim];
+                  }
+                  
+                  solver[MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoordAbs);
+                }
+              }
+            }
+          }
+        }
+      }
+      /*--- For pitching we don't update the motion origin and moment reference origin. ---*/
+
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled independently ---*/
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Rotating ---*/
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Rotating(geometry[MESH_0],
-                                         config, ExtIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
 
-      if (rank == MASTER_NODE)
+      // surface_movement->Surface_Rotating(geometry[MESH_0],
+      //                                    config, ExtIter, val_iZone);
+
+      //su2double deltaT, time_new, time_old, Lref, *Coord;
+      //su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, VarCoordAbs[3] = {0.0, 0.0, 0.0};
+      //rotCoord[3] = {0.0,0.0,0.0}, r[3] = {0.0,0.0,0.0}, 
+      su2double Center_Aux[3] = {0.0,0.0,0.0};
+      //su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+      //su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
+      //su2double cosPhi, sinPhi, cosPsi, sinPsi;
+      // unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry[MESH_0]->GetnDim();
+      // unsigned long iPoint, iVertex;
+      // string Marker_Tag, Moving_Tag;
+      
+      /*--- Initialize the delta variation in coordinates ---*/
+      VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      
+      /*--- Retrieve values from the config file ---*/
+      
+      deltaT = config->GetDelta_UnstTimeND();
+      Lref   = config->GetLength_Ref();
+      
+      /*--- Compute delta time based on physical time step ---*/
+      time_new = static_cast<su2double>(ExtIter)*deltaT;
+      if (ExtIter == 0) {
+        time_old = time_new;
+      } else {
+        time_old = static_cast<su2double>(ExtIter-1)*deltaT;
+      }
+      
+      /*--- Store displacement of each node on the rotating surface ---*/
+        /*--- Loop over markers and find the particular marker(s) (surface) to rotate ---*/
+
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Moving = config->GetMarker_All_Moving(iMarker);
+        if (Moving == YES) {
+          for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+            
+            Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+            Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+            
+            if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
+              
+              /*--- Rotation origin and angular velocity from config. ---*/
+              
+              for (iDim = 0; iDim < 3; iDim++){
+                Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/config->GetOmega_Ref();
+                Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+              }
+              /*--- Print some information to the console. Be verbose at the first
+              iteration only (mostly for debugging purposes). ---*/
+              // Note that the MASTER_NODE might not contain all the markers being moved.
+
+              if (rank == MASTER_NODE) {
+                cout << " Storing rotating displacement for marker: ";
+                cout << Marker_Tag << "." << endl;
+                if (ExtIter == 0) {
+                  cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+                  cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+                  cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+                }
+              }
+              
+              /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+              
+              dtheta = Omega[0]*(time_new-time_old);
+              dphi   = Omega[1]*(time_new-time_old);
+              dpsi   = Omega[2]*(time_new-time_old);
+              
+              /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+              
+              cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+              sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+              
+              /*--- Compute the rotation matrix. Note that the implicit
+              ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+              
+              rotMatrix[0][0] = cosPhi*cosPsi;
+              rotMatrix[1][0] = cosPhi*sinPsi;
+              rotMatrix[2][0] = -sinPhi;
+              
+              rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+              rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+              rotMatrix[2][1] = sinTheta*cosPhi;
+              
+              rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+              rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+              rotMatrix[2][2] = cosTheta*cosPhi;
+              
+              for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+                
+                /*--- Index and coordinates of the CURRENT point ---*/
+                
+                iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+                // if (!config->GetDeform_Mesh()) {
+                  Coord  = geometry[MESH_0]->node[iPoint]->GetCoord();
+                // }
+                // else {
+                //   for (iDim = 0; iDim < nDim; iDim++) {
+                //     Coord[iDim] = solver[MESH_0][MESH_SOL]->node[iPoint]->GetMesh_Coord(iDim) +
+                //                     solver[MESH_0][MESH_SOL]->node[iPoint]->GetSolution(iDim);
+                //   }
+                // }
+                
+                /*--- Calculate non-dim. position from rotation center ---*/
+                
+                for (iDim = 0; iDim < nDim; iDim++)
+                  r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+                if (nDim == 2) r[nDim] = 0.0;
+                
+                /*--- Compute transformed point coordinates ---*/
+                
+                rotCoord[0] = rotMatrix[0][0]*r[0]
+                + rotMatrix[0][1]*r[1]
+                + rotMatrix[0][2]*r[2] + Center[0];
+
+                rotCoord[1] = rotMatrix[1][0]*r[0]
+                + rotMatrix[1][1]*r[1]
+                + rotMatrix[1][2]*r[2] + Center[1];
+                
+                rotCoord[2] = rotMatrix[2][0]*r[0]
+                + rotMatrix[2][1]*r[1]
+                + rotMatrix[2][2]*r[2] + Center[2];
+                
+                /*--- Calculate delta change in the x, y, & z directions ---*/
+                for (iDim = 0; iDim < nDim; iDim++)
+                  VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+                if (nDim == 2) VarCoord[nDim] = 0.0;
+
+                if (!config->GetDeform_Mesh()) {
+                
+                  /*--- Set node displacement for volume deformation ---*/
+                  geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+                }
+                if (config->GetDeform_Mesh()) {
+                  
+                  /*--- Update boundary displacement from all movements if using new elastic mesh solver ---*/
+                  iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+                  
+                  for (iDim = 0; iDim < 3; iDim++){
+                    VarCoordAbs[iDim] = solver[MESH_0][MESH_SOL]->node[iPoint]->GetBound_Disp(iDim) + VarCoord[iDim];
+                  }
+                  
+                  solver[MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoordAbs);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      /*--- When updating the origins it is assumed that all markers have the
+      same rotation movement, because we use the last markers rotation matrix and center ---*/
+      
+      /*--- Set the mesh motion center to the new location after
+      incrementing the position with the rotation. This new
+      location will be used for subsequent mesh motion for the given marker.---*/
+      
+      for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+        
+        /*-- Check if we want to update the motion origin for the given marker ---*/
+        
+        if (config->GetMoveMotion_Origin(jMarker) == YES) {
+            
+          for (iDim = 0; iDim < 3; iDim++){
+            Center_Aux[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+          }
+          
+          /*--- Calculate non-dim. position from rotation center ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
+          if (nDim == 2) r[nDim] = 0.0;
+          
+          /*--- Compute transformed point coordinates ---*/
+          
+          rotCoord[0] = rotMatrix[0][0]*r[0]
+          + rotMatrix[0][1]*r[1]
+          + rotMatrix[0][2]*r[2] + Center[0];
+          
+          rotCoord[1] = rotMatrix[1][0]*r[0]
+          + rotMatrix[1][1]*r[1]
+          + rotMatrix[1][2]*r[2] + Center[1];
+          
+          rotCoord[2] = rotMatrix[2][0]*r[0]
+          + rotMatrix[2][1]*r[1]
+          + rotMatrix[2][2]*r[2] + Center[2];
+          
+          /*--- Calculate delta change in the x, y, & z directions ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
+          if (nDim == 2) VarCoord[nDim] = 0.0;
+          
+          for (iDim = 0; iDim < 3; iDim++){
+            Center_Aux[iDim] += VarCoord[iDim];
+          }
+          config->SetMarkerMotion_Origin(Center_Aux, jMarker);      
+        }
+      }
+
+      /*--- Set the moment computation center to the new location after
+      incrementing the position with the rotation. ---*/
+      
+      for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+          
+        Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
+        Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
+        Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
+
+        /*--- Calculate non-dim. position from rotation center ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
+        if (nDim == 2) r[nDim] = 0.0;
+        
+        /*--- Compute transformed point coordinates ---*/
+        
+        rotCoord[0] = rotMatrix[0][0]*r[0]
+        + rotMatrix[0][1]*r[1]
+        + rotMatrix[0][2]*r[2] + Center[0];
+        
+        rotCoord[1] = rotMatrix[1][0]*r[0]
+        + rotMatrix[1][1]*r[1]
+        + rotMatrix[1][2]*r[2] + Center[1];
+        
+        rotCoord[2] = rotMatrix[2][0]*r[0]
+        + rotMatrix[2][1]*r[1]
+        + rotMatrix[2][2]*r[2] + Center[2];
+        
+        /*--- Calculate delta change in the x, y, & z directions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
+        if (nDim == 2) VarCoord[nDim] = 0.0;
+        
+        config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
+        config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+        config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
+      }
+
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------------------*/
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled independently ---*/
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Update the grid velocities on the fine mesh using finite
        differencing based on node coordinates at previous times. ---*/
