@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - fix_discadjfsi
+        - develop
 
 virtualenv:
   system_site_packages: true
@@ -72,7 +72,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone --depth=1 -b fix_discadjfsi https://github.com/su2code/TestCases.git ./TestData
+    - git clone --depth=1 -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases

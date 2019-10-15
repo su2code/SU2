@@ -5033,7 +5033,8 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
                                      SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                          val_nZone,
-                                                                         MPICommunicator, false) {
+                                                                         MPICommunicator,
+                                                                         false) {
 
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
