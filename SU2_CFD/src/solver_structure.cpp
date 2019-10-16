@@ -5316,9 +5316,10 @@ if (myfile.is_open())
 
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
                       
-                    if(config->GetPrintInlet_InterpolatedData())
-                      for  (iVar=0; iVar < (maxCol_InletFile+nDim); iVar++)
+                 
+                     for  (iVar=0; iVar < (maxCol_InletFile+nDim); iVar++)
                         Inlet_InterpolatedData[iVertex*(maxCol_InletFile+nDim)+iVar]=Inlet_Values[iVar];
+                    
                   }
                   
                   }
@@ -5334,9 +5335,11 @@ if (myfile.is_open())
                     break;
                 }
               }
-              if(Point_Match == true)
-                {PrintNewInletData(Inlet_InterpolatedData,nVertex,Marker_Tag);
-                cout<<"Data successfully interpolated\n";
+              if(Point_Match == true){  
+                
+                if(config->GetPrintInlet_InterpolatedData() == true)
+                   PrintNewInletData(Inlet_InterpolatedData,nVertex,Marker_Tag);
+                   
                 Point_Match = false;}
             }
           }
