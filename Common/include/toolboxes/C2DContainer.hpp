@@ -81,7 +81,7 @@ protected:
   alignas(AlignSize) Scalar_t m_data[StaticRows*StaticCols];
 
   /*!
-   * Static size specializations use this do-nothing macro.
+   * Static size specializations use this do-nothing allocation macro.
    */
 #define DUMMY_ALLOCATOR \
   void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {}
@@ -90,18 +90,27 @@ protected:
    * runtime internal value that depend on the number of rows/columns.
    * What values need setting depends on the specialization as not all have
    * members for e.g. number of rows and cols (static size optimization).
+   * \note Aligned dynamic allocation is disabled for compilation on MAC.
    */
-#define REAL_ALLOCATOR(EXTRA)                                           \
+#ifndef __APPLE__
+#define REAL_ALLOCATOR(EXTRA)                                             \
   static_assert(AlignSize % alignof(Scalar_t)==0,                         \
-      "AlignSize is not a multiple of the type's alignment spec.");       \
+    "AlignSize is not a multiple of the type's alignment spec.");         \
                                                                           \
   void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
-      EXTRA;                                                              \
-      if(AlignSize==0)                                                    \
-          m_data = static_cast<Scalar_t*>(malloc(sz));                    \
-      else                                                                \
-          m_data = static_cast<Scalar_t*>(aligned_alloc(AlignSize,sz));   \
+    EXTRA;                                                                \
+    if(AlignSize==0)                                                      \
+      m_data = static_cast<Scalar_t*>(malloc(sz));                        \
+    else                                                                  \
+      m_data = static_cast<Scalar_t*>(aligned_alloc(AlignSize,sz));       \
   }
+#else
+#define REAL_ALLOCATOR(EXTRA)                                             \
+  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
+    EXTRA;                                                                \
+    m_data = static_cast<Scalar_t*>(malloc(sz));                          \
+  }
+#endif
 
   DUMMY_ALLOCATOR
 
