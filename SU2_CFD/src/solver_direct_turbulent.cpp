@@ -3256,9 +3256,9 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
       dnu_tilde[1] = node[kNode]->GetGradient(0,1);
 
       Sens[iNode][0][0] = density*velocity[0]*nu_tilde;
-      Sens[iNode][0][1] = density*velocity[1]*nu_tilde
+      Sens[iNode][0][1] = density*velocity[1]*nu_tilde;
 
-      SensVisc[iNode][0][0] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[0]
+      SensVisc[iNode][0][0] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[0];
       SensVisc[iNode][0][1] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[1];
     }
 
