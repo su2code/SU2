@@ -37,17 +37,23 @@
 
 #include "../../include/variables/CRadVariable.hpp"
 
-CRadVariable::CRadVariable(void) : CVariable() {
+CRadVariable::CRadVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+: CVariable(npoint, ndim, nvar, config) {
 
-}
+  /*--- The first term is the source term */
+  /*--- The second term is the Jacobian   */
+  Radiative_SourceTerm.resize(nPoint,2) = su2double(0.0);
 
-CRadVariable::CRadVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar, config) {
+  /*--- We need to initialize some containers */
+  /*--- Gradient related fields ---*/
+  Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  Radiative_SourceTerm = new su2double[2];
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
 
-  Radiative_SourceTerm[0] = 0.0; // The first term is the source term
-  Radiative_SourceTerm[1] = 0.0; // The second term is the Jacobian
+  Max_Lambda_Visc.resize(nPoint);
+  Delta_Time.resize(nPoint);
 
 }
 

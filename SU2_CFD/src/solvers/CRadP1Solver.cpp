@@ -55,7 +55,6 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
   nVar =          1;
-  node =          new CVariable*[nPoint];
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -140,8 +139,8 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
     default: init_val = 0.0; break;
   }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CRadP1Variable(init_val, nDim, nVar, config);
+  nodes = new CRadP1Variable(init_val, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
 
 }
 
@@ -149,6 +148,8 @@ CRadP1Solver::~CRadP1Solver(void) {
 
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
+
+  if (nodes != nullptr) delete nodes;
 
 }
 
@@ -179,10 +180,10 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Retrieve the radiative energy ---*/
-    Energy = node[iPoint]->GetSolution(0);
+    Energy = nodes->GetSolution(iPoint, 0);
 
     /*--- Retrieve temperature from the flow solver ---*/
-    Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,nDim+1);
 
     /*--- Compute the divergence of the radiative flux ---*/
     SourceTerm = Absorption_Coeff*(Energy - 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0));
@@ -191,8 +192,8 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     SourceTerm_Derivative =  - 16.0*Absorption_Coeff*STEFAN_BOLTZMANN*pow(Temperature,3.0);
 
     /*--- Store the source term and its derivative ---*/
-    node[iPoint]->SetRadiative_SourceTerm(0, SourceTerm);
-    node[iPoint]->SetRadiative_SourceTerm(1, SourceTerm_Derivative);
+    nodes->SetRadiative_SourceTerm(iPoint, 0, SourceTerm);
+    nodes->SetRadiative_SourceTerm(iPoint, 1, SourceTerm_Derivative);
 
   }
 
@@ -217,8 +218,8 @@ void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Radiation variables w/o reconstruction, and its gradients ---*/
 
-    numerics->SetRadVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-    numerics->SetRadVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+    numerics->SetRadVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetRadVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
     /*--- Compute residual, and Jacobians ---*/
 
@@ -246,11 +247,11 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
 
     /*--- Radiation variables w/o reconstruction ---*/
 
-    numerics->SetRadVar(node[iPoint]->GetSolution(), NULL);
+    numerics->SetRadVar(nodes->GetSolution(iPoint), NULL);
 
     /*--- Set volume ---*/
 
@@ -322,13 +323,13 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
       /*--- Retrieve temperature from the flow solver ---*/
-      Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+      Temperature = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,nDim+1);
 
       /*--- Compute the blackbody intensity at the wall. ---*/
       Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0);
 
       /*--- Compute the radiative heat flux. ---*/
-      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Energy = nodes->GetSolution(iPoint, 0);
       Radiative_Heat_Flux = Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
@@ -409,7 +410,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Twall,4.0);
 
       /*--- Compute the radiative heat flux. ---*/
-      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Energy = nodes->GetSolution(iPoint, 0);
       Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
@@ -488,7 +489,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Twall,4.0);
 
       /*--- Compute the radiative heat flux. ---*/
-      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Energy = nodes->GetSolution(iPoint, 0);
       Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
@@ -546,8 +547,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    if (node[iPoint]->GetDelta_Time() != 0.0) {
-      Delta = Vol / node[iPoint]->GetDelta_Time();
+    if (nodes->GetDelta_Time(iPoint) != 0.0) {
+      Delta = Vol / nodes->GetDelta_Time(iPoint);
       Jacobian.AddVal2Diag(iPoint, Delta);
     }
     else {
@@ -585,7 +586,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
     }
   }
 
@@ -624,7 +625,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    node[iPoint]->SetMax_Lambda_Visc(0.0);
+    nodes->SetMax_Lambda_Visc(iPoint, 0.0);
   }
 
   /*--- Loop interior edges ---*/
@@ -641,8 +642,8 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     /*--- Viscous contribution ---*/
 
     Lambda = GammaP1*Area*Area;
-    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
 
   }
 
@@ -660,7 +661,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       /*--- Viscous contribution ---*/
 
       Lambda = GammaP1*Area*Area;
-      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+      if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
     }
   }
@@ -675,7 +676,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Time step setting method ---*/
 
-       Local_Delta_Time = CFL*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+       Local_Delta_Time = CFL*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
 
       /*--- Min-Max-Logic ---*/
 
@@ -685,10 +686,10 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
 
-      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+      nodes->SetDelta_Time(iPoint, Local_Delta_Time);
     }
     else {
-      node[iPoint]->SetDelta_Time(0.0);
+      nodes->SetDelta_Time(iPoint, 0.0);
     }
   }
 
@@ -718,7 +719,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Global_Delta_Time = rbuf_time;
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -741,8 +742,8 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!implicit) {
         cout << "Using unsteady time: " << config->GetDelta_UnstTimeND() << endl;
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
-        node[iPoint]->SetDelta_Time(Local_Delta_Time);
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+        nodes->SetDelta_Time(iPoint, Local_Delta_Time);
       }
   }
 }

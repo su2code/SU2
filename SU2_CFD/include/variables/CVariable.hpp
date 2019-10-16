@@ -2731,13 +2731,13 @@ public:
    * \brief Virtual member: Set the Radiative source term at the node
    * \return value of the radiative source term
    */
-  inline virtual su2double *GetRadiative_SourceTerm(void) { return NULL;}
+  inline virtual su2double *GetRadiative_SourceTerm(unsigned long iPoint) { return nullptr;}
 
   /*!
    * \brief  Virtual member: Set the Radiative source term at the node
    * \param[in] val_RadSourceTerm - value of the radiative source term
    */
-  inline virtual void SetRadiative_SourceTerm(unsigned short iVar, su2double val_RadSourceTerm) { }
+  inline virtual void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { }
 
   /*!
    * \brief Set the FSI force sensitivity at the node
