@@ -760,7 +760,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetMultizone_Problem() && !config->GetFSI_Simulation()) {
+      if(config->GetMultizone_Problem() && !fsi) {
         Solution[iVar] = nodes->Get_BGSSolution_k(iPoint,iVar);
       }
       else {
