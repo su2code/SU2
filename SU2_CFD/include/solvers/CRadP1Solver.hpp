@@ -121,7 +121,7 @@ public:
                        CConfig *config, unsigned short iMesh);
 
   /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \brief Impose the Marshak BC on Heatflux wall boundaries.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -129,11 +129,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                        unsigned short val_marker);
+  void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \brief Impose an isothermal wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -141,8 +141,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                          unsigned short val_marker);
+  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -153,11 +153,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
-   * \brief Impose the inlet boundary condition.
+   * \brief Impose the Marshak BC on inlet boundaries.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -165,11 +165,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                unsigned short val_marker);
+  inline void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+    BC_Marshak(geometry, solver_container, config, val_marker);
+  }
+
 
   /*!
-   * \brief Impose the outlet boundary condition.
+   * \brief Impose the Marshak BC on outlet boundaries.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -177,20 +180,62 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                 unsigned short val_marker);
-
+  inline void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+    BC_Marshak(geometry, solver_container, config, val_marker);
+  }
 
   /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
+   * \brief Impose via the Marshak BC on Euler walls.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+  inline void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+    BC_Marshak(geometry, solver_container, config, val_marker);
+  }
+
+  /*!
+  * \brief Impose the Marshak BC on sliding interfaces.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  inline void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config){
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+        BC_Marshak(geometry, solver_container, config, iMarker);
+      }
+    }
+  }
+
+  /*!
+   * \brief Impose the Marshak BC on conjugate heat interfaces.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container,
+                                         CNumerics *numerics, CConfig *config, unsigned short val_marker){
+    BC_Marshak(geometry, solver_container, config, val_marker);
+  }
+
+  /*!
+   * \brief Impose the Marshak boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Compute the time step for solving the Radiation P1 equation.
