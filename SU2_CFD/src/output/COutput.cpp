@@ -499,7 +499,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      volumeDataSorter->SortConnectivity(config, geometry, true);
+      volumeDataSorter->SortConnectivity(config, geometry, false);
       
       /*--- Write tecplot binary ---*/
       
