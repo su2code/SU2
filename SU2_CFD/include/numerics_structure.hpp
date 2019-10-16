@@ -2483,7 +2483,7 @@ public:
  */
 class CUpwPB_Flow : public CNumerics {
 private:
-  bool implicit;
+  bool implicit, dynamic_grid;
   bool gravity;
   su2double Froude, Upw_i, Upw_j;
   su2double *Diff_U;

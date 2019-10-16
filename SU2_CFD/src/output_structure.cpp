@@ -5791,7 +5791,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible && !pressure_based) cout << "   Res[Press]";
-            if (incompressible && pressure_based) cout << "   Res[Velx]";
+            else if (incompressible && pressure_based) cout << "   Res[Velx]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {

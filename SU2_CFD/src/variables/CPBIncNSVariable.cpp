@@ -85,7 +85,9 @@ bool CPBIncNSVariable::SetStrainMag(void) {
   for (iDim = 0; iDim < nDim; iDim++) {
     StrainMag += pow(Gradient_Primitive[iDim+1][iDim] - 1.0/3.0*Div, 2.0);
   }
-  
+  if (nDim == 2) {
+    StrainMag += pow(1.0/3.0*Div, 2.0);
+  }
   /*--- Add off diagonals ---*/
 
   StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
@@ -98,7 +100,7 @@ bool CPBIncNSVariable::SetStrainMag(void) {
   StrainMag = sqrt(2.0*StrainMag);
 
   return false;
-  
+
 }
 
 

@@ -118,6 +118,9 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
 
   unsigned short direct_diff = config->GetDirectDiff();
   su2double *Normal, Area;
+  
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -969,7 +972,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool grid_movement  = config->GetGrid_Movement();
+  
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
@@ -1037,14 +1040,14 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
 
-      if (grid_movement) {
+      if (dynamic_grid) {
 
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
 
         if (turb_model == SA || turb_model == SA_NEG) {
           index++;
-        } else if (turb_model == SST) {
+        } else if ((turb_model == SST) || (turb_model == SST_SUST)) {
           index+=2;
         }
 
@@ -1127,7 +1130,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
@@ -1185,13 +1188,13 @@ void CPBIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *c
   
   su2double Mach     = config->GetMach();
   su2double Reynolds = config->GetReynolds();
+  unsigned short turb_model = config->GetKind_Turb_Model();
   
   bool unsteady      = (config->GetUnsteady_Simulation() != NO);
   bool viscous       = config->GetViscous();
-  bool grid_movement = config->GetGrid_Movement();
   bool turbulent     = ((config->GetKind_Solver() == RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool tkeNeeded     = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+                        (config->GetKind_Solver() == DISC_ADJ_RANS));                      
+  bool tkeNeeded     = ((turbulent) && ((turb_model == SST) || (turb_model == SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == BOUSSINESQ);
 
@@ -1217,7 +1220,7 @@ void CPBIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *c
       FluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
       FluidModel->SetTDState_T(Temperature_FreeStream);
       break;
-
+	default:
       SU2_MPI::Error("Fluid model not implemented for pressure based incompressible solver.", CURRENT_FUNCTION);
       break;
   }
@@ -1412,19 +1415,19 @@ void CPBIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *c
     if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
       cout << "Pressure based incompressible flow: rho_ref, vel_ref, temp_ref, p_ref" << endl;
       cout << "are set to 1.0 in order to perform a dimensional calculation." << endl;
-      if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
+      if (dynamic_grid) cout << "Force coefficients computed using MACH_MOTION." << endl;
       else cout << "Force coefficients computed using initial values." << endl;
     }
     else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
       cout << "Pressure based incompressible flow: rho_ref, vel_ref, and temp_ref" << endl;
       cout << "are based on the initial values, p_ref = rho_ref*vel_ref^2." << endl;
-      if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
+      if (dynamic_grid) cout << "Force coefficients computed using MACH_MOTION." << endl;
       else cout << "Force coefficients computed using initial values." << endl;
     } 
     else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
       cout << "Pressure based incompressible flow: rho_ref, vel_ref, and temp_ref" << endl;
       cout << "are user-provided reference values, p_ref = rho_ref*vel_ref^2." << endl;
-      if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
+      if (dynamic_grid) cout << "Force coefficients computed using MACH_MOTION." << endl;
       else cout << "Force coefficients computed using reference values." << endl;
     }
     cout << "The reference area for force coeffs. is " << config->GetRefArea() << " m^2." << endl;
@@ -1712,7 +1715,7 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_
 void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, Normal[3],
+  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, Normal[3], *GV,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, Non_Physical = 1.0;
   
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
@@ -1723,7 +1726,6 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool grid_movement    = config->GetGrid_Movement();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Loop over all the edges ---*/
@@ -1737,7 +1739,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
     
     /*--- Grid movement ---*/
     
-    if (grid_movement)
+    if (dynamic_grid) 
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     
     /*--- Get primitive variables ---*/
@@ -3547,13 +3549,12 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
   su2double *Normal, Area, Vol, Length, Mean_ProjVel = 0.0, Mean_Vel, Mean_Density,
   Mean_BetaInc2 = 4.1, Lambda, Local_Delta_Time, Mean_DensityInc, GradVel, Lambda1,
-  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, RefProjFlux, MinRefProjFlux;
+  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, RefProjFlux, MinRefProjFlux, ProjVel_i, ProjVel_j;
 
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker, iVar;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
   bool time_steping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time     = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -3589,6 +3590,20 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Mean_Vel = 0.5*(node[iPoint]->GetVelocity(iVar) + node[jPoint]->GetVelocity(iVar));
 		Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
     }
+    
+    /*--- Adjustment for grid movement ---*/
+    
+    if (dynamic_grid) {
+      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      ProjVel_i = 0.0; ProjVel_j = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
+        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
+      }
+      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+    }
+    
     RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
     
@@ -3622,6 +3637,17 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		  Mean_Vel = node[iPoint]->GetVelocity(iVar);
 		  Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
       }
+      
+      /*--- Adjustment for grid movement ---*/
+      
+      if (dynamic_grid) {
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        ProjVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVel += GridVel[iDim]*Normal[iDim];
+        Mean_ProjVel -= ProjVel;
+      }
+      
       RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
       MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
     
@@ -4051,6 +4077,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  AddResMassFlux(node[iPoint]->GetMassFlux()*node[iPoint]->GetMassFlux());
+	  //cout<<iPoint<<"\t"<<node[iPoint]->GetMassFlux()<<endl;
   } 
   
   InitiateComms(geometry, config, MASS_FLUX);
@@ -4186,6 +4213,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 					if (geometry->node[iPoint]->GetDomain()) {
 					Pressure_Correc[iPoint] = PCorr_Ref;
+					//cout<<"BC_Out\t"<<iPoint<<"\t"<<Pressure_Correc[iPoint]<<"\t"<<vel_corr[iPoint][0]<<"\t"<<vel_corr[iPoint][1]<<endl;
 	               }
               }
 	        break;
@@ -4332,7 +4360,6 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
   su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement    = config->GetGrid_Movement();
 
   /*--- Store the physical time step ---*/
   
@@ -4340,7 +4367,7 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
   
   /*--- Compute the dual time-stepping source term for static meshes ---*/
   
-  if (!grid_movement) {
+  if (!dynamic_grid) {
     
     /*--- Loop over all nodes (excluding halos) ---*/
     
@@ -4605,10 +4632,10 @@ void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i, Face_Flux;
 
   su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
-  
+  unsigned short turb_model = config->GetKind_Turb_Model();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS ) &&
-                    (config->GetKind_Turb_Model() == SST));
+                    ((turb_model == SST) || (turb_model == SST_SUST)));
   
   Normal     = new su2double[nDim];
   NormalArea = new su2double[nDim];
@@ -4687,13 +4714,13 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
   su2double small = 1E-6;
   bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  bool grid_movement  = config->GetGrid_Movement();
   bool viscous        = config->GetViscous();
   bool inflow		  = false;
 
   su2double *Normal = new su2double[nDim];
   su2double *val_normal = new su2double[nDim];
   su2double *V_free = new su2double[nDim];
+  unsigned short turb_model = config->GetKind_Turb_Model();
   
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
@@ -4720,7 +4747,7 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
     
       V_infty[nDim+1] = node[iPoint]->GetDensity();
        
-      if (grid_movement)
+      if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
       
@@ -4822,7 +4849,7 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((turb_model == SST) || (turb_model == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -4862,7 +4889,6 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
   bool viscous        = config->GetViscous();
 
   su2double *Normal = new su2double[nDim];
@@ -4962,6 +4988,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
   su2double *Normal = new su2double[nDim];
   su2double *val_normal = new su2double[nDim];
   unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
+  unsigned short turb_model = config->GetKind_Turb_Model();
   bool print = false;
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -5053,7 +5080,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
                                           node[iPoint]->GetGradient_Primitive());
         
                 /*--- Turbulent kinetic energy ---*/
-                if (config->GetKind_Turb_Model() == SST)
+                if ((turb_model == SST) || (turb_model == SST_SUST))
                    visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                                        solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5072,6 +5099,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
                 
                 if (implicit)
                   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+                
               }
               print = false;
     }
@@ -5091,6 +5119,7 @@ void CPBIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_conta
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  unsigned short turb_model = config->GetKind_Turb_Model();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i;
@@ -5306,7 +5335,7 @@ void CPBIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_conta
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
 
         /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == SST)
+        if ((turb_model == SST) || (turb_model == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
@@ -5385,6 +5414,9 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool fsi     = config->GetFSI_Simulation();
 
   unsigned short direct_diff = config->GetDirectDiff();
+  
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -6045,7 +6077,7 @@ unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container,
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool physical = true;
   
-  bool tkeNeeded = (turb_model == SST);
+  bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
@@ -6118,6 +6150,7 @@ void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, jPoint, iEdge;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  unsigned short turb_model = config->GetKind_Turb_Model();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -6143,7 +6176,7 @@ void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Turbulent kinetic energy ---*/
     
-    if (config->GetKind_Turb_Model() == SST)
+    if ((turb_model == SST) || (turb_model == SST_SUST))
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
@@ -6180,7 +6213,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 						
   su2double *Normal, Area, Vol, Length, Mean_ProjVel = 0.0, Mean_Vel, Mean_Density,
   Mean_BetaInc2 = 4.1, Lambda, Local_Delta_Time, Mean_DensityInc, GradVel, Lambda1, 
-  Mean_LaminarVisc, Mean_EddyVisc, Local_Delta_Time_Visc, K_v = 0.25,
+  Mean_LaminarVisc, Mean_EddyVisc, Local_Delta_Time_Visc, K_v = 0.25, ProjVel_i, ProjVel_j,
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, RefProjFlux, MinRefProjFlux;
 
   unsigned long iEdge, iVertex, iPoint, jPoint;
@@ -6229,6 +6262,19 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
     
+    /*--- Adjustment for grid movement ---*/
+    
+    if (dynamic_grid) {
+      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      ProjVel_i = 0.0; ProjVel_j =0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
+        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
+      }
+      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+    }
+    
     Lambda = fabs(Mean_ProjVel) + fabs(RefProjFlux);
     
     /*--- Inviscid contribution ---*/
@@ -6274,6 +6320,16 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);    
 
       MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
+      
+      /*--- Adjustment for grid movement ---*/
+      
+      if (dynamic_grid) {
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        ProjVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVel += GridVel[iDim]*Normal[iDim];
+        Mean_ProjVel -= ProjVel;
+      }
     
       Lambda = fabs(Mean_ProjVel) + fabs(RefProjFlux);
     
@@ -6385,7 +6441,6 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
   Normal = new su2double [nDim];
   /*--- Identify the boundary by string name ---*/
   
@@ -6423,7 +6478,7 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
       
-      if (grid_movement) {
+      if (dynamic_grid) {
         GridVel = geometry->node[iPoint]->GetGridVel();
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {

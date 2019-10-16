@@ -5271,7 +5271,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
+
       }
 
     }
@@ -7588,17 +7588,6 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool energy = config->GetEnergy_Equation();
   
-  bool write = true;//(Iteration % 500 == 0);
-  ofstream TimeStepFile;
-  stringstream iter;
-  stringstream fname;
-  if (write) {
-	  iter<<Iteration;
-	  string iters = iter.str();
-	  fname<<"TimeStep/TimeStepDB"<<iters<<".txt";
-	  TimeStepFile.open(fname.str(),ios::out);
-  }
-
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
@@ -7729,7 +7718,6 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
       Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-      if (write) TimeStepFile<<iPoint<<"\t"<<Local_Delta_Time<<"\t"<<Local_Delta_Time_Visc<<"\t"<<Vol<<"\t";
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
@@ -7737,7 +7725,6 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
       node[iPoint]->SetDelta_Time(Local_Delta_Time);
-      if (write) TimeStepFile<<config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time()<<endl;
     }
     else {
       node[iPoint]->SetDelta_Time(0.0);
@@ -7796,7 +7783,6 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         node[iPoint]->SetDelta_Time(Local_Delta_Time);
       }
     }
-  if (write) TimeStepFile.close();
 }
 
 void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

@@ -43,6 +43,7 @@ CUpwPB_Flow::CUpwPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConf
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   gravity = config->GetGravityForce();
   Froude = config->GetFroude();
+  dynamic_grid = config->GetDynamic_Grid();
   
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
@@ -92,7 +93,7 @@ CUpwPB_Flow::~CUpwPB_Flow(void) {
 void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 	
 	
-  su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF, Vel0, Vel1;
+  su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF, Vel0, Vel1, ProjGridVelFlux = 0.0;
    
    
   /*--- Primitive variables at point i and j ---*/
@@ -112,6 +113,15 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
   }
+  
+  if (dynamic_grid) {
+	  ProjGridVelFlux = 0.0; 
+	  for (iDim = 0; iDim < nDim; iDim++) { 
+		  ProjGridVelFlux   += 0.5*MeanDensity*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim]; 
+	  }
+	  Face_Flux -= ProjGridVelFlux;
+  } 
+  
  
   Flux0 = 0.5*(Face_Flux + fabs(Face_Flux)) ;
   Flux1 = 0.5*(Face_Flux - fabs(Face_Flux)) ;
@@ -121,7 +131,8 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
      
   for (iVar = 0; iVar < nVar; iVar++) {
 	  val_residual[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
-	  Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1];
+	  Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1]; 
+	  if (dynamic_grid) Velocity_upw[iVar] -= (Upw_i*GridVel_i[iVar] + Upw_j*GridVel_j[iVar]); 
   }
     
     	
