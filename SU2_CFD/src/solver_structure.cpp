@@ -5315,7 +5315,8 @@ if (myfile.is_open())
 
 
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
-                  
+                      
+                    if(config->GetPrintInlet_InterpolatedData())
                       for  (iVar=0; iVar < (maxCol_InletFile+nDim); iVar++)
                         Inlet_InterpolatedData[iVertex*(maxCol_InletFile+nDim)+iVar]=Inlet_Values[iVar];
                   }

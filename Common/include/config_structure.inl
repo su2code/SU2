@@ -1197,6 +1197,8 @@ inline unsigned short CConfig::GetKindInletInterpolationFunction(void) {return K
 
 inline unsigned short CConfig::GetKindInletInterpolationType(void) {return Kind_Inlet_InterpolationType;}
 
+inline bool CConfig::GetPrintInlet_InterpolatedData(void){ return PrintInlet_InterpolatedData;}
+
 inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
 inline bool CConfig::GetInc_Inlet_UseNormal(void) { return Inc_Inlet_UseNormal;}
