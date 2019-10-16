@@ -45,23 +45,18 @@ private:
 
 protected:
 
-  su2double *Radiative_SourceTerm;
+  MatrixType Radiative_SourceTerm;
 
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CRadVariable(void);
 
   /*!
-   * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \brief Constructor of the class.
+   * \param[in] npoint  - Number of points in the problem.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CRadVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CRadVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -72,12 +67,13 @@ public:
    * \brief Get the Radiative source term at the node
    * \return Radiative source term for the energy equation
    */
-  inline su2double *GetRadiative_SourceTerm(void) { return Radiative_SourceTerm;}
+  inline su2double *GetRadiative_SourceTerm(unsigned long iPoint) { return Radiative_SourceTerm[iPoint];}
 
   /*!
    * \brief Set the Radiative source term at the node
    * \param[in] val_RadSourceTerm - value of the radiative source term
    */
-  inline void SetRadiative_SourceTerm(unsigned short iVar, su2double val_RadSourceTerm) { Radiative_SourceTerm[iVar] = val_RadSourceTerm;}
+  inline void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { Radiative_SourceTerm(iPoint, iVar) = val_RadSourceTerm;}
+
 
 };

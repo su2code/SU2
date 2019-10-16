@@ -13764,7 +13764,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
       /*--- Add restart data for P1 radiative model. ---*/
       if (p1_radiation){
-        Local_Data[jPoint][iVar] = solver[RAD_SOL]->node[iPoint]->GetSolution(0); iVar++;
+        Local_Data[jPoint][iVar] = solver[RAD_SOL]->GetNodes()->GetSolution(iPoint,0); iVar++;
       }
 
       /*--- If limiters and/or residuals are requested. ---*/

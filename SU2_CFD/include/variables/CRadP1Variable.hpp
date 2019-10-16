@@ -51,13 +51,13 @@ public:
 
   /*!
    * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] val_energy - Radiative energy initialization value.
+   * \param[in] npoint - Number of points in the problem.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CRadP1Variable(su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CRadP1Variable(const su2double val_energy, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

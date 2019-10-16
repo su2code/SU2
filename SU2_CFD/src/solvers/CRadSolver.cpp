@@ -133,7 +133,7 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      node[iPoint_Local]->SetSolution(Solution);
+      nodes->SetSolution(iPoint_Local, Solution);
       iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/

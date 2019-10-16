@@ -2236,7 +2236,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Store the radiation source term ---*/
 
-      second_numerics->SetRadVarSource(solver_container[RAD_SOL]->node[iPoint]->GetRadiative_SourceTerm());
+      second_numerics->SetRadVarSource(solver_container[RAD_SOL]->GetNodes()->GetRadiative_SourceTerm(iPoint));
 
       /*--- Set control volume ---*/
 

@@ -515,11 +515,11 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   // Radiation solver
   if (config->GetKind_RadiationModel() != NONE)
-    Node_Rad = solver[RAD_SOL]->node[iPoint];
+    Node_Rad = solver[RAD_SOL]->GetNodes();
 
   switch(config->GetKind_RadiationModel()){
   case P1_MODEL:
-    SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(0));
+    SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
     break;
   case NONE:
     break;

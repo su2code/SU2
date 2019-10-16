@@ -39,7 +39,7 @@
 
 #include "CRadSolver.hpp"
 
-class CRadP1Solver: public CRadSolver {
+class CRadP1Solver final: public CRadSolver {
 private:
 
 protected:

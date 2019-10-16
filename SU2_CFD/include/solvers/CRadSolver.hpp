@@ -38,6 +38,7 @@
 #pragma once
 
 #include "../solver_structure.hpp"
+#include "../variables/CRadVariable.hpp"
 
 class CRadSolver : public CSolver {
 protected:
@@ -45,6 +46,13 @@ protected:
   *FlowPrimVar_j;         /*!< \brief Store the flow solution at point j. */
   su2double Absorption_Coeff;  /*!< \brief Absorption coefficient. */
   su2double Scattering_Coeff;  /*!< \brief Scattering coefficient. */
+
+  CRadVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 

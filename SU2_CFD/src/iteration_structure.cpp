@@ -2216,7 +2216,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     }
     if (radiation) {
       for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
-        solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->node[iPoint]->SetSolution_Direct(solver[val_iZone][val_iInst][MESH_0][RAD_SOL]->node[iPoint]->GetSolution());
+        solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->GetNodes()->SetSolution_Direct(iPoint, solver[val_iZone][val_iInst][MESH_0][RAD_SOL]->GetNodes()->GetSolution(iPoint));
       }
     }
   }

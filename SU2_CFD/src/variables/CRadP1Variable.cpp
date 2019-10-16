@@ -37,14 +37,12 @@
 
 #include "../../include/variables/CRadP1Variable.hpp"
 
-CRadP1Variable::CRadP1Variable(void) : CRadVariable() { }
-
-CRadP1Variable::CRadP1Variable(su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CRadVariable(val_nDim, val_nvar, config) {
+CRadP1Variable::CRadP1Variable(const su2double val_energy, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+: CRadVariable(npoint, ndim, nvar, config) {
 
   /*--- Initialization of variables ---*/
-
-  Solution[0] = val_energy;
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    Solution(iPoint,0) = val_energy;
 
 }
 

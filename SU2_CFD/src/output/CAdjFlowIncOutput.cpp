@@ -427,7 +427,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
   }
   if (config->GetKind_RadiationModel() != NONE){
-    Node_AdjRad = solver[ADJRAD_SOL]->node[iPoint];
+    Node_AdjRad = solver[ADJRAD_SOL]->GetNodes();
   }
   
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
@@ -468,7 +468,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   // Radiation
   switch(rad_model){
   case P1_MODEL:
-    SetVolumeOutputValue("ADJ_P1_ENERGY", iPoint, Node_AdjRad->GetSolution(0));
+    SetVolumeOutputValue("ADJ_P1_ENERGY", iPoint, Node_AdjRad->GetSolution(iPoint, 0));
     break;
   default: break;
   }
