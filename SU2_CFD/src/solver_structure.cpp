@@ -5117,7 +5117,7 @@ void CSolver::PrintNewInletData (passivedouble *Inlet_InterpolatedData, unsigned
 {
 
 ofstream myfile;
-myfile.precision(15);
+myfile.precision(16);
 myfile.open("Interpolated_Data_"+Marker_Tag+".dat",ios_base::out);
 
 
@@ -5125,9 +5125,9 @@ if (myfile.is_open())
 {  
             for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
 
-                  for  (unsigned long iVar=0; iVar < (maxCol_InletFile+(nDim-1)); iVar++)
+                  for  (unsigned long iVar=0; iVar < (maxCol_InletFile+nDim); iVar++)
                     {
-                      myfile<<Inlet_InterpolatedData[iVertex*(maxCol_InletFile+(nDim-1))+iVar]<<"\t";
+                      myfile<<Inlet_InterpolatedData[iVertex*(maxCol_InletFile+nDim)+iVar]<<"\t";
                     }
                   myfile<<endl;
                 }
@@ -5156,7 +5156,7 @@ if (myfile.is_open())
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow, nVertex;
-  su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius, Theta, Vr, VTheta;
+  su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius, Theta, Parameter1, Parameter2, Vr, VTheta, Vm, Vz, Alpha, Phi;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -5209,8 +5209,9 @@ if (myfile.is_open())
 
     Marker_Counter = 0;
 
-    Inlet_Values = new su2double[maxCol_InletFile+(nDim-1)];
-    Inlet_Fine   = new su2double[maxCol_InletFile+(nDim-1)];
+    /*--- Initializing inlet containers with more columns than inlet file. ---*/
+    Inlet_Values = new su2double[maxCol_InletFile+nDim];
+    Inlet_Fine   = new su2double[maxCol_InletFile+nDim];
 
     unsigned short global_failure = 0, local_failure = 0;
     ostringstream error_msg;
@@ -5234,7 +5235,9 @@ if (myfile.is_open())
             
             nVertex = geometry[MESH_0]->nVertex[iMarker];
 
-            Inlet_InterpolatedData = new passivedouble[nVertex*(maxCol_InletFile+(nDim-1))];
+            /*--- Initializing a new container for inlet data for printing if INLET_DATA_OUT is true. ---*/
+            Inlet_InterpolatedData = new passivedouble[nVertex*(maxCol_InletFile+nDim)];
+
             /*--- Loop through the nodes on this marker. ---*/
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
@@ -5242,53 +5245,81 @@ if (myfile.is_open())
               iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
               Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
 
+              /*--- Finding radius and theta for the specific vertex. ---*/ 
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-              Theta = atan(Coord[0]/Coord[1]);
+              Theta = abs(atan(Coord[0]/Coord[1]));
 
+              /*--- Set the x,y,z coordinates in Inlet_Values container ---*/
               for  (iVar=0; iVar < nDim; iVar++)
                 Inlet_Values[iVar]=Coord[iVar];
               
-              
+              /*--- Loop through all rows in the inlet file. ---*/
               for (iRow = nRowCum_InletFile[jMarker]; iRow < nRowCum_InletFile[jMarker+1]; iRow++) {
+                   
+                   /*--- Find the two closest radii for the specific vertex. ---*/
                   if (Inlet_Data[maxCol_InletFile*iRow] <= Interp_Radius && Inlet_Data[maxCol_InletFile*(iRow+1)] >= Interp_Radius){
                       
+                      /*--- Loop through all values in the inlet file except the radii---*/
                       for (index=1; index<maxCol_InletFile; index++)
                       {
                       Point_Match = true;
+
+                      /*--- 1D interpolate data for every index (column) using equation of a line. ---*/
                       slope=(Inlet_Data[index+maxCol_InletFile*(iRow+1)]-Inlet_Data[index+maxCol_InletFile*iRow])/(Inlet_Data[maxCol_InletFile*(iRow+1)]-Inlet_Data[maxCol_InletFile*iRow]);
-                      Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
+                
+                      /*--- If interpolating turbulence variables, shift them one column ahead ---*/
+                      if (index > nDim+1)
+                        Inlet_Values[index+(nDim-1)+1]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
+                      else
+                        Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
+                      
                       }
 
-                      Vr=Inlet_Values[nDim+2]; //for 1D linearly interpolated Vr
-                      VTheta=Inlet_Values[nDim+3]; //for 1D linearly interpolated VTheta
+                      /*--- New interpolated parameters for that Interp_Radius. ---*/
+                      Parameter1=Inlet_Values[nDim+2];
+                      Parameter2=Inlet_Values[nDim+3];
+
 
                       switch(config->GetKindInletInterpolationType()){
                       
                         case(VR_VTHETA):
-                              cout<<"In VrVtheta case\n";
-                              Inlet_Values[nDim+2] = Vr*sin(Theta) + VTheta*cos(Theta); //for Vx
-                              Inlet_Values[nDim+3] = Vr*cos(Theta) - VTheta*sin(Theta); //for Vy
-                              //Inlet_Values[nDum+4] = sqrt(pow(Coord[0],2)+ pow(Coord[1],2)); //assuming Vz is given
-                              break;
-                        
-                        case(ALPHA_GAMMA):
-                              cout<<"In Alpha Gamma case\n";
-                              break;
+                          Vr=Parameter1;
+                          VTheta=Parameter2;
 
+                          break;
                         
-                        case(BETA_GAMMA):
-                              cout<<"In Beta Gamme case\n";
+                        case(ALPHA_PHI):
+                          Alpha=Parameter1;
+                          Phi=Parameter2;
+                          Vm = sqrt(1/(1+pow(tan(Alpha),2)));
+
+                          VTheta = tan(Alpha)*Vm;
+                          Vr=Vm*sin(Phi);
+
+                          break;
+                        
+                        case(BETA_PHI):
+                              cout<<"In Beta Gamma case\n";
+                              
+                              //get Rotation rate from config file after merging with develop
+                              //convert WTheta to Vtheta
+
+                              //left to complete later
                               break;
                       }
-                  
-                  
+
+                      Inlet_Values[nDim+2] = Vr*sin(Theta) + VTheta*cos(Theta); //for Vx
+                      Inlet_Values[nDim+3] = Vr*cos(Theta) - VTheta*sin(Theta); //for Vy
+                      Inlet_Values[nDim+4] = sqrt(1-pow(Vr,2)- pow(VTheta,2));  //for Vz
+
+
+
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
                   
-                      for  (iVar=0; iVar < (maxCol_InletFile+(nDim-1)); iVar++)
-                        Inlet_InterpolatedData[iVertex*(maxCol_InletFile+(nDim-1))+iVar]=Inlet_Values[iVar];
-                  
+                      for  (iVar=0; iVar < (maxCol_InletFile+nDim); iVar++)
+                        Inlet_InterpolatedData[iVertex*(maxCol_InletFile+nDim)+iVar]=Inlet_Values[iVar];
                   }
-                                            
+                  
                   }
                   if (Point_Match == false){
                     unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
@@ -5303,7 +5334,9 @@ if (myfile.is_open())
                 }
               }
               if(Point_Match == true)
-                {PrintNewInletData(Inlet_InterpolatedData,nVertex,Marker_Tag);Point_Match = false;}
+                {PrintNewInletData(Inlet_InterpolatedData,nVertex,Marker_Tag);
+                cout<<"Data successfully interpolated\n";
+                Point_Match = false;}
             }
           }
         
@@ -5311,8 +5344,8 @@ if (myfile.is_open())
         if (local_failure > 0) break;
       }
       
-      maxCol_InletFile+=nDim-1;
-    
+      maxCol_InletFile+=nDim;
+
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
                        MPI_SUM, MPI_COMM_WORLD);

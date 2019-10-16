@@ -389,14 +389,14 @@ static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpo
  */
 enum ENUM_INLET_INTERPOLATIONTYPE {
   VR_VTHETA = 0,
-  ALPHA_GAMMA = 1,
-  BETA_GAMMA = 2,
+  ALPHA_PHI = 1,
+  BETA_PHI = 2,
 };
 
 static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = CCreateMap<string, ENUM_INLET_INTERPOLATIONTYPE> 
 ("VR_VTHETA",VR_VTHETA)
-("ALPHA_GAMMA",ALPHA_GAMMA)
-("BETA_GAMMA",BETA_GAMMA);
+("ALPHA_PHI",ALPHA_PHI)
+("BETA_PHI",BETA_PHI);
 
 /*!
  * \brief types of (coupling) transfers between distinct physical zones
