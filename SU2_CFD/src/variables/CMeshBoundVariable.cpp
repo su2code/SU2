@@ -37,20 +37,34 @@
 
 #include "../../include/variables/CMeshBoundVariable.hpp"
 
-CMeshBoundVariable::CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CMeshVariable(val_coor, val_nDim, config) {
+CMeshBoundVariable::CMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
+  CMeshVariable(npoint, ndim, config) {
 
-  unsigned short iDim;
-
-  /*--- Initialize Boundary Displacement container to 0.0 ---*/
-  Boundary_Displacement = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Boundary_Displacement[iDim] = 0.0;
-  }
-
+  VertexMap.Reset(nPoint);
 }
 
-CMeshBoundVariable::~CMeshBoundVariable(void) {
+void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
-  if (Boundary_Displacement != NULL) delete [] Boundary_Displacement;
+  if (VertexMap.GetIsValid()) return; // nothing to do
 
+  /*--- Count number of vertices and build map ---*/
+
+  unsigned long nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
+
+  Boundary_Displacement.resize(nBoundPt,nDim) = su2double(0.0);
+}
+
+void CMeshBoundVariable::Register_BoundDisp(bool input) {
+  if (input) {  
+    for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
+  }
+  else {
+    for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Boundary_Displacement(iVertex,iVar));
+  }
 }

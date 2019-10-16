@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/drivers/CDiscAdjMultizoneDriver.hpp"
+#include "../../include/drivers/CDiscAdjMultizoneDriver.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -531,6 +531,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
           cout << " Zone " << iZone << " (turb) - log10[RMS k]         : "
                << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
         }
+        break;
       case DISC_ADJ_HEAT:
         cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: "
              << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
@@ -788,7 +789,7 @@ void CDiscAdjMultizoneDriver::SetExternal_Zero(void) {
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->SetExternal_Zero(geometry_container[iZone][INST_0][MESH_0]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->GetNodes()->SetExternalZero();
         }
       }
     }
@@ -804,7 +805,7 @@ void CDiscAdjMultizoneDriver::Set_OldExternal(void) {
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldExternal(geometry_container[iZone][INST_0][MESH_0]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->GetNodes()->Set_OldExternal();
         }
       }
     }

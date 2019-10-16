@@ -45,7 +45,3 @@ CMeshElement::CMeshElement(void){
   WallDistance = 0.0;         /*!< \brief Store the reference distance to the nearest wall of the element. */
 
 }
-
-CMeshElement::~CMeshElement(void){
-
-}

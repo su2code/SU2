@@ -935,12 +935,7 @@ inline unsigned long CSolver::GetPoint_Max_BGS(unsigned short val_var) { return 
 
 inline su2double* CSolver::GetPoint_Max_Coord_BGS(unsigned short val_var) { return Point_Max_Coord_BGS[val_var]; }
 
-inline void CSolver::Set_OldSolution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    node[iPoint]->Set_OldSolution(); // The loop should be over nPoints
-                                     //  to guarantee that the boundaries are
-                                     //  well updated
-}
+inline void CSolver::Set_OldSolution(CGeometry *geometry) { base_nodes->Set_OldSolution(); }
 
 inline void CSolver::Set_NewSolution(CGeometry *geometry) { }
 
@@ -1046,10 +1041,7 @@ inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_contain
 inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 
-inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    node[iPoint]->SetSolution_New();
-}
+inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) { nodes->SetSolution_New(); }
 
 inline void CSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){}
 
@@ -2452,16 +2444,15 @@ inline void CTurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned lo
 }
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetSolution(0, nu_tilde_Inf);
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
 }
 
 inline su2double CTurbSASolver::GetNuTilde_Inf(void) { return nu_tilde_Inf; }
 
 inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-    node[iPoint]->SetSolution(0, kine_Inf);
-    node[iPoint]->SetSolution(1, omega_Inf);
+    nodes->SetSolution(iPoint, 0, kine_Inf);
+    nodes->SetSolution(iPoint, 1, omega_Inf);
   }
 }
 
