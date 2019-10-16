@@ -910,6 +910,23 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     //--- add viscous Hessian terms
     if(config[ZONE_0]->GetViscous()) {
+      //--- viscous mass flux is 0, so start with momentum
+      for (unsigned short iVar = 1; iVar < nVarMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_flow->node[iPoint]->GetAnisoViscHess(ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+          }
+        }
+      }
+
+      //--- add turbulent terms
       const unsigned short nVarTurbMetr = solver_turb->GetnVar();
       for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
 
@@ -919,7 +936,8 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_turb->node[iPoint]->GetAnisoHess(ih);
+            const su2double hess = solver_turb->node[iPoint]->GetAnisoHess(ih) 
+                                 + solver_turb->node[iPoint]->GetAnisoViscHess(ih);
             const su2double part = abs(grad)*hess;
             solver_flow->node[iPoint]->AddAnisoMetr(im,part);
           }

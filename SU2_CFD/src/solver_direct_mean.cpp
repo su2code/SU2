@@ -5503,8 +5503,8 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   su2double density, velocity[2], pressure, enthalpy;
   su2double vnx[3], vny[3];
-  su2double graTri[2];
-  su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
+  su2double graTri[2], graTriVisc[2];
+  su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr], SensVisc[3][nVarMetr][nFluxMetr];
   bool dummy_bool;
   bool viscous = config->GetViscous();
 
@@ -5517,6 +5517,11 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         const unsigned short i = iFlux*nVar*nDim + iVar*nDim;
         node[iPoint]->SetAnisoGrad(i+0, 0.);
         node[iPoint]->SetAnisoGrad(i+1, 0.);
+
+        if(viscous){
+          node[iPoint]->SetAnisoViscGrad(i+0, 0.);
+          node[iPoint]->SetAnisoViscGrad(i+1, 0.);
+        }
       }
     }
   }
@@ -5573,13 +5578,15 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
           }
         }
 
-        Sens[iNode][1][0] -= tau[0][0];
-        Sens[iNode][2][0] -= tau[0][1];
-        Sens[iNode][3][0] -= velocity[0]*tau[0][0] + velocity[1]*tau[0][1];
+        SensVisc[iNode][0][0] = 0.;
+        SensVisc[iNode][1][0] = tau[0][0];
+        SensVisc[iNode][2][0] = tau[0][1];
+        SensVisc[iNode][3][0] = velocity[0]*tau[0][0] + velocity[1]*tau[0][1];
 
-        Sens[iNode][1][1] -= tau[1][0];
-        Sens[iNode][2][1] -= tau[1][1];
-        Sens[iNode][3][1] -= velocity[0]*tau[1][0] + velocity[1]*tau[1][1];
+        SensVisc[iNode][0][1] = 0.;
+        SensVisc[iNode][1][1] = tau[1][0];
+        SensVisc[iNode][2][1] = tau[1][1];
+        SensVisc[iNode][3][1] = velocity[0]*tau[1][0] + velocity[1]*tau[1][1];
 
       }
     }
@@ -5631,6 +5638,11 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
           const su2double rap = 1./(Area*6.);
           node[kNode]->AddAnisoGrad(i+0, graTri[0] * rap);
           node[kNode]->AddAnisoGrad(i+1, graTri[1] * rap);
+
+          if(viscous){
+            node[kNode]->AddAnisoViscGrad(i+0, graTriVisc[0] * rap);
+            node[kNode]->AddAnisoViscGrad(i+1, graTriVisc[1] * rap);
+          }
         }
       }
     }
@@ -5640,6 +5652,11 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   
   InitiateComms(geometry, config, ANISO_GRADIENT);
   CompleteComms(geometry, config, ANISO_GRADIENT);
+
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_GRADIENT_VISC);
+    CompleteComms(geometry, config, ANISO_GRADIENT_VISC);
+  }
 }
 
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
@@ -5649,8 +5666,9 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
-  su2double hesTri[3];
-  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr];
+  su2double hesTri[3], hessTriVisc[3];
+  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr], GradVisc[3][2][nVarMetr][nFluxMetr];
+  bool viscous = config->GetViscous();
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -5673,6 +5691,12 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoHess(i+0, 0.);
         node[iPoint]->SetAnisoHess(i+1, 0.);
         node[iPoint]->SetAnisoHess(i+2, 0.);
+
+        if(viscous){
+          node[iPoint]->SetAnisoViscHess(i+0, 0.);
+          node[iPoint]->SetAnisoViscHess(i+1, 0.);
+          node[iPoint]->SetAnisoViscHess(i+2, 0.);
+        }
       }
     }
   }
@@ -5690,6 +5714,11 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
           const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
           Grad[iNode][0][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+0);
           Grad[iNode][1][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+1);
+
+          if(viscous){
+            GradVisc[iNode][0][iVar][iFlux] = node[kNode]->GetAnisoViscGrad(i+0);
+            GradVisc[iNode][1][iVar][iFlux] = node[kNode]->GetAnisoViscGrad(i+1);
+          }
         }
       }
     }
@@ -5742,6 +5771,21 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         hesTri[2] =         Grad[0][1][iVar][iFlux]*vny[0] 
                           + Grad[1][1][iVar][iFlux]*vny[1] 
                           + Grad[2][1][iVar][iFlux]*vny[2];
+
+        if(viscous){
+          hesTriVisc[0] =         GradVisc[0][0][iVar][iFlux]*vnx[0] 
+                                + GradVisc[1][0][iVar][iFlux]*vnx[1] 
+                                + GradVisc[2][0][iVar][iFlux]*vnx[2];
+          hesTriVisc[1] = 0.5 * ( GradVisc[0][0][iVar][iFlux]*vny[0] 
+                                + GradVisc[1][0][iVar][iFlux]*vny[1] 
+                                + GradVisc[2][0][iVar][iFlux]*vny[2]
+                                + GradVisc[0][1][iVar][iFlux]*vnx[0] 
+                                + GradVisc[1][1][iVar][iFlux]*vnx[1] 
+                                + GradVisc[2][1][iVar][iFlux]*vnx[2] );
+          hesTriVisc[2] =         GradVisc[0][1][iVar][iFlux]*vny[0] 
+                                + GradVisc[1][1][iVar][iFlux]*vny[1] 
+                                + GradVisc[2][1][iVar][iFlux]*vny[2];
+        }
         
         //--- assembling
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
@@ -5752,6 +5796,12 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
           node[kNode]->AddAnisoHess(i+0, hesTri[0] * rap);
           node[kNode]->AddAnisoHess(i+1, hesTri[1] * rap);
           node[kNode]->AddAnisoHess(i+2, hesTri[2] * rap);
+
+          if(viscous) {
+            node[kNode]->AddAnisoViscHess(i+0, hesTriVisc[0] * rap);
+            node[kNode]->AddAnisoViscHess(i+1, hesTriVisc[1] * rap);
+            node[kNode]->AddAnisoViscHess(i+2, hesTriVisc[2] * rap);
+          }
         }
       }
     }
@@ -5784,6 +5834,36 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  if(viscous) {
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      CVariable *var = node[iPoint];
+
+      //--- viscous mass flux is 0, so start with momentum
+      for(iVar = 1; iVar < nVarMetr; iVar++){
+        for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+          const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+
+          const su2double a = var->GetAnisoViscHess(i+0);
+          const su2double b = var->GetAnisoViscHess(i+1);
+          const su2double c = var->GetAnisoViscHess(i+2);
+
+          A[0][0] = a; A[0][1] = b;
+          A[1][0] = b; A[1][1] = c;
+
+          CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+          for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+
+          CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+          var->SetAnisoViscHess(i+0, A[0][0]);
+          var->SetAnisoViscHess(i+1, A[0][1]);
+          var->SetAnisoViscHess(i+2, A[0][2]);
+        }
+      }
+    }
+  }
 }
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -5808,6 +5888,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoGrad(i+0, 0.);
         node[iPoint]->SetAnisoGrad(i+1, 0.);
         node[iPoint]->SetAnisoGrad(i+2, 0.);
+
         if(viscous) {
           node[iPoint]->SetAnisoViscGrad(i+0, 0.);
           node[iPoint]->SetAnisoViscGrad(i+1, 0.);
@@ -5976,6 +6057,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
           node[kNode]->AddAnisoGrad(i+0, graTet[0] * rap);
           node[kNode]->AddAnisoGrad(i+1, graTet[1] * rap);
           node[kNode]->AddAnisoGrad(i+2, graTet[2] * rap);
+
           if(viscous) {
             node[kNode]->AddAnisoViscGrad(i+0, graTetVisc[0] * rap);
             node[kNode]->AddAnisoViscGrad(i+1, graTetVisc[1] * rap);
@@ -5990,6 +6072,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   
   InitiateComms(geometry, config, ANISO_GRADIENT);
   CompleteComms(geometry, config, ANISO_GRADIENT);
+
   if(viscous) {
     InitiateComms(geometry, config, ANISO_GRADIENT_VISC);
     CompleteComms(geometry, config, ANISO_GRADIENT_VISC);
@@ -6047,6 +6130,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
           Grad[iNode][0][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+0);
           Grad[iNode][1][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+1);
           Grad[iNode][2][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+2);
+
           if(viscous) {
             GradVisc[iNode][0][iVar][iFlux] = node[kNode]->GetAnisoViscGrad(i+0);
             GradVisc[iNode][1][iVar][iFlux] = node[kNode]->GetAnisoViscGrad(i+1);
@@ -6201,6 +6285,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
           node[kNode]->AddAnisoHess(i+3, hesTet[3] * rap);
           node[kNode]->AddAnisoHess(i+4, hesTet[4] * rap);
           node[kNode]->AddAnisoHess(i+5, hesTet[5] * rap);
+
           if(viscous) {
             node[kNode]->AddAnisoViscHess(i+0, hesTetVisc[0] * rap);
             node[kNode]->AddAnisoViscHess(i+1, hesTetVisc[1] * rap);
