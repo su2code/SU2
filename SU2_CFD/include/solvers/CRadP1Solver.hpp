@@ -130,7 +130,9 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+      BC_Marshak(geometry, solver_container, config, val_marker);
+  }
 
   /*!
    * \brief Impose an isothermal wall boundary condition.
