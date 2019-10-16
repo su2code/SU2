@@ -6332,11 +6332,12 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
       if (IntIter % config_container[ZONE_FLOW]->GetWrt_Con_Freq() == 0){
         /*--- Output the flow convergence ---*/
         /*--- This is temporary as it requires several changes in the output structure ---*/
+        unsigned short nVar_Flow = solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
         cout.width(8);     cout << IntIter;
         cout.width(11);    cout << BGS_Iter + 1;
         cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
         cout.width(15);    cout << log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
-        cout.width(15);    cout << log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
+        cout.width(15);    cout << log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(nVar_Flow-1));
         cout << endl;
       }
 

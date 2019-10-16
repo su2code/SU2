@@ -487,7 +487,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the old solution ---*/
 
-  if(!config->GetMultizone_Problem()) nodes->Set_OldSolution();
+  if(!config->GetMultizone_Problem() || config->GetFSI_Simulation())
+    nodes->Set_OldSolution();
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
