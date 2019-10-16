@@ -3505,7 +3505,7 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
         const su2double a = var->GetAnisoViscHess(i+0);
         const su2double b = var->GetAnisoViscHess(i+1);
-        const su2double c = var->GetAnisoHessVics(i+2);
+        const su2double c = var->GetAnisoViscHess(i+2);
         
         A[0][0] = a; A[0][1] = b;
         A[1][0] = b; A[1][1] = c;

@@ -5666,7 +5666,7 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
-  su2double hesTri[3], hessTriVisc[3];
+  su2double hesTri[3], hesTriVisc[3];
   su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr], GradVisc[3][2][nVarMetr][nFluxMetr];
   bool viscous = config->GetViscous();
 
