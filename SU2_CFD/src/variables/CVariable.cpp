@@ -81,6 +81,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = 1.0;
+  LocalCFL.resize(nPoint) = 0.0;
   
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
