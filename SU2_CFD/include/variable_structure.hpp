@@ -205,7 +205,12 @@ public:
   /*!
    * \brief Set reference solution using input file.
    */
-  void Set_RefSolution(void);
+  void Set_RefSolution(su2double *val_solution);
+  
+  /*!
+   * \brief Get reference solution.
+   */
+  su2double Get_RefSolution(unsigned short iVar);
 
   /*!
    * \brief Set the variable solution at time n.
@@ -3085,7 +3090,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
+           CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
                  unsigned short val_nvar, CConfig *config);
   
   /*!

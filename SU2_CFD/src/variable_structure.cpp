@@ -44,6 +44,8 @@ CVariable::CVariable(void) {
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Ref = NULL;
+  Solution_Red = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -64,6 +66,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Ref = NULL;
+  Solution_Red = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -98,6 +102,8 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Ref = NULL;
+  Solution_Red = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -125,6 +131,8 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution[iVar] = 0.0;
 
   Solution_Old = new su2double [nVar];
+  Solution_Ref = new su2double [nVar];
+  Solution_Red = new su2double [nVar];
   
   Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -153,6 +161,8 @@ CVariable::~CVariable(void) {
 
   if (Solution            != NULL) delete [] Solution;
   if (Solution_Old        != NULL) delete [] Solution_Old;
+  if (Solution_Ref        != NULL) delete [] Solution_Ref;
+  if (Solution_Red        != NULL) delete [] Solution_Red;
   if (Solution_time_n     != NULL) delete [] Solution_time_n;
   if (Solution_time_n1    != NULL) delete [] Solution_time_n1;
   if (Limiter             != NULL) delete [] Limiter;
@@ -221,10 +231,16 @@ void CVariable::Set_OldSolution_Adj(void) {
 
 }
 
-void CVariable::Set_RefSolution(void) {
+void CVariable::Set_RefSolution(su2double *val_solution) {
   
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution_Ref[iVar] = Solution[iVar];
+    Solution_Ref[iVar] = val_solution[iVar];
+  
+}
+
+su2double CVariable::Get_RefSolution(unsigned short iVar) {
+  
+  return Solution_Ref[iVar];
   
 }
 
@@ -236,6 +252,7 @@ void CVariable::AddSolution(unsigned short val_var, su2double val_solution) {
 
 void CVariable::AddROMSolution(unsigned short val_var, su2double val_solution) {
   // Line 11 of Algorithm 3 in Washabaugh Thesis (or Line 10 of Algorithm 1)
+  //std::cout << "solution old, ref solution, and current sum: " << Solution_Old[val_var] << ", " << Solution_Ref[val_var] << ", " << val_solution << std::endl;
   Solution[val_var] = Solution_Ref[val_var] + val_solution;
   
 }

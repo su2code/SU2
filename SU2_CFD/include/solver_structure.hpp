@@ -147,7 +147,8 @@ public:
   CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysMatrix Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   CSysSolve  System;       /*!< \brief Linear solver/smoother. */
-  vector<su2double> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  std::vector<std::vector<double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  std::vector<double> GenCoordsY;   /*!< \brief vector to store generalized coordinate solution. (rom) */
   CSysMatrix TestBasis;    /*!< \brief vector to store test basis for Petrov-Galerkin projection in reduced modelling (rom) computations. */
   
   CSysMatrix StiffMatrix;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
@@ -4998,6 +4999,14 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+  
+  /*!
+   * \brief Compute the TrialBasis, solution in reduced coordinates, and reference solution.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
+                        unsigned short nVar, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute a pressure sensor switch.
