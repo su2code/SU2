@@ -2649,6 +2649,7 @@ public:
       this->cont_adjoint = false;
       this->disc_adjoint = false;
       this->restart = false;
+      this->rom = false;
       return "";
     }
     if (option_value[0] == "CONTINUOUS_ADJOINT") {
