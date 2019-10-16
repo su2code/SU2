@@ -985,6 +985,7 @@ private:
   unsigned short Kind_RadialBasisFunction; /*!\brief type of radial basis function to use for radial basis FSI. */
   unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   unsigned short Kind_Inlet_InterpolationType; /*!brief type of spanwise interpolation data to use for the inlet face. */
+  bool PrintInlet_InterpolatedData; /*!brief option for printing the interpolated data file. */
   bool RadialBasisFunction_PolynomialOption; /*!\brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
   su2double RadialBasisFunction_Parameter; /*!\brief Radial basis function parameter. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
@@ -8999,6 +9000,12 @@ public:
    * \brief Get the kind of inlet face interpolation data type.
    */
   inline unsigned short GetKindInletInterpolationType(void);
+
+
+   /*!
+   * \brief Get whether to print inlet interpolated data or not.
+   */
+  bool GetPrintInlet_InterpolatedData(void);
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done
