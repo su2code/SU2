@@ -6423,22 +6423,17 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
   if (rank == MASTER_NODE){
 
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << endl;
-    cout << "Convergence summary for BGS iteration ";
-    cout << IntIter << endl;
-    cout << endl;
+    cout << "\n-------------------------------------------------------------------------\n\n";
+    cout << "Convergence summary for BGS iteration " << IntIter << "\n\n";
     /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-    cout << "Iter[ID]" << "  BGSRes[Psi_Rho]" << "  BGSRes[Psi_E]" << "  BGSRes[Psi_Ux]" << "  BGSRes[Psi_Uy]" << endl;
+    cout << "Iter[ID]" << "  BGSRes[Psi_Rho]" << "  BGSRes[Psi_E]" << "  BGSRes[Psi_Ux]" << "  BGSRes[Psi_Uy]\n";
     cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout << "|"; cout.width(8); cout << IntIter*1000;
-    cout << "|"; cout.width(17); cout << residual_flow[0];
-    cout << "|"; cout.width(15); cout << residual_flow[nVar_Flow-1];
-    cout << "|"; cout.width(16); cout << residual_struct[0];
-    cout << "|"; cout.width(16); cout << residual_struct[1];
-    cout << "|"; cout << endl;
-    cout << endl;
-    cout << "-------------------------------------------------------------------------" << endl;
+    cout.width(8);  cout << IntIter*1000;
+    cout.width(17); cout << residual_flow[0];
+    cout.width(15); cout << residual_flow[nVar_Flow-1];
+    cout.width(16); cout << residual_struct[0];
+    cout.width(16); cout << residual_struct[1];
+    cout << "\n\n-------------------------------------------------------------------------" << endl;
 
 
     bool write_history = true;
