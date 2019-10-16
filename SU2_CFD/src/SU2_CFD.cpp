@@ -109,8 +109,7 @@ int main(int argc, char *argv[]) {
 
   if (!dry_run){
     
-    if ((!config->GetMultizone_Problem())
-        && (config->GetTime_Marching() != HARMONIC_BALANCE && (!turbo))
+    if ((!config->GetMultizone_Problem() && (config->GetTime_Marching() != HARMONIC_BALANCE) && !turbo)
         || (turbo && config->GetDiscrete_Adjoint())) {
       
       /*--- Single zone problem: instantiate the single zone driver class. ---*/

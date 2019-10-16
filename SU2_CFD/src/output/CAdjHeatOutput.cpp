@@ -169,7 +169,7 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
-  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->node[iPoint]; 
+  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes(); 
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
 
@@ -178,15 +178,15 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
   
-  SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(0));
+  SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
   
   // Residuals
-  SetVolumeOutputValue("RES_ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(0) - Node_AdjHeat->GetSolution_Old(0));
+  SetVolumeOutputValue("RES_ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0) - Node_AdjHeat->GetSolution_Old(iPoint, 0));
   
-  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjHeat->GetSensitivity(0));
-  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(1));
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(2));
+    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 2));
   
 }
 

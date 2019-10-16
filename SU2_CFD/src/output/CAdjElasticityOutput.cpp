@@ -147,7 +147,7 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint];
+  CVariable* Node_Struc = solver[FEA_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
@@ -155,9 +155,9 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
 
-  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSolution(0));
-  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSolution(1));
-  if (nDim == 3) SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSolution(2));
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
+  if (nDim == 3) SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
 }
 
