@@ -163,55 +163,55 @@ public:
    */
   void Output(void);
 
-  /*!
-   * \brief Sort the data needed for adaptation.
-   */
-  void SetAdaptationData(void);
+  // /*!
+  //  * \brief Sort the data needed for adaptation.
+  //  */
+  // void SetAdaptationData(void);
 
-  /*!
-   * \brief Collect the data needed for adaptation.
-   */
-  vector<vector<passivedouble> > GetAdaptationData(void);
+  // /*!
+  //  * \brief Collect the data needed for adaptation.
+  //  */
+  // vector<vector<passivedouble> > GetAdaptationData(void);
 
-  /*!
-   * \brief Sort the connectivity data needed for adaptation.
-   */
-  void SetConnectivityData(void);
+  // /*!
+  //  * \brief Sort the connectivity data needed for adaptation.
+  //  */
+  // void SetConnectivityData(void);
 
-  /*!
-   * \brief Get the connectivity of edges.
-   */
-  vector<vector<unsigned long> > GetConnectivityEdg(unsigned short val_iZone, unsigned short val_iInst);
+  // /*!
+  //  * \brief Get the connectivity of edges.
+  //  */
+  // vector<vector<unsigned long> > GetConnectivityEdg(unsigned short val_iZone, unsigned short val_iInst);
 
-  /*!
-   * \brief Get the connectivity of tris.
-   */
-  vector<vector<unsigned long> > GetConnectivityTri(unsigned short val_iZone, unsigned short val_iInst);
+  // /*!
+  //  * \brief Get the connectivity of tris.
+  //  */
+  // vector<vector<unsigned long> > GetConnectivityTri(unsigned short val_iZone, unsigned short val_iInst);
 
-  /*!
-   * \brief Get the connectivity of tets.
-   */
-  vector<vector<unsigned long> > GetConnectivityTet(unsigned short val_iZone, unsigned short val_iInst);
+  // /*!
+  //  * \brief Get the connectivity of tets.
+  //  */
+  // vector<vector<unsigned long> > GetConnectivityTet(unsigned short val_iZone, unsigned short val_iInst);
 
-  /*!
-   * \brief Get the number of markers.
-   */
-  unsigned short GetnMarker_CfgFile(void);
+  // /*!
+  //  * \brief Get the number of markers.
+  //  */
+  // unsigned short GetnMarker_CfgFile(void);
 
-  /*!
-   * \brief Get the marker tag.
-   */
-  string GetMarker_CfgFile_TagBound(unsigned short val_iMarker);
+  // /*!
+  //  * \brief Get the marker tag.
+  //  */
+  // string GetMarker_CfgFile_TagBound(unsigned short val_iMarker);
 
-  /*!
-   * \brief Delete the sorted solution data.
-   */
-  void CleanAdaptationData(void);
+  // /*!
+  //  * \brief Delete the sorted solution data.
+  //  */
+  // void CleanAdaptationData(void);
 
-  /*!
-   * \brief Delete the sorted connectivity data.
-   */
-  void CleanConnectivityData(void);
+  // /*!
+  //  * \brief Delete the sorted connectivity data.
+  //  */
+  // void CleanConnectivityData(void);
 
   /*!
    * \brief Deallocation routine

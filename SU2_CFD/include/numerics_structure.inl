@@ -199,8 +199,6 @@ inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val
 
 inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
 
-inline su2double CNumerics::GetPrecond_Beta() { return 0; }
-
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
   Und_Lapl_i = val_und_lapl_i; 
   Und_Lapl_j = val_und_lapl_j; 
@@ -563,8 +561,6 @@ inline su2double CSourcePieceWise_TurbSA_Neg::GetProduction(void) { return Produ
 inline su2double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
-
-inline su2double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, CConfig *config) { }
 

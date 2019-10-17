@@ -147,6 +147,7 @@ lib_sources = \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
+  ../src/toolboxes/signal_processing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
@@ -164,7 +165,8 @@ lib_sources = \
   ../src/linear_algebra/CSysVector.cpp \
   ../src/linear_algebra/CSysMatrix.cpp \
   ../src/linear_algebra/CSysSolve.cpp \
-  ../src/linear_algebra/CSysSolve_b.cpp
+  ../src/linear_algebra/CSysSolve_b.cpp \
+  ../src/linear_algebra/CPastixWrapper.cpp
 
 lib_cxxflags = -fPIC -std=c++11
 lib_ldadd =

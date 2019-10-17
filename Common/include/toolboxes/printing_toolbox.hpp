@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include "../datatype_structure.hpp"
 
 namespace PrintingToolbox { 
 
@@ -61,12 +62,18 @@ public:
    * \return Total width of the table.
    */
   int GetTableWidth() const;
-  
+
   /*!
    * \brief Set the separator between columns (outer decoration)
    * \param[in] separator - The separation character.
    */
   void SetSeparator(const std::string & separator);
+  
+  /*!
+   * \brief Set the separator between columns (inner decoration)
+   * \param[in] separator - The separation character.
+   */
+  void SetInnerSeparator(const std::string & inner_separator);
   
   /*!
    * \brief Set the alignment of the table entries (CENTER only works for the header at the moment).
@@ -85,7 +92,7 @@ public:
    * \param[in] print - If TRUE, the top line is printed.
    */
   void SetPrintHeaderTopLine(bool print);
-
+  
   
   /*!
    * \brief Add a column to the table by specifiying the header name and the width.
@@ -103,14 +110,19 @@ public:
    * \brief Print the footer.
    */
   void PrintFooter();
-
+  
+  /*!
+   * \brief Set the floating point precision.
+   */
+  void SetPrecision(int precision);
+  
   template<typename T> CTablePrinter& operator<<(T input){
-    
+
     int indent = 0;
-   
+
     /* --- Set the left separator --- */
     if (j_ == 0)
-      *out_stream_ << "|";
+      *out_stream_ << separator_;
 
     /* --- Determine and set the current alignment in the stream --- */
     if(align_ == LEFT)
@@ -120,16 +132,16 @@ public:
 
     /*--- Print the current column value to the stream --- */
     *out_stream_ << std::setw(column_widths_.at(j_) - indent)
-                 << input;
+                 << std::setprecision(precision_) << input;
 
     /*--- Reset the column counter and if it is the last column, 
      * add also a line break ---*/
     if (j_ == GetNumColumns()-1){
-      *out_stream_ << std::setw(indent+2) << "|\n";
+      *out_stream_ << std::setw(indent+1+(int)separator_.size()) << separator_ + "\n";
       i_ = i_ + 1;
       j_ = 0;
     } else {
-      *out_stream_ << std::setw(indent+1) << separator_;
+      *out_stream_ << std::setw(indent+(int)inner_separator_.size()) << inner_separator_;
       j_ = j_ + 1;
     }
 
@@ -147,7 +159,10 @@ private:
   std::vector<std::string> column_headers_; /*< \brief Vector of column header names. */
   std::vector<int> column_widths_;          /*< \brief Vector of column widths. */
   std::string separator_;                   /*< \brief Column separator char. */
+  std::string inner_separator_;             /*< \brief Inner column separator char. */
 
+  int precision_;                           /*< \brief Floating point precision */  
+  
   int i_; /*< \brief Index of the current row. */
   int j_; /*< \brief Index of the current column. */
 
@@ -156,5 +171,80 @@ private:
   bool print_header_top_line_,  /*< \brief Printing the header top line. */
   print_header_bottom_line_;   /*< \brief Printing the header bottom line. */
 };
+
+
+
+inline void PrintScreenFixed(std::ostream &stream, su2double val, unsigned short field_width) {
+  stream.precision(6); stream.setf(std::ios::fixed, std::ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(std::ios::fixed);
+}
+
+inline void PrintScreenScientific(std::ostream &stream, su2double val, unsigned short field_width) {
+  stream.precision(4); stream.setf(std::ios::scientific, std::ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(std::ios::scientific);  
+}
+
+inline void PrintScreenInteger(std::ostream &stream, unsigned long val, unsigned short field_width){
+  stream.width(field_width);
+  stream << std::right << val;
+}
+
+
+inline std::vector<std::string> split(const std::string& s, char delimiter)
+{
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream tokenStream(s);
+  while (std::getline(tokenStream, token, delimiter))
+  {
+    tokens.push_back(token);
+  }
+  return tokens;
+}
+
+inline int stoi(const std::string s){
+  std::istringstream ss(s);
+  int number;
+  ss >> number;
+  return number;
+}
+
+inline su2double stod(const std::string s){
+  std::istringstream ss(s);
+  su2double number;
+  ss >> number;
+  return number;
+}
+
+inline std::string to_string(const su2double number){
+  
+  std::stringstream ss;
+  
+  ss << number;
+  
+  return ss.str();
+  
+}
+
+const static char* ws = " \t\n\r\f\v";
+
+// trim from end of string (right)
+inline std::string& rtrim(std::string& s, const char* t = ws){
+    s.erase(s.find_last_not_of(t) + 1);
+    return s;
+}
+
+// trim from beginning of string (left)
+inline std::string& ltrim(std::string& s, const char* t = ws){
+    s.erase(0, s.find_first_not_of(t));
+    return s;
+}
+
+// trim from both ends of string (right then left)
+inline std::string& trim(std::string& s, const char* t = ws){
+    return ltrim(rtrim(s, t), t);
+}
 
 }

@@ -138,7 +138,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
-
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
@@ -270,7 +269,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
               MaxIter = Smoothing_Iter - IterLinSol;
 
             IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
-
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -1903,9 +1901,8 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-
+  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Problem dimension and physical time step ---*/
   nDim = geometry->GetnDim();
@@ -1915,7 +1912,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
     /*--- Set the first adjoint mesh position to the final direct one ---*/
-    if (iter == 0) dt = ((su2double)config->GetnExtIter()-1)*dt;
+    if (iter == 0) dt = ((su2double)config->GetnTime_Iter()-1)*dt;
     /*--- Reverse the rotation direction for the adjoint ---*/
     else dt = -1.0*dt;
   } else {
@@ -2066,9 +2063,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-
+  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
@@ -2095,7 +2091,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
      physical time, so perform mesh motion in reverse. ---*/ 
-    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long nFlowIter  = config->GetnTime_Iter();
     unsigned long directIter = nFlowIter - iter - 1;
     time_new = static_cast<su2double>(directIter)*deltaT;
     time_old = time_new;
@@ -2208,14 +2204,13 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
+  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-
+  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2240,7 +2235,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
      physical time, so perform mesh motion in reverse. ---*/
-    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long nFlowIter  = config->GetnTime_Iter();
     unsigned long directIter = nFlowIter - iter - 1;
     time_new = static_cast<su2double>(directIter)*deltaT;
     time_old = time_new;
@@ -2345,9 +2340,8 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = config->GetContinuous_Adjoint();
-
+  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2370,7 +2364,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
      physical time, so perform mesh motion in reverse. ---*/
-    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long nFlowIter  = config->GetnTime_Iter();
     unsigned long directIter = nFlowIter - iter - 1;
     time_new = static_cast<su2double>(directIter)*deltaT;
     time_old = time_new;
@@ -2712,23 +2706,28 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          if ((config->GetOutput_FileFormat() == PARAVIEW) ||
-              (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
-            cout << "Writing a Paraview file of the FFD boxes." << endl;
-            FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
+          for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+            unsigned short *FileFormat = config->GetVolumeOutputFiles();
+            if (FileFormat[iFile] == PARAVIEW) {
+              cout << "Writing a Paraview file of the FFD boxes." << endl;
+              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+                FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
+              }
+            } else if (FileFormat[iFile] == TECPLOT) {
+              cout << "Writing a Tecplot file of the FFD boxes." << endl;
+              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+                FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+              }
+            }
+            else if (FileFormat[iFile] == CGNS)  {
+              cout << "Writing a CGNS file of the FFD boxes." << endl;
+              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+                FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
+              }
+            }
           }
-          else if (config->GetOutput_FileFormat() == TECPLOT ) {
-            cout << "Writing a Tecplot file of the FFD boxes." << endl;
-            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
-          }
-          else {
-            cout << "Writing a CGNS file of the FFD boxes." << endl;
-            FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
-          }
-        }
-        
+        }  
       }
-      
     }
     
     else {
@@ -2790,23 +2789,27 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
       /*--- Output original FFD FFDBox ---*/
       
-       if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
-        if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
-          cout << "Writing a Paraview file of the FFD boxes." << endl;
-          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-            FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
+      if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
+        
+        for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+          unsigned short *FileFormat = config->GetVolumeOutputFiles();
+          
+          if (FileFormat[iFile] == PARAVIEW) {
+            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
+            }
+          } else if (FileFormat[iFile] == TECPLOT) {
+            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+            }
           }
-        }
-        else if (config->GetOutput_FileFormat() == TECPLOT) {
-          cout << "Writing a Tecplot file of the FFD boxes." << endl;
-          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
-          }
-        }
-        else {
-          cout << "Writing a CGNS file of the FFD boxes." << endl;
-          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-            FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
+          else if (FileFormat[iFile] == CGNS)  {
+            cout << "Writing a CGNS file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
+            }
           }
         }
       }
@@ -2966,26 +2969,29 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output the deformed FFD Boxes ---*/
         
         if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
-          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
-            cout << "Writing a Paraview file of the FFD boxes." << endl;
-            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-              FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
+          
+          for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+            unsigned short *FileFormat = config->GetVolumeOutputFiles();
+            
+            if (FileFormat[iFile] == PARAVIEW) {
+              cout << "Writing a Paraview file of the FFD boxes." << endl;
+              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+                FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
+              }
+            } else if (FileFormat[iFile] == TECPLOT) {
+              cout << "Writing a Tecplot file of the FFD boxes." << endl;
+              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+                FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
+              }
             }
-          }
-          else if (config->GetOutput_FileFormat() == TECPLOT) {
-            cout << "Writing a Tecplot file of the FFD boxes." << endl;
-            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-              FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
-            }
-          }
-          else {
-            cout << "Writing a CGNS file of the FFD boxes." << endl;
-            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-              FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, false);
+            else if (FileFormat[iFile] == CGNS)  {
+              cout << "Writing a CGNS file of the FFD boxes." << endl;
+              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+                FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, false);
+              }
             }
           }
         }
-        
       }
     }
     
@@ -3435,38 +3441,40 @@ void CSurfaceMovement::CheckFFDDimension(CGeometry *geometry, CConfig *config, C
   
   OutOffLimits = false;
   for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-    switch ( config->GetDesign_Variable(iDV) ) {
-      case FFD_CONTROL_POINT_2D :
-        if (polar) {
+    if (config->GetFFDTag(iDV)== FFDBox->GetTag()){
+      switch ( config->GetDesign_Variable(iDV) ) {
+        case FFD_CONTROL_POINT_2D :
+          if (polar) {
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (kIndex > nDegree)) OutOffLimits = true;
+          }
+          else {
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
+          }
+          break;
+        case FFD_CAMBER :  case FFD_THICKNESS :
+            iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+            jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+            if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
+          break;
+        case FFD_CAMBER_2D :  case FFD_THICKNESS_2D :
           iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (kIndex > nDegree)) OutOffLimits = true;
-        }
-        else {
+          if (iIndex > lDegree) OutOffLimits = true;
+          break;
+        case FFD_CONTROL_POINT :  case FFD_NACELLE :
           iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
-        }
-        break;
-      case FFD_CAMBER :  case FFD_THICKNESS :
-          iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-          jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-          if ((iIndex > lDegree) || (jIndex > mDegree)) OutOffLimits = true;
-        break;
-      case FFD_CAMBER_2D :  case FFD_THICKNESS_2D :
-        iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        if (iIndex > lDegree) OutOffLimits = true;
-        break;
-      case FFD_CONTROL_POINT :  case FFD_NACELLE :
-        iIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
-        kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 3)));
-        if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
-        break;
-      case FFD_GULL :  case FFD_TWIST :
-        jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
-        if (jIndex > mDegree) OutOffLimits = true;
-        break;
+          jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 2)));
+          kIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 3)));
+          if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
+          break;
+        case FFD_GULL :  case FFD_TWIST :
+          jIndex= SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
+          if (jIndex > mDegree) OutOffLimits = true;
+          break;
+      }
     }
   }
   
@@ -6261,7 +6269,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements) {
+void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long TimeIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements) {
   
   /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
   su2double dh = -displacements[0];           // relative plunge
@@ -6281,7 +6289,7 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     su2double Omega, dt, psi;
     dt = config->GetDelta_UnstTimeND();
     Omega  = (config->GetRotation_Rate(3)/config->GetOmega_Ref());
-    psi = Omega*(dt*ExtIter);
+    psi = Omega*(dt*TimeIter);
     
     /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
     if (Monitoring_Tag == "Airfoil1") {
@@ -6347,7 +6355,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   su2double time_new, time_old;
   su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iDim = 0;
   
   /*--- Retrieve values from the config file ---*/
@@ -6368,7 +6376,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
     /*--- For the unsteady adjoint, we integrate backwards through
      physical time, so perform mesh motion in reverse. ---*/
     
-    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long nFlowIter  = config->GetnTime_Iter();
     unsigned long directIter = nFlowIter - iter - 1;
     time_new = static_cast<su2double>(directIter)*deltaT;
     time_old = time_new;
@@ -6440,8 +6448,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   char buffer[50];
   string DV_Filename, UnstExt, text_line;
   ifstream surface_positions;
-  bool unsteady = config->GetUnsteady_Simulation();
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool unsteady = config->GetTime_Marching();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   
   /*--- Load stuff from config ---*/
   
@@ -6454,7 +6462,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     if (adjoint) {
       /*--- For the unsteady adjoint, we integrate backwards through
        physical time, so perform mesh motion in reverse. ---*/
-      unsigned long nFlowIter = config->GetnExtIter() - 1;
+      unsigned long nFlowIter = config->GetnTime_Iter() - 1;
       flowIter  = nFlowIter - iter;
       unsigned short lastindex = DV_Filename.find_last_of(".");
       DV_Filename = DV_Filename.substr(0, lastindex);
@@ -6543,7 +6551,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     /*--- For the unsteady adjoint, use reverse time ---*/
     if (adjoint) {
       /*--- Set the first adjoint mesh position to the final direct one ---*/
-      if (iter == 0) dt = ((su2double)config->GetnExtIter()-1) * dt;
+      if (iter == 0) dt = ((su2double)config->GetnTime_Iter()-1) * dt;
       /*--- Reverse the rotation direction for the adjoint ---*/
       else dt = -1.0*dt;
     } else {
@@ -7836,6 +7844,12 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     /*--- Read the name of the output file ---*/
     
     str = config[ZONE_0]->GetMesh_Out_FileName();
+    
+    unsigned short lastindex = str.find_last_of(".");
+    str = str.substr(0, lastindex);
+    
+    str += ".su2";
+    
     strcpy (mesh_file, str.c_str());
     strcpy (cstr, mesh_file);
     

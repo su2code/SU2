@@ -203,6 +203,11 @@ CFEAElasticity::~CFEAElasticity(void) {
 
   if (FAux_Dead_Load     != NULL) delete [] FAux_Dead_Load;
 
+  if (E_i != NULL) delete [] E_i;
+  if (Nu_i != NULL) delete [] Nu_i;
+  if (Rho_s_i != NULL) delete [] Rho_s_i;
+  if (Rho_s_DL_i != NULL) delete [] Rho_s_DL_i;
+  if (Ni_Vec != NULL) delete [] Ni_Vec;
 }
 
 void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {

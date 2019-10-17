@@ -273,12 +273,6 @@ public:
   void SetTimeStep(su2double val_timestep);
   
   /*!
-   * \brief Get the Preconditioning Beta.
-   * \return val_Beta - Value of the low Mach Preconditioner.
-   */
-  virtual su2double GetPrecond_Beta();
-  
-  /*!
    * \brief Set the freestream velocity square.
    * \param[in] SetVelocity2_Inf - Value of the square of the freestream velocity.
    */
@@ -1829,12 +1823,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
-  /*!
-   * \brief Get the Preconditioning Beta.
-   * \return Beta - Value of the low Mach Preconditioner.
-   */
-  su2double GetPrecond_Beta();
+
 };
 
 /*!
@@ -5245,6 +5234,42 @@ public:
    */
   void ComputeResidual(su2double *val_residual, CConfig *config);
   
+};
+
+/*!
+ * \class CSourceIncRotatingFrame_Flow
+ * \brief Class for a rotating frame source term.
+ * \ingroup SourceDiscr
+ */
+class CSourceIncRotatingFrame_Flow : public CNumerics {
+
+private:
+  su2double Omega[3];  /*!< \brief Angular velocity */
+  bool implicit; /*!< \brief Implicit calculation. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceIncRotatingFrame_Flow(void);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
 };
 
 /*!

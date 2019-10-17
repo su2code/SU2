@@ -56,8 +56,6 @@
 #include "task_definition.hpp"
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
-#include "variables/CVariable.hpp"
-#include "variables/CMeshElement.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
@@ -71,6 +69,18 @@
 #include "../../Common/include/graph_coloring_structure.hpp"
 #include "../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 
+/*--- CVariable includes, ToDo: Once this file is split, one per class these includes can also be separated. ---*/
+#include "variables/CBaselineVariable.hpp"
+#include "variables/CEulerVariable.hpp"
+#include "variables/CIncEulerVariable.hpp"
+#include "variables/CTurbVariable.hpp"
+#include "variables/CAdjEulerVariable.hpp"
+#include "variables/CAdjTurbVariable.hpp"
+#include "variables/CHeatFVMVariable.hpp"
+#include "variables/CDiscAdjVariable.hpp"
+#include "variables/CDiscAdjFEABoundVariable.hpp"
+#include "variables/CMeshElement.hpp"
+
 using namespace std;
 
 /*!
@@ -83,6 +93,7 @@ class CSolver {
 protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
+  bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   unsigned short nVar,          /*!< \brief Number of variables of the problem. */
@@ -145,7 +156,7 @@ protected:
   unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
-
+  
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
 
@@ -153,6 +164,31 @@ protected:
 
   su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
   su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
+  
+  string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
+  
+  su2double valResidual;  /*!< \brief Store the residual of the linear system solution. */
+
+  /*!
+   * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".
+   * \note Don't forget to call SetBaseClassPointerToNodes() in the constructor of the derived CSolver.
+   * \return Nodes of the solver, upcast to their base class (CVariable).
+   */
+  virtual CVariable* GetBaseClassPointerToNodes() = 0;
+
+  /*!
+   * \brief Call this method to set "base_nodes" after the "nodes" variable of the derived solver is instantiated.
+   * \note One could set base_nodes directly if it were not private but that could lead to confusion
+   */
+  inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
+
+private:
+
+  /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
+   most derived type possible, e.g. CEulerVariable has nodes of CEulerVariable* and not CVariable*.
+   This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
+   directly instead of calling GetBaseClassPointerToNodes() or doing something equivalent. ---*/
+  CVariable* base_nodes;  /*!< \brief Pointer to CVariable to allow polymorphic access to solver nodes. */
 
 public:
   
@@ -171,12 +207,10 @@ public:
   
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
-  
-  CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
-  CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
-  
-  CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
+  CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
+  
+  vector<string> fields;
   /*!
    * \brief Constructor of the class.
    */
@@ -186,7 +220,16 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CSolver(void);
-  
+
+  /*!
+   * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
+   * \return Nodes of the solver.
+   */
+  inline CVariable* GetNodes() {
+    assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return base_nodes;
+  }
+
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -206,37 +249,6 @@ public:
   void CompleteComms(CGeometry *geometry,
                      CConfig *config,
                      unsigned short commType);
-
-    /*!
-   * \brief Routine to launch non-blocking sends and recvs amongst all processors.
-   * \param[in] bufSend - Buffer of data to be sent.
-   * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage format.
-   * \param[in] sendReq - Array of MPI send requests.
-   * \param[in] bufRecv - Buffer of data to be received.
-   * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative storage format.
-   * \param[in] sendReq - Array of MPI recv requests.
-   * \param[in] countPerElem - Pieces of data per element communicated.
-   */
-  void InitiateCommsAll(void *bufSend,
-                        int *nElemSend,
-                        SU2_MPI::Request *sendReq,
-                        void *bufRecv,
-                        int *nElemRecv,
-                        SU2_MPI::Request *recvReq,
-                        unsigned short countPerElem,
-                        unsigned short commType);
-
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
-   * \param[in] nSends - Number of sends to be completed.
-   * \param[in] sendReq - Array of MPI send requests.
-   * \param[in] nRecvs - Number of receives to be completed.
-   * \param[in] sendReq - Array of MPI recv requests.
-   */
-  void CompleteCommsAll(int nSends,
-                        SU2_MPI::Request *sendReq,
-                        int nRecvs,
-                        SU2_MPI::Request *recvReq);
   
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI periodic communication and to launch non-blocking sends and recvs.
@@ -293,9 +305,8 @@ public:
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -303,6 +314,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Get information whether the initialization is an adjoint solver or not.
+   * \return <code>TRUE</code> means that it is an adjoint solver.
+   */
+  bool GetAdjoint(void);
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -513,7 +530,14 @@ public:
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
-  
+
+    /*!
+   * \brief Set the value of the RMS residual respective solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetResidual_Solution(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -541,6 +565,24 @@ public:
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Add External_Old to Solution vector.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_ExternalOld_To_Solution(CGeometry *geometry);
+
+  /*!
+   * \brief Add the current Solution vector to External.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_Solution_To_External(CGeometry *geometry);
+
+  /*!
+   * \brief Add the current Solution vector to External_Old.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_Solution_To_ExternalOld(CGeometry *geometry);
+
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -598,6 +640,7 @@ public:
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
   virtual void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
   
@@ -802,13 +845,18 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  virtual void BC_Euler_Wall(CGeometry      *geometry, 
+                             CSolver        **solver_container, 
+                             CNumerics      *conv_numerics, 
+                             CNumerics      *visc_numerics, 
+                             CConfig        *config,
                              unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1043,8 +1091,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+  virtual void BC_Sym_Plane(CGeometry      *geometry, 
+                            CSolver        **solver_container, 
+                            CNumerics      *conv_numerics, 
+                            CNumerics      *visc_numerics, 
+                            CConfig        *config, 
+                            unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -1458,7 +1510,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3690,7 +3742,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - Physical iteration number.
    */
-  void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
+  void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
@@ -3799,7 +3851,7 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
+  virtual void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
@@ -4431,7 +4483,19 @@ public:
    * \param[in] val_implicit_periodic - Flag controlling solution rotation for periodic BCs.
    */
   void SetRotatePeriodic(bool val_rotate_periodic);
+
+  /*!
+   * \brief Retrieve the solver name for output purposes.
+   * \param[out] val_solvername - Name of the solver.
+   */
+  string GetSolverName(void);
   
+  /*!
+   * \brief Get the solution fields.
+   * \return A vector containing the solution fields.
+   */
+  vector<string> GetSolutionFields();
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
@@ -4521,6 +4585,24 @@ public:
    */
   void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Get minimun volume in the mesh
+   * \return 
+   */
+  virtual su2double GetMinimum_Volume(){ return 0.0; }
+  
+  /*!
+   * \brief Get maximum volume in the mesh
+   * \return 
+   */
+  virtual su2double GetMaximum_Volume(){ return 0.0; }
+  
+  /*!
+   * \brief Get residual of the linear solver
+   * \return 
+   */
+  su2double GetLinSol_Residual(){ return valResidual; }
+  
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4538,7 +4620,16 @@ protected:
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
  */
-class CBaselineSolver : public CSolver {
+class CBaselineSolver final : public CSolver {
+protected:
+
+  CBaselineVariable* nodes = nullptr;   /*!< \brief Variables of the baseline solver. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -4560,7 +4651,7 @@ public:
    * \param[in] nVar - Number of variables.
    * \param[in] field_names - Vector of variable names.
    */
-  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
+  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names);
 
   /*!
    * \brief Destructor of the class.
@@ -4591,7 +4682,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetOutputVariables(CGeometry *geometry, CConfig *config);
-
+  
 };
 
 /*!
@@ -4613,6 +4704,8 @@ protected:
 
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
 
+  CVariable* GetBaseClassPointerToNodes() {return nullptr;}
+  
 public:
 
   /*!
@@ -4937,6 +5030,13 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
+  CEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   
@@ -5138,7 +5238,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief Compute the gradient using a L2 Projection method,
    *        and stores the result in the <i>AnisoGrad</i> variable.
@@ -5221,17 +5321,22 @@ public:
   void Evaluate_ObjFunc(CConfig *config);
   
   /*!
-   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
+   * \author: T. Kattmann
    *
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_Euler_Wall(CGeometry      *geometry, 
+                     CSolver        **solver_container, 
+                     CNumerics      *conv_numerics, 
+                     CNumerics      *visc_numerics, 
+                     CConfig        *config,
+                     unsigned short val_marker) override;
   
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -5254,7 +5359,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_Sym_Plane(CGeometry      *geometry, 
+                    CSolver        **solver_container, 
+                    CNumerics      *conv_numerics, 
+                    CNumerics      *visc_numerics, 
+                    CConfig        *config, 
+                    unsigned short val_marker) override;
   
  /*!
   * \brief Impose the interface state across sliding meshes.
@@ -6625,18 +6735,6 @@ public:
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -6698,7 +6796,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief Set the freestream pressure.
@@ -7259,6 +7357,13 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
+  CIncEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -7481,16 +7586,21 @@ public:
   void Evaluate_ObjFunc(CConfig *config);
 
   /*!
-   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
+   * \author: T. Kattmann
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_Euler_Wall(CGeometry      *geometry, 
+                     CSolver        **solver_container, 
+                     CNumerics      *conv_numerics, 
+                     CNumerics      *visc_numerics, 
+                     CConfig        *config,
+                     unsigned short val_marker) override;
   
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -7513,8 +7623,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+  void BC_Sym_Plane(CGeometry      *geometry,
+                    CSolver        **solver_container,
+                    CNumerics      *conv_numerics,
+                    CNumerics      *visc_numerics,
+                    CConfig        *config,
+                    unsigned short val_marker) override;
+
   /*!
    * \brief Impose a subsonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8270,18 +8385,6 @@ public:
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -8298,7 +8401,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief Set the freestream pressure.
@@ -9412,11 +9515,20 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
-  
+
+  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  CTurbVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
@@ -9470,18 +9582,28 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_Sym_Plane(CGeometry      *geometry,
+                    CSolver        **solver_container,
+                    CNumerics      *conv_numerics,
+                    CNumerics      *visc_numerics,
+                    CConfig        *config,
+                    unsigned short val_marker) override;
   
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_Euler_Wall(CGeometry      *geometry, 
+                     CSolver        **solver_container, 
+                     CNumerics      *conv_numerics, 
+                     CNumerics      *visc_numerics, 
+                     CConfig        *config,
+                     unsigned short val_marker) override;
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10403,7 +10525,14 @@ protected:
   unsigned long AoA_Counter;
   su2double ACoeff, ACoeff_inc, ACoeff_old;
   bool Update_ACoeff;
-  
+
+  CAdjEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -10604,9 +10733,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
-  
+  void BC_Euler_Wall(CGeometry      *geometry,
+                     CSolver        **solver_container,
+                     CNumerics      *conv_numerics,
+                     CNumerics      *visc_numerics,
+                     CConfig        *config,
+                     unsigned short val_marker) override;
+
   /*!
    * \brief Impose the interface boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10674,8 +10807,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Sym_Plane(CGeometry      *geometry,
+                    CSolver        **solver_container,
+                    CNumerics      *conv_numerics,
+                    CNumerics      *visc_numerics,
+                    CConfig        *config,
+                    unsigned short val_marker) override;
   
   /*!
    * \brief Impose the boundary condition to the far field using characteristics.
@@ -10893,7 +11030,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
 
   /*!
    * \brief Load a solution from a restart file.
@@ -11029,7 +11166,14 @@ private:
   
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
-  
+
+  CAdjTurbVariable* nodes = nullptr;          /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -11141,286 +11285,6 @@ public:
   
 };
 
-/*! \class CPoissonSolver
- *  \brief Main class for defining the poisson potential solver.
- *  \author F. Palacios
- *  \date May 3, 2010.
- */
-class CPoissonSolver : public CSolver {
-private:
-  su2double *Source_Vector;      /*!< \brief Auxiliary vector for storing element source vector. */
-  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  su2double **StiffMatrix_Node;  /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CPoissonSolver(void);
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CPoissonSolver(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver1_geometry - Geometrical definition of the problem.
-   * \param[in] solver1_solution - Container vector with all the solutions.
-   * \param[in] solver1_config - Definition of the particular problem.
-   * \param[in] solver2_geometry - Geometrical definition of the problem.
-   * \param[in] solver2_solution - Container vector with all the solutions.
-   * \param[in] solver2_config - Definition of the particular problem.
-   */
-  void Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config, CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CPoissonSolver(void);
-  
-  /*!
-   * \brief Integrate the Poisson equation using a Galerkin method.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                        unsigned short iMesh, unsigned short iRKStep);
-  
-  /*!
-   * \brief Integrate the Poisson equation using a Galerkin method.
-   * \param[in] StiffMatrix_Elem - Element stiffness matrix
-   */
-  void AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3);
-  
-  /*!
-   * \brief Compute the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iMesh);
-  
-  /*!
-   * \brief Impose via the residual the Dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
-  
-  /*!
-   * \brief Impose via the residual the Neumann boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
-  
-  /*!
-   * \brief Set residuals to zero.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-};
-
-/*! \class CWaveSolver
- *  \brief Main class for defining the wave solver.
- *  \author F. Palacios
- *  \date May 3, 2010.
- */
-class CWaveSolver : public CSolver {
-private:
-  su2double *CWave;  /*!< \brief Wave strength for each boundary. */
-  su2double AllBound_CWave;  /*!< \brief Total wave strength for all the boundaries. */
-  su2double Total_CWave; /*!< \brief Total wave strength for all the boundaries. */
-  
-  CSysMatrix<su2double> StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-  CSysMatrix<su2double> StiffMatrixTime;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-  
-  su2double **StiffMatrix_Elem,      /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  **StiffMatrix_Node;              /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CWaveSolver(void);
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CWaveSolver(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CWaveSolver(void);
-  
-  /*!
-   * \brief Integrate the Poisson equation using a Galerkin method.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                        unsigned short iMesh, unsigned short iRKStep);
-  
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
-  
-  /*!
-   * \brief Impose a Dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
-  
-  /*!
-   * \brief Set residuals to zero.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  /*!
-   * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
-  /*!
-   * \brief Compute the total wave strength coefficient.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Wave_Strength(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Build stiffness matrix in space.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSpace_Matrix(CGeometry *geometry,
-                       CConfig   *config);
-  
-  /*!
-   * \brief Provide the total wave strength.
-   * \return Value of the wave strength.
-   */
-  su2double GetTotal_CWave(void);
-  
-};
-
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
  *  \author O. Burghardt
@@ -11429,11 +11293,18 @@ public:
 class CHeatSolverFVM : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
-  su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
-            *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
+  su2double **HeatFlux, *HeatFlux_per_Marker, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
+            *AverageT_per_Marker, Total_AverageT, AllBound_AverageT,
             *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
   su2double ***ConjugateVar, ***InterfaceVar;
+
+  CHeatFVMVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 
@@ -11664,7 +11535,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -11677,12 +11548,15 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-
+  
   /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
+   * \brief Get the heat flux.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the heat flux.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);  
+
 };
 
 /*! \class CFEASolver
@@ -11696,7 +11570,7 @@ private:
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
   /*!< We maintain the name to avoid defining a new function... */
   
-  int nFEA_Terms;
+  int nFEA_Terms; 
   bool topol_filter_applied;      /*!< \brief True if density filtering has been performed. */
 
   su2double *GradN_X,
@@ -11766,7 +11640,12 @@ protected:
 
   su2double *Res_Stress_i;        /*!< \brief Submatrix to store the nodal stress contribution of node i. */
 
-  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
+  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
@@ -11780,7 +11659,7 @@ public:
   CSysMatrix<su2double> MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
 
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
-  CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
+  CProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
 
   
   /*!
@@ -11818,7 +11697,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief Reset the initial condition for the FEM structural problem.
@@ -11827,7 +11706,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief Compute the time step for solving the FEM equations.
@@ -12360,18 +12239,6 @@ public:
   su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
   
   /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -12426,7 +12293,14 @@ public:
  */
 class CTemplateSolver : public CSolver {
 private:
-  
+
+  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -12523,8 +12397,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_Euler_Wall(CGeometry      *geometry,
+                     CSolver        **solver_container,
+                     CNumerics      *conv_numerics,
+                     CNumerics      *visc_numerics,
+                     CConfig        *config,
+                     unsigned short val_marker) override;
   
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -12583,8 +12461,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Sym_Plane(CGeometry      *geometry,
+                    CSolver        **solver_container,
+                    CNumerics      *conv_numerics,
+                    CNumerics      *visc_numerics,
+                    CConfig        *config,
+                    unsigned short val_marker) override;
   
   /*!
    * \brief Impose a custom or verification boundary condition.
@@ -12649,7 +12531,14 @@ private:
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
-  
+
+  CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -12768,9 +12657,10 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   /*!
    * \brief Set the objective function.
@@ -13001,6 +12891,13 @@ private:
   su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
   su2double *Total_Sens_DV;
 
+  CDiscAdjFEABoundVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 public:
   
   /*!
@@ -13098,7 +12995,7 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   /*!
    * \brief Set the objective function.
@@ -13233,18 +13130,6 @@ public:
    * \return Pointer to the values of the design variables
    */
   su2double GetVal_DVFEA(unsigned short iVal);
-
-  /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Prepare the solver for a new recording.
@@ -13297,6 +13182,8 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  
 };
 
 /*!
@@ -13543,6 +13430,9 @@ private:
 
   vector<CTaskDefinition> tasksList; /*!< \brief List of tasks to be carried out in the computationally
                                                  intensive part of the solver. */
+
+  CVariable* GetBaseClassPointerToNodes() {return nullptr;}
+
 public:
 
   /*!
@@ -13664,7 +13554,7 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
-                           CConfig *config, unsigned long ExtIter);
+                           CConfig *config, unsigned long TimeIter);
 
   /*!
    * \brief Set the working solution of the first time level to the current

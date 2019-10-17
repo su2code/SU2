@@ -39,6 +39,7 @@
 #pragma once
 
 #include "../solver_structure.hpp"
+#include "../variables/CDiscAdjMeshBoundVariable.hpp"
 
 /*!
  * \class CDiscAdjMeshSolver
@@ -50,6 +51,13 @@ class CDiscAdjMeshSolver : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
+
+  CDiscAdjMeshBoundVariable* nodes = nullptr;   /*!< \brief Variables of the discrete adjoint mesh solver. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 
@@ -109,12 +117,6 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Prepare the solver for a new recording.

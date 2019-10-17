@@ -35,37 +35,40 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
-CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CDiscAdjMeshVariable(val_coor, val_nDim, config) {
 
-  unsigned short iDim;
+CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
+  CVariable(npoint, ndim, config) {
+
+  nDim = ndim;
+
+  VertexMap.Reset(nPoint);
+}
+
+void CDiscAdjMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
+
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  unsigned long nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
 
   bool fsi = false;
 
   /*--- Initialize Boundary Displacement container to 0.0 ---*/
-  Bound_Disp_Sens   = new su2double [nDim];
-  Bound_Disp_Direct = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Bound_Disp_Sens[iDim]   = 0.0;
-    Bound_Disp_Direct[iDim] = 0.0;
-  }
+
+  Bound_Disp_Sens.resize(nBoundPt,nDim) = su2double(0.0);
+  Bound_Disp_Direct.resize(nBoundPt,nDim) = su2double(0.0);
 
   /*--- Container for the BGS solution at the previous iteration ---*/
-  Solution_BGS_k        = NULL;
-  if (fsi){
-    Solution_BGS_k        = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_BGS_k[iDim]        = 0.0;
-    }
-  }
+
+  if (fsi) Solution_BGS_k.resize(nBoundPt,nDim) = su2double(0.0);
 
 }
 
-CDiscAdjMeshBoundVariable::~CDiscAdjMeshBoundVariable(void) {
-
-  if (Bound_Disp_Sens != NULL)   delete [] Bound_Disp_Sens;
-  if (Bound_Disp_Direct != NULL) delete [] Bound_Disp_Direct;
-
+void CDiscAdjMeshBoundVariable::Set_BGSSolution_k() {
+  Solution_BGS_k = Bound_Disp_Sens;
 }

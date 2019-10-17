@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
   CGeometry **geometry_container      = NULL;
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
-  COutput *output                     = NULL;
+  COutput **output                     = NULL;
   CConfig *driver_config                = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
+  output             = new COutput*[nZone];
   
   driver_config       = NULL;
 
@@ -97,10 +98,11 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone]     = NULL;
     surface_movement[iZone]       = NULL;
     grid_movement[iZone]          = NULL;
+    output[iZone]                 = NULL;
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DEF, nZone, false);
+  driver_config = new CConfig(config_file_name, SU2_DEF, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -210,25 +212,57 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
       
     }
-    
     /*--- Create the point-to-point MPI communication structures. ---*/
     
     geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
+    /*--- Allocate the mesh output ---*/
+    
+    output[iZone] = new CMeshOutput(config_container[iZone], geometry_container[iZone]->GetnDim());
+    
+    /*--- Preprocess the volume output ---*/
+    
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+    
+    /*--- Preprocess history --- */
+    
+    output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
+    
+
   }
   
-  /*--- initialization of output structure  ---*/
-  
-  output  = new COutput(config_container[ZONE_0]);
-  
+
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
   if ((config_container[ZONE_0]->GetVisualize_Volume_Def() ||
        config_container[ZONE_0]->GetVisualize_Surface_Def()) &&
       config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
     
-    output->SetMesh_Files(geometry_container, config_container, nZone, true, false);
-    
+    for (iZone = 0; iZone < nZone; iZone++){
+      
+//      /*--- Load the data --- */
+      
+//      output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], NULL);
+      
+//      if (config_container[iZone]->GetVisualize_Volume_Def()){
+        
+//        /*--- If requested, write the volume output for visualization purposes --- */
+        
+//        output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
+      
+//      } 
+      
+//      if (config_container[iZone]->GetVisualize_Surface_Def()){
+        
+//        /*--- If requested, write the volume output for visualization purposes --- */
+        
+//        output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
+        
+//      }
+      
+//      output[iZone]->DeallocateData_Parallel();
+      
+    }
   }
   
   /*--- Surface grid deformation using design variables ---*/
@@ -304,11 +338,30 @@ int main(int argc, char *argv[]) {
   
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node---*/
-  
-  bool NewFile = false;
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
-  
-  output->SetMesh_Files(geometry_container, config_container, nZone, NewFile, true);
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    
+    /*--- Load the data --- */
+    
+    output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], NULL);
+    
+    output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], MESH, config->GetMesh_Out_FileName());
+    
+    /*--- Set the file names for the visualization files ---*/
+    
+    output[iZone]->SetVolume_Filename("volume_deformed");
+    output[iZone]->SetSurface_Filename("surface_deformed");
+    
+    if (config_container[iZone]->GetVisualize_Volume_Def()){
+      for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
+        unsigned short* FileFormat = config_container[iZone]->GetVolumeOutputFiles();
+        if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+          output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
+      }
+    } 
+       
+  }
+
   
   if ((config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) &&
       (config_container[ZONE_0]->GetDesign_Variable(0) != SCALE_GRID)     &&
@@ -366,9 +419,16 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
+  if (output != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output[iZone] != NULL) {
+        delete output[iZone];
+      }
+    }
+    delete [] output;
+  }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  if (output != NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the

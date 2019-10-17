@@ -67,7 +67,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshElement(void);
+  ~CMeshElement(void) = default;
 
   /*!
    * \brief Get the value of the element volume with undeformed coordinates.

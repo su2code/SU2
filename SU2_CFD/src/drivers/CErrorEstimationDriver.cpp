@@ -112,13 +112,6 @@ CErrorEstimationDriver::CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_ad
 
   }
 
-  /*--- Definition of the output class (one for all zones). The output class
-   manages the writing of all restart, volume solution, surface solution,
-   surface comma-separated value, and convergence history files (both in serial
-   and in parallel). ---*/
-
-  output = new COutput(config[ZONE_0]);
-
 }
 
 CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
@@ -270,13 +263,6 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
     } // End of loop over iInst
 
   }
-
-  /*--- Definition of the output class (one for all zones). The output class
-   manages the writing of all restart, volume solution, surface solution,
-   surface comma-separated value, and convergence history files (both in serial
-   and in parallel). ---*/
-
-  output = new COutput(config[ZONE_0]);
 
 }
 
@@ -897,13 +883,13 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
       for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
         const unsigned short ig = iVar*nDim + iFlux;
-        const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
+        const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-          const su2double hess = solver_flow->node[iPoint]->GetAnisoHess(ih);
+          const su2double hess = solver_flow->nodes->GetAnisoHess(iPoint, ih);
           const su2double part = abs(grad)*hess;
-          solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+          solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
         }
       }
     }
@@ -915,13 +901,13 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
+          const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_flow->node[iPoint]->GetAnisoViscHess(ih);
+            const su2double hess = solver_flow->nodes->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -932,14 +918,14 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjturb->node[iPoint]->GetAnisoGrad(ig);
+          const su2double grad = solver_adjturb->nodes->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_turb->node[iPoint]->GetAnisoHess(ih) 
-                                 + solver_turb->node[iPoint]->GetAnisoViscHess(ih);
+            const su2double hess = solver_turb->nodes->GetAnisoHess(iPoint, ih) 
+                                 + solver_turb->nodes->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -948,11 +934,10 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
 
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
+    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
     
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
@@ -963,9 +948,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    var->SetAnisoMetr(0, A[0][0]);
-    var->SetAnisoMetr(1, A[0][1]);
-    var->SetAnisoMetr(2, A[1][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -980,11 +965,10 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
 
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
+    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
     
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
@@ -997,9 +981,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    var->SetAnisoMetr(0, A[0][0]);
-    var->SetAnisoMetr(1, A[0][1]);
-    var->SetAnisoMetr(2, A[1][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
@@ -1068,13 +1052,13 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
       for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
         const unsigned short ig = iVar*nDim + iFlux;
-        const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
+        const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-          const su2double hess = solver_flow->node[iPoint]->GetAnisoHess(ih);
+          const su2double hess = solver_flow->nodes->GetAnisoHess(iPoint, ih);
           const su2double part = abs(grad)*hess;
-          solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+          solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
         }
       }
     }
@@ -1086,13 +1070,13 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjflow->node[iPoint]->GetAnisoGrad(ig);
+          const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_flow->node[iPoint]->GetAnisoViscHess(ih);
+            const su2double hess = solver_flow->nodes->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -1103,14 +1087,14 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjturb->node[iPoint]->GetAnisoGrad(ig);
+          const su2double grad = solver_adjturb->nodes->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_turb->node[iPoint]->GetAnisoHess(ih) 
-                                 + solver_turb->node[iPoint]->GetAnisoViscHess(ih);
+            const su2double hess = solver_turb->nodes->GetAnisoHess(iPoint, ih) 
+                                 + solver_turb->nodes->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -1119,14 +1103,13 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
 
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
-    const su2double d = var->GetAnisoMetr(3);
-    const su2double e = var->GetAnisoMetr(4);
-    const su2double f = var->GetAnisoMetr(5);
+    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
+    const su2double d = solver_flow->nodes->GetAnisoMetr(iPoint, 3);
+    const su2double e = solver_flow->nodes->GetAnisoMetr(iPoint, 4);
+    const su2double f = solver_flow->nodes->GetAnisoMetr(iPoint, 5);
 
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
@@ -1138,12 +1121,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    var->SetAnisoMetr(0, A[0][0]);
-    var->SetAnisoMetr(1, A[0][1]);
-    var->SetAnisoMetr(2, A[0][2]);
-    var->SetAnisoMetr(3, A[1][1]);
-    var->SetAnisoMetr(4, A[1][2]);
-    var->SetAnisoMetr(5, A[2][2]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[0][2]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 3, A[1][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 4, A[1][2]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -1158,14 +1141,13 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
 
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
-    const su2double d = var->GetAnisoMetr(3);
-    const su2double e = var->GetAnisoMetr(4);
-    const su2double f = var->GetAnisoMetr(5);
+    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
+    const su2double d = solver_flow->nodes->GetAnisoMetr(iPoint, 3);
+    const su2double e = solver_flow->nodes->GetAnisoMetr(iPoint, 4);
+    const su2double f = solver_flow->nodes->GetAnisoMetr(iPoint, 5);
 
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
@@ -1180,12 +1162,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     //--- store lower triangle to be consistent with AMG
-    var->SetAnisoMetr(0, A[0][0]);
-    var->SetAnisoMetr(1, A[1][0]);
-    var->SetAnisoMetr(2, A[1][1]);
-    var->SetAnisoMetr(3, A[2][0]);
-    var->SetAnisoMetr(4, A[2][1]);
-    var->SetAnisoMetr(5, A[2][2]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[1][0]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 3, A[2][0]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 4, A[2][1]);
+    solver_flow->nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
@@ -1229,101 +1211,268 @@ void CErrorEstimationDriver::Output() {
 
   config[ZONE_0]->SetDiscrete_Adjoint(false);
 
-  if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+  if (rank == MASTER_NODE)
+    cout << endl <<"-------------------- Output Preprocessing ( Zone " << ZONE_0 <<" ) --------------------" << endl;
+ 
+  /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
-    /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
+  switch (config[ZONE_0]->GetKind_Solver()) {
 
-  output->SetResult_Files_Parallel(solver, geometry, config, ExtIter, nZone);
+  case EULER: case NAVIER_STOKES: case RANS:
+    if (rank == MASTER_NODE)
+      cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
+    output = new CFlowCompOutput(config[ZONE_0], nDim);
+    break;
+  case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:  
+    if (rank == MASTER_NODE)        
+      cout << ": Euler/Navier-Stokes/RANS output structure." << endl;        
+    output = new CFlowIncOutput(config[ZONE_0], nDim);       
+    break;
+  case HEAT_EQUATION_FVM:
+    if (rank == MASTER_NODE)
+      cout << ": heat output structure." << endl;
+    output = new CHeatOutput(config[ZONE_0], nDim);
+    break;
+  case FEM_ELASTICITY:
+    if (rank == MASTER_NODE)
+      cout << ": FEM output structure." << endl;
+    output = new CElasticityOutput(config[ZONE_0], nDim);
+    break;
+  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+  case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    if (rank == MASTER_NODE)
+      cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+    output = new CAdjFlowCompOutput(config[ZONE_0], nDim);
+    break;
+  case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    if (rank == MASTER_NODE)
+      cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+    output = new CAdjFlowIncOutput(config[ZONE_0], nDim);
+    break;
+  case DISC_ADJ_FEM:
+    if (rank == MASTER_NODE)
+      cout << ": discrete adjoint FEA output structure." << endl;
+    output = new CAdjElasticityOutput(config[ZONE_0], nDim);
+    break;
+    
+  case DISC_ADJ_HEAT:
+    if (rank == MASTER_NODE)
+      cout << ": discrete adjoint heat output structure." << endl;
+    output = new CAdjHeatOutput(config[ZONE_0], nDim);
+    break;
+    
+  case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
+    if (rank == MASTER_NODE)
+      cout << ": FEM output structure." << endl;
+    output = new CFlowCompFEMOutput(config[ZONE_0], nDim);
+    break;
+    
+  default:
+    if (rank == MASTER_NODE)
+      cout << ": default output structure." << endl;
+    output = new COutput(config[ZONE_0], nDim, false);
+    break;
+  }
+  
+  output->PreprocessHistoryOutput(config[ZONE_0]);
+  
+  output->PreprocessVolumeOutput(config[ZONE_0]);
 
-  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+  /*--- Execute the routine for writing restart, volume solution,
+   surface solution, and surface comma-separated value files. ---*/
+
+  /*--- Load history data (volume output might require some values) --- */
+  
+  output->SetHistory_Output(geometry, solver, config, TimeIter, 0, 0);
+  
+  /*--- Load the data --- */
+  
+  output->Load_Data(geometry, config, solver);
+  
+  /*--- Set the filenames ---*/
+  
+  output->SetVolume_Filename(config->GetVolume_FileName());
+  
+  output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+  
+  for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+    unsigned short* FileFormat = config->GetVolumeOutputFiles();
+    output->WriteToFile(config, geometry, FileFormat[iFile]);
+
+    /*--- For now we need ASCII restarts for AMGIO ---*/
+    output->WriteToFile(config, geometry, RESTART_ASCII);
+  }
 
   
 }
 
-void CErrorEstimationDriver::SetAdaptationData() {
+// void CErrorEstimationDriver::SetAdaptationData() {
 
-  /*--- Set Kind_Solver to primal since adaptation requires Mach (or pressure) ---*/
+//   /*--- Set Kind_Solver to primal since adaptation requires Mach (or pressure) ---*/
 
-  switch (config[ZONE_0]->GetKind_Solver()) {
-    case DISC_ADJ_EULER: config[ZONE_0]->SetKind_Solver(EULER); break;
-    case DISC_ADJ_NAVIER_STOKES: config[ZONE_0]->SetKind_Solver(NAVIER_STOKES); break;
-    case DISC_ADJ_RANS: config[ZONE_0]->SetKind_Solver(RANS); break;
-  }
+//   switch (config[ZONE_0]->GetKind_Solver()) {
+//     case DISC_ADJ_EULER: config[ZONE_0]->SetKind_Solver(EULER); break;
+//     case DISC_ADJ_NAVIER_STOKES: config[ZONE_0]->SetKind_Solver(NAVIER_STOKES); break;
+//     case DISC_ADJ_RANS: config[ZONE_0]->SetKind_Solver(RANS); break;
+//   }
 
-  /*--- Set DiscreteAdjoint flag to false so we write to correct files ---*/
+//   /*--- Set DiscreteAdjoint flag to false so we write to correct files ---*/
 
-  config[ZONE_0]->SetDiscrete_Adjoint(false);
+//   config[ZONE_0]->SetDiscrete_Adjoint(false);
 
-  if (rank == MASTER_NODE) cout << endl << "---------------------------- Sort Metric Data ---------------------------" << endl;
+//   if (rank == MASTER_NODE)
+//     cout << endl <<"-------------------- Output Preprocessing ( Zone " << iZone <<" ) --------------------" << endl;
+ 
+//   /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
-  /*--- Execute the routines for collecting the restart data. ---*/
+//   switch (config[ZONE_0]->GetKind_Solver()) {
 
-  output->SetResult_Parallel(solver, geometry, config, 1);
+//   case EULER: case NAVIER_STOKES: case RANS:
+//     if (rank == MASTER_NODE)
+//       cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
+//     output = new CFlowCompOutput(config[ZONE_0], nDim);
+//     break;
+//   case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:  
+//     if (rank == MASTER_NODE)        
+//       cout << ": Euler/Navier-Stokes/RANS output structure." << endl;        
+//     output = new CFlowIncOutput(config[ZONE_0], nDim);       
+//     break;
+//   case HEAT_EQUATION_FVM:
+//     if (rank == MASTER_NODE)
+//       cout << ": heat output structure." << endl;
+//     output = new CHeatOutput(config[ZONE_0], nDim);
+//     break;
+//   case FEM_ELASTICITY:
+//     if (rank == MASTER_NODE)
+//       cout << ": FEM output structure." << endl;
+//     output = new CElasticityOutput(config[ZONE_0], nDim);
+//     break;
+//   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+//   case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+//     if (rank == MASTER_NODE)
+//       cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+//     output = new CAdjFlowCompOutput(config[ZONE_0], nDim);
+//     break;
+//   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+//     if (rank == MASTER_NODE)
+//       cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+//     output = new CAdjFlowIncOutput(config[ZONE_0], nDim);
+//     break;
+//   case DISC_ADJ_FEM:
+//     if (rank == MASTER_NODE)
+//       cout << ": discrete adjoint FEA output structure." << endl;
+//     output = new CAdjElasticityOutput(config[ZONE_0], nDim);
+//     break;
+    
+//   case DISC_ADJ_HEAT:
+//     if (rank == MASTER_NODE)
+//       cout << ": discrete adjoint heat output structure." << endl;
+//     output = new CAdjHeatOutput(config[ZONE_0], nDim);
+//     break;
+    
+//   case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
+//     if (rank == MASTER_NODE)
+//       cout << ": FEM output structure." << endl;
+//     output = new CFlowCompFEMOutput(config[ZONE_0], nDim);
+//     break;
+    
+//   default:
+//     if (rank == MASTER_NODE)
+//       cout << ": default output structure." << endl;
+//     output = new COutput(config[ZONE_0], nDim, false);
+//     break;
+//   }
+  
+//   output->PreprocessHistoryOutput(config[ZONE_0]);
+  
+//   output->PreprocessVolumeOutput(config[ZONE_0]);
 
-  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
+//   /*--- Execute the routine for writing restart, volume solution,
+//    surface solution, and surface comma-separated value files. ---*/
 
-}
+//   /*--- Load history data (volume output might require some values) --- */
+  
+//   output->SetHistory_Output(geometry, solver, config, TimeIter, 0, 0);
+  
+//   /*--- Load the data --- */
+  
+//   output->Load_Data(geometry, config, solver);
+  
+//   /*--- Set the filenames ---*/
+  
+//   output->SetVolume_Filename(config->GetVolume_FileName());
+  
+//   output->SetSurface_Filename(config->GetSurfCoeff_FileName());
 
-vector<vector<passivedouble> > CErrorEstimationDriver::GetAdaptationData() {
+//   if (rank == MASTER_NODE) cout << endl << "---------------------------- Sort Metric Data ---------------------------" << endl;
 
-  vector<vector<passivedouble> > Parallel_Data = output->GetResult_Parallel();
+//   /*--- Execute the routines for collecting the restart data. ---*/
 
-  return Parallel_Data;
+//   output->SetResult_Parallel(solver, geometry, config, 1);
 
-}
+//   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
-void CErrorEstimationDriver::SetConnectivityData() {
+// }
 
-  if (rank == MASTER_NODE) cout << endl << "------------------------- Sort Connectivity Data ------------------------" << endl;
+// vector<vector<passivedouble> > CErrorEstimationDriver::GetAdaptationData() {
 
-  /*--- Execute the routines for collecting the restart data. ---*/
+//   vector<vector<passivedouble> > Parallel_Data = output->GetResult_Parallel();
 
-  output->SetConnectivity_Parallel(geometry, config, 1);
+//   return Parallel_Data;
 
-  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+// }
 
-}
+// void CErrorEstimationDriver::SetConnectivityData() {
 
-vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityEdg(unsigned short val_iZone, unsigned short val_iInst) {
+//   if (rank == MASTER_NODE) cout << endl << "------------------------- Sort Connectivity Data ------------------------" << endl;
 
-  vector<vector<unsigned long> > Edg = output->GetConnEdg(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
-  return Edg;
-}
+//   /*--- Execute the routines for collecting the restart data. ---*/
 
-vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTri(unsigned short val_iZone, unsigned short val_iInst) {
+//   output->SetConnectivity_Parallel(geometry, config, 1);
 
-  vector<vector<unsigned long> > Tri = output->GetConnTri(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
-  return Tri;
-}
+//   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
-vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTet(unsigned short val_iZone, unsigned short val_iInst) {
+// }
 
-  vector<vector<unsigned long> > Tet = output->GetConnTet(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
-  return Tet;
-}
+// vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityEdg(unsigned short val_iZone, unsigned short val_iInst) {
 
-unsigned short CErrorEstimationDriver::GetnMarker_CfgFile() {
+//   vector<vector<unsigned long> > Edg = output->GetConnEdg(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
+//   return Edg;
+// }
 
-  unsigned short nMarker_All = config[ZONE_0]->GetnMarker_CfgFile();
-  return nMarker_All;
-}
+// vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTri(unsigned short val_iZone, unsigned short val_iInst) {
 
-string CErrorEstimationDriver::GetMarker_CfgFile_TagBound(unsigned short val_iMarker) {
+//   vector<vector<unsigned long> > Tri = output->GetConnTri(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
+//   return Tri;
+// }
 
-  string Marker_Tag = config[ZONE_0]->GetMarker_CfgFile_TagBound(val_iMarker);
-  return Marker_Tag;
-}
+// vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTet(unsigned short val_iZone, unsigned short val_iInst) {
 
-void CErrorEstimationDriver::CleanAdaptationData() {
+//   vector<vector<unsigned long> > Tet = output->GetConnTet(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
+//   return Tet;
+// }
 
-  output->CleanResult_Parallel();
-}
+// unsigned short CErrorEstimationDriver::GetnMarker_CfgFile() {
 
-void CErrorEstimationDriver::CleanConnectivityData() {
+//   unsigned short nMarker_All = config[ZONE_0]->GetnMarker_CfgFile();
+//   return nMarker_All;
+// }
 
-  output->CleanConnectivity_Parallel();
-}
+// string CErrorEstimationDriver::GetMarker_CfgFile_TagBound(unsigned short val_iMarker) {
+
+//   string Marker_Tag = config[ZONE_0]->GetMarker_CfgFile_TagBound(val_iMarker);
+//   return Marker_Tag;
+// }
+
+// void CErrorEstimationDriver::CleanAdaptationData() {
+
+//   output->CleanResult_Parallel();
+// }
+
+// void CErrorEstimationDriver::CleanConnectivityData() {
+
+//   output->CleanConnectivity_Parallel();
+// }
 
 void CErrorEstimationDriver::Postprocessing() {
 

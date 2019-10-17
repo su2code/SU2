@@ -492,6 +492,8 @@ template CSysVector<su2double> operator*(const su2double&, const CSysVector<su2d
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
 template su2double dotProd<su2double>(const CSysVector<su2double> & u, const CSysVector<su2double> & v);
 
+template class CSysVector<unsigned long>;
+
 #ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;
 template CSysVector<passivedouble> operator*(const passivedouble&, const CSysVector<passivedouble>&);
