@@ -72,7 +72,7 @@ def amg ( config , kind='' ):
     # solver iterations/ residual reduction param for each size level
     adap_flow_iter = su2amg.get_flow_iter(config)
     adap_adj_iter  = su2amg.get_adj_iter(config)
-    adap_res       = su2amg.get_residual_reduction(config)
+    # adap_res       = su2amg.get_residual_reduction(config)
 
     adap_sensor = config.ADAP_SENSOR
     sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']

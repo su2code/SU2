@@ -47,7 +47,7 @@ def get_adj_iter(config):
         nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
         ext_iter = []
         for i in range(nExt_iter):
-            ext_iter.append(config['EXT_ITER'])        
+            ext_iter.append(config['ITER'])        
         return ext_iter
 
 def get_flow_iter(config):
