@@ -1381,6 +1381,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
+  /* DESCRIPTION: Change steady time-stepping to a fixed time step. */
+  addBoolOption("STEADY_FIXED_TIME", Steady_FixedTS, false);
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
@@ -1689,6 +1691,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /*!\par CONFIG_CATEGORY: Reduced order modelling specific config options. */
+  /* DESCRIPTION: Flag for saving data with libROM. */
+  addBoolOption("SAVE_LIBROM",libROM, false);
+   
+  /* DESCRIPTION: Flag for saving data with libROM. */
+  addEnumOption("BASIS_GENERATION",POD_Basis_Gen, POD_Map, STATIC_POD);
+   
+   
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
@@ -1756,6 +1766,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
   addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
+  /*!\brief LIBROM_BASE_FILENAME
+   *  \n DESCRIPTION: Output base file name for libROM (Reduced order modelling)  \ingroup Config*/
+  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);

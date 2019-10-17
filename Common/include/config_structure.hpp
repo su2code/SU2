@@ -155,6 +155,8 @@ private:
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
+  unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  bool Steady_FixedTS;                 /*!< \brief True if a fixed time step is desired for steady case. */
   unsigned short TimeMarching;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
@@ -420,8 +422,10 @@ private:
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
-  bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
-  bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
+  bool libROM;                   /*!< \brief Flag for saving to libROM. */
+  unsigned short POD_Basis_Gen;  /*!< \brief Incremental or static POD basis generation. */
+  bool ReorientElements;		   /*!< \brief Flag for enabling element reorientation. */
+  bool AddIndNeighbor;			   /*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		/*!< \brief Number of design variables. */
   nObj, nObjW;              /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -747,6 +751,7 @@ private:
   SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
+  libROMbase_FileName;                  /*!< \brief Output base file name for libROM (reduced order modelling). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   bool Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
@@ -2783,6 +2788,18 @@ public:
    */
   bool GetReorientElements(void);
   
+  /*!
+   * \brief Get whether or not to save to libROM.
+   * \return True if specified in config file.
+   */
+  bool GetSave_libROM(void);
+   
+  /*!
+   * \brief Get kind of POD basis to generate (static or incremental).
+   * \return Returns STATIC_POD or ICREMENTAL_POD.
+  */
+  unsigned short GetKind_PODBasis(void);
+   
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
    * \return CFL number for unsteady simulations.
@@ -5155,6 +5172,12 @@ public:
    *         dual time stepping method (unsteady).
    */
   unsigned short GetTime_Marching(void);
+
+  /*!
+   * \brief Provides option to fix the time step for steady cases.
+   * \return True if a fixed time step is desired, false otherwise.
+   */
+  bool GetSteady_FixedTS(void);
   
   /*!
    * \brief Provides the number of chemical reactions in the chemistry model
@@ -5531,6 +5554,12 @@ public:
    */
   string GetVolSens_FileName(void);
   
+  /*!
+   * \brief Get the name of the file to be sent to libROM (reduced order modelling).
+   * \return Name of the file to be sent to libROM (reduced order modelling).
+   */
+  string GetlibROMbase_FileName(void);
+
   /*!
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
