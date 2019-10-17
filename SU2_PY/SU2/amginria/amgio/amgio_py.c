@@ -420,8 +420,15 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 			Msh->NbrFld = Msh->SolSiz;
 			Msh->FldTab = (int*) malloc(sizeof(int)*Msh->SolSiz);
 			for (j=0; j<Msh->NbrFld; j++){
-				Msh->FldTab[j] = GmfSca;
-				sprintf(Msh->SolTag[j], "scalar_%d", j);
+
+				PyObject *oo = PyList_GetItem(pySolHeader,j);
+	       		if ( PyFloat_Check(oo) ) {
+					sprintf(Msh->SolTag[j], "%s", (char*) PyString_AS_STRING(oo));
+				}
+				else {
+					Msh->FldTab[j] = GmfSca;
+					sprintf(Msh->SolTag[j], "scalar_%d", j);
+				}
 			}
 			Msh->Sol = (double*) malloc(sizeof(double)*(Msh->NbrVer+1)*Msh->SolSiz);
 			memset(Msh->Sol, 0, sizeof(double)*(Msh->NbrVer+1)*Msh->SolSiz);
