@@ -95,34 +95,27 @@ void CInriaFileWriter::WriteInriaRestart(CConfig *config, CGeometry *geometry, C
 	}
 
   myPoint = 0;
-  offset = 0;
-  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
       for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
         
         /*--- Global Index of the current point. (note outer loop over procs) ---*/
         
-        Global_Index = iPoint + offset;
-        
-        /*--- Only write original domain points, i.e., exclude any periodic
-         or halo nodes, even if they are output in the viz. files. ---*/
-        
-        if (Global_Index < nPoint_Restart) {
-                    
-          myPoint++;
+        Global_Index = dataSorter->GetGlobalIndex(iPoint);
+                
+        myPoint++;
           
-          /*--- Loop over the variables and write the values to file,
-           excluding mesh coordinates [0 - (nDim-1)] ---*/
-          
-          for (iVar = 0; iVar < nVar_Buf; iVar++){
-            bufDbl[iVar] = dataSorter->GetData(iVar, iPoint);
-          }
-          GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
+        /*--- Loop over the variables and write the values to file,
+         excluding mesh coordinates [0 - (nDim-1)] ---*/
+        
+        for (iVar = 0; iVar < nVar_Buf; iVar++){
+          bufDbl[iVar] = dataSorter->GetData(iVar, iPoint);
         }
+        GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
+        
       }
     }
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     
