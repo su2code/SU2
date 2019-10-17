@@ -91,9 +91,9 @@ public:
    * \param[in] disc_adj_driver - Single zone discrete adjoint driver.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
-                          unsigned short val_nZone,
-                          SU2_Comm MPICommunicator);
+  // CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
+  //                         unsigned short val_nZone,
+  //                         SU2_Comm MPICommunicator);
 
   /*! 
    * \brief Constructor of the class.

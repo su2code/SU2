@@ -480,29 +480,29 @@ public:
    */
   bool IsAHaloNode(unsigned short iMarker, unsigned short iVertex);
 
-  /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
-   */
-  unsigned long GetnTimeIter();
+  // /*!
+  //  * \brief Get the number of external iterations.
+  //  * \return Number of external iterations.
+  //  */
+  // unsigned long GetnTimeIter();
 
-  /*!
-   * \brief Get the current external iteration.
-   * \return Current external iteration.
-   */
-  unsigned long GetTime_Iter();
+  // /*!
+  //  * \brief Get the current external iteration.
+  //  * \return Current external iteration.
+  //  */
+  // unsigned long GetTime_Iter();
 
-  /*!
-   * \brief Get the number of iterations.
-   * \return Number of iterations.
-   */
-  unsigned long GetnIter();
+  // /*!
+  //  * \brief Get the number of iterations.
+  //  * \return Number of iterations.
+  //  */
+  // unsigned long GetnIter();
 
-  /*!
-   * \brief Get the current iteration.
-   * \return Current iteration.
-   */
-  unsigned long GetIter();
+  // /*!
+  //  * \brief Get the current iteration.
+  //  * \return Current iteration.
+  //  */
+  // unsigned long GetIter();
 
   /*!
    * \brief Get the unsteady time step.
@@ -877,54 +877,54 @@ public:
   /*!
    * \brief Return a pointer to a config container.
    */
-  CConfig* GetConfig(unsigned short val_iZone);
+  // CConfig* GetConfig(unsigned short val_iZone);
 
-  /*!
-   * \brief Return a pointer to a geometry container.
-   */
-  CGeometry* GetGeometry(unsigned short val_iZone, 
-                         unsigned short val_iInst, 
-                         unsigned short val_iMesh);
+  // /*!
+  //  * \brief Return a pointer to a geometry container.
+  //  */
+  // CGeometry* GetGeometry(unsigned short val_iZone, 
+  //                        unsigned short val_iInst, 
+  //                        unsigned short val_iMesh);
 
-  /*!
-   * \brief Return a pointer to a solver container.
-   */
-  CSolver* GetSolver(unsigned short val_iZone, 
-                     unsigned short val_iInst, 
-                     unsigned short val_iMesh, 
-                     unsigned short val_iSol);
+  // /*!
+  //  * \brief Return a pointer to a solver container.
+  //  */
+  // CSolver* GetSolver(unsigned short val_iZone, 
+  //                    unsigned short val_iInst, 
+  //                    unsigned short val_iMesh, 
+  //                    unsigned short val_iSol);
 
-  /*!
-   * \brief Preprocess the adapted solution and geometry from the python wrapper.
-   */
-  void Adapted_Input_Preprocessing(SU2_Comm MPICommunicator,
-                                   char* confFile,
-                                   vector<vector<passivedouble> > const &SolAdap,
-                                   vector<vector<passivedouble> > const &PoiAdap,
-                                   vector<vector<unsigned long> > const &EdgAdap,
-                                   vector<vector<unsigned long> > const &TriAdap,
-                                   vector<vector<unsigned long> > const &TetAdap,
-                                   unsigned short val_iZone, 
-                                   unsigned short val_nZone);
+  // /*!
+  //  * \brief Preprocess the adapted solution and geometry from the python wrapper.
+  //  */
+  // void Adapted_Input_Preprocessing(SU2_Comm MPICommunicator,
+  //                                  char* confFile,
+  //                                  vector<vector<passivedouble> > const &SolAdap,
+  //                                  vector<vector<passivedouble> > const &PoiAdap,
+  //                                  vector<vector<unsigned long> > const &EdgAdap,
+  //                                  vector<vector<unsigned long> > const &TriAdap,
+  //                                  vector<vector<unsigned long> > const &TetAdap,
+  //                                  unsigned short val_iZone, 
+  //                                  unsigned short val_nZone);
 
-  /*!
-   * \brief Preprocess the adapted geometry from the python wrapper.
-   */
-  void Adapted_Geometrical_Preprocessing(CConfig* config, 
-                                         CGeometry **&geometry, 
-                                         vector<vector<passivedouble> > const &PoiAdap, 
-                                         vector<vector<unsigned long> > const &EdgAdap, 
-                                         vector<vector<unsigned long> > const &TriAdap, 
-                                         vector<vector<unsigned long> > const &TetAdap, 
-                                         unsigned short val_nZone);
+  // /*!
+  //  * \brief Preprocess the adapted geometry from the python wrapper.
+  //  */
+  // void Adapted_Geometrical_Preprocessing(CConfig* config, 
+  //                                        CGeometry **&geometry, 
+  //                                        vector<vector<passivedouble> > const &PoiAdap, 
+  //                                        vector<vector<unsigned long> > const &EdgAdap, 
+  //                                        vector<vector<unsigned long> > const &TriAdap, 
+  //                                        vector<vector<unsigned long> > const &TetAdap, 
+  //                                        unsigned short val_nZone);
 
-  /*!
-   * \brief Preprocess the adapted geometry from the python wrapper.
-   */
-  void Adapted_Solver_Preprocessing(CConfig* config, 
-                                    CGeometry **geometry,
-                                    CSolver ***&solver, 
-                                    vector<vector<passivedouble> > const &SolAdap);
+  // /*!
+  //  * \brief Preprocess the adapted geometry from the python wrapper.
+  //  */
+  // void Adapted_Solver_Preprocessing(CConfig* config, 
+  //                                   CGeometry **geometry,
+  //                                   CSolver ***&solver, 
+  //                                   vector<vector<passivedouble> > const &SolAdap);
 
 };
 
