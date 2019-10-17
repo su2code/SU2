@@ -421,9 +421,11 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 			Msh->FldTab = (int*) malloc(sizeof(int)*Msh->SolSiz);
 			for (j=0; j<Msh->NbrFld; j++){
 
-				PyObject *oo = PyList_GetItem(pySolHeader,j);
-	       		if ( PyFloat_Check(oo) ) {
-					sprintf(Msh->SolTag[j], "%s", (char*) PyString_AS_STRING(oo));
+				if ( PyList_Check(pySolHeader) ) {
+					PyObject *oo = PyList_GetItem(pySolHeader,j);
+		       		if ( PyFloat_Check(oo) ) {
+						sprintf(Msh->SolTag[j], "%s", (char*) PyString_AS_STRING(oo));
+					}
 				}
 				else {
 					Msh->FldTab[j] = GmfSca;
