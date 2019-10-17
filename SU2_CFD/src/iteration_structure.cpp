@@ -3082,7 +3082,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
   bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   /*--- Global sensitivities ---*/
-  solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
   // TEMPORARY output only for standalone structural problems
   if ((!config[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){

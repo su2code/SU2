@@ -1262,7 +1262,7 @@ void CErrorEstimationDriver::Output() {
   
   /*--- Load the data --- */
   
-  output->Load_Data(geometry[ZONE_0][INST_0][MESH_0], config[ZONE_0], solver);
+  output->Load_Data(geometry[ZONE_0][INST_0][MESH_0], config[ZONE_0], solver[ZONE_0][INST_0][MESH_0]);
   
   /*--- Set the filenames ---*/
   
