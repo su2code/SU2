@@ -136,7 +136,7 @@ def amg ( config , kind='' ):
             sav_stderr, sys.stderr = sys.stderr, stderr_hdl
         
             current_mesh     = config['MESH_FILENAME']
-            current_solution = "ini_restart_flow.dat"
+            current_solution = "ini_restart_flow.csv"
             
             config_cfd.CONV_FILENAME    = "ini_history"
             config_cfd.RESTART_FILENAME = current_solution
@@ -146,7 +146,7 @@ def amg ( config , kind='' ):
             SU2_CFD(config_cfd)
                         
             if adap_sensor == 'GOAL':
-                current_solution_adj = "ini_restart_adj.dat"
+                current_solution_adj = "ini_restart_adj.csv"
 
                 config_cfd.CONV_FILENAME          = "ini_history_adj"
                 config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
@@ -188,7 +188,7 @@ def amg ( config , kind='' ):
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
         current_mesh     = config['MESH_FILENAME']
-        current_solution = "ini_restart_flow.dat"
+        current_solution = "ini_restart_flow.csv"
 
         config_cfd.RESTART_FILENAME       = current_solution
         config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
@@ -330,7 +330,7 @@ def amg ( config , kind='' ):
                 mesh['markers'] = save_markers
                 
                 current_mesh = "ite%d.su2" % global_iter
-                current_solution = "ite%d.dat" % global_iter    
+                current_solution = "ite%d.csv" % global_iter    
                 
                 su2amg.write_mesh(current_mesh, current_solution, mesh)
                 
@@ -369,7 +369,7 @@ def amg ( config , kind='' ):
                     mesh_new['dimension'] = mesh['dimension']
                     
                     current_mesh = "ite%d.su2" % global_iter
-                    current_solution = "ite%d.dat" % global_iter
+                    current_solution = "ite%d.csv" % global_iter
                                     
                     su2amg.write_mesh(current_mesh, current_solution, mesh_new)
 
@@ -400,7 +400,7 @@ def amg ( config , kind='' ):
                     mesh_new['dimension'] = mesh['dimension']
                     
                     current_mesh = "ite%d.su2" % global_iter
-                    current_solution = "ite%d.dat" % global_iter
+                    current_solution = "ite%d.csv" % global_iter
                                     
                     su2amg.write_mesh(current_mesh, current_solution, mesh_new)
                 
@@ -421,7 +421,7 @@ def amg ( config , kind='' ):
                 sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
                 sav_stderr, sys.stderr = sys.stderr, stderr_hdl
                 
-                current_solution_ini = "ite%d_ini.dat" % global_iter
+                current_solution_ini = "ite%d_ini.csv" % global_iter
                 os.rename(current_solution, current_solution_ini)
                 
                 config_cfd.MESH_FILENAME     = current_mesh
@@ -444,7 +444,7 @@ def amg ( config , kind='' ):
                     raise RuntimeError , "\n##ERROR : SU2_CFD Failed.\n"
                     
                 if adap_sensor == 'GOAL':
-                    current_solution_adj = "ite%d_adj.dat" % global_iter
+                    current_solution_adj = "ite%d_adj.csv" % global_iter
 
                     config_cfd.CONV_FILENAME          = "ite%d_history_adj" % global_iter
                     config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
