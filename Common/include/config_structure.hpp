@@ -5424,7 +5424,7 @@ public:
    * \brief Set the name of the file with the solution of the adjoint flow problem
    *		  with drag objective function.
    */
-  void GetSolution_AdjFileName(string val_filename);
+  void SetSolution_AdjFileName(string val_filename);
 
   /*!
    * \brief Get the name of the file with the residual of the problem.
