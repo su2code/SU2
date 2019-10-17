@@ -2078,7 +2078,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-    }
+    }// for iPoint
 
     if(!streamwise_periodic_temperature) {
       //loop markers and find the "outlet marker"
@@ -2126,7 +2126,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       if(rank==MASTER_NODE) cout << "Source Res outlet area: " << Area_Global << endl;
 
-
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
         /*--- Only "outlet"/donor periodic marker ---*/
@@ -2149,11 +2148,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
               }
     
               /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
-              FaceArea = 0.0; Area_Local = 0.0;
+              FaceArea = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
-              Area_Local += sqrt(FaceArea);
+              FaceArea = sqrt(FaceArea);
 
-              Residual[nDim+1] -= Area_Local/Area_Global * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+              for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+              Residual[nDim+1] -= FaceArea/Area_Global * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+
+              /*--- Add the source residual to the total ---*/
+              LinSysRes.AddBlock(iPoint, Residual);
 
             } // if domain
           } // loop vertices
@@ -2162,8 +2165,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       //add weighted heat sink to residual
       
 
-      /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      
     }
   }
 
