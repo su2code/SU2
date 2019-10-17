@@ -2111,3 +2111,5 @@ inline su2double CConfig::GetAdap_Norm(void) { return Adap_Norm; }
 inline su2double CConfig::GetMesh_Hmax(void) { return Mesh_Hmax; }
 
 inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
+
+inline unsigned long CConfig::GetMesh_Complexity( return Mesh_Complexity; )
