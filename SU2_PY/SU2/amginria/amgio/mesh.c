@@ -700,7 +700,7 @@ int GetInputFileType (char *FilNam)
       if ( strcmp(ext,"su2") == 0  ) {
         return FILE_SU2;
       }
-      else if ( strcmp(ext,"dat") == 0  ) {
+      else if ( strcmp(ext,"csv") == 0  ) {
         return FILE_DAT;
       }
       else if ( strcmp(ext,"mesh") == 0 || strcmp(ext,"meshb") == 0 ) {
