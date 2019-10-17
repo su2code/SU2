@@ -437,7 +437,7 @@ def amg ( config , kind='' ):
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
                 
-                config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
+                # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
                 
                 config_cfd.WRT_BINARY_RESTART  = "NO"
