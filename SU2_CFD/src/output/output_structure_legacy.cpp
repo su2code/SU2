@@ -12481,41 +12481,12 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     }
 
     /*--- Write an Inria format restart file. ---*/
-    if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_MET){
-      if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
-      SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-      if (rank == MASTER_NODE) cout << "Writing Inria sensor files." << endl;
-      WriteInriaOutputs(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-    }
-
-    /*--- Write an Inria format mesh file.
-          Note: currently only for serial. ---*/
-    if (rank == MASTER_NODE) {
-      if ( config[iZone]->GetWrt_InriaMesh()  && size == 1 ) {
-    
-        if (rank == MASTER_NODE) cout <<"Sorting volumetric grid connectivity." << endl;
-          
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     , true);
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL, true);
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TETRAHEDRON  , true);
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   , true);
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        , true);
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      , true);
-          
-        
-        /*--- Sort surface grid connectivity. ---*/
-          
-        if (rank == MASTER_NODE) cout <<"Sorting surface grid connectivity." << endl;
-          
-        SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], LINE         );
-        SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
-        SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
-
-        if (rank == MASTER_NODE) cout << "Writing Inria mesh." << endl;
-          
-        SetInriaMesh(config[iZone], geometry[iZone][iInst][MESH_0]);
-      }
-    }
+    // if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_MET){
+    //   if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
+    //   SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+    //   if (rank == MASTER_NODE) cout << "Writing Inria sensor files." << endl;
+    //   WriteInriaOutputs(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+    // }
 
     /*--- Write a slice on a structured mesh if requested. ---*/
 
