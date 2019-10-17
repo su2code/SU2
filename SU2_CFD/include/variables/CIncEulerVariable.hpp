@@ -50,7 +50,8 @@ protected:
   VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
   MatrixType Primitive;                    /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  VectorOfMatrix Gradient_Reconstruction;  /*!< \brief Gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  VectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
 

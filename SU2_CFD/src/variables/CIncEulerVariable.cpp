@@ -39,7 +39,7 @@
 
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
-                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) , Gradient_Reconstruction(Gradient_Primitive) {
 
   bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                       (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -107,7 +107,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
 
   if (config->GetReconstructionGradientRequired()) {
-    Gradient_Reconstruction.resize(nPoint,nPrimVarGrad,nDim,0.0);
+    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+    Gradient_Reconstruction = Gradient_Aux;
   } else {
     Gradient_Reconstruction = Gradient_Primitive;
   }

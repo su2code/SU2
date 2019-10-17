@@ -39,7 +39,7 @@
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-: CVariable(npoint, ndim, nvar, config) {
+: CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(Gradient) {
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
@@ -52,7 +52,8 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
   if (config->GetReconstructionGradientRequired()) {
-    Gradient_Reconstruction.resize(nPoint,nVar,nDim,0.0);
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
+    Gradient_Reconstruction = Gradient_Aux;
   } else {
     Gradient_Reconstruction = Gradient;
   }

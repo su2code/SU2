@@ -39,7 +39,7 @@
 
 
 CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-: CVariable(npoint, ndim, nvar, config) {
+: CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(Gradient) {
 
   bool low_fidelity = false;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -74,7 +74,8 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
   Gradient.resize(nPoint,nVar,nDim,0.0);
   
   if (config->GetReconstructionGradientRequired()) {
-    Gradient_Reconstruction.resize(nPoint,nVar,nDim,0.0);
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
+    Gradient_Reconstruction = Gradient_Aux;
   } else {
     Gradient_Reconstruction = Gradient;
   }
