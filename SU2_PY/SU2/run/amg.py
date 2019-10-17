@@ -112,7 +112,6 @@ def amg ( config , kind='' ):
     config_cfd = copy.deepcopy(config)
     for opt in adap_options:
         config_cfd.pop(opt, None)
-    config_cfd.LOW_MEMORY_OUTPUT = "NO"
     
     config_cfd.WRT_BINARY_RESTART  = "NO"
     config_cfd.READ_BINARY_RESTART = "NO"
@@ -139,19 +138,19 @@ def amg ( config , kind='' ):
             current_mesh     = config['MESH_FILENAME']
             current_solution = "ini_restart_flow.dat"
             
-            config_cfd.CONV_FILENAME         = "ini_history"
-            config_cfd.RESTART_FLOW_FILENAME = current_solution
-            config_cfd.ERROR_ESTIMATE         = 'NO'
-            config_cfd.MATH_PROBLEM           = 'DIRECT'
+            config_cfd.CONV_FILENAME    = "ini_history"
+            config_cfd.RESTART_FILENAME = current_solution
+            config_cfd.ERROR_ESTIMATE   = 'NO'
+            config_cfd.MATH_PROBLEM     = 'DIRECT'
             
             SU2_CFD(config_cfd)
                         
             if adap_sensor == 'GOAL':
-                current_solution_adj    = "ini_restart_adj.dat"
+                current_solution_adj = "ini_restart_adj.dat"
 
                 config_cfd.CONV_FILENAME          = "ini_history_adj"
                 config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
-                config_cfd.SOLUTION_FLOW_FILENAME = current_solution
+                config_cfd.SOLUTION_FILENAME      = current_solution
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                 SU2_CFD(config_cfd)
 
@@ -171,7 +170,7 @@ def amg ( config , kind='' ):
         sys.stderr = sav_stderr
         
     else:
-        required_options=['SOLUTION_FLOW_FILENAME','SOLUTION_ADJ_FILENAME']
+        required_options=['SOLUTION_FILENAME','SOLUTION_ADJ_FILENAME']
         if not all (opt in config for opt in required_options):
             err = '\n\n## ERROR : RESTART_SOL is set to YES, but the solution is missing:\n'
             for opt in required_options:
@@ -191,8 +190,8 @@ def amg ( config , kind='' ):
         current_mesh     = config['MESH_FILENAME']
         current_solution = "ini_restart_flow.dat"
 
-        config_cfd.RESTART_FLOW_FILENAME  = current_solution
-        config_cfd.SOLUTION_FLOW_FILENAME = '../' + config['SOLUTION_FLOW_FILENAME']
+        config_cfd.RESTART_FILENAME       = current_solution
+        config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
         config_cfd.ERROR_ESTIMATE         = 'YES'
         config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
@@ -425,16 +424,15 @@ def amg ( config , kind='' ):
                 current_solution_ini = "ite%d_ini.dat" % global_iter
                 os.rename(current_solution, current_solution_ini)
                 
-                config_cfd.MESH_FILENAME          = current_mesh
-                config_cfd.CONV_FILENAME          = "ite%d_history" % global_iter
-                config_cfd.SOLUTION_FLOW_FILENAME = current_solution_ini
-                config_cfd.RESTART_FLOW_FILENAME  = current_solution
-                config_cfd.ERROR_ESTIMATE         = 'NO'
-                config_cfd.MATH_PROBLEM           = 'DIRECT'
-                config_cfd.RESTART_SOL            = 'YES'
+                config_cfd.MESH_FILENAME     = current_mesh
+                config_cfd.CONV_FILENAME     = "ite%d_history" % global_iter
+                config_cfd.SOLUTION_FILENAME = current_solution_ini
+                config_cfd.RESTART_FILENAME  = current_solution
+                config_cfd.ERROR_ESTIMATE    = 'NO'
+                config_cfd.MATH_PROBLEM      = 'DIRECT'
+                config_cfd.RESTART_SOL       = 'YES'
                 
                 config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
-                config_cfd.EXT_ITER           = int(adap_adj_iter[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
                 
                 config_cfd.WRT_BINARY_RESTART  = "NO"
@@ -450,9 +448,10 @@ def amg ( config , kind='' ):
 
                     config_cfd.CONV_FILENAME          = "ite%d_history_adj" % global_iter
                     config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
-                    config_cfd.SOLUTION_FLOW_FILENAME = current_solution
+                    config_cfd.SOLUTION_FILENAME      = current_solution
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                     config_cfd.RESTART_SOL            = 'NO'
+                    config_cfd.ITER                   = int(adap_adj_iter[iSiz])
                     SU2_CFD(config_cfd)
 
                     config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
@@ -492,10 +491,10 @@ def amg ( config , kind='' ):
             
             global_iter += 1
     
-    os.rename(current_solution,os.path.join(cwd,config.RESTART_FLOW_FILENAME))
+    os.rename(current_solution,os.path.join(cwd,config.RESTART_FILENAME))
     os.rename(current_mesh,os.path.join(cwd,config.MESH_OUT_FILENAME))
     
     sys.stdout.write("\nMesh adaptation successfully ended. Results files:\n")
-    sys.stdout.write("%s\n%s\n\n" % (config.MESH_OUT_FILENAME,config.RESTART_FLOW_FILENAME))
+    sys.stdout.write("%s\n%s\n\n" % (config.MESH_OUT_FILENAME,config.RESTART_FILENAME))
     sys.stdout.flush()
     
