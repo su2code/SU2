@@ -13026,7 +13026,7 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Set the objective function.
