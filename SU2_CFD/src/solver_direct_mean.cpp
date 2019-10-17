@@ -5840,7 +5840,7 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
           nodes->SetAnisoViscHess(iPoint, i+0, A[0][0]);
           nodes->SetAnisoViscHess(iPoint, i+1, A[0][1]);
-          nodes->SetAnisoViscHess(iPoint, i+2, A[0][2]);
+          nodes->SetAnisoViscHess(iPoint, i+2, A[1][1]);
         }
       }
     }
