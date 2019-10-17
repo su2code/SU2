@@ -154,7 +154,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 void py_WriteMesh(char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
 PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *pySolHeader, PyObject *pyMarkers, int Dim)
 {
-	int i, j;
+	int i, j, NbrTag = 0;
 	Mesh *Msh= NULL;
 	int SizMsh[GmfMaxKwd+1];
 	
@@ -411,6 +411,9 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	
 	if ( PyList_Check(pySol) )
 		siz = PyList_Size(pySol);
+
+	if ( PyList_Check(pySolHeader) )
+		NbrTag = PyList_Size(pySolHeader);
 	
 	if ( siz > 0 ) {
 			
@@ -421,7 +424,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 			Msh->FldTab = (int*) malloc(sizeof(int)*Msh->SolSiz);
 			for (j=0; j<Msh->NbrFld; j++){
 
-				if ( PyList_Check(pySolHeader) ) {
+				if ( NbrTag == Msh->NbrFld  ) {
 					PyObject *oo = PyList_GetItem(pySolHeader,j);
 		       		if ( PyFloat_Check(oo) ) {
 						sprintf(Msh->SolTag[j], "%s", (char*) PyString_AS_STRING(oo));
