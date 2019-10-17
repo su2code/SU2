@@ -938,21 +938,21 @@ public:
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
                   su2double val_density, su2double* val_velocity,
                   su2double** val_invR_invPe);
-	/*!
-	 * \brief Computation of the matrix R.
-	 * \param[in] val_soundspeed - value of the sound speed.
-	 * \param[in] val_density - value of the density.
-	 * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
-	 */
-	void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
+  /*!
+   * \brief Computation of the matrix R.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
+   */
+  void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
 
-	/*!
-	 * \brief Computation of the matrix R.
-	 * \param[in] val_soundspeed - value of the sound speed.
-	 * \param[in] val_density - value of the density.
-	 * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
-	 */
-	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
+  /*!
+   * \brief Computation of the matrix R.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
+   */
+  void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
 
   /*!
    * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
@@ -978,28 +978,28 @@ public:
    */
   void InvMatrix4D(su2double **matrix, su2double **invMatrix);
 
-	/*!
-	 * \brief Computation of the matrix R.
-	 * \param[in] val_soundspeed - value of the sound speed.
-	 * \param[in] val_density - value of the density.
-	 * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
-	 * \param[out]char_jump - pointer to the vector containing the characteristic variable jump.
-	 */
-	void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
+  /*!
+   * \brief Computation of the matrix R.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
+   * \param[out]char_jump - pointer to the vector containing the characteristic variable jump.
+   */
+  void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
 
-	/*!
-	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
-	 *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
-	 * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
-	 * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
-	 * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
-	 * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
-	 * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
-	 * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
-	 */
-	void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
+  /*!
+   * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
+   *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
+   * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
+   * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
+   * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
+   * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
+   * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
+   * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
+   */
+  void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
 
   
   /*!
@@ -1330,6 +1330,12 @@ public:
    * \param[in] element_container - Element structure for the particular element integrated.
    */
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member to set the element-based local properties in mesh problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
 
   /*!
    * \brief A virtual member
@@ -4143,6 +4149,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEAElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4164,7 +4175,7 @@ public:
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
-  void SetElement_Properties(CElement *element_container, CConfig *config);
+  virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   void ReadDV(CConfig *config);
 
@@ -4184,7 +4195,7 @@ public:
   
   virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
-	virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
+  virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
 
   virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
 
@@ -4210,6 +4221,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEALinearElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4370,7 +4386,7 @@ public:
  */
 class CFEM_IdealDE : public CFEANonlinearElasticity {
 
-	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Variables of the model calculation. */
+  su2double trbbar, Eg, Eg23, Ek, Pr; /*!< \brief Variables of the model calculation. */
 
 public:
 
@@ -4404,8 +4420,8 @@ public:
  */
 class CFEM_Knowles_NearInc : public CFEANonlinearElasticity {
 
-	su2double trbbar, term1, term2, Ek, Pr;	/*!< \brief Variables of the model calculation. */
-	su2double Bk, Nk;						/*!< \brief Parameters b and n of the model. */
+  su2double trbbar, term1, term2, Ek, Pr; /*!< \brief Variables of the model calculation. */
+  su2double Bk, Nk;           /*!< \brief Parameters b and n of the model. */
 
 public:
 
@@ -4427,7 +4443,7 @@ public:
   void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   using CNumerics::Compute_Constitutive_Matrix;
 
-	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+  void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
 };
 
