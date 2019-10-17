@@ -13266,7 +13266,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
           else          nMetr = 6;
             
           for(iMetr = 0; iMetr < nMetr; iMetr++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoMetr(iMetr);
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->GetNodes()->GetAnisoMetr(iPoint, iMetr);
             iVar++;
           }
         }

@@ -110,7 +110,7 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
