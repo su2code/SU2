@@ -462,7 +462,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	
 	strcpy(BasNamSol,SolNam);
 	
-  ptr = strstr(BasNamSol,".dat");	
+  ptr = strstr(BasNamSol,".csv");	
   if ( ptr != NULL )
     BasNamSol[ptr-BasNamSol]='\0';
   ptr = strstr(BasNamSol,".solb");	
@@ -481,7 +481,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	else {
 		WriteSU2Mesh(BasNam, Msh);
 		if ( Msh->Sol ) {		
-			sprintf(OutSol, "%s.dat", BasNamSol);
+			sprintf(OutSol, "%s.csv", BasNamSol);
 			WriteSU2Solution (OutSol, Msh, Msh->Sol, Msh->NbrVer,  Msh->SolSiz, Msh->SolTag);
 		}
 	}		

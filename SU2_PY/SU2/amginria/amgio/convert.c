@@ -68,7 +68,7 @@ int ConvertGMFtoSU2Sol (Options *mshopt)
 	WriteSU2Mesh(mshopt->OutNam, Msh);
 	
 	if ( Msh->Sol ) {
-		sprintf(OutSol, "%s.dat", mshopt->OutNam);
+		sprintf(OutSol, "%s.csv", mshopt->OutNam);
 		WriteSU2Solution (OutSol, Msh, Msh->Sol, Msh->NbrVer,  Msh->SolSiz, Msh->SolTag);
 	}
 
