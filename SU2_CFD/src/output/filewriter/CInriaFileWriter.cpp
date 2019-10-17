@@ -37,6 +37,7 @@
 
 
 #include "../../../include/output/filewriter/CInriaFileWriter.hpp"
+#include "../../../include/solver_structure.hpp"
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../../Common/include/config_structure.hpp"
 
@@ -60,7 +61,7 @@ void CInriaFileWriter::WriteInriaRestart(CConfig *config, CGeometry *geometry, C
   /*--- Local variables ---*/
 	
   unsigned short iVar, nDim = geometry->GetnDim();
-  unsigned short nVar_Buf = nVar_Par-nDim;
+  unsigned short nVar_Buf = fieldnames.size()-nDim;
   unsigned long iPoint;
   string filename;
   
@@ -100,7 +101,7 @@ void CInriaFileWriter::WriteInriaRestart(CConfig *config, CGeometry *geometry, C
   offset = 0;
   for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+      for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
         
         /*--- Global Index of the current point. (note outer loop over procs) ---*/
         
