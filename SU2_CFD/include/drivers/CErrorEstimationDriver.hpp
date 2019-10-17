@@ -43,7 +43,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../../Common/include/fem_geometry_structure.hpp"
 #include "../../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
-#include "../../../SU2_CFD/include/output_structure.hpp"
+#include "../../../SU2_CFD/include/output/COutput.hpp"
 #include "../../../SU2_CFD/include/solver_structure.hpp"
 
 using namespace std;
