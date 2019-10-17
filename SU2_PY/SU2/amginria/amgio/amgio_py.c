@@ -482,7 +482,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 		WriteSU2Mesh(BasNam, Msh);
 		if ( Msh->Sol ) {		
 			sprintf(OutSol, "%s.csv", BasNamSol);
-			WriteSU2Solution (OutSol, Msh, Msh->Sol, Msh->NbrVer,  Msh->SolSiz, Msh->SolTag);
+			WriteSU2Solution (OutSol, Msh->Dim, Msh->Sol, Msh->NbrVer,  Msh->SolSiz, Msh->SolTag);
 		}
 	}		
 }
