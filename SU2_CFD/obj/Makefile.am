@@ -147,7 +147,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEABoundVariable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
-  ../src/variables/CDiscAdjMeshVariable.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
   ../src/variables/CMeshVariable.cpp \
