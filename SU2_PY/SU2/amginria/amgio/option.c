@@ -55,7 +55,7 @@ int CheckOptions (Options *mshopt)
 		SolTyp = GetInputFileType(mshopt->SolNam);
 		
 		if ( mshopt->InpFilTyp == FILE_SU2 && SolTyp != FILE_DAT ) {
-			printf("  ## ERROR : Wrong format for solution file (.dat expected)\n");
+			printf("  ## ERROR : Wrong format for solution file (.csv expected)\n");
 			return 0;
 		}
 		

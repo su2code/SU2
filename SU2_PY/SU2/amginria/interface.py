@@ -171,6 +171,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Markers = []
     Dim     = 3
     Ver     = []
+    SolTag  = []
         
     if 'Triangles' in mesh:     Tri     = mesh['Triangles']
     if 'Tetrahedra' in mesh:    Tet     = mesh['Tetrahedra']
@@ -178,6 +179,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     if 'solution' in mesh:      Sol     = mesh['solution']
     if 'markers' in mesh:       Markers = mesh['markers']
     if 'dimension' in mesh:     Dim     = mesh['dimension']
+    if 'solution_tag' in mesh:  SolTag  = mesh['solution_tag']
     if 'xyz' in mesh:
         Ver = mesh['xyz']
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
@@ -197,7 +199,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     else:
         Sol = []
     
-    amgio.py_WriteMesh(mesh_name, solution_name, Ver, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, Markers, Dim)
+    amgio.py_WriteMesh(mesh_name, solution_name, Ver, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
     
 
 def write_solution(solution_name, solution):

@@ -152,7 +152,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 
 
 void py_WriteMesh(char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
-PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *pyMarkers, int Dim)
+PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *pySolHeader, PyObject *pyMarkers, int Dim)
 {
 	int i, j;
 	Mesh *Msh= NULL;
@@ -426,15 +426,12 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 			Msh->Sol = (double*) malloc(sizeof(double)*(Msh->NbrVer+1)*Msh->SolSiz);
 			memset(Msh->Sol, 0, sizeof(double)*(Msh->NbrVer+1)*Msh->SolSiz);
 			
-			
 			Msh->Sol[0] = 0.0;
-			for (i=0; i<siz; i++)
-      {
-       	PyObject *oo = PyList_GetItem(pySol,i);
-       	if ( PyFloat_Check(oo) )
-       	{
+			for (i=0; i<siz; i++) {
+		       	PyObject *oo = PyList_GetItem(pySol,i);
+		       	if ( PyFloat_Check(oo) ) {
 					Msh->Sol[i+Msh->SolSiz] = (double) PyFloat_AS_DOUBLE(oo);
-       	}
+		       	}
 			}
 		}
 		else {
@@ -482,7 +479,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 		WriteSU2Mesh(BasNam, Msh);
 		if ( Msh->Sol ) {		
 			sprintf(OutSol, "%s.csv", BasNamSol);
-			WriteSU2Solution (OutSol, Msh->Dim, Msh->Sol, Msh->NbrVer,  Msh->SolSiz, Msh->SolTag);
+			WriteSU2Solution (OutSol, Msh->Dim, Msh->NbrVer, Msh->Ver, Msh->Sol, Msh->SolSiz, Msh->SolTag);
 		}
 	}		
 }
