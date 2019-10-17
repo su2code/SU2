@@ -63,4 +63,9 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
   Delta_Time.resize(nPoint);
+
+  if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
+    AnisoViscGrad.resize(nPoint,nDim*nVar*nDim) = su2double(0.0);
+      AnisoViscHess.resize(nPoint,3*(nDim-1)*nVar*nDim) = su2double(0.0);
+  }
 }
