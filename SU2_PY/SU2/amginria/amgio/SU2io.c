@@ -1035,8 +1035,8 @@ int WriteSU2Solution (char *SolNam, Mesh *Msh, double *Sol, int NbrVer, int SolS
 	
 	//--- Write header
 	
-	fprintf(OutFil,"\"PointID\",\"x\",\"y\"");
-	if ( Msh->Dim == 3 ) fprintf(OutFil,",\"z\",");	
+	fprintf(OutFil,"\"PointID\",\"x\",\"y\",");
+	if ( Msh->Dim == 3 ) fprintf(OutFil,"\"z\",");	
 	for (i=0; i<SolSiz-1; i++) {
 		fprintf(OutFil, "\"%s\",", SolTag[i]);
 	}
