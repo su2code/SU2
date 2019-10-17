@@ -54,7 +54,6 @@ protected:
                  SecondaryVariables;            /*!< \brief The kind of recording linked to the secondary variables of the problem.*/
   su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
   CIteration* direct_iteration;                 /*!< \brief A pointer to the direct iteration.*/
-  COutput* direct_output;                       /*!< \brief A pointer to the direct output.*/
   ofstream *ConvHist_file_direct;               /*!< \brief Convergence history file for the direct output.*/
 
   CConfig *config;                              /*!< \brief Definition of the particular problem. */

@@ -147,7 +147,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_MET, nZone, false); 
+  driver_config = new CConfig(config_file_name, SU2_MET, false); 
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -637,7 +637,6 @@ void CErrorEstimationDriver::Solver_Restart(CSolver ****solver, CGeometry ***geo
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC); // Dynamic simulation (FSI).
 
   /*--- Assign booleans ---*/
 
@@ -683,7 +682,6 @@ void CErrorEstimationDriver::Solver_Restart(CSolver ****solver, CGeometry ***geo
       solver[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver[val_iInst], config, val_iter, update_geo);
     }
     if (fem) {
-      if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
       solver[val_iInst][MESH_0][FEA_SOL]->LoadRestart(geometry[val_iInst], solver[val_iInst], config, val_iter, update_geo);
     }
     if (fem_euler || fem_ns) {
@@ -716,7 +714,6 @@ void CErrorEstimationDriver::Solver_Restart(CSolver ****solver, CGeometry ***geo
         solver[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver[val_iInst], config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
-        if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
         solver[val_iInst][MESH_0][ADJFEA_SOL]->LoadRestart(geometry[val_iInst], solver[val_iInst], config, val_iter, update_geo);
     }
     if (disc_adj_heat) {
@@ -1260,6 +1257,7 @@ void CErrorEstimationDriver::Output() {
 
   /*--- Load history data (volume output might require some values) --- */
   
+  int TimeIter = 0;
   output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], solver[ZONE_0][INST_0], config[ZONE_0], TimeIter, 0, 0);
   
   /*--- Load the data --- */
@@ -1272,7 +1270,7 @@ void CErrorEstimationDriver::Output() {
   
   output->SetSurface_Filename(config[ZONE_0]->GetSurfCoeff_FileName());
   
-  for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+  for (unsigned short iFile = 0; iFile < config[ZONE_0]->GetnVolumeOutputFiles(); iFile++){
     unsigned short* FileFormat = config[ZONE_0]->GetVolumeOutputFiles();
     output->WriteToFile(config[ZONE_0], geometry[ZONE_0][INST_0][MESH_0], FileFormat[iFile]);
 
