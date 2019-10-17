@@ -1035,25 +1035,25 @@ int WriteSU2Solution (char *SolNam, Mesh *Msh, double *Sol, int NbrVer, int SolS
 	
 	//--- Write header
 	
-	fprintf(OutFil,"\"PointID\"	\"x\"	\"y\"	");
-	if ( Msh->Dim == 3 ) fprintf(OutFil,"\"z\"	");	
-	for (i=0; i<SolSiz; i++) {
-		fprintf(OutFil, "\"%s\"	", SolTag[i]);
+	fprintf(OutFil,"\"PointID\",\"x\",\"y\"");
+	if ( Msh->Dim == 3 ) fprintf(OutFil,",\"z\",");	
+	for (i=0; i<SolSiz-1; i++) {
+		fprintf(OutFil, "\"%s\",", SolTag[i]);
 	}
-	fprintf(OutFil, "\n");
+	fprintf(OutFil, "\"%s\"\n", SolTag[i])
 	
 	//--- Write solution at vertices
   
 	for (iVer=1; iVer<=NbrVer; iVer++) {
-		fprintf(OutFil, "%d	", iVer-1);
+		fprintf(OutFil, "%d, ", iVer-1);
 		for (d=0; d<Msh->Dim; d++)
-			fprintf(OutFil, "%.15le	", Msh->Ver[iVer][d]);
+			fprintf(OutFil, "%.15le, ", Msh->Ver[iVer][d]);
 		
 		idxVer = iVer*SolSiz;
-		for (i=0; i<SolSiz; i++) {
-			fprintf(OutFil, "%.15le	", Sol[idxVer+i]);
+		for (i=0; i<SolSiz-1; i++) {
+			fprintf(OutFil, "%.15le, ", Sol[idxVer+i]);
 		}
-		fprintf(OutFil, "\n");
+		fprintf(OutFil, "%.15le\n", Sol[idxVer+i]);
 	}
   
   //--- close mesh file
