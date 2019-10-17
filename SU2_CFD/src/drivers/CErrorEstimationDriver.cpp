@@ -1248,7 +1248,7 @@ void CErrorEstimationDriver::Output() {
     break;
   }
   
-  // output->PreprocessHistoryOutput(config[ZONE_0]);
+  output->PreprocessHistoryOutput(config[ZONE_0]);
   
   output->PreprocessVolumeOutput(config[ZONE_0]);
 
@@ -1257,8 +1257,8 @@ void CErrorEstimationDriver::Output() {
 
   /*--- Load history data (volume output might require some values) --- */
   
-  // int TimeIter = 0;
-  // output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], solver[ZONE_0][INST_0][MESH_0], config[ZONE_0], TimeIter, 0, 0);
+  int TimeIter = 0;
+  output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], solver[ZONE_0][INST_0][MESH_0], config[ZONE_0], TimeIter, 0, 0);
   
   /*--- Load the data --- */
   
