@@ -365,7 +365,7 @@ void CElement::clearStress(void) {
   
 }
 
-void CElement::Set_ElProperties(CElementProperty *input_element) {
+void CElement::Set_ElProperties(CProperty *input_element) {
 
   /*--- Set the properties local to the element ---*/
 
