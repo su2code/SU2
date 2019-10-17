@@ -1026,7 +1026,7 @@ inline void CSolver::RegisterObj_Func(CConfig *config){}
 
 inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){}
 
-inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
+inline void CSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){}
 
 inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
