@@ -6429,12 +6429,12 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
     /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
     cout << "Iter[ID]" << "  BGSRes[Psi_Rho]" << "  BGSRes[Psi_E]" << "  BGSRes[Psi_Ux]" << "  BGSRes[Psi_Uy]\n";
     cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout.width(8);  cout << IntIter*1000;
-    cout.width(17); cout << residual_flow[0];
-    cout.width(15); cout << residual_flow[nVar_Flow-1];
-    cout.width(16); cout << residual_struct[0];
-    cout.width(16); cout << residual_struct[1];
-    cout << "\n\n-------------------------------------------------------------------------" << endl;
+    cout << "|"; cout.width(8);  cout << IntIter*1000;
+    cout << "|"; cout.width(17); cout << residual_flow[0];
+    cout << "|"; cout.width(15); cout << residual_flow[nVar_Flow-1];
+    cout << "|"; cout.width(16); cout << residual_struct[0];
+    cout << "|"; cout.width(16); cout << residual_struct[1];
+    cout << "|"; cout << "\n\n-------------------------------------------------------------------------" << endl;
 
 
     bool write_history = true;
