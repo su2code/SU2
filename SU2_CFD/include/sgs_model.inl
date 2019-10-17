@@ -455,6 +455,7 @@ inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
   alpha22 -= tmp;
   alpha33 -= tmp;
 
+  const su2double lenScale2 = lenScale * lenScale;
   const su2double alpha12 = dudy;
   const su2double alpha13 = dudz;
   const su2double alpha23 = dvdz;
@@ -463,12 +464,12 @@ inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
   const su2double alpha31 = dwdx;
   const su2double alpha32 = dwdy;
 
-  const su2double beta11  = lenScale*alpha11*alpha11 + lenScale*alpha12*alpha12 + lenScale*alpha13*alpha13 ;
-  const su2double beta12  = lenScale*alpha11*alpha21 + lenScale*alpha12*alpha22 + lenScale*alpha13*alpha23 ;
-  const su2double beta13  = lenScale*alpha11*alpha31 + lenScale*alpha12*alpha32 + lenScale*alpha13*alpha33 ;
-  const su2double beta22  = lenScale*alpha21*alpha21 + lenScale*alpha22*alpha22 + lenScale*alpha23*alpha23 ;
-  const su2double beta23  = lenScale*alpha21*alpha31 + lenScale*alpha22*alpha32 + lenScale*alpha23*alpha33 ;
-  const su2double beta33  = lenScale*alpha31*alpha31 + lenScale*alpha32*alpha32 + lenScale*alpha33*alpha33 ;
+  const su2double beta11  = lenScale2*alpha11*alpha11 + lenScale2*alpha12*alpha12 + lenScale2*alpha13*alpha13 ;
+  const su2double beta12  = lenScale2*alpha11*alpha21 + lenScale2*alpha12*alpha22 + lenScale2*alpha13*alpha23 ;
+  const su2double beta13  = lenScale2*alpha11*alpha31 + lenScale2*alpha12*alpha32 + lenScale2*alpha13*alpha33 ;
+  const su2double beta22  = lenScale2*alpha21*alpha21 + lenScale2*alpha22*alpha22 + lenScale2*alpha23*alpha23 ;
+  const su2double beta23  = lenScale2*alpha21*alpha31 + lenScale2*alpha22*alpha32 + lenScale2*alpha23*alpha33 ;
+  const su2double beta33  = lenScale2*alpha31*alpha31 + lenScale2*alpha32*alpha32 + lenScale2*alpha33*alpha33 ;
 
   su2double B = beta11*beta22-beta12*beta12+beta11*beta33-beta13*beta13+beta22*beta33-beta23*beta23;
             B = (B + fabs(B))*0.5;
@@ -476,10 +477,10 @@ inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
                             alpha12*alpha12+alpha13*alpha13+alpha23*alpha23 +
                             alpha21*alpha21+alpha31*alpha31+alpha32*alpha32;
 
-  const su2double lenScale_Vreman = sqrt(B/(denon+1.0E-20));
+  const su2double nuEddy_Vreman = sqrt(B/(denon+1.0E-20));
 
  /* Return the SGS dynamic viscosity. */
- return rho*const_Vreman*lenScale_Vreman;
+ return rho*const_Vreman*nuEddy_Vreman;
 
 }
 

@@ -48,15 +48,9 @@ ___bin_SU2_DEF_SOURCES = \
   
 
 ___bin_SU2_DEF_CXXFLAGS =
-___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o
+___bin_SU2_DEF_LDADD = \
+  ../../SU2_CFD/obj/libSU2Core.a \
+  ../../Common/lib/libSU2.a
 
 # always link to built dependencies from ./externals
 ___bin_SU2_DEF_CXXFLAGS += @su2_externals_INCLUDES@

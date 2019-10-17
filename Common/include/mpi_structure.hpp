@@ -77,6 +77,15 @@ class CBaseMPIWrapper;
 typedef CBaseMPIWrapper SU2_MPI;
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
+/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
+template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
+
+/*--- In AD we specialize for the passive wrapper. ---*/
+#if defined CODI_REVERSE_TYPE
+class CBaseMPIWrapper;
+template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#endif
+
 /*!
  * \class CMPIWrapper
  * \brief Class for defining the MPI wrapper routines; this class features as a base class for
@@ -223,6 +232,8 @@ public:
   
   static void Init(int *argc, char***argv);
 
+  static void Init_AMPI(void);
+
   static void Buffer_attach(void *buffer, int size);
 
   static void Buffer_detach(void *buffer, int *size);
@@ -320,6 +331,7 @@ public:
 #define MPI_MIN 9
 #define MPI_MAX 10
 #define MPI_INT 11
+#define MPI_PROD 12
 class CBaseMPIWrapper {
   
 public:

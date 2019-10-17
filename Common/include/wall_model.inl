@@ -37,39 +37,9 @@
  
 #pragma once
 
-inline CWallModel::CWallModel(void){
-  h_wm = 0.0;
-}
-
 inline CWallModel::~CWallModel(void){}
 
-inline void CWallModel::Initialize(const unsigned short *intInfo,
-                                   const su2double      *doubleInfo) {}
-
-inline void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
-                                                   const su2double velExchange,
-                                                   const su2double muExchange,
-                                                   const su2double pExchange,
-                                                   const su2double Wall_HeatFlux,
-                                                   const bool      HeatFlux_Prescribed,
-                                                   const su2double Wall_Temperature,
-                                                   const bool      Temperature_Prescribed,
-                                                         su2double &tauWall,
-                                                         su2double &qWall,
-                                                         su2double &ViscosityWall,
-                                                         su2double &kOverCvWall) {}
-
-inline CWallModel1DEQ::CWallModel1DEQ(void) : CWallModel(){
-  expansionRatio = 0.0;
-  numPoints      = 0;
-}
-
 inline CWallModel1DEQ::~CWallModel1DEQ(void){}
-
-inline CWallModelLogLaw::CWallModelLogLaw(void) : CWallModel(){
-  expansionRatio = 0.0;
-  numPoints      = 0;
-}
 
 inline CWallModelLogLaw::~CWallModelLogLaw(void){}
 

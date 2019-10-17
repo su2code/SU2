@@ -80,6 +80,10 @@ inline unsigned long CPoint::GetPoint(unsigned short val_point) { return Point[v
 
 inline su2double CPoint::GetVolume (void) { return Volume[0]; }
 
+inline su2double CPoint::GetPeriodicVolume (void) { return Periodic_Volume; }
+
+inline void CPoint::SetPeriodicVolume (su2double val_volume) { Periodic_Volume = val_volume; }
+
 inline su2double CPoint::GetMaxLength(void) {return MaxLength;}
 
 inline bool CPoint::GetMove (void) { return Move; }
@@ -95,6 +99,10 @@ inline bool CPoint::GetPhysicalBoundary(void) { return PhysicalBoundary; }
 inline void CPoint::SetSolidBoundary(bool val_boundary) { SolidBoundary = val_boundary; }
 
 inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
+
+inline void CPoint::SetPeriodicBoundary(bool val_boundary) { PeriodicBoundary = val_boundary; }
+
+inline bool CPoint::GetPeriodicBoundary(void) { return PeriodicBoundary; }
 
 inline void CPoint::AddVolume (su2double val_Volume) { Volume[0] += val_Volume; }
 
@@ -164,8 +172,8 @@ inline void CPoint::SetnChildren_CV (unsigned short val_nchildren_CV) {	nChildre
 inline void CPoint::SetParent_CV (unsigned long val_parent_CV) { Parent_CV = val_parent_CV; Agglomerate = true; }
 
 inline void CPoint::SetGridVel(su2double *val_gridvel) { 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		GridVel[iDim] = val_gridvel[iDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    GridVel[iDim] = val_gridvel[iDim];
 }
 
 inline void CPoint::SetVolume_n (void) { Volume[1] = Volume[0]; }
@@ -175,6 +183,11 @@ inline void CPoint::SetVolume_nM1 (void) { Volume[2] = Volume[1]; }
 inline su2double CPoint::GetVolume_n (void) { return Volume[1]; }
 
 inline su2double CPoint::GetVolume_nM1 (void) { return Volume[2]; }
+
+inline void CPoint::SetCoord_Old (void) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Coord_Old[iDim] = Coord[iDim];
+}
 
 inline void CPoint::SetCoord_n (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -207,13 +220,13 @@ inline su2double *CPoint::GetCoord_n1 (void) { return Coord_n1; }
 
 inline su2double *CPoint::GetCoord_p1 (void) { return Coord_p1; }
 
-inline void CPoint::SetColor(unsigned short val_color) { color = val_color; }
+inline void CPoint::SetColor(unsigned long val_color) { color = val_color; }
 
 inline void CPoint::SetnNeighbor(unsigned short val_nneighbor) { nNeighbor = val_nneighbor; }
 
 inline unsigned short CPoint::GetnNeighbor(void) { return nNeighbor; }
 
-inline unsigned short CPoint::GetColor(void) { return color; }
+inline unsigned long CPoint::GetColor(void) { return color; }
 
 inline unsigned long CPoint::GetGlobalIndex(void) { return GlobalIndex; }
 

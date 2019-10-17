@@ -46,8 +46,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
   bool fem_solver = false;
-  bool periodic   = false;
-  bool multizone  = false;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -72,7 +70,6 @@ int main(int argc, char *argv[]) {
   CGeometry ***geometry_container       = NULL;
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
-  COutput *output                       = NULL;
   unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -88,8 +85,7 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_DOT);
 
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
   
@@ -97,6 +93,7 @@ int main(int argc, char *argv[]) {
   geometry_container  = new CGeometry**[nZone];
   surface_movement    = new CSurfaceMovement*[nZone];
   grid_movement       = new CVolumetricMovement*[nZone];
+  
   nInst               = new unsigned short[nZone];
   driver_config       = NULL;
   
@@ -109,32 +106,45 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, ZONE_0, nZone, 0, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_DOT, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
 
-  /*--- Store a boolean for multizone problems ---*/
-  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Definition of the configuration option class for all zones. In this
+     constructor, the input configuration file is parsed and all options are
+     read and stored. ---*/
+    
+    if (driver_config->GetnConfigFiles() > 0){
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);
+    }
+    else{
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, true);
+    }
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+
+  }
+  
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetMultizone_Problem()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+  
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    
-    /*--- Definition of the configuration option class for all zones. In this
-     constructor, the input configuration file is parsed and all options are
-     read and stored. ---*/
-    
-    if (multizone){
-      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
-    }
-    else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
-    }
-    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
@@ -167,9 +177,7 @@ int main(int argc, char *argv[]) {
       if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
       else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines
-       will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
       if( fem_solver ) {
         switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -180,11 +188,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else {
-        if (periodic) {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-        }
+        geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
       }
 
       /*--- Deallocate the memory of geometry_aux ---*/
@@ -276,6 +280,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
   geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+    
+  geometry_container[iZone][INST_0]->PreprocessP2PComms(geometry_container[iZone][INST_0], config_container[iZone]);
+    
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
@@ -304,8 +312,7 @@ int main(int argc, char *argv[]) {
    if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
      if (rank == MASTER_NODE)
        cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
-     output = new COutput(config_container[ZONE_0]);
-     output->SetSensitivity_Files(geometry_container, config_container, nZone);
+     SetSensitivity_Files(geometry_container, config_container, nZone);
    }
 
    if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
@@ -422,9 +429,6 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  if (output != NULL) delete output;
-  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
-
   if (cstr != NULL) delete cstr;
   
   /*--- Synchronization point after a single solver iteration. Compute the
@@ -892,3 +896,129 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
     }
   }
 }
+
+
+void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
+
+  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
+  unsigned long iVertex, iPoint, nPoint, nVertex;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
+  
+  unsigned short iZone;
+  
+  CSolver *solver  = NULL;
+  COutput *output  = NULL;
+
+  
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    
+    nPoint = geometry[iZone][INST_0]->GetnPoint();
+    nDim   = geometry[iZone][INST_0]->GetnDim();
+    nMarker = config[iZone]->GetnMarker_All();
+    nVar = nDim + 1;
+    
+    /*--- We create a baseline solver to easily merge the sensitivity information ---*/
+    
+    vector<string> fieldnames;
+    fieldnames.push_back("\"Point\"");
+    fieldnames.push_back("\"x\"");
+    fieldnames.push_back("\"y\"");
+    if (nDim == 3) {
+      fieldnames.push_back("\"z\"");
+    }
+    fieldnames.push_back("\"Sensitivity_x\"");
+    fieldnames.push_back("\"Sensitivity_y\"");
+    if (nDim == 3) {
+      fieldnames.push_back("\"Sensitivity_z\"");
+    }
+    fieldnames.push_back("\"Surface_Sensitivity\"");
+    
+    solver = new CBaselineSolver(geometry[iZone][INST_0], config[iZone], nVar+nDim, fieldnames);
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        solver->GetNodes()->SetSolution(iPoint, iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
+      }
+      for (iVar = 0; iVar < nDim; iVar++) {
+        solver->GetNodes()->SetSolution(iPoint, iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
+      }
+    }
+    
+    /*--- Compute the sensitivity in normal direction ---*/
+    
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      
+      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
+        
+        
+        nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
+        
+        for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          iPoint = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNormal();
+          Prod = 0.0;
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            
+            /*--- Retrieve the gradient calculated with discrete adjoint method ---*/
+            
+            SensDim = geometry[iZone][INST_0]->GetSensitivity(iPoint, iDim);
+            
+            /*--- Calculate scalar product for projection onto the normal vector ---*/
+            
+            Prod += Normal[iDim]*SensDim;
+            
+            Area += Normal[iDim]*Normal[iDim];
+          }
+          
+          Area = sqrt(Area);
+          
+          /*--- Projection of the gradient onto the normal vector of the surface ---*/
+          
+          Sens = Prod/Area;
+          
+          solver->GetNodes()->SetSolution(iPoint, 2*nDim, Sens);
+          
+        }
+      }
+    }
+    
+    output = new CBaselineOutput(config[iZone], geometry[iZone][INST_0]->GetnDim(), solver);
+    output->PreprocessVolumeOutput(config[iZone]);
+    output->PreprocessHistoryOutput(config[iZone], false);
+    
+    /*--- Load the data --- */
+    
+    output->Load_Data(geometry[iZone][INST_0], config[iZone], &solver);
+
+    /*--- Set the surface filename ---*/
+    
+    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
+    
+    /*--- Set the surface filename ---*/
+    
+    output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
+    
+    /*--- Write to file ---*/
+    
+    for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
+      if (FileFormat[iFile] != RESTART_ASCII &&
+          FileFormat[iFile] != RESTART_BINARY &&
+          FileFormat[iFile] != CSV)
+        output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
+    }
+    
+    /*--- Free memory ---*/
+    
+    delete output;
+    delete solver;    
+    
+  }
+  
+
+}
+

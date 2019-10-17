@@ -48,12 +48,16 @@ threads="1"
 ) pysu2
 %{
 
-#include "../../SU2_CFD/include/driver_structure.hpp"
-
+#include "../../SU2_CFD/include/drivers/CDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+  
 %}
 
 // ----------- USED MODULES ------------
 %import "../../Common/include/datatypes/primitive_structure.hpp"
+%import "../../Common/include/datatype_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
 %include "std_vector.i"
@@ -94,4 +98,7 @@ const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. 
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
 // CDriver class
-%include "../../SU2_CFD/include/driver_structure.hpp"
+%include "../../SU2_CFD/include/drivers/CDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"

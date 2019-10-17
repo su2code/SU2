@@ -36,12 +36,15 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CAdjTurbVariable.hpp"
 
 CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint;
+
   unsigned short iDim, iVar, nLineLets;
+
+  adjoint = true;
 
   nDim = geometry->GetnDim();
   Gamma = config->GetGamma();
@@ -49,9 +52,13 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Dimension of the problem  ---*/
   switch (config->GetKind_Turb_Model()) {
-    case SA :     nVar = 1; break;
-    case SA_NEG : nVar = 1; break;
-    case SST :    nVar = 2; break;
+    case SA :        nVar = 1; break;
+    case SA_NEG :    nVar = 1; break;
+    case SA_E :      nVar = 1; break;
+    case SA_COMP :   nVar = 1; break;
+    case SA_E_COMP : nVar = 1; break;
+    case SST :       nVar = 2; break;
+    case SST_SUST :  nVar = 2; break;
   }
   
   /*--- Initialize nVarGrad for deallocation ---*/
@@ -95,8 +102,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialization of the structure of the whole Jacobian ---*/
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
     if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
   }
@@ -118,16 +124,12 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
   
   /*--- Far-Field values and initizalization ---*/
-  node = new CVariable* [nPoint];
   bool restart = config->GetRestart();
-  
-  if (!restart || (iMesh != MESH_0)) {
-    PsiNu_Inf = 0.0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjTurbVariable(PsiNu_Inf, nDim, nVar, config);
-    }
-  }
-  else {
+
+  nodes = new CAdjTurbVariable(0.0, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
+
+  if (restart && (iMesh == MESH_0)) {
     unsigned long index;
     su2double dull_val;
     string filename, AdjExt, text_line;
@@ -167,7 +169,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
         
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-        node[iPoint_Local] = new CAdjTurbVariable(Solution[0], nDim, nVar, config);
+        nodes->SetSolution(iPoint_Local,0,Solution[0]);
+        nodes->SetSolution_Old(iPoint_Local,0,Solution[0]);
         iPoint_Global_Local++;
       }
 
@@ -187,296 +190,19 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
                        string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
     
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjTurbVariable(Solution[0], nDim, nVar, config);
-    }
-    
     /*--- Close the restart file ---*/
     restart_file.close();
-    
   }
   
   /*--- MPI solution ---*/
-  Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
 }
 
 CAdjTurbSolver::~CAdjTurbSolver(void) {
-}
-
-void CAdjTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-            
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
-      }
-      
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-    SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy conservative variables. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-      
-    }
-    
-  }
-  
-}
-
-void CAdjTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-      
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
-      }
-      
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-    SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution_Old(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-      
-    }
-    
-  }
-}
-
-void CAdjTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-  
-  su2double **Gradient = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Gradient[iVar] = new su2double[nDim];
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-    
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
-      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
-      
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
-      }
-      
-#ifdef HAVE_MPI
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-    SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Gradient;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-        
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-        
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-        
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-        
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
-        
-        /*--- Need to rotate the gradients for all conserved variables. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (nDim == 2) {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
-          }
-          else {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-          }
-        }
-        
-        /*--- Store the received information ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            node[iPoint]->SetGradient(iVar, iDim, Gradient[iVar][iDim]);
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Gradient;
-      
-    }
-    
-  }
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Gradient[iVar];
-  delete [] Gradient;
-  
+  if (nodes != nullptr) delete nodes;
 }
 
 void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -492,7 +218,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       Solution[0] = 0.0;
       
       /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -516,7 +242,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       Solution[0] = 0.0;
       
       /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -538,11 +264,11 @@ void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     conv_numerics->SetNormal(geometry->vertex[val_marker][iVertex]->GetNormal());
 
     /*--- Set Conservative variables (for convection) ---*/
-    su2double* U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+    su2double* U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
     conv_numerics->SetConservative(U_i, NULL);
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    su2double* TurbPsi_i = node[iPoint]->GetSolution();
+    su2double* TurbPsi_i = nodes->GetSolution(iPoint);
     conv_numerics->SetTurbAdjointVar(TurbPsi_i, NULL);
     
     /*--- Add Residuals and Jacobians ---*/
@@ -601,21 +327,21 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     /*--- Conservative variables w/o reconstruction ---*/
-    U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    U_j = solver_container[FLOW_SOL]->node[jPoint]->GetSolution();
+    U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+    U_j = solver_container[FLOW_SOL]->GetNodes()->GetSolution(jPoint);
     numerics->SetConservative(U_i, U_j);
     
     /*--- Set normal vectors and length ---*/
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    TurbPsi_i = node[iPoint]->GetSolution();
-    TurbPsi_j = node[jPoint]->GetSolution();
+    TurbPsi_i = nodes->GetSolution(iPoint);
+    TurbPsi_j = nodes->GetSolution(jPoint);
     numerics->SetTurbAdjointVar(TurbPsi_i, TurbPsi_j);
     
     /*--- Gradient of turbulent variables w/o reconstruction ---*/
-    TurbVar_Grad_i = solver_container[TURB_SOL]->node[iPoint]->GetGradient();
-    TurbVar_Grad_j = solver_container[TURB_SOL]->node[jPoint]->GetGradient();
+    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
+    TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
     
 //    if (muscl) {
@@ -625,8 +351,8 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 //        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
 //        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
 //      }
-//      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient();
-//      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient();
+//      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient(iPoint);
+//      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient(jPoint);
 //      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
 //        Project_Grad_i = 0; Project_Grad_j = 0;
 //        for (iDim = 0; iDim < nDim; iDim++) {
@@ -696,16 +422,16 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Conservative variables w/o reconstruction, turbulent variables w/o reconstruction,
      and turbulent adjoint variables w/o reconstruction ---*/
-    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
-    numerics->SetTurbVar(solver_container[TURB_SOL]->node[iPoint]->GetSolution(), solver_container[TURB_SOL]->node[jPoint]->GetSolution());
-    numerics->SetTurbAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+    numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint), solver_container[FLOW_SOL]->GetNodes()->GetSolution(jPoint));
+    numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
+    numerics->SetTurbAdjointVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
     
     /*--- Viscosity ---*/
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                  solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint),
+                                  solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint));
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    numerics->SetTurbAdjointGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+    numerics->SetTurbAdjointGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
     
     /*--- Compute residual in a non-conservative way, and update ---*/
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
@@ -732,31 +458,31 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
         
     /*--- Conservative variables w/o reconstruction ---*/
-    U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+    U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
     numerics->SetConservative(U_i, NULL);
     
     /*--- Gradient of primitive variables w/o reconstruction ---*/
-    GradPrimVar_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+    GradPrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     numerics->SetPrimVarGradient(GradPrimVar_i, NULL);
     
     /*--- Laminar viscosity of the fluid ---*/
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint), 0.0);
     
     /*--- Turbulent variables w/o reconstruction ---*/
-    TurbVar_i = solver_container[TURB_SOL]->node[iPoint]->GetSolution();
+    TurbVar_i = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint);
     numerics->SetTurbVar(TurbVar_i, NULL);
     
     /*--- Gradient of Turbulent Variables w/o reconstruction ---*/
-    TurbVar_Grad_i = solver_container[TURB_SOL]->node[iPoint]->GetGradient();
+    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
     numerics->SetTurbVarGradient(TurbVar_Grad_i, NULL);
     
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
-    TurbPsi_i = node[iPoint]->GetSolution();
+    TurbPsi_i = nodes->GetSolution(iPoint);
     numerics->SetTurbAdjointVar(TurbPsi_i, NULL);
     
     /*--- Gradient of Adjoint flow variables w/o reconstruction
      (for non-conservative terms depending on gradients of flow adjoint vars.) ---*/
-    PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
+    PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->GetNodes()->GetGradient(iPoint);
     numerics->SetAdjointVarGradient(PsiVar_Grad_i, NULL);
 
     /*--- Set volume and distances to the surface ---*/
@@ -781,13 +507,13 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    jPoint = geometry->edge[iEdge]->GetNode(1);
 //    
 //    /*--- Gradient of turbulent variables w/o reconstruction ---*/
-//    TurbVar_Grad_i = solver_container[TURB_SOL]->node[iPoint]->GetGradient();
-//    TurbVar_Grad_j = solver_container[TURB_SOL]->node[jPoint]->GetGradient();
+//    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
+//    TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
 //    second_numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
 //    
 //    /*--- Turbulent adjoint variables w/o reconstruction ---*/
-//    TurbPsi_i = node[iPoint]->GetSolution();
-//    TurbPsi_j = node[jPoint]->GetSolution();
+//    TurbPsi_i = nodes->GetSolution(iPoint);
+//    TurbPsi_j = nodes->GetSolution(jPoint);
 //    second_numerics->SetTurbAdjointVar(TurbPsi_i, TurbPsi_j);
 //    
 //    /*--- Set normal vectors and length ---*/
@@ -829,7 +555,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / (config->GetCFLRedCoeff_AdjTurb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta = Vol / (config->GetCFLRedCoeff_AdjTurb()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     
     Jacobian.AddVal2Diag(iPoint, Delta);
     
@@ -863,12 +589,13 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++)
-      node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      nodes->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
   }
   
   /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
+    
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Compute the root mean square residual ---*/
   
