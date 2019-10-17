@@ -27,9 +27,8 @@ int  LoadSU2Mesh (char *FilNam, Mesh *Msh);
 int  LoadSU2Solution(char *SolNam, Mesh *Msh);
 int  LoadSU2Vertices (FILE *FilHdl, Mesh *Msh);
 void WriteSU2Mesh(char *nam, Mesh *Msh);
-int  WriteSU2Solution (char *SolNam, Mesh *Msh, double *Sol, int NbrVer, int SolSiz, char SolTag[100][256]);
 int  GetSU2SolSize(char *SolNam);
-int  WriteSU2Solution_2 (char *SolNam, int Dim, int NbrVer, double3 *Ver,  double *Sol, int SolSiz, char SolTag[100][256]);
+int  WriteSU2Solution (char *SolNam, int Dim, int NbrVer, double3 *Ver,  double *Sol, int SolSiz, char SolTag[100][256]);
 
 //--- GMFio.c
 int AddGMFMeshSize (char *MshNam, int *SizMsh);

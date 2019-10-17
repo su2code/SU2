@@ -1016,7 +1016,8 @@ void WriteSU2Mesh(char *nam, Mesh *Msh)
 
 
 
-int WriteSU2Solution (char *SolNam, Mesh *Msh, double *Sol, int NbrVer, int SolSiz, char SolTag[100][256])
+
+int  WriteSU2Solution (char *SolNam, int Dim, int NbrVer, double3 *Ver,  double *Sol, int SolSiz, char SolTag[100][256])
 {
   int       i, s, d;
   int       iVer,idxVer;
@@ -1036,75 +1037,24 @@ int WriteSU2Solution (char *SolNam, Mesh *Msh, double *Sol, int NbrVer, int SolS
 	//--- Write header
 	
 	fprintf(OutFil,"\"PointID\",\"x\",\"y\",");
-	if ( Msh->Dim == 3 ) fprintf(OutFil,"\"z\",");	
+	if ( Dim == 3 ) fprintf(OutFil,"\"z\",");	
 	for (i=0; i<SolSiz-1; i++) {
 		fprintf(OutFil, "\"%s\",", SolTag[i]);
 	}
-	fprintf(OutFil, "\"%s\"\n", SolTag[i])
+	fprintf(OutFil, "\"%s\"\n", SolTag[i]);
 	
 	//--- Write solution at vertices
   
 	for (iVer=1; iVer<=NbrVer; iVer++) {
 		fprintf(OutFil, "%d, ", iVer-1);
-		for (d=0; d<Msh->Dim; d++)
-			fprintf(OutFil, "%.15le, ", Msh->Ver[iVer][d]);
+		for (d=0; d<Dim; d++)
+			fprintf(OutFil, "%.15le, ", Ver[iVer][d]);
 		
 		idxVer = iVer*SolSiz;
 		for (i=0; i<SolSiz-1; i++) {
 			fprintf(OutFil, "%.15le, ", Sol[idxVer+i]);
 		}
 		fprintf(OutFil, "%.15le\n", Sol[idxVer+i]);
-	}
-  
-  //--- close mesh file
-	if ( OutFil )
-		fclose(OutFil);
-	
-  
-  return 1;
-}
-
-
-
-
-int  WriteSU2Solution_2 (char *SolNam, int Dim, int NbrVer, double3 *Ver,  double *Sol, int SolSiz, char SolTag[100][256])
-{
-  int       i, s, d;
-  int       iVer,idxVer;
-	
-	int2 *BdrTag=NULL;
-	int NbrBdr, NbrTag, start, iTag, cpt;
-	
-	FILE *OutFil=NULL; 
-	OutFil = fopen(SolNam, "wb");
-	
-	if ( !OutFil ) {
-		printf("  ## ERROR WriteSU2Solution: Can't open %s\n", SolNam);
-	}
- 	
-  //printf("  %%%% %s OPENED (WRITE)\n",SolNam);
-	
-	//--- Write header
-	
-	fprintf(OutFil,"\"PointID\"	\"x\"	\"y\"	");
-	if ( Dim == 3 ) fprintf(OutFil,"\"z\"	");	
-	for (i=0; i<SolSiz; i++) {
-		fprintf(OutFil, "\"%s\"	", SolTag[i]);
-	}
-	fprintf(OutFil, "\n");
-	
-	//--- Write solution at vertices
-  
-	for (iVer=1; iVer<=NbrVer; iVer++) {
-		fprintf(OutFil, "%d	", iVer-1);
-		for (d=0; d<Dim; d++)
-			fprintf(OutFil, "%.15le	", Ver[iVer][d]);
-		
-		idxVer = iVer*SolSiz;
-		for (i=0; i<SolSiz; i++) {
-			fprintf(OutFil, "%.15le	", Sol[idxVer+i]);
-		}
-		fprintf(OutFil, "\n");
 	}
   
   //--- close mesh file

@@ -581,7 +581,7 @@ void py_WriteSolution(char *SolNam, PyObject *pyVer, PyObject *pySol, PyObject *
 			WriteGMFSolution(SolNam, Sol, SolSiz, NbrVer, Dim, NbrFld, FldTab);
 		}
 		else {
-			WriteSU2Solution_2 (SolNam, Dim, NbrVer, Ver, Sol, SolSiz, SolTag);
+			WriteSU2Solution (SolNam, Dim, NbrVer, Ver, Sol, SolSiz, SolTag);
 		}
 		
 	}	
