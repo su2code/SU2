@@ -1098,7 +1098,7 @@ private:
   bool error_estimate;               /*!< \brief Determines if error estimation is taking place */
   unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
   bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
-  bool Wrt_Aniso_Mesh;               /*!< \brief Whether or not to write meshb files */
+  bool Wrt_InriaMesh;                /*!< \brief Whether or not to write meshb files */
   su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
             Mesh_Hmax,               /*!< \brief Maximum cell size */
             Mesh_Hmin;               /*!< \brief Minimum cell size */

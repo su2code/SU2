@@ -1479,9 +1479,9 @@ inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
 inline string CConfig::GetBreakdown_FileName(void) { return Breakdown_FileName; }
 
-inline string CConfig::GetSolution_FileName(void) { return Solution_FlowFileName; }
+inline string CConfig::GetSolution_FileName(void) { return Solution_FileName; }
 
-inline void CConfig::SetSolution_FileName(string val_filename) { Solution_FlowFileName = val_filename; }
+inline void CConfig::SetSolution_FileName(string val_filename) { Solution_FileName = val_filename; }
 
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
 
@@ -1491,7 +1491,7 @@ inline string CConfig::GetVolume_FileName(void) { return Volume_FileName; }
 
 inline string CConfig::GetRestart_FileName(void) { return Restart_FileName; }
 
-inline void CConfig::SetRestart_FileName(string val_filename) { Restart_FlowFileName = val_filename; }
+inline void CConfig::SetRestart_FileName(string val_filename) { Restart_FileName = val_filename; }
 
 inline string CConfig::GetRestart_AdjFileName(void) { return Restart_AdjFileName; }
 
