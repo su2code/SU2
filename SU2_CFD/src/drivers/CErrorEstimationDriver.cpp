@@ -1283,27 +1283,26 @@ void CErrorEstimationDriver::Output() {
 
   /*--- Load history data (volume output might require some values) --- */
   
-  output->SetHistory_Output(geometry, solver, config, TimeIter, 0, 0);
+  output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], solver[ZONE_0][INST_0], config[ZONE_0], TimeIter, 0, 0);
   
   /*--- Load the data --- */
   
-  output->Load_Data(geometry, config, solver);
+  output->Load_Data(geometry[ZONE_0][INST_0][MESH_0], config[ZONE_0], solver);
   
   /*--- Set the filenames ---*/
   
-  output->SetVolume_Filename(config->GetVolume_FileName());
+  output->SetVolume_Filename(config[ZONE_0]->GetVolume_FileName());
   
-  output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+  output->SetSurface_Filename(config[ZONE_0]->GetSurfCoeff_FileName());
   
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-    unsigned short* FileFormat = config->GetVolumeOutputFiles();
-    output->WriteToFile(config, geometry, FileFormat[iFile]);
+    unsigned short* FileFormat = config[ZONE_0]->GetVolumeOutputFiles();
+    output->WriteToFile(config[ZONE_0], geometry[ZONE_0][INST_0][MESH_0], FileFormat[iFile]);
 
     /*--- For now we need ASCII restarts for AMGIO ---*/
-    output->WriteToFile(config, geometry, RESTART_ASCII);
+    output->WriteToFile(config[ZONE_0], geometry[ZONE_0][INST_0][MESH_0], RESTART_ASCII);
   }
 
-  
 }
 
 // void CErrorEstimationDriver::SetAdaptationData() {
