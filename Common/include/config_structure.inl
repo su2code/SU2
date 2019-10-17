@@ -2112,4 +2112,4 @@ inline su2double CConfig::GetMesh_Hmax(void) { return Mesh_Hmax; }
 
 inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
 
-inline unsigned long CConfig::GetMesh_Complexity( return Mesh_Complexity; )
+inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }
