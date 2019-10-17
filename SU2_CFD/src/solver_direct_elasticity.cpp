@@ -535,7 +535,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
   string filename;
   ifstream properties_file;
 
-  element_properties = new CElementProperty*[nElement];
+  element_properties = new CProperty*[nElement];
 
   /*--- Restart the solution from file information ---*/
 

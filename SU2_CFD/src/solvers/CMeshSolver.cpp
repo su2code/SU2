@@ -185,9 +185,9 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
 
     /*--- Allocate element properties - only the index, to allow further integration with CFEASolver on a later stage ---*/
-    element_properties = new CElementProperty*[nElement];
+    element_properties = new CProperty*[nElement];
     for (iElem = 0; iElem < nElement; iElem++){
-      // element_properties[iElem] = new CProperty(iElem);
+      element_properties[iElem] = new CProperty(iElem);
     }
 
     /*--- Compute the element volumes using the reference coordinates ---*/
@@ -447,7 +447,7 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
       }
 
       /*--- Set the element elastic properties in the numerics container ---*/
-      // numerics[FEA_TERM]->SetMeshElasticProperties(iElem, E);
+      numerics[FEA_TERM]->SetMeshElasticProperties(iElem, E);
 
     }
 
