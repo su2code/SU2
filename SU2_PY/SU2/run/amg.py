@@ -476,19 +476,19 @@ def amg ( config , kind='' ):
                     
             #--- Print convergence history
             
-            plot_format      = config_cfd['OUTPUT_FORMAT']
-            plot_extension   = su2io.get_extension(plot_format)
-            history_filename = "ite%d_history" % global_iter + plot_extension
+            # plot_format      = config_cfd['OUTPUT_FORMAT']
+            # plot_extension   = su2io.get_extension(plot_format)
+            # history_filename = "ite%d_history" % global_iter + plot_extension
             
-            history = su2io.read_history(history_filename)
+            # history = su2io.read_history(history_filename)
             
-            res_flow = history['Res_Flow[0]']
-            res_cvg = max(res_flow)-min(res_flow)
+            # res_flow = history['Res_Flow[0]']
+            # res_cvg = max(res_flow)-min(res_flow)
             
-            del history
+            # del history
             
-            sys.stdout.write(' %s CFD done. Residual convergence %.2lf orders of magnitude\n' % (pad_nul, res_cvg))
-            sys.stdout.flush()
+            # sys.stdout.write(' %s CFD done. Residual convergence %.2lf orders of magnitude\n' % (pad_nul, res_cvg))
+            # sys.stdout.flush()
             
             
             # to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
