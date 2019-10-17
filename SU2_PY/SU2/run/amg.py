@@ -115,6 +115,8 @@ def amg ( config , kind='' ):
     
     config_cfd.WRT_BINARY_RESTART  = "NO"
     config_cfd.READ_BINARY_RESTART = "NO"
+
+    config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION)"
         
     current_mesh     = "Initial_mesh"
     current_solution = "Initial_solution"
@@ -155,6 +157,7 @@ def amg ( config , kind='' ):
                 SU2_CFD(config_cfd)
 
                 config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
+                config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
                 config_cfd.ERROR_ESTIMATE         = 'YES'
                 config_cfd.MESH_HMAX              = config.ADAP_HMAX
                 config_cfd.MESH_HMIN              = config.ADAP_HMIN
@@ -193,6 +196,7 @@ def amg ( config , kind='' ):
         config_cfd.RESTART_FILENAME       = current_solution
         config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
+        config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
         config_cfd.ERROR_ESTIMATE         = 'YES'
         config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
         config_cfd.MESH_HMAX              = config.ADAP_HMAX
@@ -428,6 +432,7 @@ def amg ( config , kind='' ):
                 config_cfd.CONV_FILENAME     = "ite%d_history" % global_iter
                 config_cfd.SOLUTION_FILENAME = current_solution_ini
                 config_cfd.RESTART_FILENAME  = current_solution
+                config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION)"
                 config_cfd.ERROR_ESTIMATE    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
@@ -455,6 +460,7 @@ def amg ( config , kind='' ):
                     SU2_CFD(config_cfd)
 
                     config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
+                    config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
                     config_cfd.ERROR_ESTIMATE         = 'YES'
                     config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_MET(config_cfd)
