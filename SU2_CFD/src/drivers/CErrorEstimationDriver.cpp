@@ -636,23 +636,8 @@ void CErrorEstimationDriver::Solver_Restart(CSolver ****solver, CGeometry ***geo
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC); // Dynamic simulation (FSI).
-
-  if (dual_time) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-  }
-
-  if (time_stepping) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-  }
 
   /*--- Assign booleans ---*/
 
@@ -874,22 +859,18 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    //--- initialize metric tensor
-    for(unsigned short im = 0; im < nMetr; ++im)
-      solver_flow->node[iPoint]->SetAnisoMetr(im, 0.0);
-
     //--- perform summation of weighted mean flow Hessians
     for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
 
       for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
         const unsigned short ig = iVar*nDim + iFlux;
-        const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
+        const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-          const su2double hess = solver_flow->nodes->GetAnisoHess(iPoint, ih);
+          const su2double hess = solver_flow->GetNodes()->GetAnisoHess(iPoint, ih);
           const su2double part = abs(grad)*hess;
-          solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
         }
       }
     }
@@ -901,13 +882,13 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
+          const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_flow->nodes->GetAnisoViscHess(iPoint, ih);
+            const su2double hess = solver_flow->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -918,14 +899,14 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjturb->nodes->GetAnisoGrad(iPoint, ig);
+          const su2double grad = solver_adjturb->GetNodes()->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_turb->nodes->GetAnisoHess(iPoint, ih) 
-                                 + solver_turb->nodes->GetAnisoViscHess(iPoint, ih);
+            const su2double hess = solver_turb->GetNodes()->GetAnisoHess(iPoint, ih) 
+                                 + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -935,9 +916,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
@@ -948,9 +929,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -966,9 +947,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
@@ -981,9 +962,9 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
@@ -1043,22 +1024,18 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    //--- initialize metric tensor
-    for(unsigned short im = 0; im < nMetr; ++im)
-      solver_flow->node[iPoint]->SetAnisoMetr(im, 0.0);
-
     //--- perform summation of weighted mean flow Hessians
     for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
 
       for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
         const unsigned short ig = iVar*nDim + iFlux;
-        const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
+        const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-          const su2double hess = solver_flow->nodes->GetAnisoHess(iPoint, ih);
+          const su2double hess = solver_flow->GetNodes()->GetAnisoHess(iPoint, ih);
           const su2double part = abs(grad)*hess;
-          solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
         }
       }
     }
@@ -1070,13 +1047,13 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjflow->nodes->GetAnisoGrad(iPoint, ig);
+          const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_flow->nodes->GetAnisoViscHess(iPoint, ih);
+            const su2double hess = solver_flow->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -1087,14 +1064,14 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
         for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
           const unsigned short ig = iVar*nDim + iFlux;
-          const su2double grad = solver_adjturb->nodes->GetAnisoGrad(iPoint, ig);
+          const su2double grad = solver_adjturb->GetNodes()->GetAnisoGrad(iPoint, ig);
 
           for (unsigned short im = 0; im < nMetr; ++im) {
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
-            const su2double hess = solver_turb->nodes->GetAnisoHess(iPoint, ih) 
-                                 + solver_turb->nodes->GetAnisoViscHess(iPoint, ih);
+            const su2double hess = solver_turb->GetNodes()->GetAnisoHess(iPoint, ih) 
+                                 + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
-            solver_flow->nodes->AddAnisoMetr(iPoint, im,part);
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
           }
         }
       }
@@ -1104,12 +1081,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
-    const su2double d = solver_flow->nodes->GetAnisoMetr(iPoint, 3);
-    const su2double e = solver_flow->nodes->GetAnisoMetr(iPoint, 4);
-    const su2double f = solver_flow->nodes->GetAnisoMetr(iPoint, 5);
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
+    const su2double d = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 3);
+    const su2double e = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 4);
+    const su2double f = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 5);
 
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
@@ -1121,12 +1098,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[0][2]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 3, A[1][1]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 4, A[1][2]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[0][2]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[1][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[1][2]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -1142,12 +1119,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = solver_flow->nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = solver_flow->nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = solver_flow->nodes->GetAnisoMetr(iPoint, 2);
-    const su2double d = solver_flow->nodes->GetAnisoMetr(iPoint, 3);
-    const su2double e = solver_flow->nodes->GetAnisoMetr(iPoint, 4);
-    const su2double f = solver_flow->nodes->GetAnisoMetr(iPoint, 5);
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
+    const su2double d = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 3);
+    const su2double e = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 4);
+    const su2double f = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 5);
 
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
@@ -1162,12 +1139,12 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     //--- store lower triangle to be consistent with AMG
-    solver_flow->nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 1, A[1][0]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 3, A[2][0]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 4, A[2][1]);
-    solver_flow->nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[1][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[2][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[2][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
