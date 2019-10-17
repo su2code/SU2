@@ -37,9 +37,6 @@
 
 
 #include "../../../include/output/filewriter/CInriaFileWriter.hpp"
-#include "../../../include/solver_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../../Common/include/config_structure.hpp"
 
 enum BCVAR  { bcMach, bcTemp, bcPres, bcDens, bcGoal };
 

@@ -545,17 +545,17 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
     if (nDim == 2){
-      SetVolumeOutputData("ANISO_METR0", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
-      SetVolumeOutputData("ANISO_METR1", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
-      SetVolumeOutputData("ANISO_METR2", iPoint, Node_Flow->GetAnisoMetr(iPoint, 2));
+      SetVolumeOutputValue("ANISO_METR0", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
+      SetVolumeOutputValue("ANISO_METR1", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
+      SetVolumeOutputValue("ANISO_METR2", iPoint, Node_Flow->GetAnisoMetr(iPoint, 2));
     }
     else{
-      SetVolumeOutputData("ANISO_METR0", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
-      SetVolumeOutputData("ANISO_METR1", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
-      SetVolumeOutputData("ANISO_METR2", iPoint, Node_Flow->GetAnisoMetr(iPoint, 2));
-      SetVolumeOutputData("ANISO_METR3", iPoint, Node_Flow->GetAnisoMetr(iPoint, 3));
-      SetVolumeOutputData("ANISO_METR4", iPoint, Node_Flow->GetAnisoMetr(iPoint, 4));
-      SetVolumeOutputData("ANISO_METR5", iPoint, Node_Flow->GetAnisoMetr(iPoint, 5));
+      SetVolumeOutputValue("ANISO_METR0", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
+      SetVolumeOutputValue("ANISO_METR1", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
+      SetVolumeOutputValue("ANISO_METR2", iPoint, Node_Flow->GetAnisoMetr(iPoint, 2));
+      SetVolumeOutputValue("ANISO_METR3", iPoint, Node_Flow->GetAnisoMetr(iPoint, 3));
+      SetVolumeOutputValue("ANISO_METR4", iPoint, Node_Flow->GetAnisoMetr(iPoint, 4));
+      SetVolumeOutputValue("ANISO_METR5", iPoint, Node_Flow->GetAnisoMetr(iPoint, 5));
     }
   }
   

@@ -38,6 +38,7 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
+#include "../../include/output/filewriter/CInriaFileWriter.hpp"
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"

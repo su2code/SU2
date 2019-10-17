@@ -37,6 +37,9 @@
 
 #pragma once
 #include "CFileWriter.hpp"
+#include "../../../include/solver_structure.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/config_structure.hpp"
 
 class CInriaFileWriter final: public CFileWriter{
 
@@ -78,52 +81,53 @@ class CInriaFileWriter final: public CFileWriter{
    */
   void WriteInriaMesh(CConfig *config, CGeometry *geometry);
 
-  /*!
-   * \brief Organizes the all the solutions for AMG.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                          unsigned short val_nZone);
+  // /*!
+  //  * \brief Organizes the all the solutions for AMG.
+  //  * \param[in] solver_container - Container vector with all the solutions.
+  //  * \param[in] geometry - Geometrical definition of the problem.
+  //  * \param[in] config - Definition of the particular problem.
+  //  * \param[in] val_nZone - Total number of domains in the grid file.
+  //  */
+  // void SetResult_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
+  //                         unsigned short val_nZone);
 
-  /*!
-   * \brief Returns a sorted solution value for AMG for the current processor.
-   */
-  vector<vector<passivedouble> > GetResult_Parallel(void);
+  // /*!
+  //  * \brief Returns a sorted solution value for AMG for the current processor.
+  //  */
+  // vector<vector<passivedouble> > GetResult_Parallel(void);
 
-  /*!
-   * \brief Cleans up the sorted solutions.
-   */
-  void CleanResult_Parallel(void);
+  // /*!
+  //  * \brief Cleans up the sorted solutions.
+  //  */
+  // void CleanResult_Parallel(void);
 
-  /*!
-   * \brief Organizes the connectivity for AMG.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetConnectivity_Parallel(CGeometry ****geometry, CConfig **config, unsigned short val_nZone);
+  // /*!
+  //  * \brief Organizes the connectivity for AMG.
+  //  * \param[in] geometry - Geometrical definition of the problem.
+  //  * \param[in] config - Definition of the particular problem.
+  //  * \param[in] val_nZone - Total number of domains in the grid file.
+  //  */
+   
+  // void SetConnectivity_Parallel(CGeometry ****geometry, CConfig **config, unsigned short val_nZone);
 
-  /*!
-   * \brief Get the connectivity of edges.
-   */
-  vector<vector<unsigned long> > GetConnEdg(CConfig *config, CGeometry *geometry);
+  // /*!
+  //  * \brief Get the connectivity of edges.
+  //  */
+  // vector<vector<unsigned long> > GetConnEdg(CConfig *config, CGeometry *geometry);
 
-  /*!
-   * \brief Get the connectivity of tris.
-   */
-  vector<vector<unsigned long> > GetConnTri(CConfig *config, CGeometry *geometry);
+  // /*!
+  //  * \brief Get the connectivity of tris.
+  //  */
+  // vector<vector<unsigned long> > GetConnTri(CConfig *config, CGeometry *geometry);
 
-  /*!
-   * \brief Get the connectivity of tets.
-   */
-  vector<vector<unsigned long> > GetConnTet(CConfig *config, CGeometry *geometry);
+  // /*!
+  //  * \brief Get the connectivity of tets.
+  //  */
+  // vector<vector<unsigned long> > GetConnTet(CConfig *config, CGeometry *geometry);
 
-  /*!
-   * \brief Cleans up the connectivity.
-   */
-  void CleanConnectivity_Parallel(void);
+  // /*!
+  //  * \brief Cleans up the connectivity.
+  //  */
+  // void CleanConnectivity_Parallel(void);
 
 };
