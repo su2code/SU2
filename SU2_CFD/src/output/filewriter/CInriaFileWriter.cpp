@@ -57,7 +57,7 @@ void CInriaFileWriter::WriteInriaRestart(CConfig *config, CGeometry *geometry, C
   
   /*--- Local variables ---*/
 	
-  unsigned short iVar, nDim = geometry->GetnDim();
+  unsigned short iProcessor, iVar, nDim = geometry->GetnDim();
   unsigned short nVar_Buf = fieldnames.size()-nDim;
   unsigned long iPoint;
   string filename;

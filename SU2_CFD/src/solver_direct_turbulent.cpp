@@ -3225,11 +3225,11 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
         Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       }
       //--- store sensors (goal-oriented)
-      density     = solver_flow->node[kNode]->GetDensity(kNode);
-      velocity[0] = solver_flow->node[kNode]->GetVelocity(kNode, 0);
-      velocity[1] = solver_flow->node[kNode]->GetVelocity(kNode, 1);
+      density     = solver_flow->nodes->GetDensity(kNode);
+      velocity[0] = solver_flow->nodes->GetVelocity(kNode, 0);
+      velocity[1] = solver_flow->nodes->GetVelocity(kNode, 1);
 
-      laminar_viscosity = solver_flow->node[kNode]->GetLaminarViscosity(kNode);
+      laminar_viscosity = solver_flow->nodes->GetLaminarViscosity(kNode);
 
       nu_tilde = nodes->GetSolution(kNode, 0);
       dnu_tilde[0] = nodes->GetGradient(kNode, 0,0);
@@ -3505,12 +3505,12 @@ void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config
         Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       }
       //--- store sensors (goal-oriented)
-      density     = solver_flow->node[kNode]->GetDensity(kNode);
-      velocity[0] = solver_flow->node[kNode]->GetVelocity(kNode, 0);
-      velocity[1] = solver_flow->node[kNode]->GetVelocity(kNode, 1);
-      velocity[2] = solver_flow->node[kNode]->GetVelocity(kNode, 2);
+      density     = solver_flow->nodes->GetDensity(kNode);
+      velocity[0] = solver_flow->nodes->GetVelocity(kNode, 0);
+      velocity[1] = solver_flow->nodes->GetVelocity(kNode, 1);
+      velocity[2] = solver_flow->nodes->GetVelocity(kNode, 2);
 
-      laminar_viscosity = solver_flow->node[kNode]->GetLaminarViscosity(kNode);
+      laminar_viscosity = solver_flow->nodes->GetLaminarViscosity(kNode);
 
       nu_tilde = nodes->GetSolution(kNode, 0);
       dnu_tilde[0] = nodes->GetGradient(kNode, 0,0);
