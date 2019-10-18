@@ -39,7 +39,7 @@
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-: CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(Gradient) {
+: CVariable(npoint, ndim, nvar, config) {
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
@@ -71,4 +71,8 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   Delta_Time.resize(nPoint) = su2double(0.0);
 
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+  
 }

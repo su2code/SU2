@@ -78,14 +78,6 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
 	  Solution_Adj_Old.resize(nPoint,nVar);
 	}
-  
-  /* Under-relaxation parameter. */
-  UnderRelaxation.resize(nPoint) = 1.0;
-  LocalCFL.resize(nPoint) = 0.0;
-  
-  /* Non-physical point (first-order) initialization. */
-  Non_Physical.resize(nPoint) = false;
-  Non_Physical_Counter.resize(nPoint) = 0;
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     Input_AdjIndices.resize(nPoint,nVar) = -1;

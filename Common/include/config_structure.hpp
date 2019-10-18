@@ -111,7 +111,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
-  su2double StartTime;
+  su2double StartTime;        /*!< \brief Start time for performance tracking of each phase of the code: preprocessing, compute, and output. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -9198,14 +9198,14 @@ public:
   unsigned short GetnConv_Field();  
   
   /*!
-   * \brief Set_StartTime
-   * \param starttime
+   * \brief Set the start time to track a phase of the code (preprocessing, compute, output).
+   * \param[in] Value of the start time to track a phase of the code.
    */
   void Set_StartTime(su2double starttime);
   
   /*!
-   * \brief Get_StartTime
-   * \return 
+   * \brief Get the start time to track a phase of the code (preprocessing, compute, output).
+   * \return Value of the start time to track a phase of the code.
    */
   su2double Get_StartTime();
 
