@@ -51,7 +51,6 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
-#include <memory>
 
 #include "fluid_model.hpp"
 #include "task_definition.hpp"
@@ -69,10 +68,6 @@
 #include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_coloring_structure.hpp"
 #include "../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
-
-#ifdef HAVE_LIBROM
-#include "StaticSVDBasisGenerator.h"
-#endif
 
 /*--- CVariable includes, ToDo: Once this file is split, one per class these includes can also be separated. ---*/
 #include "variables/CBaselineVariable.hpp"
@@ -215,10 +210,6 @@ public:
   
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
-  
-#ifdef HAVE_LIBROM
-  std::unique_ptr<CAROM::SVDBasisGenerator> u_basis_generator;
-#endif  
 
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
   
@@ -4456,16 +4447,6 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config);
-   
-#ifdef HAVE_LIBROM
-  /*!
-   * \brief Get current solution and send to libROM.
-   * \param[in] solver - Solver container
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged);
-#endif
 
   /*!
    * \brief Initialize the vertex traction containers at the vertices.

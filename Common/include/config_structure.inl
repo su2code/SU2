@@ -332,10 +332,6 @@ inline su2double CConfig::GetPhysicalTime(void) { return PhysicalTime; }
 
 inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
 
-inline bool CConfig::GetSave_libROM(void) { return libROM; }
-
-inline unsigned short CConfig::GetKind_PODBasis(void) { return POD_Basis_Gen; }
-
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
@@ -1304,8 +1300,6 @@ inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth
 
 inline unsigned short CConfig::GetTime_Marching(void) { return TimeMarching; }
 
-inline bool CConfig::GetSteady_FixedTS(void) { return Steady_FixedTS; }
-
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
 inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
@@ -1510,8 +1504,6 @@ inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_File
 inline string CConfig::GetSurfSens_FileName(void) { return SurfSens_FileName; }
 
 inline string CConfig::GetVolSens_FileName(void) { return VolSens_FileName; }
-
-inline string CConfig::GetlibROMbase_FileName(void) {return libROMbase_FileName; }
 
 inline unsigned short CConfig::GetResidual_Criteria_FEM(void) { return Res_FEM_CRIT; }
 

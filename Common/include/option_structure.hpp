@@ -1025,18 +1025,6 @@ static const map<string, GEOMETRY_MODE> GeometryMode_Map = CCreateMap<string, GE
 ("GRADIENT", GRADIENT);
 
 /*!
- * \brief types of POD basis generation in libROM.
- */
-enum POD_BASIS_MODE {
-   STATIC_POD = 0,     /*!<  \brief Static basis generation. */
-   INCREMENTAL_POD = 1      /*!<  \brief Incremental basis generation. */
-};
-static const map<string, POD_BASIS_MODE> POD_Map = CCreateMap<string, POD_BASIS_MODE>
-("STATIC_POD", STATIC_POD)
-("INCREMENTAL_POD", INCREMENTAL_POD);
-
-
-/*!
  * \brief types of boundary conditions
  */
 enum BC_TYPE {

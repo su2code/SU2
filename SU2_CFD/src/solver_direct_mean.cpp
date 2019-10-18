@@ -3228,7 +3228,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim, iMarker;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool fixed = (config->GetSteady_FixedTS());
   bool time_steping = config->GetTime_Marching() == TIME_STEPPING;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -3354,7 +3353,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
-  if (time_steping or fixed) {
+  if (time_steping) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
