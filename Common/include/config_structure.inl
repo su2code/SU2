@@ -2113,3 +2113,67 @@ inline su2double CConfig::GetMesh_Hmax(void) { return Mesh_Hmax; }
 inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
 
 inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }
+
+inline bool CConfig::GetBoolOneShot(void) { return One_Shot;}
+
+inline unsigned long CConfig::GetOneShotStart(void) { return One_Shot_Start; }
+
+inline unsigned long CConfig::GetOneShotStop(void) { return One_Shot_Stop; }
+
+inline bool CConfig::GetBoolBFGSReset(void) { return BFGS_Reset; }
+
+inline su2double CConfig::GetOneShotAlpha(void) { return One_Shot_Alpha; }
+
+inline su2double CConfig::GetOneShotBeta(void) { return One_Shot_Beta; }
+
+inline su2double CConfig::GetOneShotGamma(void) { return One_Shot_Gamma; }
+
+inline su2double CConfig::GetFDStep(void) { return One_Shot_FD; }
+
+inline su2double CConfig::GetDesignScale(void) { return OS_Design_Scale; }
+
+inline su2double CConfig::GetObjScale(void) { return Obj_Func_Scale; }
+
+inline su2double CConfig::GetBound(void) { return DV_Bound; }
+
+inline void CConfig::SetOneShotAlpha(su2double input) { One_Shot_Alpha = input; }
+
+inline void CConfig::SetOneShotBeta(su2double input) { One_Shot_Beta = input; }
+
+inline void CConfig::SetOneShotGamma(su2double input) { One_Shot_Gamma = input; }
+
+inline bool CConfig::GetCheckDescent(void) { return OS_Check_Descent; }
+
+inline unsigned short CConfig::GetOneShotMaxCounter(void) { return OS_LS_MaxCounter; }
+
+inline unsigned short CConfig::GetKind_ConstrFunc(unsigned short val_cons) { return Kind_ConstrFunc[val_cons]; }
+
+inline unsigned short CConfig::GetnConstr(void) { return nConstr;}
+
+inline su2double CConfig::GetMultiplierStart(unsigned short val_cons) { return Multiplier_Start[val_cons]; }
+
+inline su2double CConfig::GetMultiplierFactor(unsigned short val_cons) { return Multiplier_Factor[val_cons]; }
+
+inline su2double CConfig::GetConstraintTarget(unsigned short val_cons) { return ConstraintTarget[val_cons]; }
+
+inline su2double CConfig::GetConstraintScale(unsigned short val_cons) { return ConstraintScale[val_cons]; }
+
+inline bool CConfig::GetBFGSInit(void) { return BFGS_Init; }
+
+inline bool CConfig::GetLimitedMemory(void) { return Limited_Memory_BFGS; }
+
+inline unsigned short CConfig::GetLimitedMemoryIter(void) { return LBFGS_Iter; }
+
+inline bool CConfig::GetZeroStep(void) { return Zero_Step; }
+
+inline su2double CConfig::GetStepSize(void) {return Step_Size; }
+
+inline su2double CConfig::GetBFGSInitValue(void) {return BFGS_Init_Value; }
+
+inline su2double CConfig::GetBCheckEpsilon(void) {return BCheck_Epsilon; }
+
+inline su2double CConfig::GetMultiplierScale(unsigned short val_cons) { return MultiplierScale[val_cons]; }
+
+inline bool CConfig::GetConstPrecond(void) { return Constant_Preconditioner; }
+
+inline bool CConfig::GetProjectionAD(void) { return Projection_AD; }

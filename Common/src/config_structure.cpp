@@ -2483,6 +2483,89 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
   addPythonOption("MULTIPOINT_MESH_FILENAME");
 
+  /*--- Options for the one-shot optimization method ---*/
+  /*!\par CONFIG_CATEGORY: One-Shot method options \ingroup Config*/
+
+  /*!\brief ONE_SHOT \n DESCRIPTION: Use one-shot method for optimization \ingroup Config*/
+  addBoolOption("ONE_SHOT", One_Shot, false);
+
+  /*!\brief ONE_SHOT_START \n DESCRIPTION: Starting iteration of one-shot method \ingroup Config*/
+  addUnsignedLongOption("ONE_SHOT_START", One_Shot_Start, 0);
+
+  /*!\brief ONE_SHOT_STOP \n DESCRIPTION: Stopping iteration of one-shot method \ingroup Config*/
+  addUnsignedLongOption("ONE_SHOT_STOP", One_Shot_Stop, 999999);
+
+  /*!\brief ONE_SHOT_ALPHA \n DESCRIPTION: Factor for first additional term in augmented Lagrangian \ingroup Config*/
+  addDoubleOption("ONE_SHOT_ALPHA", One_Shot_Alpha, 2000.0);
+
+  /*!\brief ONE_SHOT_BETA \n DESCRIPTION: Factor for second additional term in augmented Lagrangian \ingroup Config*/
+  addDoubleOption("ONE_SHOT_BETA", One_Shot_Beta, 2.0);
+
+  /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Factor for third additional term in augmented Lagrangian \ingroup Config*/
+  addDoubleOption("ONE_SHOT_GAMMA", One_Shot_Gamma, 1.0);
+
+  /*!\brief ONE_SHOT_FD \n DESCRIPTION: Finite difference step size for second additional term in augmented Lagrangian \ingroup Config*/
+  addDoubleOption("ONE_SHOT_FD_STEP", One_Shot_FD, 1E-5);
+
+  /*!\brief DESIGN_SCALE \n DESCRIPTION: Scaling of design variables for optimization \ingroup Config*/
+  addDoubleOption("DESIGN_SCALE", OS_Design_Scale, 1E-0);
+
+  /*!\brief OBJ_SCALE \n DESCRIPTION: Scaling of objective function for optimization \ingroup Config*/
+  addDoubleOption("OBJ_SCALE", Obj_Func_Scale, 1E-0);
+
+  /*!\brief DV_BOUND \n DESCRIPTION: Lower and upper bound of design variables \ingroup Config*/
+  addDoubleOption("ONE_SHOT_DV_BOUND", DV_Bound, 1E+9);
+
+  /*!\brief ONE_SHOT_CHECK_DESCENT \n DESCRIPTION: Indicates if the descent direction condition is checked in line search \ingroup Config*/
+  addBoolOption("ONE_SHOT_CHECK_DESCENT", OS_Check_Descent, false);
+
+  /*!\brief ONE_SHOT_LS_ITER \n DESCRIPTION: Maximum line search iterations in one-shot method \ingroup Config*/
+  addUnsignedShortOption("ONE_SHOT_LS_ITER", OS_LS_MaxCounter, 20);
+
+  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
+  addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
+
+  /*!\brief MULTIPLIER_START  \n DESCRIPTION: Starting values for multiplier \ingroup Config*/
+  addDoubleListOption("MULTIPLIER_START", nConstrHelp, Multiplier_Start);
+
+  /*!\brief MULTIPLIER_FACTOR  \n DESCRIPTION: Factors for multiplier update \ingroup Config*/
+  addDoubleListOption("MULTIPLIER_FACTOR", nConstrHelp, Multiplier_Factor);
+
+  /*!\brief CONSTR_VALUE  \n DESCRIPTION: Target values for constraints \ingroup Config*/
+  addDoubleListOption("CONSTR_VALUE", nConstrHelp, ConstraintTarget);
+
+  /*!\brief CONSTR_SCALE  \n DESCRIPTION: Scaling values for constraints \ingroup Config*/
+  addDoubleListOption("CONSTR_SCALE", nConstrHelp, ConstraintScale);
+
+  /*!\brief BFGS_INIT \n DESCRIPTION: Indicates if an approximation of the inital inverse is calculated for BFGS or LBFGS \ingroup Config*/
+  addBoolOption("BFGS_INIT", BFGS_Init, false);
+
+  /*!\brief BFGS_RESET \n DESCRIPTION: Indicates if the Hessian is reset by its identity \ingroup Config*/
+  addBoolOption("BFGS_RESET", BFGS_Reset, false);
+
+  /*!\brief BFGS_SCALE \n DESCRIPTION: Initial Scaling of BFGS inverse \ingroup Config*/
+  addDoubleOption("BFGS_SCALE", BFGS_Init_Value, 1.0);
+
+  /*!\brief LBFGS \n DESCRIPTION: Indicates if BFGS with limited memory is used \ingroup Config*/
+  addBoolOption("LBFGS", Limited_Memory_BFGS, false);
+
+  /*!\brief LBFGS_ITER \n DESCRIPTION: Number of limited memory BFGS iterations to build Inverse Hessian approximation \ingroup Config*/
+  addUnsignedShortOption("LBFGS_ITER", LBFGS_Iter, 40);
+
+  /*!\brief LBFGS \n DESCRIPTION: Indicates if stepsize is set to zero if line search fails \ingroup Config*/
+  addBoolOption("ONE_SHOT_ZERO_STEP", Zero_Step, true);
+
+  /*!\brief OS_STEP_SIZE \n DESCRIPTION: Indicates if stepsize is set to zero if line search fails \ingroup Config*/
+  addDoubleOption("ONE_SHOT_STEP_SIZE", Step_Size, 1.0);
+
+  addDoubleOption("BCHECK_EPSILON", BCheck_Epsilon, 1E+1);
+
+  addDoubleListOption("MULTIPLIER_SCALE", nConstrHelp, MultiplierScale);
+
+  addBoolOption("CONST_PRECOND", Constant_Preconditioner, false);
+
+  addBoolOption("PROJECTION_AD", Projection_AD, true);
+
   /*--- options that are used for the output ---*/
   /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
 
@@ -3150,6 +3233,38 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         default:
           break;
       }
+    }
+  }
+
+  /*--- Allocate constraint arrays if running one-shot optimization ---*/
+  if(nConstr!=0 && Multiplier_Start == NULL){
+    Multiplier_Start = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      Multiplier_Start[iConstr] = 0.0;
+    }
+  }
+  if(nConstr!=0 && Multiplier_Factor == NULL){
+    Multiplier_Factor = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      Multiplier_Factor[iConstr] = 1.0;
+    }
+  }
+  if(nConstr!=0 && ConstraintTarget == NULL){
+    ConstraintTarget = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      ConstraintTarget[iConstr] = 0.0;
+    }
+  }
+  if(nConstr!=0 && ConstraintScale == NULL){
+    ConstraintScale = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      ConstraintScale[iConstr] = 1.0;
+    }
+  }
+  if(nConstr!=0 && MultiplierScale == NULL){
+    MultiplierScale = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      MultiplierScale[iConstr] = 1.0;
     }
   }
   
@@ -4586,42 +4701,61 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     
     /*--- Note that this is deliberatly done at the end of this routine! ---*/
-    switch(Kind_Solver) {
-      case EULER:
-        Kind_Solver = DISC_ADJ_EULER;
-        break;
-      case RANS:
-        Kind_Solver = DISC_ADJ_RANS;
-        break;
-      case NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
-        break;
-      case INC_EULER:
-        Kind_Solver = DISC_ADJ_INC_EULER;
-        break;
-      case INC_RANS:
-        Kind_Solver = DISC_ADJ_INC_RANS;
-        break;
-      case INC_NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_INC_NAVIER_STOKES;
-        break;
-      case FEM_EULER :
-        Kind_Solver = DISC_ADJ_FEM_EULER;
-        break;
-      case FEM_RANS :
-        Kind_Solver = DISC_ADJ_FEM_RANS;
-        break;
-      case FEM_NAVIER_STOKES : 
-        Kind_Solver = DISC_ADJ_FEM_NS;
-        break;
-      case FEM_ELASTICITY:
-        Kind_Solver = DISC_ADJ_FEM;
-        break;
-      case HEAT_EQUATION_FVM:
-        Kind_Solver = DISC_ADJ_HEAT;
-        break;
-      default:
-        break;
+    if(!One_Shot) {
+      switch(Kind_Solver) {
+        case EULER:
+          Kind_Solver = DISC_ADJ_EULER;
+          break;
+        case RANS:
+          Kind_Solver = DISC_ADJ_RANS;
+          break;
+        case NAVIER_STOKES:
+          Kind_Solver = DISC_ADJ_NAVIER_STOKES;
+          break;
+        case INC_EULER:
+          Kind_Solver = DISC_ADJ_INC_EULER;
+          break;
+        case INC_RANS:
+          Kind_Solver = DISC_ADJ_INC_RANS;
+          break;
+        case INC_NAVIER_STOKES:
+          Kind_Solver = DISC_ADJ_INC_NAVIER_STOKES;
+          break;
+        case FEM_EULER :
+          Kind_Solver = DISC_ADJ_FEM_EULER;
+          break;
+        case FEM_RANS :
+          Kind_Solver = DISC_ADJ_FEM_RANS;
+          break;
+        case FEM_NAVIER_STOKES : 
+          Kind_Solver = DISC_ADJ_FEM_NS;
+          break;
+        case FEM_ELASTICITY:
+          Kind_Solver = DISC_ADJ_FEM;
+          break;
+        case HEAT_EQUATION_FVM:
+          Kind_Solver = DISC_ADJ_HEAT;
+          break;
+        default:
+          break;
+      }
+    }
+    else {
+      /*--- For one-shot we do not currently make use of a restart solution (no reverse accumulation) ---*/
+      Restart_Flow = false;
+      switch(Kind_Solver) {
+        case EULER:
+          Kind_Solver = ONE_SHOT_EULER;
+          break;
+        case RANS:
+          Kind_Solver = ONE_SHOT_RANS;
+          break;
+        case NAVIER_STOKES:
+          Kind_Solver = ONE_SHOT_NAVIER_STOKES;
+          break;
+        default:
+          break;
+      }
     }
 
     RampOutletPressure = false;
@@ -5275,15 +5409,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:  case ONE_SHOT_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:  case ONE_SHOT_NAVIER_STOKES
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:  case ONE_SHOT_RANS
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -5794,7 +5928,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
+        (Kind_Solver == ONE_SHOT_EULER) || (Kind_Solver == ONE_SHOT_NAVIER_STOKES) || (Kind_Solver == ONE_SHOT_RANS)) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
@@ -5871,7 +6006,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == ONE_SHOT_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
         if (MUSCL_Turb) {
@@ -6002,7 +6137,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
         (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || 
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
+        (Kind_Solver == ONE_SHOT_NAVIER_STOKES) || (Kind_Solver == ONE_SHOT_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -6010,7 +6146,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
-    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS) ) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == ONE_SHOT_RANS)) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
@@ -6098,7 +6234,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
         (Kind_Solver == DISC_ADJ_INC_EULER) || (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
+        (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS) ||
+        (Kind_Solver == ONE_SHOT_EULER) || (Kind_Solver == ONE_SHOT_NAVIER_STOKES) || (Kind_Solver == ONE_SHOT_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
           cout << "Runge-Kutta explicit method for the flow equations." << endl;
@@ -6295,7 +6432,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS))
+        (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
+        (Kind_Solver == ONE_SHOT_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
   }
@@ -8132,6 +8270,12 @@ bool CConfig::GetVolumetric_Movement(){
       Kind_SU2 == SU2_DOT || 
       DirectDiff)
   { volumetric_movement = true;}
+
+  if (Kind_Solver == ONE_SHOT_EULER ||
+      Kind_Solver == ONE_SHOT_RANS  ||
+      Kind_Solver == ONE_SHOT_NAVIER_STOKES)
+  { volumetric_movement = true;}
+
   return volumetric_movement;
 }
 

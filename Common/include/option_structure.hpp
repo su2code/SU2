@@ -223,7 +223,10 @@ enum ENUM_SOLVER {
   FEM_NAVIER_STOKES = 27,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 28,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 29,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30
+  MULTIPHYSICS = 30,
+  ONE_SHOT_EULER = 41,                  /*!< \brief Definition of the one-shot Euler's optimization. */
+  ONE_SHOT_RANS = 42,                   /*!< \brief Definition of the RANS' optimization. */
+  ONE_SHOT_NAVIER_STOKES = 43           /*!< \brief Definition of the Navier-Stokes' optimization. */
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -256,7 +259,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-("MULTIPHYSICS", MULTIPHYSICS);
+("MULTIPHYSICS", MULTIPHYSICS)
+("ONE_SHOT_EULER", ONE_SHOT_EULER)
+("ONE_SHOT_RANS", ONE_SHOT_RANS)
+("ONE_SHOT_NAVIER_STOKES", ONE_SHOT_NAVIER_STOKES);
 
 /*!
  * \brief different solver types for the multizone environment component
@@ -499,12 +505,14 @@ const int EL_PRISM = 3;    /*!< \brief Elements of six nodes (3D). */
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,		/*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2 /*< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 2, /*< \brief AD-based discrete adjoint problem. */
+  ONE_SHOT = 3  /*!< \brief one-shot discrete adjoint problem (piggy-back). */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)
 ("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
-("DISCRETE_ADJOINT", DISCRETE_ADJOINT);
+("DISCRETE_ADJOINT", DISCRETE_ADJOINT)
+("ONE_SHOT", ONE_SHOT);
 
 /*!
  * \brief types of spatial discretizations
@@ -2826,6 +2834,12 @@ public:
       this->disc_adjoint = true;
       this->cont_adjoint= false;
       this->restart = true;
+      return "";
+    }
+    if (option_value[0] == "ONE_SHOT") {
+      this->disc_adjoint = true;
+      this->cont_adjoint= false;
+      this->restart = false;
       return "";
     }
     return "option in math problem map not considered in constructor";

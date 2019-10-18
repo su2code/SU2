@@ -1104,6 +1104,34 @@ private:
             Mesh_Hmin;               /*!< \brief Minimum cell size */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
+  bool One_Shot; /*!< \brief option for one-shot optimization method */
+  bool BFGS_Reset; /*!< \brief flag for reset of the Hessian to Identity in one-shot method */
+  unsigned long One_Shot_Start; /*!< \brief Start iteration for one-shot method */
+  unsigned long One_Shot_Stop; /*!< \brief Stop iteration for one-shot method */
+  su2double One_Shot_Alpha, One_Shot_Beta, One_Shot_Gamma; /*!< \brief factors for augmented Lagrangian in one-shot method */ 
+  su2double One_Shot_FD; /*!< \brief Finite difference step-size for one-shot method */
+  su2double OS_Design_Scale; /*!< \brief Value for scaling the design space */
+  su2double Obj_Func_Scale; /*!< \brief Value for scaling the objective function */
+  su2double DV_Bound; /*!< \brief Value for design variable lower and upper bound */
+  bool OS_Check_Descent; /*!< \brief option for a descent check in the line search */
+  unsigned short OS_LS_MaxCounter; /*!< \brief Maximum line search counter */
+  unsigned short *Kind_ConstrFunc;  /*!< \brief Kind of constraint functions. */
+  unsigned short nConstr, nConstrHelp;              /*! \brief Number of constraint functions. */
+  su2double* Multiplier_Start; /*! \brief Start values for constraint multipliers. */
+  su2double* Multiplier_Factor; /*! \brief Values for constant factor for multiplier update. */
+  su2double* ConstraintTarget; /*! \brief Target value for constraints. */
+  su2double* ConstraintScale; /*! \brief Scaling value for constraints. */
+  su2double* MultiplierScale;
+  bool BFGS_Init; /*!< \brief option for approximating the BFGS initial inverse */
+  su2double BFGS_Init_Value;  /*!< \brief value of initial scaling of BFGS inverse */
+  bool Limited_Memory_BFGS; /*!< \brief option for using limited memory BFGS */
+  unsigned short LBFGS_Iter; /*!< \brief number of stored iterations in limited memory BFGS */
+  bool Zero_Step; /*!< \brief option for setting the stepsize to zero in line search */
+  su2double Step_Size; /*!< \brief value of initial step size in line search */
+  su2double BCheck_Epsilon;
+  bool Constant_Preconditioner;
+  bool Projection_AD;
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9360,6 +9388,180 @@ public:
    * \return Mesh complexity
    */
   unsigned long GetMesh_Complexity(void);
+
+  /*!
+   * \brief Check if the one-shot option is specified in the config file.
+   * \return YES if one-shot is enabled.
+   */
+  bool GetBoolOneShot(void);
+
+  /*!
+   * \brief Check if the Hessian reset is done using the identity matrix.
+   * \return YES if identity matrix shall be used.
+   */
+  bool GetBoolBFGSReset(void);
+
+  /*!
+   * \brief Get the iteration number for starting the one-shot method.
+   * \return Value for iteration number
+   */
+  unsigned long GetOneShotStart(void);
+
+  /*!
+   * \brief Get the iteration number for stopping the one-shot method.
+   * \return Value for iteration number
+   */
+  unsigned long GetOneShotStop(void);
+
+  /*!
+   * \brief Get the multiplier for the "alpha"-term in the doubly augmented Lagrangian.
+   * \return Value for alpha multiplier in one-shot method
+   */
+  su2double GetOneShotAlpha(void);
+
+  /*!
+   * \brief Get the multiplier for the "beta"-term in the doubly augmented Lagrangian.
+   * \return Value for beta multiplier in one-shot method
+   */
+  su2double GetOneShotBeta(void);
+
+  /*!
+   * \brief Get the multiplier for the "gamma"-term in the doubly augmented Lagrangian.
+   * \return Value for gamma multiplier in one-shot method
+   */
+  su2double GetOneShotGamma(void);
+
+  /*!
+   * \brief Set the multiplier for the "alpha"-term in the doubly augmented Lagrangian.
+   */
+  void SetOneShotAlpha(su2double input);
+
+  /*!
+   * \brief Set the multiplier for the "beta"-term in the doubly augmented Lagrangian.
+   */
+  void SetOneShotBeta(su2double input);
+
+  /*!
+   * \brief Set the multiplier for the "gamma"-term in the doubly augmented Lagrangian.
+   */
+  void SetOneShotGamma(su2double input);
+
+  /*!
+   * \brief Get the finite difference step size for the "beta"-term in the doubly augmented Lagrangian.
+   * \return Value for the finite difference step size in one-shot method
+   */
+  su2double GetFDStep(void);
+
+  /*!
+   * \brief Get the value for scaling the design space (not the design update itself).
+   * \return Value for design space scaling
+   */
+  su2double GetDesignScale(void);
+
+  /*!
+   * \brief Get the value for scaling the objective function.
+   * \return Value for objective function scaling
+   */
+  su2double GetObjScale(void);
+
+  /*!
+   * \brief Get the value for the lower and upper bound.
+   * \return Value for bound of design variables
+   */
+  su2double GetBound(void);
+  
+  /*!
+   * \brief Check if during line search a checking for descent direction is used.
+   * \return YES if the algorithm checks for a descent direction.
+   */
+  bool GetCheckDescent(void);
+
+  /*!
+   * \brief Maximum line search counter for one-shot.
+   * \return Value for the maximum number of line searches.
+   */
+  unsigned short GetOneShotMaxCounter(void);
+
+  /*!
+   * \brief Get the kind of constraint function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \return Kind of constraint function.
+   */
+  unsigned short GetKind_ConstrFunc(unsigned short val_cons);
+
+  /*!
+   * \brief Get the total number of constraints in list
+   * \return Total number of constraints in list
+   */
+  unsigned short GetnConstr(void);
+
+  /*!
+   * \brief Get the starting value for the constraint multiplier
+   * \return Value of Multiplier (start).
+   */
+  su2double GetMultiplierStart(unsigned short val_cons);
+
+  /*!
+   * \brief Get constant factor for multiplier update
+   * \return Value of multiplier factor.
+   */
+  su2double GetMultiplierFactor(unsigned short val_cons);
+
+  /*!
+   * \brief Get target value for constraint functions
+   * \return Value of target value for constraint functions.
+   */
+  su2double GetConstraintTarget(unsigned short val_cons);
+
+  /*!
+   * \brief Get scaling value for constraint functions
+   * \return Value of scaling value for constraint functions.
+   */
+  su2double GetConstraintScale(unsigned short val_cons);
+
+  /*!
+   * \brief Check if limited memory BFGS is used.
+   * \return YES if limited memory BFGS shall be used.
+   */
+  bool GetLimitedMemory(void);
+
+  /*!
+   * \brief Return number of stored iterations in LBFGS method.
+   * \return Number of stored iterations.
+   */
+  unsigned short GetLimitedMemoryIter(void);
+
+  /*!
+   * \brief Check if initial Hessian inverse is approximated.
+   * \return YES if initial Hessian inverse is approximated.
+   */
+  bool GetBFGSInit(void);
+
+  /*!
+   * \brief Check if stepsize is set to zero when line search does not work.
+   * \return YES if stepsize is set to zero when line search does not work.
+   */
+  bool GetZeroStep(void);
+
+  /*!
+   * \brief Get the initial value of the stepsize for line search
+   * \return Value of initial stepsize.
+   */
+  su2double GetStepSize(void);
+
+  /*!
+   * \brief Get the initial scaling of the BFGS inverse
+   * \return Value of initial scaling.
+   */
+  su2double GetBFGSInitValue(void);
+
+  su2double GetBCheckEpsilon(void);
+
+  su2double GetMultiplierScale(unsigned short val_cons);
+
+  bool GetConstPrecond(void);
+
+  bool GetProjectionAD(void);
 };
 
 #include "config_structure.inl"
