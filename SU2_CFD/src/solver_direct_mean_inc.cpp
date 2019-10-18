@@ -2162,10 +2162,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           } // loop vertices
         } // loop periodic boundaries
       } // loop MarkerAll
-      //add weighted heat sink to residual
-      
 
-      
     }
   }
 
