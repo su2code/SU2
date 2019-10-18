@@ -440,6 +440,7 @@ def multipoint( config, state=None, step=1e-2 ):
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
     solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FILENAME, config)
+    flow_meta_list = su2io.expand_multipoint('flow.meta', config)
     restart_sol = config['RESTART_SOL']
     dv_value_old = config['DV_VALUE_OLD'];
 
@@ -508,7 +509,17 @@ def multipoint( config, state=None, step=1e-2 ):
     if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[0]: 
         state.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[0]
 
+    # If flow.meta file for the first point is available, rename it before using it
+    if 'MULTIPOINT_FLOW_META' in state.FILES and state.FILES.MULTIPOINT_FLOW_META[0]:
+        os.rename(state.FILES.MULTIPOINT_FLOW_META[0], 'flow.meta')
+        state.FILES['FLOW_META'] = 'flow.meta'
+
     func[0] = aerodynamics(config,state)
+    
+    # change name of flow.meta back to multipoint name
+    if os.path.exists('flow.meta'):
+        os.rename('flow.meta', flow_meta_list[0])
+        state.FILES['FLOW_META'] = flow_meta_list[0]
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/')+'/DIRECT/'
@@ -529,6 +540,10 @@ def multipoint( config, state=None, step=1e-2 ):
         link.extend( name )
     else:
         config['RESTART_SOL'] = 'NO'
+    
+    # files: meta data for the flow    
+    if 'FLOW_META' in files:
+        pull.append(files['FLOW_META'])
     
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and
@@ -573,9 +588,16 @@ def multipoint( config, state=None, step=1e-2 ):
         if 'DIRECT' in ztate.FILES:
             del ztate.FILES.DIRECT
 
+        if 'FLOW_META' in ztate.FILES:
+            del ztate.FILES.FLOW_META
+
         # use direct solution file from relevant point
         if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[i+1]: 
             ztate.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
+
+        # use flow.meta file from relevant point
+        if 'MULTIPOINT_FLOW_META' in state.FILES and state.FILES.MULTIPOINT_FLOW_META[i+1]:
+            ztate.FILES['FLOW_META'] = state.FILES.MULTIPOINT_FLOW_META[i+1]
 
         # use mesh file from relevant point
         if 'MULTIPOINT_MESH_FILENAME' in ztate.FILES:
@@ -585,6 +607,7 @@ def multipoint( config, state=None, step=1e-2 ):
 
         files = ztate.FILES
         link = []
+        pull = []
 
         # files: mesh
         name = files['MESH']
@@ -599,14 +622,19 @@ def multipoint( config, state=None, step=1e-2 ):
         else:
             konfig['RESTART_SOL'] = 'NO'
 
-      # pull needed files, start folder_1
+        # files: meta data for the flow
+        if 'FLOW_META' in files:
+            pull.append(files['FLOW_META'])
+
+        # pull needed files, start folder_1
         with redirect_folder( folder[i+1], pull, link ) as push:
             with redirect_output(log_direct):
 
                 # Perform deformation on multipoint mesh
                 if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
                     info = update_mesh(konfig,ztate)
-                    
+                
+                # Update config values
                 konfig.AOA = aoa_list[i+1]
                 konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
                 konfig.MACH_NUMBER = mach_list[i+1]
@@ -614,7 +642,6 @@ def multipoint( config, state=None, step=1e-2 ):
                 konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
                 konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
                 konfig.TARGET_CL = target_cl_list[i+1]
-
                 orig_marker_outlet = config['MARKER_OUTLET']
                 orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
                 new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[i+1] + ")"
@@ -622,10 +649,23 @@ def multipoint( config, state=None, step=1e-2 ):
 
                 ztate.FUNCTIONS.clear()
 
+                # rename meta data to flow.meta
+                if 'FLOW_META' in ztate.FILES:
+                    ztate.FILES['FLOW_META'] = 'flow.meta'
+                    os.rename(ztate.FILES.MULTIPOINT_FLOW_META[i+1], 'flow.meta')
+
                 func[i+1] = aerodynamics(konfig,ztate)
 
-                # direct files to push
                 dst = os.getcwd()
+
+                # revert name of flow.meta file to multipoint name
+                if os.path.exists('flow.meta'):
+                    os.rename('flow.meta', flow_meta_list[i+1])
+                    ztate.FILES['FLOW_META'] = flow_meta_list[i+1]
+                    dst_flow_meta = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['FLOW_META']
+                    push.append(ztate.FILES['FLOW_META'])
+                
+                # direct files to push
                 dst_direct = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
                 name = ztate.FILES['DIRECT']
                 name = su2io.expand_zones(name,konfig)
@@ -647,14 +687,22 @@ def multipoint( config, state=None, step=1e-2 ):
         # make unix link
         os.symlink(src_direct, dst_direct)
         
-        # If the mesh doesn't already exist, link
+        # If the mesh doesn't already exist, link it
         if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
             src_mesh = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['MESH']
             if not os.path.exists(src_mesh): 
                 os.symlink(src_mesh, dst_mesh)
 
+        # link flow.meta
+        if 'MULTIPOINT_FLOW_META' in state.FILES:
+            src_flow_meta = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['FLOW_META']
+            if not os.path.exists(src_flow_meta): 
+                os.symlink(src_flow_meta, dst_flow_meta)
+
     # Update MULTIPOINT_DIRECT in state.FILES
     state.FILES.MULTIPOINT_DIRECT = solution_flow_list
+    if 'FLOW_META' in state.FILES:
+        state.FILES.MULTIPOINT_FLOW_META = flow_meta_list
       
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
