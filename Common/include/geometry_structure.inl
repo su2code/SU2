@@ -472,6 +472,8 @@ inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { re
 
 inline void CGeometry::SetSensitivity(CConfig* config) {}
 
+inline void CGeometry::InitializeSensitivity(void) {}
+
 inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}
 
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}

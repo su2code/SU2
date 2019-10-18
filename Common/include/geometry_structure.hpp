@@ -1423,6 +1423,11 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  virtual void InitializeSensitivity(void);
+
+  /*!
+   * \brief A virtual member.
    * \param config - Config
    */
   virtual void ReadUnorderedSensitivity(CConfig *config);
@@ -2618,6 +2623,11 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief Set Senitivity to Zero.
+   */
+  void InitializeSensitivity(void);
 
   /*!
    * \brief Read the sensitivity from unordered ASCII adjoint solution file and store it.
