@@ -567,6 +567,8 @@ private:
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
+  unsigned long Linear_Solver_Iter_Flow;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the pressure based flow solver. */
+  unsigned long Linear_Solver_Iter_Poisson;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the poisson solver of the pressure based method. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
@@ -4124,6 +4126,24 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Iter(void);
+  
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation of flow solver for PB system.
+   * \return Max number of iterations of the linear solver for the implicit formulation of flow solver for PB system.
+   */
+  unsigned long GetLinear_Solver_Iter_Flow(void);
+  
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation of poisson solver for PB system.
+   * \return Max number of iterations of the linear solver for the implicit formulation of poisson solver for PB system.
+   */
+  unsigned long GetLinear_Solver_Iter_Poisson(void);
+  
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation.
+   * \return Max number of iterations of the linear solver for the implicit formulation.
+   */
+  void SetLinear_Solver_Iter(unsigned long LinSolver_Iter);
   
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.

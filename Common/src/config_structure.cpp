@@ -1454,6 +1454,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Max iterations of the linear solver for the FVM heat solver. */
   addUnsignedLongOption("LINEAR_SOLVER_ITER_HEAT", Linear_Solver_Iter_Heat, 10);
+  /* DESCRIPTION: Max iterations of the linear solver for the FVM flow solver in PB system. */
+  addUnsignedLongOption("LINEAR_SOLVER_ITER_FLOW", Linear_Solver_Iter_Flow, 10);
+  /* DESCRIPTION: Max iterations of the linear solver for the poisson solver in PB system. */
+  addUnsignedLongOption("LINEAR_SOLVER_ITER_POISSON", Linear_Solver_Iter_Poisson, 30);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */

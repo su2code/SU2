@@ -522,12 +522,14 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iMarker, iVar, iChildren;
   su2double *Residual_Fine;
+  bool dirichlet_poisson = false;
+
   
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric(); //pow(config->GetDamp_Res_Restric(), iMesh);
   
   su2double *Residual = new su2double[nVar];
-  
+   
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SetRes_TruncErrorZero();
     
@@ -542,14 +544,29 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   }
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+	  
+	  dirichlet_poisson = false;
+	  if ((config->GetKind_Incomp_System() == PRESSURE_BASED) && 
+	      ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) || (config->GetMarker_All_KindBC(iMarker) ==  FAR_FIELD ))) 
+	      dirichlet_poisson = true;
+        
+    if (((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) &&
+		(!(config->GetKind_Incomp_System() == PRESSURE_BASED)))  {
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
       }
+      cout<<"Should not be here in SetForcing routine"<<endl;
     }
+    if (dirichlet_poisson) {
+		cout<<"Should be here in SetForcing routine"<<endl;
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        sol_coarse->node[Point_Coarse]->SetRes_TruncErrorZero();
+      }
+    }    
   }
   
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -563,21 +580,14 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
   unsigned long iPoint;
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) 
-    solver->LinSysRes.AddBlock(iPoint, solver->node[iPoint]->GetResTruncError());
-
-  
-  if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
-	  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-	       solver->node[iPoint]->AddMassFlux(solver->node[iPoint]->GetMassTruncError());
-	   }
-  }  
-  
+    solver->LinSysRes.AddBlock(iPoint, solver->node[iPoint]->GetResTruncError());  
 }
 
 void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iVar, iChildren;
   su2double *Residual_Fine;
+  bool dirichlet_poisson = false;
   
   const unsigned short nVar = sol_coarse->GetnVar();
   
@@ -596,14 +606,30 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
     sol_coarse->node[Point_Coarse]->AddRes_TruncError(Residual);
   }
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)  {
+	  
+	  dirichlet_poisson = false;
+	  if ((config->GetKind_Incomp_System() == PRESSURE_BASED) && 
+	      ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) || (config->GetMarker_All_KindBC(iMarker) ==  FAR_FIELD ))) 
+	      dirichlet_poisson = true;
+        
+    if (((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) &&
+		(!(config->GetKind_Incomp_System() == PRESSURE_BASED)))  {
+			
       for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
       }
+      cout<<"Should not be here in SetRestRes routine"<<endl;
+    }
+    if (dirichlet_poisson) {
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        sol_coarse->node[Point_Coarse]->SetRes_TruncErrorZero();
+      }
+      cout<<"Should be here in SetRestSol routine"<<endl;
     }
   }
   
@@ -646,9 +672,10 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   /*--- Update the solution at the no-slip walls ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+    if (((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) &&
+        (SolContainer_Position != POISSON_SOL                             )) {
       
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
@@ -670,13 +697,21 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
           }
           
         }
-        
+        cout<<"Should not be here in SetRestSol routine"<<endl;
         if (SolContainer_Position == ADJFLOW_SOL) {
           sol_coarse->node[Point_Coarse]->SetVelSolutionDVector();
         }
         
       }
     }
+    if (((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW ) ||
+        (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD  ))    &&
+        (SolContainer_Position == POISSON_SOL                   )   ) {
+			for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+				sol_coarse->node[Point_Coarse]->SetSolutionZero();
+			}
+		}
   }
   
   /*--- MPI the new interpolated solution ---*/

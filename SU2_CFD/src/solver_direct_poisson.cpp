@@ -463,7 +463,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 		
 		if (Src_Term != Src_Term)Src_Term = 0.0;
 		
-		if (iMesh == MESH_0 + 1) Src_Term += solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError();
+		//if (iMesh == MESH_0 + 1) Src_Term += solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError();
 		
 		node[iPoint]->SetSourceTerm(Src_Term);
     }
@@ -509,6 +509,8 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   
 	/*--- Build implicit system ---*/
+	
+	config->SetLinear_Solver_Iter(config->GetLinear_Solver_Iter_Poisson());
 
 	/*--- Set maximum residual to zero ---*/
 
@@ -529,8 +531,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      //LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar] );
-      LinSysRes[total_index] = - (LinSysRes[total_index]);
+      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar] );
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
@@ -626,7 +627,7 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
 		Jacobian.DeleteValsRowi(Point);
 	}
     LinSysRes.SetBlock_Zero(Point, iVar);
-    //if (config->GetnMGLevels() > 0) node[Point]->SetVal_ResTruncError_Zero(iVar);
+    if (config->GetnMGLevels() > 0) node[Point]->SetVal_ResTruncError_Zero(iVar);
     LinSysSol.SetBlock(Point, Solution);
   }
 

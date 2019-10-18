@@ -1178,7 +1178,7 @@ void CPBFluidIteration::Iterate(COutput *output,
   /*integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   */
   integration[val_iZone][val_iInst][FLOW_SOL]->CurrentGridIteration(geometry, solver, numerics,
-                                                                  config, FinestMesh, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);
+                                                                  config, FinestMesh, RUNTIME_FLOW_SYS, ExtIter, val_iZone,val_iInst);
 
 
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
@@ -1193,7 +1193,8 @@ void CPBFluidIteration::Iterate(COutput *output,
   /*integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                             config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);*/
 	
-  integration[val_iZone][val_iInst][POISSON_SOL]->CurrentGridIteration(geometry, solver, numerics, config, FinestMesh, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
+  //integration[val_iZone][val_iInst][POISSON_SOL]->CurrentGridIteration(geometry, solver, numerics, config, FinestMesh, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
+  integration[val_iZone][val_iInst][POISSON_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS, ExtIter, val_iZone,val_iInst);
    
   /*--- Correct pressure and velocities ---*/
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);

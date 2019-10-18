@@ -1033,6 +1033,12 @@ inline su2double CConfig::GetDeform_Linear_Solver_Error(void) { return Deform_Li
 
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
+inline unsigned long CConfig::GetLinear_Solver_Iter_Flow(void) { return Linear_Solver_Iter_Flow; }
+
+inline unsigned long CConfig::GetLinear_Solver_Iter_Poisson(void) { return Linear_Solver_Iter_Poisson; }
+
+inline void CConfig::SetLinear_Solver_Iter(unsigned long LinSolver_Iter) { Linear_Solver_Iter = LinSolver_Iter; }
+
 inline unsigned long CConfig::GetDeform_Linear_Solver_Iter(void) { return Deform_Linear_Solver_Iter; }
 
 inline unsigned short CConfig::GetLinear_Solver_ILU_n(void) { return Linear_Solver_ILU_n; }

@@ -3427,6 +3427,8 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  
+  config->SetLinear_Solver_Iter(config->GetLinear_Solver_Iter_Flow());
 
   /*--- Build implicit system ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3791,6 +3793,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Adj_Mass, small = 1.E-5;
   su2double Net_Mass, alfa, Mass_In, Mass_Out, Mass_Free_In, Mass_Free_Out, Mass_Corr, Area_out;
   string Marker_Tag;
+  su2double ProjGridVelFlux, *MeshVel_i, *MeshVel_j;
   unsigned short Kind_Outlet;
   Normal = new su2double [nDim];
   Vel_i = new su2double[nDim];
@@ -3839,6 +3842,16 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		Vel_Avg = 0.5*(Vel_i[iDim]+Vel_j[iDim]);
 		MassFlux_Part += MeanDensity*Vel_Avg*Normal[iDim];
     }
+    
+    if (dynamic_grid) {
+		MeshVel_i = geometry->node[iPoint]->GetGridVel();
+		MeshVel_j = geometry->node[jPoint]->GetGridVel();
+		ProjGridVelFlux = 0.0; 
+	  for (iDim = 0; iDim < nDim; iDim++) { 
+		  ProjGridVelFlux   += 0.5*MeanDensity*(MeshVel_i[iDim] + MeshVel_j[iDim])*Normal[iDim]; 
+	  }
+	  //MassFlux_Part -= ProjGridVelFlux;
+	}
 	
 	/*------- Rhie-Chow interpolation ---------*/
 	
