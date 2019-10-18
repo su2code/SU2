@@ -4377,6 +4377,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
   bool incload = config->GetIncrementalLoad();
 
   bool thermal = false; /* Flag for whether to print heat flux values */
@@ -4512,6 +4513,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   }
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
+  char poisson_resid[] = ",\"Res_Poisson\"";
   
   /*--- End of the header ---*/
   
@@ -4547,6 +4549,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
 
       ConvHist_file[0] << flow_resid;
+      if (pressure_based) ConvHist_file[0] << poisson_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
       if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
@@ -4880,7 +4883,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
-    if (pressure_based) nVar_Flow = nDim;
+    if (pressure_based) {
+		nVar_Flow = nDim;
+		nVar_Poisson = 1;
+	}
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
@@ -5109,9 +5115,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
 	     
         /*--- Mass flux residual (for pressure-based problem) ---*/
-        if (pressure_based)
-           residual_mass = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetResMassFlux();
-        
+        if (pressure_based) {
+			residual_mass = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetResMassFlux();
+			for (iVar = 0; iVar < nVar_Poisson; iVar++) residual_poisson[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][POISSON_SOL]->GetRes_RMS(iVar);
+        }
         /*--- Turbulent residual ---*/
         
         if (turbulent) {
@@ -5143,7 +5150,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Iterations of the linear solver ---*/
         
         LinSolvIter = (unsigned long) solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetIterLinSolver();
-        
         /*--- Adjoint solver ---*/
         
         if (adjoint) {
@@ -5448,12 +5454,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Flow residual ---*/
             if (nDim == 2) {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-              if (incompressible && (pressure_based))  SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_mass), dummy);
+              if (incompressible && (pressure_based))  {
+				  SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]),log10 (residual_mass), dummy, dummy);
+				  SPRINTF(poisson_resid, ", %14.8e", log10 (residual_poisson[0]));
+			  }
               if (incompressible && (!pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
             }
             else {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-              if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]));
+              if (incompressible && (!pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]));
+              if (incompressible && (pressure_based))  {
+				  SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]),log10 (residual_flow[2]), log10 (residual_mass), dummy);
+				  SPRINTF(poisson_resid, ", %14.8e", log10 (residual_poisson[0]));
+			  }
             }
             
             /*--- Turbulent residual ---*/
@@ -6037,6 +6050,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
               config[val_iZone]->GetHistFile()[0] << flow_resid;
               if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
+              if (pressure_based) config[val_iZone]->GetHistFile()[0] << poisson_resid;
             }
             else {
               config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid;
@@ -6134,6 +6148,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
               config[val_iZone]->GetHistFile()[0] << flow_resid << turb_resid;
               if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
+              if (pressure_based) config[val_iZone]->GetHistFile()[0] << poisson_resid;
             }
             else {
               config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid << turb_resid;
