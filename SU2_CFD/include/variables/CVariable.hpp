@@ -2833,6 +2833,71 @@ public:
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
+/*!
+   * \brief Set to zero the solution.
+   */
+  inline virtual void SetSolutionZero(unsigned long iPoint) { }
+
+  /*!
+   * \brief Set to zero a particular solution.
+   */
+  inline virtual void SetSolutionZero(unsigned long iPoint, unsigned short val_var) { }
+
+  /*!
+   * \brief Set stored variables to the solution.
+   */
+  inline virtual void Set_StoreSolution(unsigned long iPoint) { }
+
+  /*!
+   * \brief Set saved variables to the solution.
+   */
+  inline virtual void Set_SaveSolution(unsigned long iPoint) { }
+
+  /*!
+   * \brief Set former variables to the solution.
+   */
+  inline virtual void Set_FormerSolution(unsigned long iPoint) { }
+
+  /*!
+   * \brief Set former variables to the old solution.
+   */
+  inline virtual void SetSolution_Former(unsigned long iPoint, su2double *val_solution_old) { }
+
+  /*!
+   * \brief Set stored variables to the old solution.
+   */
+  inline virtual void SetSolution_Store(unsigned long iPoint, su2double *val_solution_old) { }
+
+  inline virtual su2double* GetSolution_Store(unsigned long iPoint) { return nullptr; }
+
+  inline virtual su2double GetSolution_Store(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+
+  inline virtual su2double* GetSolution_Save(unsigned long iPoint) { return nullptr; }
+
+  inline virtual su2double GetSolution_Save(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+
+  inline virtual su2double* GetSolution_Delta(unsigned long iPoint) { return nullptr; }
+
+  inline virtual void SetSolution_Delta(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { }
+
+  inline virtual su2double GetSolution_Delta(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+
+  inline virtual su2double* GetSolution_Former(unsigned long iPoint) { return nullptr; }
+
+  inline virtual su2double GetSolution_Former(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+
+  inline virtual void SetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) {  }
+
+  inline virtual su2double GetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+
+  inline virtual void SetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
+
+  inline virtual void SetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
+
+  inline virtual su2double GetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
   /*!
    * \brief Set the FSI force sensitivity at the node
    * \param[in] iDim - spacial component

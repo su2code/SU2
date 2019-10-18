@@ -45,7 +45,7 @@
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
  */
-class CDiscAdjVariable final : public CVariable {
+class CDiscAdjVariable : public CVariable {
 private:
   MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
   MatrixType Solution_Direct;
