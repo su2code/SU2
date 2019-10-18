@@ -580,7 +580,7 @@ public:
    * \brief Get the value of the under-relaxation parameter for the current control volume (CV).
    * \return Value of the under-relaxation parameter for this CV.
    */
-  inline su2double GetUnderRelaxation(unsigned long iPoint) { return UnderRelaxation(iPoint); }
+  inline su2double GetUnderRelaxation(unsigned long iPoint) const { return UnderRelaxation(iPoint); }
   
   /*!
    * \brief Set the value of the local CFL number for the current control volume (CV).
@@ -592,7 +592,7 @@ public:
    * \brief Get the value of the local CFL number for the current control volume (CV).
    * \return Value of the local CFL number for this CV.
    */
-  inline su2double GetLocalCFL(unsigned long iPoint) { return LocalCFL(iPoint); }
+  inline su2double GetLocalCFL(unsigned long iPoint) const { return LocalCFL(iPoint); }
 
   /*!
    * \brief Set auxiliar variables, we are looking for the gradient of that variable.

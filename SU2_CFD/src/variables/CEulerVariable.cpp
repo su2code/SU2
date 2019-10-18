@@ -39,7 +39,7 @@
 
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
-                               unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(Gradient_Primitive) {
+                               unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -146,6 +146,14 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   Lambda.resize(nPoint) = su2double(0.0);
   Sensor.resize(nPoint) = su2double(0.0);
 
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+  
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero() {
