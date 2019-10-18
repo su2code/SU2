@@ -73,6 +73,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/drivers/CErrorEstimationDriver.cpp \
+  ../src/drivers/COneShotDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
@@ -131,6 +132,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_one_shot.cpp \
   ../src/solvers/CMeshSolver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
