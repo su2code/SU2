@@ -76,14 +76,15 @@ protected:
   *Buffer_Send_nVertex_Donor,/*!\brief Buffer to send number of vertices on the local processor*/
   *Buffer_Send_nFace_Donor,/*!\brief Buffer to send number of faces on the local processor*/
   *Buffer_Send_nFaceNodes_Donor,/*!\brief Buffer to send the number of nodes assocated with faces per processor*/
-  *Buffer_Receive_GlobalPoint, /*!\brief Buffer to receive global point indices*/
-  *Buffer_Send_GlobalPoint,/*!\brief Buffer to send global point indices*/
   *Buffer_Send_FaceIndex,/*!\brief Buffer to send indices pointing to the node indices that define the faces*/
   *Buffer_Receive_FaceIndex,/*!\brief Buffer to receive indices pointing to the node indices that define the faces*/
   *Buffer_Send_FaceNodes,/*!\brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
   *Buffer_Receive_FaceNodes,/*!\brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
   *Buffer_Send_FaceProc,/*!\brief Buffer to send processor which stores the node indicated in Buffer_Receive_FaceNodes*/
   *Buffer_Receive_FaceProc;/*!\brief Buffer to receive processor which stores the node indicated in Buffer_Receive_FaceNodes*/
+
+  long   *Buffer_Send_GlobalPoint,/*!\brief Buffer to send global point indices*/
+  *Buffer_Receive_GlobalPoint; /*!\brief Buffer to receive global point indices*/
 
   su2double *Buffer_Send_Coord,/*!\brief Buffer to send coordinate values*/
   *Buffer_Send_Normal,/*!\brief Buffer to send normal vector values */
