@@ -36,7 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-#include "../include/variables/CDiscAdjVariable.hpp"
+#include "../include/variables/COneShotVariable.hpp"
 
 COneShotSolver::COneShotSolver(void) : CDiscAdjSolver () {
 

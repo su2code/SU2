@@ -2836,59 +2836,71 @@ public:
 /*!
    * \brief Set to zero the solution.
    */
-  inline virtual void SetSolutionZero(unsigned long iPoint) { }
+  inline void SetSolutionZero(unsigned long iPoint) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution(iPoint,iVar) = 0.0;
+  }
 
   /*!
    * \brief Set to zero a particular solution.
    */
-  inline virtual void SetSolutionZero(unsigned long iPoint, unsigned short val_var) { }
+  inline void SetSolutionZero(unsigned long iPoint, unsigned short val_var) {Solution(iPoint,val_var) = 0.0;}
 
   /*!
    * \brief Set stored variables to the solution.
    */
-  inline virtual void Set_StoreSolution(unsigned long iPoint) { }
+  inline void Set_StoreSolution(unsigned long iPoint) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Store(iPoint,iVar) = Solution(iPoint,iVar);
+  }
 
   /*!
    * \brief Set saved variables to the solution.
    */
-  inline virtual void Set_SaveSolution(unsigned long iPoint) { }
+  inline void Set_SaveSolution(unsigned long iPoint) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Save(iPoint,iVar) = Solution(iPoint,iVar);
+  }
 
   /*!
    * \brief Set former variables to the solution.
    */
-  inline virtual void Set_FormerSolution(unsigned long iPoint) { }
+  inline void Set_FormerSolution(unsigned long iPoint) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Former(iPoint,iVar) = Solution(iPoint,iVar);
+  }
 
   /*!
    * \brief Set former variables to the old solution.
    */
-  inline virtual void SetSolution_Former(unsigned long iPoint, su2double *val_solution_old) { }
+  inline void SetSolution_Former(unsigned long iPoint, su2double *val_solution_old) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Former(iPoint,iVar) = val_solution_old[iVar];
+  }
 
   /*!
    * \brief Set stored variables to the old solution.
    */
-  inline virtual void SetSolution_Store(unsigned long iPoint, su2double *val_solution_old) { }
+  inline void SetSolution_Store(unsigned long iPoint, su2double *val_solution_old) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Store(iPoint,iVar) = val_solution_old[iVar];
+  }
 
-  inline virtual su2double* GetSolution_Store(unsigned long iPoint) { return nullptr; }
+  inline su2double* GetSolution_Store(unsigned long iPoint) { return Solution_Store[iPoint]; }
 
-  inline virtual su2double GetSolution_Store(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+  inline su2double GetSolution_Store(unsigned long iPoint, unsigned short iVar) { return Solution_Store(iPoint,iVar); }
 
-  inline virtual su2double* GetSolution_Save(unsigned long iPoint) { return nullptr; }
+  inline su2double* GetSolution_Save(unsigned long iPoint) { return Solution_Save[iPoint]; }
 
-  inline virtual su2double GetSolution_Save(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+  inline su2double GetSolution_Save(unsigned long iPoint, unsigned short iVar) { return Solution_Save(iPoint,iVar); }
 
-  inline virtual su2double* GetSolution_Delta(unsigned long iPoint) { return nullptr; }
+  inline su2double* GetSolution_Delta(unsigned long iPoint) { return Solution_Delta[iPoint]; }
 
-  inline virtual void SetSolution_Delta(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { }
+  inline void SetSolution_Delta(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { Solution_Delta(iPoint,iVar) = val_solution_delta; }
 
-  inline virtual su2double GetSolution_Delta(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+  inline su2double GetSolution_Delta(unsigned long iPoint, unsigned short iVar) { return Solution_Delta(iPoint,iVar); }
 
-  inline virtual su2double* GetSolution_Former(unsigned long iPoint) { return nullptr; }
+  inline su2double* GetSolution_Former(unsigned long iPoint) { return Solution_Former[iPoint]; }
 
-  inline virtual su2double GetSolution_Former(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+  inline su2double GetSolution_Former(unsigned long iPoint, unsigned short iVar) { return Solution_Former(iPoint,iVar); }
 
-  inline virtual void SetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) {  }
+  inline void SetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { Solution_Delta_Store(iPoint,iVar) = val_solution_delta; }
 
-  inline virtual su2double GetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar) { return 0.0; }
+  inline su2double GetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar) { return Solution_Delta_Store(iPoint,iVar); }
 
   inline virtual void SetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
 

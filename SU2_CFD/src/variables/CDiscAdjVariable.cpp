@@ -80,6 +80,17 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
     Set_BGSSolution_k();
   }
+
+  if (config->GetBoolOneShot()) {
+    Solution_Store.resize(nPoint,nVar) = su2double(0.0);
+    Solution_Former.resize(nPoint,nVar) = su2double(0.0);
+    Solution_Delta.resize(nPoint,nVar) = su2double(0.0);
+    Solution_Delta_Store.resize(nPoint,nVar) = su2double(0.0);
+    Solution_Save.resize(nPoint,nVar) = su2double(0.0);
+
+    Sensitivity_ShiftedLagrangian.resize(nPoint,nDim) = su2double(0.0);
+    Sensitivity_AugmentedLagrangian.resize(nPoint,nDim) = su2double(0.0);
+  }
 }
 
 void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }
