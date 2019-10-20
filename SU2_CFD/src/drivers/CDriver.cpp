@@ -5283,6 +5283,11 @@ void CDiscAdjFSIDriver::Run( ) {
 
   Postprocess(ZONE_FLOW, ZONE_STRUCT);
 
+  for (iZone = 0; iZone < nZone; iZone++){
+    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                                            config_container[iZone],
+                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, true);
+  }
 }
 
 
