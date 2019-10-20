@@ -184,6 +184,13 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
   if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
   
+  /*--- Load data for the discrete sensitivities. ---*/
+  if (config->GetDiscrete_Adjoint()) {
+    SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
+    SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
+    if (nDim == 3) SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
+  }
+
   if(dynamic){
     SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(iPoint, 0));
     SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(iPoint, 1));
@@ -218,6 +225,14 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
   if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
   
+  /*--- For the discrete adjoint, we have the full field of sensitivity
+   in each coordinate direction. ---*/
+  if (config->GetDiscrete_Adjoint()) {
+     AddVolumeOutput("SENSITIVITY-X",    "Sensitivity_x", "SENSITIVITY", "x-component of the coordinate sensitivity vector");
+    AddVolumeOutput("SENSITIVITY-Y",    "Sensitivity_y", "SENSITIVITY", "y-component of the coordinate sensitivity vector");
+    if (nDim == 3) AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_Z", "SENSITIVITY", "z-component of the coordinate sensitivity vector");
+  }
+
   if(dynamic){
     AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY", "x-component of the velocity vector");
     AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY", "y-component of the velocity vector");
