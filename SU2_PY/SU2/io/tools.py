@@ -42,6 +42,7 @@
 import os
 import shutil, glob
 from SU2.util import ordered_bunch
+from .historyMap import history_header_map as historyOutFields
 
 # -------------------------------------------------------------------
 #  Read SU2_DOT Gradient Values
@@ -91,11 +92,11 @@ def read_plot( filename ):
         title = line.split('=')[1] .strip() # not used right now
         line = plot_file.readline()
 
-    # process header
-    if '=' in line:
-        line = line.split("=")[1].strip()
+    if line.startswith('VARIABLES'):
+          line = plot_file.readline()
+
     line = line.split(",")
-    Variables = [ x.strip('" ') for x in line ]
+    Variables = [ x.strip().strip('"') for x in line ]
     n_Vars = len(Variables)
     
     # initialize plot data dictionary
@@ -163,16 +164,13 @@ def read_history( History_filename, nZones = 1):
     
     # initialize history data dictionary
     history_data = ordered_bunch()    
-    
-    # header name to config file name map
-    map_dict = get_headerMap(nZones)    
-    
+
     # map header names
     for key in plot_data.keys():
-        if key in map_dict:
-            var = map_dict[key]
-        else:
-            var = key
+        var = key
+        for field in historyOutFields:
+            if key == historyOutFields[field]['HEADER']:
+                var = field
         history_data[var] = plot_data[key]
     
     return history_data
@@ -187,89 +185,11 @@ def read_history( History_filename, nZones = 1):
 
 def get_headerMap(nZones = 1):
 
-    """ returns a dictionary that maps history file header names
-        to optimization problem function names
-    """
-    # header name to config file name map
-    history_header_map = { "Iteration"       : "ITERATION"               ,
-                 "REFNODE"         : "REFERENCE_NODE"          ,
-                 "CL"              : "LIFT"                    ,
-                 "CD"              : "DRAG"                    ,
-                 "CSF"             : "SIDEFORCE"               ,
-                 "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
-                 "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
-                 "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
-                 "HeatFlux_Maximum": "MAXIMUM_HEATFLUX"        ,
-                 "Temperature_Total": "TOTAL_TEMPERATURE"        ,
-                 "CMx"             : "MOMENT_X"                ,
-                 "CMy"             : "MOMENT_Y"                ,
-                 "CMz"             : "MOMENT_Z"                ,
-                 "CFx"             : "FORCE_X"                 ,
-                 "CFy"             : "FORCE_Y"                 ,
-                 "CFz"             : "FORCE_Z"                 ,
-                 "CL/CD"           : "EFFICIENCY"              ,
-                 "AoA"             : "AOA"                     ,
-                 "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
-                 "CMerit"          : "FIGURE_OF_MERIT"         ,
-                 "Buffet_Metric"   : "BUFFET"                  ,
-                 "CQ"              : "TORQUE"                  ,
-                 "CT"              : "THRUST"                  ,
-                 "CEquivArea"      : "EQUIVALENT_AREA"         ,
-                 "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "Avg_TotalPress"  : "SURFACE_TOTAL_PRESSURE"  ,
-                 "Avg_Press"       : "SURFACE_STATIC_PRESSURE" ,
-                 "Avg_MassFlow"    : "SURFACE_MASSFLOW"        ,
-                 "Avg_Mach"        : "SURFACE_MACH"            ,
-                 "Uniformity"                : "SURFACE_UNIFORMITY"            ,
-                 "Secondary_Strength"        : "SURFACE_SECONDARY"            ,
-                 "Momentum_Distortion"       : "SURFACE_MOM_DISTORTION"            ,
-                 "Secondary_Over_Uniformity" : "SURFACE_SECOND_OVER_UNIFORM"            ,
-                 "Pressure_Drop"        : "SURFACE_PRESSURE_DROP"            ,
-                 "ComboObj"        : "COMBO"                   ,
-                 "Time(min)"       : "TIME"                    ,
-                 'Time(min)"\n'    : "TIME"                    , # TDE hack for paraview
-                 "D(CL)"           : "D_LIFT"                  ,
-                 "D(CD)"           : "D_DRAG"                  ,
-                 "D(CSF)"          : "D_SIDEFORCE"             ,
-                 "D(CMx)"          : "D_MOMENT_X"              ,
-                 "D(CMy)"          : "D_MOMENT_Y"              ,
-                 "D(CMz)"          : "D_MOMENT_Z"              ,
-                 "D(CFx)"          : "D_FORCE_X"               ,
-                 "D(CFy)"          : "D_FORCE_Y"               ,
-                 "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
-                 "D(HeatFlux_Total)" : "D_HEAT"                ,
-                 "D(HeatFlux_Maximum)" : "D_HEAT_MAX"          ,
-                 "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
-                 "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
-                 "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
-                 "FlowAngleOut_1"          : "FLOW_ANGLE_OUT"         ,
-                 "FlowAngleIn_1"           : "FLOW_ANGLE_IN"          ,
-                 "MassFlowIn_1"            : "MASS_FLOW_IN"           ,
-                 "MassFlowOut_1"           : "MASS_FLOW_OUT"          ,
-                 "PressureRatio_1"         : "PRESSURE_RATIO"         ,
-                 "TotalEfficiency_" + str(getTurboPerfIndex(nZones))  : "TOTAL_EFFICIENCY"       ,
-                 "TotalStaticEfficiency_3" : "TOTAL_STATIC_EFFICIENCY",
-                 "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
-                 "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
-                 "D(TotalPressureLoss_0)"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                 "D(KineticEnergyLoss_0)"     : "D_KINETIC_ENERGY_LOSS"    ,
-                 "D(TotalStaticEfficiency_0)" : "D_TOTAL_STATIC_EFFICIENCY",
-                 "D(FlowAngleOut_0)"          : "D_FLOW_ANGLE_OUT"         ,
-                 "D(FlowAngleIn_0)"           : "D_FLOW_ANGLE_IN"          ,
-                 "D(MassFlowIn_0)"            : "D_MASS_FLOW_IN"           ,
-                 "D(MassFlowOut_0)"           : "D_MASS_FLOW_OUT"          ,
-                 "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
-                 "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
-                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     ,
-                 "D(Uniformity)"                : "D_SURFACE_UNIFORMITY"            ,
-                 "D(Secondary_Strength)"        : "D_SURFACE_SECONDARY"             ,
-                 "D(Momentum_Distortion)"       : "D_SURFACE_MOM_DISTORTION"        ,
-                 "D(Secondary_Over_Uniformity)" : "D_SURFACE_SECOND_OVER_UNIFORM"   ,
-                 "D(Pressure_Drop)"             : "D_SURFACE_PRESSURE_DROP"         }
- 
-    return history_header_map        
+    headerMap = dict()
+    for outputField in historyOutFields:
+        headerMap[outputField] = historyOutFields[outputField]['HEADER']
+
+    return headerMap        
 
 def getTurboPerfIndex(nZones = 1):
 
@@ -287,55 +207,7 @@ def getTurboPerfIndex(nZones = 1):
 #  Optimizer Function Names
 # -------------------------------------------------------------------
 
-# Aerodynamic Optimizer Function Names
-
-optnames_aero = [ "LIFT"                        ,
-                  "DRAG"                        ,
-                  "SIDEFORCE"                   ,
-                  "MOMENT_X"                    ,
-                  "MOMENT_Y"                    ,
-                  "MOMENT_Z"                    ,
-                  "FORCE_X"                     ,
-                  "FORCE_Y"                     ,
-                  "FORCE_Z"                     ,
-                  "EFFICIENCY"                  ,
-                  "FIGURE_OF_MERIT"             ,
-                  "BUFFET"                      ,
-                  "TORQUE"                      ,
-                  "THRUST"                      ,
-                  "SURFACE_TOTAL_PRESSURE"      ,
-                  "SURFACE_STATIC_PRESSURE"     ,
-                  "SURFACE_MASSFLOW"            ,
-                  "SURFACE_MACH"                ,
-                  "SURFACE_UNIFORMITY"          ,
-                  "SURFACE_SECONDARY"           ,
-                  "SURFACE_MOM_DISTORTION"      ,
-                  "SURFACE_SECOND_OVER_UNIFORM" ,
-                  "SURFACE_PRESSURE_DROP"       ,
-                  "EQUIVALENT_AREA"             ,
-                  "NEARFIELD_PRESSURE"          ,
-                  "INVERSE_DESIGN_PRESSURE"     ,
-                  "INVERSE_DESIGN_HEATFLUX"     ,
-                  "TOTAL_HEATFLUX"              ,
-                  "MAXIMUM_HEATFLUX"            ,
-                  "CUSTOM_OBJFUNC"              ,
-                  "REFERENCE_NODE"              ,
-                  "COMBO"]
-
-# Turbo performance optimizer Function Names
-optnames_turbo = ["TOTAL_PRESSURE_LOSS"     ,
-                  "KINETIC_ENERGY_LOSS"     ,
-                  "ENTROPY_GENERATION"      ,
-                  "EULERIAN_WORK"           ,
-                  "FLOW_ANGLE_IN"           ,
-                  "FLOW_ANGLE_OUT"          ,
-                  "MASS_FLOW_IN"            ,
-                  "MASS_FLOW_OUT"           ,
-                  "PRESSURE_RATIO"          ,
-                  "TOTAL_EFFICIENCY"        ,
-                  "TOTAL_STATIC_EFFICIENCY" ,
-                 ]
-#: optnames_aero
+#: optnames_stab
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_DRAG_D_ALPHA"               ,
@@ -415,68 +287,6 @@ optnames_geo.extend(PerStation)
                  
 #: optnames_geo
 
-grad_names_directdiff = ["D_LIFT",
-                         "D_DRAG",
-                         "D_SIDEFORCE",
-                         "D_MOMENT_X",
-                         "D_MOMENT_Y",
-                         "D_MOMENT_Z",
-                         "D_FORCE_X",
-                         "D_FORCE_Y",
-                         "D_FORCE_Z",
-                         "D_EFFICIENCY",
-                         "D_CUSTOM_OBJFUNC",
-                         "D_HEAT",
-                         "D_MAX_HEAT",
-                         "D_TOTAL_PRESSURE_LOSS",
-                         "D_TOTAL_EFFICIENCY",
-                         "D_TOTAL_PRESSURE_LOSS",
-                         "D_KINETIC_ENERGY_LOSS",
-                         "D_TOTAL_STATIC_EFFICIENCY",
-                         "D_FLOW_ANGLE_OUT",
-                         "D_FLOW_ANGLE_IN",
-                         "D_MASS_FLOW_IN",
-                         "D_MASS_FLOW_OUT",
-                         "D_PRESSURE_RATIO",
-                         "D_ENTHALPY_OUT",
-                         "D_TOTAL_ENTHALPY_OUT",
-                         "D_SURFACE_UNIFORMITY",
-                         "D_SURFACE_SECONDARY",
-                         "D_SURFACE_MOM_DISTORTION",
-                         "D_SURFACE_SECOND_OVER_UNIFORM",
-                         "D_SURFACE_PRESSURE_DROP"]
-
-grad_names_map = ordered_bunch()
-grad_names_map.MASS_FLOW_IN = "D_MASS_FLOW_IN"
-grad_names_map.MOMENT_Z = "D_MOMENT_Z"
-grad_names_map.FLOW_ANGLE_OUT = "D_FLOW_ANGLE_OUT"
-grad_names_map.MASS_FLOW_OUT = "D_MASS_FLOW_OUT"
-grad_names_map.FLOW_ANGLE_IN = "D_FLOW_ANGLE_IN"
-grad_names_map.FORCE_Z = "D_FORCE_Z"
-grad_names_map.FORCE_Y = "D_FORCE_Y"
-grad_names_map.FORCE_X = "D_FORCE_X"
-grad_names_map.TOTAL_EFFICIENCY = "D_TOTAL_EFFICIENCY"
-grad_names_map.TOTAL_STATIC_EFFICIENCY = "D_TOTAL_STATIC_EFFICIENCY"
-grad_names_map.PRESSURE_RATIO = "D_PRESSURE_RATIO"
-grad_names_map.EFFICIENCY = "D_EFFICIENCY"
-grad_names_map.DRAG = "D_DRAG"
-grad_names_map.LIFT = "D_LIFT"
-grad_names_map.TOTAL_ENTHALPY_OUT = "D_TOTAL_ENTHALPY_OUT"
-grad_names_map.TOTAL_PRESSURE_LOSS = "D_TOTAL_PRESSURE_LOSS"
-grad_names_map.MOMENT_Y = "D_MOMENT_Y"
-grad_names_map.MOMENT_X="D_MOMENT_X"
-grad_names_map.SIDEFORCE = "D_SIDEFORCE"
-grad_names_map.ENTHALPY_OUT = "D_ENTHALPY_OUT"
-grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
-grad_names_map.CUSTOM_OBJFUNC = "D_CUSTOM_OBJFUNC"
-grad_names_map.HEAT = "D_HEAT"
-grad_names_map.MAX_HEAT = "D_MAX_HEAT"
-grad_names_map.SURFACE_UNIFORMITY = "D_SURFACE_UNIFORMITY"
-grad_names_map.SURFACE_SECONDARY = "D_SURFACE_SECONDARY"
-grad_names_map.SURFACE_MOM_DISTORTION = "D_SURFACE_MOM_DISTORTION"
-grad_names_map.SURFACE_SECOND_OVER_UNIFORM = "D_SURFACE_SECOND_OVER_UNIFORM"
-grad_names_map.SURFACE_PRESSURE_DROP = "D_SURFACE_PRESSURE_DROP"
-
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
                   "DRAG"        :   "CD" ,
@@ -518,24 +328,22 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
         
         Outputs:
             dictionary with function keys and thier values
-            if special cases has 'UNSTEADY_SIMULATION', returns time averaged data
+            if special cases has 'TIME_MARCHING', returns time averaged data
             otherwise returns final value from history file
     """
     
     # read the history data
     history_data = read_history(History_filename, nZones)
     
-    # list of functions to pull
-    func_names = optnames_aero + grad_names_directdiff + optnames_turbo
-
     # pull only these functions
     Func_Values = ordered_bunch()
-    for this_objfun in func_names:
+    for this_objfun in historyOutFields:
         if this_objfun in history_data:
-            Func_Values[this_objfun] = history_data[this_objfun] 
+            if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
+                Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
+    if 'TIME_MARCHING' in special_cases and not final_avg:
         for key,value in Func_Values.items():
             Func_Values[key] = sum(value)/len(value)
          
@@ -693,9 +501,14 @@ def add_suffix(base_name,suffix):
             suffix      = 'new'
             suffix_name = 'input_new.txt'
     """
-    
-    base_name = os.path.splitext(base_name)    
-    suffix_name = base_name[0] + '_' + suffix + base_name[1]
+    if isinstance(base_name, list):
+        suffix_name = []
+        for name in base_name:
+            name_split = os.path.splitext(name)
+            suffix_name.append(name_split[0] + '_' + suffix + name_split[1])
+    else:
+        base_name = os.path.splitext(base_name)    
+        suffix_name = base_name[0] + '_' + suffix + base_name[1]
     
     return suffix_name
     
@@ -776,9 +589,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TECPLOT'): 
         header.append('VARIABLES=')
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -905,9 +718,9 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TECPLOT'): 
         header_format = header_format + 'VARIABLES='
-    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
+    elif (plot_format == 'CSV'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -966,11 +779,11 @@ def get_extension(output_format):
     if (output_format == "PARAVIEW")        : return ".csv"
     if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
-    if (output_format == "TECPLOT_BINARY")  : return ".plt"
+    if (output_format == "TECPLOT_BINARY")  : return ".szplt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  
     if (output_format == "CONFIG")          : return ".cfg"  
-
+    if (output_format == "CSV")         : return ".csv"
     # otherwise
     raise Exception("Output Format Unknown")
 
@@ -1000,19 +813,16 @@ def get_specialCases(config):
         if 'SOLVER' in config and config['SOLVER'] == key:
             special_cases.append(key)
             
-    if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
-        special_cases.append('UNSTEADY_SIMULATION')
+    if config.get('TIME_MARCHING','NO') != 'NO':
+        special_cases.append('TIME_MARCHING')
      
     # no support for more than one special case
     if len(special_cases) > 1:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
         raise Exception(error_str)   
-    
-    if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
-        raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for harmonic balance
-    if 'UNSTEADY_SIMULATION' in config and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
+    if 'TIME_MARCHING' in config and config['TIME_MARCHING'] == 'HARMONIC_BALANCE':
         special_cases.append('HARMONIC_BALANCE')
 
     # Special case for rotating frame
@@ -1091,7 +901,7 @@ def expand_part(name,config):
     return names
 
 def expand_time(name,config):
-    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
+    if 'TIME_MARCHING' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%05d')
@@ -1108,20 +918,58 @@ def expand_time(name,config):
     return names
 
 def expand_zones(name, config):
+    names = []
     if int(config.NZONES) > 1:
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%d')
             names = [name_pat%i for i in range(int(config.NZONES))]
         else:
             for n in range(len(name)):
-                name_pat[i] = add_suffix(name, '%d')
-                names[i]    = [name_pat%i for i in range(int(config.NZONES))]
+                name_pat = add_suffix(name[n], '%d')
+                names.extend([name_pat%i for i in range(int(config.NZONES))])
+
     else:
         if not isinstance(name, list):
             names = [name]
         else:
             names = name
     return names
+
+def expand_multipoint(name,config):
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    names = []
+    n_multipoint = len(config['MULTIPOINT_WEIGHT'].split(','))
+
+    if any(elem in optnames_multi for elem in objectives):
+        if not isinstance(name, list):
+            if '_point0' not in name:
+                name_pat = add_suffix(name,'point%d')
+                names = [name_pat%i for i in range(n_multipoint)]
+            else: 
+                name_parts = name.split('_point0')
+                name_base = name_parts[0]
+                name_suff = name_parts[1]
+                name_pat = name_base + '_point%d' + name_suff
+                names = [name_pat%i for i in range(n_multipoint)]
+        else:
+            for n in range(len(name)):
+                if '_point0' not in name:
+                    name_pat = add_suffix(name[n], 'point%d')
+                    names.extend([name_pat%i for i in range(n_multipoint)])
+                else: 
+                    name_parts = name[n].split('_point0')
+                    name_base = name_parts[0]
+                    name_suff = name_parts[1]
+                    name_pat = name_base + '_point%d' + name_suff
+                    names.extend([name_pat%i for i in range(n_multipoint)])
+    else:
+        if not isinstance(name, list):
+            names = [name]
+        else:
+            names = name
+    return names        
+
 
 
 def make_link(src,dst):
@@ -1172,9 +1020,18 @@ def restart2solution(config,state={}):
 
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
-        restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME
+        restart  = config.RESTART_FILENAME
+        solution = config.SOLUTION_FILENAME
+        restart = restart.split('.')[0]
+        solution = solution.split('.')[0]
         
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
+            restart += '.csv'
+            solution += '.csv'
+        else:
+            restart += '.dat'
+            solution += '.dat'
+
         # expand zones
         restarts  = expand_zones(restart,config)
         solutions = expand_zones(solution,config)
@@ -1191,6 +1048,15 @@ def restart2solution(config,state={}):
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
+        restart = restart.split('.')[0]
+        solution = solution.split('.')[0]
+
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
+            restart += '.csv'
+            solution += '.csv'
+        else:
+            restart += '.dat'
+            solution += '.dat'
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
         if config['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':

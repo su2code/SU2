@@ -93,7 +93,7 @@ def adjoint( config ):
     su2merge(konfig)
     
     # filenames
-    plot_format      = konfig['OUTPUT_FORMAT']
+    plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
     # CVC: Adjustment needed as FSI history filenames are different
     if konfig['SOLVER'] == 'FLUID_STRUCTURE_INTERACTION':
@@ -118,7 +118,7 @@ def adjoint( config ):
         suffix       = "refnode"
     else:
         suffix       = su2io.get_adjointSuffix(objective)
-    restart_name = konfig['RESTART_FLOW_FILENAME']
+    restart_name = konfig['RESTART_FILENAME']
     restart_name = su2io.add_suffix(restart_name,suffix)
     
     # info out

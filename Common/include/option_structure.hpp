@@ -1522,13 +1522,13 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  */
 enum ENUM_INPUT {
   SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS      = 2,  /*!< \brief CGNS input format for the computational grid. */
+  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
   RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
   BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS)
+("CGNS", CGNS_GRID)
 ("RECTANGLE", RECTANGLE)
 ("BOX", BOX);
 
@@ -1538,22 +1538,46 @@ static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 enum ENUM_OUTPUT {
   TECPLOT = 1,  		     /*!< \brief Tecplot format for the solution output. */
   TECPLOT_BINARY = 2,    /*!< \brief Tecplot binary format for the solution output. */
-  FIELDVIEW = 3,  		   /*!< \brief FieldView format for the solution output. */
-  FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
+  SURFACE_TECPLOT = 3,  		     /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY = 4,    /*!< \brief Tecplot binary format for the solution output. */
   CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
-  CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
+  SURFACE_CSV = 6,			 /*!< \brief Comma-separated values format for the solution output. */  
   PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY = 8    /*!< \brief Paraview binary format for the solution output. */
+  PARAVIEW_BINARY = 8,   /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW = 9,  		     /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_BINARY = 10,   /*!< \brief Paraview binary format for the solution output. */
+  MESH      = 11,      /*!< \brief SU2 mesh format. */
+  RESTART_BINARY = 12,/*!< \brief SU2 binary restart format. */
+  RESTART_ASCII = 13,  /*!< \brief SU2 ASCII restart format. */
+  CGNS = 14
 };
+
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
-("TECPLOT", TECPLOT)
-("TECPLOT_BINARY", TECPLOT_BINARY)
-("FIELDVIEW", FIELDVIEW)
-("FIELDVIEW_BINARY", FIELDVIEW_BINARY)
+("TECPLOT_ASCII", TECPLOT)
+("TECPLOT", TECPLOT_BINARY)
+("SURFACE_TECPLOT_ASCII", SURFACE_TECPLOT)
+("SURFACE_TECPLOT", SURFACE_TECPLOT_BINARY)
 ("CSV", CSV)
-("CGNS", CGNS_SOL)
-("PARAVIEW", PARAVIEW)
-("PARAVIEW_BINARY", PARAVIEW_BINARY);
+("SURFACE_CSV", SURFACE_CSV)
+("PARAVIEW_ASCII", PARAVIEW)
+("PARAVIEW", PARAVIEW_BINARY)
+("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
+("SURFACE_PARAVIEW", SURFACE_PARAVIEW_BINARY)
+("RESTART_ASCII", RESTART_ASCII)
+("RESTART", RESTART_BINARY)
+("CGNS", CGNS);
+
+/*!
+ * \brief type of solution output file formats
+ */
+enum ENUM_TAB_OUTPUT {
+  TAB_CSV = 1,			         /*!< \brief Comma-separated values format for the solution output. */
+  TAB_TECPLOT = 2            /*!< \brief Tecplot format for the solution output. */
+};
+
+static const map<string, ENUM_TAB_OUTPUT> TabOutput_Map = CCreateMap<string, ENUM_TAB_OUTPUT>
+("CSV", TAB_CSV)
+("TECPLOT", TAB_TECPLOT);
 
 /*!
  * \brief type of volume sensitivity file formats (inout to SU2_DOT)
@@ -1845,7 +1869,7 @@ enum ENUM_UNSTEADY {
   HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
-static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
+static const map<string, ENUM_UNSTEADY> TimeMarching_Map = CCreateMap<string, ENUM_UNSTEADY>
 ("NO", STEADY)
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
@@ -2857,45 +2881,47 @@ public:
 
     this->FFDTag = new string[this->nDV];
 
-    unsigned short nParamDV = 0;
-    stringstream ss;
-    unsigned int i = 0;
+   vector<unsigned short> nParamDV(nDV, 0);
+   unsigned short totalnParamDV = 0;
+   stringstream ss;
+   unsigned int i = 0;
+    
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
-        case NO_DEFORMATION:       nParamDV = 0; break;
-        case FFD_SETTING:          nParamDV = 0; break;
-        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_CAMBER_2D:        nParamDV = 2; break;
-        case FFD_THICKNESS_2D:     nParamDV = 2; break;
-        case FFD_TWIST_2D:         nParamDV = 3; break;
-        case HICKS_HENNE:          nParamDV = 2; break;
-        case SURFACE_BUMP:         nParamDV = 3; break;
-        case CST:                  nParamDV = 3; break;
-        case ANGLE_OF_ATTACK:      nParamDV = 1; break;
-        case SCALE:                nParamDV = 0; break;
-        case TRANSLATION:          nParamDV = 3; break;
-        case ROTATION:             nParamDV = 6; break;
-        case NACA_4DIGITS:         nParamDV = 3; break;
-        case PARABOLIC:            nParamDV = 2; break;
-        case AIRFOIL:              nParamDV = 2; break;
-        case FFD_CONTROL_POINT:    nParamDV = 7; break;
-        case FFD_NACELLE:          nParamDV = 6; break;
-        case FFD_GULL:             nParamDV = 2; break;
-        case FFD_TWIST:            nParamDV = 8; break;
-        case FFD_ROTATION:         nParamDV = 7; break;
-        case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
-        case FFD_CAMBER:           nParamDV = 3; break;
-        case FFD_THICKNESS:        nParamDV = 3; break;
-        case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
-        case SURFACE_FILE:         nParamDV = 0; break;
-        case DV_EFIELD:            nParamDV = 2; break;
-        case DV_YOUNG:             nParamDV = 0; break;
-        case DV_POISSON:           nParamDV = 0; break;
-        case DV_RHO:               nParamDV = 0; break;
-        case DV_RHO_DL:            nParamDV = 0; break;
-        case SCALE_GRID:           nParamDV = 0; break;
-        case TRANSLATE_GRID:       nParamDV = 3; break;
-        case ROTATE_GRID:          nParamDV = 6; break;
+        case NO_DEFORMATION:       nParamDV[iDV] = 0; break;
+        case FFD_SETTING:          nParamDV[iDV] = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV[iDV] = 5; break;
+        case FFD_CAMBER_2D:        nParamDV[iDV] = 2; break;
+        case FFD_THICKNESS_2D:     nParamDV[iDV] = 2; break;
+        case FFD_TWIST_2D:         nParamDV[iDV] = 3; break;
+        case HICKS_HENNE:          nParamDV[iDV] = 2; break;
+        case SURFACE_BUMP:         nParamDV[iDV] = 3; break;
+        case CST:                  nParamDV[iDV] = 3; break;
+        case ANGLE_OF_ATTACK:      nParamDV[iDV] = 1; break;
+        case SCALE:                nParamDV[iDV] = 0; break;
+        case TRANSLATION:          nParamDV[iDV] = 3; break;
+        case ROTATION:             nParamDV[iDV] = 6; break;
+        case NACA_4DIGITS:         nParamDV[iDV] = 3; break;
+        case PARABOLIC:            nParamDV[iDV] = 2; break;
+        case AIRFOIL:              nParamDV[iDV] = 2; break;
+        case FFD_CONTROL_POINT:    nParamDV[iDV] = 7; break;
+        case FFD_NACELLE:          nParamDV[iDV] = 6; break;
+        case FFD_GULL:             nParamDV[iDV] = 2; break;
+        case FFD_TWIST:            nParamDV[iDV] = 8; break;
+        case FFD_ROTATION:         nParamDV[iDV] = 7; break;
+        case FFD_CONTROL_SURFACE:  nParamDV[iDV] = 7; break;
+        case FFD_CAMBER:           nParamDV[iDV] = 3; break;
+        case FFD_THICKNESS:        nParamDV[iDV] = 3; break;
+        case FFD_ANGLE_OF_ATTACK:  nParamDV[iDV] = 2; break;
+        case SURFACE_FILE:         nParamDV[iDV] = 0; break;
+        case DV_EFIELD:            nParamDV[iDV] = 2; break;
+        case DV_YOUNG:             nParamDV[iDV] = 0; break;
+        case DV_POISSON:           nParamDV[iDV] = 0; break;
+        case DV_RHO:               nParamDV[iDV] = 0; break;
+        case DV_RHO_DL:            nParamDV[iDV] = 0; break;
+        case SCALE_GRID:           nParamDV[iDV] = 0; break;
+        case TRANSLATE_GRID:       nParamDV[iDV] = 3; break;
+        case ROTATE_GRID:          nParamDV[iDV] = 6; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2903,8 +2929,15 @@ public:
           return newstring;
         }
       }
-
-      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
+      totalnParamDV += nParamDV[iDV];
+    }
+    
+    if (totalnParamDV > option_value.size()){
+      SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
+    }
+    
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) { 
+      for (unsigned short iParamDV = 0; iParamDV < nParamDV[iDV]; iParamDV++) {
 
         ss << option_value[i] << " ";
 

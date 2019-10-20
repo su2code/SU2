@@ -1652,7 +1652,7 @@ public:
    * \param[in] iMarker_Monitoring - Marker we are monitoring.
    * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements);
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long TimeIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.
