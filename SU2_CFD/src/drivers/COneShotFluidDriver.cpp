@@ -183,11 +183,6 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-    /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-
-    config_container[iZone]->SetExtIter(TimeIter);
-
     /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
 
     /*--- Preprocess the adjoint iteration ---*/
@@ -203,7 +198,7 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
 void COneShotFluidDriver::Run(){
 
-  config_container[ZONE_0]->SetIntIter(TimeIter);
+  config_container[ZONE_0]->SetInnerIter(TimeIter);
  
   /*--- Run an iteration of the one-shot solver ---*/
   RunOneShot();
