@@ -311,6 +311,8 @@ inline unsigned long CVertex::GetNode() { return Nodes[0]; }
 
 inline su2double *CVertex::GetNormal(void) { return Normal; }
 
+inline su2double *CVertex::GetNormal_Old(void) { return Normal_Old; }
+
 inline su2double *CVertex::GetVarCoord(void) { return VarCoord; }
 
 inline su2double *CVertex::GetCoord(void) { return CartCoord; }
@@ -331,6 +333,11 @@ inline void CVertex::GetNormal(su2double *val_normal) {
 inline void CVertex::SetNormal(su2double *val_face_normal) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
 		Normal[iDim]=val_face_normal[iDim];
+}
+
+inline void CVertex::SetNormal_Old(su2double *val_face_normal) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Normal_Old[iDim]=val_face_normal[iDim];
 }
 
 inline void CVertex::SetVarCoord(su2double *val_varcoord) { 

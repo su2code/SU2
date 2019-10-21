@@ -634,17 +634,21 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   
   Nodes  = NULL;
   Normal = NULL;
+  Normal_Old = NULL;
 
   /*--- Allocate node, and face normal ---*/
   
   Nodes  = new unsigned long[1]; 
   Normal = new su2double [nDim];
+  Normal_Old = new su2double [nDim];
 
   /*--- Initializate the structure ---*/
   
   Nodes[0] = val_point;
-  for (iDim = 0; iDim < nDim; iDim ++) 
+  for (iDim = 0; iDim < nDim; iDim ++) {
     Normal[iDim] = 0.0;
+    Normal_Old[iDim] = 0.0;
+  }
 
   /*--- Set to zero the variation of the coordinates ---*/
   
@@ -669,6 +673,7 @@ CVertex::~CVertex() {
   
   if (Normal != NULL) delete[] Normal;
   if (Nodes  != NULL) delete[] Nodes;
+  if (Normal_Old != NULL) delete[] Normal_Old;
 
   /*---  donor arrays for interpolation ---*/
   
@@ -755,5 +760,6 @@ CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : C
 CTurboVertex::~CTurboVertex() {
 
 	if (TurboNormal != NULL) delete [] TurboNormal;
+  if (Normal_Old != NULL) delete[] Normal_Old;
 
 }
