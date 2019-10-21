@@ -479,7 +479,7 @@ void CAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CS
 bool CAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
-        (config->GetTime_Marching() == STEADY && (curTimeIter < 2)); 
+        (config->GetTime_Marching() == STEADY && (curInnerIter < 2)); 
   
 }
 
