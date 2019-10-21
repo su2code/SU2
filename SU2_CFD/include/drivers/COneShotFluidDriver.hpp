@@ -1,5 +1,5 @@
 /*!
- * \file COneShotDriver.hpp
+ * \file COneShotFluidOutput.hpp
  * \brief Headers of the main subroutines for driving one-shot problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author B. Munguía
@@ -42,7 +42,7 @@
 /*!
  * \class COneShotFluidDriver
  * \brief Class that extends the DiscAdjFluidDriver class with methods for one-shot optimization
- * \author L. Kusch
+ * \author L. Kusch,  B. Munguía
  * \version 6.0.1 "Falcon"
  */
 class COneShotFluidDriver : public CDiscAdjSinglezoneDriver {

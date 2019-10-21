@@ -40,7 +40,7 @@ su2_cfd_src = files(['solver_direct_transition.cpp',
 su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
-                      'output/COneShotOutput.cpp',
+                      'output/COneShotFluidOutput.cpp',
                       'output/CAdjHeatOutput.cpp',
                       'output/CBaselineOutput.cpp',
                       'output/CMultizoneOutput.cpp',
@@ -117,7 +117,7 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp',
                       'drivers/CErrorEstimationDriver.cpp',
-                      'drivers/COneShotDriver.cpp'])
+                      'drivers/COneShotFluidDriver.cpp'])
 
 if get_option('enable-normal')
   su2_cfd = executable('SU2_CFD',

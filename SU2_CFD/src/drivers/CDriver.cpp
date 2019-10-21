@@ -3799,7 +3799,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     case ONE_SHOT_EULER: case ONE_SHOT_NAVIER_STOKES: case ONE_SHOT_RANS:
       if (rank == MASTER_NODE)
         cout << ": one-shot Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new COneShotOutput(config[iZone], nDim);
+      output[iZone] = new COneShotFluidOutput(config[iZone], nDim);
       break;
       
     default:

@@ -73,7 +73,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/drivers/CErrorEstimationDriver.cpp \
-  ../src/drivers/COneShotDriver.cpp \
+  ../src/drivers/COneShotFluidDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
@@ -117,7 +117,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CAdjHeatOutput.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
-  ../src/output/COneShotOutput.cpp \
+  ../src/output/COneShotFluidOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \

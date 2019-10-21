@@ -71,7 +71,7 @@
 #include "../output/CAdjElasticityOutput.hpp"
 #include "../output/CFlowCompOutput.hpp"
 #include "../output/CAdjFlowOutput.hpp"
-#include "../output/COneShotOutput.hpp"
+#include "../output/COneShotFluidOutput.hpp"
 #include "../output/CFlowCompFEMOutput.hpp"
 #include "../output/CFlowIncOutput.hpp"
 #include "../output/CAdjFlowIncOutput.hpp"
