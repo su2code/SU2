@@ -10933,7 +10933,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double Pressure, Inflow_Pressure = 0.0, Velocity[3], Velocity2, Entropy, Target_Inflow_MassFlow = 0.0, Target_Inflow_Mach = 0.0, Density, Energy,
-  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old, Inflow_MassFlow_old;
+  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old, Inflow_MassFlow_old, Mach_Exit;
   su2double *V_inflow, *V_domain;
   
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
@@ -11053,34 +11053,46 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       }
       Pressure   = V_domain[nDim+1];
       SoundSpeed = sqrt(Gamma*Pressure/Density);
-      Entropy = Pressure*pow(1.0/Density, Gamma);
-      Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
-      
-      /*--- Compute the new fictious state at the outlet ---*/
-      
-      Density    = pow(Inflow_Pressure/Entropy,1.0/Gamma);
-      Pressure   = Inflow_Pressure;
-      SoundSpeed = sqrt(Gamma*Inflow_Pressure/Density);
-      Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-      Velocity2  = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      Mach_Exit = sqrt(Velocity2)/SoundSpeed;
+
+      if (Mach_Exit>=1.0) {
+        /*--- Supersonic exit flow: there are no incoming characteristics,
+           so no boundary condition is necessary. Set outlet state to current
+           state so that upwinding handles the direction of propagation. ---*/
+        for (iVar = 0; iVar < nPrimVar; iVar++) 
+          V_inflow[iVar] = V_domain[iVar];
       }
-      
-      Energy = Inflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
-      
-      /*--- Conservative variables, using the derived quantities ---*/
-      
-      V_inflow[0] = Pressure / ( Gas_Constant * Density);
-      for (iDim = 0; iDim < nDim; iDim++)
-        V_inflow[iDim+1] = Velocity[iDim];
-      V_inflow[nDim+1] = Pressure;
-      V_inflow[nDim+2] = Density;
-      V_inflow[nDim+3] = Energy + Pressure/Density;
-      V_inflow[nDim+4] = SoundSpeed;
-      
+
+      else {
+        Entropy = Pressure*pow(1.0/Density, Gamma);
+        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+        
+        /*--- Compute the new fictious state at the outlet ---*/
+        
+        Density    = pow(Inflow_Pressure/Entropy,1.0/Gamma);
+        Pressure   = Inflow_Pressure;
+        SoundSpeed = sqrt(Gamma*Inflow_Pressure/Density);
+        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        Velocity2  = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
+        
+        Energy = Inflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        if (tkeNeeded) Energy += GetTke_Inf();
+        
+        /*--- Conservative variables, using the derived quantities ---*/
+        
+        V_inflow[0] = Pressure / ( Gas_Constant * Density);
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inflow[iDim+1] = Velocity[iDim];
+        V_inflow[nDim+1] = Pressure;
+        V_inflow[nDim+2] = Density;
+        V_inflow[nDim+3] = Energy + Pressure/Density;
+        V_inflow[nDim+4] = SoundSpeed;
+      }
+
       /*--- Set various quantities in the solver class ---*/
       
       conv_numerics->SetNormal(Normal);
