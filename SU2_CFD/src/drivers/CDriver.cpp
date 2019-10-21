@@ -5229,64 +5229,91 @@ void CDiscAdjFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 void CDiscAdjFSIDriver::Run( ) {
 
-  /*--- As of now, we are coding it for just 2 zones. ---*/
-  /*--- This will become more general, but we need to modify the configuration for that ---*/
-  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
-  unsigned short iZone;
-  bool BGS_Converged = false;
 
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetInnerIter(IntIter);
-  unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
-  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
 
-  ofstream myfile_struc, myfile_flow, myfile_geo;
-  
-  Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+    /*--- Perform some external iteration preprocessing. ---*/
 
-  for (iOuterIter = 0; iOuterIter < nOuterIter && !BGS_Converged; iOuterIter++){
+    //PreprocessExtIter(TimeIter);
+    /*--- Set the value of the external iteration and physical time. ---*/
 
-    if (rank == MASTER_NODE){
-      cout << endl << "                    ****** BGS ITERATION ";
-      cout << iOuterIter;
-      cout << " ******" << endl;
+    for (iZone = 0; iZone < nZone; iZone++) {
+      config_container[iZone]->SetTimeIter(TimeIter);
+    
+      if (config_container[iZone]->GetTime_Domain())
+        config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+      else
+        config_container[iZone]->SetPhysicalTime(0.0);
+    
     }
 
-    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+    /*--- As of now, we are coding it for just 2 zones. ---*/
+    /*--- This will become more general, but we need to modify the configuration for that ---*/
+    unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+    unsigned short iZone;
+    bool BGS_Converged = false;
+
+    unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetInnerIter(IntIter);
+    unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+    unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+
+    ofstream myfile_struc, myfile_flow, myfile_geo;
     
-    /*--- Start with structural terms if OF is based on displacements ---*/
+    Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
-    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION)
-      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+    // /*--- Perform a dynamic mesh update if required. ---*/
 
-    /*--- Iterate fluid (including cross term) ---*/
+    // if (!fem_solver && !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
+    //   DynamicMeshUpdate(TimeIter);
+    // }
 
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
+    for (iOuterIter = 0; iOuterIter < nOuterIter && !BGS_Converged; iOuterIter++){
 
-    /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
+      if (rank == MASTER_NODE){
+        cout << endl << "                    ****** BGS ITERATION ";
+        cout << iOuterIter;
+        cout << " ******" << endl;
+      }
 
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
+      for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+      
+      /*--- Start with structural terms if OF is based on displacements ---*/
 
-    /*--- Compute mesh cross term (dM / dSv) ---*/
+      if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION)
+        Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
 
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
-    
-    /*--- End with structural terms if OF is based on fluid variables ---*/
-    
-    if (Kind_Objective_Function == FLOW_OBJECTIVE_FUNCTION)
-      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+      /*--- Iterate fluid (including cross term) ---*/
 
-    /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
+      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
 
-  }
+      /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
+
+      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
+
+      /*--- Compute mesh cross term (dM / dSv) ---*/
+
+      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
+      
+      /*--- End with structural terms if OF is based on fluid variables ---*/
+      
+      if (Kind_Objective_Function == FLOW_OBJECTIVE_FUNCTION)
+        Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+
+      /*--- Check convergence of the BGS method ---*/
+      BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
+
+    }
 
 
-  Postprocess(ZONE_FLOW, ZONE_STRUCT);
+    Postprocess(ZONE_FLOW, ZONE_STRUCT);
 
-  for (iZone = 0; iZone < nZone; iZone++){
-    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
-                                                            config_container[iZone],
-                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, true);
+    for (iZone = 0; iZone < nZone; iZone++){
+      output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                                              config_container[iZone],
+                                                              solver_container[iZone][INST_0][MESH_0], TimeIter, true);
+    }
+
+    TimeIter++;
   }
 }
 
