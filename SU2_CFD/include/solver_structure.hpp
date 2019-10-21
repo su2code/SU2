@@ -13002,6 +13002,12 @@ public:
   void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config);
 
   /*!
+  * \brief Set the objective function value.
+  * \param[in] val_ObjFunc - Value of the objective function.
+  */
+  void SetObjFunc_Value(su2double val_ObjFunc);
+
+  /*!
   * \brief Get the objective function value.
   * \return Value of the objective function.
   */
@@ -16101,8 +16107,6 @@ public:
   void SetConstrDerivative(unsigned short iConstr);
 
   su2double MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr);
-
-  void SetObjFunc_Value(su2double val_ObjFunc);
 
   void SetConFunc_Value(su2double val_ConFunc);
 
