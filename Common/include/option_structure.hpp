@@ -728,7 +728,8 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPLUSUP2 = 17,           /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  SLAU2_KEP   = 18            /*!< \brief Kinetic Energy Preserving Simple Low-Dissipation AUSM 2 numerical method. */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -747,6 +748,7 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("L2ROE", L2ROE)
 ("LMROE", LMROE)
 ("SLAU2", SLAU2)
+("SLAU2_KEP", SLAU2_KEP)
 ("FDS", FDS)
 ("LAX-FRIEDRICH", LAX_FRIEDRICH);
 

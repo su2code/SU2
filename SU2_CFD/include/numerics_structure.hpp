@@ -2197,6 +2197,57 @@ public:
 };
 
 /*!
+ * \class CUpwSLAU2_KEP_Flow
+ * \brief Class for solving the Kinetic Energy Preserving Simple Low-Dissipation AUSM 2.
+ * \ingroup ConvDiscr
+ * \author E. Molina
+ */
+class CUpwSLAU2_KEP_Flow : public CNumerics {
+private:
+  bool implicit, slau_low_dissipation;
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *delta_wave, *delta_vel;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  unsigned short iDim, iVar, jVar, kVar;
+  su2double mL, mR, mF, pF;
+  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
+  
+  su2double MeanDensity, MeanEnthalpy, MeanPressure, *MeanVelocity, *val_residual_central, *val_residual_upwind,
+  *Diff_Lapl, Local_Lambda_i, Local_Lambda_j, MeanLambda, sc2, sc4, Epsilon_4, Param_Kappa_4;
+  
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSLAU2_KEP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSLAU2_KEP_Flow(void);
+  
+  /*!
+   * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CUpwHLLC_Flow
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr

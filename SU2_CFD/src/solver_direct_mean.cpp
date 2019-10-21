@@ -440,7 +440,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
+  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
+      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -3406,8 +3407,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
                               (config->GetKind_Upwind_Flow() == ROE ||
                                config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
-
+                               config->GetKind_Upwind_Flow() == SLAU2 ||
+                               config->GetKind_Upwind_Flow() == SLAU2_KEP );
+  bool slau2_kep        = config->GetKind_Upwind_Flow() == SLAU2_KEP;
+  
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
   if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
@@ -3460,10 +3463,13 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Artificial dissipation ---*/
   
-  if (center && !Output) {
+  if ((center || slau2_kep) && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
+      SetUndivided_Laplacian(geometry, config);
+    }
+    if ((slau2_kep) && (iMesh == MESH_0)) {
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -3789,7 +3795,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool low_mach_corr    = config->Low_Mach_Correction();
   unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
-    
+  bool slau2_kep        = (config->GetKind_Upwind_Flow() == SLAU2_KEP);
+  
   /*--- Loop over all the edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3806,6 +3813,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim ++)
         sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
       numerics->SetVelocity2_Inf(sqvel);
+    }
+    
+    /*--- SLAU2 Kinetic Energy Preserving ---*/
+    
+    if (slau2_kep) {
+      /*--- Set number of neighbors ---*/
+      
+      numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+          
+      /*--- Set the largest convective eigenvalue ---*/
+      
+      numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
+      
+      /*--- Set undivided laplacian an pressure based sensor ---*/
+      
+      numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
     }
     
     /*--- Grid movement ---*/
@@ -3852,6 +3875,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+        }
+        if (slau2_kep){
+          if (iVar == (nDim + 2)){
+            Primitive_i[iVar] = V_i[iVar];
+            Primitive_j[iVar] = V_j[iVar];
+          }
+          else{
+            Primitive_i[iVar] = V_i[iVar] + 0.36 * Project_Grad_i;
+            Primitive_j[iVar] = V_j[iVar] + 0.36 * Project_Grad_j;
+          }
         }
       }
 
@@ -15338,7 +15371,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
   
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
+  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
+      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -16104,7 +16138,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
                               (config->GetKind_Upwind_Flow() == ROE ||
                                config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
+                               config->GetKind_Upwind_Flow() == SLAU2||
+                               config->GetKind_Upwind_Flow() == SLAU2_KEP);
+  bool slau2_kep            = config->GetKind_Upwind_Flow() == SLAU2_KEP;
   
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -16135,10 +16171,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
  
   /*--- Artificial dissipation ---*/
 
-  if (center && !Output) {
+  if ((center || slau2_kep) && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
+      SetUndivided_Laplacian(geometry, config);
+    }
+    if ((slau2_kep) && (iMesh == MESH_0)) {
       SetUndivided_Laplacian(geometry, config);
     }
   }
