@@ -7788,7 +7788,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config) {
+void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config, bool append) {
   
   
   unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
@@ -7854,7 +7854,8 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     strcpy (cstr, mesh_file);
     
     output_file.precision(15);
-    output_file.open(cstr, ios::out | ios::app);
+    if (append) output_file.open(cstr, ios::out | ios::app);
+    else        output_file.open(cstr, ios::out);
     
     if (nFFDBox != 0) {
       output_file << "FFD_NBOX= " << nFFDBox << endl;

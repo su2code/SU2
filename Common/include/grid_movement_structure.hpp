@@ -1940,8 +1940,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
+   * \param[in] append - Whether to append or write a new file.
 	 */		
-  void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config);
+  void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config, bool append);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 
