@@ -34,6 +34,7 @@ endif
 if get_option('enable-autodiff')
   su2_dot_src_ad = ['SU2_DOT.cpp']
   su2_cfd_obj_ad = su2_cfd_ad.extract_objects(['solver_structure.cpp',
+                                       'CMarkerProfileReaderFVM.cpp',
                                        'output/COutput.cpp',
                                        'output/output_structure_legacy.cpp',
 				       'output/CBaselineOutput.cpp',
