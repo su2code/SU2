@@ -43,7 +43,7 @@
 CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
   
   turb_model = config->GetKind_Turb_Model();
-  
+  lastInnerIter = curInnerIter;  
   gridMovement = config->GetGrid_Movement(); 
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -710,8 +710,10 @@ void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
     FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
     FixedCLSummary << "Target CL" << config->GetTarget_CL();
     FixedCLSummary << "Current AOA" << config->GetAoA();
-    if (config->GetFinite_Difference_Mode())
+    if (config->GetFinite_Difference_Mode()){
       FixedCLSummary << "Changing AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      lastInnerIter = curInnerIter - 1;
+    }
     else 
       FixedCLSummary << "Changing AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
     FixedCLSummary.PrintFooter();
@@ -731,6 +733,10 @@ void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
     }
     FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
     FixedCLSummary.PrintFooter();
+    //config->SetInnerIter(config->GetInnerIter() - config->GetIter_dCL_dAlpha());
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = config->GetInnerIter();
   }
 }
 

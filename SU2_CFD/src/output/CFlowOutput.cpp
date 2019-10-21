@@ -958,7 +958,7 @@ su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
   
   if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){
-    WriteMetaData(config, geometry);
+    WriteMetaData(config);
   }
   
   if (config->GetWrt_ForcesBreakdown()){
@@ -967,7 +967,7 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
   
 }
 
-void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry){
+void CFlowOutput::WriteMetaData(CConfig *config){
     
   ofstream meta_file;
   
@@ -985,13 +985,19 @@ void CFlowOutput::WriteMetaData(CConfig *config, CGeometry *geometry){
       meta_file <<"ITER= " << curTimeIter + 1 << endl;
     else
       meta_file <<"ITER= " << curInnerIter + config->GetExtIter_OffSet() + 1 << endl;
-    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+
+    if (config->GetFixed_CL_Mode()){
+      meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+      meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+      meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+      if (nDim==3){
+        meta_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
+        meta_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
+      }
+      meta_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
+    }
     meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-    meta_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
-    meta_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
-    meta_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
+    
     
     if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
           config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
