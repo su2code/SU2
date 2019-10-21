@@ -76,6 +76,11 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
 
+  if (config->GetBoolOneShot()) {
+    Sensitivity_ShiftedLagrangian.resize(nPoint,nDim) = su2double(0.0);
+    Sensitivity_AugmentedLagrangian.resize(nPoint,nDim) = su2double(0.0);
+  }
+
   if (config->GetMultizone_Problem()) {
     Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
     Set_BGSSolution_k();
