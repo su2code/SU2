@@ -63,12 +63,6 @@ private:
   MatrixType Solution_BGS;
   MatrixType Solution_Geometry_BGS_k;
 
-  MatrixType Solution_Store;        /*!< \brief Pointer to store solution of the problem (step k). */
-  MatrixType Solution_Former;       /*!< \brief Former solution of the problem (step k-1). */
-  MatrixType Solution_Delta;        /*!< \brief Difference of new solution and solution (step k+1 - step k). */
-  MatrixType Solution_Delta_Store;  /*!< \brief Difference of solution and old solution (step k - step k-1). */
-  MatrixType Solution_Save;         /*!< \brief Pointer to store new solution of the problem (step k+1). */
-
   MatrixType Sensitivity_ShiftedLagrangian;    /*!< \brief Vector holding the sensitivity of the shifted Lagrangian to the coordinates at this node. */
   MatrixType Sensitivity_AugmentedLagrangian;  /*!< \brief Vector holding the sensitivity of the augmented Lagrangian to the coordinates at this node. */
 

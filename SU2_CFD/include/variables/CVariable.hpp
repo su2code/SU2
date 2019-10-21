@@ -123,6 +123,12 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
+  MatrixType Solution_Store;        /*!< \brief Pointer to store solution of the problem (step k). */
+  MatrixType Solution_Former;       /*!< \brief Former solution of the problem (step k-1). */
+  MatrixType Solution_Delta;        /*!< \brief Difference of new solution and solution (step k+1 - step k). */
+  MatrixType Solution_Delta_Store;  /*!< \brief Difference of solution and old solution (step k - step k-1). */
+  MatrixType Solution_Save;         /*!< \brief Pointer to store new solution of the problem (step k+1). */
+
   MatrixType AnisoGrad;       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoViscGrad;   /*!< \brief Gradient of viscous sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoHess;       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */ 
