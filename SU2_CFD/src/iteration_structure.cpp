@@ -604,7 +604,8 @@ void CFluidIteration::Iterate(COutput *output,
     }
     
   }
-  
+
+  Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 }
 
 void CFluidIteration::Update(COutput *output,
