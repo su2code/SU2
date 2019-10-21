@@ -187,7 +187,7 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Preprocess the adjoint iteration ---*/
 
-    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
                           solver_container, numerics_container, config_container,
                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
@@ -396,7 +396,7 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Iterate(output_container[ZONE_0], integration_container, geometry_container,
                                           solver_container, numerics_container, config_container,
                                           surface_movement, grid_movement, FFDBox, iZone, iInst);
   }
@@ -458,7 +458,7 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
   RecordingState = kind_recording;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone, iInst);
+    iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], iZone, iInst);
   }
 
   /*--- Extract the objective function and store it --- */
@@ -1195,7 +1195,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone][INST_0]->Iterate_No_Residual(output, integration_container, geometry_container,
+      iteration_container[iZone][INST_0]->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, iZone, iInst);
     }
@@ -1236,7 +1236,7 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone][INST_0]->Iterate_No_Residual(output, integration_container, geometry_container,
+      iteration_container[iZone][INST_0]->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, iZone, iInst);
     }
@@ -1284,7 +1284,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone][INST_0]->Iterate_No_Residual(output, integration_container, geometry_container,
+      iteration_container[iZone][INST_0]->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, iZone, iInst);
     }
@@ -1339,7 +1339,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone][INST_0]->Iterate_No_Residual(output, integration_container, geometry_container,
+      iteration_container[iZone][INST_0]->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
                                           solver_container, numerics_container, config_container,
                                           surface_movement, grid_movement, FFDBox, iZone, iInst);
     }
