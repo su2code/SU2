@@ -470,9 +470,7 @@ void COneShotFluidOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, C
     Node_Turb = solver[TURB_SOL]->GetNodes(); 
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes(); 
   }
-  
-  CPoint*    Node_Geo  = geometry->node[iPoint];
-          
+            
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
