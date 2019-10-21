@@ -209,37 +209,9 @@ void COneShotFluidDriver::Run(){
   RunOneShot();
 
   /*--- Screen output ---*/
-  bool steady = (config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY);
-  bool output_history = false;
-
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
-  UsedTime = StopTime - StartTime;
-
-  /*--- If convergence was reached --*/
-  StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence();
-
-  /*--- Store objective and constraint for screen/history output ---*/
-  solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetObjFunc_Value(ObjFunc);
-
-  if(nConstr > 0) {
-    solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetConFunc_Value(0.0);
-    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->AddConFunc_Value(ConstrFunc[iConstr]);
-    }
-  }
-
-  /*--- Write the convergence history for the fluid (only screen output) ---*/
-
-  /*--- The logic is right now case dependent ----*/
-  /*--- This needs to be generalized when the new output structure comes ---*/
-  output_history = (steady && !((config_container[ZONE_0]->GetnInner_Iter()==1)));
-
-  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, 
-                                                  config_container, integration_container, false, UsedTime, ZONE_0, INST_0);
+  bool StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                     solver_container, numerics_container, config_container,
+                                     surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
 

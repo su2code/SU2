@@ -73,6 +73,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    case ONE_SHOT_EULER: case ONE_SHOT_NAVIER_STOKES: case ONE_SHOT_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -305,6 +306,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
+  case ONE_SHOT_EULER:           case ONE_SHOT_NAVIER_STOKES:          case ONE_SHOT_RANS:
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
