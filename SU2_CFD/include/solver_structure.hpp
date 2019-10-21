@@ -4633,6 +4633,138 @@ public:
    * \return 
    */
   su2double GetLinSol_Residual(){ return valResidual; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void StoreSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void LoadSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void LoadSolutionStep(su2double stepsize);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void StoreSaveSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void LoadSaveSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void StoreFormerSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void ShiftFormerSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void ShiftStoreSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void StoreSolutionDelta();
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  virtual void StoreMeshPoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  virtual void LoadMeshPoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void SaveSensitivity(CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void SetGeometrySensitivityGradient(CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void SetGeometrySensitivityLagrangian(CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - config class object
+   * \param[in] augmented - boolean for augmented part
+   */
+  virtual su2double CalculateLagrangianPart(CConfig *config, bool augmented);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void CalculateAlphaBetaGamma(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void ResetSensitivityLagrangian(CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void UpdateStateVariable(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void SetFiniteDifferenceSens(CGeometry *geometry, CConfig *config);
+
+  virtual void SetConstrDerivative(unsigned short iConstr);
+
+  virtual su2double MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr);
+
+  virtual void SetObjFunc_Value(su2double val_ObjFunc);
+
+  virtual su2double GetObjFunc_Value(void);
+
+  virtual void SetConFunc_Value(su2double val_ConFunc);
+
+  virtual void AddConFunc_Value(su2double val_ConFunc);
+
+  virtual su2double GetConFunc_Value(void);
   
 protected:
   /*!
