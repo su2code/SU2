@@ -2517,3 +2517,69 @@ inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return D
 inline void CSolver::SetDualTime_Mesh(void){ }
 
 inline vector<string> CSolver::GetSolutionFields(){return fields;}
+
+inline void CSolver::SetGeometrySensitivityGradient(CGeometry *geometry){}
+
+inline void CSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry){}
+
+inline void CSolver::StoreMeshPoints(CConfig *config, CGeometry *geometry){}
+
+inline void CSolver::LoadMeshPoints(CConfig *config, CGeometry *geometry){}
+
+inline void CSolver::SaveSensitivity(CGeometry *geometry){}
+
+inline void CSolver::ResetSensitivityLagrangian(CGeometry *geometry){}
+
+inline void CSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor){}
+
+inline su2double CSolver::CalculateLagrangianPart(CConfig *config, bool augmented){return 0.0;}
+
+inline void CSolver::CalculateAlphaBetaGamma(CConfig *config){}
+
+inline void CSolver::SetAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){}
+
+inline void CSolver::StoreSolution(){}
+
+inline void CSolver::LoadSolution(){}
+
+inline void CSolver::LoadSolutionStep(su2double stepsize){}
+
+inline void CSolver::ShiftFormerSolution(){}
+
+inline void CSolver::StoreFormerSolution(){}
+
+inline void CSolver::StoreSaveSolution(){}
+
+inline void CSolver::LoadSaveSolution(){}
+
+inline void CSolver::UpdateStateVariable(CConfig *config){}
+
+inline void CSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* config){}
+
+inline void CSolver::ShiftStoreSolution(){}
+
+inline void CSolver::StoreSolutionDelta(){}
+
+inline void CSolver::SetConstrDerivative(unsigned short iConstr){}
+
+inline su2double CSolver::MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr){ return 0; }
+
+inline void CSolver::SetObjFunc_Value(su2double val_ObjFunc) { }
+
+inline su2double CSolver::GetObjFunc_Value(void) { return 0; }
+
+inline void CSolver::SetConFunc_Value(su2double val_ConFunc) { }
+
+inline void CSolver::AddConFunc_Value(su2double val_ConFunc) { }
+
+inline su2double CSolver::GetConFunc_Value(void)  { return 0; }
+
+inline void COneShotSolver::SetObjFunc_Value(su2double val_ObjFunc) { ObjFunc_Value = val_ObjFunc; }
+
+inline su2double COneShotSolver::GetObjFunc_Value(void) { return ObjFunc_Value; }
+
+inline void COneShotSolver::SetConFunc_Value(su2double val_ConFunc) { ConFunc_Value = val_ConFunc; }
+
+inline void COneShotSolver::AddConFunc_Value(su2double val_ConFunc) { ConFunc_Value += val_ConFunc; }
+
+inline su2double COneShotSolver::GetConFunc_Value(void)  { return ConFunc_Value; }
