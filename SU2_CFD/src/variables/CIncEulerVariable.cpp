@@ -106,14 +106,21 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+    Gradient_Reconstruction = Gradient_Aux;
+  } else {
+    Gradient_Reconstruction = Gradient_Primitive;
+  }
+  
+  if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-
+  
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-
+  
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
-
+  
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
@@ -124,6 +131,14 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   Lambda.resize(nPoint) = su2double(0.0);
   Sensor.resize(nPoint) = su2double(0.0);
 
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+  
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero() {

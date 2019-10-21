@@ -126,7 +126,14 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+    Gradient_Reconstruction = Gradient_Aux;
+  } else {
+    Gradient_Reconstruction = Gradient_Primitive;
+  }
+  
+  if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
@@ -139,6 +146,14 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   Lambda.resize(nPoint) = su2double(0.0);
   Sensor.resize(nPoint) = su2double(0.0);
 
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+  
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero() {

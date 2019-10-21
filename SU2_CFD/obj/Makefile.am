@@ -140,6 +140,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CRadP1Solver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
+  ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
   ../src/interfaces/cfd/CMixingPlaneInterface.cpp \
@@ -151,12 +152,10 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDisplacementsInterfaceLegacy.cpp \
   ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
-  ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \
   ../src/variables/CRadVariable.cpp \
   ../src/variables/CRadP1Variable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
-  ../src/variables/CDiscAdjMeshVariable.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
   ../src/variables/CMeshVariable.cpp \

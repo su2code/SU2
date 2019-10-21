@@ -520,12 +520,13 @@ void CDriver::Postprocessing() {
     cout.precision(6);
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
+    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
+    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
     cout << setw(25) << "Cores:" << setw(12) << size << " | ";
     cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
     cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/(su2double)size << " | ";
     cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/(su2double)size << endl;
-    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
-    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << setw(25) << "Ghost/Owned Point Ratio:" << setw(12) << (Mpoints-MpointsDomain)/MpointsDomain << " | " << endl;
     cout << endl;
     cout << "Preprocessing phase:" << endl;
     cout << setw(25) << "Preproc. Time (s):"  << setw(12)<< UsedTimePreproc << " | ";
@@ -707,8 +708,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
   
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
-  if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
-  else Partition_Analysis(geometry[MESH_0], config);
+  if (!dummy){
+    if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
+    else Partition_Analysis(geometry[MESH_0], config);
+  }
 #endif
 
   /*--- Check if Euler & Symmetry markers are straight/plane. This information
@@ -3822,56 +3825,56 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 
     case EULER: case NAVIER_STOKES: case RANS:
       if (rank == MASTER_NODE)
-        cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << "Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CFlowCompOutput(config[iZone], nDim);
       break;
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:  
       if (rank == MASTER_NODE)        
-        cout << ": Euler/Navier-Stokes/RANS output structure." << endl;        
+        cout << "Euler/Navier-Stokes/RANS output structure." << endl;        
       output[iZone] = new CFlowIncOutput(config[iZone], nDim);       
       break;
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
-        cout << ": heat output structure." << endl;
+        cout << "Heat output structure." << endl;
       output[iZone] = new CHeatOutput(config[iZone], nDim);
       break;
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
-        cout << ": FEM output structure." << endl;
+        cout << "FEM output structure." << endl;
       output[iZone] = new CElasticityOutput(config[iZone], nDim);
       break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << "Adjoint Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CAdjFlowCompOutput(config[iZone], nDim);
       break;
     case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << "Adjoint Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CAdjFlowIncOutput(config[iZone], nDim);
       break;
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint FEA output structure." << endl;
+        cout << "Discrete adjoint FEA output structure." << endl;
       output[iZone] = new CAdjElasticityOutput(config[iZone], nDim);
       break;
       
     case DISC_ADJ_HEAT:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint heat output structure." << endl;
+        cout << "Discrete adjoint heat output structure." << endl;
       output[iZone] = new CAdjHeatOutput(config[iZone], nDim);
       break;
       
     case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
       if (rank == MASTER_NODE)
-        cout << ": FEM output structure." << endl;
+        cout << "FEM output structure." << endl;
       output[iZone] = new CFlowCompFEMOutput(config[iZone], nDim);
       break;
       
     default:
       if (rank == MASTER_NODE)
-        cout << ": default output structure." << endl;
+        cout << "Default output structure." << endl;
       output[iZone] = new COutput(config[iZone], nDim, false);
       break;
     }
@@ -4146,6 +4149,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   }
 
 }
+
 void CFluidDriver::Run() {
 
   unsigned short iZone, jZone, checkConvergence;
@@ -4265,14 +4269,6 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetTimeIter(ExtIter);
   delete runtime;
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
-    }
-  }
 
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
@@ -4412,7 +4408,6 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
-  su2double CFL;
   su2double rot_z_ini, rot_z_final ,rot_z;
   su2double outPres_ini, outPres_final, outPres;
   unsigned long rampFreq, finalRamp_Iter;
@@ -4447,26 +4442,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
       output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
-
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    if(mixingplane){
-      CFL = 0;
-      for (iZone = 0; iZone < nZone; iZone++){
-        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
-        CFL += config_container[iZone]->GetCFL(MESH_0);
-      }
-      /*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
-      for (iZone = 0; iZone < nZone; iZone++){
-        config_container[iZone]->SetCFL(MESH_0, CFL/nZone);
-      }
-    }
-    else{
-      output_container[ZONE_0]->SetCFL_Number(solver_container[ZONE_0], config_container[ZONE_0]);
-    }
-  }
-
 
   /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {

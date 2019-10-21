@@ -990,6 +990,12 @@ inline su2double CConfig::GetmaxTurkelBeta() { return  Max_Beta_RoeTurkel; }
 
 inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; }
 
+inline unsigned short CConfig::GetKind_Gradient_Method_Recon(void) { return Kind_Gradient_Method_Recon; }
+
+inline bool CConfig::GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+
+inline bool CConfig::GetLeastSquaresRequired(void) { return LeastSquaresRequired; }
+
 inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_Deform_Linear_Solver; }
@@ -1014,11 +1020,7 @@ inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return 
 
 inline su2double CConfig::GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
 
-inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
-
 inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation_Factor_AdjFlow; }
-
-inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
 inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
@@ -1676,10 +1678,6 @@ inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 inline bool CConfig::GetWrt_AD_Statistics(void) { return Wrt_AD_Statistics; }
 
 inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
-
-inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
-
-inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 

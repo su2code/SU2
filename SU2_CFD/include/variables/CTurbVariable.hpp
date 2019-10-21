@@ -49,7 +49,10 @@ class CTurbVariable : public CVariable {
 protected:
   VectorType muT;         /*!< \brief Eddy viscosity. */
   MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
-
+  
+  VectorOfMatrix& Gradient_Reconstruction = Gradient; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  VectorOfMatrix Gradient_Aux;                        /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  
 public:
   /*!
    * \brief Constructor of the class.
@@ -78,5 +81,35 @@ public:
    * \param[in] val_muT - Value of the eddy viscosity.
    */
   inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+
+  /*!
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \return Value of the reconstruction variables gradient at a node.
+   */
+  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+    return Gradient_Reconstruction(iPoint,iVar,iDim);
+  }
+  
+  /*!
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \param[in] iDim   - Index of the dimension.
+   */
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+  }
+  
+  /*!
+   * \brief Get the array of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \return Array of the reconstruction variables gradient at a node.
+   */
+  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  
 };
 
