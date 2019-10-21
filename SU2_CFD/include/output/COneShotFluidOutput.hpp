@@ -46,7 +46,7 @@ class CVariable;
  *  \author B. Munguía.
  *  \date June 5, 2018.
  */
-class COneShotFluidOutput final: public COutput {
+class COneShotFluidOutput final: public CFlowOutput {
 private:
   
   bool cont_adj; /*!< \brief Boolean indicating whether we run a cont. adjoint problem */ 
