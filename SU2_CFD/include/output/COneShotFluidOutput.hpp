@@ -39,6 +39,8 @@
 
 #include "CFlowOutput.hpp"
 
+class CVariable;
+
 /*! \class COneShotFluidOutput
  *  \brief Output class for compressible flow adjoint problems.
  *  \author B. Munguía.
