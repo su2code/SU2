@@ -3652,15 +3652,7 @@ void COneShotFluidIteration::Iterate_No_Residual(COutput *output,
 
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
-  unsigned long IntIter = 0;
-  bool unsteady = config[val_iZone]->GetUnsteady_Simulation() != STEADY;
   bool frozen_visc = config[val_iZone]->GetFrozen_Visc_Disc();
-
-  if (!unsteady)
-    IntIter = ExtIter;
-  else {
-    IntIter = config[val_iZone]->GetIntIter();
-  }
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
@@ -3670,11 +3662,6 @@ void COneShotFluidIteration::Iterate_No_Residual(COutput *output,
     solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution_Clean(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
     solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-
-    /*--- Set the convergence criteria (only residual possible) ---*/
-
-    integration[val_iZone][val_iInst][ADJFLOW_SOL]->Convergence_Monitoring(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone],
-                                                                          IntIter, log10(solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
     }
   if (((Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == ONE_SHOT_RANS)) && !frozen_visc) {
