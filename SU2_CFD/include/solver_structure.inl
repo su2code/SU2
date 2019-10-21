@@ -2576,7 +2576,7 @@ inline su2double CSolver::GetConFunc_Value(void)  { return 0; }
 
 inline void COneShotSolver::SetObjFunc_Value(su2double val_ObjFunc) { ObjFunc_Value = val_ObjFunc; }
 
-inline su2double COneShotSolver::GetObjFunc_Value(void) { return ObjFunc_Value; }
+inline su2double CDiscAdjSolver::GetObjFunc_Value(void) { return ObjFunc_Value; }
 
 inline void COneShotSolver::SetConFunc_Value(su2double val_ConFunc) { ConFunc_Value = val_ConFunc; }
 
