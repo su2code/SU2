@@ -674,6 +674,8 @@ inline void CSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) { 
 
 inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
+inline su2double CSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) { return 0.0; }
+
 inline void CSolver::Solve_System(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::BC_Euler_Wall(CGeometry      *geometry, 
