@@ -1020,7 +1020,13 @@ inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *conf
 
 inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::SetAdjoint_OutputUpdate(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetAdjoint_OutputZero(CGeometry *geometry, CConfig *config){}
+
 inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::ExtractAdjoint_Solution_Clean(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::RegisterObj_Func(CConfig *config){}
 
