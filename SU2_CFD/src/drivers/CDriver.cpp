@@ -1500,7 +1500,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   }
 
   /*--- Assign booleans ---*/
-f
+
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : case INC_EULER: euler = true; break;
