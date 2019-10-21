@@ -53,9 +53,11 @@ protected:
   MatrixType WindGustDer;   /*! < \brief Wind gust derivatives value */
 
   /*--- Primitive variable definition ---*/
-  MatrixType Primitive;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  VectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  MatrixType Limiter_Primitive;       /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  MatrixType Primitive;                    /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  VectorOfMatrix& Gradient_Reconstruction = Gradient_Primitive; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
@@ -175,6 +177,35 @@ public:
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
 
+  /*!
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \return Value of the reconstruction variables gradient at a node.
+   */
+  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+    return Gradient_Reconstruction(iPoint,iVar,iDim);
+  }
+  
+  /*!
+   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \param[in] iDim   - Index of the dimension.
+   */
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+  }
+  
+  /*!
+   * \brief Get the array of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \return Array of the reconstruction variables gradient at a node.
+   */
+  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  
   /*!
    * \brief A virtual member.
    */

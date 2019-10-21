@@ -1,7 +1,3 @@
-<p align="center">
-<img width="250" height="152" src="Common/doc/logoSU2_v3.3_small.jpeg">
-</p>
-
 -----------------------------------------------------------
   SU2 (ver. 6.2.0 "Falcon"): The Open-Source CFD Code
 -----------------------------------------------------------
@@ -80,4 +76,3 @@ The main research teams contributing to the current release are:
 - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
 
 Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
-

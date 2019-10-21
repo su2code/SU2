@@ -280,100 +280,6 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
   }
   
 }
-void COutput::SetCFL_Number(CSolver ****solver_container, CConfig *config) {
-  
-  su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
-  unsigned short iMesh;
-  
-  unsigned short FinestMesh = config->GetFinestMesh();
-  unsigned short nVar = 1;
-
-  bool energy = config->GetEnergy_Equation();
-  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  switch( config->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES : case RANS:
-    case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:
-      if (energy) {
-        nVar = solver_container[INST_0][FinestMesh][FLOW_SOL]->GetnVar();
-        rhoResNew = solver_container[INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-      }
-      else if (weakly_coupled_heat) {
-        rhoResNew = solver_container[INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-      }
-      else {
-        rhoResNew = solver_container[INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-      }
-      break;
-    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      rhoResNew = solver_container[INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-      break;
-    case HEAT_EQUATION_FVM:
-      rhoResNew = solver_container[INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-      break;
-  }
-  
-  if (rhoResNew < EPS) rhoResNew = EPS;
-  if (rhoResOld < EPS) rhoResOld = rhoResNew;
-
-  Div = rhoResOld/rhoResNew;
-  Diff = rhoResNew-rhoResOld;
-
-  /*--- Compute MG factor ---*/
-
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
-    else MGFactor[iMesh] = MGFactor[iMesh-1] * config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
-  }
-
-  if (Div < 1.0) power = config->GetCFL_AdaptParam(0);
-  else power = config->GetCFL_AdaptParam(1);
-
-  /*--- Detect a stall in the residual ---*/
-
-  if ((fabs(Diff) <= rhoResNew*1E-8) && (curInnerIter != 0)) { Div = 0.1; power = config->GetCFL_AdaptParam(1); }
-
-  CFLMin = config->GetCFL_AdaptParam(2);
-  CFLMax = config->GetCFL_AdaptParam(3);
-
-  CFLFactor = pow(Div, power);
-
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    CFL = config->GetCFL(iMesh);
-    CFL *= CFLFactor;
-
-    if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
-      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        config->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
-      }
-      break;
-    }
-    if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
-      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-        config->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
-      break;
-    }
-
-    config->SetCFL(iMesh, CFL);
-  }
-
-  switch( config->GetKind_Solver()) {
-  case EULER : case NAVIER_STOKES : case RANS:
-  case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:      
-    nVar = solver_container[INST_0][FinestMesh][FLOW_SOL]->GetnVar();
-    if (energy) rhoResOld = solver_container[INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-    else if (weakly_coupled_heat) rhoResOld = solver_container[INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    else rhoResOld = solver_container[INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-    break;
-  case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    rhoResOld = solver_container[INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-    break;
-  case HEAT_EQUATION_FVM:
-    rhoResOld = solver_container[INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    break;
-  }
-  
-}
 
 void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
   
@@ -499,7 +405,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      volumeDataSorter->SortConnectivity(config, geometry, true);
+      volumeDataSorter->SortConnectivity(config, geometry, false);
       
       /*--- Write tecplot binary ---*/
       
@@ -1219,7 +1125,7 @@ void COutput::CheckHistoryOutput(){
   nRequestedHistoryFields = requestedHistoryFields.size();
   
   if (rank == MASTER_NODE){
-    cout <<"History output groups: ";
+    cout <<"History output group(s): ";
     for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       requestedField = requestedHistoryFields[iReqField];            
       cout << requestedHistoryFields[iReqField];
@@ -1230,18 +1136,30 @@ void COutput::CheckHistoryOutput(){
   
   /*--- Check that the requested convergence monitoring field is available ---*/
   bool removedField = false;
+  FieldsToRemove.clear();
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
       if (!removedField) {
-        cout << "Ignoring Convergence Fields: ";
+        cout << "Ignoring Convergence Field(s): ";
         removedField = true;
       }
       cout << convFields[iField_Conv] << " ";
-      convFields.erase(std::find(convFields.begin(),
-                                 convFields.end(), convFields[iField_Conv]));
+      FieldsToRemove.push_back(convFields[iField_Conv]);
     }
   }
   if (removedField) cout << endl;
+  for (unsigned short iField_Conv = 0; iField_Conv < FieldsToRemove.size(); iField_Conv++){
+    convFields.erase(std::find(convFields.begin(),
+                               convFields.end(), FieldsToRemove[iField_Conv]));
+  }
+  if (rank == MASTER_NODE){
+    cout <<"Convergence field(s): ";  
+    for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+      cout << convFields[iField_Conv];
+      if (iField_Conv != convFields.size() - 1) cout << ", ";      
+    }
+    cout << endl;    
+  }
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
@@ -1551,17 +1469,6 @@ void COutput::Postprocess_HistoryData(CConfig *config){
            
     }
 
-    for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
-      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
-        HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
-        if (Field.fieldType == HistoryFieldType::COEFFICIENT){
-          if (config->GetDirectDiff() != NO_DERIVATIVE){
-            SetHistoryOutputValue("D_" + historyOutputPerSurface_List[iField][iMarker], SU2_TYPE::GetDerivative(Field.value));
-          }
-        }
-      }
-    }
-
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if(SetUpdate_Averages(config)){
         if (config->GetTime_Domain()){
@@ -1645,15 +1552,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
         AddHistoryOutput("D_TAVG_" + fieldIdentifier, "dtavg[" + currentField.fieldName + "]",
                          currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
                          "Derivative of the time averaged value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);  
-      }
-    }
-  }
-
-  for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
-    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
-      HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
-      if (Field.fieldType == HistoryFieldType::COEFFICIENT){
-        AddHistoryOutput("D_"      + historyOutputPerSurface_List[iField][iMarker], "d["     + Field.fieldName + "]", Field.screenFormat, "D_"      + Field.outputGroup, "Derivative values for per-surface output.", HistoryFieldType::AUTO_COEFFICIENT);
       }
     }
   }
