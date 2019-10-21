@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CFlowOutput.hpp"
 
 /*! \class COneShotFluidOutput
  *  \brief Output class for compressible flow adjoint problems.
