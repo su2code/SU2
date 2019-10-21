@@ -13000,6 +13000,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config);
+
+  /*!
+  * \brief Get the objective function value.
+  * \return Value of the objective function.
+  */
+  su2double GetObjFunc_Value(void);
 };
 
 /*!
@@ -16097,8 +16103,6 @@ public:
   su2double MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr);
 
   void SetObjFunc_Value(su2double val_ObjFunc);
-
-  su2double GetObjFunc_Value(void);
 
   void SetConFunc_Value(su2double val_ConFunc);
 
