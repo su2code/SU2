@@ -77,29 +77,29 @@ COneShotSolver::~COneShotSolver(void) {
 void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  // bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+  //     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+  // time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
 
-  unsigned long iPoint;
-  unsigned short iVar;
+  // unsigned long iPoint;
+  // unsigned short iVar;
 
-  /*--- For the one-shot solver the solution is not reset in each iteration step to the initial solution ---*/
+  // /*--- For the one-shot solver the solution is not reset in each iteration step to the initial solution ---*/
 
-  if (time_n_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
-      }
-    }
-  }
-  if (time_n1_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n1(iPoint)[iVar]);
-      }
-    }
-  }
+  // if (time_n_needed) {
+  //   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  //     for (iVar = 0; iVar < nVar; iVar++) {
+  //       AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
+  //     }
+  //   }
+  // }
+  // if (time_n1_needed) {
+  //   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  //     for (iVar = 0; iVar < nVar; iVar++) {
+  //       AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n1(iPoint)[iVar]);
+  //     }
+  //   }
+  // }
 
   /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
