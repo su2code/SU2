@@ -871,6 +871,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Evaluate_ObjFunc(CConfig *config);
+
+  /*!
+   * \brief Compute single constraint function of list
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr);
   
   /*!
    * \brief A virtual member.
