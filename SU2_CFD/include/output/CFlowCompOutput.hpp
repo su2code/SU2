@@ -50,6 +50,7 @@ class CFlowCompOutput final: public CFlowOutput {
 private:
   
   unsigned short turb_model; //!< Kind of turbulence model
+  unsigned long lastInnerIter;
    
 public:
 
