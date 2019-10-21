@@ -358,6 +358,30 @@ public:
                             unsigned short val_iInst,
                             unsigned short kind_recording) { }
 
+  virtual void InitializeAdjoint_Update(CSolver *****solver,
+                                        CGeometry**** geometry,
+                                        CConfig** config,
+                                        unsigned short iZone,
+                                        unsigned short iInst) { }
+
+  virtual void InitializeAdjoint_Zero(CSolver *****solver,
+                                      CGeometry**** geometry,
+                                      CConfig** config,
+                                      unsigned short iZone,
+                                      unsigned short iInst) { }
+
+  virtual void Iterate_No_Residual(COutput *output,
+                                   CIntegration ****integration,
+                                   CGeometry ****geometry,
+                                   CSolver *****solver,
+                                   CNumerics ******numerics,
+                                   CConfig **config,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement ***grid_movement,
+                                   CFreeFormDefBox*** FFDBox,
+                                   unsigned short val_iZone,
+                                   unsigned short val_iInst) { }
+
 };
 
 

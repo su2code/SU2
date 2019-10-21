@@ -3650,7 +3650,6 @@ void COneShotFluidIteration::Iterate_No_Residual(COutput *output,
                                         unsigned short val_iZone,
                                         unsigned short val_iInst) {
 
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
   bool frozen_visc = config[val_iZone]->GetFrozen_Visc_Disc();
 
