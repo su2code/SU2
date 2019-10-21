@@ -239,7 +239,7 @@ void COneShotSolver::ShiftFormerSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->SetSolution_Store(iPoint,direct_solver->GetNodes()->GetSolution_Former(iPoint));
-    GetNodes()->SetSolution_Store(GetNodes()->GetSolution_Former(iPoint));
+    GetNodes()->SetSolution_Store(iPoint,GetNodes()->GetSolution_Former(iPoint));
   }
 }
 
