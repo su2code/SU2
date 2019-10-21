@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/drivers/COneShotFluidOutput.hpp"
+#include "../../include/drivers/COneShotFluidDriver.hpp"
 
 COneShotFluidDriver::COneShotFluidDriver(char* confFile,
                                          unsigned short val_nZone,
