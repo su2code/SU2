@@ -403,7 +403,7 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   /*--- Extract the computed sensitivity values. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+    solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],solver_container[ZONE_0][INST_0][MESH_0],config_container[iZone]);
   }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
@@ -1202,7 +1202,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
     /*--- Extract the computed sensitivity values. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+      solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],solver_container[ZONE_0][INST_0][MESH_0],config_container[iZone]);
     }
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
@@ -1243,7 +1243,7 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
 
     /*--- Extract the computed sensitivity values. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+      solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],solver_container[ZONE_0][INST_0][MESH_0],config_container[iZone]);
     }
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
@@ -1291,7 +1291,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
     /*--- Extract the computed sensitivity values. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+      solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],solver_container[ZONE_0][INST_0][MESH_0],config_container[iZone]);
     }
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
