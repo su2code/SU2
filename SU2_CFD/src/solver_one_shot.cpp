@@ -177,7 +177,7 @@ void COneShotSolver::StoreMeshPoints(CConfig *config, CGeometry *geometry){
     unsigned long iVertex, jPoint;
     unsigned short iMarker;
     for (jPoint=0; jPoint < nPoint; jPoint++){
-        geometry->GetNodes()->SetCoord_Old(geometry->GetNodes()->GetCoord());
+        geometry->node[jPoint]->SetCoord_Old(geometry->node[jPoint]->GetCoord());
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
