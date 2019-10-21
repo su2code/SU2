@@ -5413,11 +5413,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:  case ONE_SHOT_NAVIER_STOKES
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:  case ONE_SHOT_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:  case ONE_SHOT_RANS
+      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:  case ONE_SHOT_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
