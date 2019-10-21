@@ -381,8 +381,6 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    config_container[iZone]->SetIntIter(0);
-
     iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone, iInst);
 
   }
@@ -1182,7 +1180,6 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      config_container[iZone]->SetIntIter(0);
       iteration_container[iZone][INST_0]->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, iZone, iInst);
 
     }
@@ -1224,7 +1221,6 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      config_container[iZone]->SetIntIter(0);
       iteration_container[iZone][INST_0]->InitializeAdjoint_Update(solver_container, geometry_container, config_container, iZone, iInst);
 
     }
@@ -1274,7 +1270,6 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      config_container[iZone]->SetIntIter(0);
       iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone, iInst);
 
     }
@@ -1328,8 +1323,9 @@ void COneShotFluidDriver::ComputePreconditioner(){
     seeding[iConstr] = 1.0;
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      config_container[iZone]->SetIntIter(0);
+
       iteration_container[iZone][INST_0]->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, iZone, iInst);
+
     }
 
     /*--- Initialize the adjoint of the objective function with 0.0. ---*/
