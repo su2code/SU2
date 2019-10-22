@@ -7490,6 +7490,7 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config){
   su2double dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
   su2double AoA = config->GetAoA();
   
+  if (AoA != AoA_Prev) {
   /* --- Calculate gradients of coefficients w.r.t. CL --- */
 
   dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
@@ -7505,7 +7506,7 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config){
   config->SetdCMy_dCL(dCMy_dCL_);
   config->SetdCMz_dCL(dCMz_dCL_);
   config->SetdCL_dAlpha(dCL_dAlpha_);
-
+  }
 }
 
 void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
