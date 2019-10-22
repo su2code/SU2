@@ -38,96 +38,85 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 
 
-CIncNSVariable::CIncNSVariable(void) : CIncEulerVariable() { }
-
-CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature,
-                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-                               CIncEulerVariable(val_pressure, val_velocity, val_temperature, val_nDim, val_nvar, config) {
-  DES_LengthScale = 0.0;
+CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+                               unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
+                               CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
+  Vorticity.resize(nPoint,3);
+  StrainMag.resize(nPoint);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint);
 }
 
-CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
-                               CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
-  DES_LengthScale = 0.0;
-}
+bool CIncNSVariable::SetVorticity_StrainMag() {
 
-CIncNSVariable::~CIncNSVariable(void) { }
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
-bool CIncNSVariable::SetVorticity(void) {
+    /*--- Vorticity ---*/
 
-  Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+    Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
 
-  Vorticity[2] = Gradient_Primitive[2][0]-Gradient_Primitive[1][1];
+    Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
 
-  if (nDim == 3) {
-    Vorticity[0] = Gradient_Primitive[3][1]-Gradient_Primitive[2][2];
-    Vorticity[1] = -(Gradient_Primitive[3][0]-Gradient_Primitive[1][2]);
+    if (nDim == 3) {
+      Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
+      Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
+    }
+
+    /*--- Strain Magnitude ---*/
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
+
+    su2double Div = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Div += Gradient_Primitive(iPoint,iDim+1,iDim);
+
+    StrainMag(iPoint) = 0.0;
+
+    /*--- Add diagonal part ---*/
+
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
+    }
+    if (nDim == 2) {
+      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
+    }
+
+    /*--- Add off diagonals ---*/
+
+    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,1) + Gradient_Primitive(iPoint,2,0)), 2);
+
+    if (nDim == 3) {
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,2) + Gradient_Primitive(iPoint,3,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,2,2) + Gradient_Primitive(iPoint,3,1)), 2);
+    }
+
+    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+
+    AD::SetPreaccOut(StrainMag(iPoint));
+    AD::EndPreacc();
   }
-
   return false;
-
-}
-
-bool CIncNSVariable::SetStrainMag(void) {
-
-  su2double Div;
-  unsigned short iDim;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(Gradient_Primitive, nDim+1, nDim);
-
-  Div = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Div += Gradient_Primitive[iDim+1][iDim];
-  }
-
-  StrainMag = 0.0;
-
-  /*--- Add diagonal part ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    StrainMag += pow(Gradient_Primitive[iDim+1][iDim] - 1.0/3.0*Div, 2.0);
-  }
-  if (nDim == 2) {
-    StrainMag += pow(1.0/3.0*Div, 2.0);
-  }
-
-  /*--- Add off diagonals ---*/
-
-  StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
-
-  if (nDim == 3) {
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]), 2.0);
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]), 2.0);
-  }
-
-  StrainMag = sqrt(2.0*StrainMag);
-
-  AD::SetPreaccOut(StrainMag);
-  AD::EndPreacc();
-
-  return false;
-
 }
 
 
-bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
 
   /*--- Store the density from the previous iteration. ---*/
 
-  Density_Old = GetDensity();
+  Density_Old(iPoint) = GetDensity(iPoint);
 
   /*--- Set the value of the pressure ---*/
 
-  SetPressure();
+  SetPressure(iPoint);
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution[nDim+1];
-  check_temp = SetTemperature(Temperature);
+  su2double Temperature = Solution(iPoint,nDim+1);
+  check_temp = SetTemperature(iPoint,Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -139,7 +128,7 @@ bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidMo
 
   /*--- Set the value of the density ---*/
 
-  check_dens = SetDensity(FluidModel->GetDensity());
+  check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
@@ -148,14 +137,14 @@ bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidMo
     /*--- Copy the old solution ---*/
 
     for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
+      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution[nDim+1];
-    SetTemperature(Temperature);
+    Temperature = Solution(iPoint,nDim+1);
+    SetTemperature(iPoint, Temperature);
     FluidModel->SetTDState_T(Temperature);
-    SetDensity(FluidModel->GetDensity());
+    SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
 
@@ -165,25 +154,25 @@ bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidMo
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
-  SetVelocity();
+  SetVelocity(iPoint);
 
   /*--- Set laminar viscosity ---*/
 
-  SetLaminarViscosity(FluidModel->GetLaminarViscosity());
+  SetLaminarViscosity(iPoint, FluidModel->GetLaminarViscosity());
 
   /*--- Set eddy viscosity locally and in the fluid model. ---*/
 
-  SetEddyViscosity(eddy_visc);
+  SetEddyViscosity(iPoint, eddy_visc);
   FluidModel->SetEddyViscosity(eddy_visc);
 
   /*--- Set thermal conductivity (effective value if RANS). ---*/
 
-  SetThermalConductivity(FluidModel->GetThermalConductivity());
+  SetThermalConductivity(iPoint, FluidModel->GetThermalConductivity());
 
   /*--- Set specific heats ---*/
 
-  SetSpecificHeatCp(FluidModel->GetCp());
-  SetSpecificHeatCv(FluidModel->GetCv());
+  SetSpecificHeatCp(iPoint, FluidModel->GetCp());
+  SetSpecificHeatCv(iPoint, FluidModel->GetCv());
 
   return physical;
 

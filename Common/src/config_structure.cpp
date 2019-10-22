@@ -63,7 +63,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high) {
   
   base_config = true;
   
@@ -72,8 +72,8 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  iZone = val_nZone;
-  nZone = val_nZone;
+  iZone = 0;
+  nZone = 1;
 
   /*--- Initialize pointers to Null---*/
 
@@ -90,6 +90,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   /*--- Set the default values for all of the options that weren't set ---*/
       
   SetDefault();
+  
+  /*--- Set number of zone ---*/
+  
+  SetnZone();
 
   /*--- Configuration file postprocessing ---*/
 
@@ -157,6 +161,8 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
   if ((rank == MASTER_NODE) && verb_high)
     SetOutput(val_software, val_iZone);
 
+  Multizone_Problem = config->GetMultizone_Problem();
+  
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
@@ -874,6 +880,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
+  /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
+  addBoolOption("FULL_TAPE", FullTape, YES);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
@@ -894,6 +902,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
+  addBoolOption("ADJ_FSI", FSI_Problem, NO);
+  
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -1369,8 +1379,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_MARCHING", TimeMarching, TimeMarching_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
-  /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid in (heat fvm) solid solvers */
-  addDoubleOption("CFL_NUMBER_SOLID", CFLSolid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   /* DESCRIPTION: Activate The adaptive CFL number. */
@@ -1686,7 +1694,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
-  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
@@ -1791,6 +1799,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
+  /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
+  addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
   /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
   addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
@@ -2270,6 +2280,10 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
 
+  /* DESCRIPTION: Use Robin (default) or Neumann BC at CHT interface. */
+  /*  Options: NO, YES \ingroup Config */
+  addBoolOption("CHT_ROBIN", CHT_Robin, true);
+
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
 
@@ -2464,7 +2478,7 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
-
+  
   /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
   addPythonOption("MULTIPOINT_MESH_FILENAME");
 
@@ -2863,8 +2877,7 @@ void CConfig::SetnZone(){
     
     nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
   
-  }
-  
+  }  
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -2903,12 +2916,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
-#ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
-  }
-#endif
+//#ifndef HAVE_TECIO
+//  if (Output_FileFormat == TECPLOT_BINARY) {
+//    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
+//    Output_FileFormat = TECPLOT;
+//  }
+//#endif
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/
@@ -3124,27 +3137,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
       (TimeMarching == TIME_STEPPING)) { nMGLevels = 0; }
-
-  /*--- If Fluid Structure Interaction, set the solver for each zone.
-   *--- ZONE_0 is the zone of the fluid.
-   *--- All the other zones are structure.
-   *--- This will allow us to define multiple physics structural problems */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
-
-    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
-    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
-    // Discrete adjoint linear solver
-    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
-    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
-
-    Multizone_Residual = true;
-  }
-  else { FSI_Problem = false; }
   
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
@@ -4552,6 +4544,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
+        break;
+      case HEAT_EQUATION_FVM:
+        Kind_Solver = DISC_ADJ_HEAT;
         break;
       default:
         break;
@@ -6020,10 +6015,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 	else {
 		if (Time_Domain) {
-			cout << "Static structural analysis." << endl; 
+            cout << "Dynamic structural analysis."<< endl;
+            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
 		 } else {
-			cout << "Dynamic structural analysis."<< endl;
-			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+            cout << "Static structural analysis." << endl;
 		}
 	}
 
@@ -6237,7 +6232,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
-    
     cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
     cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
     
@@ -7486,7 +7480,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   filename = filename + string(ext);
   
   /*--- Append the zone number if multizone problems ---*/
-  if (GetnZone() > 1)
+  if (Multizone_Problem)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
 
   /*--- Append the zone number if multiple instance problems ---*/
@@ -7539,7 +7533,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
     
-    if (GetnZone() > 1 ) {
+    if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
@@ -7554,7 +7548,7 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     char buffer[50];
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
-    if (GetnZone() > 1 ) {
+    if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }

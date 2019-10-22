@@ -69,6 +69,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
+  ../src/drivers/CDiscAdjMultizoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \

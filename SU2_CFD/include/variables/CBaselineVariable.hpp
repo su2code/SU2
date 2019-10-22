@@ -44,25 +44,19 @@
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
  */
-class CBaselineVariable : public CVariable {
+class CBaselineVariable final : public CVariable {
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CBaselineVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the flow value (initialization value).
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config);
+  CBaselineVariable(unsigned long npoint, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CBaselineVariable(void);
+  ~CBaselineVariable() = default;
 
 };

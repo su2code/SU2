@@ -273,12 +273,6 @@ public:
   void SetTimeStep(su2double val_timestep);
   
   /*!
-   * \brief Get the Preconditioning Beta.
-   * \return val_Beta - Value of the low Mach Preconditioner.
-   */
-  virtual su2double GetPrecond_Beta();
-  
-  /*!
    * \brief Set the freestream velocity square.
    * \param[in] SetVelocity2_Inf - Value of the square of the freestream velocity.
    */
@@ -1835,12 +1829,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
-  /*!
-   * \brief Get the Preconditioning Beta.
-   * \return Beta - Value of the low Mach Preconditioner.
-   */
-  su2double GetPrecond_Beta();
+
 };
 
 /*!

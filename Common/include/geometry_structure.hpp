@@ -926,19 +926,19 @@ public:
 	 */	
 	virtual void SetCoord(CGeometry *geometry);
 
-        /*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-         * \param[in] val_marker - Index of the boundary marker.
-	 */
-        virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+  /*! 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   */
+  virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
 
-        /*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-         * \param[in] val_marker - Index of the boundary marker.
-	 */
-        virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
+  /*! 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   */
+  virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
 
 	/*! 
 	 * \brief A virtual member.
