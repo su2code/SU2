@@ -34,7 +34,7 @@ env:
           TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dpython_path=/usr/local/lib/python3.5/dist-packages"
           TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
@@ -42,7 +42,7 @@ env:
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Dpython_path=/usr/local/lib/python3.5/dist-packages"
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
@@ -64,7 +64,6 @@ install:
     - $CONFIGURE_COMMAND
     - ./meson.py build --reconfigure --optimization=2
     - ./meson.py build --reconfigure --warnlevel=2
-    - ./meson.py build --reconfigure -Dpython_path=/usr/local/lib/python3.5/dist-packages
     - ./ninja -C build install
 
     # Add environmental variables according to the configure step
