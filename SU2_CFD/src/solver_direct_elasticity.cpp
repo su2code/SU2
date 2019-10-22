@@ -3615,7 +3615,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   /*--- Store the value of the residual. ---*/
 
-  SetIterLinSolver(System.GetResidual());
+  SetResLinSolver(System.GetResidual());
   
 }
 

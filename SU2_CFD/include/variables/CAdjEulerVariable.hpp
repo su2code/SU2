@@ -53,7 +53,7 @@ protected:
   MatrixType IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   MatrixType HB_Source;          /*!< \brief Harmonic balance source term. */
 
-  VectorOfMatrix& Gradient_Reconstruction = Gradient; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  VectorOfMatrix& Gradient_Reconstruction = Gradient_Aux; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   VectorOfMatrix Gradient_Aux;                        /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   
 public:
