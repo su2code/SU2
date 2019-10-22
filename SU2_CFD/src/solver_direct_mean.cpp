@@ -487,13 +487,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
   
-  Smatrix = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Smatrix[iDim] = new su2double [nDim];
-  
-  Cvector = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    Cvector[iVar] = new su2double [nDim];
+  if (config->GetLeastSquaresRequired()) {
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
+    
+    Cvector = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      Cvector[iVar] = new su2double [nDim];
+  }
   
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
   
@@ -14329,13 +14331,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
   
-  Smatrix = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Smatrix[iDim] = new su2double [nDim];
-  
-  Cvector = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    Cvector[iVar] = new su2double [nDim];
+  if (config->GetLeastSquaresRequired()) {
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
+    
+    Cvector = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      Cvector[iVar] = new su2double [nDim];
+  }
   
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
   
