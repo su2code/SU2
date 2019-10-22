@@ -239,7 +239,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [3.139355, 1.144919, -1040.600000, -2464.900000] #last 4 columns
+    discadj_heat.test_vals = [-2.271573, 0.671194, -3.172000, -8.231600] #last 4 columns
     discadj_heat.su2_exec  = "SU2_CFD_AD"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
@@ -250,15 +250,30 @@ def main():
     ###################################
    
     # Structural model
-#    discadj_fsi           = TestCase('discadj_fsi')
-#    discadj_fsi.cfg_dir   = "disc_adj_fsi"
-#    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
-#    discadj_fsi.test_iter = 3000
-#    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
-#    discadj_fsi.su2_exec  = "SU2_CFD_AD"
-#    discadj_fsi.timeout   = 1600
-#    discadj_fsi.tol       = 0.00001
-#    test_list.append(discadj_fsi)      
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "config.cfg"
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157601,0.726660,1.303625] #last 4 columns
+    discadj_fsi.su2_exec  = "SU2_CFD_AD"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)
+
+    ###################################
+    ### Coupled CHT Adjoint         ###
+    ###################################
+
+    # Coupled discrete adjoint for heatflux in heated cylinder array
+    discadj_cht           = TestCase('discadj_cht')
+    discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
+    discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
+    discadj_cht.test_iter = 10
+    discadj_cht.test_vals = [-2.403785, -3.097865, -3.097836, -3.097833] #last 4 columns
+    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.timeout   = 1600
+    discadj_cht.tol       = 0.00001
+    test_list.append(discadj_cht)
 
     ######################################
     ### RUN TESTS                      ###
@@ -275,7 +290,7 @@ def main():
     discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     discadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
     discadj_euler_py.test_iter = 10
-    discadj_euler_py.su2_exec  = "discrete_adjoint.py"
+    discadj_euler_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_euler_py.timeout   = 1600
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
@@ -287,7 +302,7 @@ def main():
     discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     discadj_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
     discadj_multiple_ffd_py.test_iter = 9
-    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py"
+    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_multiple_ffd_py.timeout   = 1600
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
@@ -299,7 +314,7 @@ def main():
     directdiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     directdiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
     directdiff_euler_py.test_iter = 10
-    directdiff_euler_py.su2_exec  = "direct_differentiation.py"
+    directdiff_euler_py.su2_exec  = "direct_differentiation.py -f"
     directdiff_euler_py.timeout   = 1600
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
@@ -311,7 +326,7 @@ def main():
     directdiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     directdiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
     directdiff_multiple_ffd_py.test_iter = 9
-    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py"
+    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py -f"
     directdiff_multiple_ffd_py.timeout   = 1600
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"

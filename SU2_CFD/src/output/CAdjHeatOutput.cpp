@@ -107,7 +107,7 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "bgs[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
@@ -124,8 +124,9 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
  
   SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
  
-  if (multiZone)
-    SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
+  if (multiZone) {
+    SetHistoryOutputValue("BGS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
+  }
     
   SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
  
@@ -168,7 +169,7 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
-  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->node[iPoint]; 
+  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes(); 
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
 
@@ -177,15 +178,15 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
   
-  SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(0));
+  SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
   
   // Residuals
-  SetVolumeOutputValue("RES_ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(0) - Node_AdjHeat->GetSolution_Old(0));
+  SetVolumeOutputValue("RES_ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0) - Node_AdjHeat->GetSolution_Old(iPoint, 0));
   
-  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjHeat->GetSensitivity(0));
-  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(1));
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(2));
+    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 2));
   
 }
 
