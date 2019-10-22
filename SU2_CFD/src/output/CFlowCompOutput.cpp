@@ -248,10 +248,15 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
   
+  ///   /// BEGIN_GROUP: FIXED_CL, DESCRIPTION: Relevant outputs for the Fixed CL mode 
   if (config->GetFixed_CL_Mode()){
+    /// DESCRIPTION: Difference between current and target CL
     AddHistoryOutput("DELTA_CL", "Delta_CL", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
+    /// DESCRIPTION: Angle of attack before the most recent update
     AddHistoryOutput("PREV_AOA", "Previous_AOA", ScreenOutputFormat::FIXED, "FIXED_CL", "Angle of Attack at the previous iteration of the Fixed CL driver");
+    /// DESCRIPTION: Last change in angle of attack by the Fixed CL driver
     AddHistoryOutput("CHANGE_IN_AOA", "Change_in_AOA", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "Last change in Angle of Attack by Fixed CL Driver", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: AOA control command by the CL Driver
     AddHistoryOutput("CL_DRIVER_COMMAND", "CL_Driver_Command", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "CL Driver's control command", HistoryFieldType::RESIDUAL);
   }
 
@@ -733,7 +738,6 @@ void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
     }
     FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
     FixedCLSummary.PrintFooter();
-    //config->SetInnerIter(config->GetInnerIter() - config->GetIter_dCL_dAlpha());
     curInnerIter = lastInnerIter;
     WriteMetaData(config);
     curInnerIter = config->GetInnerIter();

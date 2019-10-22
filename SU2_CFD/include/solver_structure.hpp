@@ -10438,7 +10438,6 @@ protected:
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
   
-  //unsigned long AoA_Counter;
   su2double ACoeff, ACoeff_inc, ACoeff_old;
   bool Update_ACoeff;
 
