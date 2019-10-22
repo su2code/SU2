@@ -7948,8 +7948,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         
         thermal_conductivity       = nodes->GetThermalConductivity(iPoint);
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
-        HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
@@ -7983,6 +7981,9 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
           MomentZ_Force[0] += (-Force[0]*Coord[1]);
           MomentZ_Force[1] += (Force[1]*Coord[0]);
+          
+          HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
+          MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
           
         }
 

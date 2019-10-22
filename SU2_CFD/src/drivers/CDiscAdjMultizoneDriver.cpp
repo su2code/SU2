@@ -150,8 +150,7 @@ void CDiscAdjMultizoneDriver::Run() {
   unsigned short  jZone             = 0,
                   wrt_sol_freq      = config_container[ZONE_0]->GetVolume_Wrt_Freq();
   unsigned long   nIter             = 0,
-                  iOuter_Iter       = 0,
-                  iInner_Iter       = 0;
+                  iOuter_Iter       = 0;
 
   nIter = driver_config->GetnOuter_Iter();
 
@@ -251,10 +250,14 @@ void CDiscAdjMultizoneDriver::Run() {
         /*--- Add off-diagonal contribution (including the OF gradient) to Solution for next inner evaluation. ---*/
 
         Add_ExternalOld_To_Solution(iZone);
+
+        /*--- Print out the convergence data to screen and history file ---*/
+
+        output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
+                                                   config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInnerIter);
       }
 
-
-      /*--- Off-diagonal (coupling term) update. ---*/
+      /*--- Off-diagonal (coupling term) update for next outer evaluation. ---*/
 
       for (jZone = 0; jZone < nZone; jZone++) {
 
@@ -270,13 +273,12 @@ void CDiscAdjMultizoneDriver::Run() {
           /*--- Add the cross derivatives from iZone<-jZone dependencies to the External vector. ---*/
 
           Add_Solution_To_External(jZone);
-
         }
       }
 
       // TODO: Add an option to _already_ update off-diagonals here (i.e., in the zone-loop)
 
-      /*--- Compute residual from Solution and Solution_BGS_k. ---*/
+      /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
 
       SetResidual_BGS(iZone);
 
@@ -284,18 +286,18 @@ void CDiscAdjMultizoneDriver::Run() {
        *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
+        
+      /*--- make sure that everything is loaded into the output container ---*/
+      
+      output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      
     }
 
     /*--- Now all coupling terms are summed up, set External_Old to External for next outer iteration. ---*/
 
     Set_OldExternal();
-
-    /*--- Print out the convergence data to screen and history file ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-      output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
-                                                 config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInner_Iter);
-    }
+    
+    /*--- Set the multizone output. ---*/
 
     driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
                                               driver_config->GetTimeIter(), driver_config->GetOuterIter());
@@ -719,9 +721,12 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetAdjIndex(ObjFunc_Index, ObjFunc);
-    if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
-
-      cout << " Objective function                   : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
+    if (kind_recording == FLOW_CONS_VARS) {
+      cout << " Objective function                   : " << ObjFunc;
+      if (driver_config->GetWrt_AD_Statistics()){
+        cout << " (" << ObjFunc_Index << ")" << endl;
+      }
+      cout << endl;
     }
   }
 }

@@ -2896,7 +2896,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Set the default output files ---*/
-  if (nVolumeOutputFiles == 0){
+  if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
     VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
     VolumeOutputFiles[0] = RESTART_BINARY;
@@ -2917,12 +2917,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
-//#ifndef HAVE_TECIO
-//  if (Output_FileFormat == TECPLOT_BINARY) {
-//    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-//    Output_FileFormat = TECPLOT;
-//  }
-//#endif
+#ifndef HAVE_TECIO
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
+    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
+    }
+  }
+#endif
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/
@@ -6259,8 +6261,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
     cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
-    cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
+    if (Multizone_Problem)
+      cout << "Maximum number of solver outer iterations: " << nOuterIter <<"."<< endl;
+    if (Time_Domain)
+      cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
     
+    cout << "Begin convergence monitoring at iteration " << StartConv_Iter << "." << endl;    
+    cout << "Residual minimum value: 1e" << MinLogResidual << "." << endl;
+    cout << "Cauchy series min. value: " << Cauchy_Eps << "." << endl;
+    cout << "Number of Cauchy elements: " << Cauchy_Elems << "." << endl;
   }
 
   if (val_software == SU2_MSH) {
@@ -6298,18 +6307,25 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << "Writing a solution file every " << Wrt_Sol_Freq <<" iterations."<< endl;
-    cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
-    if ((TimeMarching == DT_STEPPING_1ST) || (TimeMarching == DT_STEPPING_2ND)) {
-      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
-      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
+    cout << "Writing solution files every " << VolumeWrtFreq <<" iterations."<< endl;
+    cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
+    if (Multizone_Problem){
+      cout << "Writing the convergence history file every " << HistoryWrtFreq[1] <<" outer iterations."<< endl;      
+    }
+    if (Time_Domain) {
+      cout << "Writing the convergence history file every " << HistoryWrtFreq[0] <<" time iterations."<< endl;      
+    }
+    cout << "Writing the screen convergence history every " << ScreenWrtFreq[2] <<" inner iterations."<< endl;
+    if (Multizone_Problem){
+      cout << "Writing the screen convergence history every " << ScreenWrtFreq[1] <<" outer iterations."<< endl;      
+    }
+    if (Time_Domain) {
+      cout << "Writing the screen convergence history every " << ScreenWrtFreq[0] <<" time iterations."<< endl;      
     }
 
     switch (Tab_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
-      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6318,7 +6334,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   
     if (!ContinuousAdjoint && !DiscreteAdjoint) {
-      cout << "Surface coefficients file name: " << SurfCoeff_FileName << "." << endl;
+      cout << "Surface file name: " << SurfCoeff_FileName << "." << endl;
       cout << "Volume file name: " << Volume_FileName << "." << endl;
       cout << "Restart file name: " << Restart_FileName << "." << endl;
     }
@@ -6327,17 +6343,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
       cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
-      cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
+      cout << "Surface adjoint file name: " << SurfAdjCoeff_FileName << "." << endl;
     }
 
   }
 
   if (val_software == SU2_SOL) {
     switch (Tab_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
-      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
