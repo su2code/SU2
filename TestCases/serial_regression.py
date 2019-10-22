@@ -1491,7 +1491,7 @@ def main():
     contadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
     contadj_euler_py.test_iter = 10
-    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
+    contadj_euler_py.su2_exec  = "continuous_adjoint.py -f"
     contadj_euler_py.timeout   = 1600
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
@@ -1517,7 +1517,7 @@ def main():
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     contadj_multi_py.test_iter  = 10
-    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py -f"
     contadj_multi_py.timeout    = 1600
     contadj_multi_py.new_output = True
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
