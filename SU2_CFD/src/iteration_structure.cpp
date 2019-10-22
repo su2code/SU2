@@ -698,9 +698,6 @@ bool CFluidIteration::Monitor(COutput *output,
     StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
   }
 
-  /*--- If convergence was reached --*/
-  // StopCalc =  output->GetConvergence();
-
   return StopCalc;
 
 }
@@ -1062,7 +1059,6 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
   }
 
   /* --- Set convergence based on fixed CL convergence  --- */
-  //output->SetConvergence(fixed_cl_convergence);
   return fixed_cl_convergence;
 }
 

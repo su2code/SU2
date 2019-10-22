@@ -4702,55 +4702,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
 
   }
-
-	
-
-	
-
-	/*--- Only from the adjoint restart file ---*/
-
-	// else {
-
-	// 	/*--- The adjoint problem needs this information from the adjoint solution file ---*/
-
-	// 	if (config->GetEval_dOF_dCX() == true) {
-
-	// 		/*--- If it is a restart it will use the value that was stored in the adjoint solution file  ---*/
-
-	// 		if (config->GetRestart()) {
-
- //     /*--- dCD_dCL coefficient ---*/
-     
- //     if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
- //       cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
- //     config->SetdCD_dCL(dCD_dCL_);
-     
- //     /*--- dCMx_dCL coefficient ---*/
-     
- //     if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
- //       cout <<"WARNING: SU2 will use the dCMx/dCL provided in\nthe adjoint solution file: " << dCMx_dCL_ << " ." << endl;
- //     config->SetdCMx_dCL(dCMx_dCL_);
-     
- //     /*--- dCMy_dCL coefficient ---*/
-     
- //     if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
- //       cout <<"WARNING: SU2 will use the dCMy/dCL provided in\nthe adjoint solution file: " << dCMy_dCL_ << " ." << endl;
- //     config->SetdCMy_dCL(dCMy_dCL_);
-     
- //     /*--- dCMz_dCL coefficient ---*/
-     
- //     if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
- //       cout <<"WARNING: SU2 will use the dCMz/dCL provided in\nthe adjoint solution file: " << dCMz_dCL_ << " ." << endl;
- //     config->SetdCMz_dCL(dCMz_dCL_);
-     
-	// 		}
-
-
-	// 	}
-
-	// }
-
-	/*--- External iteration ---*/
+  
+  /*--- External iteration ---*/
 
   if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
     config->SetExtIter_OffSet(InnerIter_);
