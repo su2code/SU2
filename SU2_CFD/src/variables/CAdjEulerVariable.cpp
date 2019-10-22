@@ -38,7 +38,8 @@
 #include "../../include/variables/CAdjEulerVariable.hpp"
 
 CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie, unsigned long npoint, unsigned long ndim,
-                                     unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+                                     unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
+                                     Gradient_Reconstruction{config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient} {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -59,9 +60,6 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
 
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
-    Gradient_Reconstruction = Gradient_Aux;
-  } else {
-    Gradient_Reconstruction = Gradient;
   }
   
   if (config->GetLeastSquaresRequired()) {
