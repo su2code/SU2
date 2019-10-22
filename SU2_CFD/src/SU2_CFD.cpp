@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, turbo;
   bool dry_run = false;
+  bool one_shot = false;
   std::string filename = "default";
   
   /*--- Command line parsing ---*/
@@ -101,6 +102,7 @@ int main(int argc, char *argv[]) {
   nZone    = config->GetnZone();
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
+  one_shot = config->GetBoolOneShot();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -119,7 +121,12 @@ int main(int argc, char *argv[]) {
       }
       if (config->GetDiscrete_Adjoint()) {
 
-        driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+        if (one_shot) {
+          driver = new COneShotFluidDriver(config_file_name, nZone, MPICommunicator);
+        }
+        else {
+          driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+        }
       }
       else
         driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
