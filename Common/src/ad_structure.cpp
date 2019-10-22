@@ -49,6 +49,7 @@ namespace AD {
 
   su2double::TapeType& globalTape = su2double::getGlobalTape();
   su2double::TapeType::Position StartPosition, EndPosition;
+  std::vector<su2double::TapeType::Position> TapePositions;
 
   bool Status = false;
   bool PreaccActive = false;

@@ -35,6 +35,11 @@ if get_option('enable-cgns')
   su2_cpp_args += '-DHAVE_CGNS'
 endif
 
+# Check for non-debug build
+if get_option('buildtype')!='debug'
+  su2_cpp_args += '-DNDEBUG'
+endif
+
 # check if MPI dependencies are found and add them
 if mpi_dep[0].found() and mpi_dep[1].found() 
 

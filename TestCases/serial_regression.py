@@ -1193,8 +1193,8 @@ def main():
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
-    airfoilRBF.test_iter = 0
-    airfoilRBF.test_vals = [0.000000, 1.440246, -2.236518] #last 4 columns
+    airfoilRBF.test_iter = 1
+    airfoilRBF.test_vals = [1.0, -2.979045, -4.882900]
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
     airfoilRBF.multizone = True
@@ -1207,10 +1207,10 @@ def main():
 
     # CHT incompressible
     cht_incompressible           = TestCase('cht_incompressible')
-    cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
-    cht_incompressible.cfg_file  = "config.cfg"
+    cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
+    cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [10.000000, -2.601006, -3.342894] #last 4 columns
+    cht_incompressible.test_vals = [-2.132187, -0.579649, -0.579649, -0.579649] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
@@ -1491,7 +1491,7 @@ def main():
     contadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
     contadj_euler_py.test_iter = 10
-    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
+    contadj_euler_py.su2_exec  = "continuous_adjoint.py -f"
     contadj_euler_py.timeout   = 1600
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
@@ -1517,7 +1517,7 @@ def main():
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     contadj_multi_py.test_iter  = 10
-    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py -f"
     contadj_multi_py.timeout    = 1600
     contadj_multi_py.new_output = True
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
