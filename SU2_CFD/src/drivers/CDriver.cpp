@@ -1131,9 +1131,9 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
     case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; compressible = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; compressible = true; break;
     case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
-    case ONE_SHOT_EULER: euler = true; disc_adj = true; one_shot = true; break;
-    case ONE_SHOT_NAVIER_STOKES: ns = true; disc_adj = true; one_shot = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case ONE_SHOT_RANS: ns = true; turbulent = true; disc_adj = true; one_shot = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ONE_SHOT_EULER: euler = true; disc_adj = true; one_shot = true; compressible = true; break;
+    case ONE_SHOT_NAVIER_STOKES: ns = true; disc_adj = true; one_shot = true; compressible = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ONE_SHOT_RANS: ns = true; turbulent = true; disc_adj = true; one_shot = true; compressible = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
   }
   
   /*--- Determine the kind of FEM solver used for the flow. ---*/
