@@ -12696,7 +12696,19 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
+  /*!
+   * \brief Compute the multizone residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -12842,7 +12854,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void RegisterObj_Func(CConfig *config);
-  
+
   /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -13043,7 +13055,19 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
+  /*!
+   * \brief Compute the multizone residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
 };
 
