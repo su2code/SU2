@@ -5042,23 +5042,23 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   direct_iteration = new CIteration*[nZone];
 
   unsigned short iZone;
-//  for (iZone = 0; iZone < nZone; iZone++){
-//    switch (config_container[iZone]->GetKind_Solver()) {
-//      case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:      
-//       case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-//         direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
-//         nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
-//         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
-//         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
-//         break;
-//       case DISC_ADJ_FEM:
-//         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
-//         nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
-//         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
-//         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
-//         break;
-//    }
-//  }
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_Solver()) {
+      case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:      
+       case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+         direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+         nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
+         flow_criteria = -8.0;  // Temporarily hard coded until adapted into new structure
+         flow_criteria_rel = 3.0;
+         break;
+       case DISC_ADJ_FEM:
+         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
+         nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
+         structure_criteria    = -8.0;
+         structure_criteria_rel = 3.0;
+         break;
+    }
+  }
 
   init_res_flow   = new su2double[nVar_Flow];
   init_res_struct = new su2double[nVar_Struct];
@@ -5157,8 +5157,9 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
 
     myfile_res.close();
   }
+  output_legacy = new COutputLegacy(config_container[ZONE_0]);
 
-//  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
 //  config_container[ZONE_0]->SetnExtIter(1);
 //  config_container[ZONE_1]->SetnExtIter(1);
   ConvHist_file = NULL;
@@ -5187,10 +5188,6 @@ CDiscAdjFSIDriver::~CDiscAdjFSIDriver(void) {
 
 }
 
-void CDiscAdjFSIDriver::Update(){
-
-}
-
 void CDiscAdjFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 }
@@ -5205,12 +5202,11 @@ void CDiscAdjFSIDriver::Run( ) {
 
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetInnerIter(IntIter);
   unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
-  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
 
   ofstream myfile_struc, myfile_flow, myfile_geo;
 
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-
 
   for (iOuterIter = 0; iOuterIter < nOuterIter && !BGS_Converged; iOuterIter++){
 
@@ -5246,6 +5242,7 @@ void CDiscAdjFSIDriver::Run( ) {
 
     /*--- Check convergence of the BGS method ---*/
     BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
+
   }
 
 
@@ -6032,10 +6029,10 @@ void CDiscAdjFSIDriver::Iterate_Block(unsigned short ZONE_FLOW,
 
   switch (kind_recording){
   case FLOW_CONS_VARS:
-    nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
+    nIntIter = config_container[ZONE_FLOW]->GetnInner_Iter();
     break;
   case FEA_DISP_VARS:
-    nIntIter = config_container[ZONE_STRUCT]->GetDyn_nIntIter();
+    nIntIter = config_container[ZONE_STRUCT]->GetnInner_Iter();
     break;
   case MESH_COORDS:
   case FEM_CROSS_TERM_GEOMETRY:
@@ -6296,9 +6293,8 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
   unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetOuterIter();
 
 
-//  if (rank == MASTER_NODE)  
-//    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
-//     output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Header(&ConvHist_file[ZONE_0][INST_0], config_container[ZONE_0], ZONE_0, INST_0);
+  if (rank == MASTER_NODE)  
+     output_legacy->SetConvHistory_Header(&ConvHist_file[ZONE_0][INST_0], config_container[ZONE_0], ZONE_0, INST_0);
 
   if (kind_recording == FLOW_CONS_VARS) {
 
@@ -6311,23 +6307,23 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
       if (IntIter % config_container[ZONE_FLOW]->GetWrt_Con_Freq() == 0){
         /*--- Output the flow convergence ---*/
         /*--- This is temporary as it requires several changes in the output structure ---*/
+        unsigned short nVar_Flow = solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
         cout.width(8);     cout << IntIter;
         cout.width(11);    cout << BGS_Iter + 1;
         cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
         cout.width(15);    cout << log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
-        cout.width(15);    cout << log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
+        cout.width(15);    cout << log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(nVar_Flow-1));
         cout << endl;
       }
 
     }
   }
 
-//  if (kind_recording == FEA_DISP_VARS) {
-//    if ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()))
-//    /*--- Set the convergence criteria (only residual possible) ---*/
-//       output_container[ZONE_0]->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
+  if (kind_recording == FEA_DISP_VARS) {
+    /*--- Set the convergence criteria (only residual possible) ---*/
+       output_legacy->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
 
-//  }
+  }
 
 
 }
@@ -6403,22 +6399,17 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
   if (rank == MASTER_NODE){
 
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << endl;
-    cout << "Convergence summary for BGS iteration ";
-    cout << IntIter << endl;
-    cout << endl;
+    cout << "\n-------------------------------------------------------------------------\n\n";
+    cout << "Convergence summary for BGS iteration " << IntIter << "\n\n";
     /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-    cout << "Iter[ID]" << "  BGSRes[Psi_Rho]" << "  BGSRes[Psi_E]" << "  BGSRes[Psi_Ux]" << "  BGSRes[Psi_Uy]" << endl;
+    cout << "Iter[ID]" << "  BGSRes[Psi_Rho]" << "  BGSRes[Psi_E]" << "  BGSRes[Psi_Ux]" << "  BGSRes[Psi_Uy]\n";
     cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout.width(8); cout << IntIter*1000;
-    cout.width(17); cout << residual_flow[0];
-    cout.width(15); cout << residual_flow[nVar_Flow-1];
-    cout.width(16); cout << residual_struct[0];
-    cout.width(16); cout << residual_struct[1];
-    cout << endl;
-    cout << endl;
-    cout << "-------------------------------------------------------------------------" << endl;
+    cout << "|"; cout.width(8);  cout << IntIter*1000;
+    cout << "|"; cout.width(17); cout << residual_flow[0];
+    cout << "|"; cout.width(15); cout << residual_flow[nVar_Flow-1];
+    cout << "|"; cout.width(16); cout << residual_struct[0];
+    cout << "|"; cout.width(16); cout << residual_struct[1];
+    cout << "|"; cout << "\n\n-------------------------------------------------------------------------" << endl;
 
 
     bool write_history = true;
