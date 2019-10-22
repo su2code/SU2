@@ -709,13 +709,13 @@ void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
     FixedCLSummary.PrintHeader();
     FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
     FixedCLSummary << "Target CL" << config->GetTarget_CL();
-    FixedCLSummary << "Current AOA" << config->GetAoA();
+    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
     if (config->GetFinite_Difference_Mode()){
-      FixedCLSummary << "Changing AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
       lastInnerIter = curInnerIter - 1;
     }
     else 
-      FixedCLSummary << "Changing AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
     FixedCLSummary.PrintFooter();
     SetScreen_Header(config);
   }

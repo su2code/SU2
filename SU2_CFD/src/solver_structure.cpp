@@ -4528,17 +4528,16 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
 void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) {
 
-	su2double AoA_ = config->GetAoA();
-	su2double AoS_ = config->GetAoS();
-	su2double BCThrust_ = config->GetInitial_BCThrust();
-	su2double dCD_dCL_ = config->GetdCD_dCL();
+  su2double AoA_ = config->GetAoA();
+  su2double AoS_ = config->GetAoS();
+  su2double BCThrust_ = config->GetInitial_BCThrust();
+  su2double dCD_dCL_ = config->GetdCD_dCL();
   su2double dCMx_dCL_ = config->GetdCMx_dCL();
   su2double dCMy_dCL_ = config->GetdCMy_dCL();
   su2double dCMz_dCL_ = config->GetdCMz_dCL();
   string::size_type position;
-	unsigned long InnerIter_ = 0;
-	ifstream restart_file;
-	//bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  unsigned long InnerIter_ = 0;
+  ifstream restart_file;
   
   /*--- Carry on with ASCII metadata reading. ---*/
   
@@ -4548,7 +4547,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
       cout << " Computation will continue without updating metadata parameters." << endl;
     }
-  } else {
+  } 
+  else {
     
     string text_line;
     
@@ -4583,41 +4583,36 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       if (position != string::npos) {
         text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
       }
+             
+      /*--- dCD_dCL coefficient ---*/
       
-      if (adjoint) {
-        
-        /*--- dCD_dCL coefficient ---*/
-        
-        position = text_line.find ("DCD_DCL_VALUE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-        }
-        
-        /*--- dCMx_dCL coefficient ---*/
-        
-        position = text_line.find ("DCMX_DCL_VALUE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
-        }
-        
-        /*--- dCMy_dCL coefficient ---*/
-        
-        position = text_line.find ("DCMY_DCL_VALUE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
-        }
-        
-        /*--- dCMz_dCL coefficient ---*/
-        
-        position = text_line.find ("DCMZ_DCL_VALUE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
-        }
-        
+      position = text_line.find ("DCD_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
       }
       
+      /*--- dCMx_dCL coefficient ---*/
+      
+      position = text_line.find ("DCMX_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+      }
+      
+      /*--- dCMy_dCL coefficient ---*/
+      
+      position = text_line.find ("DCMY_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+      }
+      
+      /*--- dCMz_dCL coefficient ---*/
+      
+      position = text_line.find ("DCMZ_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+      }     
+      
     }
-    
     
     /*--- Close the restart meta file. ---*/
     
@@ -4626,92 +4621,89 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   }
   
 
-	/*--- Load the metadata. ---*/
-
-	/*--- Angle of attack ---*/
-
-	if (config->GetDiscard_InFiles() == false) {
-		if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-			cout.precision(6);
-			cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-			cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-		}
-		config->SetAoA(AoA_ + config->GetAoA_Offset());
-	}
-	else {
-		if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-			cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-	}
-
-	/*--- Sideslip angle ---*/
-
-	if (config->GetDiscard_InFiles() == false) {
-		if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-			cout.precision(6);
-			cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-			cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-		}
-		config->SetAoS(AoS_ + config->GetAoS_Offset());
-	}
-	else {
-		if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-			cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-	}
-
-	/*--- BCThrust angle ---*/
-
-	if (config->GetDiscard_InFiles() == false) {
-		if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-			cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-		config->SetInitial_BCThrust(BCThrust_);
-	}
-	else {
-		if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-			cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-	}
-
-
-	/*--- The adjoint problem needs this information from the direct solution ---*/
-
-	if (adjoint) {
-
-		if (config->GetDiscard_InFiles() == false) {
-
-      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
-      config->SetdCD_dCL(dCD_dCL_);
+  /*--- Load the metadata. ---*/
   
-      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
-      config->SetdCMx_dCL(dCMx_dCL_);
-  
-      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
-      config->SetdCMy_dCL(dCMy_dCL_);
-  
-      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
-      config->SetdCMz_dCL(dCMz_dCL_);
+  /*--- Angle of attack ---*/
 
-		}
-		
-    else {
-  
-      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
-      
-      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
-      
-      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
-      
-      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
-  
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+      cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
     }
+    config->SetAoA(AoA_ + config->GetAoA_Offset());
+  }
 
-	}
+  else {
+    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+  }
+
+  /*--- Sideslip angle ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+      cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+    }
+    config->SetAoS(AoS_ + config->GetAoS_Offset());
+  }
+  else {
+    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+  }
+
+  /*--- BCThrust ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+      config->SetInitial_BCThrust(BCThrust_);
+    }
+  else {
+    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+  }
+
+
+  if (config->GetDiscard_InFiles() == false) {
+
+    if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
+    config->SetdCD_dCL(dCD_dCL_);
+
+    if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
+    config->SetdCMx_dCL(dCMx_dCL_);
+
+    if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
+    config->SetdCMy_dCL(dCMy_dCL_);
+
+    if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
+    config->SetdCMz_dCL(dCMz_dCL_);
+
+  }
+	
+  else {
+
+    if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
+    
+    if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
+    
+    if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
+    
+    if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
+
+  }
+
+	
 
 	
 
