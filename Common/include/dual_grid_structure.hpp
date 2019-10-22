@@ -811,10 +811,22 @@ public:
   void SetAdjointCoord(su2double *adj_coor);
 
   /*!
+   * \brief Set the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void SetAdjointCoord_intIndexBased(su2double *adj_coor);
+
+  /*!
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
   void GetAdjointCoord(su2double *adj_coor);
+
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void GetAdjointCoord_intIndexBased(su2double *adj_coor);
 
 };
 
