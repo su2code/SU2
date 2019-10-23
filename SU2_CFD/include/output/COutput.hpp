@@ -691,8 +691,9 @@ protected:
    * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
+   * \param[in] force_writing - boolean that forces writing of volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter);
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing);
   
   /*!
    * \brief Set the values of the volume output fields for a point.
@@ -781,6 +782,12 @@ protected:
    * \param[in] solver_container - The container holding all solution data.
    */
   inline virtual void WriteAdditionalFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container){}
+
+  /*!
+   * \brief Write any additional output defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  inline virtual void SetAdditionalScreenOutput(CConfig *config){}
 
 };
 
