@@ -1994,8 +1994,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
-  /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Deform limit in m or inches */
