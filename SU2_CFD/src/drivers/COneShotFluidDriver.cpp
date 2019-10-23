@@ -216,9 +216,9 @@ void COneShotFluidDriver::Run(){
     RunOneShot();
 
     /*--- Screen output ---*/
-    const bool StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                             solver_container, numerics_container, config_container,
-                                             surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    const bool StopCalc = iteration_container[ZONE_0][INST_0]->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                                                       solver_container, numerics_container, config_container,
+                                                                       surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     if(StopCalc) break;
 
@@ -241,7 +241,7 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
 
-    if(TimeIter>config_container[ZONE_0]->GetOneShotStart() && TimeIter<config_container[ZONE_0]->GetOneShotStop()){
+    if(InnerIter>config_container[ZONE_0]->GetOneShotStart() && InnerIter<config_container[ZONE_0]->GetOneShotStop()){
 
       if(whilecounter > 0){
         /*--- Armijo line search (halve step) ---*/
@@ -286,15 +286,15 @@ void COneShotFluidDriver::RunOneShot(){
     PrimalDualStep();
 
     /*--- Estimate Alpha, Beta, and Gamma ---*/
-    if(TimeIter >= config_container[ZONE_0]->GetOneShotStart() && TimeIter > 1) solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateAlphaBetaGamma(config_container[ZONE_0]);
+    if(InnerIter >= config_container[ZONE_0]->GetOneShotStart() && InnerIter > 1) solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateAlphaBetaGamma(config_container[ZONE_0]);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian(true);
 
     whilecounter++;
 
-  } while(TimeIter > config_container[ZONE_0]->GetOneShotStart() && 
-          TimeIter < config_container[ZONE_0]->GetOneShotStop() &&
+  } while(InnerIter > config_container[ZONE_0]->GetOneShotStart() && 
+          InnerIter < config_container[ZONE_0]->GetOneShotStop() &&
           (!CheckFirstWolfe()) && whilecounter<maxcounter+1);
 
   /*--- Store FFD info in file ---*/
@@ -308,10 +308,10 @@ void COneShotFluidDriver::RunOneShot(){
   if (!CheckFirstWolfe() && config_container[ZONE_0]->GetZeroStep()) stepsize = 0.0;
 
   /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
-  if(TimeIter > 1) solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAlphaBetaGamma(config_container[ZONE_0], BCheck_Norm);
+  if(InnerIter > 1) solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAlphaBetaGamma(config_container[ZONE_0], BCheck_Norm);
   CalculateLagrangian(true);
 
-  if(TimeIter >= config_container[ZONE_0]->GetOneShotStart() && TimeIter < config_container[ZONE_0]->GetOneShotStop()){
+  if(InnerIter >= config_container[ZONE_0]->GetOneShotStart() && InnerIter < config_container[ZONE_0]->GetOneShotStop()){
 
     /*--- Update design variable ---*/
     UpdateDesignVariable();
@@ -374,7 +374,7 @@ void COneShotFluidDriver::RunOneShot(){
     ComputeActiveSet(stepsize);
 
     /*--- Do a BFGS update to approximate the inverse preconditioner ---*/
-    if(TimeIter > config_container[ZONE_0]->GetOneShotStart()) BFGSUpdate(config_container[ZONE_0]);
+    if(InnerIter > config_container[ZONE_0]->GetOneShotStart()) BFGSUpdate(config_container[ZONE_0]);
 
     /*--- Compute the search direction for the line search procedure ---*/
     ComputeSearchDirection();
@@ -449,7 +449,7 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 
     AD::StartRecording();
 
-    if (rank == MASTER_NODE && kind_recording == MainVariables && (TimeIter == 0)) {
+    if (rank == MASTER_NODE && kind_recording == MainVariables && (InnerIter == 0)) {
       cout << endl << "-------------------------------------------------------------------------" << endl;
       cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Combined recording of flow and design variables." << endl;
