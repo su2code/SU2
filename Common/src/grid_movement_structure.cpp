@@ -2629,6 +2629,10 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   bool cartesian   = (config->GetFFD_CoordSystem() == CARTESIAN);
   su2double BoundLimit = config->GetOpt_LineSearch_Bound();
 
+  bool one_shot = (config->GetKind_Solver() == ONE_SHOT_EULER)         ||
+                 (config->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES) ||
+                 (config->GetKind_Solver() == ONE_SHOT_RANS);
+
   /*--- Setting the Free Form Deformation ---*/
   
   if (config->GetDesign_Variable(0) == FFD_SETTING) {
@@ -2709,18 +2713,18 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             unsigned short *FileFormat = config->GetVolumeOutputFiles();
             if (FileFormat[iFile] == PARAVIEW) {
-              cout << "Writing a Paraview file of the FFD boxes." << endl;
+              if (!one_shot) cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
               }
             } else if (FileFormat[iFile] == TECPLOT) {
-              cout << "Writing a Tecplot file of the FFD boxes." << endl;
+              if (!one_shot) cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
               }
             }
             else if (FileFormat[iFile] == CGNS)  {
-              cout << "Writing a CGNS file of the FFD boxes." << endl;
+              if (!one_shot) cout << "Writing a CGNS file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
               }
@@ -2795,18 +2799,18 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           unsigned short *FileFormat = config->GetVolumeOutputFiles();
           
           if (FileFormat[iFile] == PARAVIEW) {
-            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            if (!one_shot) cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
           } else if (FileFormat[iFile] == TECPLOT) {
-            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            if (!one_shot) cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
             }
           }
           else if (FileFormat[iFile] == CGNS)  {
-            cout << "Writing a CGNS file of the FFD boxes." << endl;
+            if (!one_shot) cout << "Writing a CGNS file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
             }
@@ -2831,7 +2835,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       /*--- Apply the deformation to the orifinal FFD box ---*/
       
-      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
+      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0)) && !(one_shot)
         cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
       
       /*--- Loop over all the FFD boxes levels ---*/
@@ -2848,13 +2852,13 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             
             /*--- Check the dimension of the FFD compared with the design variables ---*/
             
-            if (rank == MASTER_NODE) cout << "Checking FFD box dimension." << endl;
+            if (rank == MASTER_NODE && !one_shot) cout << "Checking FFD box dimension." << endl;
             CheckFFDDimension(geometry, config, FFDBox[iFFDBox], iFFDBox);
             
             /*--- Compute intersections of the FFD box with the surface to eliminate design
              variables and satisfy surface continuity ---*/
             
-            if (rank == MASTER_NODE) cout << "Checking FFD box intersections with the solid surfaces." << endl;
+            if (rank == MASTER_NODE && !one_shot) cout << "Checking FFD box intersections with the solid surfaces." << endl;
             CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
             
             /*--- Compute the parametric coordinates of the child box
@@ -2974,18 +2978,18 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             unsigned short *FileFormat = config->GetVolumeOutputFiles();
             
             if (FileFormat[iFile] == PARAVIEW) {
-              cout << "Writing a Paraview file of the FFD boxes." << endl;
+              if (!one_shot) cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
               }
             } else if (FileFormat[iFile] == TECPLOT) {
-              cout << "Writing a Tecplot file of the FFD boxes." << endl;
+              if (!one_shot) cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
               }
             }
             else if (FileFormat[iFile] == CGNS)  {
-              cout << "Writing a CGNS file of the FFD boxes." << endl;
+              if (!one_shot) cout << "Writing a CGNS file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, false);
               }
@@ -3511,6 +3515,10 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
   bool cartesian = (config->GetFFD_CoordSystem() == CARTESIAN);
+
+  bool one_shot = (config->GetKind_Solver() == ONE_SHOT_EULER)         ||
+                 (config->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES) ||
+                 (config->GetKind_Solver() == ONE_SHOT_RANS);
   
   lDegree = FFDBox->GetlOrder()-1;
   mDegree = FFDBox->GetmOrder()-1;
@@ -3742,7 +3750,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
     
     /*--- Screen output ---*/
     
-    if (rank == MASTER_NODE) {
+    if (rank == MASTER_NODE && !one_shot) {
       
       if (IPlane_Intersect_A || IPlane_Intersect_B ||
           JPlane_Intersect_A || JPlane_Intersect_B ||
@@ -3793,7 +3801,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
    that we are looking for ---*/
   
   if (config->GetFFD_Continuity() == USER_INPUT) {
-    if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE && !one_shot)
       cout << "SU2 is fixing user's input planes." << endl;
     
     for (index = 0; index < config->GetnFFD_Fix_IDir(); index++)
@@ -3809,7 +3817,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   }
   
   if (config->GetFFD_Continuity() == DERIVATIVE_NONE) {
-    if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE && !one_shot)
       cout << "SU2 is fixing the planes to maintain a continuous surface." << endl;
     
     if (IPlane_Intersect_A) { FFDBox->Set_Fix_IPlane(0); }
@@ -3822,7 +3830,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   }
   
   if (config->GetFFD_Continuity() == DERIVATIVE_1ST) {
-    if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE && !one_shot)
       cout << "SU2 is fixing the planes to maintain a continuous 1st order derivative." << endl;
     
     if (IPlane_Intersect_A) { FFDBox->Set_Fix_IPlane(0); FFDBox->Set_Fix_IPlane(1); }
@@ -3835,7 +3843,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   }
   
   if (config->GetFFD_Continuity() == DERIVATIVE_2ND) {
-    if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE && !one_shot)
       cout << "SU2 is fixing the planes to maintain a continuous 2nd order derivative." << endl;
     
     if ((IPlane_Intersect_A) && (lDegree > 1)) { FFDBox->Set_Fix_IPlane(0); FFDBox->Set_Fix_IPlane(1); FFDBox->Set_Fix_IPlane(2); }
@@ -3932,6 +3940,10 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
   unsigned short nDim = geometry->GetnDim();
+
+  bool one_shot = (config->GetKind_Solver() == ONE_SHOT_EULER)         ||
+                 (config->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES) ||
+                 (config->GetKind_Solver() == ONE_SHOT_RANS);
   
   /*--- Set to zero all the porints in VarCoord, this is important when we are dealing with different boxes
     because a loop over GetnSurfacePoint is no sufficient ---*/
@@ -4033,7 +4045,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
   MaxDiff = my_MaxDiff;
 #endif
   
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE && !one_shot)
     cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
   
   return MaxDiff;
@@ -6978,6 +6990,10 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   unsigned short SplineOrder[3];
   unsigned short Blending = 0;
 
+  bool one_shot = (config->GetKind_Solver() == ONE_SHOT_EULER)         ||
+                 (config->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES) ||
+                 (config->GetKind_Solver() == ONE_SHOT_RANS);
+
   char *cstr = new char [val_mesh_filename.size()+1];
   strcpy (cstr, val_mesh_filename.c_str());
   
@@ -7030,7 +7046,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
       text_line.erase (0,9);
       nFFDBox = atoi(text_line.c_str());
       
-      if (rank == MASTER_NODE) cout << nFFDBox << " Free Form Deformation boxes." << endl;
+      if (rank == MASTER_NODE && !one_shot) cout << nFFDBox << " Free Form Deformation boxes." << endl;
       
       nCornerPoints = new unsigned short[nFFDBox];
       nControlPoints = new unsigned short[nFFDBox];
@@ -7040,7 +7056,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
       text_line.erase (0,11);
       nLevel = atoi(text_line.c_str());
       
-      if (rank == MASTER_NODE) cout << nLevel << " Free Form Deformation nested levels." << endl;
+      if (rank == MASTER_NODE && !one_shot) cout << nLevel << " Free Form Deformation nested levels." << endl;
 
       for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
         
@@ -7063,7 +7079,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         
         string TagFFDBox = text_line.c_str();
         
-        if (rank == MASTER_NODE) cout << "FFD box tag: " << TagFFDBox <<". ";
+        if (rank == MASTER_NODE && !one_shot) cout << "FFD box tag: " << TagFFDBox <<". ";
 
         /*--- Read the level of the FFD box ---*/
         
@@ -7071,7 +7087,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         text_line.erase (0,10);
         LevelFFDBox = atoi(text_line.c_str());
         
-        if (rank == MASTER_NODE) cout << "FFD box level: " << LevelFFDBox <<". ";
+        if (rank == MASTER_NODE && !one_shot) cout << "FFD box level: " << LevelFFDBox <<". ";
         
         /*--- Read the degree of the FFD box ---*/
         
@@ -7101,7 +7117,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           text_line.erase (0,13); degree[2] = atoi(text_line.c_str());
         }
         
-        if (rank == MASTER_NODE) {
+        if (rank == MASTER_NODE && !one_shot) {
           if (nDim == 2) {
             if (polar) cout << "Degrees: " << degree[0] << ", " << degree[2] << "." << endl;
             else cout << "Degrees: " << degree[0] << ", " << degree[1] << "." << endl;
@@ -7135,7 +7151,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
             SplineOrder[2] = 2;
           }
         }
-        if (rank == MASTER_NODE){
+        if (rank == MASTER_NODE && !one_shot){
           if (Blending == BSPLINE_UNIFORM){
             cout << "FFD Blending using B-Splines. ";
             cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
@@ -7155,7 +7171,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         getline (mesh_file, text_line);
         text_line.erase (0,12);
         nParentFFDBox = atoi(text_line.c_str());
-        if (rank == MASTER_NODE) cout << "Number of parent boxes: " << nParentFFDBox <<". ";
+        if (rank == MASTER_NODE && !one_shot) cout << "Number of parent boxes: " << nParentFFDBox <<". ";
         for (iParentFFDBox = 0; iParentFFDBox < nParentFFDBox; iParentFFDBox++) {
           getline(mesh_file, text_line);
           
@@ -7180,7 +7196,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         getline (mesh_file, text_line);
         text_line.erase (0,13);
         nChildFFDBox = atoi(text_line.c_str());
-        if (rank == MASTER_NODE) cout << "Number of child boxes: " << nChildFFDBox <<"." << endl;
+        if (rank == MASTER_NODE && !one_shot) cout << "Number of child boxes: " << nChildFFDBox <<"." << endl;
         
         for (iChildFFDBox = 0; iChildFFDBox < nChildFFDBox; iChildFFDBox++) {
           getline(mesh_file, text_line);
@@ -7205,7 +7221,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         
         getline (mesh_file, text_line);
         text_line.erase (0,18); nCornerPoints[iFFDBox] = atoi(text_line.c_str());
-        if (rank == MASTER_NODE) cout << "Corner points: " << nCornerPoints[iFFDBox] <<". ";
+        if (rank == MASTER_NODE && !one_shot) cout << "Corner points: " << nCornerPoints[iFFDBox] <<". ";
         if (nDim == 2) nCornerPoints[iFFDBox] = nCornerPoints[iFFDBox]*SU2_TYPE::Int(2);
 
 
@@ -7299,7 +7315,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         getline (mesh_file, text_line);
         text_line.erase (0,19); nControlPoints[iFFDBox] = atoi(text_line.c_str());
         
-        if (rank == MASTER_NODE) cout << "Control points: " << nControlPoints[iFFDBox] <<". ";
+        if (rank == MASTER_NODE && !one_shot) cout << "Control points: " << nControlPoints[iFFDBox] <<". ";
         
         /*--- Method to identify if there is a FFDBox definition ---*/
         
@@ -7355,10 +7371,10 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 #ifdef HAVE_MPI
         nSurfPoints = 0;
         SU2_MPI::Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<< endl;
+        if (rank == MASTER_NODE && !one_shot) cout << "Surface points: " << nSurfPoints <<"."<< endl;
 #else
         nSurfPoints = my_nSurfPoints;
-        if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<< endl;
+        if (rank == MASTER_NODE && !one_shot) cout << "Surface points: " << nSurfPoints <<"."<< endl;
 #endif
         
       }

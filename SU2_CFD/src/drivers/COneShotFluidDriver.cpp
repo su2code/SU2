@@ -1388,7 +1388,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
       BCheck_Inv[0][0] = 1./BCheck[0][0];
     }
     else{
-      if (rank == MASTER_NODE) cout << "BCheck not positive definite!!!" << endl;
+      // if (rank == MASTER_NODE) cout << "BCheck not positive definite!!!" << endl;
       BCheck_Norm = config_container[ZONE_0]->GetBCheckEpsilon();
       BCheck_Inv[0][0] = 1./config_container[ZONE_0]->GetBCheckEpsilon();
     }
