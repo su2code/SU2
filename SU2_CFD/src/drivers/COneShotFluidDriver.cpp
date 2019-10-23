@@ -210,7 +210,7 @@ void COneShotFluidDriver::Run(){
 
     iteration_container[ZONE_0][INST_0]->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
                                                     solver_container, numerics_container, config_container,
-                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                                    surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
    
     /*--- Run an iteration of the one-shot solver ---*/
     RunOneShot();
