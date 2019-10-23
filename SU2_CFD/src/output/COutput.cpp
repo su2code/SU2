@@ -674,7 +674,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, 
                               unsigned long iter, bool force_writing){
   
-  bool writeFiles = WriteVolume_Output(config, iter) || force_writing;
+  bool writeFiles = WriteVolume_Output(config, iter, force_writing);
   
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */ 
   
@@ -991,6 +991,7 @@ void COutput::SetScreen_Output(CConfig *config) {
     }      
     (*convergenceTable) << out.str();
   }
+  SetAdditionalScreenOutput(config);
 }
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
@@ -1790,10 +1791,10 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 
 }
 
-bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter){
-  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0));
+bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
+  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   else {
-     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0));
+     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   }
 }
 
