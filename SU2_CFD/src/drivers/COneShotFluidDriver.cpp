@@ -231,6 +231,7 @@ void COneShotFluidDriver::RunOneShot(){
   su2double stepsize = config_container[ZONE_0]->GetStepSize();
   unsigned short maxcounter = config_container[ZONE_0]->GetOneShotMaxCounter();
   unsigned short whilecounter = 0;
+  unsigned long InnerIter = config_container[ZONE_0]->GetInnerIter();
 
   /*--- Store the old solution and the old design for line search ---*/
   for (iZone = 0; iZone < nZone; iZone++){
@@ -430,6 +431,7 @@ void COneShotFluidDriver::PrimalDualStep(){
 void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
   unsigned short iZone;
   unsigned short iInst = 0;
+  unsigned long InnerIter = config_container[ZONE_0]->GetInnerIter();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
