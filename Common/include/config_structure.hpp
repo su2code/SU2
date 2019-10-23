@@ -585,8 +585,7 @@ private:
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
-  unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
-  GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
+  unsigned long GridDef_Nonlinear_Iter; /*!< \brief Number of nonlinear increments for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Mesh;    /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
@@ -4164,12 +4163,6 @@ public:
    * \return CFL reduction factor.
    */
   su2double GetCFLRedCoeff_AdjTurb(void);
-  
-  /*!
-   * \brief Get the number of linear smoothing iterations for mesh deformation.
-   * \return Number of linear smoothing iterations for mesh deformation.
-   */
-  unsigned long GetGridDef_Linear_Iter(void);
   
   /*!
    * \brief Get the number of nonlinear increments for mesh deformation.
