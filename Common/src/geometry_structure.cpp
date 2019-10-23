@@ -3936,9 +3936,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     
   }
   
-  /*--- If SU2_DEF then write a file with the boundary information ---*/
+  /*--- If SU2_DEF or SAND then write a file with the boundary information ---*/
   
-  if ((config->GetKind_SU2() == SU2_DEF) && (rank == MASTER_NODE)) {
+  if (((config->GetKind_SU2() == SU2_DEF) || (config->GetBoolOneShot())) && (rank == MASTER_NODE)) {
 
     string str = "boundary.dat";
 
