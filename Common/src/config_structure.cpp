@@ -795,6 +795,13 @@ void CConfig::SetPointersNull(void) {
   Restart_Bandwidth_Agg = 0.0;
   
   Mesh_Box_Size = NULL;
+
+  /*--- Constraint vars for SAND ---*/
+  Multiplier_Start  = NULL;
+  Multiplier_Factor = NULL;
+  Multiplier_Scale  = NULL;
+  Constraint_Target = NULL;
+  Constraint_Scale  = NULL;
  
 }
 
@@ -2525,17 +2532,20 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
 
-  /*!\brief MULTIPLIER_START  \n DESCRIPTION: Starting values for multiplier \ingroup Config*/
-  addDoubleListOption("MULTIPLIER_START", nConstrHelp, Multiplier_Start);
+  /*!\brief CONSTRAINT_MULTIPLIER_START  \n DESCRIPTION: Starting values for constraint Lagrange multiplier \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_MULTIPLIER_START", nConstrHelp, Multiplier_Start);
 
-  /*!\brief MULTIPLIER_FACTOR  \n DESCRIPTION: Factors for multiplier update \ingroup Config*/
-  addDoubleListOption("MULTIPLIER_FACTOR", nConstrHelp, Multiplier_Factor);
+  /*!\brief CONSTRAINT_MULTIPLIER_FACTOR  \n DESCRIPTION: Factors for constraint Lagrange multiplier update \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_MULTIPLIER_FACTOR", nConstrHelp, Multiplier_Factor);
 
-  /*!\brief CONSTR_VALUE  \n DESCRIPTION: Target values for constraints \ingroup Config*/
-  addDoubleListOption("CONSTR_VALUE", nConstrHelp, ConstraintTarget);
+  /*!\brief CONSTRAINT_MULTIPLIER_SCALE  \n DESCRIPTION: Scaling for constraint Lagrange multiplier \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_MULTIPLIER_SCALE", nConstrHelp, Multiplier_Scale);
 
-  /*!\brief CONSTR_SCALE  \n DESCRIPTION: Scaling values for constraints \ingroup Config*/
-  addDoubleListOption("CONSTR_SCALE", nConstrHelp, ConstraintScale);
+  /*!\brief CONSTRAINT_VALUE  \n DESCRIPTION: Target values for constraints \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_VALUE", nConstrHelp, Constraint_Target);
+
+  /*!\brief CONSTRAINT_SCALE  \n DESCRIPTION: Scaling values for constraints \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_SCALE", nConstrHelp, Constraint_Scale);
 
   /*!\brief BFGS_INIT \n DESCRIPTION: Indicates if an approximation of the inital inverse is calculated for BFGS or LBFGS \ingroup Config*/
   addBoolOption("BFGS_INIT", BFGS_Init, false);
@@ -2559,8 +2569,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("ONE_SHOT_STEP_SIZE", Step_Size, 1.0);
 
   addDoubleOption("BCHECK_EPSILON", BCheck_Epsilon, 1E+1);
-
-  addDoubleListOption("MULTIPLIER_SCALE", nConstrHelp, MultiplierScale);
 
   addBoolOption("CONST_PRECOND", Constant_Preconditioner, false);
 
@@ -3249,22 +3257,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Multiplier_Factor[iConstr] = 1.0;
     }
   }
-  if(nConstr!=0 && ConstraintTarget == NULL){
-    ConstraintTarget = new su2double[nConstr];
+  if(nConstr!=0 && Multiplier_Scale == NULL){
+    Multiplier_Scale = new su2double[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      ConstraintTarget[iConstr] = 0.0;
+      Multiplier_Scale[iConstr] = 1.0;
     }
   }
-  if(nConstr!=0 && ConstraintScale == NULL){
-    ConstraintScale = new su2double[nConstr];
+  if(nConstr!=0 && Constraint_Target == NULL){
+    Constraint_Target = new su2double[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      ConstraintScale[iConstr] = 1.0;
+      Constraint_Target[iConstr] = 0.0;
     }
   }
-  if(nConstr!=0 && MultiplierScale == NULL){
-    MultiplierScale = new su2double[nConstr];
+  if(nConstr!=0 && Constraint_Scale == NULL){
+    Constraint_Scale = new su2double[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      MultiplierScale[iConstr] = 1.0;
+      Constraint_Scale[iConstr] = 1.0;
     }
   }
   

@@ -2156,9 +2156,11 @@ inline su2double CConfig::GetMultiplierStart(unsigned short val_cons) { return M
 
 inline su2double CConfig::GetMultiplierFactor(unsigned short val_cons) { return Multiplier_Factor[val_cons]; }
 
-inline su2double CConfig::GetConstraintTarget(unsigned short val_cons) { return ConstraintTarget[val_cons]; }
+inline su2double CConfig::GetMultiplierScale(unsigned short val_cons) { return Multiplier_Scale[val_cons]; }
 
-inline su2double CConfig::GetConstraintScale(unsigned short val_cons) { return ConstraintScale[val_cons]; }
+inline su2double CConfig::GetConstraintTarget(unsigned short val_cons) { return Constraint_Target[val_cons]; }
+
+inline su2double CConfig::GetConstraintScale(unsigned short val_cons) { return Constraint_Scale[val_cons]; }
 
 inline bool CConfig::GetBFGSInit(void) { return BFGS_Init; }
 
@@ -2173,8 +2175,6 @@ inline su2double CConfig::GetStepSize(void) {return Step_Size; }
 inline su2double CConfig::GetBFGSInitValue(void) {return BFGS_Init_Value; }
 
 inline su2double CConfig::GetBCheckEpsilon(void) {return BCheck_Epsilon; }
-
-inline su2double CConfig::GetMultiplierScale(unsigned short val_cons) { return MultiplierScale[val_cons]; }
 
 inline bool CConfig::GetConstPrecond(void) { return Constant_Preconditioner; }
 

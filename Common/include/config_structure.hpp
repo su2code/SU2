@@ -1119,9 +1119,9 @@ private:
   unsigned short nConstr, nConstrHelp;              /*! \brief Number of constraint functions. */
   su2double* Multiplier_Start; /*! \brief Start values for constraint multipliers. */
   su2double* Multiplier_Factor; /*! \brief Values for constant factor for multiplier update. */
-  su2double* ConstraintTarget; /*! \brief Target value for constraints. */
-  su2double* ConstraintScale; /*! \brief Scaling value for constraints. */
-  su2double* MultiplierScale;
+  su2double* Multiplier_Scale;
+  su2double* Constraint_Target; /*! \brief Target value for constraints. */
+  su2double* Constraint_Scale; /*! \brief Scaling value for constraints. */
   bool BFGS_Init; /*!< \brief option for approximating the BFGS initial inverse */
   su2double BFGS_Init_Value;  /*!< \brief value of initial scaling of BFGS inverse */
   bool Limited_Memory_BFGS; /*!< \brief option for using limited memory BFGS */
