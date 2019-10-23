@@ -179,11 +179,11 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
 
 void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
-  // unsigned short iZone;
+  unsigned short iZone;
 
-  // for(iZone = 0; iZone < nZone; iZone++) {
+  for(iZone = 0; iZone < nZone; iZone++) {
 
-  //   config_container[iZone]->SetTimeIter(TimeIter);
+    config_container[iZone]->SetTimeIter(TimeIter);
 
   //   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
 
