@@ -68,10 +68,10 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-i", "--iterations", dest="iterations", default=-1,
                       help="number of ITERATIONS", metavar="ITERATIONS")
-    parser.add_option("-d", "--dimmension", dest="geomDim", default=2,
+    parser.add_option("-d", "--dimension", dest="geomDim", default=2,
                       help="Geometry dimension (2 or 3)", metavar="geomDim")
     parser.add_option("-w", "--Wind", action="store_true", dest="Wind", default=False,
-                      help=" Wind system (default is body system")
+                      help=" Wind system (default is body system)")
     parser.add_option("-v", "--Verbose", action="store_true", dest="verbose", default=False,
                       help=" Verbose printout (if activated)")
 

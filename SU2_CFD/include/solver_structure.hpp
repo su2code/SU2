@@ -2103,6 +2103,44 @@ public:
    */
   virtual void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] convergence - boolean for whether the solution is converged
+   * \return boolean for whether the Fixed C_L mode is converged to target C_L
+   */
+  virtual bool FixedCL_Convergence(CConfig *config, bool convergence);
+
+  /*!
+   * \brief A virtual member.
+   * \return boolean for whether the Fixed C_L mode is currently in finite-differencing mode
+   */
+  virtual bool GetStart_AoA_FD(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return boolean for whether the Fixed C_L mode is currently in finite-differencing mode
+   */
+  virtual bool GetEnd_AoA_FD(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return value for the last iteration that the AoA was updated
+   */
+  virtual unsigned long GetIter_Update_AoA();
+
+  /*!
+   * \brief A virtual member.
+   * \return value of the AoA before most recent update
+   */
+  virtual su2double GetPrevious_AoA();
+
+  /*!
+   * \brief A virtual member.
+   * \return value of CL Driver control command (AoA_inc)
+   */
+  virtual su2double GetAoA_inc();
   
   /*!
    * \brief A virtual member.
@@ -4835,7 +4873,6 @@ protected:
   
   su2double
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
-  AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -4910,16 +4947,14 @@ protected:
   su2double *Secondary,    /*!< \brief Auxiliary nPrimVar vector. */
   *Secondary_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Secondary_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-  
-  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
-  su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
-  unsigned long AoA_Counter;
-  bool AoA_FD_Change;
+
+  su2double AoA_Prev, /*!< \brief Old value of the angle of attack (monitored). */
+  AoA_inc;
+  bool Start_AoA_FD,  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
+  End_AoA_FD,         /*!< \brief Boolean for end of finite differencing for FixedCL mode */
+  Update_AoA;         /*!< \brief Boolean to signal Angle of Attack Update */
+  unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
+  su2double dCL_dAlpha; /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   unsigned short nSpanMax; /*!< \brief Max number of maximum span-wise sections for all zones */
@@ -5550,6 +5585,50 @@ public:
    */
   void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                        CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Check for convergence of the Fixed CL mode to the target CL
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] convergence - boolean for whether the solution is converged
+   * \return boolean for whether the Fixed CL mode is converged to target CL
+   */
+  bool FixedCL_Convergence(CConfig *config, bool convergence);
+
+  /*!
+   * \brief Checking whether fixed CL mode in finite-differencing mode 
+   * \return boolean for whether the Fixed CL mode is currently in finite-differencing mode
+   */
+  bool GetStart_AoA_FD(void);
+
+  /*!
+   * \brief Checking whether fixed CL mode in finite-differencing mode 
+   * \return boolean for whether the Fixed CL mode is currently in finite-differencing mode
+   */
+  bool GetEnd_AoA_FD(void);
+
+    /*!
+   * \brief Get the iteration of the last AoA update (Fixed CL Mode)
+   * \return value for the last iteration that the AoA was updated
+   */
+  unsigned long GetIter_Update_AoA();
+
+  /*!
+   * \brief Get the AoA before the most recent update
+   * \return value of the AoA before most recent update
+   */
+  su2double GetPrevious_AoA();
+
+  /*!
+   * \brief Get the CL Driver's control command
+   * \return value of CL Driver control command (AoA_inc)
+   */
+  su2double GetAoA_inc();
+
+  /*!
+   * \brief Set gradients of coefficients for fixed CL mode
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCoefficient_Gradients(CConfig *config);
   
   /*!
    * \brief Update the solution using the explicit Euler scheme.
@@ -7181,19 +7260,13 @@ protected:
   AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
 
   su2double
-  AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
-  Total_CMx_Prev,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
-  Total_CMy_Prev,      /*!< \brief Total y moment coefficient for all the boundaries. */
   Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
-  Total_CMz_Prev,      /*!< \brief Total z moment coefficient for all the boundaries. */
   Total_CoPx,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CoPy,      /*!< \brief Total y moment coefficient for all the boundaries. */
   Total_CoPz,      /*!< \brief Total z moment coefficient for all the boundaries. */
@@ -7236,15 +7309,6 @@ protected:
   su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
   *Primitive_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Primitive_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
-  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
-  su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
-  unsigned long AoA_Counter;
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
@@ -7600,17 +7664,6 @@ public:
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
 
-  /*!
-   * \brief Update the AoA and freestream velocity at the farfield.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
-                       CConfig *config, unsigned short iMesh, bool Output);
-  
   /*!
    * \brief Update the solution using the explicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10385,7 +10438,6 @@ protected:
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
   
-  unsigned long AoA_Counter;
   su2double ACoeff, ACoeff_inc, ACoeff_old;
   bool Update_ACoeff;
 
@@ -12644,7 +12696,19 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
+  /*!
+   * \brief Compute the multizone residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -12790,7 +12854,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void RegisterObj_Func(CConfig *config);
-  
+
   /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12991,7 +13055,19 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
+  /*!
+   * \brief Compute the multizone residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -13079,14 +13155,6 @@ protected:
   *Surface_CMy,        /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz,        /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_CEff;       /*!< \brief Efficiency (Cl/Cd) for each monitoring surface. */
-
-  su2double Cauchy_Value,         /*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func; 	                  /*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie; 	  /*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,             /*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func; 	                  /*!< \brief Current value of the objective function (the function which is monitored). */
-
 
   unsigned long nDOFsLocTot;    /*!< \brief Total number of local DOFs, including halos. */
   unsigned long nDOFsLocOwned;  /*!< \brief Number of owned local DOFs. */

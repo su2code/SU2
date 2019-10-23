@@ -983,6 +983,21 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
 
 }
 
+void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  /*--- As there are geometrical crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++)
+        nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
+  }
+
+}
+
+
 void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
