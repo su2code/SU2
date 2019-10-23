@@ -1769,13 +1769,15 @@ inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
 
 inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
 
-inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
-
-inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
-
 inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
+
+inline unsigned long CConfig::GetUpdate_AoA_Iter_Limit(void) { return Update_AoA_Iter_Limit; }
+
+inline bool CConfig::GetFinite_Difference_Mode(void) { return Finite_Difference_Mode; }
+
+inline void CConfig::SetFinite_Difference_Mode(bool val_fd_mode) { Finite_Difference_Mode = val_fd_mode; }
 
 inline bool CConfig::GetUpdate_BCThrust_Bool(void) { return Update_BCThrust_Bool; }
 
@@ -2074,7 +2076,11 @@ inline su2double  CConfig::Get_StartTime() {return StartTime;}
 
 inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
+inline void CConfig::SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter) { HistoryWrtFreq[iter] = nIter;}
+
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
+
+inline void CConfig::SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter;}
 
 inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
 
