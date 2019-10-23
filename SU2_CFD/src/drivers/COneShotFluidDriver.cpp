@@ -179,34 +179,50 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
 
 void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
-  unsigned short iZone;
+  // unsigned short iZone;
 
-  for(iZone = 0; iZone < nZone; iZone++) {
+  // for(iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
+  //   config_container[iZone]->SetTimeIter(TimeIter);
 
-    /*--- Preprocess the adjoint iteration ---*/
+  //   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
 
-    iteration_container[iZone][INST_0]->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
-                          solver_container, numerics_container, config_container,
-                          surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  //   /*--- Preprocess the adjoint iteration ---*/
 
-  }
+  //   iteration_container[iZone][INST_0]->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
+  //                         solver_container, numerics_container, config_container,
+  //                         surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+  // }
 
 }
 
 
 void COneShotFluidDriver::Run(){
 
-  config_container[ZONE_0]->SetInnerIter(TimeIter);
- 
-  /*--- Run an iteration of the one-shot solver ---*/
-  RunOneShot();
+  unsigned long OneShotIter, nOneShotIter = config_container[ZONE_0]->GetnInner_Iter();;
 
-  /*--- Screen output ---*/
-  bool StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                     solver_container, numerics_container, config_container,
-                                     surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  for(OneShotIter = 0; OneShotIter < nOneShotIter; OneShotIter++) {
+
+    config_container[ZONE_0]->SetInnerIter(OneShotIter);
+
+    /*--- Preprocess the one-shot iteration ---*/
+
+    iteration_container[ZONE_0][INST_0]->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
+                                                    solver_container, numerics_container, config_container,
+                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
+   
+    /*--- Run an iteration of the one-shot solver ---*/
+    RunOneShot();
+
+    /*--- Screen output ---*/
+    const bool StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                             solver_container, numerics_container, config_container,
+                                             surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+    if(StopCalc) break;
+
+  }
 
 }
 
