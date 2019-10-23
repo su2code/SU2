@@ -13,3 +13,4 @@ option('blas-name', type : 'string', value : 'openblas', description: 'name of t
 option('enable-pastix', type : 'boolean', value : false, description: 'enable PaStiX support')
 option('pastix_root', type : 'string', value : 'externals/pastix/', description: 'PaStiX base directory')
 option('scotch_root', type : 'string', value : 'externals/scotch/', description: 'Scotch base directory')
+option('enable-pybeam',  type : 'boolean', value : false, description: 'enable pyBeam solver')

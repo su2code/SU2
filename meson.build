@@ -127,3 +127,7 @@ subdir('SU2_PY')
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
 endif
+
+if get_option('enable-pybeam')
+  subproject('pyBeam')
+endif

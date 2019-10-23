@@ -12,3 +12,6 @@
 [submodule "externals/meson"]
 	path = externals/meson
 	url = https://github.com/mesonbuild/meson
+[submodule "subprojects/pyBeam"]
+	path = subprojects/pyBeam
+	url = https://github.com/pyBeam/pyBeam
