@@ -2835,7 +2835,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       /*--- Apply the deformation to the orifinal FFD box ---*/
       
-      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0)) && !(one_shot)
+      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0) && !one_shot)
         cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
       
       /*--- Loop over all the FFD boxes levels ---*/
