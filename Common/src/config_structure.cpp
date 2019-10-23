@@ -2423,6 +2423,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Writing surface solution file frequency for dual time */
   addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
 
+  /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
+  addEnumOption("WINDOW_FUNCTION", Type_WindowFct,Window_Map, SQUARE);
+
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 

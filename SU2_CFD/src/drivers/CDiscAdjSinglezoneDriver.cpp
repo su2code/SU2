@@ -270,9 +270,11 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
+  Signal_Processing::RunningAverage windowEvaluator = Signal_Processing::RunningAverage();
+
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
-      seeding = 1.0/((su2double)IterAvg_Obj);
+      seeding = windowEvaluator.GetWndWeight(config->GetWindowIdx(),TimeIter, IterAvg_Obj-1)/ ((su2double)IterAvg_Obj);
     }
     else{
       seeding = 0.0;
@@ -284,7 +286,6 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
   }
-
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){

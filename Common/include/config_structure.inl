@@ -1473,6 +1473,8 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 
 inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
+inline unsigned short CConfig::GetWindowIdx(void){return Type_WindowFct;}
+
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
