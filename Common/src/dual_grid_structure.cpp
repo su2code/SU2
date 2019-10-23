@@ -109,6 +109,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     Coord_Sum = new su2double[nDim];
   }
 
+  /*--- For one-shot, we need to store the mesh coordinates ---*/
+  if (config->GetBoolOneShot()) {
+    Coord_Old = new su2double[nDim];
+  }
+
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   bool dynamic_grid = config->GetDynamic_Grid();
 
@@ -224,6 +229,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   if ( config->GetSmoothNumGrid() ) {
     Coord_Old = new su2double[nDim];
     Coord_Sum = new su2double[nDim];
+  }
+
+  /*--- For one-shot, we need to store the mesh coordinates ---*/
+  if (config->GetBoolOneShot()) {
+    Coord_Old = new su2double[nDim];
   }
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
