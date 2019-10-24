@@ -13,6 +13,8 @@ install_data(['continuous_adjoint.py',
 	     'discrete_adjoint.py',
 	     'direct_differentiation.py',
 	     'fsi_computation.py',
+	     'pyBeamFSI.py',
+	     'pyBeamFSI_AD.py',
 	     'SU2_CFD.py'], 
 	     install_dir: join_paths(get_option('bindir')))
 
@@ -70,14 +72,11 @@ install_data(['SU2/util/bunch.py',
               'SU2/util/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/util'))
 
-install_data(['FSI/__init__.py',
-              'FSI/FSIInterface.py',
-              'FSI/PitchPlungeAirfoilStructuralTester.py',
-              'FSI/io/__init__.py',
-              'FSI/io/FSI_config.py',
-              'FSI/util/__init__.py',
-              'FSI/util/switch.py'],
-	      install_dir: join_paths(get_option('bindir'), 'FSI'))
+install_data(['SU2_FSI/PrimalInterface.py',
+              'SU2_FSI/AdjointInterface.py',
+              'SU2_FSI/FSI_config.py',
+              'SU2_FSI/switch.py'],
+	      install_dir: join_paths(get_option('bindir'), 'SU2_FSI'))
 
 
 
