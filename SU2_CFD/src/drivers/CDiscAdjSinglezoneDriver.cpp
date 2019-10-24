@@ -140,11 +140,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
    *--- we only have to record if the current recording is different from the main variables. ---*/
 
-  if (RecordingState != MainVariables){
-
-    MainRecording();
-
-  }
+  MainRecording();
 
 }
 
@@ -475,14 +471,17 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
 
 void CDiscAdjSinglezoneDriver::MainRecording(){
 
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   *    as argument ensures that all information from a previous recording is removed. ---*/
+  if (RecordingState != MainVariables){
 
-  SetRecording(NONE);
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+     *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+    SetRecording(NONE);
 
-  SetRecording(MainVariables);
+    /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+
+    SetRecording(MainVariables);
+  }
 
 }
 
