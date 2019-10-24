@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-from ..util.switch import switch
+from .switch import switch
 
 # ----------------------------------------------------------------------
 #  FSI Configuration Class
