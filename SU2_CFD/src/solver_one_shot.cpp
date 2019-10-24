@@ -62,6 +62,9 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *di
      }
    }
  }
+
+ geometry->InitializeSensitivity();
+ 
 }
 
 COneShotSolver::~COneShotSolver(void) {
@@ -130,8 +133,6 @@ void COneShotSolver::SetGeometrySensitivityGradient(CGeometry *geometry){
 
     unsigned short iDim;
     unsigned long iPoint;
-
-    geometry->InitializeSensitivity();
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {

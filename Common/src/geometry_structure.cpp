@@ -3783,6 +3783,8 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   xadj      = NULL;
 #endif
 #endif
+
+  Sensitivity = NULL;
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -3833,6 +3835,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   xadj      = NULL;
 #endif
 #endif
+
+  Sensitivity == NULL;
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -4022,6 +4026,8 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > const &PoiAd
 #endif
 #endif
 
+  Sensitivity = NULL;
+
   /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -4175,6 +4181,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   xadj      = NULL;
 #endif
 #endif
+
+  Sensitivity = NULL;
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -14100,10 +14108,12 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 void CPhysicalGeometry::InitializeSensitivity() {
   unsigned short iDim;
   unsigned long iPoint;
-  Sensitivity = new su2double[nPoint*nDim];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
+  if(Sensitivity == NULL) {
+    Sensitivity = new su2double[nPoint*nDim];
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Sensitivity[iPoint*nDim+iDim] = 0.0;
+      }
     }
   }
 }

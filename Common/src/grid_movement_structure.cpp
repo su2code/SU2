@@ -2611,6 +2611,7 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
   nFFDBox = 0;
   nLevel = 0;
   FFDBoxDefinition = false;
+  FFDBox = NULL;
 }
 
 CSurfaceMovement::~CSurfaceMovement(void) {}
@@ -2639,7 +2640,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     /*--- Definition of the FFD deformation class ---*/
     
-    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    if(FFDBox == NULL) FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     
     /*--- Read the FFD information from the config file ---*/
     
@@ -2758,7 +2759,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     /*--- Definition of the FFD deformation class ---*/
     
-    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    if(FFDBox == NULL) FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     
     /*--- Read the FFD information from the grid file ---*/
     
@@ -7163,7 +7164,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           }
         }
 
-        FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, Blending);
+        if(FFDBox[iFFDBox] == NULL) FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, Blending);
         FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
         /*--- Read the number of parents boxes ---*/
