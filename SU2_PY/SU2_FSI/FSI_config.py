@@ -86,7 +86,9 @@ class FSIConfig:
 
             for case in switch(this_param):
                 # integer values
+                if case("RESTART_ITER"): pass
                 if case("NDIM"): pass
+                if case("NB_EXT_ITER"): pass
                 if case("NB_FSI_ITER"):
                     self._ConfigContent[this_param] = int(this_value)
                     break
@@ -103,7 +105,9 @@ class FSIConfig:
                 if case("SU2_CONFIG"): pass
                 if case("PYBEAM_CONFIG"): pass
                 if case("MLS_CONFIG_FILE_NAME"): pass
-                if case("RESTART_SOL"): pass
+                if case("INTERNAL_FLOW"):
+                    self._ConfigContent[this_param] = this_value
+                    break
 
                 if case():
                     print(this_param + " is an invalid option !")
