@@ -2640,7 +2640,10 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     /*--- Definition of the FFD deformation class ---*/
     
-    if(FFDBox == NULL) FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    if(FFDBox == NULL) {
+      FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+      for(iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) FFDBox[iFFDBox] = NULL;
+    }
     
     /*--- Read the FFD information from the config file ---*/
     
@@ -2759,7 +2762,10 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     /*--- Definition of the FFD deformation class ---*/
     
-    if(FFDBox == NULL) FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    if(FFDBox == NULL) {
+      FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+      for(iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) FFDBox[iFFDBox] = NULL;
+    }
     
     /*--- Read the FFD information from the grid file ---*/
     
