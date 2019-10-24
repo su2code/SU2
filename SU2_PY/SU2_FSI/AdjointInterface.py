@@ -102,10 +102,6 @@ class AdjointInterface:
         self.nSolidInterfaceNodes = 0  # number of nodes on the solid interface, sum over all partitions
         self.nSolidInterfacePhysicalNodes = 0  # number of physical nodes on the solid interface, sum over all partitions
 
-        self.MappingMatrix = None  # interpolation/mapping matrix for meshes interpolation/mapping - interpolation happening with MLS module
-        self.MappingMatrix_T = None  # transposed interpolation/mapping matrix for meshes interpolation/mapping - interpolation happening with MLS module
-        self.d_RBF = 0
-
         self.localFluidInterface_vertex_indices = None
 
         self.globalFluidInterfaceXcoor = None
@@ -404,8 +400,6 @@ class AdjointInterface:
                 self.localFluidInterface_vertex_indices[localIndex] = int(iVertex)
                 localIndex += 1
 
-        #print("rank: {}, local_vertex_indices: {}".format(myid, self.localFluidInterface_vertex_indices))
-
         if self.have_MPI:
             fluidIndexing_temp = self.comm.allgather(fluidIndexing_temp)
             for ii in range(len(fluidIndexing_temp)):
@@ -427,10 +421,6 @@ class AdjointInterface:
             self.comm.Gatherv(sendbuf=bufXCoor, recvbuf=(self.globalFluidInterfaceXcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYCoor, recvbuf=(self.globalFluidInterfaceYcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidInterfaceZcoor, self.sendCounts), root=0)
-            #if myid == 0:
-                #print("Gathered array X: {}".format(self.globalFluidInterfaceXcoor))
-                #print("Gathered array Y: {}".format(self.globalFluidInterfaceYcoor))
-                #print("Gathered array Z: {}".format(self.globalFluidInterfaceZcoor))
 
         else:
             self.fluidIndexing = fluidIndexing_temp.copy()
@@ -445,9 +435,6 @@ class AdjointInterface:
                 self.globalFluidCoordinates[i][0] = self.globalFluidInterfaceXcoor[i]
                 self.globalFluidCoordinates[i][1] = self.globalFluidInterfaceYcoor[i]
                 self.globalFluidCoordinates[i][2] = self.globalFluidInterfaceZcoor[i]
-
-            print(self.globalFluidCoordinates.shape)
-            print(self.globalSolidCoordinates.shape)
 
         del fluidIndexing_temp, localFluidInterface_array_X_init, \
             localFluidInterface_array_Y_init, localFluidInterface_array_Z_init
@@ -523,7 +510,6 @@ class AdjointInterface:
 
             # Initialize the global load array
             if myid == self.rootProcess:
-                print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
                 self.globalFluidLoadX = np.empty(sum(self.sendCounts))
                 self.globalFluidLoadY = np.empty(sum(self.sendCounts))
                 self.globalFluidLoadZ = np.empty(sum(self.sendCounts))
@@ -532,11 +518,6 @@ class AdjointInterface:
             self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalFluidLoadX, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalFluidLoadY, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalFluidLoadZ, self.sendCounts), root=0)
-
-            # if myid == 0:
-            #     print("Gathered array X: {}".format(self.globalFluidLoadX))
-            #     print("Gathered array Y: {}".format(self.globalFluidLoadY))
-            #     print("Gathered array Z: {}".format(self.globalFluidLoadZ))
 
         else:
             self.globalFluidLoadX = localFluidLoadX.copy()
@@ -558,34 +539,6 @@ class AdjointInterface:
             self.globalSolidLoadZ = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadZ)
 
         # ---> Output: self.globalSolidLoadX, self.globalSolidLoadY, self.globalSolidLoadZ
-
-            outF = open("loadsFlowAdjoint.txt", "w")
-            index = 0
-            for i in self.globalFluidLoadX:
-                outF.write(str(index))
-                outF.write("\t")
-                outF.write(str(self.globalFluidLoadX[index]))
-                outF.write("\t")
-                outF.write(str(self.globalFluidLoadY[index]))
-                outF.write("\t")
-                outF.write(str(self.globalFluidLoadZ[index]))
-                outF.write("\n")
-                index += 1
-            outF.close()
-
-            outF = open("loadsFEAAdjoint.txt", "w")
-            index = 0
-            for i in self.globalSolidLoadZ:
-                outF.write(str(index))
-                outF.write("\t")
-                outF.write(str(self.globalSolidLoadX[index]))
-                outF.write("\t")
-                outF.write(str(self.globalSolidLoadY[index]))
-                outF.write("\t")
-                outF.write(str(self.globalSolidLoadZ[index]))
-                outF.write("\n")
-                index += 1
-            outF.close()
 
         ################################################################################################################
         # --- STEP 3: Check conservation
@@ -620,7 +573,6 @@ class AdjointInterface:
                 SolidSolver.SetLoads(iVertex, self.globalSolidLoadX[iVertex],
                                               self.globalSolidLoadY[iVertex],
                                               self.globalSolidLoadZ[iVertex])
-                #print(iVertex, self.globalSolidLoadX[iVertex], self.globalSolidLoadY[iVertex])
 
 
 
@@ -684,7 +636,6 @@ class AdjointInterface:
 
             # Initialize the global load array
             if myid == self.rootProcess:
-                print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
                 self.globalDispFlowAdjointX = np.empty(sum(self.sendCounts))
                 self.globalDispFlowAdjointY = np.empty(sum(self.sendCounts))
                 self.globalDispFlowAdjointZ = np.empty(sum(self.sendCounts))
@@ -693,11 +644,6 @@ class AdjointInterface:
             self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalDispFlowAdjointX, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalDispFlowAdjointY, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalDispFlowAdjointZ, self.sendCounts), root=0)
-
-            # if myid == 0:
-            #     print("Gathered array X: {}".format(self.globalFluidLoadX))
-            #     print("Gathered array Y: {}".format(self.globalFluidLoadY))
-            #     print("Gathered array Z: {}".format(self.globalFluidLoadZ))
 
         else:
             self.globalDispFlowAdjointX = localDispFlowAdjointX.copy()
@@ -715,56 +661,10 @@ class AdjointInterface:
             self.globalDispSolidAdjointY = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointY)
             self.globalDispSolidAdjointZ = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointZ)
 
-            outF = open("dispFlowAdjoint.txt", "w")
-            index = 0
-            for i in self.globalFluidLoadX:
-                outF.write(str(index))
-                outF.write("\t")
-                outF.write(str(self.globalDispFlowAdjointX[index]))
-                outF.write("\t")
-                outF.write(str(self.globalDispFlowAdjointY[index]))
-                outF.write("\t")
-                outF.write(str(self.globalDispFlowAdjointZ[index]))
-                outF.write("\n")
-                index += 1
-            outF.close()
-
-            outF = open("dispFEAAdjoint.txt", "w")
-            index = 0
-            for i in self.globalDispSolidAdjointX:
-                outF.write(str(index))
-                outF.write("\t")
-                outF.write(str(self.globalDispSolidAdjointX[index]))
-                outF.write("\t")
-                outF.write(str(self.globalDispSolidAdjointY[index]))
-                outF.write("\t")
-                outF.write(str(self.globalDispSolidAdjointZ[index]))
-                outF.write("\n")
-                index += 1
-            outF.close()
-
         # ---> Output: self.globalSolidLoadX, self.globalSolidLoadY, self.globalSolidLoadZ
 
         ################################################################################################################
-        # --- STEP 3: Check conservation
-        ################################################################################################################
-
-        # --- Check for total force conservation after interpolation
-        # if myid == self.rootProcess:
-        #     WSX = self.globalSolidLoadX.dot(self.globalDispSolidAdjointX)
-        #     WSY = self.globalSolidLoadY.dot(self.globalDispSolidAdjointY)
-        #     WSZ = self.globalSolidLoadZ.dot(self.globalDispSolidAdjointZ)
-        #
-        #     WFX = self.globalFluidLoadX.dot(localDispFlowAdjointX)
-        #     WFY = self.globalFluidLoadY.dot(localDispFlowAdjointY)
-        #     WFZ = self.globalFluidLoadZ.dot(localDispFlowAdjointZ)
-        #
-        #     self.MPIPrint("Checking f/s adjoint interface conservation...")
-        #     self.MPIPrint('Solid side (Wx_Adj, Wy_Adj, Wz_Adj) = ({}, {}, {})'.format(WSX, WSY, WSZ))
-        #     self.MPIPrint('Fluid side (Wx_Adj, Wy_Adj, Wz_Adj) = ({}, {}, {})'.format(WFX, WFY, WFZ))
-
-        ################################################################################################################
-        # --- STEP 4: Transfer to the structural solver
+        # --- STEP 3: Transfer to the structural solver
         # --- pyBeam runs in single core, so there is no need to deal with the parallelization
         ################################################################################################################
 
@@ -825,11 +725,6 @@ class AdjointInterface:
                 self.globalSolidLoadSensY[iVertex] = sensY
                 self.globalSolidLoadSensZ[iVertex] = sensZ
 
-                # Compute the relaxed, interface displacements
-                loadSensX[iVertex] = sensX
-                loadSensY[iVertex] = sensY
-                loadSensZ[iVertex] = sensZ
-
         ################################################################################################################
         # --- STEP 2: Interpolate
         ################################################################################################################
@@ -838,9 +733,9 @@ class AdjointInterface:
 
         if myid == self.rootProcess:
 
-            self.globalFluidLoadSensX = MLSSolver.interpolation_matrix.dot(loadSensX)
-            self.globalFluidLoadSensY = MLSSolver.interpolation_matrix.dot(loadSensY)
-            self.globalFluidLoadSensZ = MLSSolver.interpolation_matrix.dot(loadSensZ)
+            self.globalFluidLoadSensX = MLSSolver.interpolation_matrix.dot(self.globalSolidLoadSensX)
+            self.globalFluidLoadSensY = MLSSolver.interpolation_matrix.dot(self.globalSolidLoadSensY)
+            self.globalFluidLoadSensZ = MLSSolver.interpolation_matrix.dot(self.globalSolidLoadSensZ)
 
         # ---> Output: self.globalFluidDispX, self.globalFluidDispY, self.globalFluidDispZ
 
@@ -858,10 +753,6 @@ class AdjointInterface:
             self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensX, self.sendCounts), recvbuf=localFluidLoadSensX, root=0)
             self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensY, self.sendCounts), recvbuf=localFluidLoadSensY, root=0)
             self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensZ, self.sendCounts), recvbuf=localFluidLoadSensZ, root=0)
-
-            # print("rank: {}, local_array X: {}".format(myid, localFluidDispX))
-            # print("rank: {}, local_array Y: {}".format(myid, localFluidDispY))
-            # print("rank: {}, local_array Z: {}".format(myid, localFluidDispZ))
 
         else:
             localFluidLoadSensX = self.globalFluidLoadSensX.copy()
@@ -900,7 +791,7 @@ class AdjointInterface:
         self.MPIPrint('* Begin steady FSI computation *')
         self.MPIPrint('********************************\n')
 
-        self.MPIPrint('\n*************** Enter Block Gauss Seidel (BGS) method for strong coupling FSI ***************')
+        self.MPIPrint('\n*********** Enter Block Gauss Seidel (BGS) method for strong coupling adjoint FSI ************')
 
         # --- External FSI loop --- #
         self.FSIIter = 0
@@ -915,7 +806,7 @@ class AdjointInterface:
 
             if self.FSIIter > 0:
                 # --- Surface displacements interpolation and communication ---#
-                self.MPIPrint('\n##### Transferring displacements\n')
+                self.MPIPrint('\n##### Transferring fluid traction adjoint\n')
                 self.MPIBarrier()
                 self.transferFlowLoadAdjoint(FSIconfig, FluidSolver, SolidSolver, MLSSolver)
 
@@ -950,11 +841,6 @@ class AdjointInterface:
                 SolidSolver.RunAdjoint()
 
             self.FSIIter += 1
-
-            # Move the restart file to a solution file
-            if myid is 0:
-                new_name_flow = "./Output/adjoint_flow_" + str("{:02d}".format(self.FSIIter)) + ".vtk"
-                shutil.move("adjoint.vtk", new_name_flow)
 
         self.MPIBarrier()
 
