@@ -490,7 +490,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       for (jVertex = 0; jVertex < Buffer_Receive_nLinkedNodes[iVertex]; jVertex++){
         iTmp = uptr[ jVertex ];
         for (kVertex = 0; kVertex < nGlobalVertex; kVertex++){
-          if( Buffer_Receive_GlobalPoint[kVertex] == iTmp ){
+          if( Buffer_Receive_GlobalPoint[kVertex] == long(iTmp) ){
             uptr[ jVertex ] = kVertex;
             count++;
             break;
@@ -765,7 +765,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   unsigned long Point_Target = 0;
 
   unsigned long iVertexDonor, iPointDonor = 0;
-  unsigned long jGlobalPoint = 0;
   int iProcessor;
 
   unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0;
@@ -889,10 +888,10 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
               inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
               dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
               // Match node on the face to the correct global index
-              jGlobalPoint=donor_geometry->node[dPoint]->GetGlobalIndex();
+              long jGlobalPoint = donor_geometry->node[dPoint]->GetGlobalIndex();
               for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
                 for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-                  if (jGlobalPoint ==Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
+                  if (jGlobalPoint == Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
                     Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
                     Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
                   }
@@ -919,10 +918,10 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
             inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
             dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
             // Match node on the face to the correct global index
-            jGlobalPoint=donor_geometry->node[dPoint]->GetGlobalIndex();
+            long jGlobalPoint = donor_geometry->node[dPoint]->GetGlobalIndex();
             for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
               for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-                if (jGlobalPoint ==Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
+                if (jGlobalPoint == Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
                   Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
                   Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
                 }
@@ -1300,7 +1299,6 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   unsigned int nNodes=0, iNodes=0;
   unsigned long nVertexDonor = 0, nVertexTarget= 0;
   unsigned long Point_Donor = 0;
-  unsigned long Global_Point = 0;
   unsigned long pGlobalPoint = 0;
   int iProcessor;
 
@@ -1449,7 +1447,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
       iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
       if (target_geometry->node[iPoint]->GetDomain()) {
-        Global_Point = target_geometry->node[iPoint]->GetGlobalIndex();
+        long Global_Point = target_geometry->node[iPoint]->GetGlobalIndex();
         nNodes = 0;
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           for (iFace = 0; iFace < Buffer_Receive_nFace_Donor[iProcessor]; iFace++) {
@@ -1474,7 +1472,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
             iNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1]- (unsigned int)faceindex;
             for (iTarget=0; iTarget<iNodes; iTarget++) {
               if (Global_Point == Buffer_Receive_GlobalPoint[faceindex+iTarget]) {
-                coeff =Buffer_Receive_Coeff[faceindex+iTarget];
+                coeff = Buffer_Receive_Coeff[faceindex+iTarget];
                 pGlobalPoint = Buffer_Receive_FaceNodes[faceindex+iTarget];
                 target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,pGlobalPoint);
                 target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,coeff);
@@ -1535,7 +1533,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   unsigned short iDim, nDim;
   
   unsigned long ii, jj, *uptr;
-  unsigned long vPoint, dPoint;
+  unsigned long vPoint;
   unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
   unsigned long nAlreadyVisited, nToVisit, StartVisited;
   
@@ -1711,7 +1709,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
           
           /*--- Contruct information regarding the target cell ---*/
           
-          dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
+          long dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
           for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
             if( dPoint == Target_GlobalPoint[jVertexTarget] )
               break;
@@ -1943,7 +1941,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
           for (iDim = 0; iDim < nDim; iDim++)
             Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
           
-          dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
+          long dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
           for (target_iPoint = 0; target_iPoint < nGlobalVertex_Target; target_iPoint++){
             if( dPoint == Target_GlobalPoint[target_iPoint] )
               break;
