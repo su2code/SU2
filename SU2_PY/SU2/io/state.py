@@ -92,9 +92,11 @@ def State_Factory(state=None,config=None):
             MESH: mesh.su2
             DIRECT: solution_flow.dat
             ADJOINT_DRAG: solution_adj_cd.dat
+            FLOW_META: flow.meta
             MULTIPOINT_DIRECT: [solution_flow_point0.dat solution_flow_point1.dat, ...]
             MULTIPOINT_ADJOINT_DRAG: [solution_adj_point0_cd.dat solution_adj_point1_cd.dat, ...]
             MULTIPOINT_MESH_FILENAME: [mesh_0.su2, mesh_1.su2, ... ]
+            MULTIPOINT_FLOW_META: [flow_point0.meta, flow_point1.meta, ...]
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
@@ -326,6 +328,7 @@ class State(ordered_bunch):
 
         register_file('MESH',mesh_name)
 
+        # direct solutions
         if restart:
             register_file('DIRECT',direct_name)
             if multipoint:
@@ -333,6 +336,13 @@ class State(ordered_bunch):
                 name_list = expand_zones(name_list,config)
                 register_file('MULTIPOINT_DIRECT',name_list)
         
+        # flow meta data file
+        if restart:
+            register_file('FLOW_META','flow.meta')
+            if multipoint:
+                name_list = expand_multipoint('flow.meta',config)
+                register_file('MULTIPOINT_FLOW_META',name_list)
+
         # adjoint solutions
         if restart:
             for obj, suff in adj_map.items():
@@ -355,9 +365,6 @@ class State(ordered_bunch):
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
             register_file('TARGET_HEATFLUX',targetheatflux_name)
-        
-        # flow meta data file
-        register_file('FLOW_META', 'flow.meta')
 
         return
     

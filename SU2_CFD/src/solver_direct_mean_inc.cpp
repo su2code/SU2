@@ -84,15 +84,6 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   Smatrix = NULL; Cvector = NULL;
   Preconditioner = NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-  
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
-  
   FluidModel = NULL;
 
   SlidingState     = NULL;
@@ -202,15 +193,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Smatrix = NULL; Cvector = NULL;
   Preconditioner = NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
-  
   /*--- Fluid model pointer initialization ---*/
 
   FluidModel = NULL;
@@ -497,10 +479,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Total_CT       = 0.0;    Total_CQ           = 0.0;    Total_CMerit         = 0.0;
   Total_MaxHeat  = 0.0;    Total_Heat         = 0.0;    Total_ComboObj       = 0.0;
   Total_CpDiff   = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc = 0.0;
-  AoA_Prev       = 0.0;
-  Total_CL_Prev  = 0.0;    Total_CD_Prev      = 0.0;
-  Total_CMx_Prev = 0.0;    Total_CMy_Prev     = 0.0;     Total_CMz_Prev      = 0.0;
-
+  
   /*--- Read farfield conditions ---*/
 
   Density_Inf     = config->GetDensity_FreeStreamND();
@@ -567,11 +546,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       InitVertexTractionAdjointContainer(geometry, config);
 
   }
-
-  /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-
-  if (config->GetFixed_CL_Mode())
-    Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -806,8 +780,6 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
   
   if (FluidModel != NULL) delete FluidModel;
   
@@ -1540,13 +1512,8 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-  bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool outlet           = ((config->GetnMarker_Outlet() != 0));
-
-  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
-  
-  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
 
   /*--- Set the primitive variables ---*/
   
@@ -4273,132 +4240,6 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
 #endif
 }
 
-void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
-                                   CConfig *config, unsigned short iMesh, bool Output) {
-  
-  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3] = {0.0,0.0,0.0},
-  AoA_inc = 0.0, Vel_Infty_Mag, Old_AoA;
-  
-  unsigned short iDim;
-  
-  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long Update_Alpha = config->GetUpdate_Alpha();
-  
-  unsigned long InnerIter       = config->GetInnerIter();
-  bool write_heads = ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0));
-  su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
-  bool Update_AoA             = false;
-  
-  if (InnerIter == 0) AoA_Counter = 0;
-  
-  /*--- Only the fine mesh level should check the convergence criteria ---*/
-  
-  if ((iMesh == MESH_0) && Output) {
-    
-    /*--- Initialize the update flag to false ---*/
-    
-    Update_AoA = false;
-    
-    /*--- Reevaluate Angle of Attack at a fixed number of iterations ---*/
-    
-    if ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0)) {
-      AoA_Counter++;
-      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
-      Update_AoA = true;
-    }
-    
-    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
-    
-    config->SetUpdate_AoA(Update_AoA);
-    
-  } else {
-    Update_AoA = config->GetUpdate_AoA();
-  }
-  
-  if (Update_AoA && Output) {
-    
-    /*--- Retrieve the specified target CL value. ---*/
-    
-    Target_CL = config->GetTarget_CL();
-    
-    /*--- Retrieve the old AoA (radians) ---*/
-    
-    AoA_old = config->GetAoA()*PI_NUMBER/180.0;
-    
-    /*--- Estimate the increment in AoA based on dCL_dAlpha (radians) ---*/
-    
-    AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
-    
-    /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
-    
-    if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
-    else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
-    
-    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
-    
-    if (iMesh == MESH_0) {
-      config->SetAoA(AoA*180.0/PI_NUMBER);
-    }
-    
-    /*--- Update the freestream velocity vector at the farfield ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vel_Infty[iDim] = GetVelocity_Inf(iDim);
-    
-    /*--- Compute the magnitude of the free stream velocity ---*/
-    
-    Vel_Infty_Mag = 0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vel_Infty_Mag += Vel_Infty[iDim]*Vel_Infty[iDim];
-    Vel_Infty_Mag = sqrt(Vel_Infty_Mag);
-    
-    /*--- Compute the new freestream velocity with the updated AoA ---*/
-    
-    if (nDim == 2) {
-      Vel_Infty[0] = cos(AoA)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(AoA)*Vel_Infty_Mag;
-    }
-    if (nDim == 3) {
-      Vel_Infty[0] = cos(AoA)*cos(Beta)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(Beta)*Vel_Infty_Mag;
-      Vel_Infty[2] = sin(AoA)*cos(Beta)*Vel_Infty_Mag;
-    }
-    
-    /*--- Store the new freestream velocity vector for the next iteration ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_Inf[iDim] = Vel_Infty[iDim];
-    }
-    
-    /*--- Only the fine mesh stores the updated values for velocity in config ---*/
-    
-    if (iMesh == MESH_0) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-    }
-    
-    /*--- Output some information to the console with the headers ---*/
-    
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && !config->GetDiscrete_Adjoint()) {
-      Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      
-      cout.precision(7);
-      cout.setf(ios::fixed, ios::floatfield);
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-      cout << "CL: " << Total_CL;
-      cout << " (target: " << config->GetTarget_CL() <<")." << endl;
-      cout.precision(4);
-      cout << "Previous AoA: " << Old_AoA << " deg";
-      cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
-
-      cout << "-------------------------------------------------------------------------" << endl << endl;
-    }
-    
-  }
-  
-}
-
 void CIncEulerSolver::SetInletAtVertex(su2double *val_inlet,
                                        unsigned short iMarker,
                                        unsigned long iVertex) {
@@ -4559,8 +4400,6 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
     switch(Kind_ObjFunc) {
       case DRAG_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
-        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
         break;
       case LIFT_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
@@ -4573,15 +4412,12 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
         break;
       case MOMENT_X_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
         break;
       case MOMENT_Y_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
         break;
       case MOMENT_Z_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
         break;
       case FORCE_X_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
@@ -7135,7 +6971,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
+  CSkinFriction = NULL; HF_Visc = NULL;
   
   /*--- Set the gamma value ---*/
   
@@ -7512,16 +7348,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CT       = 0.0;  Total_CQ           = 0.0;  Total_CMerit         = 0.0;
   Total_MaxHeat  = 0.0;  Total_Heat         = 0.0;  Total_ComboObj       = 0.0;
   Total_CpDiff   = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc = 0.0;
-  AoA_Prev       = 0.0;
-  Total_CL_Prev  = 0.0;  Total_CD_Prev      = 0.0;
-  Total_CMx_Prev = 0.0;  Total_CMy_Prev     = 0.0;  Total_CMz_Prev       = 0.0;
-
-  /*--- Coefficients for fixed lift mode. ---*/
   
-  AoA_Prev = 0.0;
-  Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
-
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf     = config->GetDensity_FreeStreamND();
@@ -7593,11 +7420,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       InitVertexTractionAdjointContainer(geometry, config);
 
   }
-
-  /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-
-  if (config->GetFixed_CL_Mode())
-    Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -7692,8 +7514,6 @@ CIncNSSolver::~CIncNSSolver(void) {
   if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
   if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
 
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
-  
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -7731,15 +7551,10 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool fixed_cl             = config->GetFixed_CL_Mode();
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool outlet               = ((config->GetnMarker_Outlet() != 0));
   bool energy               = config->GetEnergy_Equation();
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
-  
-  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
-  
   /*--- Set the primitive variables ---*/
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);

@@ -902,6 +902,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
+  addBoolOption("ADJ_FSI", FSI_Problem, NO);
+  
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -1107,8 +1109,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DCM_DIH", dCM_diH, 0.05);
-  /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
-  addUnsignedLongOption("UPDATE_ALPHA", Update_Alpha, 5);
+  /* DESCRIPTION: Maximum number of iterations between AoA updates for fixed CL problem. */
+  addUnsignedLongOption("UPDATE_AOA_ITER_LIMIT", Update_AoA_Iter_Limit, 200);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_IH", Update_iH, 5);
   /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
@@ -1704,7 +1706,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
-  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
@@ -2006,8 +2008,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
-  /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Deform limit in m or inches */
@@ -2887,8 +2887,7 @@ void CConfig::SetnZone(){
     
     nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
   
-  }
-  
+  }  
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -2960,9 +2959,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Initialize the AoA and Sideslip variables for the incompressible
-   solver. This is typically unused (often internal flows). This also
-   is necessary to avoid any issues with the AoA adjustments for the
-   compressible code for fixed lift mode (including the adjoint). ---*/
+   solver. This is typically unused (often internal flows). Also fixed CL
+   mode for incompressible flows is not implemented ---*/
 
   if (Kind_Solver == INC_EULER ||
       Kind_Solver == INC_NAVIER_STOKES ||
@@ -2989,6 +2987,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     SetAoA(alpha);
     SetAoS(beta);
+
+    if (Fixed_CL_Mode) {
+      SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
+    }
     
   }
 
@@ -3141,7 +3143,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
+  /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
   
   if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
     Discard_InFiles = false;
@@ -3150,27 +3152,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
       (TimeMarching == TIME_STEPPING)) { nMGLevels = 0; }
-
-  /*--- If Fluid Structure Interaction, set the solver for each zone.
-   *--- ZONE_0 is the zone of the fluid.
-   *--- All the other zones are structure.
-   *--- This will allow us to define multiple physics structural problems */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
-
-    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
-    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
-    // Discrete adjoint linear solver
-    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
-    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
-
-    Multizone_Residual = true;
-  }
-  else { FSI_Problem = false; }
   
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
@@ -3394,6 +3375,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
   }
+
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
   if (Kind_SU2 != SU2_DEF) {
@@ -3926,7 +3908,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Evaluate when the Cl should be evaluated ---*/
   
-  Iter_Fixed_CL        = SU2_TYPE::Int(nInnerIter / (su2double(Update_Alpha)+1));
   Iter_Fixed_CM        = SU2_TYPE::Int(nInnerIter / (su2double(Update_iH)+1));
   Iter_Fixed_NetThrust = SU2_TYPE::Int(nInnerIter / (su2double(Update_BCThrust)+1));
 
@@ -3937,7 +3918,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
-    Iter_Fixed_CL = SU2_TYPE::Int(su2double (Iter_Fixed_CL) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_CM = SU2_TYPE::Int(su2double (Iter_Fixed_CM) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
@@ -3950,7 +3930,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kappa_Flow[1] = Kappa_AdjFlow[1];
   }
   
-  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nInnerIter+1; Update_Alpha = 0; }
+  if (Update_AoA_Iter_Limit == 0 && Fixed_CL_Mode) { 
+    SU2_MPI::Error("ERROR: Please specify non-zero UPDATE_AOA_ITER_LIMIT.", CURRENT_FUNCTION); 
+  }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nInnerIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nInnerIter+1; Update_BCThrust = 0; }
 
@@ -4231,16 +4213,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 
-  /*--- If it is a fixed mode problem, then we will add 100 iterations to
+  /*--- If it is a fixed mode problem, then we will add Iter_dCL_dAlpha iterations to
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
-  	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
-    ConvCriteria = RESIDUAL;
-  		nInnerIter += Iter_dCL_dAlpha;
-  		MinLogResidual = -24;
-  	}
+    if (Fixed_CL_Mode) nInnerIter += Iter_dCL_dAlpha;
+
+    if (Fixed_CM_Mode) {
+      nInnerIter += Iter_dCL_dAlpha;
+      ConvCriteria = RESIDUAL;
+      MinLogResidual = -24;
+    }
   }
+
+  /* --- Set Finite Difference mode to false by default --- */
+
+  Finite_Difference_Mode = false;
 
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
@@ -6064,10 +6052,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 	else {
 		if (Time_Domain) {
-			cout << "Static structural analysis." << endl; 
+            cout << "Dynamic structural analysis."<< endl;
+            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
 		 } else {
-			cout << "Dynamic structural analysis."<< endl;
-			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+            cout << "Static structural analysis." << endl;
 		}
 	}
 
