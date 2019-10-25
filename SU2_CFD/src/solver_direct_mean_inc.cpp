@@ -4589,7 +4589,7 @@ su2double CIncEulerSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short i
         ConstraintFunction = config->GetSurface_PressureDrop(0);
         break;
       case CUSTOM_OBJFUNC:
-        ConstraintFunction = config->GetSurface_FlowUniformityIndex(0);
+        ConstraintFunction = Total_Custom_ObjFunc;
         break;
       default:
         break;

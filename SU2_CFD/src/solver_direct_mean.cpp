@@ -8746,7 +8746,6 @@ su2double CEulerSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iCon
         ConstraintFunction = config->GetSurface_SecondOverUniform(0);
         break;
       case CUSTOM_OBJFUNC:
-        Total_Custom_ObjFunc=config->GetSurface_FlowUniformityIndex(1);
         ConstraintFunction = Total_Custom_ObjFunc;
         break;
       default:
