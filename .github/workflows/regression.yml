@@ -1,10 +1,6 @@
 name: Regression Testing
 
 on: 
-  push:
-    branches-ignore:
-      - 'develop'
-      - 'master'
   pull_request:
     branches: 
       - 'develop'
