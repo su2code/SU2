@@ -919,7 +919,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631530] #last 4 columns
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631543] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
