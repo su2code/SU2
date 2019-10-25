@@ -780,6 +780,12 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
   
+  /* Experimental Comments
+   *
+   * Wir müssten im Prinzip hier mit den Spalten der Systemmatrix initialisieren??
+   *
+   */
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
