@@ -189,6 +189,8 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
   /*--- Store coefficients of momentum equation ---*/
   Mom_Coeff = new su2double [nDim];
   Mom_Coeff_nb = new su2double [nDim];
+  
+  strong_bc = false;
 
 }
 
@@ -312,6 +314,8 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
   Mom_Coeff = new su2double [nDim];
   Mom_Coeff_nb = new su2double [nDim];
   
+  strong_bc = false;
+  
 
 }
 
@@ -414,6 +418,8 @@ CPoissonVariable::CPoissonVariable(su2double val_SourceTerm, unsigned short val_
     Solution[iVar] = 0.0;
     Solution_Old[iVar] = 0.0;
   }
+  
+  strong_bc = false;
 }
 
 CPoissonVariable::~CPoissonVariable(void) {

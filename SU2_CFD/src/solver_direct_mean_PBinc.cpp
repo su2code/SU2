@@ -890,6 +890,9 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   }
   
   SetResMassFluxZero(); 
+  
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+      node[iPoint]->ResetStrongBC();
 
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -927,8 +930,7 @@ unsigned long iPoint, ErrorCounter = 0;
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       SetPrimitive_Gradient_LS(geometry, config);
-    }
-    
+    }  
   
 }
 
@@ -3415,7 +3417,7 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
 void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
+  unsigned short iVar, iDim;
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol,Mom_Coeff[3];
 
@@ -3432,6 +3434,17 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
   /*--- Build implicit system ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	  
+    /*--- Workaround to deal with nodes that are part of multiple boundaries and where
+     *    one face might be strong BC and another weak BC (mostly for farfield boundary 
+     *    where the boundary face is strong or weak depending on local flux. ---*/
+    if (node[iPoint]->GetStrongBC()) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			Jacobian.DeleteValsRowi(total_index);
+			LinSysRes.SetBlock_Zero(iPoint, iVar);
+		}
+	}
 
 
     /*--- Read the volume ---*/
@@ -3451,7 +3464,7 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
         local_Res_TruncError[iVar] = 0.0;
       }
     }
-    
+        
     /*--- Read the residual ---*/
     
     local_Res_TruncError = node[iPoint]->GetResTruncError();
@@ -3843,16 +3856,6 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		MassFlux_Part += MeanDensity*Vel_Avg*Normal[iDim];
     }
     
-    if (dynamic_grid) {
-		MeshVel_i = geometry->node[iPoint]->GetGridVel();
-		MeshVel_j = geometry->node[jPoint]->GetGridVel();
-		ProjGridVelFlux = 0.0; 
-	  for (iDim = 0; iDim < nDim; iDim++) { 
-		  ProjGridVelFlux   += 0.5*MeanDensity*(MeshVel_i[iDim] + MeshVel_j[iDim])*Normal[iDim]; 
-	  }
-	  //MassFlux_Part -= ProjGridVelFlux;
-	}
-	
 	/*------- Rhie-Chow interpolation ---------*/
 	
 	dist_ij = 0; proj_vector_ij = 0; dist_ij_2 = 0.0;
@@ -4164,7 +4167,6 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff,**Grad_i,**Grad_j;
   su2double *Pressure_Correc, Current_Pressure, factor, *Flow_Dir;
   su2double MassFlux_Part, Poissonval_j, Poissonval_i, Correction, small = 1E-6, ur;
-  
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i, PCorr_Ref, Coeff_Mom;
   string Marker_Tag;
   unsigned short Kind_Outlet;
@@ -4278,20 +4280,11 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		 case FAR_FIELD:         
          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           if (geometry->node[iPoint]->GetDomain()) {		
-		     
-		     geometry->vertex[iMarker][iVertex]->GetNormal(Normal); 
-		        
-		     MassFlux_Part = 0.0;
-		     for (iDim = 0; iDim < nDim; iDim++) 
-               MassFlux_Part -= node[iPoint]->GetDensity()*(node[iPoint]->GetVelocity(iDim))*Normal[iDim];
-             inflow = false;
-             if ((MassFlux_Part < 0.0) && (fabs(MassFlux_Part) > EPS)) inflow = true;
-             if (inflow) {
+           if (geometry->node[iPoint]->GetDomain()) {
+		      if (node[iPoint]->GetStrongBC()) {
                 for (iDim = 0; iDim < nDim; iDim++)
-                  vel_corr[iPoint][iDim] = 0.0;
-   			  }
-			  //else
+                  vel_corr[iPoint][iDim] = 0.0;   
+   			  }			  
 			  Pressure_Correc[iPoint] = PCorr_Ref;
 		   }
          }
@@ -4766,22 +4759,24 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
       
       Face_Flux = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) {
-		//Face_Flux -= 0.5*node[iPoint]->GetDensity()*(V_domain[iDim+1] + V_infty[iDim+1])*Normal[iDim];
 		Face_Flux -= node[iPoint]->GetDensity()*V_domain[iDim+1]*Normal[iDim];
 	  }
 	  
 	  Flux0 = 0.5*(Face_Flux + fabs(Face_Flux));
 	  Flux1 = 0.5*(Face_Flux - fabs(Face_Flux));
 	  
-      for (iVar = 0; iVar < nVar; iVar++) {
-	     Residual[iVar] = Flux0*V_domain[iVar+1] ;//+ Flux1*V_infty[iDim+1];
-	  }
 	  inflow = false;
 	  if ((Face_Flux < 0.0) && (fabs(Face_Flux) > EPS)) inflow = true;
-           
+	  
+      for (iVar = 0; iVar < nVar; iVar++) {
+	     Residual[iVar] = Flux0*V_domain[iVar+1] ;
+	  }
+	               
 	  if (inflow) {
 	      for (iDim = 0; iDim < nDim; iDim++)
               LinSysRes.SetBlock_Zero(iPoint, iDim);
+	      
+	      node[iPoint]->SetStrongBC();
 	  }
 	  else {   
            LinSysRes.AddBlock(iPoint, Residual);
@@ -4964,6 +4959,8 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
        * Fix the velocity and remove any contribution to the residual at this node. ---*/
       
       node[iPoint]->SetVelocity_Old(V_inlet);
+      
+      node[iPoint]->SetStrongBC();
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim);
@@ -6049,6 +6046,8 @@ void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     StrainMag_Max = max(StrainMag_Max, StrainMag);
     Omega_Max = max(Omega_Max, Omega);
     
+    node[iPoint]->ResetStrongBC();
+    
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -6507,6 +6506,8 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim);
       //node[iPoint]->SetVel_ResTruncError_Zero();
+      
+      node[iPoint]->SetStrongBC();
 
       /*--- Enforce the no-slip boundary condition in a strong way by
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/

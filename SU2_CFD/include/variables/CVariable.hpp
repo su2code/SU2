@@ -2674,6 +2674,10 @@ public:
   
   inline virtual void SetMassFluxZero() {}
   
+  inline virtual void SetStrongBC() {}
+  
+  inline virtual void ResetStrongBC() {}
+  
   inline virtual void SetMassFlux(su2double val_MassFlux) {}
   
   inline virtual void AddMassFlux(su2double val_MassFlux) {}
@@ -2699,6 +2703,8 @@ public:
   inline virtual void Set_Mom_Coeff_nb(unsigned short val_Var, su2double val_Mom_Coeff) {}
   
   inline virtual su2double GetMassFlux() { return 0.0; }
+  
+  inline virtual bool GetStrongBC() { return false; }
   
   inline virtual su2double GetPoisson_Coeff() { return 0.0; }
   

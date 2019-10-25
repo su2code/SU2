@@ -521,6 +521,18 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 	/*--- Initialize residual and solution at the ghost points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  
+	  
+	/*--- Workaround to deal with nodes that are part of multiple boundaries and where
+     *    one face might be strong BC and another weak BC (mostly for farfield boundary 
+     *    where the boundary face is strong or weak depending on local flux. ---*/
+    if (node[iPoint]->GetStrongBC()) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			Jacobian.DeleteValsRowi(total_index);
+			LinSysRes.SetBlock_Zero(iPoint, iVar);
+		}
+	}
+	  
 	 /*--- Read the residual ---*/
      local_Res_TruncError = node[iPoint]->GetResTruncError();
 
@@ -724,7 +736,7 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		     
 		      node[iPoint]->SetSolution(Residual);
 		      node[iPoint]->Set_OldSolution();
-		     
+		      node[iPoint]->SetStrongBC();
 		     if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
 				 Jacobian.DeleteValsRowi(iPoint);
 		     }
@@ -845,7 +857,7 @@ unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 		     
 		     node[iPoint]->SetSolution(Residual);
 		     node[iPoint]->Set_OldSolution();
-		     
+		     node[iPoint]->SetStrongBC();
 		     if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
 				 Jacobian.DeleteValsRowi(iPoint);
 		     }		     

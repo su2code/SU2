@@ -60,6 +60,7 @@ protected:
   su2double *Mom_Coeff;
   su2double *Mom_Coeff_nb;
   su2double *PrimitiveMGCorr;
+  bool strong_bc;
 
 public:
   
@@ -344,6 +345,12 @@ public:
   }
   
   inline void Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var) { Mom_Coeff_nb[val_Var] += val_coeff_nb;}
+  
+  inline void SetStrongBC() { strong_bc = true; }
+  
+  inline void ResetStrongBC() { strong_bc = false; }
+  
+  inline bool GetStrongBC() { return strong_bc; }
 
 };
 
@@ -357,6 +364,7 @@ public:
 class CPoissonVariable : public CVariable {
   su2double SourceTerm;
   su2double Poisson_Coeff;
+  bool strong_bc;
 public:
   
   /*!
@@ -385,5 +393,11 @@ public:
   inline void SetSourceTerm(su2double val_SourceTerm) { SourceTerm = val_SourceTerm ; }
   
   inline su2double GetSourceTerm() { return SourceTerm;}
+  
+  inline void SetStrongBC() { strong_bc = true; }
+  
+  inline bool GetStrongBC() { return strong_bc; }
+  
+  inline void ResetStrongBC() { strong_bc = false; }
   
 };

@@ -4767,7 +4767,6 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Update residual value ---*/
 
       LinSysRes.AddBlock(iPoint, Residual);
-      
      
       /*--- Convective Jacobian contribution for implicit integration ---*/
       
