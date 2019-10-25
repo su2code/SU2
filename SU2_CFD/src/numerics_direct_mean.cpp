@@ -1860,23 +1860,7 @@ void CUpwSLAU2_KEP_Flow::ComputeResidual(su2double *val_residual, su2double **va
   MeanEnthalpy = 0.5*(Enthalpy_i+Enthalpy_j);
   for (iDim = 0; iDim < nDim; iDim++)
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
-  
-  /*--- Get projected flux tensor for the central scheme---*/
-  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, val_residual_central);
-  
-  /*--- Dissipative part of the central scheme---*/
-  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
-  sc4 = sc2*sc2/4.0;
-  Epsilon_4 = Param_Kappa_4*sc4;
-  
-  /*--- Computes differences btw. Laplacians ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
-  
-  /*--- Now subtract the dissipative part ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_residual_central[iVar] -= Epsilon_4*Diff_Lapl[iVar]*MeanLambda;
-  
+    
   /*--- Sound speed and Projected Mach Number ---*/
   aF = 0.5 * (SoundSpeed_i + SoundSpeed_j);
   mL  = ProjVelocity_i/aF;
@@ -1929,11 +1913,9 @@ void CUpwSLAU2_KEP_Flow::ComputeResidual(su2double *val_residual, su2double **va
   }
 
   val_residual_upwind[nVar-1] = 0.5*(mF+fabs(mF))*(Enthalpy_i) + 0.5*(mF-fabs(mF))*(Enthalpy_j);
-
-  Dissipation_ij = 0.0;
   
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = ((1.- Dissipation_ij)*val_residual_central[iVar] + Dissipation_ij*val_residual_upwind[iVar]) * Area;
+    val_residual[iVar] = val_residual_upwind[iVar] * Area;
   
   /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
   if (implicit) {

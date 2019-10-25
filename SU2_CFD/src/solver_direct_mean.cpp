@@ -440,8 +440,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   
-  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
-      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -3409,7 +3408,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2 ||
                                config->GetKind_Upwind_Flow() == SLAU2_KEP );
-  bool slau2_kep        = config->GetKind_Upwind_Flow() == SLAU2_KEP;
   
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -3463,13 +3461,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Artificial dissipation ---*/
   
-  if ((center || slau2_kep) && !Output) {
+  if ( center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-    if ((slau2_kep) && (iMesh == MESH_0)) {
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -3814,23 +3809,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
       numerics->SetVelocity2_Inf(sqvel);
     }
-    
-    /*--- SLAU2 Kinetic Energy Preserving ---*/
-    
-    if (slau2_kep) {
-      /*--- Set number of neighbors ---*/
-      
-      numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
-          
-      /*--- Set the largest convective eigenvalue ---*/
-      
-      numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
-      
-      /*--- Set undivided laplacian an pressure based sensor ---*/
-      
-      numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
-    }
-    
+           
     /*--- Grid movement ---*/
     
     if (grid_movement)
@@ -3875,16 +3854,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-        if (slau2_kep){
-          if (iVar == (nDim + 2)){
-            Primitive_i[iVar] = V_i[iVar];
-            Primitive_j[iVar] = V_j[iVar];
-          }
-          else{
-            Primitive_i[iVar] = V_i[iVar] + 0.36 * Project_Grad_i;
-            Primitive_j[iVar] = V_j[iVar] + 0.36 * Project_Grad_j;
-          }
         }
       }
 
@@ -4007,6 +3976,36 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
+    /*--- SLAU2 Kinetic Energy Preserving ---*/
+    if (slau2_kep){
+      
+      /*--- Pressure, density, enthalpy and velocity at points i and j ---*/
+
+      su2double MeanPressure    = 0.5 * (V_i[nDim+1] + V_j[nDim+1]);
+      su2double MeanDensity     = 0.5 * (V_i[nDim+2] + V_j[nDim+2]);
+      su2double MeanEnthalpy    = 0.5 * (V_i[nDim+3] + V_j[nDim+3]);
+      su2double MeanVelocity[3] = {0.0, 0.0, 0.0};
+      su2double *Normal         = geometry->edge[iEdge]->GetNormal();
+      su2double ProjFlux[5]     = {0.0, 0.0, 0.0, 0.0, 0.0};
+      su2double Dissipation_ij  = 0.05;
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        MeanVelocity[iDim] = 0.5 * (V_i[iDim+1] + V_j[iDim+1]);
+      }
+      
+      /*--- Get projected flux tensor ---*/
+      numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
+      //numerics->GetInviscidProjFlux_SkewSym(V_i, V_j, Normal, ProjFlux);
+      
+//      if (kind_dissipation != NO_ROELOWDISS)
+//        numerics->SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        Res_Conv[iVar] = (1.- Dissipation_ij)*ProjFlux[iVar] + Dissipation_ij*Res_Conv[iVar];
+      
+    }
+
+    
     /*--- Update residual value ---*/
     
     LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -15371,8 +15370,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
   
-  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
-      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -16140,7 +16138,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2||
                                config->GetKind_Upwind_Flow() == SLAU2_KEP);
-  bool slau2_kep            = config->GetKind_Upwind_Flow() == SLAU2_KEP;
   
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -16171,13 +16168,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
  
   /*--- Artificial dissipation ---*/
 
-  if ((center || slau2_kep) && !Output) {
+  if (center  && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-    if ((slau2_kep) && (iMesh == MESH_0)) {
       SetUndivided_Laplacian(geometry, config);
     }
   }

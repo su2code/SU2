@@ -370,6 +370,74 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 
 }
 
+void CNumerics::GetInviscidProjFlux_SkewSym(su2double *val_primitive_i,
+                                    su2double *val_primitive_j,
+                                    su2double *val_normal,
+                                    su2double *val_Proj_Flux) {
+  
+  unsigned short iDim;
+  su2double Velocity_L[3] = {0.0,0.0,0.0};
+  su2double Velocity_R[3] = {0.0,0.0,0.0};
+    
+  /*--- Primitive variables at point i ---*/
+  su2double sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_L[iDim] = val_primitive_i[iDim+1];
+    sq_vel += Velocity_L[iDim]*Velocity_L[iDim];
+  }
+    
+  su2double Pressure_L   = val_primitive_i[nDim+1];
+  su2double Density_L    = val_primitive_i[nDim+2];
+  su2double Enthalpy_L   = val_primitive_i[nDim+3];
+  su2double Energy_L     = Enthalpy_L - Pressure_L/Density_L;
+  su2double SoundSpeed_L = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_L-0.5*sq_vel)));
+  
+  /*--- Primitive variables at point j ---*/
+  sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_R[iDim] = val_primitive_j[iDim+1];
+    sq_vel += Velocity_R[iDim]*Velocity_R[iDim];
+  }
+
+  su2double Pressure_R   = val_primitive_j[nDim+1];
+  su2double Density_R    = val_primitive_j[nDim+2];
+  su2double Enthalpy_R   = val_primitive_j[nDim+3];
+  su2double Energy_R     = Enthalpy_R - Pressure_R/Density_R;
+  su2double SoundSpeed_R = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_R-0.5*sq_vel)));
+
+  
+  if (nDim == 2){
+    val_Proj_Flux[0] = 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0])*val_normal[0];
+    val_Proj_Flux[1] = (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Pressure_L + Pressure_R))*val_normal[0];
+    val_Proj_Flux[2] = (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]))*val_normal[0];
+    val_Proj_Flux[4] = ((0.5*(Velocity_L[0]+Velocity_R[0])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Velocity_L[0]*Pressure_L + Velocity_R[0]*Pressure_R))*val_normal[0];
+
+    val_Proj_Flux[0] += 0.5*(Density_L*Velocity_L[1] + Density_R*Velocity_R[1])*val_normal[1];
+    val_Proj_Flux[1] += (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]))*val_normal[1];
+    val_Proj_Flux[2] += (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Pressure_L + Pressure_R))*val_normal[1];
+     val_Proj_Flux[4] += ((0.5*(Velocity_L[1]+Velocity_R[1])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Velocity_L[1]*Pressure_L + Velocity_R[1]*Pressure_R))*val_normal[1];
+  }
+  else{
+    val_Proj_Flux[0] = 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0])*val_normal[0];
+    val_Proj_Flux[1] = (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Pressure_L + Pressure_R))*val_normal[0];
+    val_Proj_Flux[2] = (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]))*val_normal[0];
+    val_Proj_Flux[3] = (0.5*(Velocity_L[2]+Velocity_R[2]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]))*val_normal[0];
+    val_Proj_Flux[4] = ((0.5*(Velocity_L[0]+Velocity_R[0])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Velocity_L[0]*Pressure_L + Velocity_R[0]*Pressure_R))*val_normal[0];
+
+    val_Proj_Flux[0] += 0.5*(Density_L*Velocity_L[1] + Density_R*Velocity_R[1])*val_normal[1];
+    val_Proj_Flux[1] += (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]))*val_normal[1];
+    val_Proj_Flux[2] += (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Pressure_L + Pressure_R))*val_normal[1];
+    val_Proj_Flux[3] += (0.5*(Velocity_L[2]+Velocity_R[2]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]))*val_normal[1];
+    val_Proj_Flux[4] += ((0.5*(Velocity_L[1]+Velocity_R[1])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Velocity_L[1]*Pressure_L + Velocity_R[1]*Pressure_R))*val_normal[1];
+
+    val_Proj_Flux[0] += 0.5*(Density_L*Velocity_L[2] + Density_R*Velocity_R[2])*val_normal[2];
+    val_Proj_Flux[1] += (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[2]+Density_R*Velocity_R[2]))*val_normal[2];
+    val_Proj_Flux[2] += (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[2]+Density_R*Velocity_R[2]))*val_normal[2];
+    val_Proj_Flux[3] += (0.5*(Velocity_L[2]+Velocity_R[2]) * 0.5*(Density_L*Velocity_L[2]+Density_R*Velocity_R[2]) + 0.5*(Pressure_L + Pressure_R))*val_normal[2];
+    val_Proj_Flux[4] += ((0.5*(Velocity_L[2]+Velocity_R[2])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[2]+Density_R*Velocity_R[2]) + 0.5*(Velocity_L[2]*Pressure_L + Velocity_R[2]*Pressure_R))*val_normal[2];
+  }
+}
+
 void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
                                            su2double *val_velocity,
                                            su2double *val_pressure,

@@ -773,7 +773,19 @@ public:
   void GetInviscidProjFlux(su2double *val_density, su2double *val_velocity,
                            su2double *val_pressure, su2double *val_enthalpy,
                            su2double *val_normal, su2double *val_Proj_Flux);
-    
+  
+  /*!
+   * \brief Compute the projected inviscid flux vector.
+   * \param[in] val_density - Pointer to the density.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] val_pressure - Pointer to the pressure.
+   * \param[in] val_enthalpy - Pointer to the enthalpy.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_Proj_Flux - Pointer to the projected flux.
+   */
+  void GetInviscidProjFlux_SkewSym(su2double *val_primitive_i, su2double *val_primitive_j,
+                           su2double *val_normal, su2double *val_Proj_Flux);
+  
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
