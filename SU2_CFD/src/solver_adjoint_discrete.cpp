@@ -262,16 +262,14 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
   bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
-  bool input = true;
+  bool input          = true;
+  bool push_index     = true;
+
+  if(config->GetMultizone_Problem()) push_index = false;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  if(config->GetMultizone_Problem()) {
-    direct_solver->GetNodes()->RegisterSolution_intIndexBased(input);
-    direct_solver->GetNodes()->SetAdjIndices(input);
-  } else {
-    direct_solver->GetNodes()->RegisterSolution(input);
-  }
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
@@ -377,16 +375,14 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
-  /*--- Register variables as output of the solver iteration ---*/
-  bool input = false;
+  bool input        = false;
+  bool push_index   = true;
 
-  if(config->GetMultizone_Problem()) {
-    direct_solver->GetNodes()->RegisterSolution_intIndexBased(input);
-    direct_solver->GetNodes()->SetAdjIndices(input);
-  }
-  else {
-    direct_solver->GetNodes()->RegisterSolution(input);
-  }
+  if(config->GetMultizone_Problem()) push_index = false;
+
+  /*--- Register variables as output of the solver iteration ---*/
+
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 }
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
@@ -495,7 +491,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     /*--- Extract the adjoint solution ---*/
     
     if(config->GetMultizone_Problem()) {
-      direct_solver->GetNodes()->GetAdjointSolution_intIndexBased(iPoint,Solution);
+      direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
       direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
@@ -641,7 +637,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
     /*--- Extract the adjoint solution ---*/
 
     if (config->GetMultizone_Problem())
-      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
     else
       geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
@@ -699,7 +695,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->GetNodes()->GetAdjointSolution_intIndexBased(iPoint,Solution);
+    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
 
     for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
 
@@ -718,7 +714,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
     /*--- Extract the adjoint solution ---*/
 
     if (config->GetMultizone_Problem())
-      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
     else
       geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
@@ -739,7 +735,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
     /*--- Extract the adjoint solution ---*/
 
     if (config->GetMultizone_Problem())
-      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
     else
       geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
@@ -779,7 +775,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
     if(config->GetMultizone_Problem()) {
-      direct_solver->GetNodes()->SetAdjointSolution_intIndexBased(iPoint,Solution);
+      direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);

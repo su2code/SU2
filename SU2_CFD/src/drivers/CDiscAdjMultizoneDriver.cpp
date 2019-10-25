@@ -720,7 +720,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
-    AD::SetAdjIndex(ObjFunc_Index, ObjFunc);
+    AD::SetIndex(ObjFunc_Index, ObjFunc);
     if (kind_recording == FLOW_CONS_VARS) {
       cout << " Objective function                   : " << ObjFunc;
       if (driver_config->GetWrt_AD_Statistics()){
