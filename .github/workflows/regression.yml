@@ -13,13 +13,13 @@ jobs:
           - config_set: BaseMPI
             flags: '-Denable-pywrapper=true'
           - config_set: ReverseMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true'
           - config_set: ForwardMPI
             flags: '-Denable-directdiff=true -Denable-normal=false'          
           - config_set: BaseNoMPI
             flags: '-Denable-pywrapper=true -Dwith-mpi=disabled'
           - config_set: ReverseNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true'
           - config_set: ForwardNoMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled'  
     runs-on: ubuntu-latest
