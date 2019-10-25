@@ -4491,6 +4491,115 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
 }
 
+su2double CIncEulerSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) {
+
+  unsigned short iMarker_Monitoring=0, Kind_ConstrFunc;
+
+  su2double ConstraintFunction = 0.0;
+
+  /*--- TODO: markers ---*/
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < 1; iMarker_Monitoring++) {
+
+    Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
+
+    switch(Kind_ConstrFunc) {
+      case DRAG_COEFFICIENT:
+        ConstraintFunction = (Surface_CD[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) ConstraintFunction = -config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
+        if (config->GetFixed_CM_Mode()) ConstraintFunction = -config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
+        break;
+      case LIFT_COEFFICIENT:
+       ConstraintFunction = (Surface_CL[iMarker_Monitoring]);
+        break;
+      case SIDEFORCE_COEFFICIENT:
+        ConstraintFunction = (Surface_CSF[iMarker_Monitoring]);
+        break;
+      case EFFICIENCY:
+        ConstraintFunction = (Surface_CEff[iMarker_Monitoring]);
+        break;
+      case MOMENT_X_COEFFICIENT:
+        ConstraintFunction = (Surface_CMx[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) ConstraintFunction = -config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        ConstraintFunction = (Surface_CMy[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) ConstraintFunction = -config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        ConstraintFunction = (Surface_CMz[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) ConstraintFunction = -config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case FORCE_X_COEFFICIENT:
+        ConstraintFunction = Surface_CFx[iMarker_Monitoring];
+        break;
+      case FORCE_Y_COEFFICIENT:
+        ConstraintFunction = Surface_CFy[iMarker_Monitoring];
+        break;
+      case FORCE_Z_COEFFICIENT:
+        ConstraintFunction = Surface_CFz[iMarker_Monitoring];
+        break;
+      case TOTAL_HEATFLUX:
+        ConstraintFunction = Surface_HF_Visc[iMarker_Monitoring];
+        break;
+      case MAXIMUM_HEATFLUX:
+        ConstraintFunction = Surface_MaxHF_Visc[iMarker_Monitoring];
+        break;
+
+        /*--- The following are not per-surface, and as a result will be
+         double-counted iff multiple surfaces are specified as well as multi-objective ---*/
+
+      case INVERSE_DESIGN_PRESSURE:
+        ConstraintFunction = Total_CpDiff;
+        break;
+      case INVERSE_DESIGN_HEATFLUX:
+        ConstraintFunction = Total_HeatFluxDiff;
+        break;
+      case THRUST_COEFFICIENT:
+        ConstraintFunction = Total_CT;
+        break;
+      case TORQUE_COEFFICIENT:
+        ConstraintFunction = Total_CQ;
+        break;
+      case FIGURE_OF_MERIT:
+        ConstraintFunction = Total_CMerit;
+        break;
+      case SURFACE_TOTAL_PRESSURE:
+        ConstraintFunction = config->GetSurface_TotalPressure(0);
+        break;
+      case SURFACE_STATIC_PRESSURE:
+        ConstraintFunction = config->GetSurface_Pressure(0);
+        break;
+      case SURFACE_MASSFLOW:
+        ConstraintFunction = config->GetSurface_MassFlow(0);
+        break;
+      case SURFACE_UNIFORMITY:
+        ConstraintFunction = config->GetSurface_Uniformity(0);
+        break;
+      case SURFACE_SECONDARY:
+        ConstraintFunction = config->GetSurface_SecondaryStrength(0);
+        break;
+      case SURFACE_MOM_DISTORTION:
+        ConstraintFunction = config->GetSurface_MomentumDistortion(0);
+        break;
+      case SURFACE_SECOND_OVER_UNIFORM:
+        ConstraintFunction = config->GetSurface_SecondOverUniform(0);
+        break;
+      case SURFACE_PRESSURE_DROP:
+        ConstraintFunction = config->GetSurface_PressureDrop(0);
+        break;
+      case CUSTOM_OBJFUNC:
+        ConstraintFunction = config->GetSurface_FlowUniformityIndex(0);
+        break;
+      default:
+        break;
+
+    }
+  }
+
+  return ConstraintFunction;
+}
+
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh) {
   
