@@ -1375,6 +1375,8 @@ inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { re
 
 inline string CConfig::GetMarker_SobolevBC_TagBound(unsigned short val_marker) { return Marker_SobolevBC[val_marker]; }
 
+inline string CConfig::GetMarker_Interface_TagBound(unsigned short val_marker) { return Marker_Interface[val_marker]; }
+
 inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ return Marker_PyCustom[val_marker]; }
 
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
@@ -1416,6 +1418,8 @@ inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned sh
 
 inline void CConfig::SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_moving) { Marker_All_SobolevBC[val_marker] = val_moving; }
 
+inline void CConfig::SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface) { Marker_All_Interface[val_marker] = val_interface; }
+
 inline void CConfig::SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
@@ -1452,6 +1456,8 @@ inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) {
 
 inline unsigned short CConfig::GetMarker_All_SobolevBC(unsigned short val_marker) { return Marker_All_SobolevBC[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_Interface(unsigned short val_marker) { return Marker_All_Interface[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker) { return Marker_All_PyCustom[val_marker];}
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
@@ -1462,7 +1468,7 @@ inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_En
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
-inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
+inline unsigned short CConfig::GetnMarker_Interface(void) { return nMarker_Interface; }
 
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 

@@ -361,6 +361,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
   Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
+  Marker_CfgFile_Interface     = NULL;  Marker_All_Interface     = NULL;
 
   Marker_CfgFile_Turbomachinery       = NULL; Marker_All_Turbomachinery       = NULL;
   Marker_CfgFile_TurbomachineryFlag   = NULL; Marker_All_TurbomachineryFlag   = NULL;
@@ -383,7 +384,7 @@ void CConfig::SetPointersNull(void) {
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
   Marker_SymWall              = NULL;    Marker_PerBound       = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_Interface      = NULL;
   Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
@@ -990,8 +991,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /*!\brief MARKER_FLUID_INTERFACE\n DESCRIPTION: Fluid interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
-  /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
-  addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
+  /*!\brief MARKER_INTERFACE\n DESCRIPTION: Interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_INTERFACE", nMarker_Interface, Marker_Interface);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
@@ -4363,7 +4364,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
-  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
+  iMarker_NearFieldBound, iMarker_Interface, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
@@ -4384,7 +4385,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -4414,6 +4415,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_SobolevBC      = new unsigned short[nMarker_All];	// Store what boundary to apply to the gradient smoothing.
+  Marker_All_Interface      = new unsigned short[nMarker_All];	// Store whether the boundary belongs to an interface.
   Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
   Marker_All_PerBound       = new short[nMarker_All];		// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
@@ -4434,6 +4436,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_DV[iMarker_All]                   = 0;
     Marker_All_Moving[iMarker_All]               = 0;
     Marker_All_SobolevBC[iMarker_All]            = 0;
+    Marker_All_Interface[iMarker_All]            = 0;
     Marker_All_PerBound[iMarker_All]             = 0;
     Marker_All_Turbomachinery[iMarker_All]       = 0;
     Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
@@ -4454,6 +4457,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Interface            = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
@@ -4472,6 +4476,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
     Marker_CfgFile_SobolevBC[iMarker_CfgFile]            = 0;
+    Marker_CfgFile_Interface[iMarker_CfgFile]            = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
@@ -4643,12 +4648,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NEARFIELD_BOUNDARY;
-    iMarker_CfgFile++;
-  }
-
-  for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_InterfaceBound[iMarker_InterfaceBound];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERFACE_BOUNDARY;
     iMarker_CfgFile++;
   }
   
@@ -4956,6 +4955,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Moving[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Interface[iMarker_CfgFile] = NO;
+    for (iMarker_Interface = 0; iMarker_Interface < nMarker_Interface; iMarker_Interface++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Interface[iMarker_Interface])
+        Marker_CfgFile_Interface[iMarker_CfgFile] = YES;
+  }
+
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_PyCustom[iMarker_CfgFile] = NO;
     for(iMarker_PyCustom=0; iMarker_PyCustom < nMarker_PyCustom; iMarker_PyCustom++)
@@ -4976,7 +4982,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Interface, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
@@ -6369,11 +6375,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_InterfaceBound != 0) {
+  if (nMarker_Interface != 0) {
     BoundaryTable << "Interface boundary";
-    for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-      BoundaryTable << Marker_InterfaceBound[iMarker_InterfaceBound];
-      if (iMarker_InterfaceBound < nMarker_InterfaceBound-1)  BoundaryTable << " ";
+    for (iMarker_Interface = 0; iMarker_Interface < nMarker_Interface; iMarker_Interface++) {
+      BoundaryTable << Marker_Interface[iMarker_Interface];
+      if (iMarker_Interface < nMarker_Interface-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -6877,11 +6883,19 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+
 unsigned short CConfig::GetMarker_CfgFile_SobolevBC(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_Interface(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Interface[iMarker_CfgFile];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker){
@@ -7034,6 +7048,9 @@ CConfig::~CConfig(void) {
 
   if (Marker_CfgFile_SobolevBC != NULL) delete[] Marker_CfgFile_SobolevBC;
   if (Marker_All_SobolevBC     != NULL) delete[] Marker_All_SobolevBC;
+
+  if (Marker_CfgFile_Interface != NULL) delete[] Marker_CfgFile_Interface;
+  if (Marker_All_Interface     != NULL) delete[] Marker_All_Interface;
 
   if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
   if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
@@ -7288,7 +7305,7 @@ CConfig::~CConfig(void) {
   if (Marker_PerBound != NULL )           delete[] Marker_PerBound;
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
-  if (Marker_InterfaceBound != NULL )     delete[] Marker_InterfaceBound;
+  if (Marker_Interface != NULL )          delete[] Marker_Interface;
   if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
   if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
@@ -7936,6 +7953,7 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
   return iMarker_Moving;
 }
 
+
 unsigned short CConfig::GetMarker_SobolevBC(string val_marker) {
   unsigned short iMarker_SobolevBC;
 
@@ -7944,6 +7962,16 @@ unsigned short CConfig::GetMarker_SobolevBC(string val_marker) {
     if (Marker_SobolevBC[iMarker_SobolevBC] == val_marker) break;
 
   return iMarker_SobolevBC;
+}
+
+unsigned short CConfig::GetMarker_Interface(string val_marker) {
+  unsigned short iMarker_Interface;
+
+  /*--- Find the marker for this interface boundary. ---*/
+  for (iMarker_Interface = 0; iMarker_Interface < nMarker_Interface; iMarker_Interface++)
+    if (Marker_Interface[iMarker_Interface] == val_marker) break;
+
+  return iMarker_Interface;
 }
 
 su2double CConfig::GetDirichlet_Value(string val_marker) {
@@ -9258,6 +9286,8 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   if (driver_config->GetTime_Domain()){
     Delta_UnstTime = driver_config->GetTime_Step();
     Delta_DynTime  = driver_config->GetTime_Step();
+
+    Time_Domain = true;
   }
 
   /*------------------------------------------------------------*/

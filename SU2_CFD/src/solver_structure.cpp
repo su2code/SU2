@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file solver_structure.cpp
  * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
@@ -313,11 +313,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     case PERIODIC_SOL_GG:
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nVar;
+      JCOUNT           = nDim;
       break;
     case PERIODIC_PRIM_GG:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nPrimVarGrad;
+      JCOUNT           = nDim;
       break;
     case PERIODIC_SOL_LS:
       COUNT_PER_POINT  = nDim*nDim + nVar*nDim;

@@ -19,7 +19,6 @@ branches:
         - feature_mesh_solver
 
 python:
-    #- 2.7
     - 3.6
 
 env:

@@ -3299,7 +3299,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
-  bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
@@ -3327,10 +3326,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     GetPower_Properties(geometry, config, iMesh, Output);
     SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
-
-  /*--- Compute Interface MPI ---*/
-
-  if (interface) { Set_MPI_Interface(geometry, config); }
 
   /*--- Compute NearField MPI ---*/
 
@@ -15381,7 +15376,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
-  bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
@@ -15408,10 +15402,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     Set_MPI_ActDisk(solver_container, geometry, config);
     SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
-
-  /*--- Compute Interface MPI ---*/
-
-  if (interface) { Set_MPI_Interface(geometry, config); }
 
   /*--- Compute NearField MPI ---*/
 

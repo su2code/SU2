@@ -291,8 +291,6 @@ inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
-inline void CGeometry::MatchInterface(CConfig *config) { }
-
 inline void CGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
