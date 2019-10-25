@@ -1032,7 +1032,8 @@ private:
   su2double Streamwise_Periodic_PressureDrop,       /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
             Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
-            Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+            Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+            Streamwise_Periodic_OutletHeat;         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
   vector<su2double> Streamwise_Periodic_RefNode;    /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
 
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
@@ -5979,6 +5980,12 @@ public:
    * \return Real periodic treatment of energy equation.
    */
   bool GetStreamwise_Periodic_Temperature(void);
+
+  /*!
+   * \brief Get the value of the artificial periodic outlet heat.
+   * \return Heat value.
+   */
+  su2double GetStreamwise_Periodic_OutletHeat(void);
 
   /*!
    * \brief Get the value of the pressure delta from which body force vector is computed.

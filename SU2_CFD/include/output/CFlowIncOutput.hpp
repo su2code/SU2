@@ -49,9 +49,9 @@ class CVariable;
 class CFlowIncOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/ 
+  unsigned short turb_model, /*!< \brief The kind of turbulence model*/ 
+                 streamwise_periodic;  /*!< \brief  */
   bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/ 
-       streamwise_periodic,  /*!< \brief  */
        streamwise_periodic_temperature,  /*!< \brief  */
        weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
 

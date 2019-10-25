@@ -211,6 +211,12 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");    
   }
   
+
+  if(streamwise_periodic) {
+    AddHistoryOutput("STREAMWISE_MASSFLOW", "SWMassflow", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Empty explanation");
+    AddHistoryOutput("STREAMWISE_DP", "SWDeltaP", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Empty explanation");
+    AddHistoryOutput("STREAMWISE_HEAT", "SWHeat", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Empty explanation");
+  }
   /*--- Add analyze surface history fields --- */
   
   AddAnalyzeSurfaceOutput(config);
@@ -311,6 +317,11 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
+  if(streamwise_periodic) {
+    SetHistoryOutputValue("STREAMWISE_MASSFLOW", config->GetStreamwise_Periodic_MassFlow());
+    SetHistoryOutputValue("STREAMWISE_DP", config->GetStreamwise_Periodic_PressureDrop());
+    SetHistoryOutputValue("STREAMWISE_HEAT", config->GetStreamwise_Periodic_IntegratedHeatFlow());
+  }
   
   /*--- Set the analyse surface history values --- */
   
@@ -333,16 +344,12 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   // SOLUTION variables
   AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
-  if(streamwise_periodic)
-    AddVolumeOutput("RECOVERED_PRESSURE", "Recovered_Pressure", "SOLUTION", "Recovered physical pressure");
   AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3) 
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat) 
-    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
-  if (heat && streamwise_periodic && streamwise_periodic_temperature)
-    AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
+    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
   
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -452,6 +459,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
+  if(streamwise_periodic)
+    AddVolumeOutput("RECOVERED_PRESSURE", "Recovered_Pressure", "SOLUTION", "Recovered physical pressure");
+  if (heat && streamwise_periodic && streamwise_periodic_temperature)
+    AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
   AddVolumeOutput("RANK", "rank", "SOLUTION", "rank of the MPI-partition");
 
 }

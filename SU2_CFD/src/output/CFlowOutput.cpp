@@ -134,6 +134,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
   bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   bool energy         = config->GetEnergy_Equation();
+  bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
 
 
   bool axisymmetric               = config->GetAxisymmetric();
@@ -222,6 +223,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
           Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          if(streamwise_periodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
           SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -530,11 +532,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     su2double Pressure_Drop = 0.0;
     if (nMarker_Analyze == 2) {
-      Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
+      Pressure_Drop = (Surface_TotalPressure_Total[1]-Surface_TotalPressure_Total[0]) * config->GetPressure_Ref(); //TK:: changed to total pressure
       config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
     } 
     SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
-    Tot_Surface_PressureDrop += Pressure_Drop;
+    Tot_Surface_PressureDrop = Pressure_Drop; //TK:: was += before, therefore it was counted double for 2 analyze markers
   }
   
   SetHistoryOutputValue("AVG_MASSFLOW", Tot_Surface_MassFlow);

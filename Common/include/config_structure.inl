@@ -1624,6 +1624,9 @@ inline unsigned short CConfig::GetKind_Streamwise_Periodic(void) {
 inline bool CConfig::GetStreamwise_Periodic_Temperature(void) {
   return Streamwise_Periodic_Temperature; }
 
+inline su2double CConfig::GetStreamwise_Periodic_OutletHeat(void) {
+  return Streamwise_Periodic_OutletHeat; }
+
 inline su2double CConfig::GetStreamwise_Periodic_PressureDrop(void) {
   return Streamwise_Periodic_PressureDrop; }
 

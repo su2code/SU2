@@ -1592,7 +1592,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
   
   /*--- Compute integrated Heatflux and massflow, TK:: Euler equations not implemented yet, probalby wasted here ---*/
-
+  if(rank==MASTER_NODE) cout << "EulerPrepsocessing GetStreamwise_Periodic_Properties." << endl;
   if (config->GetKind_Streamwise_Periodic()) GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
   /*--- Initialize the Jacobian matrices ---*/
@@ -2034,6 +2034,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool body_force          = config->GetBody_Force();
   bool boussinesq          = (config->GetKind_DensityModel() == BOUSSINESQ);
   bool viscous             = config->GetViscous();
+  bool energy              = config->GetEnergy_Equation();
   bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
   bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
@@ -2080,14 +2081,19 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     }// for iPoint
 
-    if(!streamwise_periodic_temperature) {
+    if(!streamwise_periodic_temperature && energy) {
       //loop markers and find the "outlet marker"
       
       //compute "outlet" area
       su2double Area_Local = 0.0, 
                 Area_Global = 0.0,
+                MassFlow_Local,
+                Temperature_Local = 0.0,
+                Temperature_Global = 0.0,
                 FaceArea, 
                 AxiFactor;
+      
+      unsigned short Kind_Averaging=1, area=0, massflow=1;
 
       vector<su2double> AreaNormal(nDim);
     
@@ -2095,7 +2101,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
         /*--- Only "outlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-            config->GetMarker_All_PerBound(iMarker) == 2) {
+            config->GetMarker_All_PerBound(iMarker) == 1) {
             
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2116,6 +2122,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
               FaceArea = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
               Area_Local += sqrt(FaceArea);
+              FaceArea = sqrt(FaceArea);
+              Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
     
             } // if domain
           } // loop vertices
@@ -2124,13 +2132,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     
       // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflwo
       SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      if(rank==MASTER_NODE) cout << "Source Res outlet area: " << Area_Global << endl;
+      SU2_MPI::Allreduce(&Temperature_Local, &Temperature_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      Temperature_Global /= Area_Global;
+      if(rank==MASTER_NODE) cout << "Source Res outlet area: " << Area_Global << endl << "Outlet Area Avg Temperature: " << Temperature_Global* config->GetTemperature_Ref() << endl;
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
         /*--- Only "outlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-            config->GetMarker_All_PerBound(iMarker) == 2) {
+            config->GetMarker_All_PerBound(iMarker) == 1) {
             
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2152,19 +2162,46 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
               for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
               FaceArea = sqrt(FaceArea);
 
+              //compute local massflow
+              MassFlow_Local = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                MassFlow_Local += AreaNormal[iDim] * nodes->GetVelocity(iPoint, iDim) * nodes->GetDensity(iPoint) * AxiFactor;
+              }
+
               for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-              Residual[nDim+1] -= FaceArea/Area_Global * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+              if(Kind_Averaging == area) {
+                if (config->GetStreamwise_Periodic_OutletHeat() == 0.0) {
+                  Residual[nDim+1] -= FaceArea/Area_Global * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+                } else {
+                  Residual[nDim+1] -= FaceArea/Area_Global * config->GetStreamwise_Periodic_OutletHeat() / config->GetHeat_Flux_Ref();
+                }
+              } else if (Kind_Averaging == massflow) {
+                if (config->GetStreamwise_Periodic_OutletHeat() == 0.0) {
+                  Residual[nDim+1] -= abs(MassFlow_Local/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+                } else {
+                  Residual[nDim+1] -= abs(MassFlow_Local/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_OutletHeat() / config->GetHeat_Flux_Ref();
+                }
+              }
 
               /*--- Add the source residual to the total ---*/
               LinSysRes.AddBlock(iPoint, Residual);
+
+              /////////////////////////////
+              // hdf fluid adaption
+              for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+              Residual[nDim+1] = 0.5 * abs(MassFlow_Local) * nodes->GetSpecificHeatCp(iPoint) * (Temperature_Global - config->GetInc_Temperature_Init()/config->GetTemperature_Ref() );
+
+              LinSysRes.AddBlock(iPoint, Residual);
+
 
             } // if domain
           } // loop vertices
         } // loop periodic boundaries
       } // loop MarkerAll
 
-    }
-  }
+    }// if !streamwise_periodic_temperature
+  }// if streamwise_periodic
 
   if (body_force) {
 
@@ -6450,7 +6487,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
                                                         unsigned short iMesh,
                                                         bool           Output) {
 
-  if (rank == MASTER_NODE) { cout << "------------------------------- New Routine Start --------------------------" << endl; }
+  //if (rank == MASTER_NODE) { cout << "------------------------------- New Routine Start --------------------------" << endl; }
   /*---------------------------------------------------------------------------------------------*/
   // 1. evaluate massflow, avg_density, Area at streamwise periodic outlet. also bulk temp at in/outlet. Loop periodic markers. Communicate and set results
   // 2. Update delta_p is target massflow is chosen.
@@ -6460,6 +6497,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
   /*--- Initialization and allocation done here. ---*/
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
+  unsigned long InnerIter = config->GetInnerIter();
 
   bool axisymmetric = config->GetAxisymmetric();
   //bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*1)) == 0) // TK output at every iteration
@@ -6551,7 +6589,16 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
     
     /*--- Store updated pressure difference ---*/
     Pressure_Drop_new = Pressure_Drop + damping_factor*ddP;
-    config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
+    /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times 
+          (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts 
+          it gets called 2x before the restart files are read such that the current massflow is 
+          Area*inital-velocity which can be way off! 
+          With this there is still a slight inconsitency wrt to a non-restarted simulation: The restarted "zero-th"
+          iteration does not get a pressure-update but the continuing simulation would have an update here. This can be 
+          fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at 
+          best ---*/
+    if(InnerIter > 0)
+      config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
     
     /*--- Output the new value of Delta P and ddp ---*/
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) { //TK:: Move whole computation up in front of output
@@ -6626,10 +6673,10 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
     if (iMesh == MESH_0)
       config->SetStreamwise_Periodic_IntegratedHeatFlow(HeatFlow_Global);
 
-    if (rank == MASTER_NODE) { cout << "HeatFlow_Global: " << HeatFlow_Global * config->GetHeat_Flux_Ref() << endl; }
+    //if (rank == MASTER_NODE) { cout << "HeatFlow_Global: " << HeatFlow_Global * config->GetHeat_Flux_Ref() << endl; }
   } // if energy
 
-  if (rank == MASTER_NODE) { cout << "------------------------------- New Routine End --------------------------" << endl; }
+  //if (rank == MASTER_NODE) { cout << "------------------------------- New Routine End --------------------------" << endl; }
 }
 
 
@@ -7777,6 +7824,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
     
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
+    if(rank==MASTER_NODE) cout << "NSPrepsocessing GetStreamwise_Periodic_Properties." << endl;
     GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
     /*--- Free allocated memory. ---*/

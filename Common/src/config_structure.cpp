@@ -916,6 +916,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
   /*!\brief STREAMWISE_PERIODIC_TEMPERATURE \n DESCRIPTION: Use real periodicty for temperature: NO, YES \ingroup Config */
   addBoolOption("STREAMWISE_PERIODIC_TEMPERATURE", Streamwise_Periodic_Temperature, false);
+  /* DESCRIPTION: Heatflux boundary at streamwise periodic 'outlet', choose heat [W] such that net domain heatflux is zero. Only active if STREAMWISE_PERIODIC_TEMPERATURE is active. */
+  addDoubleOption("STREAMWISE_PERIODIC_OUTLET_HEAT", Streamwise_Periodic_OutletHeat, 0.0);
   /* DESCRIPTION: Delta pressure on which basis body force will be computed, serves as initial value if MASSFLOW is chosen */
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Target Massflow, Delta P will be adapted until m_dot is met.  */
