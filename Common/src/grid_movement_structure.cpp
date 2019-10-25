@@ -2713,22 +2713,22 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
         /*--- Output original FFD FFDBox ---*/
         
-        if (rank == MASTER_NODE) {
+        if (rank == MASTER_NODE && !one_shot) {
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             unsigned short *FileFormat = config->GetVolumeOutputFiles();
             if (FileFormat[iFile] == PARAVIEW) {
-              if (!one_shot) cout << "Writing a Paraview file of the FFD boxes." << endl;
+              cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
               }
             } else if (FileFormat[iFile] == TECPLOT) {
-              if (!one_shot) cout << "Writing a Tecplot file of the FFD boxes." << endl;
+              cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
               }
             }
             else if (FileFormat[iFile] == CGNS)  {
-              if (!one_shot) cout << "Writing a CGNS file of the FFD boxes." << endl;
+              cout << "Writing a CGNS file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
               }

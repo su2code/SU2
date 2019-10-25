@@ -2414,7 +2414,10 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver,
   for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++){
     solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[val_iZone][val_iInst][iMesh], config[val_iZone]);
   }
-  if ((config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) && !config[val_iZone]->GetFrozen_Visc_Disc()) {
+  if ((config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
+       config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS || 
+       config[val_iZone]->GetKind_Solver() == ONE_SHOT_RANS) && 
+       !config[val_iZone]->GetFrozen_Visc_Disc()) {
     solver[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
   }
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
