@@ -35,7 +35,7 @@ jobs:
       - name: Build 
         uses: docker://su2code/build-su2
         with:
-          args: ${{github.sha}} /github/workspace "${{matrix.flags}}"
+          args: ${{github.ref}} /github/workspace "${{matrix.flags}}"
       - name: Upload Binaries 
         uses: actions/upload-artifact@v1
         with:
@@ -81,5 +81,5 @@ jobs:
       - name: Run Tests in Container
         uses: docker://su2code/test-su2
         with:
-          args: ${{github.sha}} develop develop /github/workspace ${{matrix.testscript}}
+          args: ${{github.ref}} develop develop /github/workspace ${{matrix.testscript}}
   
