@@ -426,7 +426,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
 
   /*--- Print the residuals of the direct iteration that we just recorded ---*/
   /*--- This routine should be moved to the output, once the new structure is in place ---*/
-  if ((rank == MASTER_NODE) && (kind_recording == MainVariables)){
+  if ((rank == MASTER_NODE) && (kind_recording == MainVariables) && (!config->GetBoolOneShot())){
 
     switch (config->GetKind_Solver()) {
 
