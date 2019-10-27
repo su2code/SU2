@@ -706,7 +706,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
               if (dist == 0.0) break;
             }
           }
-          
         }
 
         /*--- Store the value of the pair ---*/
@@ -1382,13 +1381,11 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     /*-- Send donor info --*/
     Buffer_Send_FaceIndex   = new unsigned long[MaxFace_Donor];
     Buffer_Send_FaceNodes   = new unsigned long[MaxFaceNodes_Donor];
-    //Buffer_Send_FaceProc    = new unsigned long[MaxFaceNodes_Donor];
     Buffer_Send_GlobalPoint = new long[MaxFaceNodes_Donor];
     Buffer_Send_Coeff       = new su2double[MaxFaceNodes_Donor];
 
     Buffer_Receive_FaceIndex= new unsigned long[MaxFace_Donor*nProcessor];
     Buffer_Receive_FaceNodes= new unsigned long[MaxFaceNodes_Donor*nProcessor];
-    //Buffer_Receive_FaceProc = new unsigned long[MaxFaceNodes_Donor*nProcessor];
     Buffer_Receive_GlobalPoint = new long[MaxFaceNodes_Donor*nProcessor];
     Buffer_Receive_Coeff    = new su2double[MaxFaceNodes_Donor*nProcessor];
 
@@ -1397,7 +1394,6 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     }
     for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++) {
       Buffer_Send_FaceNodes[iVertex]=0;
-      //Buffer_Send_FaceProc[iVertex]=0;
       Buffer_Send_GlobalPoint[iVertex]=0;
       Buffer_Send_Coeff[iVertex]=0.0;
     }
@@ -1456,7 +1452,6 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
             for (iTarget=0; iTarget<iNodes; iTarget++) {
               if (Global_Point == Buffer_Receive_GlobalPoint[faceindex+iTarget])
                 nNodes++;
-              //coeff =Buffer_Receive_Coeff[faceindex+iDonor];
             }
           }
         }
@@ -1477,7 +1472,6 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
                 target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,pGlobalPoint);
                 target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,coeff);
                 target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, iProcessor);
-                //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
                 iDonor++;
               }
             }
