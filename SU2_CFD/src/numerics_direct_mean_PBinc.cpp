@@ -361,7 +361,7 @@ void CAvgGradPBInc_Flow::ComputeResidual(su2double *val_residual, su2double **va
   
   Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
-  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_turb_ke              = 0.0;//0.5*(turb_ke_i + turb_ke_j);
 
   /*--- Mean gradient approximation ---*/
   
@@ -474,7 +474,7 @@ void CAvgGradCorrectedPBInc_Flow::ComputeResidual(su2double *val_residual, su2do
   
   Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
-  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_turb_ke              = 0.0;//0.5*(turb_ke_i + turb_ke_j);
  
   /*--- Compute vector going from iPoint to jPoint ---*/
   
