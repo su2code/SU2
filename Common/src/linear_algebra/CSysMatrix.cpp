@@ -265,6 +265,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long nPoint, unsigned long nPoi
     ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
     for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
 
+    invM = new ScalarType [nPointDomain*nVar*nEqn];
+    for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+
     delete [] nNeigh_ilu;
 
   }
