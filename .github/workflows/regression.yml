@@ -35,12 +35,12 @@ jobs:
       - name: Build 
         uses: docker://su2code/build-su2
         with:
-          args: ${{github.ref}} /github/workspace "${{matrix.flags}}"
+          args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Upload Binaries 
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.config_set }}
-          path: bin
+          path: install/bin
   tests:
     runs-on: ubuntu-latest
     name: Regression Tests
@@ -73,13 +73,13 @@ jobs:
           name: ${{format('Forward{0}', matrix.tag)}}
       - name: Move Binaries
         run: |
-          mkdir bin
-          cp -r ${{format('Base{0}', matrix.tag)}}/. bin/
-          cp -r ${{format('Reverse{0}', matrix.tag)}}/. bin/
-          cp -r ${{format('Forward{0}', matrix.tag)}}/. bin/
-          chmod a+x bin/*               
+          mkdir -p install/bin
+          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
+          chmod a+x install/bin/*               
       - name: Run Tests in Container
         uses: docker://su2code/test-su2
         with:
-          args: ${{github.ref}} develop develop /github/workspace ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   
