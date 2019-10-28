@@ -72,14 +72,9 @@ namespace AD{
   /*!
    * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational graph.
    * \param[in] data - The variable to be registered as input.
+   * \param[in] push_index - boolean whether we also want to push the index.
    */
-  void RegisterInput(su2double &data);
-
-  /*!
-   * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
-   * \param[in] data - The variable to be registered as input.
-   */
-  void RegisterInput_intIndexBased(su2double &data);
+  void RegisterInput(su2double &data, bool push_index = true);
 
   /*!
    * \brief Registers the variable as an output. I.e. as the root of the computational graph.
@@ -246,7 +241,7 @@ namespace AD{
    * \param[in] data - variable whose gradient information will be extracted.
    * \param[in] index - where obtained gradient information will be stored.
    */
-  void SetAdjIndex(int &index, const su2double &data);
+  void SetIndex(int &index, const su2double &data);
 
   /*!
    * \brief Pushes back the current tape position to the tape position's vector.
