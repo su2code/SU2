@@ -637,7 +637,7 @@ void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *confi
 
   } else if (config->GetDesign_Variable(0) != FFD_SETTING) {
 
-    grid_movement->SetVolume_Deformation(geometry, config, false, false);
+    grid_movement->SetVolume_Deformation(geometry, config, true, false);
 
   }
 
