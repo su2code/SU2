@@ -46,25 +46,126 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdj
 
 }
 
-COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config, direct_solver, Kind_Solver, iMesh) {
+COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config) {
 
- theta = 0.0;
- rho = 0.0;
- nConstr = config->GetnConstr();
+  unsigned short iVar, iMarker, iDim;
+  unsigned long iVertex;
+  string text_line, mesh_filename;
+  ifstream restart_file;
+  string filename, AdjExt;
 
- DConsVec = new su2double** [nConstr];
- for (unsigned short iConstr=0; iConstr<nConstr;iConstr++){
-   DConsVec[iConstr] = new su2double* [nPointDomain];
-   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
-     DConsVec[iConstr][iPoint] = new su2double [nVar];
-     for (unsigned short iVar = 0; iVar < nVar; iVar++){
-       DConsVec[iConstr][iPoint][iVar]=0.0;
-     }
-   }
- }
+  adjoint = true;
 
- geometry->InitializeSensitivity();
- 
+  nVar = direct_solver->GetnVar();
+  nDim = geometry->GetnDim();
+
+  /*--- Initialize arrays to NULL ---*/
+
+  CSensitivity = NULL;
+
+  /*-- Store some information about direct solver ---*/
+  this->KindDirect_Solver = Kind_Solver;
+  this->direct_solver = direct_solver;
+
+
+  nMarker      = config->GetnMarker_All();
+  nPoint       = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+
+  /*--- Define some auxiliary vectors related to the residual ---*/
+
+  Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
+  Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
+  Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
+
+  /*--- Define some auxiliary vectors related to the geometry adjoint (nDim) ---*/
+  Solution_Geometry = new su2double[nDim];     for (iDim = 0; iDim < nDim; iDim++) Solution_Geometry[iDim] = 1.0;
+
+  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
+
+  if (config->GetMultizone_Residual()){
+
+    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar] = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+
+  }
+
+
+  /*--- Define some structures for locating max residuals ---*/
+
+  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max_Coord = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+
+  /*--- Define some auxiliary vectors related to the solution ---*/
+
+  Solution   = new su2double[nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 1e-16;
+
+  /*--- Sensitivity definition and coefficient in all the markers ---*/
+
+  CSensitivity = new su2double* [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
+  }
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          CSensitivity[iMarker][iVertex] = 0.0;
+      }
+  }
+
+  /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
+
+  nodes = new CDiscAdjVariable(Solution, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
+
+  switch(KindDirect_Solver){
+  case RUNTIME_FLOW_SYS:
+    SolverName = "ADJ.FLOW";
+    break;
+  case RUNTIME_HEAT_SYS:
+    SolverName = "ADJ.HEAT";
+    break;
+  case RUNTIME_TURB_SYS:
+    SolverName = "ADJ.TURB";
+    break;
+  default:
+    SolverName = "ADJ.SOL";
+    break;
+  }
+
+  theta = 0.0;
+  rho = 0.0;
+  nConstr = config->GetnConstr();
+
+  DConsVec = new su2double** [nConstr];
+  for (unsigned short iConstr=0; iConstr<nConstr;iConstr++){
+    DConsVec[iConstr] = new su2double* [nPointDomain];
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+      DConsVec[iConstr][iPoint] = new su2double [nVar];
+      for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        DConsVec[iConstr][iPoint][iVar]=0.0;
+      }
+    }
+  }
+
+  geometry->InitializeSensitivity();
+
 }
 
 COneShotSolver::~COneShotSolver(void) {
@@ -75,6 +176,17 @@ COneShotSolver::~COneShotSolver(void) {
     delete [] DConsVec[iConstr];
   }
   delete [] DConsVec;
+
+  unsigned short iMarker;
+
+  if (CSensitivity != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] CSensitivity[iMarker];
+    }
+    delete [] CSensitivity;
+  }
+
+  if (nodes != nullptr) delete nodes;
 }
 
 void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
@@ -124,7 +236,7 @@ void COneShotSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry){
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        geometry->SetSensitivity(iPoint, iDim, GetNodes()->GetSensitivity_AugmentedLagrangian(iPoint,iDim));
+        geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_AugmentedLagrangian(iPoint,iDim));
       }
     }
 }
@@ -136,7 +248,7 @@ void COneShotSolver::SetGeometrySensitivityGradient(CGeometry *geometry){
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        geometry->SetSensitivity(iPoint, iDim, GetNodes()->GetSensitivity_ShiftedLagrangian(iPoint,iDim));
+        geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_ShiftedLagrangian(iPoint,iDim));
       }
     }
 }
@@ -147,7 +259,7 @@ void COneShotSolver::SaveSensitivity(CGeometry *geometry){
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        GetNodes()->SetSensitivity_ShiftedLagrangian(iPoint, iDim, GetNodes()->GetSensitivity(iPoint,iDim));
+        nodes->SetSensitivity_ShiftedLagrangian(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim));
       }
     }
 }
@@ -158,7 +270,7 @@ void COneShotSolver::ResetSensitivityLagrangian(CGeometry *geometry){
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        GetNodes()->SetSensitivity_AugmentedLagrangian(iPoint, iDim, 0.0);
+        nodes->SetSensitivity_AugmentedLagrangian(iPoint, iDim, 0.0);
       }
     }
 }
@@ -169,7 +281,7 @@ void COneShotSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double 
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        GetNodes()->SetSensitivity_AugmentedLagrangian(iPoint,iDim, GetNodes()->GetSensitivity_AugmentedLagrangian(iPoint,iDim)+factor*GetNodes()->GetSensitivity(iPoint,iDim));
+        nodes->SetSensitivity_AugmentedLagrangian(iPoint,iDim, nodes->GetSensitivity_AugmentedLagrangian(iPoint,iDim)+factor*nodes->GetSensitivity(iPoint,iDim));
       }
     }
 }
@@ -206,7 +318,7 @@ void COneShotSolver::StoreSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->Set_StoreSolution(iPoint);
-    GetNodes()->Set_StoreSolution(iPoint);
+    nodes->Set_StoreSolution(iPoint);
   }
 }
 
@@ -214,7 +326,7 @@ void COneShotSolver::StoreFormerSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->Set_FormerSolution(iPoint);
-    GetNodes()->Set_FormerSolution(iPoint);
+    nodes->Set_FormerSolution(iPoint);
   }
 }
 
@@ -222,7 +334,7 @@ void COneShotSolver::LoadSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->SetSolution(iPoint,direct_solver->GetNodes()->GetSolution_Store(iPoint));
-    GetNodes()->SetSolution(iPoint,GetNodes()->GetSolution_Store(iPoint));
+    nodes->SetSolution(iPoint,nodes->GetSolution_Store(iPoint));
   }
 }
 
@@ -231,7 +343,7 @@ void COneShotSolver::LoadSolutionStep(su2double stepsize){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       direct_solver->GetNodes()->SetSolution(iPoint, iVar, direct_solver->GetNodes()->GetSolution_Former(iPoint,iVar)+stepsize*direct_solver->GetNodes()->GetSolution_Delta_Store(iPoint,iVar));
-      GetNodes()->SetSolution(iPoint, iVar, GetNodes()->GetSolution_Former(iPoint,iVar)+stepsize*GetNodes()->GetSolution_Delta_Store(iPoint,iVar));
+      nodes->SetSolution(iPoint, iVar, nodes->GetSolution_Former(iPoint,iVar)+stepsize*nodes->GetSolution_Delta_Store(iPoint,iVar));
     }
   }
 }
@@ -240,7 +352,7 @@ void COneShotSolver::ShiftFormerSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->SetSolution_Store(iPoint,direct_solver->GetNodes()->GetSolution_Former(iPoint));
-    GetNodes()->SetSolution_Store(iPoint,GetNodes()->GetSolution_Former(iPoint));
+    nodes->SetSolution_Store(iPoint,nodes->GetSolution_Former(iPoint));
   }
 }
 
@@ -248,7 +360,7 @@ void COneShotSolver::ShiftStoreSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->SetSolution_Former(iPoint,direct_solver->GetNodes()->GetSolution_Store(iPoint));
-    GetNodes()->SetSolution_Former(iPoint,GetNodes()->GetSolution_Store(iPoint));
+    nodes->SetSolution_Former(iPoint,nodes->GetSolution_Store(iPoint));
   }
 }
 
@@ -256,7 +368,7 @@ void COneShotSolver::StoreSaveSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->Set_SaveSolution(iPoint);
-    GetNodes()->Set_SaveSolution(iPoint);
+    nodes->Set_SaveSolution(iPoint);
   }
 }
 
@@ -264,7 +376,7 @@ void COneShotSolver::LoadSaveSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->SetSolution(iPoint,direct_solver->GetNodes()->GetSolution_Save(iPoint));
-    GetNodes()->SetSolution(iPoint,GetNodes()->GetSolution_Save(iPoint));
+    nodes->SetSolution(iPoint,nodes->GetSolution_Save(iPoint));
   }
 }
 
@@ -315,7 +427,7 @@ su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmente
       direct_solver->GetNodes()->SetSolution_Delta(iPoint, iVar, direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
     }
     for (iVar = 0; iVar < nVar; iVar++){
-      GetNodes()->SetSolution_Delta(iPoint,iVar,GetNodes()->GetSolution(iPoint,iVar)-GetNodes()->GetSolution_Store(iPoint,iVar));
+      nodes->SetSolution_Delta(iPoint,iVar,nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar));
     }
   }
 
@@ -330,7 +442,7 @@ su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmente
     helper=0.0;
     for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-        helper+=GetNodes()->GetSolution_Delta(iPoint,iVar)*GetNodes()->GetSolution_Delta(iPoint,iVar);
+        helper+=nodes->GetSolution_Delta(iPoint,iVar)*nodes->GetSolution_Delta(iPoint,iVar);
       }
     }
     myLagrangian+=helper*(config->GetOneShotBeta()/2);
@@ -339,7 +451,7 @@ su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmente
   helper=0.0;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      helper+=direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*GetNodes()->GetSolution_Store(iPoint,iVar);
+      helper+=direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*nodes->GetSolution_Store(iPoint,iVar);
     }
   }
   myLagrangian+=helper;
@@ -390,32 +502,32 @@ void COneShotSolver::ExtractAdjoint_Solution_Clean(CGeometry *geometry, CConfig 
 
     /*--- Store the adjoint solution ---*/
 
-    GetNodes()->SetSolution(iPoint,Solution);
+    nodes->SetSolution(iPoint,Solution);
   }
 
 }
 
 void COneShotSolver::UpdateStateVariable(CConfig *config){
-    unsigned long iPoint;
-    unsigned short iVar;
-    su2double fd_step=config->GetFDStep();
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] = direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar)+fd_step*GetNodes()->GetSolution_Delta(iPoint,iVar);
-      }
-      direct_solver->GetNodes()->SetSolution(iPoint,Solution);
+  unsigned long iPoint;
+  unsigned short iVar;
+  su2double fd_step=config->GetFDStep();
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      Solution[iVar] = direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar)+fd_step*nodes->GetSolution_Delta(iPoint,iVar);
     }
+    direct_solver->GetNodes()->SetSolution(iPoint,Solution);
+  }
 }
 
 void COneShotSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* config){
-    unsigned short iDim;
-    unsigned long iPoint;
+  unsigned short iDim;
+  unsigned long iPoint;
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GetNodes()->SetSensitivity(iPoint,iDim, (GetNodes()->GetSensitivity(iPoint,iDim)-GetNodes()->GetSensitivity_ShiftedLagrangian(iPoint,iDim))*(1./config->GetFDStep()));
-      }
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      nodes->SetSensitivity(iPoint,iDim, (nodes->GetSensitivity(iPoint,iDim)-nodes->GetSensitivity_ShiftedLagrangian(iPoint,iDim))*(1./config->GetFDStep()));
     }
+  }
 }
 
 void COneShotSolver::StoreSolutionDelta(){
@@ -427,7 +539,7 @@ void COneShotSolver::StoreSolutionDelta(){
       direct_solver->GetNodes()->SetSolution_Delta_Store(iPoint, iVar, direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar));
     }
     for (iVar = 0; iVar < nVar; iVar++){
-      GetNodes()->SetSolution_Delta_Store(iPoint,iVar,GetNodes()->GetSolution_Delta(iPoint,iVar));
+      nodes->SetSolution_Delta_Store(iPoint,iVar,nodes->GetSolution_Delta(iPoint,iVar));
     }
   }
 }
@@ -438,7 +550,7 @@ void COneShotSolver::SetConstrDerivative(unsigned short iConstr){
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      DConsVec[iConstr][iPoint][iVar]=GetNodes()->GetSolution(iPoint,iVar);
+      DConsVec[iConstr][iPoint][iVar]=nodes->GetSolution(iPoint,iVar);
     }
   }
 
