@@ -7170,7 +7170,8 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           }
         }
 
-        if(FFDBox[iFFDBox] != NULL) delete FFDBox[iFFDBox]; 
+        if(FFDBox[iFFDBox] != NULL) delete FFDBox[iFFDBox]; // This is just a work-around to prevent excessive memory allocation.
+                                                            // TODO: write SAND-specific FFD code instead of relying on poorly written I/O 
         FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, Blending);
         FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
