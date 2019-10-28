@@ -40,6 +40,8 @@
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
+  nodes = nullptr;
+
 }
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver() {

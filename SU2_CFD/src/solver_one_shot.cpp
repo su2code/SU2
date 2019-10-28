@@ -40,8 +40,6 @@
 
 COneShotSolver::COneShotSolver(void) : CDiscAdjSolver () {
 
-  nodes = nullptr;
-
 }
 
 COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdjSolver(geometry, config) {
