@@ -1977,7 +1977,7 @@ public:
                      CConfig** config,
                      unsigned short iZone,
                      unsigned short iInst,
-                     unsigned short kind_recording);
+                     unsigned short kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables AND the mesh node positions
@@ -1994,7 +1994,7 @@ public:
                        CConfig **config,
                        unsigned short iZone,
                        unsigned short iInst,
-                       unsigned short kind_recording);
+                       unsigned short kind_recording) override;
   /*!
    * \brief Registers all input variables of the fluid iteration. - The objective function is not set and
    * instead of an adjoint variable the difference in direct variables is set (needed for doubly augmented Lagrangian)
