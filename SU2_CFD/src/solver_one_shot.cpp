@@ -40,13 +40,15 @@
 
 COneShotSolver::COneShotSolver(void) : CDiscAdjSolver () {
 
+  nodes = nullptr;
+
 }
 
 COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdjSolver(geometry, config) {
 
 }
 
-COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config) {
+COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver() {
 
   unsigned short iVar, iMarker, iDim;
   unsigned long iVertex;
