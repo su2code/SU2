@@ -3949,8 +3949,8 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
   unsigned short nDim = geometry->GetnDim();
 
   bool one_shot = (config->GetKind_Solver() == ONE_SHOT_EULER)         ||
-                 (config->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES) ||
-                 (config->GetKind_Solver() == ONE_SHOT_RANS);
+                  (config->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES) ||
+                  (config->GetKind_Solver() == ONE_SHOT_RANS);
   
   /*--- Set to zero all the porints in VarCoord, this is important when we are dealing with different boxes
     because a loop over GetnSurfacePoint is no sufficient ---*/
@@ -7170,7 +7170,8 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           }
         }
 
-        if(FFDBox[iFFDBox] == NULL) FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, Blending);
+        if(FFDBox[iFFDBox] != NULL) delete FFDBox[iFFDBox]; 
+        FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, Blending);
         FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
         /*--- Read the number of parents boxes ---*/
