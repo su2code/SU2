@@ -499,7 +499,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
       /*--- Load and sort the output data and connectivity. ---*/
       
-      volumeDataSorter->SortConnectivity(config, geometry, true);
+      volumeDataSorter->SortConnectivity(config, geometry, false);
       
       /*--- Write tecplot binary ---*/
       
@@ -1220,7 +1220,7 @@ void COutput::CheckHistoryOutput(){
   nRequestedHistoryFields = requestedHistoryFields.size();
   
   if (rank == MASTER_NODE){
-    cout <<"History output groups: ";
+    cout <<"History output group(s): ";
     for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       requestedField = requestedHistoryFields[iReqField];            
       cout << requestedHistoryFields[iReqField];
@@ -1231,18 +1231,30 @@ void COutput::CheckHistoryOutput(){
   
   /*--- Check that the requested convergence monitoring field is available ---*/
   bool removedField = false;
+  FieldsToRemove.clear();
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
       if (!removedField) {
-        cout << "Ignoring Convergence Fields: ";
+        cout << "Ignoring Convergence Field(s): ";
         removedField = true;
       }
       cout << convFields[iField_Conv] << " ";
-      convFields.erase(std::find(convFields.begin(),
-                                 convFields.end(), convFields[iField_Conv]));
+      FieldsToRemove.push_back(convFields[iField_Conv]);
     }
   }
   if (removedField) cout << endl;
+  for (unsigned short iField_Conv = 0; iField_Conv < FieldsToRemove.size(); iField_Conv++){
+    convFields.erase(std::find(convFields.begin(),
+                               convFields.end(), FieldsToRemove[iField_Conv]));
+  }
+  if (rank == MASTER_NODE){
+    cout <<"Convergence field(s): ";  
+    for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+      cout << convFields[iField_Conv];
+      if (iField_Conv != convFields.size() - 1) cout << ", ";      
+    }
+    cout << endl;    
+  }
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
@@ -1552,17 +1564,6 @@ void COutput::Postprocess_HistoryData(CConfig *config){
            
     }
 
-    for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
-      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
-        HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
-        if (Field.fieldType == HistoryFieldType::COEFFICIENT){
-          if (config->GetDirectDiff() != NO_DERIVATIVE){
-            SetHistoryOutputValue("D_" + historyOutputPerSurface_List[iField][iMarker], SU2_TYPE::GetDerivative(Field.value));
-          }
-        }
-      }
-    }
-
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if(SetUpdate_Averages(config)){
         if (config->GetTime_Domain()){
@@ -1646,15 +1647,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
         AddHistoryOutput("D_TAVG_" + fieldIdentifier, "dtavg[" + currentField.fieldName + "]",
                          currentField.screenFormat, "D_TAVG_" + currentField.outputGroup, 
                          "Derivative of the time averaged value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);  
-      }
-    }
-  }
-
-  for (unsigned short iField = 0; iField < historyOutputPerSurface_List.size(); iField++){
-    for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]].size(); iMarker++){
-      HistoryOutputField &Field = historyOutputPerSurface_Map[historyOutputPerSurface_List[iField]][iMarker];
-      if (Field.fieldType == HistoryFieldType::COEFFICIENT){
-        AddHistoryOutput("D_"      + historyOutputPerSurface_List[iField][iMarker], "d["     + Field.fieldName + "]", Field.screenFormat, "D_"      + Field.outputGroup, "Derivative values for per-surface output.", HistoryFieldType::AUTO_COEFFICIENT);
       }
     }
   }
@@ -1826,6 +1818,7 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time"); 
   
+  AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 }
 
 void COutput::LoadCommonHistoryData(CConfig *config){
@@ -1852,6 +1845,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   
   SetHistoryOutputValue("WALL_TIME", UsedTime);
   
+  SetHistoryOutputValue("NONPHYSICAL_POINTS", config->GetNonphysical_Points());
 }
 
 
