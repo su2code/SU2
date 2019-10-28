@@ -7612,6 +7612,13 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
   /*--- Total number of points in each FFD box. ---*/
   
   for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+
+    /*--- Free memory in case vectors were previously filled. ---*/
+    vector<su2double>().swap(GlobalCoordX[iFFDBox]);
+    vector<su2double>().swap(GlobalCoordY[iFFDBox]);
+    vector<su2double>().swap(GlobalCoordZ[iFFDBox]);
+    vector<string>().swap(GlobalTag[iFFDBox]);
+    vector<unsigned long>().swap(GlobalPoint[iFFDBox]);
     
     /*--- Loop over the mesh to collect the coords of the local points. ---*/
     
@@ -7658,6 +7665,13 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
   
   for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+
+    /*--- Free memory in case vectors were previously filled. ---*/
+    vector<su2double>().swap(GlobalCoordX[iFFDBox]);
+    vector<su2double>().swap(GlobalCoordY[iFFDBox]);
+    vector<su2double>().swap(GlobalCoordZ[iFFDBox]);
+    vector<string>().swap(GlobalTag[iFFDBox]);
+    vector<unsigned long>().swap(GlobalPoint[iFFDBox]);
     
     nLocalPoint = 0;
     for (iPoint = 0; iPoint < FFDBox[iFFDBox]->GetnSurfacePoint(); iPoint++) {
