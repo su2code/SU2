@@ -153,7 +153,6 @@ public:
    * \param[in] Gradient - Output to store the gradient data.
    */
   void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient);
-  void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient);
 
   /*!
    * \brief Performs a surface deformation and volumetric deformation (see also SU2_DEF).
