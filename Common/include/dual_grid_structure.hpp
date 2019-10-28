@@ -176,8 +176,8 @@ private:
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
   su2double MaxLength;                /*!< \brief The maximum cell-center to cell-center length. */
-  int *Input_AdjIndices,              /*!< \brief Indices of Coord variables in the adjoint vector. */
-  *Output_AdjIndices;                 /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  int *AD_InputIndex,                 /*!< \brief Indices of Coord variables in the adjoint vector. */
+  *AD_OutputIndex;                    /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
 public:
 	
@@ -297,7 +297,7 @@ public:
    * \brief Set the adjoint vector indices of Coord vector.
    * \param[in] input - Save them to the input or output indices vector.
    */
-  void SetAdjIndices(bool input);
+  void SetIndex(bool input);
 
   /*!
    * \brief Set the adjoint values of the (geometric) coordinates.
@@ -814,7 +814,7 @@ public:
    * \brief Set the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  void SetAdjointCoord_intIndexBased(su2double *adj_coor);
+  void SetAdjointCoord_LocalIndex(su2double *adj_coor);
 
   /*!
    * \brief Get the adjoint values of the coordinates.
@@ -826,7 +826,7 @@ public:
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  void GetAdjointCoord_intIndexBased(su2double *adj_coor);
+  void GetAdjointCoord_LocalIndex(su2double *adj_coor);
 
 };
 
