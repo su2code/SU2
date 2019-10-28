@@ -143,7 +143,7 @@ public:
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
    */
-  void SetRecording(unsigned short kind_recording);
+  void SetRecording(unsigned short kind_recording) override;
 
   /*!
    * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).
