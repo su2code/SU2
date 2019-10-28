@@ -104,7 +104,7 @@ public:
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void SetRecording(unsigned short kind_recording);
+  virtual void SetRecording(unsigned short kind_recording);
 
   /*!
    * \brief Run one iteration of the solver.
