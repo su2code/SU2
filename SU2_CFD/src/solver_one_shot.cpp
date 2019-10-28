@@ -232,8 +232,6 @@ void COneShotSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry){
     unsigned short iDim;
     unsigned long iPoint;
 
-    geometry->InitializeSensitivity();
-
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_AugmentedLagrangian(iPoint,iDim));
