@@ -7406,6 +7406,8 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
     if (rank == MASTER_NODE) cout <<"There is no FFD box definition. Just in case, check the .su2 file" << endl;
   }
 
+  delete [] cstr;
+
 }
 
 void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox) {
@@ -8097,7 +8099,9 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
   delete [] Coord_Control_Points_Copy;
 
   delete [] ParamCoord;
+  delete [] ParamCoord_;
   delete [] cart_coord;
+  delete [] cart_coord_;
   delete [] Gradient;
   
   for (iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++)
