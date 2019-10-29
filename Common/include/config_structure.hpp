@@ -548,12 +548,10 @@ private:
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
-  su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
   su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
-  unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
