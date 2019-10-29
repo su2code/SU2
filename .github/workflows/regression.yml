@@ -33,7 +33,7 @@ jobs:
             MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
       - name: Build 
-        uses: docker://su2code/build-su2
+        uses: docker://su2code/build-su2:20191029
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Upload Binaries 
@@ -79,7 +79,7 @@ jobs:
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
           chmod a+x install/bin/*               
       - name: Run Tests in Container
-        uses: docker://su2code/test-su2
+        uses: docker://su2code/test-su2:20191029
         with:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   
