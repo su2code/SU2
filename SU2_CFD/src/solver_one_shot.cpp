@@ -176,6 +176,7 @@ COneShotSolver::~COneShotSolver(void) {
     delete [] DConsVec[iConstr];
   }
   delete [] DConsVec;
+  DConsVec = NULL;
 
   unsigned short iMarker;
 
@@ -184,9 +185,10 @@ COneShotSolver::~COneShotSolver(void) {
       delete [] CSensitivity[iMarker];
     }
     delete [] CSensitivity;
+    CSensitivity = NULL;
   }
 
-  if (nodes != nullptr) delete nodes;
+  if (nodes != nullptr) {delete nodes; nodes = nullptr;}
 }
 
 void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
