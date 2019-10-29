@@ -2614,7 +2614,14 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
   FFDBox = NULL;
 }
 
-CSurfaceMovement::~CSurfaceMovement(void) {}
+CSurfaceMovement::~CSurfaceMovement(void) {
+  if(FFDBox != NULL) {
+    for(usigned short iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+      if(FFDBox[iFFDBox] != NULL) delete FFDBox[iFFDBox];
+    }
+    delete [] FFDBox;
+  }
+}
 
 void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
   
@@ -8070,13 +8077,21 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short Degree[], unsigned short BSpline
 CFreeFormDefBox::~CFreeFormDefBox(void) {
   unsigned short iOrder, jOrder, kOrder, iCornerPoints, iDim;
   
-  for (iOrder = 0; iOrder < lOrder; iOrder++) 
-    for (jOrder = 0; jOrder < mOrder; jOrder++) 
+  for (iOrder = 0; iOrder < lOrder; iOrder++) {
+    for (jOrder = 0; jOrder < mOrder; jOrder++) {
       for (kOrder = 0; kOrder < nOrder; kOrder++) {
         delete [] Coord_Control_Points[iOrder][jOrder][kOrder];
         delete [] ParCoord_Control_Points[iOrder][jOrder][kOrder];
         delete [] Coord_Control_Points_Copy[iOrder][jOrder][kOrder];
       }
+      delete [] Coord_Control_Points[iOrder][jOrder];
+      delete [] ParCoord_Control_Points[iOrder][jOrder];
+      delete [] Coord_Control_Points_Copy[iOrder][jOrder];
+    }
+    delete [] Coord_Control_Points[iOrder];
+    delete [] ParCoord_Control_Points[iOrder];
+    delete [] Coord_Control_Points_Copy[iOrder];
+  }
   delete [] Coord_Control_Points;
   delete [] ParCoord_Control_Points;
   delete [] Coord_Control_Points_Copy;
@@ -8093,6 +8108,19 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
     delete BlendingFunction[iDim];
   }
   delete [] BlendingFunction;
+
+  for (unsigned short iDim = 0; iDim < 3; ++iDim) {
+    vector<su2double>().swap(CartesianCoord[iDim]);
+    vector<su2double>().swap(ParametricCoord[iDim]);
+  }
+  vector<unsigned short>().swap(MarkerIndex);
+  vector<unsigned long>().swap(VertexIndex);
+  vector<unsigned long>().swap(PointIndex);
+  vector<string>().swap(ParentFFDBox);
+  vector<string>().swap(ChildFFDBox);
+  vector<unsigned short>().swap(Fix_IPlane);
+  vector<unsigned short>().swap(Fix_JPlane);
+  vector<unsigned short>().swap(Fix_KPlane);
 }
 
 void  CFreeFormDefBox::SetUnitCornerPoints(void) {

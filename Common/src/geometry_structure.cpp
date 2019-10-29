@@ -4555,6 +4555,8 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     delete [] nTotVertexSpan;
   }
 
+  if (Sensitivity != NULL) delete [] Sensitivity;
+
 }
 
 void CPhysicalGeometry::DistributeColoring(CConfig *config,
