@@ -1,19 +1,18 @@
 #include "../../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
-#include <iomanip> // for setprecision
+#include <iomanip> /*--- for setprecision ---*/
 
-CSTLFileWriter::CSTLFileWriter(vector<string> fields, unsigned short nDim) :
-  CFileWriter(fields, ".stl", nDim){}
+const string CSTLFileWriter::fileExt = ".stl";
 
-
-CSTLFileWriter::~CSTLFileWriter(){
-
-}
+CSTLFileWriter::CSTLFileWriter(vector<string> fields, unsigned short nDim, 
+                                         string fileName, CParallelDataSorter *dataSorter) : 
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
-void CSTLFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+CSTLFileWriter::~CSTLFileWriter(){}
 
-  filename += file_ext;
+
+void CSTLFileWriter::Write_Data(){
 
   /*--- Routine to write the surface STL files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the
@@ -47,8 +46,8 @@ void CSTLFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
    partitions so we can set up buffers. The master node will handle
    the writing of the CSV file after gathering all of the data. ---*/
 
-  nLocalTria = data_sorter->GetnElem(TRIANGLE);
-  nLocalQuad = data_sorter->GetnElem(QUADRILATERAL);
+  nLocalTria = dataSorter->GetnElem(TRIANGLE);
+  nLocalQuad = dataSorter->GetnElem(QUADRILATERAL);
   nLocalTriaAll = nLocalTria + nLocalQuad*2; // Quad splitted into 2 tris
 
   if (rank == MASTER_NODE) Buffer_Recv_nTriaAll = new unsigned long[nProcessor];
@@ -85,7 +84,7 @@ void CSTLFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   for (iElem = 0; iElem < nLocalTria; iElem++) {
     for (iPoint = 0; iPoint < 3; iPoint++) {
       for (iVar = 0; iVar < 3; iVar++){
-        bufD_Send[index] = data_sorter->GetData(iVar, data_sorter->GetElem_Connectivity(TRIANGLE, iElem, iPoint) - 1); // (var, GlobalPointindex)
+        bufD_Send[index] = dataSorter->GetData(iVar, dataSorter->GetElem_Connectivity(TRIANGLE, iElem, iPoint) - 1); // (var, GlobalPointindex)
         if ((abs(bufD_Send[index]) < 1e-4 || abs(bufD_Send[index]) > 1e5) && bufD_Send[index] != 0) {
               cout << "Bad bufD_Send value: " << bufD_Send[index] << " at iproc " << rank << " iElem " << iElem << " iPoint " << iPoint << " iVat " << iVar << endl;
         }
@@ -97,7 +96,7 @@ void CSTLFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   for (iElem = 0; iElem < nLocalQuad; iElem++) {
     for (iPoint = 0; iPoint < Nodelist.size(); iPoint++) {
       for (iVar = 0; iVar < 3; iVar++){
-        bufD_Send[index] = data_sorter->GetData(iVar, data_sorter->GetElem_Connectivity(QUADRILATERAL,iElem,Nodelist[iPoint]) - 1);
+        bufD_Send[index] = dataSorter->GetData(iVar, dataSorter->GetElem_Connectivity(QUADRILATERAL,iElem,Nodelist[iPoint]) - 1);
         index++;
       }
     }
@@ -114,7 +113,7 @@ void CSTLFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
 
     /*--- Open the CSV file and write the header with variable names. ---*/
     Surf_file.precision(6);
-    Surf_file.open(filename.c_str(), ios::out);
+    Surf_file.open(fileName.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
     /*--- Loop through all of the collected data and write each node's values ---*/
 

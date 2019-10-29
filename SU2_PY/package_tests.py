@@ -52,7 +52,6 @@ from collections import OrderedDict
 # plotting
 # verbose redirection
 # pyopt optimizers
-# verify server.py
 
 
 # needed config options

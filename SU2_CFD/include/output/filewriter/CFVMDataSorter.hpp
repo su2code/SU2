@@ -62,13 +62,6 @@ public:
   ~CFVMDataSorter() override;
   
   /*!
-   * \brief Sort the output data for each grid node into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SortOutputData() override;
-  
-  /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

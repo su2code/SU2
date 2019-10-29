@@ -1,17 +1,17 @@
 #include "../../../include/output/filewriter/CParaviewFileWriter.hpp"
 
+const string CParaviewFileWriter::fileExt = ".vtk";
 
-CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, ".vtk", nDim){}
+CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim, 
+                                         string fileName, CParallelDataSorter *dataSorter) : 
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CParaviewFileWriter::~CParaviewFileWriter(){}
 
-void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
-  
-  filename += file_ext;
-  
-  if (!data_sorter->GetConnectivitySorted()){
+void CParaviewFileWriter::Write_Data(){
+    
+  if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
   
@@ -36,7 +36,7 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
   /*--- Open Paraview ASCII file and write the header. ---*/
   
   if (rank == MASTER_NODE) {
-    Paraview_File.open(filename.c_str(), ios::out);
+    Paraview_File.open(fileName.c_str(), ios::out);
     Paraview_File.precision(6);
     Paraview_File << "# vtk DataFile Version 3.0\n";
     Paraview_File << "vtk output\n";
@@ -44,7 +44,7 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
     Paraview_File << "DATASET UNSTRUCTURED_GRID\n";
     
     /*--- Write the header ---*/
-    Paraview_File << "POINTS "<< data_sorter->GetnPointsGlobal() <<" double\n";
+    Paraview_File << "POINTS "<< dataSorter->GetnPointsGlobal() <<" double\n";
     
   }
 
@@ -56,7 +56,7 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
 
   /*--- Each processor opens the file. ---*/
 
-  Paraview_File.open(filename.c_str(), ios::out | ios::app);
+  Paraview_File.open(fileName.c_str(), ios::out | ios::app);
 
   /*--- Write surface and volumetric point coordinates. ---*/
 
@@ -66,9 +66,9 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
       /*--- Write the node data from this proc ---*/
       
       
-      for (iPoint = 0; iPoint < data_sorter->GetnPoints(); iPoint++) {
+      for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++)
-          Paraview_File << scientific << data_sorter->GetData(iDim, iPoint) << "\t";
+          Paraview_File << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
         if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
       }
     }
@@ -82,13 +82,13 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
   /*--- Reduce the total number of each element. ---*/
 
   unsigned long nTot_Line, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
-  unsigned long nParallel_Line = data_sorter->GetnElem(LINE),
-                nParallel_Tria = data_sorter->GetnElem(TRIANGLE),
-                nParallel_Quad = data_sorter->GetnElem(QUADRILATERAL),
-                nParallel_Tetr = data_sorter->GetnElem(TETRAHEDRON),
-                nParallel_Hexa = data_sorter->GetnElem(HEXAHEDRON),
-                nParallel_Pris = data_sorter->GetnElem(PRISM),
-                nParallel_Pyra = data_sorter->GetnElem(PYRAMID);
+  unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
+                nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
+                nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
+                nParallel_Tetr = dataSorter->GetnElem(TETRAHEDRON),
+                nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
+                nParallel_Pris = dataSorter->GetnElem(PRISM),
+                nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
 #ifdef HAVE_MPI
   SU2_MPI::Reduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Reduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
@@ -113,7 +113,7 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
     /*--- Write the header ---*/
     nGlobal_Elem_Storage = nTot_Line*3 + nTot_Tria*4 + nTot_Quad*5 + nTot_Tetr*5 + nTot_Hexa*9 + nTot_Pris*7 + nTot_Pyra*6;
     
-    Paraview_File << "\nCELLS " << data_sorter->GetnElem() << "\t" << nGlobal_Elem_Storage << "\n";
+    Paraview_File << "\nCELLS " << dataSorter->GetnElem() << "\t" << nGlobal_Elem_Storage << "\n";
     
   }
 
@@ -130,63 +130,63 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
       
       for (iElem = 0; iElem < nParallel_Line; iElem++) {
         Paraview_File << N_POINTS_LINE << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(LINE, iElem, 0)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(LINE, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(LINE, iElem, 0)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(LINE, iElem, 1)-1 << "\t";
       }
       
       for (iElem = 0; iElem < nParallel_Tria; iElem++) {
         Paraview_File << N_POINTS_TRIANGLE << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1 << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1 << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1 << "\t";
       }
       
       for (iElem = 0; iElem < nParallel_Quad; iElem++) {
         Paraview_File << N_POINTS_QUADRILATERAL << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1 << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1 << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1 << "\t";
-        Paraview_File <<  data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1 << "\t";
       }
       
       
       for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
         Paraview_File << N_POINTS_TETRAHEDRON << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1 << "\t";
       }
       
       for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
         Paraview_File << N_POINTS_HEXAHEDRON << "\t"; 
-        Paraview_File << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1 << "\t";
       }
       
       for (iElem = 0; iElem < nParallel_Pris; iElem++) {
         Paraview_File << N_POINTS_PRISM << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(PRISM, iElem, 0)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(PRISM, iElem, 1)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(PRISM, iElem, 2)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(PRISM, iElem, 3)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(PRISM, iElem, 4)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(PRISM, iElem, 5)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 0)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(PRISM, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 2)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(PRISM, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 4)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(PRISM, iElem, 5)-1 << "\t";
       }
       
       for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
         Paraview_File << N_POINTS_PYRAMID << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1 << "\t" 
-                      << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1 << "\t";
-        Paraview_File << data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1 << "\t" 
+                      << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1 << "\t";
       }
       
     }    Paraview_File.flush();
@@ -198,7 +198,7 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
   if (rank == MASTER_NODE) {
     
     /*--- Write the header ---*/
-    Paraview_File << "\nCELL_TYPES " << data_sorter->GetnElem() << "\n";
+    Paraview_File << "\nCELL_TYPES " << dataSorter->GetnElem() << "\n";
     
   }
 
@@ -225,7 +225,7 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
   
   if (rank == MASTER_NODE) {
     /*--- Write the header ---*/
-    Paraview_File << "\nPOINT_DATA "<< data_sorter->GetnPointsGlobal() <<"\n";
+    Paraview_File << "\nPOINT_DATA "<< dataSorter->GetnPointsGlobal() <<"\n";
     
   }
 
@@ -293,9 +293,9 @@ found = fieldnames[iField].find("_z");
           
           /*--- Write the node data from this proc ---*/
           
-          for (iPoint = 0; iPoint < data_sorter->GetnPoints(); iPoint++) {
-            Paraview_File << scientific << data_sorter->GetData(VarCounter+0, iPoint) << "\t" << data_sorter->GetData(VarCounter+1, iPoint) << "\t";
-            if (nDim == 3) Paraview_File << scientific << data_sorter->GetData(VarCounter+2, iPoint) << "\t";
+          for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+            Paraview_File << scientific << dataSorter->GetData(VarCounter+0, iPoint) << "\t" << dataSorter->GetData(VarCounter+1, iPoint) << "\t";
+            if (nDim == 3) Paraview_File << scientific << dataSorter->GetData(VarCounter+2, iPoint) << "\t";
             if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
           }
         }
@@ -328,8 +328,8 @@ found = fieldnames[iField].find("_z");
 
           /*--- Write the node data from this proc ---*/
           
-          for (iPoint = 0; iPoint < data_sorter->GetnPoints(); iPoint++) {
-            Paraview_File << scientific << data_sorter->GetData(VarCounter, iPoint) << "\t";
+          for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+            Paraview_File << scientific << dataSorter->GetData(VarCounter, iPoint) << "\t";
           }
           
         }
@@ -356,7 +356,7 @@ found = fieldnames[iField].find("_z");
 #endif
   UsedTime = StopTime-StartTime;
   
-  file_size = Determine_Filesize(filename);
+  file_size = Determine_Filesize(fileName);
   
   /*--- Compute and store the bandwidth ---*/
   

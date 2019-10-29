@@ -1,19 +1,19 @@
 #include "../../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 
+const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
-CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, ".vtk", nDim){}
+CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim, string fileName, 
+                                                     CParallelDataSorter *dataSorter) : 
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
   
 }
 
-void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
-  
-  filename += file_ext;
-  
-  if (!data_sorter->GetConnectivitySorted()){
+void CParaviewBinaryFileWriter::Write_Data(){
+    
+  if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
   
@@ -28,14 +28,16 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   const int NCOORDS = 3;
 
-  strcpy(fname, filename.c_str());
+  strcpy(fname, fileName.c_str());
   
-  /*--- Check for big endian. We have to swap bytes otherwise. ---*/
+  /* Check for big endian. We have to swap bytes otherwise. 
+   * Since size of character is 1 byte when the character pointer
+   *  is de-referenced it will contain only first byte of integer. ---*/
   
-  bool BigEndian;
-  union {int i; char c[4];} val;
-  val.i = 0x76543210;
-  if (val.c[0] == 0x10) BigEndian = false;
+  bool BigEndian = false;  
+  unsigned int i = 1;  
+  char *c = (char*)&i;
+  if (*c) BigEndian = false;
   else BigEndian = true;
   
   file_size = 0.0;
@@ -62,7 +64,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   if (!fhw) {
     SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   filename, CURRENT_FUNCTION);
+                   fileName, CURRENT_FUNCTION);
   }
   
   /*--- File header written in ASCII. ---*/
@@ -85,7 +87,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   /*--- Write the point coordinates. ---*/
   
-  unsigned long GlobalPoint = data_sorter->GetnPointsGlobal();
+  unsigned long GlobalPoint = dataSorter->GetnPointsGlobal();
   
   SPRINTF(str_buf, "POINTS %i float\n", (int)GlobalPoint);
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
@@ -99,7 +101,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       if (nDim == 2 && iDim == 2) {
         coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)SU2_TYPE::GetValue(data_sorter->GetData(iDim,iPoint));
+        float val = (float)dataSorter->GetData(iDim,iPoint);
         coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -116,24 +118,24 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   unsigned long nTot_Line;
   unsigned long nTot_Tria, nTot_Quad;
   unsigned long nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
-  nTot_Line = data_sorter->GetnElem(LINE);  
-  nTot_Tria = data_sorter->GetnElem(TRIANGLE);
-  nTot_Quad = data_sorter->GetnElem(QUADRILATERAL);
-  nTot_Tetr = data_sorter->GetnElem(TETRAHEDRON);
-  nTot_Hexa = data_sorter->GetnElem(HEXAHEDRON);
-  nTot_Pris = data_sorter->GetnElem(PRISM);
-  nTot_Pyra = data_sorter->GetnElem(PYRAMID);
+  nTot_Line = dataSorter->GetnElem(LINE);  
+  nTot_Tria = dataSorter->GetnElem(TRIANGLE);
+  nTot_Quad = dataSorter->GetnElem(QUADRILATERAL);
+  nTot_Tetr = dataSorter->GetnElem(TETRAHEDRON);
+  nTot_Hexa = dataSorter->GetnElem(HEXAHEDRON);
+  nTot_Pris = dataSorter->GetnElem(PRISM);
+  nTot_Pyra = dataSorter->GetnElem(PYRAMID);
   nGlobal_Elem_Storage = (nTot_Line*3 + nTot_Tria*4 + nTot_Quad*5 + nTot_Tetr*5 +
                           nTot_Hexa*9 + nTot_Pris*7 + nTot_Pyra*6);
   
   int *conn_buf = NULL;
   
-  SPRINTF (str_buf, "\nCELLS %i %i\n", (int)data_sorter->GetnElem(),
+  SPRINTF (str_buf, "\nCELLS %i %i\n", (int)dataSorter->GetnElem(),
            (int)nGlobal_Elem_Storage);
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
   file_size += sizeof(char)*strlen(str_buf);
   
-  conn_buf = new int[data_sorter->GetnElem()*(N_POINTS_HEXAHEDRON+1)];
+  conn_buf = new int[dataSorter->GetnElem()*(N_POINTS_HEXAHEDRON+1)];
   
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
@@ -142,8 +144,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Line; iElem++) {
     iNode2 = iElem*(N_POINTS_LINE+1);
     conn_buf[iNode2+0] = N_POINTS_LINE;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(LINE, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(LINE, iElem, 1)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(LINE, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(LINE, iElem, 1)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Line*(N_POINTS_LINE+1));
@@ -155,9 +157,9 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Tria; iElem++) {
     iNode2 = iElem*(N_POINTS_TRIANGLE+1);
     conn_buf[iNode2+0] = N_POINTS_TRIANGLE;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1;
-    conn_buf[iNode2+3] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1;
+    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Tria*(N_POINTS_TRIANGLE+1));
@@ -168,10 +170,10 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Quad; iElem++) {
     iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
     conn_buf[iNode2+0] = N_POINTS_QUADRILATERAL;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1;
-    conn_buf[iNode2+3] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1;
-    conn_buf[iNode2+4] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1;
+    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1;
+    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Quad*(N_POINTS_QUADRILATERAL+1));
@@ -182,10 +184,10 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Tetr; iElem++) {
     iNode2 = iElem*(N_POINTS_TETRAHEDRON+1);
     conn_buf[iNode2+0] = N_POINTS_TETRAHEDRON;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1;
-    conn_buf[iNode2+3] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1;
-    conn_buf[iNode2+4] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1;
+    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1;
+    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Tetr*(N_POINTS_TETRAHEDRON+1));
@@ -196,14 +198,14 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Hexa; iElem++) {
     iNode2 = iElem*(N_POINTS_HEXAHEDRON+1);
     conn_buf[iNode2+0] = N_POINTS_HEXAHEDRON;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1;
-    conn_buf[iNode2+3] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1;
-    conn_buf[iNode2+4] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1;
-    conn_buf[iNode2+5] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1;
-    conn_buf[iNode2+6] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1;
-    conn_buf[iNode2+7] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1;
-    conn_buf[iNode2+8] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1;
+    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1;
+    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1;
+    conn_buf[iNode2+5] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1;
+    conn_buf[iNode2+6] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1;
+    conn_buf[iNode2+7] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1;
+    conn_buf[iNode2+8] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Hexa*(N_POINTS_HEXAHEDRON+1));
@@ -214,12 +216,12 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Pris; iElem++) {
     iNode2 = iElem*(N_POINTS_PRISM+1);
     conn_buf[iNode2+0] = N_POINTS_PRISM;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(PRISM, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(PRISM, iElem, 1)-1;
-    conn_buf[iNode2+3] = data_sorter->GetElem_Connectivity(PRISM, iElem, 2)-1;
-    conn_buf[iNode2+4] = data_sorter->GetElem_Connectivity(PRISM, iElem, 3)-1;
-    conn_buf[iNode2+5] = data_sorter->GetElem_Connectivity(PRISM, iElem, 4)-1;
-    conn_buf[iNode2+6] = data_sorter->GetElem_Connectivity(PRISM, iElem, 5)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(PRISM, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(PRISM, iElem, 1)-1;
+    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(PRISM, iElem, 2)-1;
+    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(PRISM, iElem, 3)-1;
+    conn_buf[iNode2+5] = dataSorter->GetElem_Connectivity(PRISM, iElem, 4)-1;
+    conn_buf[iNode2+6] = dataSorter->GetElem_Connectivity(PRISM, iElem, 5)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Pris*(N_POINTS_PRISM+1));
@@ -230,11 +232,11 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   for (iElem = 0; iElem < nTot_Pyra; iElem++) {
     iNode2 = iElem*(N_POINTS_PYRAMID+1);
     conn_buf[iNode2+0] = N_POINTS_PYRAMID;
-    conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1;
-    conn_buf[iNode2+2] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1;
-    conn_buf[iNode2+3] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1;
-    conn_buf[iNode2+4] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1;
-    conn_buf[iNode2+5] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1;
+    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1;
+    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1;
+    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1;
+    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1;
+    conn_buf[iNode2+5] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1;
   }
   if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                             nTot_Pyra*(N_POINTS_PYRAMID+1));
@@ -248,13 +250,13 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   /*--- Load/write the cell type for all elements in the file. ---*/
   
 
-  SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(data_sorter->GetnElem()));
+  SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(dataSorter->GetnElem()));
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
   file_size += sizeof(char)*strlen(str_buf);
   
   int *type_buf = NULL;
   
-  type_buf = new int[data_sorter->GetnElem()];
+  type_buf = new int[dataSorter->GetnElem()];
   
   for (iElem = 0; iElem < nTot_Line; iElem++) {
     type_buf[iElem] = LINE;
@@ -372,7 +374,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
           if (nDim == 2 && iDim == 2) {
             vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)SU2_TYPE::GetValue(data_sorter->GetData(VarCounter+iDim,iPoint));
+            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
             vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
@@ -403,7 +405,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
        This will be replaced with a derived data type most likely. ---*/
       
       for (iPoint = 0; iPoint < GlobalPoint; iPoint++) {
-        float val = (float)SU2_TYPE::GetValue(data_sorter->GetData(VarCounter,iPoint));
+        float val = (float)dataSorter->GetData(VarCounter,iPoint);
         scalar_buf[iPoint] = val;
       }
       if (!BigEndian)
@@ -496,8 +498,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   unsigned long myPoint, GlobalPoint;
   
-  GlobalPoint = data_sorter->GetnPointsGlobal();
-  myPoint     = data_sorter->GetnPoints();
+  GlobalPoint = dataSorter->GetnPointsGlobal();
+  myPoint     = dataSorter->GetnPoints();
   
   
   int *nPoint_Snd = new int[size+1];
@@ -536,7 +538,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       if (nDim == 2 && iDim == 2) {
         coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)SU2_TYPE::GetValue(data_sorter->GetData(iDim, iPoint));
+        float val = (float)dataSorter->GetData(iDim, iPoint);
         coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -587,13 +589,13 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   unsigned long nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long myElem, myElemStorage, GlobalElem, GlobalElemStorage;
   
-  unsigned long nParallel_Line = data_sorter->GetnElem(LINE),
-                nParallel_Tria = data_sorter->GetnElem(TRIANGLE),
-                nParallel_Quad = data_sorter->GetnElem(QUADRILATERAL),
-                nParallel_Tetr = data_sorter->GetnElem(TETRAHEDRON),
-                nParallel_Hexa = data_sorter->GetnElem(HEXAHEDRON),
-                nParallel_Pris = data_sorter->GetnElem(PRISM),
-                nParallel_Pyra = data_sorter->GetnElem(PYRAMID);
+  unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
+                nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
+                nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
+                nParallel_Tetr = dataSorter->GetnElem(TETRAHEDRON),
+                nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
+                nParallel_Pris = dataSorter->GetnElem(PRISM),
+                nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
   
   SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -673,70 +675,70 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   for (iElem = 0; iElem < nParallel_Line; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_LINE;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(LINE, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(LINE, iElem, 1)-1;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(LINE, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(LINE, iElem, 1)-1;
     iStorage += (N_POINTS_LINE+1);
   }
   
   for (iElem = 0; iElem < nParallel_Tria; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_TRIANGLE;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1;
-    conn_buf[iStorage+3] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1 ;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1;
+    conn_buf[iStorage+3] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1 ;
     iStorage += (N_POINTS_TRIANGLE+1);
   }
   
   for (iElem = 0; iElem < nParallel_Quad; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_QUADRILATERAL;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1;
-    conn_buf[iStorage+3] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1;
-    conn_buf[iStorage+4] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1;
+    conn_buf[iStorage+3] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1;
+    conn_buf[iStorage+4] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1;
     iStorage += (N_POINTS_QUADRILATERAL+1);
     
   }
   
   for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_TETRAHEDRON;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1;
-    conn_buf[iStorage+3] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1;
-    conn_buf[iStorage+4] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1;
+    conn_buf[iStorage+3] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1;
+    conn_buf[iStorage+4] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1;
     iStorage += (N_POINTS_TETRAHEDRON+1);
     
   }
   
   for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_HEXAHEDRON;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1;
-    conn_buf[iStorage+3] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1;
-    conn_buf[iStorage+4] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1;
-    conn_buf[iStorage+5] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1;
-    conn_buf[iStorage+6] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1;
-    conn_buf[iStorage+7] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1;
-    conn_buf[iStorage+8] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1;
+    conn_buf[iStorage+3] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1;
+    conn_buf[iStorage+4] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1;
+    conn_buf[iStorage+5] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1;
+    conn_buf[iStorage+6] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1;
+    conn_buf[iStorage+7] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1;
+    conn_buf[iStorage+8] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1;
     iStorage += (N_POINTS_HEXAHEDRON+1);
   }
   
   for (iElem = 0; iElem < nParallel_Pris; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_PRISM;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(PRISM, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(PRISM, iElem, 1)-1;
-    conn_buf[iStorage+3] = data_sorter->GetElem_Connectivity(PRISM, iElem, 2)-1;
-    conn_buf[iStorage+4] = data_sorter->GetElem_Connectivity(PRISM, iElem, 3)-1;
-    conn_buf[iStorage+5] = data_sorter->GetElem_Connectivity(PRISM, iElem, 4)-1;
-    conn_buf[iStorage+6] = data_sorter->GetElem_Connectivity(PRISM, iElem, 5)-1;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(PRISM, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(PRISM, iElem, 1)-1;
+    conn_buf[iStorage+3] = dataSorter->GetElem_Connectivity(PRISM, iElem, 2)-1;
+    conn_buf[iStorage+4] = dataSorter->GetElem_Connectivity(PRISM, iElem, 3)-1;
+    conn_buf[iStorage+5] = dataSorter->GetElem_Connectivity(PRISM, iElem, 4)-1;
+    conn_buf[iStorage+6] = dataSorter->GetElem_Connectivity(PRISM, iElem, 5)-1;
     iStorage += (N_POINTS_PRISM+1);
   }
   
   for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
     conn_buf[iStorage+0] = N_POINTS_PYRAMID;
-    conn_buf[iStorage+1] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1;
-    conn_buf[iStorage+2] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1;
-    conn_buf[iStorage+3] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1;
-    conn_buf[iStorage+4] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1;
-    conn_buf[iStorage+5] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1;
+    conn_buf[iStorage+1] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1;
+    conn_buf[iStorage+2] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1;
+    conn_buf[iStorage+3] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1;
+    conn_buf[iStorage+4] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1;
+    conn_buf[iStorage+5] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1;
     iStorage += (N_POINTS_PYRAMID+1);
   }
   
@@ -929,7 +931,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
           if (nDim == 2 && iDim == 2) {
             vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)SU2_TYPE::GetValue(data_sorter->GetData(VarCounter+iDim,iPoint));
+            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
             vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
@@ -1004,7 +1006,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
        This will be replaced with a derived data type most likely. ---*/
       
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        float val = (float)SU2_TYPE::GetValue(data_sorter->GetData(VarCounter,iPoint));
+        float val = (float)dataSorter->GetData(VarCounter,iPoint);
         scalar_buf[iPoint] = val;
       }
       if (!BigEndian) SwapBytes((char *)scalar_buf, sizeof(float), myPoint);

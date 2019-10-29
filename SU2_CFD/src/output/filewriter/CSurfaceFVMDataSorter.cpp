@@ -19,14 +19,11 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
   
   if (linearPartitioner != NULL) delete linearPartitioner;
+  delete [] passiveDoubleBuffer;
   
 }
 
 void CSurfaceFVMDataSorter::SortOutputData() {
-  
-  if (!connectivity_sorted){
-    SU2_MPI::Error("Connectivity must be sorted before sorting output data", CURRENT_FUNCTION);
-  }
   
   unsigned long iProcessor;
   unsigned long iPoint, iElem;
@@ -372,6 +369,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- First, add up the number of surface points I have on my rank. ---*/
   
   nParallel_Poin = 0;
+  Renumber2Global.clear();  
+  
   for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) {
     if (surfPoint[iPoint] != -1) {
       
@@ -413,18 +412,18 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we can allocate the new data structure to hold these points alone. Here,
    we also copy the data for those points from our volume data structure. ---*/
   
-  Parallel_Data = new su2double*[VARS_PER_POINT];
+  if (passiveDoubleBuffer == nullptr){
+    passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  }
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nParallel_Poin]();
     count = 0;
     for (int ii = 0; ii < (int)volume_sorter->GetnPoints(); ii++) {
       if (surfPoint[ii] !=-1) {
-        Parallel_Data[jj][count] = volume_sorter->GetData(jj,ii);
+        passiveDoubleBuffer[count*VARS_PER_POINT + jj] = volume_sorter->GetData(jj,ii);
         count++;
       }
     }
   }
-  
   /*--- Reduce the total number of surf points we have. This will be
    needed for writing the surface solution files later. ---*/
   
@@ -1075,10 +1074,6 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
-  
-  
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Sorting surface grid connectivity." << endl;
 
   SortSurfaceConnectivity(config, geometry, LINE         );
   SortSurfaceConnectivity(config, geometry, TRIANGLE     );
@@ -1450,14 +1445,17 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nElem_Total;
+      if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
       if (nParallel_Line > 0) Conn_Line_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_Tria = nElem_Total;
+      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;      
       if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nElem_Total;
+      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;      
       if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
       break;
     default:

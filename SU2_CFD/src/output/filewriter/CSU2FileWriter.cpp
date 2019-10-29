@@ -1,20 +1,18 @@
 #include "../../../include/output/filewriter/CSU2FileWriter.hpp"
 
+const string CSU2FileWriter::fileExt = ".csv";
 
-
-
-CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim) : 
-  CFileWriter(fields, ".csv", nDim){}
+CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim, 
+                               string fileName, CParallelDataSorter *dataSorter) : 
+  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CSU2FileWriter::~CSU2FileWriter(){
   
 }
 
-void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
-  
-  filename += file_ext;
-  
+void CSU2FileWriter::Write_Data(){
+    
   /*--- Local variables ---*/
   
   unsigned short iVar;
@@ -35,7 +33,7 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   /*--- Only the master node writes the header. ---*/
   
   if (rank == MASTER_NODE) {
-    restart_file.open(filename.c_str(), ios::out);
+    restart_file.open(fileName.c_str(), ios::out);
     restart_file.precision(15);
     restart_file << "\"PointID\"";
     for (iVar = 0; iVar < fieldnames.size()-1; iVar++)
@@ -50,7 +48,7 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   /*--- All processors open the file. ---*/
   
-  restart_file.open(filename.c_str(), ios::out | ios::app);
+  restart_file.open(fileName.c_str(), ios::out | ios::app);
   restart_file.precision(15);
   
   /*--- Write the restart file in parallel, processor by processor. ---*/
@@ -58,11 +56,11 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   unsigned long myPoint = 0, Global_Index;
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      for (iPoint = 0; iPoint < data_sorter->GetnPoints(); iPoint++) {
+      for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
         
         /*--- Global Index of the current point. (note outer loop over procs) ---*/
         
-        Global_Index = data_sorter->GetGlobalIndex(iPoint);
+        Global_Index = dataSorter->GetGlobalIndex(iPoint);
         
         /*--- Write global index. (note outer loop over procs) ---*/
         
@@ -72,9 +70,9 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
         /*--- Loop over the variables and write the values to file ---*/
         
         for (iVar = 0; iVar < fieldnames.size()-1; iVar++) {
-          restart_file << scientific << data_sorter->GetData(iVar, iPoint) << ", ";
+          restart_file << scientific << dataSorter->GetData(iVar, iPoint) << ", ";
         }
-        restart_file << scientific << data_sorter->GetData(fieldnames.size()-1, iPoint) << "\n";        
+        restart_file << scientific << dataSorter->GetData(fieldnames.size()-1, iPoint) << "\n";        
       }
       
     }
@@ -97,7 +95,7 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   /*--- Determine the file size ---*/
   
-  file_size = Determine_Filesize(filename);
+  file_size = Determine_Filesize(fileName);
   
   /*--- Compute and store the bandwidth ---*/
   

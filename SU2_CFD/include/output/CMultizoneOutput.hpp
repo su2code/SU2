@@ -60,7 +60,7 @@ using namespace std;
  * \brief Class for writing the multizone output.
  * \author R. Sanchez, T. Albring.
  */
-class CDriverOutput final: public COutput {
+class CMultizoneOutput final: public COutput {
 
 protected:
   unsigned short nZone; //!< Number of zones
@@ -73,12 +73,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDriverOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
+  CMultizoneOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDriverOutput(void) override;
+  ~CMultizoneOutput(void) override;
 
   /*!
    * \brief Load the multizone history output field values

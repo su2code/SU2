@@ -49,7 +49,7 @@ class CVariable;
 class CFlowIncOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; /*!< \brief Boolean indicating whether have a turbulence model*/ 
+  unsigned short turb_model; /*!< \brief The kind of turbulence model*/ 
   bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/ 
   weakly_coupled_heat; /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/ 
 
@@ -104,15 +104,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryOutputFields(CConfig *config) override;
-
-  /*!
-   * \brief Compute value of the Q criteration for vortex idenfitication
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] node_flow - The flow variable node
-   * \return Value of the Q criteration at the node
-   */
-  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
   
   /*!
    * \brief Check whether the base values for relative residuals should be initialized

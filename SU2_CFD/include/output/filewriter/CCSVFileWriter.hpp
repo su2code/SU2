@@ -47,7 +47,7 @@ public:
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
    */  
-  CCSVFileWriter(vector<string> fields, unsigned short nDim);
+  CCSVFileWriter(vector<string> fields, unsigned short nDim, string fileName, CParallelDataSorter* data_sorter);
   
   /*!
    * \brief Destructor
@@ -59,7 +59,7 @@ public:
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
-  void Write_Data(string filename, CParallelDataSorter* data_sorter) override;
+  void Write_Data() override;
   
 };
 

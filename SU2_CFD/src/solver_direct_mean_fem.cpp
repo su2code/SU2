@@ -53,8 +53,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
 
-  Cauchy_Serie = NULL;
-
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
 
@@ -88,8 +86,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
-
-  Cauchy_Serie = NULL;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -134,8 +130,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
   Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
-
-  Cauchy_Serie = NULL;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -774,7 +768,6 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
   if (Surface_CMz != NULL)      delete [] Surface_CMz;
   if (CEff_Inv != NULL)         delete [] CEff_Inv;
 
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 }
 
 void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
@@ -1298,7 +1291,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     if (unsteady){
       NonDimTableOut << "-- Unsteady conditions" << endl;      
       NonDimTable.PrintHeader();
-      NonDimTable << "Total Time" << config->GetMax_Time() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
+      NonDimTable << "Total Time" << config->GetMax_Time() << config->GetTime_Ref() << "s" << config->GetMax_Time()/config->GetTime_Ref();
       Unit.str("");
       NonDimTable << "Time Step" << config->GetTime_Step() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
       Unit.str("");
@@ -9555,8 +9548,6 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
   MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
 
-  Cauchy_Serie = NULL;
-
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
@@ -9671,8 +9662,6 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
   if (Heat_Visc        != NULL)  delete [] Heat_Visc;
   if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
-
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 
   if( SGSModel ) delete SGSModel;
 }

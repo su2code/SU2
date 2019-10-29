@@ -753,8 +753,6 @@ inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
 
 inline su2double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 
-inline su2double CConfig::GetCFL_Solid(void) {	return CFLSolid; }
-
 inline void CConfig::SetCFL(unsigned short val_mesh, su2double val_cfl) { CFL[val_mesh] = val_cfl; }
 
 inline su2double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
@@ -1047,8 +1045,6 @@ inline su2double CConfig::GetEntropyFix_Coeff(void) { return EntropyFix_Coeff; }
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
 inline su2double CConfig::GetCFLRedCoeff_AdjTurb(void) { return CFLRedCoeff_AdjTurb; }
-
-inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Linear_Iter; }
 
 inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_Nonlinear_Iter; }
 
@@ -1423,6 +1419,12 @@ inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker)
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
+inline unsigned short CConfig::GetnMarker_CfgFile(void) { return nMarker_CfgFile; }
+
+inline unsigned short CConfig::GetnMarker_Euler(void) { return nMarker_Euler; }
+
+inline unsigned short CConfig::GetnMarker_SymWall(void) { return nMarker_SymWall; }
+
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
@@ -1465,7 +1467,7 @@ inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
 
-inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
+inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
@@ -1641,8 +1643,6 @@ inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
 
 inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
 
-inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
-
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
 
 inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
@@ -1666,6 +1666,8 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
+
+inline bool CConfig::GetWrt_AD_Statistics(void) { return Wrt_AD_Statistics; }
 
 inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
 
@@ -1767,13 +1769,15 @@ inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
 
 inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
 
-inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
-
-inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
-
 inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
+
+inline unsigned long CConfig::GetUpdate_AoA_Iter_Limit(void) { return Update_AoA_Iter_Limit; }
+
+inline bool CConfig::GetFinite_Difference_Mode(void) { return Finite_Difference_Mode; }
+
+inline void CConfig::SetFinite_Difference_Mode(bool val_fd_mode) { Finite_Difference_Mode = val_fd_mode; }
 
 inline bool CConfig::GetUpdate_BCThrust_Bool(void) { return Update_BCThrust_Bool; }
 
@@ -1875,7 +1879,7 @@ inline bool CConfig::GetEulerPersson(void) { return EulerPersson; }
 
 inline void CConfig::SetEulerPersson(bool val_EulerPersson) { EulerPersson = val_EulerPersson; }
 
-inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
+inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem || (nMarker_Fluid_Load > 0); }
 
 inline void CConfig::SetFSI_Simulation(bool FSI_sim) { FSI_Problem = FSI_sim; }
 
@@ -1903,6 +1907,8 @@ inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
+inline bool CConfig::GetFull_Tape() { return FullTape; }
+
 inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}
 
 inline su2double CConfig::GetQuadrature_Factor_Straight(void) {return Quadrature_Factor_Straight;}
@@ -1922,6 +1928,8 @@ inline bool CConfig::GetUse_Lumped_MassMatrix_DGFEM(void) {return Use_Lumped_Mas
 inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacobian_Spatial_Discretization_Only;}
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
+
+inline bool CConfig::GetCHT_Robin(void) { return CHT_Robin; }
 
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
@@ -2058,7 +2066,9 @@ inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mes
 
 inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
 
-inline string CConfig::GetConv_Field(){ return ConvField; }
+inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
+
+inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
@@ -2066,5 +2076,16 @@ inline su2double  CConfig::Get_StartTime() {return StartTime;}
 
 inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
+inline void CConfig::SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter) { HistoryWrtFreq[iter] = nIter;}
+
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
 
+inline void CConfig::SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter;}
+
+inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
+
+inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles;}
+
+inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
+
+inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}

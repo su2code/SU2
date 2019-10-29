@@ -55,6 +55,14 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 }
 
 void CSinglezoneDriver::StartSolver() {
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -64,7 +72,8 @@ void CSinglezoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Single-zone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
+      cout << "The simulation will run for " 
+           << driver_config->GetnTime_Iter() - config_container[ZONE_0]->GetRestart_Iter() << " time steps." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -147,8 +156,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Perform a dynamic mesh update if required. ---*/
-
-  DynamicMeshUpdate(TimeIter);
+  /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
+          mesh cordinates are read from the restart files. ---*/
+  if (!(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint()))
+    DynamicMeshUpdate(TimeIter);
 
 }
 
@@ -186,113 +197,25 @@ void CSinglezoneDriver::Update() {
 
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
-  bool output_files = false;
-  
-  unsigned short RestartFormat = SU2_RESTART_ASCII;
-  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  
-  bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
-  bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
-  bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
-  bool Wrt_STL  = config_container[ZONE_0]->GetWrt_Stl_Sol();
-  bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
-  
-  if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
-    RestartFormat = SU2_RESTART_BINARY;
-  }
-
-  /*--- Determine whether a solution needs to be written
-   after the current iteration ---*/
-
-  if (
-
-      /*--- General if statements to print output statements ---*/
-
-      (StopCalc) ||
-
-      /*--- Unsteady problems ---*/
-
-      (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) &&
-       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-
-      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) &&
-       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                           ((TimeIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
-      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) &&
-       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
-      ((config_container[ZONE_0]->GetTime_Domain()) &&
-       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-
-      /*--- No inlet profile file found. Print template. ---*/
-
-      (config_container[ZONE_0]->GetWrt_InletFile())
-
-      ) {
-
-    output_files = true;
-
-  }
-
-  /*--- Determine whether a solution doesn't need to be written
-   after the current iteration ---*/
-
-//  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-//    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-//    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
-//  }
-
-  /*--- write the solution ---*/
-
-  if (output_files && config_container[ZONE_0]->GetWrt_Output()) {
-
-    /*--- Time the output for performance benchmarking. ---*/
+  /*--- Time the output for performance benchmarking. ---*/
 #ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StopTime = MPI_Wtime();
+  StopTime = MPI_Wtime();
 #endif
-    UsedTimeCompute += StopTime-StartTime;
+  UsedTimeCompute += StopTime-StartTime;
 #ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StartTime = MPI_Wtime();
+  StartTime = MPI_Wtime();
 #endif
-
-    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-
-    /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
     
-    for (unsigned short iInst = 0; iInst < nInst[ZONE_0]; iInst++){
-      
-      config_container[ZONE_0]->SetiInst(iInst);
-      
-      output_container[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
-      
-      /*--- Write restart files ---*/
-      
-      output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat, TimeDomain);
-      
-      /*--- Write visualization files ---*/
-      
-      if (Wrt_Vol)
-        output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat, TimeDomain);
-      if (Wrt_Surf)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat, TimeDomain);
-      if (Wrt_CSV)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV, TimeDomain);    
-      if (Wrt_STL)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], STL, TimeDomain);
-
-      output_container[ZONE_0]->DeallocateData_Parallel();
-      
-    }
-    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-
-    /*--- Store output time and restart the timer for the compute phase. ---*/
+  bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                               config_container[ZONE_0],
+                                                               solver_container[ZONE_0][INST_0][MESH_0], TimeIter, StopCalc);
+  
+  if (wrote_files){
+    
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -301,17 +224,14 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-
-  }
-  
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+    StartTime = MPI_Wtime();
 #endif
-  config_container[ZONE_0]->Set_StartTime(StartTime);
-  
-}
+    config_container[ZONE_0]->Set_StartTime(StartTime);
+  }
+}  
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
@@ -358,9 +278,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
         
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " ) before convergence." << endl;
+      output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
     
@@ -388,6 +309,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   /*--- Reset the inner convergence --- */
   
   output_container[ZONE_0]->SetConvergence(false);
+  
+  /*--- Increase the total iteration count --- */
+  
+  IterCount += config_container[ZONE_0]->GetInnerIter()+1;
 
   return StopCalc;
 }
