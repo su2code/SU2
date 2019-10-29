@@ -38,6 +38,7 @@
 #pragma once
 
 #include "COutput.hpp"
+#include "../variables/CVariable.hpp"
 
 class CFlowOutput : public COutput{
 public:
@@ -51,7 +52,8 @@ public:
    * \brief Destructor of the class.
    */
   ~CFlowOutput(void) override;
-  
+
+protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
@@ -95,10 +97,51 @@ public:
   void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Write information to meta data file
-   * \param[in] output - Container holding the output instances per zone.   
-   * \param[in] config - Definition of the particular problem per zone.
-   * \param[in] solver - The container holding all solution data.
+   * \brief Compute value of the Q criteration for vortex idenfitication
+   * \param[in] VelocityGradient - Velocity gradients
+   * \return Value of the Q criteration at the node
    */
-  void WriteMetaData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
+  su2double GetQ_Criterion(su2double** VelocityGradient) const;
+  
+  /*!
+   * \brief Write information to meta data file
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void WriteMetaData(CConfig *config);
+  
+  /*!
+   * \brief Write any additional files defined for the current solver.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
+  void WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container) override;
+  
+  /*!
+   * \brief Determines if the the volume output should be written.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iter - Current iteration index.
+   * \param[in] force_writing - boolean that forces writing of volume output
+   */
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing) override;
+  
+  /*!
+   * \brief Write the forces breakdown file
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
+  void WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container);
+  
+  /*!
+   * \brief Set the time averaged output fields.
+   */
+  void SetTimeAveragedFields();
+  
+  /*!
+   * \brief Load the time averaged output fields.
+   * \param iPoint
+   * \param node_flow
+   */
+  void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
 };

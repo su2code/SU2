@@ -82,7 +82,6 @@ protected:
   CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
   
   unsigned short GlobalField_Counter;  //!< Number of output fields
-  su2double** Parallel_Data;           //!< Array holding the output data after sorting
   
   bool connectivity_sorted;            //!< Boolean to store information on whether the connectivity is sorted
   
@@ -90,6 +89,10 @@ protected:
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
+  passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types 
+  su2double     *doubleBuffer;         //!< Buffer holding the sorted, partitioned data as su2double types 
+  /// Pointer used to allocate the memory used for ::passiveDoubleBuffer and ::doubleBuffer.
+  char *dataBuffer;                    
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
@@ -119,7 +122,7 @@ public:
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    */
-  virtual void SortOutputData(){}
+  virtual void SortOutputData();
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures.
@@ -189,7 +192,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  su2double GetData(unsigned short iField, unsigned long iPoint) {return Parallel_Data[iField][iPoint];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
+  
+  /*!
+   * \brief Get the pointer to the sorted linear partitioned data.
+   * \return Pointer to the sorted data.
+   */
+  const passivedouble *GetData() {return passiveDoubleBuffer;}
   
   /*!
    * \brief Get the global index of a point.
@@ -228,5 +237,9 @@ public:
    */
   void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
     connSend[Index[iPoint] + iField] = data;
+  }
+  
+  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
+    return connSend[Index[iPoint] + iField];
   }
 };

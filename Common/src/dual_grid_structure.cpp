@@ -52,10 +52,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume  = NULL;  Vertex       = NULL;
-  Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
-  Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;
+  Volume            = NULL;           Vertex              = NULL;
+  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
+  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
+  GridVel           = NULL;           GridVel_Grad        = NULL;
+  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -71,6 +72,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   }
 
   Coord = new su2double[nDim];
+
+  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
+    AD_InputIndex   = new int[nDim];
+    AD_OutputIndex  = new int[nDim];
+  }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV   = 0;
@@ -137,6 +143,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
+      Coord_Old = new su2double[nDim];
     }
   }
 
@@ -160,10 +167,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume  = NULL;  Vertex       = NULL;
-  Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
-  Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1  = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;
+  Volume            = NULL;           Vertex              = NULL;
+  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
+  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
+  GridVel           = NULL;           GridVel_Grad        = NULL;
+  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -181,6 +189,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Coord    = new su2double[nDim]; 
   Coord[0] = val_coord_0; 
   Coord[1] = val_coord_1;
+
+  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
+    AD_InputIndex   = new int[nDim];
+    AD_OutputIndex  = new int[nDim];
+  }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV   = 0;
@@ -244,6 +257,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
+      Coord_Old = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
         Coord_p1[iDim] = Coord[iDim];
         Coord_n[iDim]  = Coord[iDim];
@@ -269,10 +283,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume  = NULL;  Vertex       = NULL;
-  Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
-  Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;
+  Volume            = NULL;           Vertex              = NULL;
+  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
+  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
+  GridVel           = NULL;           GridVel_Grad        = NULL;
+  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
   if ( config->GetTime_Marching() == NO ) { 
@@ -290,6 +305,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Coord[0] = val_coord_0; 
   Coord[1] = val_coord_1; 
   Coord[2] = val_coord_2;
+
+  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
+    AD_InputIndex   = new int[nDim];
+    AD_OutputIndex  = new int[nDim];
+  }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV = 0;
@@ -354,6 +374,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
+      Coord_Old = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
         Coord_p1[iDim] = Coord[iDim];
         Coord_n[iDim]  = Coord[iDim];
@@ -386,8 +407,9 @@ CPoint::~CPoint() {
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  
-}
+  if (AD_InputIndex  != NULL) delete[] AD_InputIndex;
+  if (AD_OutputIndex != NULL) delete[] AD_OutputIndex;
+ }
 
 void CPoint::SetPoint(unsigned long val_point) {
 
@@ -425,6 +447,27 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
   }
   Boundary = true;
 
+}
+
+void CPoint::SetIndex(bool input) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    if(input) {
+      AD::SetIndex(AD_InputIndex[iDim], Coord[iDim]);
+    }
+    else {
+      AD::SetIndex(AD_OutputIndex[iDim], Coord[iDim]);
+    }
+  }
+}
+
+void CPoint::SetAdjointSolution(const su2double *adj_sol) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    AD::SetDerivative(AD_OutputIndex[iDim], SU2_TYPE::GetValue(adj_sol[iDim]));
+  }
+}
+
+su2double CPoint::GetAdjointSolution(unsigned short iDim) {
+  return AD::GetDerivative(AD_InputIndex[iDim]);
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {

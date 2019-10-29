@@ -2682,10 +2682,19 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-  
+  bool input              = true;
+  bool push_index         = true;
+
+  if(config->GetMultizone_Problem()) push_index = false;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      AD::RegisterInput(node[iPoint]->GetCoord()[iDim], push_index);
+    }
+    if(!push_index) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        node[iPoint]->SetIndex(input);
+      }
     }
   }
 }
@@ -2695,8 +2704,18 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
-      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+//        In case we are dealing with mesh adjoints the following two lines might be needed
+//        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+//        node[iPoint]->SetAdjIndices(false);
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }
@@ -2795,6 +2814,149 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
     }
   }
 }
+
+
+void CGeometry::ComputeSurf_Straightness(CConfig *config,
+                                         bool    print_on_screen) {
+
+  bool RefUnitNormal_defined;
+  unsigned short iDim,
+                 iMarker,
+                 iMarker_Global,
+                 nMarker_Global = config->GetnMarker_CfgFile();
+  unsigned long iVertex;
+  constexpr passivedouble epsilon = 1.0e-6;
+  su2double Area;
+  string Local_TagBound,
+         Global_TagBound;
+
+  vector<su2double> Normal(nDim),
+                    UnitNormal(nDim),
+                    RefUnitNormal(nDim);
+  
+  /*--- Assume now that this boundary marker is straight. As soon as one
+        AreaElement is found that is not aligend with a Reference then it is
+        certain that the boundary marker is not straight and one can stop
+        searching. Another possibility is that this process doesn't own
+        any nodes of that boundary, in that case we also have to assume the
+        boundary is straight.
+        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
+        the value false (or see cases specified in the conditional below)
+        which could be wrong. ---*/
+  bound_is_straight.resize(nMarker);
+  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+
+  /*--- Loop over all local markers ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Marker has to be Symmetry or Euler. Additionally marker can't be a 
+          moving surface and Grid Movement Elasticity is forbidden as well. All
+          other GridMovements are rigid. ---*/
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE || 
+         config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
+        config->GetMarker_Moving_Bool(Local_TagBound) == false &&
+        config->GetKind_GridMovement() != ELASTICITY) {
+
+      /*--- Loop over all global markers, and find the local-global pair via 
+            matching unique string tags. ---*/
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+        if (Local_TagBound == Global_TagBound) {
+
+          RefUnitNormal_defined = false;
+          iVertex = 0;
+
+          while(bound_is_straight[iMarker] == true &&
+                iVertex < nVertex[iMarker]) {
+
+            vertex[iMarker][iVertex]->GetNormal(Normal.data());
+            UnitNormal = Normal;
+
+            /*--- Compute unit normal. ---*/
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Negate for outward convention. ---*/
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitNormal[iDim] /= -Area;
+
+            /*--- Check if unit normal is within tolerance of the Reference unit normal. 
+                  Reference unit normal = first unit normal found. ---*/
+            if(RefUnitNormal_defined) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon ) {
+                  bound_is_straight[iMarker] = false;
+                  break;
+                }
+              }
+            } else {
+              RefUnitNormal = UnitNormal; //deep copy of values 
+              RefUnitNormal_defined = true;
+            }
+
+          iVertex++;
+          }//while iVertex
+        }//if Local == Global
+      }//for iMarker_Global
+    } else {
+      /*--- Enforce default value: false ---*/
+      bound_is_straight[iMarker] = false;
+    }//if sym or euler ...
+  }//for iMarker
+
+  /*--- Communicate results and print on screen. ---*/
+  if(print_on_screen) {
+
+    /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
+          on screen as nMarker (local) can vary across ranks. Default 'true' as it can
+          happen that a local rank does not contain an element of each surface marker.  ---*/
+    vector<bool> bound_is_straight_Global(nMarker_Global, true);
+    /*--- Match local with global tag bound and fill a Global Marker vector. ---*/
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+        if(Local_TagBound == Global_TagBound)
+          bound_is_straight_Global[iMarker_Global] = bound_is_straight[iMarker];
+
+      }//for iMarker_Global
+    }//for iMarker
+
+    vector<int> Buff_Send_isStraight(nMarker_Global),
+                Buff_Recv_isStraight(nMarker_Global);
+
+    /*--- Cast to int as std::vector<boolean> can be a special construct. MPI handling using <int>
+          is more straight-forward. ---*/
+    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
+      Buff_Send_isStraight[iMarker_Global] = static_cast<int> (bound_is_straight_Global[iMarker_Global]);
+
+    /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
+    SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), 
+                       nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
+
+    /*--- Print results on screen. ---*/
+    if(rank == MASTER_NODE) {
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
+          config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
+
+          cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
+          if(Buff_Recv_isStraight[iMarker_Global] == false) cout << " NOT";
+          if(nDim == 2) cout << " a single straight." << endl;
+          if(nDim == 3) cout << " a single plane." << endl;
+        }//if sym or euler
+      }//for iMarker_Global
+    }//if rank==MASTER
+  }//if print_on_scren
+
+}
+
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
@@ -3727,7 +3889,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
         Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
 
-      case CGNS:
+      case CGNS_GRID:
         Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
 
@@ -3739,7 +3901,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   else {
 
     switch (val_format) {
-      case SU2: case CGNS: case RECTANGLE: case BOX:
+      case SU2: case CGNS_GRID: case RECTANGLE: case BOX:
         Read_Mesh_FVM(config, val_mesh_filename, val_iZone, val_nZone);
         break;
       default:
@@ -7509,7 +7671,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
     case SU2:
       MeshFVM = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
-    case CGNS:
+    case CGNS_GRID:
       MeshFVM = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
@@ -13451,14 +13613,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     string::size_type position;
     
     Surface_file.open(cstr, ios::in);
-    
-    /*--- Read extra inofmration ---*/
-    
-//    getline(Surface_file, text_line);
-//    text_line.erase (0,9);
-//    su2double AoASens = atof(text_line.c_str());
-//    config->SetAoA_Sens(AoASens);
-    
+
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
@@ -13468,13 +13623,17 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     char delimiter = ',';
     split_line = PrintingToolbox::split(text_line, delimiter);
     
+    for (unsigned short iField = 0; iField < split_line.size(); iField++){
+      PrintingToolbox::trim(split_line[iField]);
+    }
+    
     std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
     
     if (it == split_line.end()){
       SU2_MPI::Error("Surface sensitivity not found in file.", CURRENT_FUNCTION);
     }
     
-    int sens_index = std::distance(split_line.begin(), it);
+    unsigned short sens_index = std::distance(split_line.begin(), it);
     
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
@@ -13514,23 +13673,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
-  bool sst = (config->GetKind_Turb_Model() == SST)  || (config->GetKind_Turb_Model() == SST_SUST);
-  bool sa  = (config->GetKind_Turb_Model() == SA)   || (config->GetKind_Turb_Model() == SA_NEG)  ||
-             (config->GetKind_Turb_Model() == SA_E) || (config->GetKind_Turb_Model() == SA_COMP) ||
-             (config->GetKind_Turb_Model() == SA_E_COMP);
-  bool grid_movement = config->GetGrid_Movement();
-  bool frozen_visc = config->GetFrozen_Visc_Disc();
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
-               (Kind_Solver == DISC_ADJ_RANS)           ||
-               (Kind_Solver == DISC_ADJ_NAVIER_STOKES)  ||
-               (Kind_Solver == DISC_ADJ_INC_EULER)          ||
-               (Kind_Solver == DISC_ADJ_INC_RANS)           ||
-               (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES)  ||
-               (Kind_Solver == ADJ_EULER)               ||
-               (Kind_Solver == ADJ_NAVIER_STOKES)       ||
-               (Kind_Solver == ADJ_RANS));
-  su2double Sens, dull_val, AoASens;
+
+  su2double AoASens;
   unsigned short nTimeIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
@@ -13547,21 +13691,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (rank == MASTER_NODE)
     cout << "Reading in sensitivity at iteration " << nTimeIter-1 << "."<< endl;
   
-  unsigned short skipVar = nDim, skipMult = 1;
-
-  if (flow) {
-    skipVar += skipMult*(nDim+2);
-    if (sst && !frozen_visc) { skipVar += skipMult*2;}
-    if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-    if (grid_movement)       { skipVar += nDim;}
-  }
-  else if (Kind_Solver == DISC_ADJ_HEAT) {
-    skipVar += 1;
-  }
-  else {
-    cout << "WARNING: Reading in sensitivities not defined for specified solver!" << endl;
-  }
-
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
@@ -13578,9 +13707,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   filename = config->GetObjFunc_Extension(filename);
   
-  filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
   if (config->GetRead_Binary_Restart()) {
+    
+    filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
     char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
@@ -13845,6 +13975,28 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     delete [] displace;
     
 #endif
+    
+    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_x\"");
+    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_y\"");
+    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_z\"");
+    
+    if (itx == config->fields.end()){
+      SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);      
+    }
+    if (ity == config->fields.end()){
+      SU2_MPI::Error("Sensitivity y not found in file.", CURRENT_FUNCTION);      
+    }
+    if (nDim == 3){
+      if (itz == config->fields.end()){
+        SU2_MPI::Error("Sensitivity z not found in file.", CURRENT_FUNCTION);      
+      }
+    }
+    
+    unsigned short sens_x_idx = std::distance(config->fields.begin(), itx);    
+    unsigned short sens_y_idx = std::distance(config->fields.begin(), ity);    
+    unsigned short sens_z_idx = 0;
+    if (nDim == 3)
+      sens_z_idx = std::distance(config->fields.begin(), itz);    
 
     /*--- Load the data from the binary restart. ---*/
 
@@ -13861,9 +14013,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        index = counter*nFields + skipVar;
-        for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
-
+        index = counter*nFields + sens_x_idx - 1;
+        Sensitivity[iPoint_Local*nDim+0] = Restart_Data[index]; 
+        index = counter*nFields + sens_y_idx - 1;
+        Sensitivity[iPoint_Local*nDim+1] = Restart_Data[index]; 
+        
+        if (nDim == 3){
+          index = counter*nFields + sens_z_idx - 1;
+          Sensitivity[iPoint_Local*nDim+2] = Restart_Data[index]; 
+        }
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
       }
@@ -13874,6 +14032,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     config->SetAoA_Sens(Restart_Meta[4]);
 
   } else {
+    
+    filename = config->GetFilename(filename, ".csv", nTimeIter-1);
 
     /*--- First, check that this is not a binary restart file. ---*/
 
@@ -13964,11 +14124,40 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   getline (restart_file, text_line);
   
+  vector<string> fields = PrintingToolbox::split(text_line, ',');
+  
+  for (unsigned short iField = 0; iField < fields.size(); iField++){
+    PrintingToolbox::trim(fields[iField]);
+  }
+  
+  std::vector<string>::iterator itx = std::find(fields.begin(), fields.end(), "\"Sensitivity_x\"");
+  std::vector<string>::iterator ity = std::find(fields.begin(), fields.end(), "\"Sensitivity_y\"");
+  std::vector<string>::iterator itz = std::find(fields.begin(), fields.end(), "\"Sensitivity_z\"");
+  
+  if (itx == fields.end()){
+    SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);      
+  }
+  if (ity ==fields.end()){
+    SU2_MPI::Error("Sensitivity y not found in file.", CURRENT_FUNCTION);      
+  }
+  if (nDim == 3){
+    if (itz == fields.end()){
+      SU2_MPI::Error("Sensitivity z not found in file.", CURRENT_FUNCTION);      
+    }
+  }
+  
+  unsigned short sens_x_idx = std::distance(fields.begin(), itx);    
+  unsigned short sens_y_idx = std::distance(fields.begin(), ity);    
+  unsigned short sens_z_idx = 0;
+  if (nDim == 3)
+    sens_z_idx = std::distance(fields.begin(), itz);    
+  
+  
   for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     getline (restart_file, text_line);
-
-  	istringstream point_line(text_line);
+    
+    vector<string> point_line = PrintingToolbox::split(text_line, ',');
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -13976,13 +14165,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      point_line >> index;
-      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
-      for (iDim = 0; iDim < nDim; iDim++) {
-        point_line >> Sens;
-        Sensitivity[iPoint_Local*nDim+iDim] = Sens;
-      }
+      Sensitivity[iPoint_Local*nDim+0] = PrintingToolbox::stod(point_line[sens_x_idx]);
+      Sensitivity[iPoint_Local*nDim+1] = PrintingToolbox::stod(point_line[sens_y_idx]);
+      if (nDim == 3)
+        Sensitivity[iPoint_Local*nDim+2] = PrintingToolbox::stod(point_line[sens_z_idx]);
+      
     }
 
   }
@@ -14825,7 +15012,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     
     /*--- Write an output file---*/
 
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Wing_File.open("wing_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
@@ -14917,7 +15104,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() > 1) {
-    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    		if (config->GetTabular_FileFormat() == TAB_CSV) {
     			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
     			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
     			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
@@ -15120,7 +15307,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Fuselage_File.open("fuselage_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Fuselage_File << "\"x (in)\",\"Area (in^2)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
@@ -15203,7 +15390,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() > 1) {
-    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    		if (config->GetTabular_FileFormat() == TAB_CSV) {
     			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
     			           <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
     			           <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
@@ -15431,7 +15618,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Write an output file---*/
     
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
       Nacelle_File.open("nacelle_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
@@ -15493,7 +15680,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
       su2double theta_deg = atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180;
       
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
+        if (config->GetTabular_FileFormat() == TAB_CSV) {
           Nacelle_File  << theta_deg <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
           <<", "<< Twist[iPlane] <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][2]
           <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][2] << endl;

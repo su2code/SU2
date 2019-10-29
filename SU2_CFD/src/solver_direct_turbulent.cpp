@@ -48,7 +48,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   nVertex       = NULL;
   nMarker       = 0;
   Inlet_TurbVars = NULL;
-  
+  snode = nullptr;
 }
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
@@ -91,6 +91,7 @@ CTurbSolver::~CTurbSolver(void) {
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
   
+  if (nodes != nullptr) delete nodes;
 }
 
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
@@ -112,14 +113,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     /*--- Primitive variables w/o reconstruction ---*/
     
-    V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-    V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+    V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+    V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
     
     /*--- Turbulent variables w/o reconstruction ---*/
     
-    Turb_i = node[iPoint]->GetSolution();
-    Turb_j = node[jPoint]->GetSolution();
+    Turb_i = nodes->GetSolution(iPoint);
+    Turb_j = nodes->GetSolution(jPoint);
     numerics->SetTurbVar(Turb_i, Turb_j);
     
     /*--- Grid Movement ---*/
@@ -136,11 +137,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
       
-      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
+      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(jPoint);
       if (limiter) {
-        Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
-        Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
+        Limiter_i = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(iPoint);
+        Limiter_j = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(jPoint);
       }
       
       for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
@@ -163,11 +164,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Turbulent variables using gradient reconstruction and limiters ---*/
       
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
+      Gradient_i = nodes->GetGradient(iPoint);
+      Gradient_j = nodes->GetGradient(jPoint);
       if (limiter) {
-        Limiter_i = node[iPoint]->GetLimiter();
-        Limiter_j = node[jPoint]->GetLimiter();
+        Limiter_i = nodes->GetLimiter(iPoint);
+        Limiter_j = nodes->GetLimiter(jPoint);
       }
       
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -227,17 +228,17 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(),
-                           solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive());
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint),
+                           solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint));
     
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
     
-    numerics->SetTurbVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-    numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+    numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
     
     /*--- Menter's first blending function (only SST)---*/
     if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-      numerics->SetF1blending(node[iPoint]->GetF1blending(), node[jPoint]->GetF1blending());
+      numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
     
     /*--- Compute residual, and Jacobians ---*/
     
@@ -257,14 +258,23 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-void CTurbSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSolver::BC_Sym_Plane(CGeometry      *geometry, 
+                               CSolver        **solver_container, 
+                               CNumerics      *conv_numerics, 
+                               CNumerics      *visc_numerics, 
+                               CConfig        *config, 
+                               unsigned short val_marker) {
   
   /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
 
 }
 
-void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSolver::BC_Euler_Wall(CGeometry      *geometry, 
+                                CSolver        **solver_container,
+                                CNumerics      *conv_numerics, 
+                                CNumerics      *visc_numerics, 
+                                CConfig        *config, 
+                                unsigned short val_marker) {
   
   /*--- Convective fluxes across euler wall are equal to zero. ---*/
 
@@ -369,7 +379,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -408,7 +418,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+          nodes->AddClippedSolution(iPoint,0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
         }
         
         break;
@@ -416,7 +426,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA_NEG:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
+          nodes->AddSolution(iPoint,0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
         }
         
         break;
@@ -426,16 +436,16 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           
           if (compressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
-            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+            density_old = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
+            density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
           if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+            density_old = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+            density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+            nodes->AddConservativeSolution(iPoint,iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
           
         }
@@ -495,9 +505,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. ---*/
       
-      U_time_nM1 = node[iPoint]->GetSolution_time_n1();
-      U_time_n   = node[iPoint]->GetSolution_time_n();
-      U_time_nP1 = node[iPoint]->GetSolution();
+      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
+      U_time_nP1 = nodes->GetSolution(iPoint);
       
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
@@ -516,14 +526,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         }
         else{
-          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
+          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0);
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -593,13 +603,13 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Compute the GCL component of the source term for node i ---*/
       
-      U_time_n = node[iPoint]->GetSolution_time_n();
+      U_time_n = nodes->GetSolution_time_n(iPoint);
       
       /*--- Multiply by density at node i for the SST model ---*/
       
       if ((turbModel == SST) || (turbModel == SST_SUST)) {
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -610,13 +620,13 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Compute the GCL component of the source term for node j ---*/
       
-      U_time_n = node[jPoint]->GetSolution_time_n();
+      U_time_n = nodes->GetSolution_time_n(jPoint);
       
       /*--- Multiply by density at node j for the SST model ---*/
       
       if ((turbModel == SST) || (turbModel == SST_SUST)) {
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetDensity(); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
+        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
+        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -652,13 +662,13 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- Compute the GCL component of the source term for node i ---*/
         
-        U_time_n = node[iPoint]->GetSolution_time_n();
+        U_time_n = nodes->GetSolution_time_n(iPoint);
         
         /*--- Multiply by density at node i for the SST model ---*/
         
         if ((turbModel == SST) || (turbModel == SST_SUST)) {
-          if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
-          else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+          else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
         } else {
@@ -680,9 +690,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. ---*/
       
-      U_time_nM1 = node[iPoint]->GetSolution_time_n1();
-      U_time_n   = node[iPoint]->GetSolution_time_n();
-      U_time_nP1 = node[iPoint]->GetSolution();
+      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
+      U_time_nP1 = nodes->GetSolution(iPoint);
       
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
        grids, the volumes will change. On rigidly transforming grids, the
@@ -704,14 +714,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         }
         else{
-          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
+          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0);
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -812,7 +822,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      node[iPoint_Local]->SetSolution(Solution);
+      nodes->SetSolution(iPoint_Local,Solution);
       iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -852,12 +862,12 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
         Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
         Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+        Solution_Fine = solver[iMesh-1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
         }
       }
-      solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+      solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution);
     }
     solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_EDDY);
     solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
@@ -904,7 +914,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Define geometry constants in the solver structure ---*/
   
   nDim = geometry->GetnDim();
-  node = new CVariable*[nPoint];
   
   /*--- Single grid simulation ---*/
   
@@ -1045,8 +1054,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nDim, nVar, config);
+  nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
 
@@ -1166,10 +1175,10 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     
     if (kind_hybridRANSLES == SA_EDDES){
       for (iPoint = 0; iPoint < nPoint; iPoint++){
-        PrimGrad_Flow      = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-        Vorticity          = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
-        Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-        node[iPoint]->SetVortex_Tilting(PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+        PrimGrad_Flow      = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+        Vorticity          = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+        Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        nodes->SetVortex_Tilting(iPoint,PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
     }
     
@@ -1192,11 +1201,11 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-    mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     
     nu  = mu/rho;
-    nu_hat = node[iPoint]->GetSolution();
+    nu_hat = nodes->GetSolution(iPoint);
     
     Ji   = nu_hat[0]/nu;
     Ji_3 = Ji*Ji*Ji;
@@ -1206,7 +1215,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     
     if (neg_spalart_allmaras && (muT < 0.0)) muT = 0.0;
     
-    node[iPoint]->SetmuT(muT);
+    nodes->SetmuT(iPoint,muT);
     
   }
   
@@ -1224,28 +1233,28 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
+    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), NULL);
     
     /*--- Set vorticity and strain rate magnitude ---*/
     
-    numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
+    numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint), NULL);
 
-    numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(), 0.0);
+    numerics->SetStrainMag(solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint), 0.0);
     
     /*--- Set intermittency ---*/
     
     if (transition) {
-      numerics->SetIntermittency(solver_container[TRANS_SOL]->node[iPoint]->GetIntermittency());
+      numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
     }
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
     
-    numerics->SetTurbVar(node[iPoint]->GetSolution(), NULL);
-    numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), NULL);
+    numerics->SetTurbVar(nodes->GetSolution(iPoint), NULL);
+    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), NULL);
     
     /*--- Set volume ---*/
     
@@ -1263,7 +1272,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
       /*--- Set DES length scale ---*/
       
-      numerics->SetDistance(node[iPoint]->GetDES_LengthScale(), 0.0);
+      numerics->SetDistance(nodes->GetDES_LengthScale(iPoint), 0.0);
       
     }
 
@@ -1274,7 +1283,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Store the intermittency ---*/
 
     if (transition_BC) {
-      node[iPoint]->SetGammaBC(numerics->GetGammaBC());
+      nodes->SetGammaBC(iPoint,numerics->GetGammaBC());
     }
     
     /*--- Subtract residual and the Jacobian ---*/
@@ -1301,7 +1310,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Access stored harmonic balance source term ---*/
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
-        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
+        Source = nodes->GetHarmonicBalance_Source(iPoint,iVar);
         Residual[iVar] = Source*Volume;
       }
       
@@ -1341,7 +1350,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
         for (iVar = 0; iVar < nVar; iVar++)
           Solution[iVar] = 0.0;
         
-        node[iPoint]->SetSolution_Old(Solution);
+        nodes->SetSolution_Old(iPoint,Solution);
         LinSysRes.SetBlock_Zero(iPoint);
         
         /*--- Includes 1 in the diagonal ---*/
@@ -1376,7 +1385,7 @@ void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] = 0.0;
       
-      node[iPoint]->SetSolution_Old(Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Includes 1 in the diagonal ---*/
@@ -1409,7 +1418,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Grid Movement ---*/
       
@@ -1421,7 +1430,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       /*--- Set turbulent variable at the wall, and at infinity ---*/
       
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
       Solution_j[0] = nu_tilde_Inf;
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
@@ -1479,7 +1488,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -1487,7 +1496,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       
-      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_i[0] = nodes->GetSolution(iPoint,0);
 
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
 
@@ -1566,7 +1575,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -1579,8 +1588,8 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
        Solution_j --> TurbVar_outlet ---*/
       
       for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-        Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+        Solution_j[iVar] = nodes->GetSolution(iPoint,iVar);
       }
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
@@ -1660,7 +1669,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -1670,7 +1679,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
        that the turbulent variable is copied from the interior of the
        domain to the outlet before computing the residual. ---*/
       
-      conv_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
       
       /*--- Set Normal (negate for outward convention) ---*/
       
@@ -1758,7 +1767,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -1766,7 +1775,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       
-      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_i[0] = nodes->GetSolution(iPoint,0);
       Solution_j[0] = nu_tilde_Engine;
       
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -1876,7 +1885,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Check the flow direction. Project the flow into the normal to the inlet face ---*/
       
@@ -1910,10 +1919,10 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
          domain to the outlet before computing the residual.
          or set the turbulent variable states (prescribed for an inflow)  ----*/
         
-        Solution_i[0] = node[iPoint]->GetSolution(0);
+        Solution_i[0] = nodes->GetSolution(iPoint,0);
         
-        //      if (val_inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
-        //      else Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_inlet [nDim+9]);
+        //      if (val_inlet_surface) Solution_j[0] = 0.5*(nodes->GetSolution(iPoint,0)+V_outlet [nDim+9]);
+        //      else Solution_j[0] = 0.5*(nodes->GetSolution(iPoint,0)+V_inlet [nDim+9]);
         
         //      /*--- Inflow analysis (interior extrapolation) ---*/
         //      if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
@@ -1928,7 +1937,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         /*--- Inflow analysis (interior extrapolation) ---*/
         if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
-          Solution_j[0] = node[iPoint]->GetSolution(0);
+          Solution_j[0] = nodes->GetSolution(iPoint,0);
         }
         
         /*--- Outflow analysis ---*/
@@ -2027,7 +2036,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -2035,7 +2044,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_i[0] = nodes->GetSolution(iPoint,0);
       Solution_j[0] = extAverageNu;
 
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -2075,7 +2084,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
@@ -2144,7 +2153,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -2152,7 +2161,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_i[0] = nodes->GetSolution(iPoint,0);
       Solution_j[0] =  nu_tilde;
 
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -2192,7 +2201,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
@@ -2233,8 +2242,8 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //        /*--- Store the solution for both points ---*/
   //        for (iVar = 0; iVar < nVar; iVar++) {
-  //          Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-  //          Solution_j[iVar] = node[jPoint]->GetSolution(iVar);
+  //          Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+  //          Solution_j[iVar] = nodes->GetSolution(jPoint,iVar);
   //        }
   //
   //        /*--- Set Conservative Variables ---*/
@@ -2290,7 +2299,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //      /*--- We only send the information that belong to other boundary ---*/
   //      if ((jProcessor != rank) && compute) {
   //
-  //        Conserv_Var = node[iPoint]->GetSolution();
+  //        Conserv_Var = nodes->GetSolution(iPoint);
   //        Flow_Var = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
   //
   //        for (iVar = 0; iVar < nVar; iVar++)
@@ -2327,7 +2336,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //        else {
   //
   //          for (iVar = 0; iVar < nVar; iVar++)
-  //            Buffer_Receive_U[iVar] = node[jPoint]->GetSolution(iVar);
+  //            Buffer_Receive_U[iVar] = nodes->GetSolution(jPoint,iVar);
   //
   //          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++)
   //            Buffer_Send_U[nVar+iVar] = solver_container[FLOW_SOL]->node[jPoint]->GetSolution(iVar);
@@ -2336,7 +2345,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //        /*--- Store the solution for both points ---*/
   //        for (iVar = 0; iVar < nVar; iVar++) {
-  //          Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+  //          Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
   //          Solution_j[iVar] = Buffer_Receive_U[iVar];
   //        }
   //
@@ -2415,7 +2424,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+              PrimVar_i[iVar] = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,iVar);
               PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
@@ -2428,7 +2437,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
             conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
             /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = node[iPoint]->GetSolution(0);
+            Solution_i[0] = nodes->GetSolution(iPoint,0);
             Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
 
             conv_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -2469,7 +2478,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
           /*--- Turbulent variables and its gradients  ---*/
 
           visc_numerics->SetTurbVar(Solution_i, Solution_j);
-          visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+          visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
           /*--- Compute and update residual ---*/
 
@@ -2517,8 +2526,8 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //        /*--- Store the solution for both points ---*/
   //        for (iVar = 0; iVar < nVar; iVar++) {
-  //          Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-  //          Solution_j[iVar] = node[jPoint]->GetSolution(iVar);
+  //          Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+  //          Solution_j[iVar] = nodes->GetSolution(jPoint,iVar);
   //        }
   //
   //        /*--- Set Conservative Variables ---*/
@@ -2574,7 +2583,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //      /*--- We only send the information that belong to other boundary ---*/
   //      if ((jProcessor != rank) && compute) {
   //
-  //        Conserv_Var = node[iPoint]->GetSolution();
+  //        Conserv_Var = nodes->GetSolution(iPoint);
   //        Flow_Var = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
   //
   //        for (iVar = 0; iVar < nVar; iVar++)
@@ -2611,7 +2620,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //        else {
   //
   //          for (iVar = 0; iVar < nVar; iVar++)
-  //            Buffer_Receive_U[iVar] = node[jPoint]->GetSolution(iVar);
+  //            Buffer_Receive_U[iVar] = nodes->GetSolution(jPoint,iVar);
   //
   //          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++)
   //            Buffer_Send_U[nVar+iVar] = solver_container[FLOW_SOL]->node[jPoint]->GetSolution(iVar);
@@ -2620,7 +2629,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //        /*--- Store the solution for both points ---*/
   //        for (iVar = 0; iVar < nVar; iVar++) {
-  //          Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+  //          Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
   //          Solution_j[iVar] = Buffer_Receive_U[iVar];
   //        }
   //
@@ -2747,9 +2756,9 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
          (normal) interior point. ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Vel[iDim]    = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetVelocity(iDim);
-        P_Normal       = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetPressure();
-        T_Normal       = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetTemperature();
+          Vel[iDim]    = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint_Neighbor,iDim);
+        P_Normal       = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint_Neighbor);
+        T_Normal       = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint_Neighbor);
 
         /*--- Compute the wall-parallel velocity at first point off the wall ---*/
         
@@ -2792,8 +2801,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         /*--- Compute the shear stress at the wall in the regular fashion
          by using the stress tensor on the surface ---*/
         
-        Lam_Visc_Wall = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-        grad_primvar  = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+        Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        grad_primvar  = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
         
         div_vel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2879,8 +2888,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
         
-        Lam_Visc_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetLaminarViscosity();
-        Density_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetDensity();
+        Lam_Visc_Normal = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint_Neighbor);
+        Density_Normal = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint_Neighbor);
         Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
 
         dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
@@ -2896,7 +2905,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
         
         nu_til_old = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
-        nu_til_old = node[iPoint]->GetSolution(0);
+        nu_til_old = nodes->GetSolution(iPoint,0);
         counter = 0; diff = 1.0;
         
         while (diff > tol) {
@@ -2919,7 +2928,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         for (iVar = 0; iVar < nVar; iVar++)
           Solution[iVar] = nu_til;
         
-        node[iPoint_Neighbor]->SetSolution_Old(Solution);
+        nodes->SetSolution_Old(iPoint_Neighbor,Solution);
         LinSysRes.SetBlock_Zero(iPoint_Neighbor);
         
         /*--- includes 1 in the diagonal ---*/
@@ -2959,11 +2968,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     coord_i                 = geometry->node[iPoint]->GetCoord();
     nNeigh                  = geometry->node[iPoint]->GetnPoint();
     wallDistance            = geometry->node[iPoint]->GetWall_Distance();
-    primVarGrad             = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-    vorticity               = solver[FLOW_SOL]->node[iPoint]->GetVorticity();    
-    density                 = solver[FLOW_SOL]->node[iPoint]->GetDensity();
-    laminarViscosity        = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    eddyViscosity           = solver[TURB_SOL]->node[iPoint]->GetmuT();
+    primVarGrad             = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    vorticity               = solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);    
+    density                 = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    laminarViscosity        = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    eddyViscosity           = solver[TURB_SOL]->GetNodes()->GetmuT(iPoint);
     kinematicViscosity      = laminarViscosity/density;
     kinematicViscosityTurb  = eddyViscosity/density;
     
@@ -2978,7 +2987,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     
     /*--- Low Reynolds number correction term ---*/
     
-    nu_hat = node[iPoint]->GetSolution()[0];
+    nu_hat = nodes->GetSolution(iPoint,0);
     Ji   = nu_hat/kinematicViscosity;
     Ji_2 = Ji * Ji;
     Ji_3 = Ji*Ji*Ji;
@@ -3065,7 +3074,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Flow Turbulence Combust - 2015
          ---*/
         
-        vortexTiltingMeasure = node[iPoint]->GetVortex_Tilting();
+        vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
         
         omega = sqrt(vorticity[0]*vorticity[0] + 
                      vorticity[1]*vorticity[1] +
@@ -3089,7 +3098,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
           aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
           ln_max = max(ln_max,aux_ln);
-          vortexTiltingMeasure += node[jPoint]->GetVortex_Tilting();
+          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
         }
 
         vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
@@ -3111,7 +3120,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         
     }
     
-    node[iPoint]->SetDES_LengthScale(lengthScale);
+    nodes->SetDES_LengthScale(iPoint,lengthScale);
   
   }
 }
@@ -3231,7 +3240,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Define geometry constants in the solver structure ---*/
   
   nDim = geometry->GetnDim();
-  node = new CVariable*[nPoint];
   
   /*--- Single grid simulation ---*/
   
@@ -3365,8 +3373,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nDim, nVar, constants, config);
+  nodes = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nPoint, nDim, nVar, constants, config);
+  SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
 
@@ -3502,24 +3510,24 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Compute blending functions and cross diffusion ---*/
     
-    rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-    mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     
     dist = geometry->node[iPoint]->GetWall_Distance();
     
-    strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
+    strMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
 
-    node[iPoint]->SetBlendingFunc(mu, dist, rho);
+    nodes->SetBlendingFunc(iPoint,mu, dist, rho);
     
-    F2 = node[iPoint]->GetF2blending();
+    F2 = nodes->GetF2blending(iPoint);
     
     /*--- Compute the eddy viscosity ---*/
     
-    kine  = node[iPoint]->GetSolution(0);
-    omega = node[iPoint]->GetSolution(1);
+    kine  = nodes->GetSolution(iPoint,0);
+    omega = nodes->GetSolution(iPoint,1);
     zeta = min(1.0/omega, a1/(strMag*F2));
     muT = min(max(rho*kine*zeta,0.0),1.0);
-    node[iPoint]->SetmuT(muT);
+    nodes->SetmuT(iPoint,muT);
     
   }
   
@@ -3533,16 +3541,16 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
+    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), NULL);
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
     
-    numerics->SetTurbVar(node[iPoint]->GetSolution(), NULL);
-    numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), NULL);
+    numerics->SetTurbVar(nodes->GetSolution(iPoint), NULL);
+    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), NULL);
     
     /*--- Set volume ---*/
     
@@ -3554,21 +3562,21 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Menter's first blending function ---*/
     
-    numerics->SetF1blending(node[iPoint]->GetF1blending(),0.0);
+    numerics->SetF1blending(nodes->GetF1blending(iPoint),0.0);
     
     /*--- Menter's second blending function ---*/
     
-    numerics->SetF2blending(node[iPoint]->GetF2blending(),0.0);
+    numerics->SetF2blending(nodes->GetF2blending(iPoint),0.0);
     
     /*--- Set vorticity and strain rate magnitude ---*/
     
-    numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
+    numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint), NULL);
     
-    numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(), 0.0);
+    numerics->SetStrainMag(solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint), 0.0);
     
     /*--- Cross diffusion ---*/
     
-    numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
+    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
     
     /*--- Compute the source term ---*/
     
@@ -3611,8 +3619,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Set wall values ---*/
       
-      density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
       
       beta_1 = constants[4];
       
@@ -3620,8 +3628,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution);
-      node[iPoint]->SetSolution(Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -3659,8 +3667,8 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       
       /*--- Set wall values ---*/
       
-      density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
       
       beta_1 = constants[4];
       
@@ -3668,8 +3676,8 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution);
-      node[iPoint]->SetSolution(Solution);
+      nodes->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -3705,14 +3713,14 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       conv_numerics->SetPrimitive(V_domain, V_infty);
       
       /*--- Set turbulent variable at the wall, and at infinity ---*/
       
       for (iVar = 0; iVar < nVar; iVar++)
-      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+      Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
       
       Solution_j[0] = kine_Inf;
       Solution_j[1] = omega_Inf;
@@ -3779,7 +3787,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -3789,7 +3797,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
        values for the turbulent state at the inflow. ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
 
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
 
@@ -3875,7 +3883,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -3888,8 +3896,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
        Solution_j --> TurbVar_outlet ---*/
       
       for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-        Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+        Solution_j[iVar] = nodes->GetSolution(iPoint,iVar);
       }
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
@@ -3992,7 +4000,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -4001,7 +4009,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
 
       Solution_j[0]= extAverageKine;
       Solution_j[1]= extAverageOmega;
@@ -4031,10 +4039,10 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4117,14 +4125,14 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
 
       /*--- Set the turbulent variable states. Use average span-wise values
              values for the turbulent state at the inflow. ---*/
@@ -4157,10 +4165,10 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4220,7 +4228,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+              PrimVar_i[iVar] = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,iVar);
               PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
@@ -4233,8 +4241,8 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
             conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
             /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = node[iPoint]->GetSolution(0);
-            Solution_i[1] = node[iPoint]->GetSolution(1);
+            Solution_i[0] = nodes->GetSolution(iPoint,0);
+            Solution_i[1] = nodes->GetSolution(iPoint,1);
 
             Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
             Solution_j[1] = GetSlidingState(iMarker, iVertex, 1, jVertex);
@@ -4275,7 +4283,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           /*--- Turbulent variables and its gradients  ---*/
 
           visc_numerics->SetTurbVar(Solution_i, Solution_j);
-          visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+          visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
           /*--- Compute and update residual ---*/
 

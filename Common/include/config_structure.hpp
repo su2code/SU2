@@ -91,7 +91,8 @@ private:
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  string ConvField;
+  string* ConvField;
+  unsigned short nConvField;
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
@@ -416,7 +417,6 @@ private:
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
-  CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
@@ -585,8 +585,7 @@ private:
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
-  unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
-  GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
+  unsigned long GridDef_Nonlinear_Iter; /*!< \brief Number of nonlinear increments for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Mesh;    /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
@@ -615,16 +614,17 @@ private:
   su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
   su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
-  unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_dCL_dAlpha;   /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
+  su2double dNetThrust_dBCThrust;        /*!< \brief value of dNetThrust/dBCThrust. */
   bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  unsigned long Update_AoA_Iter_Limit; /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode */
+  bool Finite_Difference_Mode;
   bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
   unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
@@ -703,7 +703,7 @@ private:
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
   unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
-  unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
+  unsigned short Tab_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -746,8 +746,7 @@ private:
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  bool Low_MemoryOutput,      /*!< \brief Output less information for lower memory use */
-  Wrt_Output,                 /*!< \brief Write any output files */
+  bool Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -759,6 +758,7 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_AD_Statistics,          /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
@@ -875,6 +875,7 @@ private:
   bool Sine_Load;             /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
+  bool CHT_Robin;             /*!< \brief Option for boundary condition method at CHT interfaces. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -976,7 +977,8 @@ private:
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,       /*!< \brief AD-based discrete adjoint mode. */
+  FullTape;                     /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1068,6 +1070,10 @@ private:
   su2double *default_wrt_freq;
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
+  unsigned long VolumeWrtFreq;    /*!< \brief Writing frequency for solution files. */
+  unsigned short* VolumeOutputFiles; /*!< \brief File formats to output */
+  unsigned short nVolumeOutputFiles; /*!< \brief Number of File formats to output */
+  
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -1401,7 +1407,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
@@ -2754,13 +2760,6 @@ public:
    * \return CFL number for each grid.
    */
   su2double GetCFL(unsigned short val_mesh);
-
-  /*!
-   * \brief Get the Courant Friedrich Levi number for solid solvers.
-   * \param[in] val_mesh - Index of the mesh were the CFL is applied.
-   * \return CFL number for each grid.
-   */
-  su2double GetCFL_Solid(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for each grid.
@@ -2916,10 +2915,28 @@ public:
   su2double *GetWeightsIntegrationADER_DG(void);
 
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers including send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void);
+
+  /*!
+   * \brief Get the total number of boundary markers in the config file.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_CfgFile(void);
+
+  /*!
+   * \brief Get the number of Euler boundary markers.
+   * \return Number of Euler boundary markers.
+   */
+  unsigned short GetnMarker_Euler(void);
+
+  /*!
+   * \brief Get the number of symmetry boundary markers.
+   * \return Number of symmetry boundary markers.
+   */
+  unsigned short GetnMarker_SymWall(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -3177,13 +3194,7 @@ public:
    * \return <code>TRUE</code> means that a volume solution file will be written.
    */
   bool GetWrt_Vol_Sol(void);
-  
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetLow_MemoryOutput(void);
-  
+
   /*!
    * \brief Get information about writing a surface solution file.
    * \return <code>TRUE</code> means that a surface solution file will be written.
@@ -3243,6 +3254,12 @@ public:
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
   bool GetWrt_Performance(void);
+
+  /*!
+   * \brief Get information about the computational graph (e.g. memory usage) when using AD in reverse mode.
+   * \return <code>TRUE</code> means that the tape statistics will be written after each recording.
+   */
+  bool GetWrt_AD_Statistics(void);
   
   /*!
    * \brief Get information about writing the mesh quality metrics to the visualization files.
@@ -4154,12 +4171,6 @@ public:
    * \return CFL reduction factor.
    */
   su2double GetCFLRedCoeff_AdjTurb(void);
-  
-  /*!
-   * \brief Get the number of linear smoothing iterations for mesh deformation.
-   * \return Number of linear smoothing iterations for mesh deformation.
-   */
-  unsigned long GetGridDef_Linear_Iter(void);
   
   /*!
    * \brief Get the number of nonlinear increments for mesh deformation.
@@ -5391,7 +5402,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetOutput_FileFormat(void);
+  unsigned short GetTabular_FileFormat(void);
   
   /*!
    * \brief Get the format of the output solution.
@@ -5442,7 +5453,7 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
   
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -6419,6 +6430,13 @@ public:
   unsigned short GetMarker_Moving(string val_marker);
 
   /*!
+   * \brief Get bool if marker is moving. <i>val_marker</i>.
+   * \param[in] val_marker - String of the marker to test.
+   * \return Bool if the marker is a moving boundary <i>val_marker</i>.
+   */
+  bool GetMarker_Moving_Bool(string val_marker);
+
+  /*!
    * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
@@ -6429,7 +6447,7 @@ public:
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Fluid_Load(string val_marker);
-  
+
   /*!
    * \brief Get the name of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
@@ -8230,12 +8248,6 @@ public:
   su2double GetdCL_dAlpha(void);
   
   /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetUpdate_Alpha(void);
-  
-  /*!
    * \brief Number of iterations to evaluate dCL_dAlpha.
    * \return Number of iterations.
    */
@@ -8246,12 +8258,6 @@ public:
    * \return Damping coefficient for fixed CL mode.
    */
   su2double GetdCM_diH(void);
-  
-  /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetIter_Fixed_CL(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
@@ -8294,6 +8300,23 @@ public:
    * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
    */
   bool GetUpdate_AoA(void);
+
+  /*!
+   * \brief Get the maximum number of iterations between AoA updates for fixed C_L mode
+   * \return Number of maximum iterations between AoA updates
+   */
+  unsigned long GetUpdate_AoA_Iter_Limit(void);
+
+  /*!
+   * \brief Get whether at the end of finite differencing (Fixed CL mode)
+   * \return boolean indicating end of finite differencing mode (Fixed CL mode)
+   */
+  bool GetFinite_Difference_Mode(void);
+
+  /*!
+   * \brief Set whether at the end of finite differencing (Fixed CL mode)
+   */
+  void SetFinite_Difference_Mode(bool val_fd_mode);
   
   /*!
    * \brief Set the current number of non-physical nodes in the solution.
@@ -8418,6 +8441,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void);
+
+  /*!
+  * \brief Get the indicator whether we want to use full (coupled) tapes.
+  * \return the full tape indicator.
+  */
+  bool GetFull_Tape(void);
   
   /*!
    * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
@@ -8925,6 +8954,12 @@ public:
   bool GetWeakly_Coupled_Heat(void);
 
   /*!
+   * \brief Get the boundary condition method for CHT.
+   * \return YES if Robin BC is used.
+   */
+  bool GetCHT_Robin(void);
+
+  /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
@@ -9156,9 +9191,17 @@ public:
   string GetVolumeOutput_Field(unsigned short iField);
 
   /*
-  * \brief Get the convergence field for monitoring
+  * \brief Get the convergence fields for monitoring
+  * \param[in] iField - Index of the field
+  * return Field name for monitoring convergence
   */
-  string GetConv_Field();
+  string GetConv_Field(unsigned short iField);
+  
+  /*
+  * \brief Get the number of convergence monitoring fields.
+  * return Number of convergence monitoring fields.
+  */
+  unsigned short GetnConv_Field();  
   
   /*!
    * \brief Set_StartTime
@@ -9177,13 +9220,45 @@ public:
    * \return 
    */
   unsigned long GetHistory_Wrt_Freq(unsigned short iter);
+
+    /*!
+   * \brief SetHistory_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
+   * \param[in] nIter: Number of iterations
+   */
+  void SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter);
   
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
-
+  
+  /*!
+   * \brief SetScreen_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
+   * \param[in] nIter: Number of iterations
+   */
+  void SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter);
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq_Inner
+   * \return 
+   */
+  unsigned long GetVolume_Wrt_Freq();
+  
+  /*!
+   * \brief GetVolumeOutputFiles
+   * \return 
+   */
+  unsigned short* GetVolumeOutputFiles();
+  
+  /*!
+   * \brief GetnVolumeOutputFiles
+   * \return 
+   */
+  unsigned short GetnVolumeOutputFiles();
+  
   /*!
    * \brief Get the desired factorization frequency for PaStiX
    * \return Number of calls to 'Build' that trigger re-factorization.
@@ -9202,6 +9277,12 @@ public:
    */
   unsigned short GetPastixFillLvl(void);
 
+  /*!
+   * \brief Check if an option is present in the config file
+   * \param[in] - Name of the option
+   * \return <TRUE> if option was set in the config file
+   */
+  bool OptionIsSet(string option);
 };
 
 #include "config_structure.inl"

@@ -46,6 +46,7 @@
  */
 class CBaselineOutput : public COutput {
 
+  std::vector<string> fields;
 public:
 
   /*!

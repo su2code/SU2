@@ -12,6 +12,8 @@ PrintingToolbox::CTablePrinter::CTablePrinter(std::ostream * output, const std::
   print_header_bottom_line_ = true;
   print_header_top_line_    = true;
   align_ = RIGHT;
+  inner_separator_ = separator;
+  precision_ = 6;
 }
 
 PrintingToolbox::CTablePrinter::~CTablePrinter(){
@@ -30,6 +32,10 @@ void PrintingToolbox::CTablePrinter::SetSeparator(const std::string &separator){
   separator_ = separator;
 }
 
+void PrintingToolbox::CTablePrinter::SetInnerSeparator(const std::string &inner_separator){
+  inner_separator_ = inner_separator;
+}
+
 void PrintingToolbox::CTablePrinter::SetPrintHeaderBottomLine(bool print){
   print_header_bottom_line_ = print;
 }
@@ -40,6 +46,11 @@ void PrintingToolbox::CTablePrinter::SetPrintHeaderTopLine(bool print){
 
 void PrintingToolbox::CTablePrinter::SetAlign(int align){
   align_ = align;
+}
+
+void PrintingToolbox::CTablePrinter::SetPrecision(int precision){
+  precision_ = precision;
+  out_stream_->precision(precision_);
 }
 
 void PrintingToolbox::CTablePrinter::AddColumn(const std::string & header_name, int column_width){
@@ -67,7 +78,7 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
   
   
   if (print_header_top_line_) PrintHorizontalLine();
-  *out_stream_ << "|";
+  *out_stream_ << separator_;
   int indent = 0;
   for (int i=0; i<GetNumColumns(); ++i){
     
@@ -88,12 +99,15 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
 
     *out_stream_ << std::setw(column_widths_.at(i) - indent) << column_headers_.at(i).substr(0, column_widths_.at(i));
     if (i != GetNumColumns()-1){
-      *out_stream_ << std::setw(1+indent) << separator_;
+      *out_stream_ << std::setw(indent+(int)inner_separator_.size()) << inner_separator_;
     }
   }
 
-  *out_stream_ << std::setw(2+indent) << "|\n";
-  if (print_header_bottom_line_) PrintHorizontalLine();
+  *out_stream_ << std::setw((int)separator_.size()+indent) << separator_;
+  *out_stream_ << "\n";
+  if (print_header_bottom_line_){
+    PrintHorizontalLine();
+  }
 }
 
 void PrintingToolbox::CTablePrinter::PrintFooter(){

@@ -46,11 +46,20 @@ class CTecplotFileWriter final: public CFileWriter{
 public:
   
   /*!
+   * \brief File extension
+   */
+  const static string fileExt;
+  
+  /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
+   * \param[in] - The name of the file
+   * \param[in] - The parallel sorted data to write
    */  
-  CTecplotFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep);
+  CTecplotFileWriter(vector<string> fields, unsigned short nDim,
+                     string fileName, CParallelDataSorter *dataSorter, 
+                     unsigned long time_iter, su2double timestep);
   
   /*!
    * \brief Destructor
@@ -59,10 +68,8 @@ public:
   
   /*!
    * \brief Write sorted data to file in tecplot ASCII file format
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
    */
-  void Write_Data(string filename, CParallelDataSorter* data_sorter) override;
+  void Write_Data() override;
   
 };
 
