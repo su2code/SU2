@@ -1450,12 +1450,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
-  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation for the FVM heat solver. */
-  addDoubleOption("LINEAR_SOLVER_ERROR_HEAT", Linear_Solver_Error_Heat, 1E-8);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
-  /* DESCRIPTION: Max iterations of the linear solver for the FVM heat solver. */
-  addUnsignedLongOption("LINEAR_SOLVER_ITER_HEAT", Linear_Solver_Iter_Heat, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -3156,12 +3152,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }  else {
     Kind_Regime = NO_FLOW;
   }  
-
-
-  if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
-    Linear_Solver_Iter = Linear_Solver_Iter_Heat;
-    Linear_Solver_Error = Linear_Solver_Error_Heat;
-  }
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
