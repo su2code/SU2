@@ -15,7 +15,7 @@ flags=""
 branch=""
 workdir=$PWD
 if [ "$#" -ne 0 ]; then
-    while [ "`echo $1 | cut -c1`" = "-" ]
+  while [ "$(echo $1 | cut -c1)" = "-" ]
     do
         case "$1" in
             -f)
