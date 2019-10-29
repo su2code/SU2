@@ -3836,7 +3836,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #endif
 #endif
 
-  Sensitivity == NULL;
+  Sensitivity = NULL;
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
