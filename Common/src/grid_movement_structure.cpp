@@ -2616,7 +2616,7 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
 CSurfaceMovement::~CSurfaceMovement(void) {
   if(FFDBox != NULL) {
-    for(usigned short iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+    for(unsigned short iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
       if(FFDBox[iFFDBox] != NULL) delete FFDBox[iFFDBox];
     }
     delete [] FFDBox;
