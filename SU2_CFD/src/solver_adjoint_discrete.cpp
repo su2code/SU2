@@ -161,6 +161,8 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
     delete [] CSensitivity;
   }
 
+  delete [] Solution_Geometry;
+
   if (nodes != nullptr) delete nodes;
 }
 
