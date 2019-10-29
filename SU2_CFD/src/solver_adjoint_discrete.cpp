@@ -40,8 +40,6 @@
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
-  nodes = nullptr;
-
 }
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver() {
@@ -161,10 +159,9 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
       delete [] CSensitivity[iMarker];
     }
     delete [] CSensitivity;
-    CSensitivity = NULL;
   }
 
-  if (nodes != nullptr) {delete nodes; nodes = nullptr;}
+  if (nodes != nullptr) delete nodes;
 }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){

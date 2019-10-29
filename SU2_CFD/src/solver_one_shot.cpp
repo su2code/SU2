@@ -46,108 +46,7 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdj
 
 }
 
-COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver() {
-
-  unsigned short iVar, iMarker, iDim;
-  unsigned long iVertex;
-  string text_line, mesh_filename;
-  ifstream restart_file;
-  string filename, AdjExt;
-
-  adjoint = true;
-
-  nVar = direct_solver->GetnVar();
-  nDim = geometry->GetnDim();
-
-  /*--- Initialize arrays to NULL ---*/
-
-  CSensitivity = NULL;
-
-  /*-- Store some information about direct solver ---*/
-  this->KindDirect_Solver = Kind_Solver;
-  this->direct_solver = direct_solver;
-
-
-  nMarker      = config->GetnMarker_All();
-  nPoint       = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-
-  /*--- Define some auxiliary vectors related to the residual ---*/
-
-  Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
-  Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
-  Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
-
-  /*--- Define some auxiliary vectors related to the geometry adjoint (nDim) ---*/
-  Solution_Geometry = new su2double[nDim];     for (iDim = 0; iDim < nDim; iDim++) Solution_Geometry[iDim] = 1.0;
-
-  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
-
-  if (config->GetMultizone_Residual()){
-
-    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar] = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
-
-  }
-
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
-
-  /*--- Define some auxiliary vectors related to the solution ---*/
-
-  Solution   = new su2double[nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 1e-16;
-
-  /*--- Sensitivity definition and coefficient in all the markers ---*/
-
-  CSensitivity = new su2double* [nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
-  }
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          CSensitivity[iMarker][iVertex] = 0.0;
-      }
-  }
-
-  /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
-
-  nodes = new CDiscAdjVariable(Solution, nPoint, nDim, nVar, config);
-  SetBaseClassPointerToNodes();
-
-  switch(KindDirect_Solver){
-  case RUNTIME_FLOW_SYS:
-    SolverName = "ADJ.FLOW";
-    break;
-  case RUNTIME_HEAT_SYS:
-    SolverName = "ADJ.HEAT";
-    break;
-  case RUNTIME_TURB_SYS:
-    SolverName = "ADJ.TURB";
-    break;
-  default:
-    SolverName = "ADJ.SOL";
-    break;
-  }
+COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config, direct_solver, Kind_Solver, iMesh) {
 
   theta = 0.0;
   rho = 0.0;
@@ -176,19 +75,6 @@ COneShotSolver::~COneShotSolver(void) {
     delete [] DConsVec[iConstr];
   }
   delete [] DConsVec;
-  DConsVec = NULL;
-
-  unsigned short iMarker;
-
-  if (CSensitivity != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] CSensitivity[iMarker];
-    }
-    delete [] CSensitivity;
-    CSensitivity = NULL;
-  }
-
-  if (nodes != nullptr) {delete nodes; nodes = nullptr;}
 }
 
 void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
@@ -478,7 +364,7 @@ void COneShotSolver::SetAdjoint_OutputZero(CGeometry *geometry, CConfig *config)
 
   unsigned long iPoint;
   unsigned short iVar;
-  su2double * ZeroSolution = new su2double[nVar];
+  su2double *ZeroSolution = new su2double[nVar];
   for (iVar = 0; iVar < nVar; iVar++){
       ZeroSolution[iVar] = 0.0;
   }
