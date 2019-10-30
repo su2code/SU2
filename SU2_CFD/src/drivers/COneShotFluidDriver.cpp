@@ -811,7 +811,7 @@ su2double COneShotFluidDriver::UpdateStepSizeCubic(su2double stepsize, su2double
 su2double COneShotFluidDriver::UpdateStepSizeBound(su2double stepsize, su2double a, su2double b){
   if(stepsize < a) {return a;}
   else if(stepsize > b) {return b;}
-  else {return stepsize};
+  else {return stepsize;}
 }
 
 
