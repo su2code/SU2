@@ -220,7 +220,7 @@ void COneShotFluidDriver::Run(){
 
 void COneShotFluidDriver::RunOneShot(){
 
-  su2double stepsize = config->GetStepSize();
+  su2double stepsize = 1.0, stepsize_p, stepsize_tmp;
   unsigned short maxcounter = config->GetOneShotMaxCounter();
   unsigned short whilecounter = 0;
   unsigned long InnerIter = config->GetInnerIter();
@@ -232,14 +232,26 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
 
-    if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
+    if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){      
 
-      if(whilecounter > 0){
-        // --- Armijo line search (halve step) ---
-        // stepsize=stepsize*0.5;
+      if(whilecounter > 1) {
+        /*--- Cubic backtracking ---*/
+        stepsize_tmp = UpdateStepSizeCubic(stepsize, stepsize_p);
+        Lagrangian_p = Lagrangian;
+        stepsize_p   = stepsize;
+        stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
 
+        /*---Load the old design for line search---*/
+        solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
+        LoadMultiplier();
+        UpdateMultiplier(stepsize);
+      }
+      else if(whilecounter > 0){
         /*--- Parabolic backtracking ---*/
-        UpdateStepSizeQuadratic(stepsize);
+        stepsize_tmp = UpdateStepSizeQuadratic(stepsize);
+        Lagrangian_p = Lagrangian;
+        stepsize_p   = stepsize;
+        stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
@@ -247,7 +259,10 @@ void COneShotFluidDriver::RunOneShot(){
         UpdateMultiplier(stepsize);
       }
       else{
-        /*--- Update constraint multiplier ---*/
+        /*--- Compute and store GradL dot p ---*/
+        StoreGradDotDir();
+
+        /*--- Store and update constraint multiplier ---*/
         StoreMultiplier();
         UpdateMultiplier(1.0);
       }
@@ -754,8 +769,6 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
   su2double admissible_step = 0.0;
 
   for (iDV=0;iDV<nDV_Total;iDV++){
-    /*--- ShiftedLagrangianGradient is the gradient at the old iterate (for One_Shot it is N_u and not L_u) ---*/
-    // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
@@ -764,18 +777,43 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
   return (Lagrangian <= Lagrangian_Old + admissible_step);
 }
 
-void COneShotFluidDriver::UpdateStepSizeQuadratic(su2double &stepsize){
+void COneShotFluidDriver::StoreGradDotDir(){
   unsigned short iDV;
-  su2double admissible_step = 0.0, tmp = stepsize;
-
+  GradDotDir = 0.0;
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
-  admissible_step *= cwolfeone;
-
-  stepsize = admissible_step*tmp/(2.*(Lagrangian - Lagrangian_Old - admissible_step*tmp));
 }
+
+su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
+  return GradDotDir/(2.*(Lagrangian - Lagrangian_Old + GradDotDir));
+}
+
+su2double COneShotFluidDriver::UpdateStepSizeCubic(su2double stepsize, su2double stepsize_p){
+  const su2double tmp = 1./(pow(stepsize,2.)*pow(stepsize_p,2.)*(stepsize-stepsize_p));
+
+  const su2double vec1 = Lagrangian   - Lagrangian_Old - stepsize*GradDotDir,
+                  vec2 = Lagrangian_p - Lagrangian_Old - stepsize_p*GradDotDir;
+
+  const su2double a = tmp*(pow(stepsize_p,2.)*vec1  - pow(stepsize,2.)*vec2),
+                  b = tmp*(-pow(stepsize_p,3.)*vec1 + pow(stepsize,3.)*vec2);
+
+  if(fabs(a) < 1.0E-16) {
+    return -GradDotDir/(2.*b); // Function is quadratic
+  }
+  else {
+    const su2double d = pow(b,2.) - 3.*a*GradDotDir; // Discriminant
+    return (-b + sqrt(d))/(3.*a); // Function is cubic
+  }
+}
+
+su2double COneShotFluidDriver::UpdateStepSizeBound(su2double stepsize, su2double a, su2double b){
+  if(stepsize < a) {return a;}
+  else if(stepsize > b) {return b;}
+  else {return stepsize};
+}
+
 
 void COneShotFluidDriver::ComputeDesignVarUpdate(su2double stepsize){
   unsigned short iDV;

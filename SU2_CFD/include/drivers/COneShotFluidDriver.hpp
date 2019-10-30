@@ -63,7 +63,8 @@ protected:
   su2double* DesignVariable; /*!< \brief Current design variable value.*/
   su2double* AugmentedLagrangianGradient; /*!< \brief Gradient of doubly augmented Lagrangian.*/
   su2double* AugmentedLagrangianGradient_Old; /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
-  su2double Lagrangian, Lagrangian_Old; /*!< \brief Value of doubly augmented Lagrangian.*/
+  su2double Lagrangian, Lagrangian_Old, Lagrangian_p; /*!< \brief Value of doubly augmented Lagrangian.*/
+  su2double GradDotDir; /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
   
   su2double lb, ub; /*!< \brief Lower and upper bounds of design variables.*/
   su2double epsilon; /*!< \brief Estimator for the active set.*/
@@ -204,9 +205,24 @@ public:
   bool CheckFirstWolfe();
 
   /*!
+   * \brief Store gradient dotted with search direction for first Armijo search iteration.
+   */
+  void StoreGradDotDir()
+
+  /*!
    * \brief Perform parabolic backtracking.
    */
-  void UpdateStepSizeQuadratic(su2double &stepsize);
+  su2double UpdateStepSizeQuadratic(void);
+
+  /*!
+   * \brief Perform cubic backtracking.
+   */
+  su2double UpdateStepSizeCubic(su2double stepsize, su2double stepsize_p);
+
+  /*!
+   * \brief Bound step size.
+   */
+  su2double UpdateStepSizeBound(su2double stepsize, su2double a, su2double b)
 
   /*!
    * \brief Store values for the updated design variables.
