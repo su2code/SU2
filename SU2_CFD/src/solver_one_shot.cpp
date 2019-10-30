@@ -273,7 +273,7 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   unsigned long iPoint;
   su2double normDelta=0.0,    myNormDelta=0.0;
   su2double normDeltaNew=0.0, myNormDeltaNew=0.0;
-  su2double helpr=0.0,        myHelper=0.0;
+  su2double helper=0.0,       myHelper=0.0;
 
   /* --- Estimate rho and theta values --- */
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
