@@ -2116,7 +2116,7 @@ inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
 
 inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }
 
-inline bool CConfig::GetBoolOneShot(void) { return Bool_One_Shot;}
+inline bool CConfig::GetBoolOneShot(void) { return OneShot;}
 
 inline unsigned long CConfig::GetOneShotStart(void) { return One_Shot_Start; }
 

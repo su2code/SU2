@@ -886,7 +886,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, OneShot, false, Restart_Flow, false);
   /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
   addBoolOption("FULL_TAPE", FullTape, YES);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -4706,7 +4706,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     
     /*--- Note that this is deliberatly done at the end of this routine! ---*/
-    if(!One_Shot) {
+    if(!OneShot) {
       switch(Kind_Solver) {
         case EULER:
           Kind_Solver = DISC_ADJ_EULER;
@@ -4746,7 +4746,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
     else {
-      Bool_One_Shot = true;
       /*--- For one-shot we do not currently make use of a restart solution (no reverse accumulation) ---*/
       Restart_Flow = false;
       switch(Kind_Solver) {

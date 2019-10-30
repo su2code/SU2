@@ -1104,7 +1104,7 @@ private:
             Mesh_Hmin;               /*!< \brief Minimum cell size */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
-  bool Bool_One_Shot; /*!< \brief option for one-shot optimization method */
+  bool OneShot; /*!< \brief option for one-shot optimization method */
   bool BFGS_Reset; /*!< \brief flag for reset of the Hessian to Identity in one-shot method */
   unsigned long One_Shot_Start; /*!< \brief Start iteration for one-shot method */
   unsigned long One_Shot_Stop; /*!< \brief Stop iteration for one-shot method */
@@ -1311,10 +1311,14 @@ private:
   
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
+                            bool & OneShot, const bool & OneShot_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default,
+                                              DiscreteAdjoint, DiscreteAdjoint_default,
+                                              OneShot, OneShot_default,
+                                              Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
