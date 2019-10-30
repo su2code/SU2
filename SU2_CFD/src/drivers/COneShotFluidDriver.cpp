@@ -226,8 +226,8 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned long InnerIter = config->GetInnerIter();
 
   /*--- Store the old solution and the old design for line search ---*/
-  solver[ADJFLOW_SOL]->StoreSolution();
-  solver[ADJFLOW_SOL]->StoreMeshPoints(config, geometry);
+  solver[ADJFLOW_SOL]->SetStoreSolution();
+  solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
@@ -242,7 +242,7 @@ void COneShotFluidDriver::RunOneShot(){
         UpdateStepSizeQuadratic(stepsize);
 
         /*---Load the old design for line search---*/
-        solver[ADJFLOW_SOL]->LoadMeshPoints(config, geometry);
+        solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
       }
@@ -312,8 +312,8 @@ void COneShotFluidDriver::RunOneShot(){
     // CheckMultiplier();
 
     /*--- N_u ---*/
-    solver[ADJFLOW_SOL]->SaveSensitivity(geometry);
-    solver[ADJFLOW_SOL]->StoreSaveSolution();
+    solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
+    solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
     solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
 

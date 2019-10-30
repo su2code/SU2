@@ -4665,7 +4665,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void StoreSolution();
+  virtual void SetStoreSolution();
 
   /*!
    * \brief A virtual member.
@@ -4675,12 +4675,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void LoadSolutionStep(su2double stepsize);
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void StoreSaveSolution();
+  virtual void SetSaveSolution();
 
   /*!
    * \brief A virtual member.
@@ -4690,47 +4685,32 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void StoreFormerSolution();
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void ShiftFormerSolution();
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void ShiftStoreSolution();
-
-  /*!
-   * \brief A virtual member.
-   */
   virtual void SetSolutionDelta();
 
   /*!
    * \brief A virtual member.
    */
-  virtual void StoreSolutionDelta();
+  virtual void SetSolutionDeltaStore();
 
   /*!
    * \brief A virtual member.
    * \param[in] config - config class object
    * \param[in] geometry - geometry class object
    */
-  virtual void StoreMeshPoints(CConfig *config, CGeometry *geometry);
+  virtual void SetMeshPointsOld(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
    * \param[in] config - config class object
    * \param[in] geometry - geometry class object
    */
-  virtual void LoadMeshPoints(CConfig *config, CGeometry *geometry);
+  virtual void LoadMeshPointsOld(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
-  virtual void SaveSensitivity(CGeometry *geometry);
+  virtual void SetSensitivityShiftedLagrangian(CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
@@ -15997,7 +15977,7 @@ public:
    * \brief Store the current solution in Solution_Store.
    * (This is done to store the solution of the current iterate before line search)
    */
-  void StoreSolution();
+  void SetStoreSolution();
 
   /*!
    * \brief Load the current solution from Solution_Store.
@@ -16005,30 +15985,25 @@ public:
   void LoadSolution();
 
   /*!
-   * \brief Load the current solution from Solution_Store + stepsize*Update.
-   */
-  void LoadSolutionStep(su2double stepsize);
-
-  /*!
    * \brief Store current mesh coordinates and normals.
    * (This is e.g. done before line search)
    * \param[in] config - config class object
    * \param[in] geometry - geometry class object
    */
-  void StoreMeshPoints(CConfig *config, CGeometry *geometry);
+  void SetMeshPointsOld(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Load mesh coordinates and normals.
    * \param[in] config - config class object
    * \param[in] geometry - geometry class object
    */
-  void LoadMeshPoints(CConfig *config, CGeometry *geometry);
+  void LoadMeshPointsOld(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Store the geometry sensitivities (Sensitivity) in Sensitivity_ShiftedLagrangian
    * \param[in] geometry - geometry class object
    */
-  void SaveSensitivity(CGeometry* geometry);
+  void SetSensitivityShiftedLagrangian(CGeometry* geometry);
 
   /*!
    * \brief Calculate either the solver part of the augmented or the shifted Lagrangian
@@ -16043,7 +16018,7 @@ public:
    * \brief Store the current solution in Solution_Save.
    * (This is done to store the solution before calculating the alpha and beta terms)
    */
-  void StoreSaveSolution();
+  void SetSaveSolution();
 
   /*!
    * \brief Load the current solution from Solution_Save.
@@ -16065,18 +16040,6 @@ public:
   void SetGeometrySensitivityLagrangian(CGeometry *geometry);
 
   /*!
-   * \brief Shift Solution_Former to Solution_Store.
-   * (This is needed if the solution at two former states is stored)
-   */
-  void ShiftFormerSolution();
-
-  /*!
-   * \brief Shift Solution_Store to Solution_Former.
-   * (This is needed if Solution is only updated by a factor*Delta)
-   */
-  void ShiftStoreSolution();
-
-  /*!
    * \brief Set Solution_Delta for this time step.
    */
   void SetSolutionDelta();
@@ -16085,13 +16048,7 @@ public:
    * \brief Store Solution_Delta in Solution_Delta_Store.
    * (This is needed if Solution is only updated by a factor*Delta)
    */
-  void StoreSolutionDelta();
-
-  /*!
-   * \brief Store the current solution in Solution_Former.
-   * (This additional storage is needed if the solution at two former states is stored)
-   */
-  void StoreFormerSolution();
+  void SetSolutionDeltaStore();
 
   /*!
    * \brief Calculate estimates for alpha, beta, and gamma of the doubly augmented Lagrangian

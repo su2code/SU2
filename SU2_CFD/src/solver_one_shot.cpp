@@ -141,7 +141,7 @@ void COneShotSolver::SetGeometrySensitivityGradient(CGeometry *geometry){
     }
 }
 
-void COneShotSolver::SaveSensitivity(CGeometry *geometry){
+void COneShotSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){
     unsigned short iDim;
     unsigned long iPoint;
 
@@ -174,7 +174,7 @@ void COneShotSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double 
     }
 }
 
-void COneShotSolver::StoreMeshPoints(CConfig *config, CGeometry *geometry){
+void COneShotSolver::SetMeshPointsOld(CConfig *config, CGeometry *geometry){
     unsigned long iVertex, jPoint;
     unsigned short iMarker;
     for (jPoint=0; jPoint < nPoint; jPoint++){
@@ -188,7 +188,7 @@ void COneShotSolver::StoreMeshPoints(CConfig *config, CGeometry *geometry){
     }
 }
 
-void COneShotSolver::LoadMeshPoints(CConfig *config, CGeometry *geometry){
+void COneShotSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){
     unsigned long iVertex, jPoint;
     unsigned short iMarker;
     for (jPoint=0; jPoint < nPoint; jPoint++){
@@ -202,19 +202,11 @@ void COneShotSolver::LoadMeshPoints(CConfig *config, CGeometry *geometry){
     }
 }
 
-void COneShotSolver::StoreSolution(){
+void COneShotSolver::SetStoreSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->Set_StoreSolution(iPoint);
     nodes->Set_StoreSolution(iPoint);
-  }
-}
-
-void COneShotSolver::StoreFormerSolution(){
-  unsigned long iPoint;
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->GetNodes()->Set_FormerSolution(iPoint);
-    nodes->Set_FormerSolution(iPoint);
   }
 }
 
@@ -226,33 +218,7 @@ void COneShotSolver::LoadSolution(){
   }
 }
 
-void COneShotSolver::LoadSolutionStep(su2double stepsize){
-  unsigned long iPoint, iVar;
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      direct_solver->GetNodes()->SetSolution(iPoint, iVar, direct_solver->GetNodes()->GetSolution_Former(iPoint,iVar)+stepsize*direct_solver->GetNodes()->GetSolution_Delta_Store(iPoint,iVar));
-      nodes->SetSolution(iPoint, iVar, nodes->GetSolution_Former(iPoint,iVar)+stepsize*nodes->GetSolution_Delta_Store(iPoint,iVar));
-    }
-  }
-}
-
-void COneShotSolver::ShiftFormerSolution(){
-  unsigned long iPoint;
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->GetNodes()->SetSolution_Store(iPoint,direct_solver->GetNodes()->GetSolution_Former(iPoint));
-    nodes->SetSolution_Store(iPoint,nodes->GetSolution_Former(iPoint));
-  }
-}
-
-void COneShotSolver::ShiftStoreSolution(){
-  unsigned long iPoint;
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->GetNodes()->SetSolution_Former(iPoint,direct_solver->GetNodes()->GetSolution_Store(iPoint));
-    nodes->SetSolution_Former(iPoint,nodes->GetSolution_Store(iPoint));
-  }
-}
-
-void COneShotSolver::StoreSaveSolution(){
+void COneShotSolver::SetSaveSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->GetNodes()->Set_SaveSolution(iPoint);
@@ -439,7 +405,7 @@ void COneShotSolver::SetSolutionDelta(){
   }
 }
 
-void COneShotSolver::StoreSolutionDelta(){
+void COneShotSolver::SetSolutionDeltaStore(){
   unsigned short iVar;
   unsigned long iPoint;
 

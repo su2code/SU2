@@ -2530,11 +2530,11 @@ inline void CSolver::SetGeometrySensitivityGradient(CGeometry *geometry){}
 
 inline void CSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry){}
 
-inline void CSolver::StoreMeshPoints(CConfig *config, CGeometry *geometry){}
+inline void CSolver::SetMeshPointsOld(CConfig *config, CGeometry *geometry){}
 
-inline void CSolver::LoadMeshPoints(CConfig *config, CGeometry *geometry){}
+inline void CSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){}
 
-inline void CSolver::SaveSensitivity(CGeometry *geometry){}
+inline void CSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){}
 
 inline void CSolver::ResetSensitivityLagrangian(CGeometry *geometry){}
 
@@ -2546,17 +2546,11 @@ inline void CSolver::CalculateRhoTheta(CConfig *config){}
 
 inline void CSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){}
 
-inline void CSolver::StoreSolution(){}
+inline void CSolver::SetStoreSolution(){}
 
 inline void CSolver::LoadSolution(){}
 
-inline void CSolver::LoadSolutionStep(su2double stepsize){}
-
-inline void CSolver::ShiftFormerSolution(){}
-
-inline void CSolver::StoreFormerSolution(){}
-
-inline void CSolver::StoreSaveSolution(){}
+inline void CSolver::SetSaveSolution(){}
 
 inline void CSolver::LoadSaveSolution(){}
 
@@ -2564,11 +2558,9 @@ inline void CSolver::UpdateStateVariable(CConfig *config){}
 
 inline void CSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* config){}
 
-inline void CSolver::ShiftStoreSolution(){}
-
 inline void CSolver::SetSolutionDelta(){}
 
-inline void CSolver::StoreSolutionDelta(){}
+inline void CSolver::SetSolutionDeltaStore(){}
 
 inline void CSolver::SetConstrDerivative(unsigned short iConstr){}
 
