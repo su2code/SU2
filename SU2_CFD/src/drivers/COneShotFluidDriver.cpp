@@ -248,7 +248,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else if(whilecounter > 0){
         /*--- Parabolic backtracking ---*/
-        stepsize_tmp = UpdateStepSizeQuadratic(stepsize);
+        stepsize_tmp = UpdateStepSizeQuadratic();
         Lagrangian_p = Lagrangian;
         stepsize_p   = stepsize;
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
