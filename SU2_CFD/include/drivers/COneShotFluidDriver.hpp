@@ -222,7 +222,7 @@ public:
   /*!
    * \brief Bound step size.
    */
-  su2double UpdateStepSizeBound(su2double stepsize, su2double a, su2double b)
+  su2double UpdateStepSizeBound(su2double stepsize, su2double a, su2double b);
 
   /*!
    * \brief Store values for the updated design variables.
