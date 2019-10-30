@@ -772,7 +772,6 @@ private:
   Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
-  Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
   Specific_Heat_Cv,     /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,     /*!< \brief Non-dimensional specific heat at constant volume. */
   Thermal_Expansion_Coeff,     /*!< \brief Thermal expansion coefficient. */
@@ -1682,12 +1681,6 @@ public:
    * \return Value of the constant: Cp
    */
   su2double GetSpecific_Heat_Cp(void);
-
-  /*!
-   * \brief Get the value of the specific heat for solids.
-   * \return Specific heat number (solid).
-   */
-  su2double GetSpecific_Heat_Cp_Solid(void);
   
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
@@ -1812,10 +1805,10 @@ public:
   su2double GetThermalDiffusivity_Solid(void);
 
   /*!
-   * \brief Get the temperature in solids at freestream conditions.
+   * \brief Get the temperature in solids at initial conditions.
    * \return Freestream temperature (solid).
    */
-  su2double GetTemperature_Freestream_Solid(void);
+  su2double GetTemperature_Initial_Solid(void);
   
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
