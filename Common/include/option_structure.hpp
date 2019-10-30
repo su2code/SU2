@@ -2795,6 +2795,8 @@ class COptionMathProblem : public COptionBase {
   bool cont_adjoint_def;
   bool & disc_adjoint;
   bool disc_adjoint_def;
+  bool & one_shot;
+  bool one_shot_def;
   bool & restart;
   bool restart_def;
 

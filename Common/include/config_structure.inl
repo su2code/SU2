@@ -2148,7 +2148,7 @@ inline bool CConfig::GetCheckDescent(void) { return OS_Check_Descent; }
 
 inline unsigned short CConfig::GetOneShotSearchIter(void) { return OS_Search_Iter; }
 
-inline unsigned short CConfig::GetOneShotSearchTol(void) { return OS_Search_Tol; }
+inline su2double CConfig::GetOneShotSearchTol(void) { return OS_Search_Tol; }
 
 inline unsigned short CConfig::GetKind_ConstrFunc(unsigned short val_cons) { return Kind_ConstrFunc[val_cons]; }
 
