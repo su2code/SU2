@@ -1115,6 +1115,7 @@ private:
   su2double DV_Bound; /*!< \brief Value for design variable lower and upper bound */
   bool OS_Check_Descent; /*!< \brief option for a descent check in the line search */
   unsigned short OS_Search_Iter; /*!< \brief Maximum line search counter */
+  su2double OS_Search_Tol; /*!< \brief Value for step size lower bound */
   unsigned short *Kind_ConstrFunc;  /*!< \brief Kind of constraint functions. */
   unsigned short nConstr, nConstrHelp;              /*! \brief Number of constraint functions. */
   su2double* Multiplier_Start; /*! \brief Start values for constraint multipliers. */
