@@ -671,7 +671,6 @@ void COneShotFluidOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, 
   
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
-  CSolver* mesh_solver = solver[MESH_SOL];
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];  
 
