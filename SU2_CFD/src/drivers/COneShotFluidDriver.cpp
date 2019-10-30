@@ -309,7 +309,7 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
   if(InnerIter >= config_container[ZONE_0]->GetOneShotStart() && InnerIter > 1) {
     solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateRhoTheta(config_container[ZONE_0]);
-    solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateAlphaBetaGamma(config_container[ZONE_0], BCheck_Norm);}
+    solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateAlphaBetaGamma(config_container[ZONE_0], BCheck_Norm);
     CalculateLagrangian(true);
   }
 
