@@ -296,7 +296,7 @@ void COneShotFluidDriver::RunOneShot(){
           InnerIter < config->GetOneShotStop() &&
           !CheckFirstWolfe() && 
           ArmijoIter < nArmijoIter+1 &&
-          setpsize >= tol);
+          stepsize >= tol);
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);

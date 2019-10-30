@@ -4773,6 +4773,10 @@ public:
   virtual void AddConFunc_Value(su2double val_ConFunc);
 
   virtual su2double GetConFunc_Value(void);
+
+  virtual void SetArmijoIter(unsigned short val_iter);
+
+  virtual su2double GetArmijoIter(void);
   
 protected:
   /*!
