@@ -4749,12 +4749,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void CalculateAlphaBetaGamma(CConfig *config);
+  virtual void CalculateRhoTheta(CConfig *config);
 
   /*!
    * \brief A virtual member.
    */
-  virtual void SetAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm);
+  virtual void CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm);
 
   /*!
    * \brief A virtual member.
@@ -15950,7 +15950,7 @@ private:
  */
 class COneShotSolver : public CDiscAdjSolver {
 private:
-  su2double theta, rho;
+  su2double theta, theta_old, rho, rho_old;
   unsigned short nConstr;
   su2double ConFunc_Value;
   su2double *** DConsVec;
@@ -16086,12 +16086,12 @@ public:
   /*!
    * \brief Calculate estimates for alpha, beta, and gamma of the doubly augmented Lagrangian
    */
-  void CalculateAlphaBetaGamma(CConfig *config);
+  void CalculateRhoTheta(CConfig *config);
 
   /*!
    * \brief Store estimates for alpha, beta, and gamma of the doubly augmented Lagrangian
    */
-  void SetAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm);
+  void CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm);
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration

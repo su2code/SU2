@@ -2542,9 +2542,9 @@ inline void CSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double 
 
 inline su2double CSolver::CalculateLagrangianPart(CConfig *config, bool augmented){return 0.0;}
 
-inline void CSolver::CalculateAlphaBetaGamma(CConfig *config){}
+inline void CSolver::CalculateRhoTheta(CConfig *config){}
 
-inline void CSolver::SetAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){}
+inline void CSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){}
 
 inline void CSolver::StoreSolution(){}
 

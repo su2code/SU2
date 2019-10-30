@@ -48,9 +48,11 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdj
 
 COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config, direct_solver, Kind_Solver, iMesh) {
 
-  theta = 0.0;
-  rho = 0.0;
-  nConstr = config->GetnConstr();
+  rho       = 0.0;
+  rho_old   = 0.0;
+  theta     = 0.0;
+  theta_old = 0.0;
+  nConstr   = config->GetnConstr();
 
   DConsVec = new su2double** [nConstr];
   for (unsigned short iConstr=0; iConstr<nConstr;iConstr++){
@@ -266,40 +268,56 @@ void COneShotSolver::LoadSaveSolution(){
   }
 }
 
-void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config){
+void COneShotSolver::CalculateRhoTheta(CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;
   su2double normDelta=0.0,    myNormDelta=0.0;
   su2double normDeltaNew=0.0, myNormDeltaNew=0.0;
+  su2double helpr=0.0,        myHelper=0.0;
 
   /* --- Estimate rho and theta values --- */
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      myNormDelta += direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar);
-      myNormDeltaNew += (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar))*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
+      myNormDelta    += direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)
+                      * direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar);
+      myNormDeltaNew += (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar))
+                      * (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
+      myHelper       += direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
+                      - nodes->GetSolution_Delta(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
     }
   }
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&myNormDelta, &normDelta, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&myNormDeltaNew, &normDeltaNew, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&myHelper, &helper, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   normDelta    = myNormDelta;
   normDeltaNew = myNormDeltaNew;
+  helper       = myHelper;
 #endif
 
-  rho = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho), 0.9999); // Saturate contractivity
+  rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 0.9999); // Saturate contractivity
+  theta = max(fabs(helper)/normDelta, 0.9*theta_old);
 }
 
-void COneShotSolver::SetAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){
+void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){
 
-  su2double alpha = 2./((1.-rho)*(1.-rho));
-  su2double beta  = 2.;
-  su2double gamma = 2./val_bcheck_norm;
+  /* --- Estimate alpha, beta, and gamma values --- */
+  // su2double alpha = 2./((1.-rho)*(1.-rho));
+  // su2double beta  = 2.;
+  // su2double gamma = 2./val_bcheck_norm;
+  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  su2double beta  = 2./theta;
+  su2double gamma = 2./(beta*val_bcheck_norm);
 
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
   config->SetOneShotGamma(gamma);
+
+  /* --- Store rho and theta values for this iteration --- */
+  rho_old   = rho;
+  theta_old = theta;
 }
 
 su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmented){
