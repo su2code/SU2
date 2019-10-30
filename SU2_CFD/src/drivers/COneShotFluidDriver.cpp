@@ -320,7 +320,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
-    CheckMultiplier();
+    // CheckMultiplier();
 
     /*--- N_u ---*/
     for (iZone = 0; iZone < nZone; iZone++){
