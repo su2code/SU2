@@ -4776,7 +4776,7 @@ public:
 
   virtual void SetArmijoIter(unsigned short val_iter);
 
-  virtual su2double GetArmijoIter(void);
+  virtual unsigned short GetArmijoIter(void);
   
 protected:
   /*!
