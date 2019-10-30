@@ -2523,8 +2523,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief ONE_SHOT_CHECK_DESCENT \n DESCRIPTION: Indicates if the descent direction condition is checked in line search \ingroup Config*/
   addBoolOption("ONE_SHOT_CHECK_DESCENT", OS_Check_Descent, false);
 
-  /*!\brief ONE_SHOT_LS_ITER \n DESCRIPTION: Maximum line search iterations in one-shot method \ingroup Config*/
-  addUnsignedShortOption("ONE_SHOT_SEARCH_ITER", OS_nArmijoIter, 20);
+  /*!\brief ONE_SHOT_SEARCH_ITER \n DESCRIPTION: Maximum search iterations in one-shot method \ingroup Config*/
+  addUnsignedShortOption("ONE_SHOT_SEARCH_ITER", OS_Search_Iter, 20);
+
+  /*!\brief ONE_SHOT_LS_ITER \n DESCRIPTION: Lower bound for step size in Armijo search \ingroup Config*/
+  addDoubleOption("ONE_SHOT_SEARCH_TOL", OS_Search_Tol, 1.0E-16);
 
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);

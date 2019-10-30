@@ -220,8 +220,8 @@ void COneShotFluidDriver::Run(){
 
 void COneShotFluidDriver::RunOneShot(){
 
-  su2double stepsize = 1.0, stepsize_p, stepsize_tmp;
-  unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShot_nArmijoIter();
+  su2double stepsize = 1.0, stepsize_p, stepsize_tmp, tol = config->GetOneShotSearchTol();
+  unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned long InnerIter = config->GetInnerIter();
 
   /*--- Store the old solution and the old design for line search ---*/
@@ -295,7 +295,8 @@ void COneShotFluidDriver::RunOneShot(){
   } while(InnerIter > config->GetOneShotStart() && 
           InnerIter < config->GetOneShotStop() &&
           !CheckFirstWolfe() && 
-          ArmijoIter < nArmijoIter+1);
+          ArmijoIter < nArmijoIter+1 &&
+          setpsize >= tol);
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);

@@ -2146,7 +2146,9 @@ inline void CConfig::SetOneShotGamma(su2double input) { One_Shot_Gamma = input; 
 
 inline bool CConfig::GetCheckDescent(void) { return OS_Check_Descent; }
 
-inline unsigned short CConfig::GetOneShot_nArmijoIter(void) { return OS_nArmijoIter; }
+inline unsigned short CConfig::GetOneShotSearchIter(void) { return OS_Search_Iter; }
+
+inline unsigned short CConfig::GetOneShotSearchTol(void) { return OS_Search_Tol; }
 
 inline unsigned short CConfig::GetKind_ConstrFunc(unsigned short val_cons) { return Kind_ConstrFunc[val_cons]; }
 

@@ -1114,7 +1114,7 @@ private:
   su2double Obj_Func_Scale; /*!< \brief Value for scaling the objective function */
   su2double DV_Bound; /*!< \brief Value for design variable lower and upper bound */
   bool OS_Check_Descent; /*!< \brief option for a descent check in the line search */
-  unsigned short OS_nArmijoIter; /*!< \brief Maximum line search counter */
+  unsigned short OS_Search_Iter; /*!< \brief Maximum line search counter */
   unsigned short *Kind_ConstrFunc;  /*!< \brief Kind of constraint functions. */
   unsigned short nConstr, nConstrHelp;              /*! \brief Number of constraint functions. */
   su2double* Multiplier_Start; /*! \brief Start values for constraint multipliers. */
@@ -9484,7 +9484,13 @@ public:
    * \brief Maximum line search counter for one-shot.
    * \return Value for the maximum number of line searches.
    */
-  unsigned short GetOneShot_nArmijoIter(void);
+  unsigned short GetOneShotSearchIter(void);
+
+  /*!
+   * \brief Lower bound for one-shot step size.
+   * \return Value for the lower bound of step size.
+   */
+  su2double GetOneShotSearchTol(void);
 
   /*!
    * \brief Get the kind of constraint function. There are several options: Drag coefficient,
