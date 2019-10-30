@@ -2574,9 +2574,9 @@ inline void CSolver::AddConFunc_Value(su2double val_ConFunc) { }
 
 inline su2double CSolver::GetConFunc_Value(void)  { return 0; }
 
-virtual void CSolver::SetArmijoIter(unsigned short val_iter) { }
+inline void CSolver::SetArmijoIter(unsigned short val_iter) { }
 
-virtual su2double CSolver::GetArmijoIter(void) { return 0; }
+inline su2double CSolver::GetArmijoIter(void) { return 0; }
 
 inline void CDiscAdjSolver::SetObjFunc_Value(su2double val_ObjFunc) { ObjFunc_Value = val_ObjFunc; }
 
