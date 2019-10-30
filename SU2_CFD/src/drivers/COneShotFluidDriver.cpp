@@ -245,8 +245,9 @@ void COneShotFluidDriver::RunOneShot(){
     if(InnerIter>config_container[ZONE_0]->GetOneShotStart() && InnerIter<config_container[ZONE_0]->GetOneShotStop()){
 
       if(whilecounter > 0){
-        /*--- Armijo line search (halve step) ---*/
-        stepsize=stepsize*0.5;
+        // --- Armijo line search (halve step) ---
+        // stepsize=stepsize*0.5;
+        UpdateStepSizeQuadratic(stepsize);
 
         /*---Load the old design for line search---*/
         for (iZone = 0; iZone < nZone; iZone++){
@@ -800,11 +801,25 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- ShiftedLagrangianGradient is the gradient at the old iterate (for One_Shot it is N_u and not L_u) ---*/
     // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+    /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
   admissible_step *= cwolfeone;
 
-  return (Lagrangian<=Lagrangian_Old+admissible_step);
+  return (Lagrangian <= Lagrangian_Old + admissible_step);
+}
+
+void COneShotFluidDriver::UpdateStepSizeQuadratic(su2double &stepsize){
+  unsigned short iDV;
+  su2double admissible_step = 0.0, tmp = stepsize;
+
+  for (iDV=0;iDV<nDV_Total;iDV++){
+    /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
+    admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+  }
+  admissible_step *= cwolfeone;
+
+  stepsize = admissible_step*tmp/(2.*(Lagrangian - Lagrangian_Old - admissible_step*tmp));
 }
 
 void COneShotFluidDriver::ComputeDesignVarUpdate(su2double stepsize){

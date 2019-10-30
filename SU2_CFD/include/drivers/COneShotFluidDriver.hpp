@@ -204,6 +204,11 @@ public:
   bool CheckFirstWolfe();
 
   /*!
+   * \brief Perform parabolic backtracking.
+   */
+  void UpdateStepSizeQuadratic(su2double &stepsize);
+
+  /*!
    * \brief Store values for the updated design variables.
    */
   void UpdateDesignVariable();
