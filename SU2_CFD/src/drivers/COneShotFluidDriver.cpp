@@ -307,11 +307,14 @@ void COneShotFluidDriver::RunOneShot(){
   if (!CheckFirstWolfe() && config_container[ZONE_0]->GetZeroStep()) stepsize = 0.0;
 
   /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
-  if(InnerIter > config_container[ZONE_0]->GetOneShotStart() && InnerIter > 1) {
+  if(InnerIter >= config_container[ZONE_0]->GetOneShotStart() && InnerIter > 1) {
     solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateRhoTheta(config_container[ZONE_0]);
     solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->CalculateAlphaBetaGamma(config_container[ZONE_0], BCheck_Norm);
     CalculateLagrangian(true);
   }
+
+  /*--- Set Deltay and DeltaBary ---*/
+  solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetSolutionDelta();
 
   if(InnerIter >= config_container[ZONE_0]->GetOneShotStart() && InnerIter < config_container[ZONE_0]->GetOneShotStop()){
 

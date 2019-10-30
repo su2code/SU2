@@ -4705,6 +4705,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void SetSolutionDelta();
+
+  /*!
+   * \brief A virtual member.
+   */
   virtual void StoreSolutionDelta();
 
   /*!
@@ -16070,6 +16075,11 @@ public:
    * (This is needed if Solution is only updated by a factor*Delta)
    */
   void ShiftStoreSolution();
+
+  /*!
+   * \brief Set Solution_Delta for this time step.
+   */
+  void SetSolutionDelta();
 
   /*!
    * \brief Store Solution_Delta in Solution_Delta_Store.

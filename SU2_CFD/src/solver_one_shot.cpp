@@ -326,15 +326,6 @@ su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmente
   su2double Lagrangian=0.0, myLagrangian=0.0;
   su2double helper=0.0;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      direct_solver->GetNodes()->SetSolution_Delta(iPoint, iVar, direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
-    }
-    for (iVar = 0; iVar < nVar; iVar++){
-      nodes->SetSolution_Delta(iPoint,iVar,nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar));
-    }
-  }
-
   /* --- Calculate augmented Lagrangian terms (alpha and beta) --- */
   if(augmented){
     for (iPoint = 0; iPoint < nPointDomain; iPoint++){
@@ -430,6 +421,20 @@ void COneShotSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* confi
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       nodes->SetSensitivity(iPoint,iDim, (nodes->GetSensitivity(iPoint,iDim)-nodes->GetSensitivity_ShiftedLagrangian(iPoint,iDim))*(1./config->GetFDStep()));
+    }
+  }
+}
+
+void COneShotSolver::SetSolutionDelta(){
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      direct_solver->GetNodes()->SetSolution_Delta(iPoint, iVar, direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
+    }
+    for (iVar = 0; iVar < nVar; iVar++){
+      nodes->SetSolution_Delta(iPoint,iVar,nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar));
     }
   }
 }
