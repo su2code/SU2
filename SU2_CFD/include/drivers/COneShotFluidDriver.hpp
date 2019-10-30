@@ -207,7 +207,7 @@ public:
   /*!
    * \brief Store gradient dotted with search direction for first Armijo search iteration.
    */
-  void StoreGradDotDir()
+  void StoreGradDotDir();
 
   /*!
    * \brief Perform parabolic backtracking.
