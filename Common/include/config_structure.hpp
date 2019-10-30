@@ -1104,7 +1104,7 @@ private:
             Mesh_Hmin;               /*!< \brief Minimum cell size */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
-  bool One_Shot; /*!< \brief option for one-shot optimization method */
+  bool Bool_One_Shot; /*!< \brief option for one-shot optimization method */
   bool BFGS_Reset; /*!< \brief flag for reset of the Hessian to Identity in one-shot method */
   unsigned long One_Shot_Start; /*!< \brief Start iteration for one-shot method */
   unsigned long One_Shot_Stop; /*!< \brief Stop iteration for one-shot method */
@@ -1114,7 +1114,7 @@ private:
   su2double Obj_Func_Scale; /*!< \brief Value for scaling the objective function */
   su2double DV_Bound; /*!< \brief Value for design variable lower and upper bound */
   bool OS_Check_Descent; /*!< \brief option for a descent check in the line search */
-  unsigned short OS_LS_MaxCounter; /*!< \brief Maximum line search counter */
+  unsigned short OS_nArmijoIter; /*!< \brief Maximum line search counter */
   unsigned short *Kind_ConstrFunc;  /*!< \brief Kind of constraint functions. */
   unsigned short nConstr, nConstrHelp;              /*! \brief Number of constraint functions. */
   su2double* Multiplier_Start; /*! \brief Start values for constraint multipliers. */
@@ -9480,7 +9480,7 @@ public:
    * \brief Maximum line search counter for one-shot.
    * \return Value for the maximum number of line searches.
    */
-  unsigned short GetOneShotMaxCounter(void);
+  unsigned short GetOneShot_nArmijoIter(void);
 
   /*!
    * \brief Get the kind of constraint function. There are several options: Drag coefficient,

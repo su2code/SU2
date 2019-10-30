@@ -221,8 +221,7 @@ void COneShotFluidDriver::Run(){
 void COneShotFluidDriver::RunOneShot(){
 
   su2double stepsize = 1.0, stepsize_p, stepsize_tmp;
-  unsigned short maxcounter = config->GetOneShotMaxCounter();
-  unsigned short whilecounter = 0;
+  unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShot_nArmijoIter();
   unsigned long InnerIter = config->GetInnerIter();
 
   /*--- Store the old solution and the old design for line search ---*/
@@ -234,7 +233,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){      
 
-      if(whilecounter > 1) {
+      if(ArmijoIter > 1) {
         /*--- Cubic backtracking ---*/
         stepsize_tmp = UpdateStepSizeCubic(stepsize, stepsize_p);
         Lagrangian_p = Lagrangian;
@@ -246,7 +245,7 @@ void COneShotFluidDriver::RunOneShot(){
         LoadMultiplier();
         UpdateMultiplier(stepsize);
       }
-      else if(whilecounter > 0){
+      else if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         stepsize_tmp = UpdateStepSizeQuadratic();
         Lagrangian_p = Lagrangian;
@@ -271,7 +270,7 @@ void COneShotFluidDriver::RunOneShot(){
       solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
-      if (whilecounter != maxcounter || (!config->GetZeroStep())) {
+      if (ArmijoIter != nArmijoIter || (!config->GetZeroStep())) {
         ComputeDesignVarUpdate(stepsize);
       }
       else {
@@ -291,11 +290,15 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian(true);
 
-    whilecounter++;
+    ArmijoIter++;
 
   } while(InnerIter > config->GetOneShotStart() && 
           InnerIter < config->GetOneShotStop() &&
-          (!CheckFirstWolfe()) && whilecounter<maxcounter+1);
+          !CheckFirstWolfe() && 
+          ArmijoIter < nArmijoIter+1);
+
+  /*--- Store number of search iterations ---*/
+  solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||

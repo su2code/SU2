@@ -2493,14 +2493,11 @@ void CConfig::SetConfig_Options() {
   /*--- Options for the one-shot optimization method ---*/
   /*!\par CONFIG_CATEGORY: One-Shot method options \ingroup Config*/
 
-  /*!\brief ONE_SHOT \n DESCRIPTION: Use one-shot method for optimization \ingroup Config*/
-  addBoolOption("ONE_SHOT", One_Shot, false);
-
   /*!\brief ONE_SHOT_START \n DESCRIPTION: Starting iteration of one-shot method \ingroup Config*/
-  addUnsignedLongOption("ONE_SHOT_START", One_Shot_Start, 0);
+  addUnsignedLongOption("ONE_SHOT_START_ITER", One_Shot_Start, 0);
 
   /*!\brief ONE_SHOT_STOP \n DESCRIPTION: Stopping iteration of one-shot method \ingroup Config*/
-  addUnsignedLongOption("ONE_SHOT_STOP", One_Shot_Stop, 999999);
+  addUnsignedLongOption("ONE_SHOT_STOP_ITER", One_Shot_Stop, 999999);
 
   /*!\brief ONE_SHOT_ALPHA \n DESCRIPTION: Factor for first additional term in augmented Lagrangian \ingroup Config*/
   addDoubleOption("ONE_SHOT_ALPHA", One_Shot_Alpha, 2000.0);
@@ -2527,7 +2524,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ONE_SHOT_CHECK_DESCENT", OS_Check_Descent, false);
 
   /*!\brief ONE_SHOT_LS_ITER \n DESCRIPTION: Maximum line search iterations in one-shot method \ingroup Config*/
-  addUnsignedShortOption("ONE_SHOT_LS_ITER", OS_LS_MaxCounter, 20);
+  addUnsignedShortOption("ONE_SHOT_SEARCH_ITER", OS_nArmijoIter, 20);
 
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
@@ -4749,6 +4746,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
     else {
+      Bool_One_Shot = true;
       /*--- For one-shot we do not currently make use of a restart solution (no reverse accumulation) ---*/
       Restart_Flow = false;
       switch(Kind_Solver) {

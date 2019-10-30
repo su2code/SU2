@@ -15931,7 +15931,7 @@ private:
 class COneShotSolver : public CDiscAdjSolver {
 private:
   su2double theta, theta_old, rho, rho_old;
-  unsigned short nConstr;
+  unsigned short nConstr, ArmijoIter;
   su2double ConFunc_Value;
   su2double *** DConsVec;
 
@@ -16109,6 +16109,10 @@ public:
   void AddConFunc_Value(su2double val_ConFunc);
 
   su2double GetConFunc_Value(void);
+
+  void SetArmijoIter(unsigned short val_iter);
+
+  unsigned short GetArmijoIter(void);
 
 };
 

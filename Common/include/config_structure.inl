@@ -2116,7 +2116,7 @@ inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
 
 inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }
 
-inline bool CConfig::GetBoolOneShot(void) { return One_Shot;}
+inline bool CConfig::GetBoolOneShot(void) { return Bool_One_Shot;}
 
 inline unsigned long CConfig::GetOneShotStart(void) { return One_Shot_Start; }
 
@@ -2146,7 +2146,7 @@ inline void CConfig::SetOneShotGamma(su2double input) { One_Shot_Gamma = input; 
 
 inline bool CConfig::GetCheckDescent(void) { return OS_Check_Descent; }
 
-inline unsigned short CConfig::GetOneShotMaxCounter(void) { return OS_LS_MaxCounter; }
+inline unsigned short CConfig::GetOneShot_nArmijoIter(void) { return OS_nArmijoIter; }
 
 inline unsigned short CConfig::GetKind_ConstrFunc(unsigned short val_cons) { return Kind_ConstrFunc[val_cons]; }
 

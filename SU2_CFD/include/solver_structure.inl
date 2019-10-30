@@ -2583,3 +2583,7 @@ inline void COneShotSolver::SetConFunc_Value(su2double val_ConFunc) { ConFunc_Va
 inline void COneShotSolver::AddConFunc_Value(su2double val_ConFunc) { ConFunc_Value += val_ConFunc; }
 
 inline su2double COneShotSolver::GetConFunc_Value(void)  { return ConFunc_Value; }
+
+inline void COneShotSolver::SetArmijoIter(unsigned short val_iter) { ArmijoIter = val_iter; }
+
+inline unsigned short COneShotSolver::GetArmijoIter(void) { return ArmijoIter; }
