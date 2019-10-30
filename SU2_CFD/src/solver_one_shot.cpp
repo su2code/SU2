@@ -205,8 +205,8 @@ void COneShotSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){
 void COneShotSolver::SetStoreSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->GetNodes()->Set_StoreSolution(iPoint);
-    nodes->Set_StoreSolution(iPoint);
+    direct_solver->GetNodes()->SetSolution_Store(iPoint);
+    nodes->SetSolution_Store(iPoint);
   }
 }
 
@@ -221,8 +221,8 @@ void COneShotSolver::LoadSolution(){
 void COneShotSolver::SetSaveSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->GetNodes()->Set_SaveSolution(iPoint);
-    nodes->Set_SaveSolution(iPoint);
+    direct_solver->GetNodes()->SetSolution_Save(iPoint);
+    nodes->SetSolution_Save(iPoint);
   }
 }
 
@@ -401,20 +401,6 @@ void COneShotSolver::SetSolutionDelta(){
     }
     for (iVar = 0; iVar < nVar; iVar++){
       nodes->SetSolution_Delta(iPoint,iVar,nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar));
-    }
-  }
-}
-
-void COneShotSolver::SetSolutionDeltaStore(){
-  unsigned short iVar;
-  unsigned long iPoint;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      direct_solver->GetNodes()->SetSolution_Delta_Store(iPoint, iVar, direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar));
-    }
-    for (iVar = 0; iVar < nVar; iVar++){
-      nodes->SetSolution_Delta_Store(iPoint,iVar,nodes->GetSolution_Delta(iPoint,iVar));
     }
   }
 }

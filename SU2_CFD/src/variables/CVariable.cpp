@@ -90,9 +90,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   if (config->GetBoolOneShot()) {
     Solution_Store.resize(nPoint,nVar) = su2double(0.0);
-    Solution_Former.resize(nPoint,nVar) = su2double(0.0);
     Solution_Delta.resize(nPoint,nVar) = su2double(0.0);
-    Solution_Delta_Store.resize(nPoint,nVar) = su2double(0.0);
     Solution_Save.resize(nPoint,nVar) = su2double(0.0);
   }
 

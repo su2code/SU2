@@ -126,7 +126,6 @@ protected:
   MatrixType Solution_Store;        /*!< \brief Pointer to store solution of the problem (step k). */
   MatrixType Solution_Former;       /*!< \brief Former solution of the problem (step k-1). */
   MatrixType Solution_Delta;        /*!< \brief Difference of new solution and solution (step k+1 - step k). */
-  MatrixType Solution_Delta_Store;  /*!< \brief Difference of solution and old solution (step k - step k-1). */
   MatrixType Solution_Save;         /*!< \brief Pointer to store new solution of the problem (step k+1). */
 
   MatrixType AnisoGrad;       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */ 
@@ -2854,29 +2853,15 @@ public:
   /*!
    * \brief Set stored variables to the solution.
    */
-  inline void Set_StoreSolution(unsigned long iPoint) {
+  inline void SetSolution_Store(unsigned long iPoint) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Store(iPoint,iVar) = Solution(iPoint,iVar);
   }
 
   /*!
    * \brief Set saved variables to the solution.
    */
-  inline void Set_SaveSolution(unsigned long iPoint) {
+  inline void SetSolution_Save(unsigned long iPoint) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Save(iPoint,iVar) = Solution(iPoint,iVar);
-  }
-
-  /*!
-   * \brief Set former variables to the solution.
-   */
-  inline void Set_FormerSolution(unsigned long iPoint) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Former(iPoint,iVar) = Solution(iPoint,iVar);
-  }
-
-  /*!
-   * \brief Set former variables to the old solution.
-   */
-  inline void SetSolution_Former(unsigned long iPoint, su2double *val_solution_old) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Former(iPoint,iVar) = val_solution_old[iVar];
   }
 
   /*!
@@ -2899,14 +2884,6 @@ public:
   inline void SetSolution_Delta(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { Solution_Delta(iPoint,iVar) = val_solution_delta; }
 
   inline su2double GetSolution_Delta(unsigned long iPoint, unsigned short iVar) { return Solution_Delta(iPoint,iVar); }
-
-  inline su2double* GetSolution_Former(unsigned long iPoint) { return Solution_Former[iPoint]; }
-
-  inline su2double GetSolution_Former(unsigned long iPoint, unsigned short iVar) { return Solution_Former(iPoint,iVar); }
-
-  inline void SetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { Solution_Delta_Store(iPoint,iVar) = val_solution_delta; }
-
-  inline su2double GetSolution_Delta_Store(unsigned long iPoint, unsigned short iVar) { return Solution_Delta_Store(iPoint,iVar); }
 
   inline virtual void SetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
 

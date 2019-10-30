@@ -4689,11 +4689,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  virtual void SetSolutionDeltaStore();
-
-  /*!
-   * \brief A virtual member.
    * \param[in] config - config class object
    * \param[in] geometry - geometry class object
    */
@@ -16043,12 +16038,6 @@ public:
    * \brief Set Solution_Delta for this time step.
    */
   void SetSolutionDelta();
-
-  /*!
-   * \brief Store Solution_Delta in Solution_Delta_Store.
-   * (This is needed if Solution is only updated by a factor*Delta)
-   */
-  void SetSolutionDeltaStore();
 
   /*!
    * \brief Calculate estimates for alpha, beta, and gamma of the doubly augmented Lagrangian
