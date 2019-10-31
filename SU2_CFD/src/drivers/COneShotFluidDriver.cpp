@@ -927,9 +927,8 @@ void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
           * (DesignVariable[iDV]-BoundProjection(DesignVariable[iDV]-stepsize*ShiftedLagrangianGradient[iDV]));
   }
   norm = sqrt(norm);
-  if(norm < (ub-lb)/2.0) {
-    epsilon = norm;
-  }
+  epsilon = min(norm, (ub-lb)/2.0);
+
   for (iDV = 0; iDV < nDV_Total; iDV++) {
     activeset[iDV] = false;
     if(ub-DesignVariable[iDV] <= epsilon) activeset[iDV] = true;
@@ -1011,8 +1010,6 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-
-    AD::Reset();
 }
 
 void COneShotFluidDriver::ComputeBetaTerm(){
@@ -1050,8 +1047,6 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-
-    AD::Reset();
 }
 
 void COneShotFluidDriver::ComputePreconditioner(){
