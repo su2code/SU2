@@ -426,23 +426,19 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 
   iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
-  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
+  /*---Enable recording and register input of the flow iteration (conservative variables and node coordinates) --- */
 
-  if (kind_recording != NONE){
+  AD::StartRecording();
 
-    AD::StartRecording();
-
-    if (rank == MASTER_NODE && kind_recording == MainVariables && (InnerIter == 0)) {
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "Direct iteration to store the primal computational graph." << endl;
-      cout << "Combined recording of flow and design variables." << endl;
-      cout << "Compute residuals to check the convergence of the direct problem." << endl;
-      cout << "-------------------------------------------------------------------------" << endl << endl;
-    }
-
-    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
-
+  if (rank == MASTER_NODE && kind_recording == MainVariables && (InnerIter == 0)) {
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << "Direct iteration to store the primal computational graph." << endl;
+    cout << "Combined recording of flow and design variables." << endl;
+    cout << "Compute residuals to check the convergence of the direct problem." << endl;
+    cout << "-------------------------------------------------------------------------" << endl << endl;
   }
+
+  iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, kind_recording);
 
@@ -565,8 +561,6 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
       nDV_Count++;
     }
   }
-  AD::Reset();
-
 }
 
 void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
