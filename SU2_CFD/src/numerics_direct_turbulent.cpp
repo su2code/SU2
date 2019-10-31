@@ -581,7 +581,7 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         r=tanh(r)/tanh(1.0);
 
         g = r + cw2*(pow(r,6.0)-r);
-        g_6 =	pow(g,6.0);
+        g_6 = pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
 
@@ -612,7 +612,7 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
         dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-        val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+        val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
     }
 
@@ -706,7 +706,7 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
 
         r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         g = r + cw2*(pow(r,6.0)-r);
-        g_6 =	pow(g,6.0);
+        g_6 = pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
 
@@ -747,7 +747,7 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         if (r == 10.0) dr = 0.0;
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
         dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-        val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+        val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
         /* Compressibility Correction */
         val_Jacobian_i[0][0] -= 2.0*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
@@ -860,7 +860,7 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         r=tanh(r)/tanh(1.0);
 
         g = r + cw2*(pow(r,6.0)-r);
-        g_6 =	pow(g,6.0);
+        g_6 = pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
 
@@ -902,7 +902,7 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
         dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-        val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+        val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
         /* Compressibility Correction */
         val_Jacobian_i[0][0] -= 2.0*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;

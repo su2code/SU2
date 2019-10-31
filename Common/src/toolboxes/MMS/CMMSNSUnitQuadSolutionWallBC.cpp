@@ -176,7 +176,7 @@ void CMMSNSUnitQuadSolutionWallBC::GetMMSSourceTerm(const su2double *val_coords,
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSUnitQuadSolutionWallBC.mw in the directory
-       	CreateMMSSourceTerms for the details how to do this. ---*/
+        CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double t1 = (v_0 * rho_0);
   const su2double t2 = 1.0 - y;
   const su2double t6 = rho_0 * u_0;

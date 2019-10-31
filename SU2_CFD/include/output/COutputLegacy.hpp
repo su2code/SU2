@@ -153,7 +153,7 @@ class COutputLegacy {
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
   unsigned short   nSpanWiseSections,
-		   nMarkerTurboPerf;
+       nMarkerTurboPerf;
 
   su2double **TotalStaticEfficiency,
         **TotalTotalEfficiency,
@@ -213,8 +213,8 @@ class COutputLegacy {
 
 protected:
 
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
+  int rank,   /*!< \brief MPI Rank. */
+  size;         /*!< \brief MPI Size. */
 
 public:
 

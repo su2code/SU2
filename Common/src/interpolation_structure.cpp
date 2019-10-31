@@ -2871,7 +2871,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
     /*--- Send information about size of local_M array ---*/
     nLocalM = nVertexDonorInDomain*(nVertexDonorInDomain+1)/2 \
-		    + nVertexDonorInDomain*(nGlobalVertexDonor-iGlobalVertexDonor_end);
+        + nVertexDonorInDomain*(nGlobalVertexDonor-iGlobalVertexDonor_end);
 
     nLocalM_arr = new unsigned long [nProcessor];
 #ifdef HAVE_MPI
@@ -2916,7 +2916,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
 #ifdef HAVE_MPI
     if (rank != MASTER_NODE) {
-    	SU2_MPI::Send(local_M, nLocalM, MPI_DOUBLE, MASTER_NODE, 0, MPI_COMM_WORLD);
+      SU2_MPI::Send(local_M, nLocalM, MPI_DOUBLE, MASTER_NODE, 0, MPI_COMM_WORLD);
     }
 
     /*--- Assemble global_M ---*/
@@ -3019,7 +3019,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
         /*--- Calculate M_p*P*M_inv ---*/
         C_inv_trunc = new su2double [(nGlobalVertexDonor+nPolynomial+1)*nGlobalVertexDonor];
-      	for (int m=0; m<nPolynomial+1; m++) {
+        for (int m=0; m<nPolynomial+1; m++) {
           for (iVertexDonor=0; iVertexDonor<nGlobalVertexDonor; iVertexDonor++) {
             val_i = 0;
             for (int n=0; n<nPolynomial+1; n++) {
@@ -3032,7 +3032,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
             /*--- Save in row major order ---*/
             C_inv_trunc[m*nGlobalVertexDonor+iVertexDonor] = val_i;
           }
-      	}
+        }
 
         /*--- Calculate (I - P'*M_p*P*M_inv) ---*/
         C_tmp = new su2double [nGlobalVertexDonor*nGlobalVertexDonor];
@@ -3054,7 +3054,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
         /*--- Write to C_inv_trunc matrix ---*/
         for (iVertexDonor=0; iVertexDonor<nGlobalVertexDonor; iVertexDonor++)
-      	  for (jVertexDonor=0; jVertexDonor<nGlobalVertexDonor; jVertexDonor++)
+          for (jVertexDonor=0; jVertexDonor<nGlobalVertexDonor; jVertexDonor++)
             C_inv_trunc[(iVertexDonor+nPolynomial+1)*(nGlobalVertexDonor)+jVertexDonor] = C_tmp[iVertexDonor*(nGlobalVertexDonor)+jVertexDonor];
 
       } else { // no polynomial term used in the interpolation
@@ -3062,7 +3062,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         C_inv_trunc = new su2double [nGlobalVertexDonor*nGlobalVertexDonor];
         for (iVertexDonor=0; iVertexDonor<nGlobalVertexDonor; iVertexDonor++)
           for (jVertexDonor=0; jVertexDonor<nGlobalVertexDonor; jVertexDonor++)
-      		C_inv_trunc[iVertexDonor*nGlobalVertexDonor+jVertexDonor] = global_M->Read((int)iVertexDonor, (int)jVertexDonor);
+          C_inv_trunc[iVertexDonor*nGlobalVertexDonor+jVertexDonor] = global_M->Read((int)iVertexDonor, (int)jVertexDonor);
 
       } // endif GetRadialBasisFunctionPolynomialOption
     } // endif (rank == MASTER_NODE)
@@ -3075,7 +3075,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
       C_inv_trunc = new su2double [(nGlobalVertexDonor+nPolynomial+1)*nGlobalVertexDonor];
     }
 
-  	SU2_MPI::Bcast(C_inv_trunc, (nGlobalVertexDonor+nPolynomial+1)*nGlobalVertexDonor, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(C_inv_trunc, (nGlobalVertexDonor+nPolynomial+1)*nGlobalVertexDonor, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
     /*--- Calculate H matrix ---*/
@@ -3817,7 +3817,7 @@ passivedouble CSymmetricMatrix::ReadL(int i, int j)
 
     default:
       throw invalid_argument("Matrix not decomposed yet or results have been deleted.");
-	}
+  }
 }
 
 passivedouble CSymmetricMatrix::ReadU(int i, int j)
@@ -3839,7 +3839,7 @@ passivedouble CSymmetricMatrix::ReadU(int i, int j)
 
     default:
       throw invalid_argument("Matrix not decomposed yet or results have been deleted.");
-	}
+  }
 }
 
 double CSymmetricMatrix::ReadInv(int i, int j)

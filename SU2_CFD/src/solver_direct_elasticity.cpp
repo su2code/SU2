@@ -4281,9 +4281,9 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
         // Compute the area/volume of the element
         if (nDim == 2)
-        	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
+          elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
         else
-        	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
+          elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
 
         // Compute the total volume
         totalVolume += elementVolume;

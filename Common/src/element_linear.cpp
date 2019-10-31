@@ -142,10 +142,10 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
 
-    val_Ni = 0.25*(1.0-Xi)*(1.0-Eta);		GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = 0.25*(1.0+Xi)*(1.0-Eta);		GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 0.25*(1.0+Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,3);
+    val_Ni = 0.25*(1.0-Xi)*(1.0-Eta);   GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = 0.25*(1.0+Xi)*(1.0-Eta);   GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 0.25*(1.0+Xi)*(1.0+Eta);   GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);   GaussPoint[iGauss]->SetNi(val_Ni,3);
 
     /*--- dN/d xi, dN/d eta ---*/
 
@@ -239,10 +239,10 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
 
-    val_Ni = Xi;						  GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = Eta;						  GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = Zeta;					  GaussPoint[iGauss]->SetNi(val_Ni,3);
+    val_Ni = Xi;              GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = Eta;             GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 1.0-Xi-Eta-Zeta; GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = Zeta;            GaussPoint[iGauss]->SetNi(val_Ni,3);
 
     /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
 
@@ -310,7 +310,7 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 
   su2double oneOnSqrt3 = 0.577350269189626;
 
-  GaussCoord[0][0] = -oneOnSqrt3;  GaussCoord[0][1] = -oneOnSqrt3;  GaussCoord[0][2] = -oneOnSqrt3;	 GaussWeight[0] = 1.0;
+  GaussCoord[0][0] = -oneOnSqrt3;  GaussCoord[0][1] = -oneOnSqrt3;  GaussCoord[0][2] = -oneOnSqrt3;  GaussWeight[0] = 1.0;
   GaussCoord[1][0] =  oneOnSqrt3;  GaussCoord[1][1] = -oneOnSqrt3;  GaussCoord[1][2] = -oneOnSqrt3;  GaussWeight[1] = 1.0;
   GaussCoord[2][0] =  oneOnSqrt3;  GaussCoord[2][1] =  oneOnSqrt3;  GaussCoord[2][2] = -oneOnSqrt3;  GaussWeight[2] = 1.0;
   GaussCoord[3][0] = -oneOnSqrt3;  GaussCoord[3][1] =  oneOnSqrt3;  GaussCoord[3][2] = -oneOnSqrt3;  GaussWeight[3] = 1.0;
@@ -330,14 +330,14 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
 
-    val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,3);
-    val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0+Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,4);
-    val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0+Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,5);
-    val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0+Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,6);
-    val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,7);
+    val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,3);
+    val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,4);
+    val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,5);
+    val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,6);
+    val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,7);
 
     /*--- dN/d xi ---*/
 

@@ -1396,8 +1396,8 @@ public:
   CDummyMeshFEM_DG(CConfig *config);
 
   /*!
-	 * \brief Destructor of the class.
-	 */
+   * \brief Destructor of the class.
+   */
   ~CDummyMeshFEM_DG();
 
 };

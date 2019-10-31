@@ -39,31 +39,31 @@
 
 CGaussVariable::CGaussVariable(void) {
 
-	GradNi_Xj = NULL;
-	GradNi_xj = NULL;
-	J_X = 0.0;
-	J_x = 0.0;
-	iGaussPoint = 0;
-	Ni = NULL;
+  GradNi_Xj = NULL;
+  GradNi_xj = NULL;
+  J_X = 0.0;
+  J_x = 0.0;
+  iGaussPoint = 0;
+  Ni = NULL;
 
 }
 
 CGaussVariable::CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes) {
 
-	 GradNi_Xj = new su2double* [val_nNodes];
-	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
-		 GradNi_Xj[iNode] = new su2double [val_nDim];
+   GradNi_Xj = new su2double* [val_nNodes];
+   for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
+     GradNi_Xj[iNode] = new su2double [val_nDim];
 
-	 GradNi_xj = new su2double* [val_nNodes];
-	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
-		 GradNi_xj[iNode] = new su2double [val_nDim];
+   GradNi_xj = new su2double* [val_nNodes];
+   for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
+     GradNi_xj[iNode] = new su2double [val_nDim];
 
-	 J_X = 0.0;
-	 J_x = 0.0;
+   J_X = 0.0;
+   J_x = 0.0;
 
-	 iGaussPoint = val_iGauss;
+   iGaussPoint = val_iGauss;
 
-	 Ni = new su2double [val_nNodes];
+   Ni = new su2double [val_nNodes];
 
 }
 
@@ -71,7 +71,7 @@ CGaussVariable::~CGaussVariable(void) {
 
   if (GradNi_Xj            != NULL) delete [] GradNi_Xj;
   if (GradNi_xj            != NULL) delete [] GradNi_xj;
-  if (Ni            	   != NULL) delete [] Ni;
+  if (Ni                 != NULL) delete [] Ni;
 
 }
 

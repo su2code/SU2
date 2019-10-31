@@ -194,10 +194,10 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE)cout << endl <<"Restarting Fluid and Structural Solvers." << endl;
 
     for (iZone = 0; iZone < nZone; iZone++) {
-    	for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
         Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
                        config_container[iZone], true);
-    	}
+      }
     }
   }
 
@@ -387,7 +387,7 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-	for (iInst = 0; iInst < nInst[iZone]; iInst++)
+  for (iInst = 0; iInst < nInst[iZone]; iInst++)
     delete iteration_container[iZone][iInst];
     delete [] iteration_container[iZone];
   }
@@ -1735,7 +1735,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integra
   fem_ns           = false;
   fem_turbulent    = false;
   heat_fvm         = false; disc_adj_heat    = false;
-  fem 			       = false; disc_adj_fem     = false;
+  fem              = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
 
@@ -1908,7 +1908,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   heat_fvm         = false;
   fem              = false;
-  spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
+  spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
@@ -2096,7 +2096,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
 
-	          case AUSMPLUSUP:
+            case AUSMPLUSUP:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
                 numerics[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);

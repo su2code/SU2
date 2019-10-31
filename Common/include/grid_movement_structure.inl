@@ -74,20 +74,20 @@ inline void CFreeFormDefBox::Set_VertexIndex(unsigned long val_iVertex) { Vertex
 inline void CFreeFormDefBox::Set_PointIndex(unsigned long val_iPoint) { PointIndex.push_back(val_iPoint); }
 
 inline void CFreeFormDefBox::Set_CartesianCoord(su2double *val_coord) { CartesianCoord[0].push_back(val_coord[0]);
-																																		CartesianCoord[1].push_back(val_coord[1]);
-																																		CartesianCoord[2].push_back(val_coord[2]); }
+                                                                    CartesianCoord[1].push_back(val_coord[1]);
+                                                                    CartesianCoord[2].push_back(val_coord[2]); }
 
 inline void CFreeFormDefBox::Set_CartesianCoord(su2double *val_coord, unsigned long val_iSurfacePoints) { CartesianCoord[0][val_iSurfacePoints] = val_coord[0];
-																																																			CartesianCoord[1][val_iSurfacePoints] = val_coord[1];
-																																																			CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }
+                                                                                                      CartesianCoord[1][val_iSurfacePoints] = val_coord[1];
+                                                                                                      CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }
 
 inline void CFreeFormDefBox::Set_ParametricCoord(su2double *val_coord) { ParametricCoord[0].push_back(val_coord[0]);
-																																		 ParametricCoord[1].push_back(val_coord[1]);
-																																		 ParametricCoord[2].push_back(val_coord[2]); }
+                                                                     ParametricCoord[1].push_back(val_coord[1]);
+                                                                     ParametricCoord[2].push_back(val_coord[2]); }
 
 inline void CFreeFormDefBox::Set_ParametricCoord(su2double *val_coord, unsigned long val_iSurfacePoints) { ParametricCoord[0][val_iSurfacePoints] = val_coord[0];
-																																																			 ParametricCoord[1][val_iSurfacePoints] = val_coord[1];
-																																																			 ParametricCoord[2][val_iSurfacePoints] = val_coord[2]; }
+                                                                                                       ParametricCoord[1][val_iSurfacePoints] = val_coord[1];
+                                                                                                       ParametricCoord[2][val_iSurfacePoints] = val_coord[2]; }
 
 inline unsigned short CFreeFormDefBox::Get_MarkerIndex(unsigned long val_iSurfacePoints) { return MarkerIndex[val_iSurfacePoints]; }
 
@@ -104,16 +104,16 @@ inline unsigned long CFreeFormDefBox::Get_VertexIndex(unsigned long val_iSurface
 inline unsigned long CFreeFormDefBox::Get_PointIndex(unsigned long val_iSurfacePoints) { return PointIndex[val_iSurfacePoints]; }
 
 inline su2double *CFreeFormDefBox::Get_CartesianCoord(unsigned long val_iSurfacePoints) {
-																																										cart_coord_[0] = CartesianCoord[0][val_iSurfacePoints];
-																																										cart_coord_[1] = CartesianCoord[1][val_iSurfacePoints];
-																																										cart_coord_[2] = CartesianCoord[2][val_iSurfacePoints];
-																																										return cart_coord_; }
+                                                                                    cart_coord_[0] = CartesianCoord[0][val_iSurfacePoints];
+                                                                                    cart_coord_[1] = CartesianCoord[1][val_iSurfacePoints];
+                                                                                    cart_coord_[2] = CartesianCoord[2][val_iSurfacePoints];
+                                                                                    return cart_coord_; }
 
 inline su2double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePoints) {
-																																										ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
-																																										ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
-																																										ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
-																																										return ParamCoord_; }
+                                                                                    ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
+                                                                                    ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
+                                                                                    ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
+                                                                                    return ParamCoord_; }
 
 inline unsigned long CFreeFormDefBox::GetnSurfacePoint(void) { return PointIndex.size(); }
 
@@ -148,44 +148,44 @@ inline void CFreeFormDefBox::SetmOrder(unsigned short val_mOrder) { mOrder = val
 inline void CFreeFormDefBox::SetnOrder(unsigned short val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1;}
 
 inline void  CFreeFormDefBox::SetCoordCornerPoints(su2double *val_coord, unsigned short val_icornerpoints) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
 }
 
 inline void CFreeFormDefBox::SetCoordControlPoints(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-			Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
-		}
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+    }
 }
 
 inline void CFreeFormDefBox::SetCoordControlPoints_Copy(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-			Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
-		}
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+    }
 }
 
 inline void CFreeFormDefBox::SetParCoordControlPoints(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-			ParCoord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      ParCoord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
 }
 
 inline void CFreeFormDefBox::SetCoordCornerPoints(su2double val_xcoord, su2double val_ycoord, su2double val_zcoord, unsigned short val_icornerpoints) {
-	Coord_Corner_Points[val_icornerpoints][0] = val_xcoord;
-	Coord_Corner_Points[val_icornerpoints][1] = val_ycoord;
-	Coord_Corner_Points[val_icornerpoints][2] = val_zcoord;
+  Coord_Corner_Points[val_icornerpoints][0] = val_xcoord;
+  Coord_Corner_Points[val_icornerpoints][1] = val_ycoord;
+  Coord_Corner_Points[val_icornerpoints][2] = val_zcoord;
 }
 
 inline void CFreeFormDefBox::SetControlPoints(unsigned short *val_index, su2double *movement) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_Control_Points[val_index[0]][val_index[1]][val_index[2]][iDim] += movement[iDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Coord_Control_Points[val_index[0]][val_index[1]][val_index[2]][iDim] += movement[iDim];
 }
 
 inline void CFreeFormDefBox::SetOriginalControlPoints() {
-	for (unsigned short iDegree = 0; iDegree <= lDegree_Copy; iDegree++)
-		for (unsigned short jDegree = 0; jDegree <= mDegree_Copy; jDegree++)
-			for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
-				for (unsigned short iDim = 0; iDim < nDim; iDim++)
-					Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
+  for (unsigned short iDegree = 0; iDegree <= lDegree_Copy; iDegree++)
+    for (unsigned short jDegree = 0; jDegree <= mDegree_Copy; jDegree++)
+      for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
 
   lDegree = lDegree_Copy; mDegree = mDegree_Copy; nDegree = nDegree_Copy;
   lOrder = lOrder_Copy; mOrder = mOrder_Copy; nOrder = nOrder_Copy;
@@ -193,9 +193,9 @@ inline void CFreeFormDefBox::SetOriginalControlPoints() {
 }
 
 inline void CFreeFormDefBox::CrossProduct (su2double *v1, su2double *v2, su2double *v3) {
-	v3[0] = v1[1]*v2[2]-v1[2]*v2[1];
-	v3[1] = v1[2]*v2[0]-v1[0]*v2[2];
-	v3[2] = v1[0]*v2[1]-v1[1]*v2[0];
+  v3[0] = v1[1]*v2[2]-v1[2]*v2[1];
+  v3[1] = v1[2]*v2[0]-v1[0]*v2[2];
+  v3[2] = v1[0]*v2[1]-v1[1]*v2[0];
 }
 
 inline su2double CFreeFormDefBox::DotProduct (su2double *v1, su2double *v2) { su2double scalar = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]; return scalar; }
@@ -211,11 +211,11 @@ inline void CFreeFormDefBox::SetLevel(unsigned short val_level) { Level = val_le
 inline unsigned short CFreeFormDefBox::GetLevel() { return Level; }
 
 inline su2double CFreeFormDefBox::Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+  return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
 }
 
 inline su2double CVolumetricMovement::Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+  return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
 }
 
 inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }

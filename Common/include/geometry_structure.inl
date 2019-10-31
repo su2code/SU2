@@ -350,11 +350,11 @@ inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
 
 inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
-  		                                su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
-  		                                su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
-  		                                su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
-  		                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
-  		                                su2double &Fuselage_MaxCurvature) { }
+                                      su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+                                      su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+                                      su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+                                      su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+                                      su2double &Fuselage_MaxCurvature) { }
 
 inline void CGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
                                        su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,

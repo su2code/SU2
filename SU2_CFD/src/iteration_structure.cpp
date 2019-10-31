@@ -99,7 +99,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
 
       break;
 
- 	/*--- Already initialized in the static mesh movement routine at driver level. ---*/
+  /*--- Already initialized in the static mesh movement routine at driver level. ---*/
   case STEADY_TRANSLATION: case ROTATING_FRAME:
     break;
 

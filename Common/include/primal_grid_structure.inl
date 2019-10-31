@@ -83,7 +83,7 @@ inline su2double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[va
 
 inline su2double CPrimalGrid::GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
 
-inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
+inline void CPrimalGrid::SetDivide (bool val_divide) {  Divide = val_divide; }
 
 inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
@@ -224,7 +224,7 @@ inline unsigned short CQuadrilateral::GetMaxNodesFace(void) { return maxNodesFac
 
 inline unsigned short CQuadrilateral::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
-inline void CQuadrilateral::SetDomainElement(unsigned long val_domainelement) {	DomainElement = val_domainelement; }
+inline void CQuadrilateral::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
 
 inline unsigned long CQuadrilateral::GetDomainElement(void) { return DomainElement; }
 

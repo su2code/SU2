@@ -751,29 +751,29 @@ inline unsigned short CConfig::GetMGCycle(void) { return MGCycle; }
 
 inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
 
-inline su2double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
+inline su2double CConfig::GetCFL(unsigned short val_mesh) { return CFL[val_mesh]; }
 
 inline void CConfig::SetCFL(unsigned short val_mesh, su2double val_cfl) { CFL[val_mesh] = val_cfl; }
 
-inline su2double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
+inline su2double CConfig::GetUnst_CFL(void) { return Unst_CFL; }
 
-inline su2double CConfig::GetMax_DeltaTime(void) {	return Max_DeltaTime; }
+inline su2double CConfig::GetMax_DeltaTime(void) {  return Max_DeltaTime; }
 
-inline su2double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
+inline su2double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) { return ParamDV[val_dv][val_param]; }
 
-inline su2double CConfig::GetCoordFFDBox(unsigned short val_ffd, unsigned short val_index) {	return CoordFFDBox[val_ffd][val_index]; }
+inline su2double CConfig::GetCoordFFDBox(unsigned short val_ffd, unsigned short val_index) {  return CoordFFDBox[val_ffd][val_index]; }
 
-inline unsigned short CConfig::GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_index) {	return DegreeFFDBox[val_ffd][val_index]; }
+inline unsigned short CConfig::GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_index) {  return DegreeFFDBox[val_ffd][val_index]; }
 
-inline string CConfig::GetFFDTag(unsigned short val_dv) {	return FFDTag[val_dv]; }
+inline string CConfig::GetFFDTag(unsigned short val_dv) { return FFDTag[val_dv]; }
 
-inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[val_ffd]; }
+inline string CConfig::GetTagFFDBox(unsigned short val_ffd) { return TagFFDBox[val_ffd]; }
 
-inline unsigned short CConfig::GetnDV(void) {	return nDV; }
+inline unsigned short CConfig::GetnDV(void) { return nDV; }
 
-inline unsigned short CConfig::GetnDV_Value(unsigned short iDV) {	return nDV_Value[iDV]; }
+inline unsigned short CConfig::GetnDV_Value(unsigned short iDV) { return nDV_Value[iDV]; }
 
-inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
+inline unsigned short CConfig::GetnFFDBox(void) { return nFFDBox; }
 
 inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; }
 
@@ -814,18 +814,18 @@ inline short CConfig::GetFFD_Fix_JDir(unsigned short val_index) { return FFD_Fix
 inline short CConfig::GetFFD_Fix_KDir(unsigned short val_index) { return FFD_Fix_KDir[val_index]; }
 
 inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {
-	if (nMG_PreSmooth == 0) return 1;
-	else return MG_PreSmooth[val_mesh];
+  if (nMG_PreSmooth == 0) return 1;
+  else return MG_PreSmooth[val_mesh];
 }
 
 inline unsigned short CConfig::GetMG_PostSmooth(unsigned short val_mesh) {
-	if (nMG_PostSmooth == 0) return 0;
-	else return MG_PostSmooth[val_mesh];
+  if (nMG_PostSmooth == 0) return 0;
+  else return MG_PostSmooth[val_mesh];
 }
 
 inline unsigned short CConfig::GetMG_CorrecSmooth(unsigned short val_mesh) {
-	if (nMG_CorrecSmooth == 0) return 0;
-	else return MG_CorrecSmooth[val_mesh];
+  if (nMG_CorrecSmooth == 0) return 0;
+  else return MG_CorrecSmooth[val_mesh];
 }
 
 inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
@@ -1160,7 +1160,7 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_Turb(void) { return Kind_Co
 
 inline unsigned short CConfig::GetKind_Centered_Turb(void) { return Kind_Centered_Turb; }
 
-inline unsigned short CConfig::GetKind_Upwind_Turb(void) {	return Kind_Upwind_Turb; }
+inline unsigned short CConfig::GetKind_Upwind_Turb(void) {  return Kind_Upwind_Turb; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTurb(void) { return Kind_TimeIntScheme_AdjTurb; }
 
@@ -1170,7 +1170,7 @@ inline unsigned short CConfig::GetKind_Centered_AdjTurb(void) { return Kind_Cent
 
 inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind_AdjTurb; }
 
-inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) {	return Kind_ConvNumScheme_Heat; }
+inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) { return Kind_ConvNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
@@ -1296,11 +1296,11 @@ inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth
 
 inline unsigned short CConfig::GetTime_Marching(void) { return TimeMarching; }
 
-inline bool CConfig::GetRestart(void) {	return Restart; }
+inline bool CConfig::GetRestart(void) { return Restart; }
 
-inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
+inline bool CConfig::GetWrt_Binary_Restart(void) {  return Wrt_Binary_Restart; }
 
-inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
+inline bool CConfig::GetRead_Binary_Restart(void) { return Read_Binary_Restart; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
@@ -1339,10 +1339,10 @@ inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ r
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
-	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
-		if (val_tag == Marker_All_TagBound[iMarker]) return iMarker;
-	}
-	return -1;
+  for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
+    if (val_tag == Marker_All_TagBound[iMarker]) return iMarker;
+  }
+  return -1;
 }
 
 inline unsigned short CConfig::GetMarker_All_KindBC(unsigned short val_marker) { return Marker_All_KindBC[val_marker]; }
@@ -1427,7 +1427,7 @@ inline unsigned short CConfig::GetnMarker_SymWall(void) { return nMarker_SymWall
 
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
-inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
+inline unsigned short CConfig::GetnMarker_EngineInflow(void) {  return nMarker_EngineInflow; }
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 

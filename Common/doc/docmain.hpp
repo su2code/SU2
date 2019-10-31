@@ -52,47 +52,47 @@
 /*!
  * \defgroup ConvDiscr Discretization of the convective terms.
  * \brief Group of classes which define the numerical methods for
- *		  discretizing the convective terms of a Partial Differential Equation.
- *		  There are methods for solving the direct, adjoint and linearized
- *		  systems of equations.
+ *      discretizing the convective terms of a Partial Differential Equation.
+ *      There are methods for solving the direct, adjoint and linearized
+ *      systems of equations.
  */
 
 /*!
  * \defgroup ViscDiscr Discretization of the viscous terms.
  * \brief Group of classes which define the numerical methods for
- *		  discretizing the viscous terms of a Partial Differential Equation.
- *		  There are methods for solving the direct, adjoint and linearized
- *		  systems of equations.
+ *      discretizing the viscous terms of a Partial Differential Equation.
+ *      There are methods for solving the direct, adjoint and linearized
+ *      systems of equations.
  */
 
 /*!
  * \defgroup SourceDiscr Discretization of the source terms.
  * \brief Group of classes which define the numerical methods for
- *		  discretizing the source terms of a Partial Differential Equation.
- *		  There are methods for solving the direct, adjoint and linearized
- *		  systems of equations.
+ *      discretizing the source terms of a Partial Differential Equation.
+ *      There are methods for solving the direct, adjoint and linearized
+ *      systems of equations.
  */
 
 /*!
  * \defgroup Potential_Flow_Equation Solving the potential flow equation.
  * \brief Group of classes which define the system of Potential flow equation in
- *		  three formulations: direct, adjoint, and linearized.
+ *      three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Euler_Equations Solving the Euler's equations.
  * \brief Group of classes which define the system of Euler equations in
- *		  three formulations: direct, adjoint, and linearized.
+ *      three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes' equations.
  * \brief Group of classes which define the system of Navier-Stokes equations in
- *		  three formulations: direct, adjoint, and linearized.
+ *      three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Turbulence_Model Solving the turbulence models.
  * \brief Group of classes which define the turbulence model in
- *		  three formulations: direct, adjoint, and linearized.
+ *      three formulations: direct, adjoint, and linearized.
  */

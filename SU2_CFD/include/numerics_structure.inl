@@ -74,7 +74,7 @@ inline void CFEAElasticity::Compute_Plane_Stress_Term(CElement *element_containe
 inline void CFEANonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
 inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
-	if (iVar == jVar) return 1.0; else return 0.0;
+  if (iVar == jVar) return 1.0; else return 0.0;
 }
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
