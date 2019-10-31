@@ -410,12 +410,12 @@ void CNumerics::GetInviscidProjFlux_SkewSym(su2double *val_primitive_i,
     val_Proj_Flux[0] = 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0])*val_normal[0];
     val_Proj_Flux[1] = (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Pressure_L + Pressure_R))*val_normal[0];
     val_Proj_Flux[2] = (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]))*val_normal[0];
-    val_Proj_Flux[4] = ((0.5*(Velocity_L[0]+Velocity_R[0])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Velocity_L[0]*Pressure_L + Velocity_R[0]*Pressure_R))*val_normal[0];
+    val_Proj_Flux[3] = ((0.5*(Velocity_L[0]+Velocity_R[0])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0]) + 0.5*(Velocity_L[0]*Pressure_L + Velocity_R[0]*Pressure_R))*val_normal[0];
 
     val_Proj_Flux[0] += 0.5*(Density_L*Velocity_L[1] + Density_R*Velocity_R[1])*val_normal[1];
     val_Proj_Flux[1] += (0.5*(Velocity_L[0]+Velocity_R[0]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]))*val_normal[1];
     val_Proj_Flux[2] += (0.5*(Velocity_L[1]+Velocity_R[1]) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Pressure_L + Pressure_R))*val_normal[1];
-     val_Proj_Flux[4] += ((0.5*(Velocity_L[1]+Velocity_R[1])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Velocity_L[1]*Pressure_L + Velocity_R[1]*Pressure_R))*val_normal[1];
+    val_Proj_Flux[3] += ((0.5*(Velocity_L[1]+Velocity_R[1])+(SoundSpeed_L*SoundSpeed_R/(Gamma*Gamma_Minus_One))) * 0.5*(Density_L*Velocity_L[1]+Density_R*Velocity_R[1]) + 0.5*(Velocity_L[1]*Pressure_L + Velocity_R[1]*Pressure_R))*val_normal[1];
   }
   else{
     val_Proj_Flux[0] = 0.5*(Density_L*Velocity_L[0]+Density_R*Velocity_R[0])*val_normal[0];

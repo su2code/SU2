@@ -139,7 +139,9 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
+  //if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
+  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)||
+      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
     Undivided_Laplacian = new su2double [nVar];
   }
   

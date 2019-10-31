@@ -440,7 +440,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
+  //if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
+  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
+      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -3469,6 +3471,9 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
   }
   
+  if (config->GetKind_Upwind_Flow() == SLAU2_KEP)
+    SetUndivided_Laplacian(geometry, config);
+  
   /*--- Roe Low Dissipation Sensor ---*/
   
   if (roe_low_dissipation){
@@ -3792,6 +3797,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
   bool slau2_kep        = (config->GetKind_Upwind_Flow() == SLAU2_KEP);
   
+  su2double **P_Tensor, **invP_Tensor;
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++){
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
+  }
   /*--- Loop over all the edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3854,6 +3866,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+        }
+        
+        if (slau2_kep){
+
+          /*--- Only velocity and pressure are extrapolated ---*/
+          su2double alpha;
+          if ((iVar > 0) && (iVar <nDim+2))
+            alpha = 0.36;
+          else
+            alpha = 0.0;
+
+          Primitive_i[iVar] = V_i[iVar] + alpha * Project_Grad_i;
+          Primitive_j[iVar] = V_j[iVar] + alpha * Project_Grad_j;
+
         }
       }
 
@@ -3981,6 +4007,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Pressure, density, enthalpy and velocity at points i and j ---*/
 
+      su2double MeanTemperature = 0.5 * (V_i[0] + V_j[0]);
       su2double MeanPressure    = 0.5 * (V_i[nDim+1] + V_j[nDim+1]);
       su2double MeanDensity     = 0.5 * (V_i[nDim+2] + V_j[nDim+2]);
       su2double MeanEnthalpy    = 0.5 * (V_i[nDim+3] + V_j[nDim+3]);
@@ -3992,11 +4019,128 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++) {
         MeanVelocity[iDim] = 0.5 * (V_i[iDim+1] + V_j[iDim+1]);
       }
+      su2double BetaInc2 = pow(config->GetModVel_FreeStreamND(),2.);
+      su2double Cp = (Gamma * config->GetGas_ConstantND()) / Gamma_Minus_One;
+      su2double MeandRhodT = -MeanDensity/MeanTemperature;
       
       /*--- Get projected flux tensor ---*/
-      numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
-      //numerics->GetInviscidProjFlux_SkewSym(V_i, V_j, Normal, ProjFlux);
+      //numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
+      numerics->GetInviscidProjFlux_SkewSym(V_i, V_j, Normal, ProjFlux);
+      //numerics->GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &BetaInc2, &MeanEnthalpy, Normal, ProjFlux);
       
+      //
+      su2double MeanSoundSpeed = sqrt(fabs(MeanPressure*Gamma/MeanDensity));
+      su2double UnitNormal[3]  = {0.0, 0.0, 0.0};
+      su2double Lambda[5]     = {0.0, 0.0, 0.0, 0.0, 0.0};
+      su2double Diff_Lapl[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+      su2double *Und_Lapl_i = node[iPoint]->GetUndivided_Laplacian();
+      su2double *Und_Lapl_j = node[jPoint]->GetUndivided_Laplacian();
+      
+      /*--- Face area (norm or the normal vector) ---*/
+      su2double Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt(Area);
+      
+      /*-- Unit Normal ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+            
+      /*--- Computes differences between Laplacians ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++){
+        Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
+      }
+      
+      su2double ProjVelocity = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVelocity   += MeanVelocity[iDim]*UnitNormal[iDim];
+      }
+      
+      // Compressible
+//      /*--- Compute P and Lambda (do it with the Normal) ---*/
+//
+//      numerics->GetPMatrix(&MeanDensity, MeanVelocity, &MeanSoundSpeed, UnitNormal, P_Tensor);
+
+//      /*--- Flow eigenvalues and entropy correctors ---*/
+//
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Lambda[iDim] = ProjVelocity;
+//
+//      Lambda[nVar-2] = ProjVelocity + MeanSoundSpeed;
+//      Lambda[nVar-1] = ProjVelocity - MeanSoundSpeed;
+//
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        Lambda[iVar] = max(fabs(Lambda[iVar]), fabs(ProjVelocity) + MeanSoundSpeed);
+//      }
+//
+//      /*--- Compute inverse P ---*/
+//
+//      numerics->GetPMatrix_inv(&MeanDensity, MeanVelocity, &MeanSoundSpeed, UnitNormal, invP_Tensor);
+//
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+//          su2double Proj_ModJac_Tensor_ij = 0.0;
+//
+//          /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+//
+//          for (unsigned short kVar = 0; kVar < nVar; kVar++){
+//            Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
+//          }
+//          ProjFlux[iVar] -= 0.001*Proj_ModJac_Tensor_ij*Diff_Lapl[jVar]*Area;
+//        }
+//      }
+      // End compressible
+      
+      // Incompressible
+      /*--- Eigenvalues of the preconditioned system ---*/
+       
+      if (nDim == 2) {
+        Lambda[0] = ProjVelocity;
+        Lambda[1] = ProjVelocity;
+        Lambda[2] = ProjVelocity - MeanSoundSpeed;
+        Lambda[3] = ProjVelocity + MeanSoundSpeed;
+      }
+      if (nDim == 3) {
+        Lambda[0] = ProjVelocity;
+        Lambda[1] = ProjVelocity;
+        Lambda[2] = ProjVelocity;
+        Lambda[3] = ProjVelocity - MeanSoundSpeed;
+        Lambda[4] = ProjVelocity + MeanSoundSpeed;
+      }
+       
+       /*--- Absolute value of the eigenvalues ---*/
+       
+      for (iVar = 0; iVar < nVar; iVar++)
+        Lambda[iVar] = fabs(Lambda[iVar]);
+
+      /*--- Build the preconditioning matrix using mean values ---*/
+
+      numerics->GetPreconditioner(&MeanDensity, MeanVelocity, &BetaInc2, &Cp, &MeanTemperature, &MeandRhodT, P_Tensor);
+
+      /*--- Build the absolute value of the preconditioned Jacobian, i.e.,
+      |A_precon| = P x |Lambda| x inv(P), where P diagonalizes the matrix
+      inv(Precon) x dF/dV and Lambda is the diag. matrix of its eigenvalues. ---*/
+
+      numerics->GetPreconditionedProjJac(&MeanDensity, Lambda, &BetaInc2, UnitNormal, invP_Tensor);
+      
+      /*--- Compute dissipation as Precon x |A_precon| x dV. If implicit,
+       store Precon x |A_precon| from dissipation term. ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+          su2double Proj_ModJac_Tensor_ij = 0.0;
+          for (unsigned short kVar = 0; kVar < nVar; kVar++)
+            Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*invP_Tensor[kVar][jVar];
+          ProjFlux[iVar] -= 0.001*Proj_ModJac_Tensor_ij*Diff_Lapl[jVar]*Area;
+        }
+        //cout << ProjFlux[iVar] << " ";
+      }
+      //cout << endl;
+
+      //End Incompressible
+      //
 //      if (kind_dissipation != NO_ROELOWDISS)
 //        numerics->SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
       
@@ -4004,7 +4148,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Res_Conv[iVar] = (1.- Dissipation_ij)*ProjFlux[iVar] + Dissipation_ij*Res_Conv[iVar];
       
     }
-
     
     /*--- Update residual value ---*/
     
@@ -4046,6 +4189,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] P_Tensor[iVar];
+    delete [] invP_Tensor[iVar];
+  }
+  delete [] P_Tensor;
+  delete [] invP_Tensor;
 }
 
 void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
@@ -9024,8 +9174,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
-
-
       
       /*--- Set various quantities in the numerics class ---*/
       
@@ -15370,7 +15518,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
   
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
+  //if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED){
+  if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
+      (config->GetKind_Upwind_Flow() == SLAU2_KEP)){
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -16176,6 +16326,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   
+  if (config->GetKind_Upwind_Flow() == SLAU2_KEP)
+    SetUndivided_Laplacian(geometry, config);
+    
   /*--- Compute gradient of the primitive variables ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
