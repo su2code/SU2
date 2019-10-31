@@ -52,11 +52,6 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   bool multizone = config->GetMultizone_Problem();
 
   int rank = MASTER_NODE;
-
-  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == INC_RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
