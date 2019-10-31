@@ -351,9 +351,7 @@ public:
 
   /*! \brief Get reference solution for reduced order modeling.
    */
-  inline su2double Get_RefSolution(unsigned long iPoint, unsigned long iVar) {
-    return Solution_Ref(iPoint, iVar);
-  }
+  inline su2double Get_RefSolution(unsigned long iPoint, unsigned long iVar) { return Solution_Ref(iPoint, iVar); }
 
   /*!
    * \brief Add a value to the reference solution.

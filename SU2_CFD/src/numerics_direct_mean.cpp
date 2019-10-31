@@ -140,10 +140,10 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
       ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar] + U_j[iVar]);
+      val_residual[iVar] -= ProjGridVel * 0.5*(U_i[iVar] + U_j[iVar]);
       if (implicit or rom) {
-        val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
-        val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel;
+        val_Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel;
       }
     }
   }
