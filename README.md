@@ -61,6 +61,8 @@ Thanks for building, and happy optimizing!
   SU2 DEVELOPERS
 ----------------------------------------------------------
 
+We follow the popular "GitFlow" branching model for scalable development. In the SU2 repository, the master branch represents the latest stable major or minor release (7.0, 6.2.0, etc.), it should only be modified during version releases. Work that is staged for release is put into the develop branch via Pull Requests on GitHub from various "feature" branches where folks do their day-to-day work on the code. At release time, the work that has been merged into the develop branch is pushed to the master branch and tagged as a release.
+
 SU2 is being developed by individuals and organized teams all around the world. 
 
 The current SU2 release has been coordinated by the SU2 International Developers Society with selected contributions from the open-source community.
