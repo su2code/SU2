@@ -44,6 +44,7 @@ if [ ! -z "$branch" ]; then
   git clone --recursive https://github.com/su2code/SU2 $name
   cd $name
   git config --add remote.origin.fetch '+refs/pull/*/merge:refs/remotes/origin/refs/pull/*/merge'
+  git config --add remote.origin.fetch '+refs/heads/*:refs/remotes/origin/refs/heads/*'
   git fetch origin
   git checkout $branch
   git submodule update
