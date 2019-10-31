@@ -1348,14 +1348,6 @@ public:
                     unsigned short kind_recording);
 
   /*!
-   * \brief Run the post-processing routines.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Postprocess(unsigned short ZONE_FLOW,
-                     unsigned short ZONE_STRUCT);
-
-  /*!
    * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
    */
   void DynamicMeshUpdate(unsigned long TimeIter);
