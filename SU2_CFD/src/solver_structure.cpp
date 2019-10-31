@@ -5633,7 +5633,7 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       //--- store coordinates
       for (iDim = 0; iDim<2; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       //--- store sensors (goal-oriented)
-      for (iVar = 0; iVar < nVar; ++iVar) Sens[iNode][iVar] = nodes->GetSolution(kNode,iVar);
+      for (iVar = 0; iVar < nVar; ++iVar) Sens[iNode][iVar] = base_nodes->GetSolution(kNode,iVar);
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
@@ -5678,8 +5678,8 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Area = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Area*6.);
-        nodes->AddAnisoGrad(kNode, i+0, graTri[0] * rap);
-        nodes->AddAnisoGrad(kNode, i+1, graTri[1] * rap);
+        base_nodes->AddAnisoGrad(kNode, i+0, graTri[0] * rap);
+        base_nodes->AddAnisoGrad(kNode, i+1, graTri[1] * rap);
       }
     }
   }
@@ -5718,8 +5718,8 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       //--- store gradient
       for(iVar = 0; iVar < nVar; iVar++){
         const unsigned short i = iVar*nDim;
-        Grad[iNode][0][iVar] = nodes->GetAnisoGrad(kNode, i+0);
-        Grad[iNode][1][iVar] = nodes->GetAnisoGrad(kNode, i+1);
+        Grad[iNode][0][iVar] = base_nodes->GetAnisoGrad(kNode, i+0);
+        Grad[iNode][1][iVar] = base_nodes->GetAnisoGrad(kNode, i+1);
       }
     }
 
@@ -5775,9 +5775,9 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Area = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Area*6.);
-        nodes->AddAnisoHess(kNode, i+0, hesTri[0] * rap);
-        nodes->AddAnisoHess(kNode, i+1, hesTri[1] * rap);
-        nodes->AddAnisoHess(kNode, i+2, hesTri[2] * rap);
+        base_nodes->AddAnisoHess(kNode, i+0, hesTri[0] * rap);
+        base_nodes->AddAnisoHess(kNode, i+1, hesTri[1] * rap);
+        base_nodes->AddAnisoHess(kNode, i+2, hesTri[2] * rap);
       }
     }
   }
@@ -5787,9 +5787,9 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     for(iVar = 0; iVar < nVar; iVar++){
       const unsigned short i = iVar*nMetr;
 
-      const su2double a = nodes->GetAnisoHess(iPoint, i+0);
-      const su2double b = nodes->GetAnisoHess(iPoint, i+1);
-      const su2double c = nodes->GetAnisoHess(iPoint, i+2);
+      const su2double a = base_nodes->GetAnisoHess(iPoint, i+0);
+      const su2double b = base_nodes->GetAnisoHess(iPoint, i+1);
+      const su2double c = base_nodes->GetAnisoHess(iPoint, i+2);
       
       A[0][0] = a; A[0][1] = b;
       A[1][0] = b; A[1][1] = c;
@@ -5800,9 +5800,9 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
       CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-      nodes->SetAnisoHess(iPoint, i+0, A[0][0]);
-      nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
-      nodes->SetAnisoHess(iPoint, i+2, A[1][1]);
+      base_nodes->SetAnisoHess(iPoint, i+0, A[0][0]);
+      base_nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
+      base_nodes->SetAnisoHess(iPoint, i+2, A[1][1]);
     }
   }
 }
@@ -5823,7 +5823,7 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       //--- store coordinates
       for (iDim = 0; iDim<3; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       //--- store sensors (goal-oriented)
-      for (iVar = 0; iVar < nVar; ++iVar) Sens[iNode][iVar] = nodes->GetSolution(kNode,iVar);
+      for (iVar = 0; iVar < nVar; ++iVar) Sens[iNode][iVar] = base_nodes->GetSolution(kNode,iVar);
     }
 
     //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
@@ -5880,9 +5880,9 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Vol = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Vol*24.);
-        nodes->AddAnisoGrad(kNode, i+0, graTet[0] * rap);
-        nodes->AddAnisoGrad(kNode, i+1, graTet[1] * rap);
-        nodes->AddAnisoGrad(kNode, i+2, graTet[2] * rap);
+        base_nodes->AddAnisoGrad(kNode, i+0, graTet[0] * rap);
+        base_nodes->AddAnisoGrad(kNode, i+1, graTet[1] * rap);
+        base_nodes->AddAnisoGrad(kNode, i+2, graTet[2] * rap);
       }
     }
   }
@@ -5912,9 +5912,9 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       //--- store gradient
       for(iVar = 0; iVar < nVar; iVar++){
         const unsigned short i = iVar*nDim;
-        Grad[iNode][0][iVar] = nodes->GetAnisoGrad(kNode, i+0);
-        Grad[iNode][1][iVar] = nodes->GetAnisoGrad(kNode, i+1);
-        Grad[iNode][2][iVar] = nodes->GetAnisoGrad(kNode, i+2);
+        Grad[iNode][0][iVar] = base_nodes->GetAnisoGrad(kNode, i+0);
+        Grad[iNode][1][iVar] = base_nodes->GetAnisoGrad(kNode, i+1);
+        Grad[iNode][2][iVar] = base_nodes->GetAnisoGrad(kNode, i+2);
       }
     }
 
@@ -6010,12 +6010,12 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Vol = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Vol*24.);
-        nodes->AddAnisoHess(kNode, i+0, hesTet[0] * rap);
-        nodes->AddAnisoHess(kNode, i+1, hesTet[1] * rap);
-        nodes->AddAnisoHess(kNode, i+2, hesTet[2] * rap);
-        nodes->AddAnisoHess(kNode, i+3, hesTet[3] * rap);
-        nodes->AddAnisoHess(kNode, i+4, hesTet[4] * rap);
-        nodes->AddAnisoHess(kNode, i+5, hesTet[5] * rap);
+        base_nodes->AddAnisoHess(kNode, i+0, hesTet[0] * rap);
+        base_nodes->AddAnisoHess(kNode, i+1, hesTet[1] * rap);
+        base_nodes->AddAnisoHess(kNode, i+2, hesTet[2] * rap);
+        base_nodes->AddAnisoHess(kNode, i+3, hesTet[3] * rap);
+        base_nodes->AddAnisoHess(kNode, i+4, hesTet[4] * rap);
+        base_nodes->AddAnisoHess(kNode, i+5, hesTet[5] * rap);
       }
     }
   }
@@ -6034,12 +6034,12 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     for(iVar = 0; iVar < nVar; iVar++){
       const unsigned short i = iVar*nMetr;
 
-      const su2double a = nodes->GetAnisoHess(iPoint, i+0);
-      const su2double b = nodes->GetAnisoHess(iPoint, i+1);
-      const su2double c = nodes->GetAnisoHess(iPoint, i+2);
-      const su2double d = nodes->GetAnisoHess(iPoint, i+3);
-      const su2double e = nodes->GetAnisoHess(iPoint, i+4);
-      const su2double f = nodes->GetAnisoHess(iPoint, i+5);
+      const su2double a = base_nodes->GetAnisoHess(iPoint, i+0);
+      const su2double b = base_nodes->GetAnisoHess(iPoint, i+1);
+      const su2double c = base_nodes->GetAnisoHess(iPoint, i+2);
+      const su2double d = base_nodes->GetAnisoHess(iPoint, i+3);
+      const su2double e = base_nodes->GetAnisoHess(iPoint, i+4);
+      const su2double f = base_nodes->GetAnisoHess(iPoint, i+5);
 
       A[0][0] = a; A[0][1] = b; A[0][2] = c;
       A[1][0] = b; A[1][1] = d; A[1][2] = e;
@@ -6051,12 +6051,12 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
       CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-      nodes->SetAnisoHess(iPoint, i+0, A[0][0]);
-      nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
-      nodes->SetAnisoHess(iPoint, i+2, A[0][2]);
-      nodes->SetAnisoHess(iPoint, i+3, A[1][1]);
-      nodes->SetAnisoHess(iPoint, i+4, A[1][2]);
-      nodes->SetAnisoHess(iPoint, i+5, A[2][2]);
+      base_nodes->SetAnisoHess(iPoint, i+0, A[0][0]);
+      base_nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
+      base_nodes->SetAnisoHess(iPoint, i+2, A[0][2]);
+      base_nodes->SetAnisoHess(iPoint, i+3, A[1][1]);
+      base_nodes->SetAnisoHess(iPoint, i+4, A[1][2]);
+      base_nodes->SetAnisoHess(iPoint, i+5, A[2][2]);
     }
   }
 }
