@@ -783,6 +783,18 @@ inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *conf
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }
 
+inline bool CSolver::FixedCL_Convergence(CConfig *config, bool convergence) { return false; }
+
+inline bool CSolver::GetStart_AoA_FD(void) { return false; }
+
+inline bool CSolver::GetEnd_AoA_FD(void) { return false; }
+
+inline unsigned long CSolver::GetIter_Update_AoA(void) { return 0; }
+
+inline su2double CSolver::GetPrevious_AoA(void) { return 0.0; }
+
+inline su2double CSolver::GetAoA_inc(void) { return 0.0; }
+
 inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                          CConfig *config, unsigned short iMesh, bool Output) { }
 
@@ -1644,6 +1656,16 @@ inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
+
+inline bool CEulerSolver::GetStart_AoA_FD(void) { return Start_AoA_FD; }
+
+inline bool CEulerSolver::GetEnd_AoA_FD(void) { return End_AoA_FD; }
+
+inline unsigned long CEulerSolver::GetIter_Update_AoA(void) { return Iter_Update_AoA; }
+
+inline su2double CEulerSolver::GetPrevious_AoA(void) { return AoA_Prev; }
+
+inline su2double CEulerSolver::GetAoA_inc(void) { return AoA_inc; }
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
