@@ -430,6 +430,7 @@ private:
   su2double SmoothingParam; /*!< \brief Parameter for the Laplace part in gradient smoothing. */
   bool SepDim; /*!< \brief Flag for enabling separated calculation for every dimension. */
   bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
+  bool Project2Surface; /*!< \brief Flag for calculating the projection onto the surface mesh from the SetVolume_Deformation routines stiffness matrix. */
   bool DebugMode; /*!< \brief temporary flag for some debuging stuff
 
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -2806,6 +2807,12 @@ public:
    * \return true means that smoothing is for each dimension separate
    */
   bool GetSepDim(void);
+
+  /*!
+   * \brief Check if the gradient smoothing is active
+   * \return true means that smoothing is applied to the sensitivities
+   */
+  bool GetProject2Surface(void);
 
   /*!
    * \brief Check if we want some simplified debugging stuff

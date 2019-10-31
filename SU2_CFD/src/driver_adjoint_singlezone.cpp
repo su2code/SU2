@@ -541,7 +541,13 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   if (config->GetSmoothGradient()) {
     solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics_container[ZONE_0 ][INST_0][MESH_0][GRADIENT_SMOOTHING], config);
+  } else if ( config->GetSmoothGradient() && config->GetProject2Surface() ) {
+    grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
+    grid_movement[ZONE_0][INST_0]->Multiply_by_Volume_Deformation_Stiffness(geometry, config, true);
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics_container[ZONE_0 ][INST_0][MESH_0][GRADIENT_SMOOTHING], config);
+    grid_movement[ZONE_0][INST_0]->Multiply_by_Volume_Deformation_Stiffness(geometry, config, false);
   }
+
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

@@ -339,6 +339,8 @@ inline su2double CConfig::GetSmoothingParam(void) { return SmoothingParam; }
 
 inline bool CConfig::GetSepDim(void) { return SepDim; }
 
+inline bool CConfig::GetProject2Surface(void) { return Project2Surface; }
+
 inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }

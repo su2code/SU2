@@ -1558,6 +1558,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
   /* DESCRIPTION: Switch to calculate dimensions separated */
   addBoolOption("SECOND_ORDER_INTEGRATION",SecOrdQuad, true);
+  /* DESCRIPTION: Switch to activate gradient smoothing */
+  addBoolOption("PROJECT_TO_SURFACE",Project2Surface, false);
   /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
   addBoolOption("DEBUG_MODE",DebugMode, false);
 
