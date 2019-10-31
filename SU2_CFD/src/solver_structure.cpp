@@ -5619,7 +5619,7 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
 void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned long iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim;
   su2double vnx[3], vny[3];
   su2double graTri[2];
@@ -5809,7 +5809,7 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
 void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned long iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim;
   su2double vnx[4], vny[4], vnz[4];
   su2double graTet[3];
