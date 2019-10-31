@@ -758,8 +758,7 @@ void CErrorEstimationDriver::ComputeMetric() {
       //--- Volume turb grad
       if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
       solver_turb->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
-                                       config[ZONE_0],
-                                       solver_flow);
+                                       config[ZONE_0]);
 
       //--- Volume turb Hess
       if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
@@ -788,8 +787,7 @@ void CErrorEstimationDriver::ComputeMetric() {
       //--- Volume turb grad
       if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
       solver_turb->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
-                                       config[ZONE_0],
-                                       solver_flow);
+                                       config[ZONE_0]);
 
       //--- Volume turb Hess
       if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
