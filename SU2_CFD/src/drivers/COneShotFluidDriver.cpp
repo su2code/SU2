@@ -429,17 +429,21 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 
   /*---Enable recording and register input of the flow iteration (conservative variables and node coordinates) --- */
 
-  AD::StartRecording();
+  if (kind_recording != NONE){
 
-  if (rank == MASTER_NODE && kind_recording == MainVariables && (InnerIter == 0)) {
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << "Direct iteration to store the primal computational graph." << endl;
-    cout << "Combined recording of flow and design variables." << endl;
-    cout << "Compute residuals to check the convergence of the direct problem." << endl;
-    cout << "-------------------------------------------------------------------------" << endl << endl;
+    AD::StartRecording();
+
+    if (rank == MASTER_NODE && kind_recording == MainVariables && (InnerIter == 0)) {
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << "Direct iteration to store the primal computational graph." << endl;
+      cout << "Combined recording of flow and design variables." << endl;
+      cout << "Compute residuals to check the convergence of the direct problem." << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
+    }
+
+    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
+
   }
-
-  iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, kind_recording);
 
