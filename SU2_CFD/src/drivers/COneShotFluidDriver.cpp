@@ -786,12 +786,12 @@ void COneShotFluidDriver::StoreGradDotDir(){
   GradDotDir = 0.0;
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    GradDotDir -= DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    GradDotDir += SearchDirection[iDV]*AugmentedLagrangianGradient[iDV];
   }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
-  return GradDotDir/(2.*(Lagrangian - Lagrangian_Old + GradDotDir));
+  return -GradDotDir/(2.*(Lagrangian - Lagrangian_Old - GradDotDir));
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeCubic(su2double stepsize, su2double stepsize_p){
