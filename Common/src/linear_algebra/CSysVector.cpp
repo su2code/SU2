@@ -43,7 +43,7 @@ CSysVector<ScalarType>::CSysVector(void) {
   nElm = 0; nElmDomain = 0;
   nBlk = 0; nBlkDomain = 0;
   nVar = 0;
-  
+
   vec_val = NULL;
   nElm = 0;
   nElmDomain = 0;

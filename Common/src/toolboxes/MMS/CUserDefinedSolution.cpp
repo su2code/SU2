@@ -44,10 +44,10 @@ CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim,
                                            unsigned short val_iMesh,
                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for a
    user-defined verification case. ---*/
-  
+
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;

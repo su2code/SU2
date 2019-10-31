@@ -124,11 +124,11 @@ int main()
     }
 
     INTEGER4  IsDouble = 1;
-    
+
     I = TECDAT142(&NumPts, X, &IsDouble);
     I = TECDAT142(&NumPts, Y, &IsDouble);
     I = TECDAT142(&NumPts, Z, &IsDouble);
-    
+
     delete X;
     delete Y;
     delete Z;
@@ -365,6 +365,6 @@ int main()
         I = TECEND142();
         /* DOCEND */
     }
-        
+
     return 0;
 }

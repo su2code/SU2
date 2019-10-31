@@ -98,7 +98,7 @@ void CSutherland::SetDerViscosity(su2double T, su2double rho) {
   const su2double T_refInv = 1.0/T_ref;
   const su2double TnonDim  = T_refInv*T;
   const su2double TSInv    = 1.0/(T + S);
- 
+
   dmudT_rho = Mu_ref*(T_ref + S)*TSInv*sqrt(TnonDim)
             * (1.5*T_refInv - TnonDim*TSInv);
 
@@ -110,15 +110,15 @@ CPolynomialViscosity::CPolynomialViscosity(void) : CViscosityModel() {
 }
 
 CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b) : CViscosityModel() {
-  
+
   /*--- Attributes initialization ---*/
-  
+
   nPolyCoeffs = val_nCoeffs;
   b = new su2double[nPolyCoeffs];
-  
+
   for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++)
     b[iVar] = val_b[iVar];
-  
+
 }
 
 CPolynomialViscosity::~CPolynomialViscosity(void) {
@@ -126,13 +126,13 @@ CPolynomialViscosity::~CPolynomialViscosity(void) {
 }
 
 void CPolynomialViscosity::SetViscosity(su2double T, su2double rho) {
-  
+
   /*--- Evaluate the new Mu from the coefficients and temperature. ---*/
-  
+
   Mu = b[0];
   for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
     Mu += b[iVar]*pow(T,iVar);
-  
+
 }
 
 /*-------------------------------------------------*/
@@ -169,21 +169,21 @@ CConstantConductivity::~CConstantConductivity(void) { }
 CConstantConductivityRANS::CConstantConductivityRANS(void) : CConductivityModel() { }
 
 CConstantConductivityRANS::CConstantConductivityRANS(su2double kt_const, su2double pr_turb) : CConductivityModel() {
-  
+
   /*--- Attributes initialization ---*/
-  
+
   Kt_Lam    = kt_const;
   dktdrho_T = 0.0;
   dktdT_rho = 0.0;
-  
+
   Prandtl_Turb = pr_turb;
 
 }
 
 void CConstantConductivityRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
-  
+
   Kt = Kt_Lam + cp*mu_turb/Prandtl_Turb;
-  
+
 }
 
 CConstantConductivityRANS::~CConstantConductivityRANS(void) { }
@@ -226,7 +226,7 @@ CConstantPrandtlRANS::CConstantPrandtlRANS(su2double pr_lam, su2double pr_turb) 
 void CConstantPrandtlRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
 
   Kt = cp * ((mu_lam/Prandtl_Lam) + (mu_turb/Prandtl_Turb));
-  
+
 }
 
 CConstantPrandtlRANS::~CConstantPrandtlRANS(void) { }
@@ -237,15 +237,15 @@ CPolynomialConductivity::CPolynomialConductivity(void) : CConductivityModel() {
 }
 
 CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b) : CConductivityModel() {
-  
+
   /*--- Attributes initialization ---*/
-  
+
   nPolyCoeffs = val_nCoeffs;
   b = new su2double[nPolyCoeffs];
-  
+
   for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++)
     b[iVar] = val_b[iVar];
-  
+
 }
 
 CPolynomialConductivity::~CPolynomialConductivity(void) {
@@ -253,27 +253,27 @@ CPolynomialConductivity::~CPolynomialConductivity(void) {
 }
 
 void CPolynomialConductivity::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
-  
+
   /*--- Evaluate the new Kt from the coefficients and temperature. ---*/
-  
+
   Kt = b[0];
   for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
     Kt += b[iVar]*pow(T,iVar);
-  
+
 }
 
 CPolynomialConductivityRANS::CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb) : CConductivityModel() {
-  
+
   /*--- Attributes initialization ---*/
-  
+
   nPolyCoeffs = val_nCoeffs;
   b = new su2double[nPolyCoeffs];
-  
+
   for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++)
     b[iVar] = val_b[iVar];
-  
+
   Prandtl_Turb = pr_turb;
-  
+
 }
 
 CPolynomialConductivityRANS::~CPolynomialConductivityRANS(void) {
@@ -281,16 +281,16 @@ CPolynomialConductivityRANS::~CPolynomialConductivityRANS(void) {
 }
 
 void CPolynomialConductivityRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
-  
+
   /*--- Evaluate the new Kt from the coefficients and temperature. ---*/
-  
+
   Kt = b[0];
   for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
     Kt += b[iVar]*pow(T,iVar);
-  
+
   /*--- Add a component due to turbulence to compute effective conductivity. ---*/
-  
+
   Kt += cp*mu_turb/Prandtl_Turb;
-  
+
 }
 

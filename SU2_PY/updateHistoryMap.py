@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file updateHistoryMap.py
 #  \brief Python script for updating the historyMap.py file.
@@ -36,10 +36,10 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 import os, pprint
 
-su2_home = os.environ['SU2_HOME'] 
+su2_home = os.environ['SU2_HOME']
 
-fileList = ['CFlowOutput.cpp', 
-'CFlowIncOutput.cpp', 
+fileList = ['CFlowOutput.cpp',
+'CFlowIncOutput.cpp',
 'CFlowCompOutput.cpp',
 'CHeatOutput.cpp',
 'CFlowCompFEMOutput.cpp',
@@ -82,7 +82,7 @@ def parse_output(files):
             curOutputField = dict()
             name = 'D_' + field
             curOutputField['HEADER'] = 'd[' + outputFields[field]['HEADER'] + ']'
-            curOutputField['GROUP'] = 'D_' + outputFields[field]['GROUP'] 
+            curOutputField['GROUP'] = 'D_' + outputFields[field]['GROUP']
             curOutputField['TYPE'] = 'D_COEFFICIENT'
             curOutputField['DESCRIPTION'] = 'Derivative value'
             addedOutputFields[name] = curOutputField

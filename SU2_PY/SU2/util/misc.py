@@ -14,5 +14,5 @@ def check_array(A,oned_as='row'):
             A = A.T
         else:
             raise Exception("oned_as must be 'row' or 'col' ")
-            
+
     return A

@@ -48,14 +48,14 @@
  * \author T. Economon, E. van der Weide
  */
 class CVerificationSolution {
-  
+
 protected:
   int rank;  /*!< \brief MPI Rank. */
   int size;  /*!< \brief MPI Size. */
-  
+
   unsigned short nDim;  /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;  /*!< \brief Number of variables of the problem  */
-  
+
   unsigned short Kind_Solver;                  /*!< \brief The kind of solver we are running. */
 
 private:
@@ -64,14 +64,14 @@ private:
   su2double *Error_Max;                        /*!< \brief Vector with the global max error for each variable in a verification case. */
   unsigned long *Error_Point_Max;              /*!< \brief Global index for the node with the max error in a verification case. */
   su2double **Error_Point_Max_Coord;           /*!< \brief Coordinates for the node with the max error in a verification case. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CVerificationSolution(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -83,7 +83,7 @@ public:
                         unsigned short val_nvar,
                         unsigned short val_iMesh,
                         CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -98,7 +98,7 @@ public:
   virtual void GetSolution(const su2double *val_coords,
                            const su2double val_t,
                            su2double       *val_solution);
-  
+
   /*!
    * \brief Get the exact solution at the current position and t = 0.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -106,7 +106,7 @@ public:
    */
   void GetInitialCondition(const su2double *val_coords,
                            su2double       *val_solution);
-  
+
   /*!
    * \brief Get the boundary conditions state for an exact solution.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -116,7 +116,7 @@ public:
   virtual void GetBCState(const su2double *val_coords,
                           const su2double val_t,
                           su2double       *val_solution);
-  
+
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -140,7 +140,7 @@ public:
                 solution is not known.
    */
   virtual bool ExactSolutionKnown(void);
-  
+
   /*!
    * \brief Get the local error defined as the local solution minus the verification solution.
    * \param[in]  val_coords   - Cartesian coordinates of the current position.

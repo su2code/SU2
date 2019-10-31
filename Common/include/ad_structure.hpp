@@ -104,8 +104,8 @@ namespace AD{
   /*!
    * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
    */
-  void ComputeAdjoint();  
-  
+  void ComputeAdjoint();
+
   /*!
    * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
    * \param[in] enter - Position where we start evaluating the tape.
@@ -181,27 +181,27 @@ namespace AD{
    * for each output variable to the AD tape.
    */
   void EndPreacc();
-  
+
   /*!
    * \brief Initializes an externally differentiated function. Input and output variables are set with SetExtFuncIn/SetExtFuncOut
    * \param[in] storePrimalInput - Specifies whether the primal input values are stored for the reverse call of the external function.
    * \param[in] storePrimalOutput - Specifies whether the primal output values are stored for the reverse call of the external function.
    */
   void StartExtFunc(bool storePrimalInput, bool storePrimalOutput);
-  
+
   /*!
    * \brief Sets the scalar input of a externally differentiated function.
    * \param[in] data - the scalar input variable.
    */
   void SetExtFuncIn(su2double &data);
-  
+
   /*!
    * \brief Sets the input variables of a externally differentiated function using a 1D array.
    * \param[in] data - the input 1D array.
    * \param[in] size - number of rows.
    */
   void SetExtFuncIn(const su2double* data, const int size);
-  
+
   /*!
   * \brief  Sets the input variables of a externally differentiated function using a 2D array.
   * \param[in] data - the input 2D array.
@@ -230,7 +230,7 @@ namespace AD{
   * \param[in] size_y - number of columns.
   */
   void SetExtFuncOut(su2double** data, const int size_x, const int size_y);
-  
+
   /*!
    * \brief Ends an external function section by deleting the structures.
    */

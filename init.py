@@ -63,7 +63,7 @@ def init_submodules(method = 'auto'):
     print('Invalid method')
     sys.exit(1)
 
-  # If directory was cloned using git, use submodule feature 
+  # If directory was cloned using git, use submodule feature
   # to check and initialize submodules if necessary
   if is_git:
     submodule_status(alt_name_codi, sha_version_codi)
@@ -101,14 +101,14 @@ def submodule_status(path, sha_commit):
     # ' ' : Correct version of submodule is initialized
     status_indicator = status[0][0]
 
-    
+
     if status_indicator == '+':
       # Write a warning that the sha tags do not match
       sys.stderr.write('WARNING: the currently checked out submodule commit in '
                         + path + ' does not match the SHA-1 found in the index.\n')
       sys.stderr.write('Use \'git submodule update --init '+ path + '\' to reset the module if necessary.\n')
     elif status_indicator == '-':
-      # Initialize the submodule if necessary 
+      # Initialize the submodule if necessary
       print('Initialize submodule ' + path + ' using git ... ')
       subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
 
@@ -117,12 +117,12 @@ def submodule_status(path, sha_commit):
     if (cur_sha_commit != sha_commit):
       print('SHA-1 tag stored in index does not match SHA tag stored in this script.')
       sys.exit(1)
-  
-  
+
+
 
 def download_module(name, alt_name, git_repo, commit_sha):
-  
-  # ZipFile does not preserve file permissions. 
+
+  # ZipFile does not preserve file permissions.
   # This is a workaround for that problem:
   # https://stackoverflow.com/questions/39296101/python-zipfile-removes-execute-permissions-from-binaries
   class MyZipFile(zipfile.ZipFile):
@@ -139,14 +139,14 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
   if not os.path.exists(alt_name + '/' + commit_sha):
 
-    if os.path.exists(alt_name) and os.listdir(alt_name): 
+    if os.path.exists(alt_name) and os.listdir(alt_name):
       print('Directory ' + alt_name + ' is not empty')
       print('Maybe submodules are already cloned with git?')
-      sys.exit(1) 
- 
+      sys.exit(1)
+
     else:
       print('Downloading ' + name + ' \'' + commit_sha + '\'')
-    
+
       filename = commit_sha + '.zip'
 
       url = git_repo + '/archive/' + filename
@@ -161,8 +161,8 @@ def download_module(name, alt_name, git_repo, commit_sha):
           print('and place it in the source code root folder')
           print('Run meson.py again')
           sys.exit()
-   
-      # Unzip file 
+
+      # Unzip file
       zipf = MyZipFile(sys.path[0] + '/' + filename)
       zipf.extractall(sys.path[0] + '/externals')
 
@@ -176,11 +176,11 @@ def download_module(name, alt_name, git_repo, commit_sha):
       f.close()
 
 
-   
+
 if __name__ == '__main__':
   if sys.version_info[0] < 3:
     raise Exception("Script must be run using Python 3")
-   
+
   # Set up the build environment, i.e. clone or download all submodules
   init_submodules(sys.argv[1])
 

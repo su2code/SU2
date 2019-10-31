@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file mesh_adaptation.py
 #  \brief Python script for doing the grid adaptation using the SU2 suite.
@@ -39,10 +39,10 @@ import SU2
 from optparse import OptionParser
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
-def main(): 
+def main():
 
     # Command Line Options
     parser = OptionParser()
@@ -61,9 +61,9 @@ def main():
 
     options.partitions = int( options.partitions )
     options.cycle      = int( options.cycle      )
-    options.overwrite  = options.overwrite == "True"    
+    options.overwrite  = options.overwrite == "True"
     options.save_all   = options.save_all  == "True"
-    
+
     # Run Mesh Adaptation
     mesh_adaptation ( options.filename   ,
                       options.partitions ,
@@ -79,20 +79,20 @@ def main():
 # -------------------------------------------------------------------
 
 def mesh_adaptation( filename             ,
-                     partitions   = 0     , 
+                     partitions   = 0     ,
                      cycles       = 1     ,
                      overwrite    = False ,
                      save_all     = False  ):
 
     # Set the name of the configuration file
     config_name = filename
-    
+
     # Read the specified configuration file
     config = SU2.io.Config(config_name)
-    
+
     # Set the number of partitions for parallel computations
     config.NUMBER_PART = partitions
-    
+
     # Call CFD to generate a solution
     SU2.run.CFD(config)
 

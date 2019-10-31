@@ -34,7 +34,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 inline void CGridMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
@@ -74,19 +74,19 @@ inline void CFreeFormDefBox::Set_VertexIndex(unsigned long val_iVertex) { Vertex
 inline void CFreeFormDefBox::Set_PointIndex(unsigned long val_iPoint) { PointIndex.push_back(val_iPoint); }
 
 inline void CFreeFormDefBox::Set_CartesianCoord(su2double *val_coord) { CartesianCoord[0].push_back(val_coord[0]);
-																																		CartesianCoord[1].push_back(val_coord[1]); 
+																																		CartesianCoord[1].push_back(val_coord[1]);
 																																		CartesianCoord[2].push_back(val_coord[2]); }
-																																		
+
 inline void CFreeFormDefBox::Set_CartesianCoord(su2double *val_coord, unsigned long val_iSurfacePoints) { CartesianCoord[0][val_iSurfacePoints] = val_coord[0];
-																																																			CartesianCoord[1][val_iSurfacePoints] = val_coord[1]; 
-																																																			CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }		
+																																																			CartesianCoord[1][val_iSurfacePoints] = val_coord[1];
+																																																			CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }
 
 inline void CFreeFormDefBox::Set_ParametricCoord(su2double *val_coord) { ParametricCoord[0].push_back(val_coord[0]);
-																																		 ParametricCoord[1].push_back(val_coord[1]); 
+																																		 ParametricCoord[1].push_back(val_coord[1]);
 																																		 ParametricCoord[2].push_back(val_coord[2]); }
-																																		 
+
 inline void CFreeFormDefBox::Set_ParametricCoord(su2double *val_coord, unsigned long val_iSurfacePoints) { ParametricCoord[0][val_iSurfacePoints] = val_coord[0];
-																																																			 ParametricCoord[1][val_iSurfacePoints] = val_coord[1]; 
+																																																			 ParametricCoord[1][val_iSurfacePoints] = val_coord[1];
 																																																			 ParametricCoord[2][val_iSurfacePoints] = val_coord[2]; }
 
 inline unsigned short CFreeFormDefBox::Get_MarkerIndex(unsigned long val_iSurfacePoints) { return MarkerIndex[val_iSurfacePoints]; }
@@ -103,18 +103,18 @@ inline unsigned long CFreeFormDefBox::Get_VertexIndex(unsigned long val_iSurface
 
 inline unsigned long CFreeFormDefBox::Get_PointIndex(unsigned long val_iSurfacePoints) { return PointIndex[val_iSurfacePoints]; }
 
-inline su2double *CFreeFormDefBox::Get_CartesianCoord(unsigned long val_iSurfacePoints) { 
+inline su2double *CFreeFormDefBox::Get_CartesianCoord(unsigned long val_iSurfacePoints) {
 																																										cart_coord_[0] = CartesianCoord[0][val_iSurfacePoints];
 																																										cart_coord_[1] = CartesianCoord[1][val_iSurfacePoints];
 																																										cart_coord_[2] = CartesianCoord[2][val_iSurfacePoints];
 																																										return cart_coord_; }
 
-inline su2double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePoints) { 
+inline su2double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePoints) {
 																																										ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
 																																										ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
 																																										ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
 																																										return ParamCoord_; }
-																																										
+
 inline unsigned long CFreeFormDefBox::GetnSurfacePoint(void) { return PointIndex.size(); }
 
 inline void CFreeFormDefBox::SetnCornerPoints(unsigned short val_ncornerpoints) { nCornerPoints = val_ncornerpoints; }
@@ -148,7 +148,7 @@ inline void CFreeFormDefBox::SetmOrder(unsigned short val_mOrder) { mOrder = val
 inline void CFreeFormDefBox::SetnOrder(unsigned short val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1;}
 
 inline void  CFreeFormDefBox::SetCoordCornerPoints(su2double *val_coord, unsigned short val_icornerpoints) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
 }
 
@@ -186,7 +186,7 @@ inline void CFreeFormDefBox::SetOriginalControlPoints() {
 			for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
 				for (unsigned short iDim = 0; iDim < nDim; iDim++)
 					Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
-          
+
   lDegree = lDegree_Copy; mDegree = mDegree_Copy; nDegree = nDegree_Copy;
   lOrder = lOrder_Copy; mOrder = mOrder_Copy; nOrder = nOrder_Copy;
   nControlPoints = nControlPoints_Copy;

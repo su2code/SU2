@@ -116,7 +116,7 @@ class FSIConfig:
 		if case("DISP_PRED")		      : pass
 		if case("AITKEN_RELAX")               : pass
 	        if case("TIME_MARCHING")	      : pass
-		if case("INTERNAL_FLOW")	      : 
+		if case("INTERNAL_FLOW")	      :
 	        #if case("MESH_DEF_METHOD")	      : pass
 		    self._ConfigContent[this_param] = this_value
 		    break
@@ -125,7 +125,7 @@ class FSIConfig:
 		    print(this_param + " is an invalid option !")
 		    break
 	    #end for
-	
+
 
 
     #def dump()

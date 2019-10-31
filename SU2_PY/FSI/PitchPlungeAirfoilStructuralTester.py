@@ -121,12 +121,12 @@ class Point:
 
 class Solver:
   """Description"""
-  
+
   def __init__(self, config_fileName):
     """ Description. """
 
     self.Config_file = config_fileName
-    self.Config = {}    
+    self.Config = {}
 
     print("\n------------------------------ Configuring the structural tester solver for FSI simulation ------------------------------")
     self.__readConfig()
@@ -141,7 +141,7 @@ class Solver:
       print("Structural model : pitching-plunging airfoil.")
     else:
       self.nDof = 0
-      
+
 
     # Structural properties
     self.m = self.Config['SPRING_MASS'] # airfoil mass [kg]
@@ -161,7 +161,7 @@ class Solver:
     self.stopTime = self.Config['STOP_TIME']
     self.deltaT = self.Config['DELTA_T']
     self.rhoAlphaGen = self.Config['RHO']
-    
+
     self.nDim= int()
     self.nElem = int()
     self.nPoint = int()
@@ -174,7 +174,7 @@ class Solver:
 
     print("\n------------------------------ Creating the structural model ------------------------------")
     self.__setStructuralMatrices()
-  
+
     print("\n------------------------------ Setting the integration parameters ------------------------------")
     self.__setIntegrationParameters()
     self.__setInitialConditions()
@@ -219,7 +219,7 @@ class Solver:
 	  if case("GRAVITY_CENTER")	      	: pass
 	  if case("INITIAL_DISP")	      	: pass
 	  if case("INITIAL_ANGLE")	      	: pass
-	  if case("RHO")	      		: 
+	  if case("RHO")	      		:
 	    self.Config[this_param] = float(this_value)
 	    break
 
@@ -238,21 +238,21 @@ class Solver:
 
   def __readSU2Mesh(self):
     """ Description. """
-    
+
     with open(self.Mesh_file, 'r') as meshfile:
       print('Opened mesh file ' + self.Mesh_file + '.')
       while 1:
         line = meshfile.readline()
 	if not line:
 	  break
-        
+
 	pos = line.find('NDIM')
 	if pos != -1:
 	  line = line.strip('\r\n')
           line = line.split("=",1)
 	  self.nDim = int(line[1])
 	  continue
-	
+
 	pos = line.find('NELEM')
 	if pos != -1:
 	  line = line.strip('\r\n')
@@ -327,7 +327,7 @@ class Solver:
 
   def __setStructuralMatrices(self):
     """ Descriptions. """
-    
+
     self.M = np.zeros((self.nDof, self.nDof))
     self.K = np.zeros((self.nDof, self.nDof))
     self.C = np.zeros((self.nDof, self.nDof))
@@ -347,7 +347,7 @@ class Solver:
     if self.Config['STRUCT_TYPE'] == "AIRFOIL":
       print('Setting pitching-plunging airfoil system')
       print('Number of DOF : ')
-      
+
       self.centerOfRotation = np.zeros((3,1))
       self.centerOfRotation[0] = self.xf
       self.centerOfRotation_n = np.zeros((3,1))
@@ -360,7 +360,7 @@ class Solver:
       self.C[1][1] = self.Ca
       self.K[0][0] = self.Kh
       self.K[1][1] = self.Ka
-      
+
       print('Airfoil mass : {} [kg]'.format(self.m))
       print('Airfoil cord : {} [m]'.format(self.c))
       print('Position of the flexural axis (from the leading edge) : {} [m]'.format(self.xf))
@@ -374,7 +374,7 @@ class Solver:
 
   def __setIntegrationParameters(self):
     """ Description. """
-    
+
     self.alpha_m = (2.0*self.rhoAlphaGen-1.0)/(self.rhoAlphaGen+1.0)
     self.alpha_f = (self.rhoAlphaGen)/(self.rhoAlphaGen+1.0)
     self.gamma = 0.5+self.alpha_f-self.alpha_m
@@ -407,9 +407,9 @@ class Solver:
 
     RHS = np.zeros((self.nDof,1))
     RHS += self.F
-    RHS -= self.C.dot(self.qdot) 
+    RHS -= self.C.dot(self.qdot)
     RHS -= self.K.dot(self.q)
-    self.qddot = linalg.solve(self.M, RHS) 
+    self.qddot = linalg.solve(self.M, RHS)
     self.a = np.copy(self.qddot)
 
     self.centerOfRotation[1] = self.q[0]
@@ -428,7 +428,7 @@ class Solver:
     newCenter = np.zeros((3,1))
     Centerdot = np.zeros((3,1))
     newVel = np.zeros((3,1))
-    
+
     if self.nDof == 2:
       dPsi = -(self.q[1] - self.q_n[1])
       newCenter[0] = self.centerOfRotation[0]
@@ -473,8 +473,8 @@ class Solver:
 
   def __temporalIteration(self):
     """ Description. """
-    
-    eps = 1e-6 
+
+    eps = 1e-6
 
     self.__SetLoads()
 
@@ -506,11 +506,11 @@ class Solver:
       res = self.__ComputeResidual()
 
     self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
-      
+
 
   def __SetLoads(self):
     """ Description """
-    
+
     makerID = self.markers.keys()[0]
     nodeList = self.markers[makerID]
 
@@ -605,7 +605,7 @@ class Solver:
 
   def getFSIMarkerID(self):
     """ Description. """
-    
+
     list = self.markers.keys()
     return list[0]
 

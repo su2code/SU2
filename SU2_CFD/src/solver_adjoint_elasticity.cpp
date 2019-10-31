@@ -443,12 +443,12 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
   if (dynamic) {
 
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
-    
+
     direct_solver->GetNodes()->RegisterSolution_Accel(input);
     direct_solver->GetNodes()->RegisterSolution_Vel(input);
-    
+
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
-    
+
     direct_solver->GetNodes()->Register_femSolution_time_n();
     direct_solver->GetNodes()->RegisterSolution_Accel_time_n();
     direct_solver->GetNodes()->RegisterSolution_Vel_time_n();
@@ -571,7 +571,7 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
 
 
 void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
-  
+
   bool dynamic = (config->GetTime_Domain());
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long TimeIter = config->GetTimeIter();
@@ -631,7 +631,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- FIRST: The acceleration solution ---*/
 
     /*--- Set the old acceleration solution ---*/
-    nodes->Set_OldSolution_Accel();    
+    nodes->Set_OldSolution_Accel();
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -649,7 +649,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
     /*--- Set the old velocity solution ---*/
     nodes->Set_OldSolution_Vel();
-    
+
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint velocity solution u'' ---*/
@@ -901,7 +901,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
   unsigned short iVar;
   unsigned long iPoint;
-  
+
   su2double relax = config->GetAitkenStatRelax();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -909,9 +909,9 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
     /*--- Extract the adjoint solution ---*/
 
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
-    
+
     /*--- Relax and set the solution ---*/
-    
+
     for(iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*nodes->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
 
@@ -1236,4 +1236,4 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
 }
 
-    
+

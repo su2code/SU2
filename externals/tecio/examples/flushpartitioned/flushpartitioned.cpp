@@ -261,7 +261,7 @@ int32_t createZone(
         int32_t zero = 0;
         int32_t returnValue = TECZNE142(zoneTitle, &zoneType, &nNodes, &nCells, &nFaces, &iCellMax, &jCellMax, &kCellMax, &solTime, &strandID, &parentZn, &isBlock,
             &nFConns, &fNMode, &zero, &zero, &zero, NULL, valueLocations, shareVarPtr, &shrConn);
-        ++*zone; 
+        ++*zone;
     #else
         // Note: There are 64-bit versions of this and related routines for zones that overflow 32-bit limits
         int32_t returnValue = tecZoneCreateFE(fileHandle, zoneTitle, ZONETYPE_FEBRICK, nNodes, nCells, NULL, shareVarPtr, valueLocations, NULL, shrConn, 0, 0, zone);

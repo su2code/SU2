@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file direct_differentiation.py
 #  \brief Python script for doing the direct differentiation computation using the SU2 suite.
@@ -42,11 +42,11 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
-        
+
     parser = OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
@@ -61,7 +61,7 @@ def main():
     options.partitions = int( options.partitions )
     options.quiet      = options.quiet.upper() == 'TRUE'
     options.nzones     = int( options.nzones )
-        
+
     direct_differentiation( options.filename   ,
                             options.partitions ,
                             options.quiet      ,
@@ -82,10 +82,10 @@ def direct_differentiation( filename           ,
     config.NUMBER_PART = partitions
     config.NZONES      = int(nzones)
     config["DIRECT_DIFF"] = 'DESIGN_VARIABLES'
-    
-    if quiet: 
+
+    if quiet:
         config.CONSOLE = 'CONCISE'
-    
+
     # State
     state = SU2.io.State()
     state.find_files(config)
@@ -96,13 +96,13 @@ def direct_differentiation( filename           ,
         if group in config.HISTORY_OUTPUT:
             if SU2.io.historyOutFields[fields]['TYPE'] == 'D_COEFFICIENT':
                 foundDerivativeField = True
-    
+
     if not foundDerivativeField:
         sys.exit('No derivative field found in HISTORY_OUTPUT')
 
     # Direct Differentiation Gradients
     SU2.eval.gradients.directdiff(config,state)
-    
+
     return state
 
 #: finite_differences()

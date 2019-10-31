@@ -74,7 +74,7 @@ namespace AD{
 
   extern std::vector<su2double*> localOutputValues;
 
-  extern codi::PreaccumulationHelper<su2double> PreaccHelper;  
+  extern codi::PreaccumulationHelper<su2double> PreaccHelper;
 
   inline void RegisterInput(su2double &data, bool push_index) {
     AD::globalTape.registerInput(data);
@@ -115,7 +115,7 @@ namespace AD{
     }
     if (TapePositions.size() != 0) {
       TapePositions.clear();
-    }    
+    }
   }
 
   inline void SetIndex(int &index, const su2double &data) {
@@ -133,7 +133,7 @@ namespace AD{
   inline void SetPreaccIn(const su2double &data) {
     if (PreaccActive) {
       if (data.isActive()) {
-        PreaccHelper.addInput(data);       
+        PreaccHelper.addInput(data);
       }
     }
   }
@@ -206,7 +206,7 @@ namespace AD{
       PreaccHelper.finish(false);
     }
   }
-  
+
   inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){
     FuncHelper = new ExtFuncHelper(true);
     if (!storePrimalInput){
@@ -216,9 +216,9 @@ namespace AD{
       FuncHelper->disableOutputPrimalStore();
     }
   }
-  
+
   inline void SetExtFuncIn(const su2double &data) {
-    FuncHelper->addInput(data);       
+    FuncHelper->addInput(data);
   }
 
   inline void SetExtFuncIn(const su2double* data, const int size) {
@@ -235,7 +235,7 @@ namespace AD{
       }
     }
   }
-  
+
   inline void SetExtFuncOut(su2double& data) {
     if (globalTape.isActive()) {
       FuncHelper->addOutput(data);
@@ -264,9 +264,9 @@ namespace AD{
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();
   }
-  
+
   inline void EndExtFunc(){delete FuncHelper;}
-  
+
 #else
 
   /*--- Default implementation if reverse mode is disabled ---*/
@@ -318,19 +318,19 @@ namespace AD{
   inline void Push_TapePosition() {}
 
   inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){}
-  
+
   inline void SetExtFuncIn(const su2double &data) {}
 
   inline void SetExtFuncIn(const su2double* data, const int size) {}
 
   inline void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y) {}
-  
+
   inline void SetExtFuncOut(su2double& data) {}
 
   inline void SetExtFuncOut(su2double* data, const int size) {}
 
   inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {}
-  
+
   inline void EndExtFunc(){}
 #endif
 }
@@ -342,35 +342,35 @@ namespace AD{
 #ifdef __APPLE__
 
 namespace std{
-  
+
   template<>
   inline su2double abs(const complex<su2double>& x){
-    
+
     return sqrt(x.real()*x.real() + x.imag()*x.imag());
-    
+
   }
-  
+
   template<>
   inline complex<su2double> operator/(const complex<su2double>& x,
                                       const complex<su2double>& y){
-    
+
     su2double d    = (y.real()*y.real() + y.imag()*y.imag());
     su2double real = (x.real()*y.real() + x.imag()*y.imag())/d;
     su2double imag = (x.imag()*y.real() - x.real()*y.imag())/d;
-    
+
     return complex<su2double>(real, imag);
-    
+
   }
-  
+
   template<>
   inline complex<su2double> operator*(const complex<su2double>& x,
                                       const complex<su2double>& y){
-    
+
     su2double real = (x.real()*y.real() - x.imag()*y.imag());
     su2double imag = (x.imag()*y.real() + x.real()*y.imag());
-    
+
     return complex<su2double>(real, imag);
-    
+
   }
 }
 #endif

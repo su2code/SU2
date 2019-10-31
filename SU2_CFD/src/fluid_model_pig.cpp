@@ -72,7 +72,7 @@ CIdealGas::~CIdealGas(void) {
 }
 
 void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
-  
+
   Density = rho;
   StaticEnergy = e;
   Pressure = Gamma_Minus_One*Density*StaticEnergy;

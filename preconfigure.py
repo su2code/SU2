@@ -287,7 +287,7 @@ def find_all(text, dic):
 def init_codi(argument_dict, modes, mpi_support = False, update = False):
 
     modules_failed = True
-    
+
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
     sha_version_codi = 'bd4a639c2fe625a80946c8365bd2976a2868cf46'
@@ -381,7 +381,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
         print('\t - Execute command \'touch externals/'+ alt_name + '/' + commit_sha + '\'')
         print('\t - Run preconfigure.py again')
         sys.exit()
-    
+
     # Extract zip archive
     try:
         print('Extracting archive ...')
@@ -428,7 +428,7 @@ def configure(argument_dict,
         configure_base = configure_base + ' --disable-tecio'
 
     build_dirs = ''
-   
+
     print(  '\nPreparing build environment\n' \
             '=====================================================================')
 

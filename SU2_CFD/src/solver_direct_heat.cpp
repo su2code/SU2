@@ -57,7 +57,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  
+
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
@@ -225,7 +225,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*--- Heat flux in all the markers ---*/
-  
+
   HeatFlux = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
@@ -259,7 +259,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
-  
+
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
@@ -269,16 +269,16 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 CHeatSolverFVM::~CHeatSolverFVM(void) {
-  
+
   unsigned short iMarker;
-  
+
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
-  
+
   if (nodes != nullptr) delete nodes;
 }
 
@@ -314,12 +314,12 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  
+
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
@@ -420,10 +420,10 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-  
+
   solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-  
+
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -502,10 +502,10 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
   }
 
   /*--- MPI parallelization ---*/
-  
+
   InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
   CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  
+
   delete [] Diff;
 
 }
@@ -931,7 +931,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *Flow_Dir,  Vel_Mag;
   su2double *V_inlet, *V_domain;
-  
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
@@ -1273,9 +1273,9 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
           }
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
-          
+
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-          
+
         }
       }
     }
@@ -1313,7 +1313,7 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
           }
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
-          
+
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
 
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
@@ -1357,12 +1357,12 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
-  
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  
+
   bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -1606,7 +1606,7 @@ void CHeatSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
@@ -1701,7 +1701,7 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
@@ -1737,7 +1737,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
           }
         }
         solver_container[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-      }      
+      }
       solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }

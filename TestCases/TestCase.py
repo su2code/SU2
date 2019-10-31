@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
@@ -65,7 +65,7 @@ class TestCase:
         self.no_restart = False
 
         # Indicate whether the new output is used
-        self.new_output = True   
+        self.new_output = True
 
         # multizone problem
         self.multizone = False
@@ -73,10 +73,10 @@ class TestCase:
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.ntest_vals = 4
-        self.test_vals = []  
+        self.test_vals = []
 
-        # These can be optionally varied 
-        self.su2_exec    = "SU2_CFD" 
+        # These can be optionally varied
+        self.su2_exec    = "SU2_CFD"
         self.timeout     = 300
         self.tol         = 0.001
 
@@ -93,7 +93,7 @@ class TestCase:
         iter_missing = True
         start_solver = True
 
-        # Adjust the number of iterations in the config file   
+        # Adjust the number of iterations in the config file
         self.adjust_iter()
 
         # Check for disabling the restart
@@ -107,8 +107,8 @@ class TestCase:
         if self.polar:
              command = "%s > %s" % (self.su2_exec, logfilename)
         else:
-            command = "%s %s > %s 2>&1" % (self.su2_exec, 
-                                           self.cfg_file, 
+            command = "%s %s > %s 2>&1" % (self.su2_exec,
+                                           self.cfg_file,
                                            logfilename)
 
         # Run SU2
@@ -181,7 +181,7 @@ class TestCase:
             if iter_missing:
                 passed = False
 
-        # Write the test results 
+        # Write the test results
         #for j in output:
         #  print(j)
 
@@ -190,7 +190,7 @@ class TestCase:
         else:
             print("%s: FAILED"%self.tag)
             print('Output for the failed case')
-            subprocess.call(['cat', logfilename])      
+            subprocess.call(['cat', logfilename])
 
         print('execution command: %s'%command)
 
@@ -264,13 +264,13 @@ class TestCase:
         if not timed_out and passed:
             # Compare files
             fromfile = self.reference_file
-            tofile = self.test_file 
+            tofile = self.test_file
             # Initial value s.t. will fail if it does not get to diff step
             diff = ''
             try:
                 fromdate = time.ctime(os.stat(fromfile).st_mtime)
                 fromlines = open(fromfile, 'U').readlines()
-                try: 
+                try:
                     todate = time.ctime(os.stat(tofile).st_mtime)
                     tolines = open(tofile, 'U').readlines()
                     diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
@@ -313,7 +313,7 @@ class TestCase:
         iter_missing = True
         start_solver = True
 
-        # Adjust the number of iterations in the config file   
+        # Adjust the number of iterations in the config file
         self.adjust_opt_iter()
 
         # Assemble the shell command to run SU2
@@ -384,7 +384,7 @@ class TestCase:
             if iter_missing:
                 passed = False
 
-        # Write the test results 
+        # Write the test results
         #for j in output:
         #  print(j)
 
@@ -393,7 +393,7 @@ class TestCase:
         else:
             print("%s: FAILED"%self.tag)
             print('Output for the failed case')
-            subprocess.call(['cat', logfilename])      
+            subprocess.call(['cat', logfilename])
 
         print('execution command: %s'%command)
 
@@ -510,7 +510,7 @@ class TestCase:
             if iter_missing:
                 passed = False
 
-        # Write the test results 
+        # Write the test results
         #for j in output:
         #  print(j)
 
@@ -549,25 +549,25 @@ class TestCase:
         return passed
 
     def run_def(self):
-    
+
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
         exceed_tol   = False
         timed_out    = False
         iter_missing = True
         start_solver = True
-    
+
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
-    
+
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
         process = subprocess.Popen(command, shell=True)  # This line launches SU2
-    
+
         # check for timeout
         while process.poll() is None:
             time.sleep(0.1)
@@ -581,7 +581,7 @@ class TestCase:
                     pass
                 timed_out = True
                 passed    = False
-    
+
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
@@ -602,7 +602,7 @@ class TestCase:
                         continue
                     except IndexError:
                         continue
-    
+
                     if iter_number == self.test_iter:  # Found the iteration number we're checking for
                         iter_missing = False
                         if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
@@ -618,38 +618,38 @@ class TestCase:
                         break
                     else:
                         iter_missing = True
-    
+
             if not start_solver:
                 passed = False
-    
+
             if iter_missing:
                 passed = False
-    
-        # Write the test results 
+
+        # Write the test results
         #for j in output:
         #  print(j)
-    
+
         if passed:
             print("%s: PASSED"%self.tag)
         else:
             print("%s: FAILED"%self.tag)
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])
-    
+
         print('execution command: %s'%command)
-    
+
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d sec'%self.timeout)
-    
+
         if exceed_tol:
             print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
-    
+
         if not start_solver:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
-    
+
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
-    
+
         print('test_iter=%d' % self.test_iter)
 
         print_vals(self.test_vals, name="test_vals (stored)")
@@ -657,13 +657,13 @@ class TestCase:
         print_vals(sim_vals, name="sim_vals (computed)")
 
         print_vals(delta_vals, name="delta_vals")
- 
+
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
-    
+
         sys.stdout.flush()
         os.chdir(workdir)
-        return passed    
+        return passed
 
     def adjust_iter(self):
 

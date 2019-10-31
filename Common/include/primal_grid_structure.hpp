@@ -77,12 +77,12 @@ protected:
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
 public:
-	
+
 	/*!
 	 * \brief Constructor of the class.
 	 */
 	CPrimalGrid(void);
-	
+
 	/*!
 	 * \overload
 	 * \param[in] val_nNodes - Number of nodes of the element.
@@ -90,7 +90,7 @@ public:
 	 * \param[in] val_VTK_Type - Type of the element using the vtk nomenclature.
 	 */
 	CPrimalGrid(unsigned short val_nNodes, unsigned short val_nFaces, unsigned short val_VTK_Type);
-	
+
 	/*!
 	 * \brief Destructor of the class.
 	 */
@@ -177,26 +177,26 @@ public:
   * \param[in] val_face              - Local index of the face.
   */
  void SetJacobianConstantFace(bool val_JacFaceIsConstant, unsigned short val_face);
-	
+
 	/*!
 	 * \brief Set the center of gravity of an element (including edges).
 	 * \param[in] val_coord - Coordinates of the element.
 	 */
 	void SetCoord_CG(su2double **val_coord);
-	
+
 	/*!
 	 * \brief Get the center of gravity of an element (including edges).
 	 * \param[in] val_dim - Coordinate of the center of gravity.
 	 * \return Coordinates of the center of gravity.
 	 */
 	su2double GetCG(unsigned short val_dim);
-		
+
   /*!
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.
    */
   void SetVolume(su2double val_volume);
-  
+
   /*!
    * \brief Get the center of gravity of an element (including edges).
    * \param[in] val_dim - Coordinate of the center of gravity.
@@ -211,19 +211,19 @@ public:
 	 * \return Coordinates of the center of gravity.
 	 */
 	su2double GetFaceCG(unsigned short val_face, unsigned short val_dim);
-	
+
 	/*!
 	 * \brief Get all the neighbors of an element.
 	 * \return List of all the neighbor of an element.
 	 */
 	void GetAllNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief Set that an element must be divided in the adaptation stage.
 	 * \param[in] val_divide - <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	void SetDivide(bool val_divide);
-  
+
 	/*!
 	 * \brief Get if an element must be divided in the adaptation stage.
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
@@ -253,106 +253,106 @@ public:
   * \return The color of the element in the partitioning.
   */
  virtual unsigned long GetColor(void);
-  
+
   /*!
    * \brief Get the element global index in a parallel computation.
    * \return Global index of the element in a parallel computation.
    */
   unsigned long GetGlobalIndex(void);
-  
+
   /*!
    * \brief Set the global index for an element in a parallel computation.
    * \return Global index of an element in a parallel computation.
    */
   void SetGlobalIndex(unsigned long val_globalindex);
-	
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.
 	 */
 	virtual void SetDomainElement(unsigned long val_domainelement);
-	
+
 	/*!
 	 * \brief A virtual member.
 	 * \return Relate the boundary element which a face of a domain element.
 	 */
 	virtual unsigned long GetDomainElement(void);
-  
+
 	/*!
 	 * \brief A pure virtual member.
 	 */
 	virtual void Change_Orientation(void) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \return Kind of element using the vtk nomenclature.
 	 */
 	virtual unsigned short GetVTK_Type(void) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	virtual unsigned short GetRotation_Type(void);
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_rotation_type - Kind of rotation/traslation that must be applied.
 	 */
 	virtual void SetRotation_Type(unsigned short val_rotation_type);
-  
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of the node.
 	 * \return Number of neighbors nodes of a node in the element.
 	 */
 	virtual unsigned short GetnNeighbor_Nodes(unsigned short val_node) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \return Number of neighbors elements of a element.
 	 */
 	virtual unsigned short GetnNeighbor_Elements(void) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \return Number of nodes of an element.
 	 */
 	virtual unsigned short GetnNodes(void) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \return Number of faces of an element.
 	 */
 	virtual unsigned short GetnFaces(void) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_face - Local index of a face.
 	 * \return Local index of the nodes that compose a face.
 	 */
 	virtual unsigned short GetnNodesFace(unsigned short val_face) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \return Maximum number of nodes that compose a face.
 	 */
 	virtual unsigned short GetMaxNodesFace(void) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of a node.
 	 * \return Global index of the node.
 	 */
 	virtual unsigned long GetNode(unsigned short val_node) = 0;
-  
+
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   virtual void SetNode(unsigned short val_node, unsigned long val_point);
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_face - Local index of the face.
@@ -360,7 +360,7 @@ public:
 	 * \return - Local index of the nodes that compose the face.
 	 */
 	virtual unsigned short GetFaces(unsigned short val_face, unsigned short val_index) = 0;
-	
+
 	/*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of a node.
@@ -480,101 +480,101 @@ private:
                                                                     solution at the vertex. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of Neighbor_Elements. */
-	
+
 public:
-  
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point - Index of the 1st triangle point read from the grid file.
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
 	 */
 	CVertexMPI(unsigned long val_point, unsigned short val_nDim);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CVertexMPI(void);
-	
+
 	/*!
 	 * \brief Get the nodes shared by the line.
 	 * \param[in] val_node - Local (to the line) index of the node (a line has 2 nodes).
 	 * \return Global index of the line node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-	
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-  
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-	
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the type of rotation/traslation that must be applied.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetRotation_Type(void);
-	
+
 	/*!
 	 * \brief Set the type of rotation/traslation that must be applied.
 	 * \param[in] val_rotation_type - Kind of rotation/traslation that must be applied.
 	 */
 	void SetRotation_Type(unsigned short val_rotation_type);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	void Change_Orientation(void);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetnFaces(void);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetMaxNodesFace(void);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-	
+
 	/*!
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the
 	 *        definition of the function in all the derived classes).
@@ -598,9 +598,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of Neighbor_Elements. */
-  
+
 public:
-  
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
@@ -608,26 +608,26 @@ public:
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
 	 */
 	CLine(unsigned long val_point_0, unsigned long val_point_1, unsigned short val_nDim);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CLine(void);
-  
+
 	/*!
 	 * \brief Get the nodes shared by the line.
 	 * \param[in] val_node - Local (to the line) index of the node (a line has 2 nodes).
 	 * \return Global index of the line node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-  
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -635,7 +635,7 @@ public:
 	 * \return Local (to the line) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-  
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the line) index of a node.
@@ -644,63 +644,63 @@ public:
 	 * \return Local (to the line) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the line) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-  
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-  
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-  
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-  
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-  
+
 	/*!
 	 * \brief Set the domain element which shares a face with the boundary element.
 	 * \param[in] val_domainelement - Global index of the element.
 	 */
 	void SetDomainElement(unsigned long val_domainelement);
-	
+
 	/*!
 	 * \brief Get the domain element which shares a face with the boundary element.
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
-	
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
@@ -723,9 +723,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of Neighbor_Elements. */
-  
+
 public:
-	
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
@@ -735,26 +735,26 @@ public:
 	 */
 	CTriangle(unsigned long val_point_0, unsigned long val_point_1,
             unsigned long val_point_2, unsigned short val_nDim);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CTriangle(void);
-	
+
 	/*!
 	 * \brief Get the nodes shared by the triangle.
 	 * \param[in] val_node - Local (to the triangle) index of the node (a triangle has 3 nodes).
 	 * \return Global index of the triangle node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-  
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -762,7 +762,7 @@ public:
 	 * \return Local (to the triangle) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the triangle) index of a node.
@@ -771,62 +771,62 @@ public:
 	 * \return Local (to the triangle) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-  
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the triangle) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-	
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-  
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-  
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-  
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-  
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-  
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
-	
+
 	/*!
 	 * \brief Set the domain element which shares a face with the boundary element.
 	 * \param[in] val_domainelement - Global index of the element.
 	 */
 	void SetDomainElement(unsigned long val_domainelement);
-	
+
 	/*!
 	 * \brief Get the domain element which shares a face with the boundary element.
 	 * \return Domain element which shares a face with the boundary element.
@@ -850,9 +850,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-  
+
 public:
-  
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -863,26 +863,26 @@ public:
 	 */
 	CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CQuadrilateral(void);
-  
+
 	/*!
 	 * \brief Get the nodes shared by the triangle.
 	 * \param[in] val_node - Local (to the quadrilateral) index of the node (a quadrilateral has 4 nodes).
 	 * \return Global index of the triangle node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-  
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -890,7 +890,7 @@ public:
 	 * \return Local (to the quadrilateral) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-  
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
@@ -898,62 +898,62 @@ public:
 	 * \return Local (to the quadrilateral) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-  
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-	
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-	
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-	
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-	
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
-	
+
 	/*!
 	 * \brief Set the domain element which shares a face with the boundary element.
 	 * \param[in] val_domainelement - Global index of the element.
 	 */
 	void SetDomainElement(unsigned long val_domainelement);
-	
+
 	/*!
 	 * \brief Get the domain element which shares a face with the boundary element.
 	 * \return Domain element which shares a face with the boundary element.
@@ -977,9 +977,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-	
+
 public:
-  
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -989,26 +989,26 @@ public:
 	 */
 	CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
                unsigned long val_point_2, unsigned long val_point_3);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CTetrahedron(void);
-  
+
 	/*!
 	 * \brief Get the nodes shared by the tetrahedron.
 	 * \param[in] val_node - Local (to the tetrahedron) index of the node (a tetrahedron has 4 nodes).
 	 * \return Global index of the tetrahedron node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-	
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -1016,7 +1016,7 @@ public:
 	 * \return Local (to the element) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
@@ -1024,51 +1024,51 @@ public:
 	 * \return Local (to the element) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-  
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-	
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-	
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-	
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
@@ -1091,9 +1091,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-  
+
 public:
-	
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -1109,26 +1109,26 @@ public:
               unsigned long val_point_2, unsigned long val_point_3,
               unsigned long val_point_4, unsigned long val_point_5,
               unsigned long val_point_6, unsigned long val_point_7);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CHexahedron(void);
-  
+
 	/*!
 	 * \brief Get the nodes shared by the triangle.
 	 * \param[in] val_node - Local (to the triangle) index of the node (a triangle has 3 nodes).
 	 * \return Global index of the triangle node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-	
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -1136,7 +1136,7 @@ public:
 	 * \return Local (to the element) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
@@ -1145,51 +1145,51 @@ public:
 	 * \return Local (to the element) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-  
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-  
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-	
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-	
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-	
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
@@ -1212,9 +1212,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-	
+
 public:
-	
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -1227,26 +1227,26 @@ public:
 	CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_2, unsigned long val_point_3,
          unsigned long val_point_4, unsigned long val_point_5);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CPrism(void);
-  
+
 	/*!
 	 * \brief Get the nodes shared by the triangle.
 	 * \param[in] val_node - Local (to the triangle) index of the node (a prism has 6 nodes).
 	 * \return Global index of the prism node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-	
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -1254,7 +1254,7 @@ public:
 	 * \return Local (to the element) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
@@ -1262,51 +1262,51 @@ public:
 	 * \return Local (to the element) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-	
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-	
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-	
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-	
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
@@ -1329,9 +1329,9 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-	
+
 public:
-	
+
 	/*!
 	 * \brief Constructor using the nodes and index.
 	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -1343,26 +1343,26 @@ public:
 	CPyramid(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_2, unsigned long val_point_3,
            unsigned long val_point_4);
-  
+
   /*!
 	 * \brief Destructor of the class.
 	 */
 	~CPyramid(void);
-  
+
 	/*!
 	 * \brief Get the nodes shared by the pyramid.
 	 * \param[in] val_node - Local (to the pyramid) index of the node (a pyramid has 3 nodes).
 	 * \return Global index of the pyramid node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
-  
+
   /*!
 	 * \brief Set the point associated at a node.
 	 * \param[in] val_node - Local index of a node.
    * \param[in] val_point - Point associated to the node.
 	 */
   void SetNode(unsigned short val_node, unsigned long val_point);
-	
+
 	/*!
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
@@ -1370,7 +1370,7 @@ public:
 	 * \return Local (to the element) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
@@ -1378,51 +1378,51 @@ public:
 	 * \return Local (to the element) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-	
+
 	/*!
 	 * \brief Get the number of neighbors nodes of a node.
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \return Number if neighbors of a node val_node.
 	 */
 	unsigned short GetnNeighbor_Nodes(unsigned short val_node);
-	
+
 	/*!
 	 * \brief Get the number of nodes that composes a face of an element.
 	 * \param[in] val_face - Local index of the face.
 	 * \return Number of nodes that composes a face of an element.
 	 */
 	unsigned short GetnNodesFace(unsigned short val_face);
-	
+
 	/*!
 	 * \brief Get the number of nodes of an element.
 	 * \return Number of nodes that composes an element.
 	 */
 	unsigned short GetnNodes(void);
-	
+
 	/*!
 	 * \brief Get the number of faces of an element.
 	 * \return Number of faces of an element.
 	 */
 	unsigned short GetnFaces(void);
-	
+
 	/*!
 	 * \brief Get the Maximum number of nodes of a face of an element.
 	 * \return Maximum number of nodes of a face of an element.
 	 */
 	unsigned short GetMaxNodesFace(void);
-	
+
 	/*!
 	 * \brief Get the type of the element using VTK nomenclature.
 	 * \return Type of the element using VTK nomenclature.
 	 */
 	unsigned short GetVTK_Type(void);
-	
+
 	/*!
 	 * \brief Get the number of element that are neighbor to this element.
 	 * \return Number of neighbor elements.
 	 */
 	unsigned short GetnNeighbor_Elements(void);
-	
+
 	/*!
 	 * \brief Change the orientation of an element.
 	 */
@@ -1851,7 +1851,7 @@ public:
            for the wall function treatment.
   * \return The pointer to the data of donorElementsWallFunctions.
   */
- unsigned long *GetDonorsWallFunctions(void); 
+ unsigned long *GetDonorsWallFunctions(void);
 
  /*!
   * \brief Set the global ID's of the donor elements for the wall function treatment.

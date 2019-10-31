@@ -60,8 +60,8 @@ inline su2double CFluidModel::GetLaminarViscosity () {
         LaminarViscosity->SetViscosity(Temperature, Density);
         Mu = LaminarViscosity->GetViscosity();
         LaminarViscosity->SetDerViscosity(Temperature, Density);
-        dmudrho_T= LaminarViscosity->Getdmudrho_T(); 
-        dmudT_rho= LaminarViscosity->GetdmudT_rho();  
+        dmudrho_T= LaminarViscosity->Getdmudrho_T();
+        dmudT_rho= LaminarViscosity->GetdmudT_rho();
         return Mu;
 }
 
@@ -77,7 +77,7 @@ inline su2double CFluidModel::GetThermalConductivity () {
         ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
         Kt = ThermalConductivity->GetConductivity();
         ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
-        dktdrho_T= ThermalConductivity->Getdktdrho_T(); 
+        dktdrho_T= ThermalConductivity->Getdktdrho_T();
         dktdT_rho= ThermalConductivity->GetdktdT_rho();
         return Kt;
 }

@@ -13,13 +13,13 @@
 #include "ThirdPartyHeadersBegin.h"
 #include "ThirdPartyHeadersEnd.h"
 #include <algorithm>
-#include <cctype> 
+#include <cctype>
 #include <limits.h>
 #include "TranslatedString.h"
 #include "stringformat.h"
 using std::string; using tecplot::___4217; using tecplot::___1097; using tecplot::___4218;
  #ifdef MSWIN
- # pragma warning (disable : 4786) 
+ # pragma warning (disable : 4786)
  #endif
  #define           FORMAT_BUFFER_SIZE 16384
 static char      *FormatStringBuffer = NULL; static int        FormatStringBufferSize = FORMAT_BUFFER_SIZE; void ___1476(void) { if (FormatStringBuffer != NULL) free(FormatStringBuffer); FormatStringBuffer = NULL; } char *___4410(const char *Format, va_list     ___93) { char *___3359 = NULL; REQUIRE(VALID_REF(Format)); if (FormatStringBuffer == NULL) FormatStringBuffer = (char *)malloc(FormatStringBufferSize); if (FormatStringBuffer != NULL) {

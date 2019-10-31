@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file merge_solution.py
 #  \brief Python script for merging of the solution files.
@@ -39,7 +39,7 @@ from optparse import OptionParser
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -52,25 +52,25 @@ def main():
 
     (options, args)=parser.parse_args()
     options.partitions = int(options.partitions)
-    
+
     merge_solution( options.filename   ,
                     options.partitions  )
 
 
 # -------------------------------------------------------------------
-#  MERGE SOLUTION 
+#  MERGE SOLUTION
 # -------------------------------------------------------------------
 
 def merge_solution( filename        ,
                     partitions = -1  ):
-    
+
     config = SU2.io.Config(filename)
-    
+
     if partitions > -1 :
         config.NUMBER_PART = partitions
-        
+
     SU2.run.merge(config)
-    
+
 #: def merge_solution()
 
 if __name__ == '__main__':

@@ -51,7 +51,7 @@
 
 using namespace std;
 
-/*! 
+/*!
  * \class CADTComparePointClass
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
@@ -91,7 +91,7 @@ private:
   CADTComparePointClass();
 };
 
-/*! 
+/*!
  * \class CBBoxTargetClass
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
@@ -155,7 +155,7 @@ private:
   void Copy(const CBBoxTargetClass &other);
 };
 
-/*! 
+/*!
  * \class CADTNodeClass
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
@@ -204,7 +204,7 @@ private:
   void Copy(const CADTNodeClass &other);
 };
 
-/*! 
+/*!
  * \class CADTBaseClass
  * \brief  Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
@@ -234,7 +234,7 @@ protected:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  virtual ~CADTBaseClass();  
+  virtual ~CADTBaseClass();
 
   /*!
    * \brief Function, which builds the ADT of the given coordinates.
@@ -265,7 +265,7 @@ private:
   CADTBaseClass& operator=(const CADTBaseClass &);
 };
 
-/*! 
+/*!
  * \class CADTPointsOnlyClass
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
@@ -284,7 +284,7 @@ public:
    * \param[in] nDim       Number of spatial dimensions of the problem.
    * \param[in] nPoints    Number of local points to be stored in the ADT.
    * \param[in] coor       Coordinates of the local points.
-   * \param[in] pointID    Local point IDs of the local points. 
+   * \param[in] pointID    Local point IDs of the local points.
    * \param[in] globalTree Whether or not a global tree must be built. If false
                            a local ADT is built.
    */
@@ -328,7 +328,7 @@ private:
   CADTPointsOnlyClass& operator=(const CADTPointsOnlyClass &);
 };
 
-/*! 
+/*!
  * \class CADTElemClass
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
@@ -370,7 +370,7 @@ public:
                                  offset in node numbers of the rank.
    * \param[in]     val_VTKElem  Type of the elements using the VTK convention.
    * \param[in]     val_markerID Markers of the local elements.
-   * \param[in]     val_elemID   Local element IDs of the elements. 
+   * \param[in]     val_elemID   Local element IDs of the elements.
    * \param[in]     globalTree   Whether or not a global tree must be built. If false
                                  a local ADT is built.
    */

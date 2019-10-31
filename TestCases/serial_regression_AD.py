@@ -42,8 +42,8 @@ import sys
 from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
@@ -74,7 +74,7 @@ def main():
     discadj_cylinder3D.tol       = 0.00001
     test_list.append(discadj_cylinder3D)
 
-    # Arina nozzle 2D  
+    # Arina nozzle 2D
     discadj_arina2k              = TestCase('discadj_arina2k')
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
@@ -88,7 +88,7 @@ def main():
     #######################################################
     ### Disc. adj. compressible RANS                    ###
     #######################################################
-    
+
     # Adjoint turbulent NACA0012 SA
     discadj_rans_naca0012_sa           = TestCase('discadj_rans_naca0012_sa')
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
@@ -170,11 +170,11 @@ def main():
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
-   
+
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder.cfg" 
+    discadj_cylinder.cfg_file  = "cylinder.cfg"
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.746904, -1.544886, -0.008345, 0.000014] #last 4 columns
     discadj_cylinder.su2_exec  = "SU2_CFD_AD"
@@ -182,7 +182,7 @@ def main():
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
-    
+
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
     ##########################################################################
@@ -218,17 +218,17 @@ def main():
     ###################################
     ### Structural Adjoint          ###
     ###################################
-   
+
     # Structural model
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
-    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 9
     discadj_fea.test_vals = [-6.319841, -6.375512, -0.000364, -8.708681] #last 4 columns
     discadj_fea.su2_exec  = "SU2_CFD_AD"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
-    test_list.append(discadj_fea)    
+    test_list.append(discadj_fea)
 
     ###################################
     ### Disc. adj. heat             ###
@@ -248,7 +248,7 @@ def main():
     ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
-   
+
     # Structural model
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
@@ -277,14 +277,14 @@ def main():
 
     ######################################
     ### RUN TESTS                      ###
-    ######################################  
+    ######################################
 
     pass_list = [ test.run_test() for test in test_list ]
-    
+
     ######################################
     ### RUN PYTHON TESTS               ###
     ######################################
-    
+
     # test discrete_adjoint.py
     discadj_euler_py = TestCase('discadj_euler_py')
     discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
@@ -296,7 +296,7 @@ def main():
     discadj_euler_py.test_file = "of_grad_cd.dat"
     pass_list.append(discadj_euler_py.run_filediff())
     test_list.append(discadj_euler_py)
-    
+
     # test discrete_adjoint with multiple ffd boxes
     discadj_multiple_ffd_py = TestCase('discadj_multiple_ffd_py')
     discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
@@ -380,7 +380,7 @@ def main():
             print('  passed - %s'%test.tag)
         else:
             print('* FAILED - %s'%test.tag)
-    
+
     if all(pass_list):
         sys.exit(0)
     else:

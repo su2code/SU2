@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
@@ -57,7 +57,7 @@ import scipy.optimize
 
 obj_scale = 1/0.0125 # scale the objective so that it starts at 1-4
 con_scale = 1/0.5    # 1 over upper bound (e.g. max volume)
-var_scale = 1.0      # variable scale 
+var_scale = 1.0      # variable scale
 
 # maximum number of iterations
 maxJev_t = 1000
@@ -345,7 +345,7 @@ ub = np.ones((N,))*var_scale
 bounds = np.array((lb,ub),float).transpose()
 
 ## 1st Phase: Run with "gray" filter settings ##
-# get the constraint and function within some tolerance 
+# get the constraint and function within some tolerance
 line = "1: Gray filter (initialization)"
 print(line); logfile.write(line+"\n"); logfile.flush()
 
@@ -365,7 +365,7 @@ while nJacEval < maxJev_i:
   line = " Iter {:d}: f= {:f}  h= {:e}  r= {:f}  nfev= {:d}  njev= {:d}".\
     format(itCount, obj._fval, obj._hval, obj._r, optimum.nfev, optimum.nit)
   print(line); logfile.write(line+"\n"); logfile.flush()
-  
+
   if obj._hval > htol: # increase penalty
     obj.update()
   elif optimum.success: # check convergence

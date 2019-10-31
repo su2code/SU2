@@ -96,47 +96,47 @@ template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; }
 class CBaseMPIWrapper {
 
 public:
-  
+
   typedef MPI_Request  Request;
   typedef MPI_Status   Status;
   typedef MPI_Datatype Datatype;
   typedef MPI_Op       Op;
   typedef MPI_Comm     Comm;
   typedef MPI_Win      Win;
-  
+
 protected:
-  
+
   static int Rank, Size, MinRankError;
   static Comm currentComm;
   static bool winMinRankErrorInUse;
   static Win  winMinRankError;
-  
+
 public:
-  
+
   static int GetRank();
-  
+
   static int GetSize();
-  
+
   static Comm GetComm();
-  
+
   static void SetComm(Comm NewComm);
 
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
   static void Init(int *argc, char***argv);
-  
+
   static void Buffer_attach(void *buffer, int size);
 
   static void Buffer_detach(void *buffer, int *size);
 
   static void Finalize();
-  
+
   static void Comm_rank(Comm comm, int* rank);
-  
+
   static void Comm_size(Comm comm, int* size);
-  
+
   static void Barrier(Comm comm);
-  
+
   static void Abort(Comm comm, int error);
 
   static void Get_count(Status *status, Datatype datatype, int *count);
@@ -229,7 +229,7 @@ public:
   static AMPI_Datatype convertDatatype(MPI_Datatype datatype);
 
   static void SetComm(Comm NewComm);
-  
+
   static void Init(int *argc, char***argv);
 
   static void Init_AMPI(void);
@@ -333,13 +333,13 @@ public:
 #define MPI_INT 11
 #define MPI_PROD 12
 class CBaseMPIWrapper {
-  
+
 public:
   typedef int Comm;
   typedef int Datatype;
   typedef int Request;
   typedef int Op;
-  
+
   struct Status {
     int MPI_TAG;
     int MPI_SOURCE;
@@ -352,31 +352,31 @@ private:
 
 public:
   static int GetRank();
-  
-  static int GetSize();  
-  
+
+  static int GetSize();
+
   static Comm GetComm();
-  
+
   static void SetComm(Comm NewComm);
-  
+
   static void Error(std::string ErrorMsg, std::string FunctionName);
-    
+
   static void Init(int *argc, char***argv);
-  
+
   static void Buffer_attach(void *buffer, int size);
-  
+
   static void Buffer_detach(void *buffer, int *size);
-  
+
   static void Finalize();
-  
+
   static void Comm_rank(Comm comm, int* rank);
-  
+
   static void Comm_size(Comm comm, int* size);
-  
+
   static void Barrier(Comm comm);
-  
+
   static void Abort(Comm comm, int error);
-  
+
   static void Get_count(Status *status, Datatype datatype, int *count);
 
   static void Isend(void *buf, int count, Datatype datatype, int dest,
@@ -428,7 +428,7 @@ public:
                        int dest, int sendtag, void *recvbuf, int recvcnt,
                        Datatype recvtype,int source, int recvtag,
                        Comm comm, Status *status);
-  
+
   static void Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
                            void *recvbuf, int recvcount, Datatype recvtype,
                            Comm comm);
@@ -439,9 +439,9 @@ public:
 
   static void Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
                              Datatype datatype, Op op, Comm comm);
-    
+
   static void CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype);
-  
+
 };
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;

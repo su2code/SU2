@@ -50,7 +50,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*,
 /* Constructor. Initialize the const member variables, if needed. */
 CBlasStructure::CBlasStructure(void)
 #if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  : mc (256), kc (128), nc (128) 
+  : mc (256), kc (128), nc (128)
 #endif
 {}
 
@@ -128,7 +128,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const su2double *A,
 
   /* Native implementation of the matix vector product.
      Initialize the elements of y to zero. */
-  memset(y, 0, M*sizeof(su2double));  
+  memset(y, 0, M*sizeof(su2double));
 
   /* Carry out the matrix vector product. */
   for(int k=0; k<M; ++k) {

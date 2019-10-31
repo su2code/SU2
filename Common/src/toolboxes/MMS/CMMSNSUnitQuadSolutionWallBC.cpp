@@ -36,7 +36,7 @@
  */
 
 #include "../../../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
-  
+
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(void) : CVerificationSolution() { }
 
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nDim,
@@ -44,7 +44,7 @@ CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nD
                                                            unsigned short val_iMesh,
                                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad with no-slip
    wall boundary conditions. ---*/

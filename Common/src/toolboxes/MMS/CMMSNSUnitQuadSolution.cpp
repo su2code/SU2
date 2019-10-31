@@ -44,7 +44,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
                                                unsigned short val_iMesh,
                                                CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {

@@ -289,7 +289,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         }
         else {
 
-          /*--- Not a viscous wall boundary, while viscous walls are present. 
+          /*--- Not a viscous wall boundary, while viscous walls are present.
                 The distance must be computed. Loop over the integration points
                 and do so. ---*/
           for(unsigned short i=0; i<nInt; ++i) {

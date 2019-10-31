@@ -46,7 +46,7 @@ from math import *
 import numpy as np
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -195,4 +195,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()  
+    main()

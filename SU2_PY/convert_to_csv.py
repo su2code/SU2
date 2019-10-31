@@ -53,7 +53,7 @@ while 1:
     if not line:
         break
 
-    line = line.split() 
+    line = line.split()
     for i, val in enumerate(line):
         outfile.write(val.strip())
         if i != len(line)-1:

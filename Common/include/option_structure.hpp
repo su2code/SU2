@@ -658,7 +658,7 @@ enum ENUM_SURFACEMOVEMENT {
   EXTERNAL = 6,
   EXTERNAL_ROTATION = 7,
   FLUID_STRUCTURE_STATIC = 8 /*!< \brief Fluid structure deformation with no grid velocity. */
-  
+
 };
 
 static const map<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = CCreateMap<string, ENUM_SURFACEMOVEMENT>
@@ -1110,7 +1110,7 @@ static const map<string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = CCr
 
 
 /*!
- * \brief Kinds of Design Variables for FEA problems 
+ * \brief Kinds of Design Variables for FEA problems
  */
 enum ENUM_DVFEA {
   NODV_FEA = 0,         /*!< \brief No design variable for FEA problems. */
@@ -1541,7 +1541,7 @@ enum ENUM_OUTPUT {
   SURFACE_TECPLOT = 3,  		     /*!< \brief Tecplot format for the solution output. */
   SURFACE_TECPLOT_BINARY = 4,    /*!< \brief Tecplot binary format for the solution output. */
   CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
-  SURFACE_CSV = 6,			 /*!< \brief Comma-separated values format for the solution output. */  
+  SURFACE_CSV = 6,			 /*!< \brief Comma-separated values format for the solution output. */
   PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
   PARAVIEW_BINARY = 8,   /*!< \brief Paraview binary format for the solution output. */
   SURFACE_PARAVIEW = 9,  		     /*!< \brief Paraview ASCII format for the solution output. */
@@ -1649,7 +1649,7 @@ enum ENUM_PARAM {
   TRANSLATION = 1,		       /*!< \brief Surface movement as design variable. */
   ROTATION = 2,			         /*!< \brief Surface rotation as design variable. */
   SCALE = 3,			           /*!< \brief Surface rotation as design variable. */
-  
+
   FFD_SETTING = 10,		       /*!< \brief No surface deformation. */
   FFD_CONTROL_POINT = 11,	   /*!< \brief Free form deformation for 3D design (change a control point). */
   FFD_NACELLE = 12,	         /*!< \brief Free form deformation for 3D design (change a control point). */
@@ -1672,17 +1672,17 @@ enum ENUM_PARAM {
   CST = 34,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 35,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 36,		     /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
-  
+
   DV_EFIELD = 40,            /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 41,
   DV_POISSON = 42,
   DV_RHO = 43,
   DV_RHO_DL = 44,
-  
+
   TRANSLATE_GRID = 50,       /*!< \brief Translate the volume grid. */
   ROTATE_GRID = 51,          /*!< \brief Rotate the volume grid */
   SCALE_GRID = 52,           /*!< \brief Scale the volume grid. */
-  
+
   ANGLE_OF_ATTACK = 101	   /*!< \brief Angle of attack for airfoils. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
@@ -2470,8 +2470,8 @@ public:
   }
 
   ~COptionDoubleArray() {
-     if(def  != NULL) delete [] def; 
-     if(vals != NULL) delete [] vals; 
+     if(def  != NULL) delete [] def;
+     if(vals != NULL) delete [] vals;
   };
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
@@ -2560,12 +2560,12 @@ class COptionShortList : public COptionBase {
   short * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
-  
+
 public:
   COptionShortList(string option_field_name, unsigned short & list_size,  short * & option_field) : field(option_field), size(list_size) {
     this->name = option_field_name;
   }
-  
+
   ~COptionShortList() {};
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
@@ -2577,7 +2577,7 @@ public:
       return "";
     }
     this->size = option_size;
-    
+
     // Parse all of the options
     short * vals = new  short[option_size];
     for (unsigned long i  = 0; i < option_size; i++) {
@@ -2592,7 +2592,7 @@ public:
     this->field = vals;
     return "";
   }
-  
+
   void SetDefault() {
     this->size = 0; // There is no default value for list
   }
@@ -2814,7 +2814,7 @@ public:
     this->disc_adjoint = this->disc_adjoint_def;
     this->restart = this->restart_def;
   }
-  
+
 };
 
 class COptionDVParam : public COptionBase {
@@ -2830,7 +2830,7 @@ public:
   }
 
   ~COptionDVParam() {};
-  
+
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -2885,7 +2885,7 @@ public:
    unsigned short totalnParamDV = 0;
    stringstream ss;
    unsigned int i = 0;
-    
+
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
         case NO_DEFORMATION:       nParamDV[iDV] = 0; break;
@@ -2931,12 +2931,12 @@ public:
       }
       totalnParamDV += nParamDV[iDV];
     }
-    
+
     if (totalnParamDV > option_value.size()){
       SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
     }
-    
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) { 
+
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       for (unsigned short iParamDV = 0; iParamDV < nParamDV[iDV]; iParamDV++) {
 
         ss << option_value[i] << " ";
@@ -3069,7 +3069,7 @@ public:
           newstring.append(": DV_VALUE does not contain enough entries to match DV_KIND or DV_PARAM.");
           return newstring;
         }
-        
+
         ss << option_value[i] << " ";
 
         ss >> this->valueDV[iDV][iValueDV];
@@ -3101,21 +3101,21 @@ class COptionFFDDef : public COptionBase {
   unsigned short & nFFD;
   su2double ** & CoordFFD;
   string * & FFDTag;
-  
+
 public:
   COptionFFDDef(string option_field_name, unsigned short & nFFD_field, su2double** & coordFFD_field, string* & FFDTag_field) : nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field) {
     this->name = option_field_name;
   }
-  
+
   ~COptionFFDDef() {};
-  
+
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
     }
-    
+
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0) {
       string newstring;
@@ -3129,8 +3129,8 @@ public:
       newstring.append(": may not have ending semicolon");
       return newstring;
     }
-    
-    
+
+
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
     this->nFFD = 0;
@@ -3139,35 +3139,35 @@ public:
         this->nFFD++;
       }
     }
-    
+
     // One more design variable than semicolon
     this->nFFD++;
-    
+
     this->CoordFFD = new su2double*[this->nFFD];
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
       this->CoordFFD[iFFD] = new su2double[25];
     }
-    
+
     this->FFDTag = new string[this->nFFD];
-    
+
     unsigned short nCoordFFD = 0;
     stringstream ss;
     unsigned int i = 0;
-    
+
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-      
+
       nCoordFFD = 25;
-      
+
       for (unsigned short iCoordFFD = 0; iCoordFFD < nCoordFFD; iCoordFFD++) {
-        
+
         ss << option_value[i] << " ";
-        
+
         if (iCoordFFD == 0) ss >> this->FFDTag[iFFD];
         else ss >> this->CoordFFD[iFFD][iCoordFFD-1];
-        
+
         i++;
       }
-      
+
       if (iFFD < (this->nFFD-1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
@@ -3177,40 +3177,40 @@ public:
         }
         i++;
       }
-      
+
     }
-    
+
     // Need to return something...
     return "";
   }
-  
+
   void SetDefault() {
     this->nFFD = 0;
     this->CoordFFD = NULL;
     this->FFDTag = NULL;
   }
-  
+
 };
 
 class COptionFFDDegree : public COptionBase {
   string name;
   unsigned short & nFFD;
   unsigned short ** & DegreeFFD;
-  
+
 public:
   COptionFFDDegree(string option_field_name, unsigned short & nFFD_field, unsigned short** & degreeFFD_field) : nFFD(nFFD_field), DegreeFFD(degreeFFD_field) {
     this->name = option_field_name;
   }
-  
+
   ~COptionFFDDegree() {};
-  
+
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
     }
-    
+
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0) {
       string newstring;
@@ -3224,8 +3224,8 @@ public:
       newstring.append(": may not have ending semicolon");
       return newstring;
     }
-    
-    
+
+
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
     this->nFFD = 0;
@@ -3234,29 +3234,29 @@ public:
         this->nFFD++;
       }
     }
-    
+
     // One more design variable than semicolon
     this->nFFD++;
-    
+
     this->DegreeFFD = new unsigned short*[this->nFFD];
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
       this->DegreeFFD[iFFD] = new unsigned short[3];
     }
-    
+
     unsigned short nDegreeFFD = 0;
     stringstream ss;
     unsigned int i = 0;
-    
+
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-      
+
       nDegreeFFD = 3;
-      
+
       for (unsigned short iDegreeFFD = 0; iDegreeFFD < nDegreeFFD; iDegreeFFD++) {
         ss << option_value[i] << " ";
         ss >> this->DegreeFFD[iFFD][iDegreeFFD];
         i++;
       }
-      
+
       if (iFFD < (this->nFFD-1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
@@ -3266,18 +3266,18 @@ public:
         }
         i++;
       }
-      
+
     }
-    
+
     // Need to return something...
     return "";
   }
-  
+
   void SetDefault() {
     this->nFFD = 0;
     this->DegreeFFD = NULL;
   }
-  
+
 };
 
 // Class where the option is represented by (String, su2double, string, su2double, ...)
@@ -3666,7 +3666,7 @@ public:
   }
 
   ~COptionExhaust() {};
-  
+
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
@@ -3704,7 +3704,7 @@ public:
       if (!(ss_2nd >> this->ptotal[i]))
         return badValue(option_value, "exhaust fixed", this->name);
     }
-    
+
     return "";
   }
 
@@ -3714,7 +3714,7 @@ public:
     this->ptotal = NULL;
     this->size = 0; // There is no default value for list
   }
-  
+
 };
 
 class COptionPeriodic : public COptionBase {
@@ -3971,7 +3971,7 @@ class COptionActDisk : public COptionBase {
   su2double ** & press_jump;
   su2double ** & temp_jump;
   su2double ** & omega;
-  
+
 public:
   COptionActDisk(const string name,
                  unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet,
@@ -3980,7 +3980,7 @@ public:
   press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
-  
+
   ~COptionActDisk() {};
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
@@ -3990,7 +3990,7 @@ public:
       this->SetDefault();
       return "";
     }
-    
+
     if (totalVals % mod_num != 0) {
       string newstring;
       newstring.append(this->name);
@@ -3998,13 +3998,13 @@ public:
       this->SetDefault();
       return newstring;
     }
-    
+
     unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
     this->marker_outlet = new string[this->outlet_size];
-    
+
     this->press_jump = new su2double*[this->inlet_size];
     this->temp_jump = new su2double*[this->inlet_size];
     this->omega = new su2double*[this->inlet_size];
@@ -4013,9 +4013,9 @@ public:
       this->temp_jump[i] = new su2double[2];
       this->omega[i] = new su2double[2];
     }
-    
+
     string tname = "actuator disk";
-    
+
     for (int i = 0; i < this->inlet_size; i++) {
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
@@ -4067,7 +4067,7 @@ class COptionWallFunction : public COptionBase {
   su2double**      &doubleInfo;
 
 public:
-  COptionWallFunction(const string name, unsigned short &nMarker_WF, 
+  COptionWallFunction(const string name, unsigned short &nMarker_WF,
                       string* &Marker_WF, unsigned short* &type_WF,
                       unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
   nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
@@ -4237,27 +4237,27 @@ public:
           break;
         }
         case LOGARITHMIC_WALL_MODEL: {
-          
+
           /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
            factor and number of points in the wall model must be specified. */
           this->intInfo[i]    = new unsigned short[1];
           this->doubleInfo[i] = new su2double[2];
-          
+
           istringstream ss_1st(option_value[counter++]);
           if (!(ss_1st >> this->doubleInfo[i][0])) {
             return badValue(option_value, "su2double", this->name);
           }
-          
+
           istringstream ss_2nd(option_value[counter++]);
           if (!(ss_2nd >> this->doubleInfo[i][1])) {
             return badValue(option_value, "su2double", this->name);
           }
-          
+
           istringstream ss_3rd(option_value[counter++]);
           if (!(ss_3rd >> this->intInfo[i][0])) {
             return badValue(option_value, "unsigned short", this->name);
           }
-          
+
           break;
         }
 

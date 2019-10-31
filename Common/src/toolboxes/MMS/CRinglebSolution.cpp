@@ -160,7 +160,7 @@ void CRinglebSolution::GetSolution(const su2double *val_coords,
   /* Check if the Newton algorithm actually converged. */
   if(iter == iterMax)
     SU2_MPI::Error("Newton algorithm did not converge", CURRENT_FUNCTION);
-  
+
   /* Compute the speed of sound, density and pressure. */
   const su2double a   = sqrt(1.0 - 0.5*Gm1*q*q);
   const su2double rho = pow(a,tovGm1);

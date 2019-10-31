@@ -26,10 +26,10 @@ uint64_t ___4709::___717(void) {
  #  else
 { struct timeval now; struct timezone ___4179; gettimeofday(&now, &___4179); return now.tv_sec * 1000L + now.tv_usec / 1000L; }
  #  endif
- #endif 
+ #endif
  #if defined _WIN32
 { struct _timeb curTimeB; _ftime(&curTimeB); return curTimeB.time * 1000LL + curTimeB.millitm; }
- #endif 
+ #endif
 }
  #endif
 }}

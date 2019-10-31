@@ -51,16 +51,16 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
                                              unsigned short val_iMesh,
                                              CConfig*       config) {
   /*--- Store the kind of solver ---*/
-  
+
   Kind_Solver = config->GetKind_Solver();
-  
+
   /*--- Store the rank and size for the calculation. ---*/
-  
+
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
-  
+
   /*--- Store the dimension and number of variables. ---*/
-  
+
   nDim = val_nDim;
   nVar = val_nVar;
 
@@ -105,7 +105,7 @@ void CVerificationSolution::GetSolution(const su2double *val_coords,
 
 void CVerificationSolution::GetInitialCondition(const su2double *val_coords,
                                                 su2double       *val_solution) {
-  
+
   /*--- Initial conditions call the GetSolution() method at t = 0. ---*/
   GetSolution(val_coords, 0.0, val_solution);
 }
@@ -135,18 +135,18 @@ void CVerificationSolution::GetLocalError(const su2double *val_coords,
                                           const su2double val_t,
                                           const su2double *val_solution,
                                           su2double       *val_error) {
-  
+
   /*--- Get the value of the verification solution first.
         Use val_error to store this solution. ---*/
-  
+
   GetSolution(val_coords, val_t, val_error);
-  
+
   /*--- Compute the local error as the difference between the current
    numerical solution and the verification solution. ---*/
-  
+
   for (unsigned short iVar=0; iVar<nVar; ++iVar)
     val_error[iVar] = val_solution[iVar] - val_error[iVar];
-  
+
 }
 
 void CVerificationSolution::SetVerificationError(unsigned long nDOFsGlobal,

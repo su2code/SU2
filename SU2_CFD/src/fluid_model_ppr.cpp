@@ -72,9 +72,9 @@ su2double CPengRobinson::T_v_h(su2double v, su2double h) {
   su2double sqrt2=sqrt(2.0);
 
   d = (v*v+2*b*v-b*b);
-  
+
   atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
-  
+
   fv = atanh;
 
   A = Gas_Constant*(1 / Gamma_Minus_One + v/(v-b)) - a*v*k*k / (TstarCrit * d);
@@ -117,9 +117,9 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
     sqrt2=sqrt(2.0);
 
     atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
-  
+
     fv = atanh;
-    
+
     A = Gas_Constant / Gamma_Minus_One;
     B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
     C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
@@ -178,7 +178,7 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
 
   if (Zed > 0.1) Z = min(Zed, 0.99);
     else Z=0.99;
-  
+
   do {
     F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
     F1 = 3*Z*Z + 2*Z*(B - 1.0) + (A - 2*B - 3*B*B);
@@ -196,9 +196,9 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
 
 
   rho= P/(Zed*Gas_Constant*T);
-  
+
   atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
-  
+
   fv = atanh;
 
   e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
@@ -237,16 +237,16 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
 
   T = T_v_h(x1, h);
-  
+
   atanh = (log(1.0+( b*sqrt2 / (x1 + b))) - log(1.0-( b*sqrt2 / (x1 + b))))/2.0;
   fv = atanh;
-  
+
   fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
   T = T_v_h(x2, h);
-  
+
   atanh = (log(1.0+( b*sqrt2 / (x2 + b))) - log(1.0-( b*sqrt2 / (x2 + b))))/2.0;
   fv = atanh;
-  
+
   fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
   // zbrac algorithm NR
@@ -371,13 +371,13 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
     x2 = v;
   }
   T = T_P_rho(P,1.0/x1);
-  
+
   atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
   fv = atanh;
-  
+
   fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
   T = T_P_rho(P,1.0/x2);
-  
+
   atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
   fv = atanh;
 
@@ -390,14 +390,14 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
       if (fabs(fx1) < fabs(fx2)) {
         x1 += FACTOR*(x1-x2);
         T = T_P_rho(P,1.0/x1);
-        
+
         atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
         fv = atanh;
-        
+
         fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
       }else {
         T = T_P_rho(P,1.0/x2);
-        
+
         atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
         fv = atanh;
 
@@ -419,10 +419,10 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
   do{
     xmid=rtb+(dx *= 0.5);
     T = T_P_rho(P,1.0/xmid);
-    
+
     atanh = (log(1.0 + ( b*sqrt2 / (xmid + b) )) - log(1.0-( b*sqrt2 / (xmid + b) )))/2.0;
     fv = atanh;
-    
+
     fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
     if (fmid <= 0.0) rtb=xmid;
     count++;

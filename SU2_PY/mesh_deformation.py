@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file mesh_deformation.py
 #  \brief Python script for doing the parallel deformation using SU2_DEF.
@@ -41,11 +41,11 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
-    
+
     # Command Line Options
     parser = OptionParser()
     parser.add_option("-f", "--file", dest="filename",
@@ -55,34 +55,34 @@ def main():
 
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
-    
+
     # Run Parallel Comutation
     mesh_deformation ( options.filename    ,
                        options.partitions   )
 #: def main()
 
-  
+
 # -------------------------------------------------------------------
 #  Parallel Computation Function
 # -------------------------------------------------------------------
 
 def mesh_deformation( filename           ,
                       partitions  = 2     ):
-    
+
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
     config.DV_VALUE_NEW = config.DV_VALUE
-    
+
     # State
     state = SU2.io.State()
-    
+
     state.FILES.MESH = config.MESH_FILENAME
 
     # Deformation
     info = SU2.run.DEF(config)
     state.update(info)
-    
+
     return state
 
 #: mesh_deformation()
@@ -95,5 +95,5 @@ def mesh_deformation( filename           ,
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
     main()
-    
-    
+
+

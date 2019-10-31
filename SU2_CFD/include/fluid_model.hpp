@@ -223,7 +223,7 @@ public:
      * \brief Set specific heat Cp model.
      */
     virtual void SetCpModel (CConfig *config);
-  
+
 		/*!
 		 * \brief Set viscosity model.
 		 */
@@ -644,32 +644,32 @@ public:
  * \author: T. Economon
  */
 class CConstantDensity : public CFluidModel {
-  
+
 protected:
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantDensity(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantDensity(su2double val_Density, su2double val_Cp);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CConstantDensity(void);
-  
+
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] T - Temperature value at the point.
    */
   void SetTDState_T(su2double val_Temperature);
-  
+
 };
 
 /*!
@@ -678,35 +678,35 @@ public:
  * \author: T. Economon
  */
 class CIncIdealGas : public CFluidModel {
-  
+
 protected:
   su2double Gas_Constant,  /*!< \brief Gas Constant. */
   Gamma;                   /*!< \brief Heat Capacity Ratio. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CIncIdealGas(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CIncIdealGas(void);
-  
+
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] T - Temperature value at the point.
    */
-  
+
   void SetTDState_T(su2double val_Temperature);
-  
+
 };
 
 /*!
@@ -715,42 +715,42 @@ public:
  * \author: T. Economon
  */
 class CIncIdealGasPolynomial : public CFluidModel {
-  
+
 protected:
   unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
   su2double Gas_Constant,     /*!< \brief Specific Gas Constant. */
   *b,                         /*!< \brief Polynomial coefficients for Cp as a function of temperature. */
   Gamma;                      /*!< \brief Ratio of specific heats. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CIncIdealGasPolynomial(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CIncIdealGasPolynomial(su2double val_gas_constant, su2double val_operating_pressure);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CIncIdealGasPolynomial(void);
-  
+
   /*!
    * \brief Set the temperature polynomial coefficients for variable Cp.
    * \param[in] config - configuration container for the problem.
    */
   void SetCpModel(CConfig *config);
-  
+
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] T - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature);
-  
+
 };
 
 #include "fluid_model.inl"

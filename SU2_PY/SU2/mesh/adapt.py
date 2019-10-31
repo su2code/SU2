@@ -43,79 +43,79 @@ from ..run import MSH as SU2_MSH
 
 def full(config):
     config = copy.deepcopy(config)
-    
+
     config.KIND_ADAPT = 'FULL'
-    
+
     raise NotImplementedError
 
- 
+
 def full_flow(config):
-    
+
     # local copy
     konfig = copy.deepcopy(config)
-    
+
     # set config
     konfig.KIND_ADAPT = 'FULL_FLOW'
-    
+
     # run MSH
     SU2_MSH(konfig)
-    
+
     return
-    
-    
+
+
 def full_adjoint(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
 
 def grad_flow(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def grad_adjoint(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def grad_flow_adj(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def robust(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def full_linear(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def computable(config):
     config = copy.deepcopy(config)
-    
+
     pass
- 
+
 def computable_robust():
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def remaining(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def wake(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
- 
+
 def horizontal_plane(config):
     config = copy.deepcopy(config)
-    
+
     raise NotImplementedError
 
 # config name map

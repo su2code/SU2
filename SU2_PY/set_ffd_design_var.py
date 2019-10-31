@@ -72,7 +72,7 @@ options.scale  = float(options.scale)
 options.dim  = int(options.dimension)
 
 if options.dim == 3:
-  
+
   print(" ")
   print("% FFD_CONTROL_POINT (X)")
 
@@ -92,7 +92,7 @@ if options.dim == 3:
 
   print(" ")
   print("% FFD_CONTROL_POINT (Y)")
-  
+
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
@@ -109,7 +109,7 @@ if options.dim == 3:
 
   print(" ")
   print("% FFD_CONTROL_POINT (Z)")
-  
+
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
@@ -143,7 +143,7 @@ if options.dim == 3:
 
   print(" ")
   print("% FFD_NACELLE (PHI)")
-  
+
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
@@ -200,8 +200,8 @@ if options.dim == 3:
       dvList = dvList + "( 16, " + str(options.scale) + " | " + options.marker + " | "
       dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
       dvList = dvList + "; "
-  
-  
+
+
 
   print(dvList)
 

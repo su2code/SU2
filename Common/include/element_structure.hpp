@@ -88,13 +88,13 @@ protected:
 	 * \param[in] body_forces - If we need dead loads.
 	 */
 	void AllocateStructures(const bool body_forces);
-	
+
 	/*!
 	 * \brief Compute gradients for 2D elements.
 	 * \param[in] mode - Type of coordinates to consider.
 	 */
 	void ComputeGrad_2D(const FrameType mode);
-	
+
 	/*!
 	 * \brief Compute gradients for 3D elements.
 	 * \param[in] mode - Type of coordinates to consider.
@@ -419,7 +419,7 @@ public:
 	 * because inactive variables are ignored.
 	 */
 	void SetPreaccIn_Coords(void);
-	
+
 	/*!
 	 * \brief Register the stress residual as a pre-accumulation output. When computing the element
 	 * stiffness matrix this is the only term that sees its way into the RHS of the system.

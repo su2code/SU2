@@ -16,7 +16,7 @@ using std::vector;
 #include "FileSystem.h"
  #if !defined MAKEARCHIVE
 #include "AUXDATA.h"
- #endif 
+ #endif
  #if defined MSWIN
 #include <io.h>
  #endif
@@ -73,7 +73,7 @@ int32_t             ___2042[___2380]  = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; int32_t 
  #define ___3638 2
  #if defined MAKEARCHIVE
 namespace { char const* ZoneTypes[] = { "ORDERED", "FELINESEG", "FETRIANGLE", "FEQUADRILATERAL", "FETETRAHEDRON", "FEBRICK", "FEPOLYGON", "FEPOLYHEDRON" }; }
- #endif 
+ #endif
 namespace { void WriteErr( int32_t    ___1397, char const* routine_name) {
  #if defined MAKEARCHIVE
 { ___3186("Err: (%s) Write failure on file %d.\n", routine_name, ___1397 + 1); }
@@ -300,10 +300,10 @@ if (DebugLevel[___1397]) ___3185("\nInserting Text: %s\n", ___3813);
 if (___1133(HeadFile[___1397], &Text, ___4226, ___1305)) RetVal = 0; else RetVal = -1; return RetVal; } void ___3975( int32_t        ___1397, int32_t const* ___2891) { ___4278(___1397); REQUIRE(VALID_REF(___2891)); DoWriteForeign = (*___2891 != 0); }
  #if defined MAKEARCHIVE
 namespace { ___372 ___250( char      ___472, ___372 ___2030) { REQUIRE(0 <= ___472 && "Char <= 127"); REQUIRE(VALID_BOOLEAN(___2030)); ___372 IsValidNameChar = (___472 == '_' || tecplot::___1998(___472)); if (!___2030) IsValidNameChar = (IsValidNameChar || ___472 == '.'     || tecplot::___2012(___472)); ENSURE(VALID_BOOLEAN(IsValidNameChar)); return IsValidNameChar; } }
- #endif 
+ #endif
  #if defined MAKEARCHIVE
 namespace { ___372 ___249(char const* ___2686) { REQUIRE(VALID_REF(___2686)); ___372 IsValidName = ___250(*___2686, ___4226); for (char const* NPtr = ___2686; IsValidName && *NPtr != '\0'; ++NPtr) { IsValidName = ___250(*NPtr, ___1305); } ENSURE(VALID_BOOLEAN(IsValidName)); return IsValidName; } }
- #endif 
+ #endif
 int32_t ___3971( int32_t    ___1397, char const* ___2686, char const* ___4315) { if (CheckFile(___1397, "TECAUXSTR142") < 0) return (-1);
  #if defined MAKEARCHIVE
 if (DebugLevel[___1397]) ___3186("\nInserting data set aux data: '%s' = '%s'\n", ___2686, ___4315);

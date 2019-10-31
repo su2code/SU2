@@ -74,12 +74,12 @@ protected:
   su2double a_T2;     /*!< \brief Parameter for the temperature solution. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CMMSNSUnitQuadSolutionWallBC(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -91,7 +91,7 @@ public:
                                unsigned short val_nvar,
                                unsigned short val_iMesh,
                                CConfig*       config);
-  
+
   /*!
    * \brief Destructor of the class.
    */

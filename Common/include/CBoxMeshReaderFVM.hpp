@@ -46,51 +46,51 @@
  * \author: T. Economon
  */
 class CBoxMeshReaderFVM: public CMeshReaderFVM {
-  
+
 private:
-  
+
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
   unsigned long pNode; /*!< \brief Number of grid nodes in the z-direction. */
-  
+
   su2double Lx; /*!< \brief Length of the domain in the x-direction. */
   su2double Ly; /*!< \brief Length of the domain in the y-direction. */
   su2double Lz; /*!< \brief Length of the domain in the z-direction. */
-  
+
   su2double Ox; /*!< \brief Offset of the domain from 0.0 in the x-direction. */
   su2double Oy; /*!< \brief Offset of the domain from 0.0 in the y-direction. */
   su2double Oz; /*!< \brief Offset of the domain from 0.0 in the z-direction. */
-  
+
   unsigned short KindElem;  /*!< \brief VTK identifier of the interior elements. */
   unsigned short KindBound; /*!< \brief VTK identifier of the surface elements. */
-  
+
   /*!
    * \brief Computes and stores the grid points based on an analytic definition of a box grid.
    */
   void ComputeBoxPointCoordinates();
-  
+
   /*!
    * \brief Computes and stores the volume element connectivity based on an analytic definition of a box grid.
    */
   void ComputeBoxVolumeConnectivity();
-  
+
   /*!
    * \brief Computes and stores the surface element connectivity based on an analytic definition of a box grid.
    */
   void ComputeBoxSurfaceConnectivity();
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the CBoxMeshReaderFVM class.
    */
   CBoxMeshReaderFVM(CConfig        *val_config,
                     unsigned short val_iZone,
                     unsigned short val_nZone);
-  
+
   /*!
    * \brief Destructor of the CBoxMeshReaderFVM class.
    */
   ~CBoxMeshReaderFVM(void);
-  
+
 };

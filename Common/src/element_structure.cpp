@@ -40,30 +40,30 @@
 unsigned short CElement::nDim = 0;
 
 CElement::CElement(void) {
-  
+
   CurrentCoord = NULL;
   RefCoord = NULL;
   GaussWeight = NULL;
   GaussCoord = NULL;
-  
+
   GaussPoint = NULL;
-  
+
   NodalStress = NULL;
   NodalExtrap = NULL;
-  
+
   nNodes = 0;
   nGaussPoints = 0;
-  
+
   el_Pressure = 0.0;
-  
+
   Mab = NULL;
   Kab = NULL;
   Ks_ab = NULL;
   Kt_a = NULL;
   dNiXj = NULL;
-  
+
   FDL_a = NULL;
-  
+
   iDe = 0;
   iDV = 0;
   iProp = 0;
@@ -71,33 +71,33 @@ CElement::CElement(void) {
 
 
 CElement::CElement(unsigned short val_nDim, CConfig *config) {
-  
+
   /*--- Initializate the number of dimension and some structures we need ---*/
   nDim = val_nDim;
-  
+
   CurrentCoord = NULL;
   RefCoord = NULL;
   GaussWeight = NULL;
   GaussCoord = NULL;
-  
+
   GaussPoint = NULL;
-  
+
   NodalStress = NULL;
   NodalExtrap = NULL;
-  
+
   nNodes = 0;
   nGaussPoints = 0;
-  
+
   el_Pressure = 0.0;
-  
+
   Mab = NULL;
   Kab = NULL;
   Ks_ab = NULL;
   Kt_a = NULL;
   dNiXj = NULL;
-  
+
   FDL_a = NULL;
-  
+
   iDe = 0;
   iDV = 0;
   iProp = 0;
@@ -105,55 +105,55 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 }
 
 CElement::~CElement(void) {
-  
+
   unsigned short iNode, iGauss, jNode;
-  
+
   if (GaussPoint != NULL) {
     for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
       delete GaussPoint[iGauss];
     }
     delete [] GaussPoint;
   }
-  
+
   if (NodalExtrap != NULL) {
     for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] NodalExtrap[iNode];
     }
     delete [] NodalExtrap;
   }
-  
+
   if (NodalStress != NULL) {
     for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] NodalStress[iNode];
     }
     delete [] NodalStress;
   }
-  
+
   if (CurrentCoord != NULL) {
     for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] CurrentCoord [iNode];
     }
     delete [] CurrentCoord;
   }
-  
+
   if (RefCoord != NULL) {
     for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] RefCoord [iNode];
     }
     delete [] RefCoord;
   }
-  
+
   if (GaussWeight != NULL) {
     delete [] GaussWeight;
   }
-  
+
   if (GaussCoord != NULL) {
     for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
       delete [] GaussCoord[iGauss];
     }
     delete [] GaussCoord;
   }
-  
+
   if (Mab != NULL) {
     for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] Mab[iNode];
@@ -177,7 +177,7 @@ CElement::~CElement(void) {
     }
     delete [] Ks_ab;
   }
-  
+
   if (Kt_a != NULL) {
     for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] Kt_a[iNode];
@@ -287,9 +287,9 @@ void CElement::AllocateStructures(const bool body_forces) {
 }
 
 void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB) {
-  
+
   unsigned short iDim, jDim;
-  
+
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[iDim][jDim];
@@ -298,9 +298,9 @@ void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short
 }
 
 void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB) {
-  
+
   unsigned short iDim, jDim;
-  
+
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[jDim][iDim];
@@ -309,32 +309,32 @@ void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned sho
 }
 
 void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA) {
-  
+
   unsigned short iDim;
-  
+
   for(iDim = 0; iDim < nDim; iDim++) {
     Kt_a[nodeA][iDim] += val_Kt_a[iDim];
   }
-  
+
 }
 
 void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA) {
-  
+
   unsigned short iDim;
-  
+
   for(iDim = 0; iDim < nDim; iDim++) {
     FDL_a[nodeA][iDim] += val_FDL_a[iDim];
   }
-  
+
 }
 
 
 void CElement::clearElement(void) {
-  
+
   unsigned short iNode, jNode, iDim, nDimSq;
-  
+
   nDimSq = nDim*nDim;
-  
+
   for(iNode = 0; iNode < nNodes; iNode++) {
     for(iDim = 0; iDim < nDim; iDim++) {
       if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
@@ -351,18 +351,18 @@ void CElement::clearElement(void) {
 }
 
 void CElement::clearStress(void) {
-  
+
   unsigned short iNode, iStress, nStress;
-  
+
   if (nDim == 2) nStress = 3;
   else nStress = 6;
-  
+
   for(iNode = 0; iNode < nNodes; iNode++) {
     for (iStress = 0; iStress < nStress; iStress++) {
       NodalStress[iNode][iStress] = 0.0;
     }
   }
-  
+
 }
 
 void CElement::Set_ElProperties(CProperty *input_element) {

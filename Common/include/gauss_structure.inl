@@ -34,7 +34,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 inline void CGaussVariable::SetGradNi_Xj(su2double val_GradNi_Xj, unsigned short val_iDim, unsigned short val_Ni) { GradNi_Xj[val_Ni][val_iDim] = val_GradNi_Xj; }
@@ -96,6 +96,6 @@ inline void CElementProperty::SetPhysicalDensity(su2double valDensity) { physica
 inline su2double CElementProperty::GetPhysicalDensity(void) { return physical_rho; }
 
 inline su2double CElementProperty::GetAdjointDensity(void) { return SU2_TYPE::GetDerivative(design_rho); }
-  
+
 inline void CElementProperty::RegisterDensity(void) { AD::RegisterInput(design_rho); }
 

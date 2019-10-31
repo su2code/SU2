@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
@@ -41,11 +41,11 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
-    
+
     # Command Line Options
     parser=OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
@@ -54,18 +54,18 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
-                      
+
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.compute     = options.compute.upper() == 'TRUE'
 
     if options.filename == None:
         raise Exception("No config file provided. Use -f flag")
-    
+
     parallel_computation( options.filename    ,
                           options.partitions  ,
                           options.compute      )
-        
+
 #: def main()
 
 
@@ -73,25 +73,25 @@ def main():
 #  CFD Solution
 # -------------------------------------------------------------------
 
-def parallel_computation( filename           , 
-                          partitions  = 0    , 
+def parallel_computation( filename           ,
+                          partitions  = 0    ,
                           compute     = True  ):
-    
+
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    
+
     # State
     state = SU2.io.State()
-    
+
     # check for existing files
     if not compute:
         state.find_files(config)
     else:
         state.FILES.MESH = config.MESH_FILENAME
-    
+
     # CFD Solution (direct or adjoint)
-    info = SU2.run.CFD(config) 
+    info = SU2.run.CFD(config)
     state.update(info)
 
     # Solution merging
@@ -101,7 +101,7 @@ def parallel_computation( filename           ,
         config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
     info = SU2.run.merge(config)
     state.update(info)
-  
+
     return state
 
 #: parallel_computation()

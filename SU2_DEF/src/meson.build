@@ -23,9 +23,9 @@ if get_option('enable-normal')
                                         'output/filewriter/CSU2MeshFileWriter.cpp'])
 
   su2_def = executable('SU2_DEF',
-                        su2_def_src, 
+                        su2_def_src,
                         install: true,
-                        dependencies: [su2_deps, common_dep], 
+                        dependencies: [su2_deps, common_dep],
                         objects : su2_cfd_obj,
                         cpp_args :[default_warning_flags, su2_cpp_args])
 endif

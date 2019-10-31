@@ -11,7 +11,7 @@
 #include "JobControl_s.h"
  #endif
 using namespace tecplot::___3933;
- #define MIN_CELLS_FOR_MULTITHREAD 100000 
+ #define MIN_CELLS_FOR_MULTITHREAD 100000
  #if !defined TECIOMPI
 namespace { struct NodeToElemData { ___2730 const& ___2723; boost::scoped_array<tecplot::___3933::___465> const& elemIndex; boost::scoped_array<tecplot::___3933::___465>& elem; boost::scoped_array<boost::atomic<int> >& count; ___465 begin; ___465 end; NodeToElemData( ___2730 const& ___2723, boost::scoped_array<tecplot::___3933::___465> const& elemIndex, boost::scoped_array<tecplot::___3933::___465>& elem, boost::scoped_array<boost::atomic<int> >& count, ___465 begin, ___465 end) : ___2723(___2723) , elemIndex(elemIndex) , elem(elem) , count(count) , begin(begin) , end(end) {} }; void STDCALL fillElemArrayForCellRange(___90 ___2124) { NodeToElemData* nodeToElemData = reinterpret_cast<NodeToElemData*>(___2124); for(___465 ___449 = nodeToElemData->begin; ___449 < nodeToElemData->end; ++___449) { for(int32_t ___681 = 0; ___681 < nodeToElemData->___2723.___2500; ++___681) { ___2718 ___2709 = nodeToElemData->___2723.___4314(___449 * nodeToElemData->___2723.___2500 + ___681); ___465 ind = nodeToElemData->elemIndex[___2709] + nodeToElemData->count[___2709]++; ___478(nodeToElemData->elem[ind] == 0); nodeToElemData->elem[ind] = ___449; } } } }
  #endif

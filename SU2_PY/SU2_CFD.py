@@ -45,7 +45,7 @@ import SU2				# imports SU2 python tools
 import pysu2			# imports the SU2 wrapped module
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -86,7 +86,7 @@ def main():
     from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial)
     comm = MPI.COMM_WORLD
   else:
-    comm = 0 
+    comm = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
@@ -121,4 +121,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()  
+    main()

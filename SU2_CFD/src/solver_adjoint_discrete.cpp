@@ -150,7 +150,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-CDiscAdjSolver::~CDiscAdjSolver(void) { 
+CDiscAdjSolver::~CDiscAdjSolver(void) {
 
   unsigned short iMarker;
 
@@ -292,7 +292,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Temperature            = config->GetTemperature_FreeStreamND();
 
     su2double SoundSpeed = 0.0;
-    
+
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
 
@@ -488,7 +488,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Extract the adjoint solution ---*/
-    
+
     if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
@@ -542,7 +542,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  
+
   /*--- Extract the adjoint values of the farfield values ---*/
 
   if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
@@ -586,7 +586,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
       (KindDirect_Solver == RUNTIME_FLOW_SYS &&
        (!config->GetBoolTurbomachinery()))) {
-        
+
     su2double Local_Sens_ModVel, Local_Sens_BPress, Local_Sens_Temp;
 
     Local_Sens_ModVel = SU2_TYPE::GetDerivative(ModVel);
@@ -869,7 +869,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Sens_Geo[iMarker_Monitoring] = 0.0;
   }
-  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
@@ -938,7 +938,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
     Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
   }
-  
+
   delete [] Sens_Geo;
 
 }
@@ -971,14 +971,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
-  
+
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
-  
+
 
   /*--- Read and store the restart metadata. ---*/
 

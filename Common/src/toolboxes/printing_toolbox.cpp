@@ -60,7 +60,7 @@ void PrintingToolbox::CTablePrinter::AddColumn(const std::string & header_name, 
 
   column_headers_.push_back(header_name);
   column_widths_.push_back(column_width);
-  table_width_ += column_width + separator_.size(); // for the separator  
+  table_width_ += column_width + separator_.size(); // for the separator
 }
 
 void PrintingToolbox::CTablePrinter::PrintHorizontalLine() {
@@ -75,25 +75,25 @@ void PrintingToolbox::CTablePrinter::PrintHorizontalLine() {
 
 void PrintingToolbox::CTablePrinter::PrintHeader(){
 
-  
-  
+
+
   if (print_header_top_line_) PrintHorizontalLine();
   *out_stream_ << separator_;
   int indent = 0;
   for (int i=0; i<GetNumColumns(); ++i){
-    
+
     std::stringstream ss;
-    
+
     ss << column_headers_.at(i).substr(0, column_widths_.at(i));
-    
+
     indent = 0;
 
     if(align_ == LEFT)
       *out_stream_ << std::left;
     else if (align_ == RIGHT)
-      *out_stream_ << std::right; 
+      *out_stream_ << std::right;
     else if (align_ == CENTER) {
-      *out_stream_ << std::right; 
+      *out_stream_ << std::right;
       indent = (int)(column_widths_.at(i) - ss.str().size()) / 2;
     }
 

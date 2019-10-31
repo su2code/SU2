@@ -87,7 +87,7 @@ public:
                                           const su2double velExchange,
                                           const su2double muExchange,
                                           const su2double pExchange,
-                                          const su2double Wall_HeatFlux, 
+                                          const su2double Wall_HeatFlux,
                                           const bool      HeatFlux_Prescribed,
                                           const su2double TWall,
                                           const bool      Temperature_Prescribed,
@@ -175,9 +175,9 @@ private:
 };
 
 class CWallModelLogLaw : public CWallModel {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class, which initializes the object.
    * \param[in] config     - Definition of the particular problem.
@@ -186,12 +186,12 @@ public:
    */
   CWallModelLogLaw(CConfig      *config,
                    const string &Marker_Tag);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CWallModelLogLaw(void);
-  
+
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
    from the data at the exchange location.
@@ -223,7 +223,7 @@ public:
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
                                   su2double       &kOverCvWall);
-  
+
 private:
 
   su2double C;  /*!< \brief Constant to match the Reichardt BL profile. */

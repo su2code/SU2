@@ -3,39 +3,39 @@
 
 
 CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
- 
+
   this->volume_sorter = volume_sorter;
-  
+
   connectivity_sorted = false;
-  
+
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
-  
+
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-  
+
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-  
+
   /*--- Update the solution by looping over the owned volume elements. ---*/
-  
+
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
-    
+
     /* Count up the number of local points we have for allocating storage. */
-    
+
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       nLocalPoint_Sort++;
     }
   }
-  
+
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nGlobalPoint_Sort = nLocalPoint_Sort;
 #endif
-  
+
   /*--- Create the linear partitioner --- */
-  
+
   linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
 
 }
@@ -44,17 +44,17 @@ CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
 
   if (linearPartitioner != NULL) delete linearPartitioner;
   delete [] passiveDoubleBuffer;
-  
+
 }
 
 
 
 void CSurfaceFEMDataSorter::SortOutputData() {
-  
+
   if (!connectivity_sorted){
     SU2_MPI::Error("Connectivity must be sorted before sorting output data", CURRENT_FUNCTION);
   }
-  
+
   const int VARS_PER_POINT = GlobalField_Counter;
 
   /*---------------------------------------------------*/
@@ -193,11 +193,11 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   /* Allocate the memory for Parallel_Surf_Data. */
   nParallel_Poin = globalSurfaceDOFIDs.size();
-  
+
   if (passiveDoubleBuffer == nullptr){
     passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
   }
-  
+
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nParallel_Poin; ++i) {
@@ -238,7 +238,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   map<unsigned long, unsigned long> mapGlobalVol2Surf;
   for(unsigned long i=0; i<nParallel_Poin; ++i)
     mapGlobalVol2Surf[globalSurfaceDOFIDs[i]] = offsetSurfaceDOFs + i;
-   
+
 
   /* Fill the receive buffers with the modified global surface DOF numbers,
      such that this information can be returned to the original ranks. */
@@ -307,27 +307,27 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 }
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
-  
+
   SortSurfaceConnectivity(config, geometry, LINE         );
   SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);   
-  
-  
+  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+
+
   unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
   nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
   SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
   connectivity_sorted = true;
-  
+
 }
 
 
 
 void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
-  
+
   /* Determine the number of nodes for this element type. */
     unsigned short NODES_PER_ELEMENT = 0;
     switch (Elem_Type) {
@@ -343,17 +343,17 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
       default:
         SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
     }
-    
+
     /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
           geometrical information for the FEM DG solver. ---*/
     CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-  
+
     unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
     CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-  
+
     const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
     const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
-  
+
     /*--- Create the map from the global DOF ID to the local index.
           Note one is added to the index value, because visualization
           softwares typically use 1-based indexing. ---*/
@@ -364,7 +364,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
         globalID.push_back(globalIndex);
       }
     }
-  
+
     /*--- Determine the number of sub-elements on this rank by looping
           over the surface elements of the boundary markers that must
           be plotted. ---*/
@@ -381,12 +381,12 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
         }
       }
     }
-  
+
     /* Allocate the memory to store the connectivity if the size is
        larger than zero. */
     int *Conn_SubElem = NULL;
     if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
-  
+
     /*--- Repeat the loop over the surface elements of the boundary markers
           that must be plotted, but now store the connectivity. ---*/
     unsigned long kNode = 0;
@@ -394,20 +394,20 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
       if( !boundaries[iMarker].periodicBoundary ) {
         if (config->GetMarker_All_Plotting(iMarker) == YES) {
           const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
-  
+
           /* Loop over the surface elements of this boundary marker. */
           for(unsigned long i=0; i<surfElem.size(); ++i) {
-  
+
             /* Check if this is the element type to be stored. */
             const unsigned short ind      = surfElem[i].indStandardElement;
             const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
             if(Elem_Type == VTK_Type) {
-  
+
               /* Get the number of sub-elements and the local connectivity of
                  the sub-elements. */
               const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
               const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
-  
+
               /* Store the global connectivities. */
               const unsigned short kk = NODES_PER_ELEMENT*nSubFaces;
               for(unsigned short k=0; k<kk; ++k, ++kNode)
@@ -417,7 +417,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
         }
       }
     }
-  
+
     /*--- Store the particular global element count in the class data,
           and set the class data pointer to the connectivity array. ---*/
     switch (Elem_Type) {
@@ -428,17 +428,17 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
         break;
       case TRIANGLE:
         nParallel_Tria = nSubElem_Local;
-        if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;        
+        if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
         nParallel_Quad = nSubElem_Local;
-        if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;       
+        if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
         Conn_Quad_Par = Conn_SubElem;
         break;
       default:
         SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
         break;
     }
-    
+
 }

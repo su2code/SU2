@@ -115,25 +115,25 @@ public:
  * \version 1.0
  */
 class CConstantViscosity : public CViscosityModel {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantViscosity(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantViscosity(su2double mu_const);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CConstantViscosity(void);
-  
-  
+
+
 };
 
 /*!
@@ -148,34 +148,34 @@ protected:
   su2double      Mu_ref,    /*!< \brief Internal Energy. */
   T_ref,     /*!< \brief DpDd_e. */
   S;       /*!< \brief DpDe_d. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CSutherland(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CSutherland(su2double mu_ref, su2double t_ref, su2double s);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CSutherland(void);
-  
+
   /*!
    * \brief Set Viscosity.
    */
   void SetViscosity(su2double T, su2double rho);
-  
+
   /*!
    * \brief Set Viscosity Derivatives.
    */
   void SetDerViscosity(su2double T, su2double rho);
-  
+
 };
 
 /*!
@@ -189,27 +189,27 @@ protected:
   su2double *b;               /*!< \brief Polynomial coefficients for viscosity as a function of temperature. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialViscosity(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CPolynomialViscosity(void);
-  
+
   /*!
    * \brief Set Viscosity.
    */
   void SetViscosity(su2double T, su2double rho);
-  
+
 };
 
 /*!
@@ -297,33 +297,33 @@ public:
  * \version 1.0
  */
 class CConstantConductivityRANS : public CConductivityModel {
-  
+
 protected:
   su2double Kt_Lam;         /*!< \brief Constant laminar conductivity. */
   su2double Prandtl_Turb;   /*!< \brief Turbulent Prandtl number. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantConductivityRANS(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantConductivityRANS(su2double kt_const, su2double pr_turb);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CConstantConductivityRANS(void);
-  
+
   /*!
    * \brief Set effective thermal conductivity.
    */
   void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
-  
+
 };
 
 /*!
@@ -412,29 +412,29 @@ class CPolynomialConductivity : public CConductivityModel {
 protected:
   unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
   su2double *b;               /*!< \brief Polynomial coefficients for thermal conductivity as a function of temperature. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialConductivity(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CPolynomialConductivity(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b);
-  
+
   /*!
    * \brief Set Thermal conductivity.
    */
   void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
-  
+
 };
 
 /*!
@@ -449,27 +449,27 @@ protected:
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl number. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialConductivityRANS(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CPolynomialConductivityRANS(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb);
-  
+
   /*!
    * \brief Set Thermal conductivity.
    */
   void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
-  
+
 };
 
 #include "transport_model.inl"

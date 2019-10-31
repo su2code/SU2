@@ -81,9 +81,9 @@ teciompi = static_library('teciompi',
            'TecioSZL.cpp',
            'exportSubzonePlt.cpp',
            install : false,
-	   dependencies: [mpi_dep], 
+	   dependencies: [mpi_dep],
 	   cpp_args: [default_warning_flags, tec_cxx_flags],
-	   include_directories: 
+	   include_directories:
 	   teciompi_include)
 
 teciompi_dep = declare_dependency(link_with: teciompi,

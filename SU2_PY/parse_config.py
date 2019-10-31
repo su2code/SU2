@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
@@ -103,7 +103,7 @@ def parse_config(config_cpp, config_hpp):
   # Read the Options section of config_structure.cpp into a list of strings
   lines = []
   f = open(config_cpp,'r')
-  while(1): 
+  while(1):
     s = f.readline()
     if s.find('BEGIN_CONFIG_OPTIONS')>-1:
       break
@@ -159,7 +159,7 @@ def parse_config(config_cpp, config_hpp):
           values = scheme_list
           print("Convect Option: ", name)
         elif option_type == 'AddEnumListOption':
-          values = ['Enum list'] 
+          values = ['Enum list']
         elif option_type == 'AddDVParamOption':
           values = ['DV Param']
 
@@ -189,7 +189,7 @@ def parse_config(config_cpp, config_hpp):
           default='NO'
         elif default=='true':
           default='YES'
-       
+
         # Check for a description tag
         description = "No description"
         if lines[j-1].find('DESCRIPTION')>-1:
@@ -253,7 +253,7 @@ if __name__=="__main__":
     sys.exit('Could not find cpp file, please check that su2_basedir is set correctly in parse_config.py')
   if not os.path.isfile(config_hpp):
     sys.exit('Could not find hpp file, please check that su2_basedir is set correctly in parse_config.py')
- 
+
   # Run the parser
   option_list = parse_config(config_cpp, config_hpp)
 

@@ -34,7 +34,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 inline CUnsignedLong2T::CUnsignedLong2T(){long0 = long1 = 0;}
@@ -308,7 +308,7 @@ inline void CGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool
 inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
 inline su2double CGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
-  
+
 inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
 inline su2double CGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
@@ -350,7 +350,7 @@ inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
 
 inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
-  		                                su2double &Fuselage_Volume, su2double &Fuselage_WettedArea, 
+  		                                su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
   		                                su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
   		                                su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
   		                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
@@ -379,7 +379,7 @@ inline void CGeometry::SetMGLevel(unsigned short val_iMesh) { MGLevel = val_iMes
 
 inline unsigned short CGeometry::GetMGLevel(void) { return MGLevel; }
 
-inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
+inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); }
 
 inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }
 

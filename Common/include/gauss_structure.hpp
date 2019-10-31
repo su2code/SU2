@@ -254,32 +254,32 @@ public:
    * \brief Get index of the design variable.
    */
   unsigned long GetDV(void);
-  
+
   /*!
    * \brief Set the Design density (topology optimization variable).
    */
   void SetDesignDensity(su2double valDensity);
-  
+
   /*!
    * \brief Get the value of the Design density.
    */
   su2double GetDesignDensity(void);
-  
+
   /*!
    * \brief Set the Physical density (used to penalize element stiffness by the FEM solver).
    */
   void SetPhysicalDensity(su2double valDensity);
-  
+
   /*!
    * \brief Get the value of the Physical density.
    */
   su2double GetPhysicalDensity(void);
-  
+
   /*!
    * \brief Extract the derivative of the Design density.
    */
   su2double GetAdjointDensity(void);
-  
+
   /*!
    * \brief Register the Design density as an AD input variable.
    */

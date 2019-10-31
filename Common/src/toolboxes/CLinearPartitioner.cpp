@@ -41,13 +41,13 @@
 CLinearPartitioner::CLinearPartitioner(unsigned long val_global_count,
                                        unsigned long val_offset,
                                        bool          isDisjoint) {
-  
+
   /*--- Store MPI size ---*/
-  
+
   size = SU2_MPI::GetSize();
-  
+
   /*--- Resize the vectors containing our linear partitioning. ---*/
-  
+
   firstIndex.resize(size);
   lastIndex.resize(size);
   sizeOnRank.resize(size);
@@ -56,23 +56,23 @@ CLinearPartitioner::CLinearPartitioner(unsigned long val_global_count,
   /*--- Compute the number of points that will be on each processor.
    This is a linear partitioning with the addition of a simple load
    balancing for any remainder points. ---*/
-  
+
   unsigned long quotient = 0;
   if (val_global_count >= (unsigned long)size)
     quotient = val_global_count/size;
-  
+
   int remainder = int(val_global_count%size);
   for (int ii = 0; ii < size; ii++) {
     sizeOnRank[ii] = quotient + int(ii < remainder);
   }
-  
+
   /*--- Store the local number of nodes on each proc in the linear
    partitioning, the beginning/end index, and the linear partitioning
    within an array in cumulative storage format. ---*/
-  
+
   unsigned long adjust = 0;
   if (isDisjoint) adjust = 1;
-  
+
   firstIndex[0] = val_offset;
   lastIndex[0]  = firstIndex[0] + sizeOnRank[0] - adjust;
   cumulativeSizeBeforeRank[0] = 0;
@@ -83,7 +83,7 @@ CLinearPartitioner::CLinearPartitioner(unsigned long val_global_count,
                                        sizeOnRank[iProc-1]);
   }
   cumulativeSizeBeforeRank[size] = val_global_count;
-  
+
 }
 
 CLinearPartitioner::~CLinearPartitioner(void) { }
@@ -91,23 +91,23 @@ CLinearPartitioner::~CLinearPartitioner(void) { }
 unsigned long CLinearPartitioner::GetRankContainingIndex(unsigned long val_index) {
 
   /*--- Initial guess ---*/
-  
+
   unsigned long iProcessor = val_index/sizeOnRank[0];
-  
+
   /*--- Guard against going over size. ---*/
-  
+
   if (iProcessor >= (unsigned long)size)
     iProcessor = (unsigned long)size-1;
-  
+
   /*--- Move up or down until we find the processor. ---*/
-  
+
   if (val_index >= cumulativeSizeBeforeRank[iProcessor])
     while(val_index >= cumulativeSizeBeforeRank[iProcessor+1])
       iProcessor++;
   else
     while(val_index < cumulativeSizeBeforeRank[iProcessor])
       iProcessor--;
-  
+
   return iProcessor;
-  
+
 }
