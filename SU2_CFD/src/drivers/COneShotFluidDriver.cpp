@@ -588,6 +588,7 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
       nDV_Count++;
     }
   }
+  AD::ClearAdjoints();
 }
 
 void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
