@@ -130,7 +130,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
-  Smoothing_Iter = config->GetGridDef_Linear_Iter();
+  Smoothing_Iter = config->GetDeform_Linear_Solver_Iter();
   Screen_Output  = config->GetDeform_Output();
   NumError       = config->GetDeform_Linear_Solver_Error();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
