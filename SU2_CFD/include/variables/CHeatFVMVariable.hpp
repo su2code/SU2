@@ -84,7 +84,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \param[in] iVar   - Index of the variable.
    * \param[in] iDim   - Index of the dimension.
-   * \param[in] iDim   - Index of the dimension.
+   * \param[in] value  - Value of the reconstruction gradient component.
    */
   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
