@@ -233,7 +233,7 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetSaveSolution();
 
   /*--- Set Deltay and DeltaBary ---*/
-  solver[ADJFLOW_SOL]->SetSolutionDelta();
+  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
@@ -254,7 +254,7 @@ void COneShotFluidDriver::RunOneShot(){
         UpdateMultiplier(stepsize);
 
         /*--- Set Deltay and DeltaBary ---*/
-        solver[ADJFLOW_SOL]->SetSolutionDelta();
+        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
       }
       else if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
@@ -270,7 +270,7 @@ void COneShotFluidDriver::RunOneShot(){
         UpdateMultiplier(stepsize);
 
         /*--- Set Deltay and DeltaBary ---*/
-        solver[ADJFLOW_SOL]->SetSolutionDelta();
+        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
       }
       else{
         /*--- Compute and store GradL dot p ---*/
