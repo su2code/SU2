@@ -588,7 +588,10 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
       nDV_Count++;
     }
   }
+  
   AD::ClearAdjoints();
+
+  AD::Reset();
 }
 
 void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
@@ -1038,6 +1041,8 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
+
+    AD::Reset();
 }
 
 void COneShotFluidDriver::ComputeBetaTerm(){
@@ -1076,6 +1081,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
+
+    AD::Reset();
 }
 
 void COneShotFluidDriver::ComputePreconditioner(){
