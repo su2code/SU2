@@ -4692,6 +4692,11 @@ public:
    */
   virtual void SetSolutionDelta(CGeometry *geometry);
 
+    /*!
+   * \brief A virtual member.
+   */
+  virtual void SetStoreSolutionDelta();
+
   /*!
    * \brief A virtual member.
    * \param[in] config - config class object
@@ -16052,6 +16057,11 @@ public:
    * \brief Set Solution_Delta for this time step.
    */
   void SetSolutionDelta(CGeometry *geometry);
+
+  /*!
+   * \brief Set Solution_Delta for this time step.
+   */
+  void SetStoreSolutionDelta();
 
   /*!
    * \brief Calculate estimates for alpha, beta, and gamma of the doubly augmented Lagrangian

@@ -126,6 +126,7 @@ protected:
   MatrixType Solution_Store;        /*!< \brief Pointer to store solution of the problem (step k). */
   MatrixType Solution_Former;       /*!< \brief Former solution of the problem (step k-1). */
   MatrixType Solution_Delta;        /*!< \brief Difference of new solution and solution (step k+1 - step k). */
+  MatrixType Solution_DeltaStore;        /*!< \brief Difference of new solution and solution (step k+1 - step k). */
   MatrixType Solution_Save;         /*!< \brief Pointer to store new solution of the problem (step k+1). */
 
   MatrixType AnisoGrad;       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */ 
@@ -2884,6 +2885,12 @@ public:
   inline void SetSolution_Delta(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { Solution_Delta(iPoint,iVar) = val_solution_delta; }
 
   inline su2double GetSolution_Delta(unsigned long iPoint, unsigned short iVar) { return Solution_Delta(iPoint,iVar); }
+
+  inline su2double* GetSolution_DeltaStore(unsigned long iPoint) { return Solution_DeltaStore[iPoint]; }
+
+  inline void SetSolution_DeltaStore(unsigned long iPoint, unsigned short iVar, su2double val_solution_delta) { Solution_DeltaStore(iPoint,iVar) = val_solution_delta; }
+
+  inline su2double GetSolution_DeltaStore(unsigned long iPoint, unsigned short iVar) { return Solution_DeltaStore(iPoint,iVar); }
 
   inline virtual void SetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
 

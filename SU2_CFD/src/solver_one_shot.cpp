@@ -257,12 +257,12 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   /* --- Estimate rho and theta values --- */
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      myNormDelta    += direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)
-                      * direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar);
+      myNormDelta    += direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar)
+                      * direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar);
       myNormDeltaNew += (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar))
                       * (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
-      myHelper       += direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
-                      - nodes->GetSolution_Delta(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
+      myHelper       += direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
+                      - nodes->GetSolution_DeltaStore(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
     }
   }
 
@@ -428,6 +428,18 @@ void COneShotSolver::SetSolutionDelta(CGeometry *geometry){
 
       AddRes_RMS(iVar,res_bary*res_bary);
       AddRes_Max(iVar,fabs(res_bary),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
+  }
+}
+
+void COneShotSolver::SetStoreSolutionDelta(){
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for(iVar = 0; iVar < nVar; iVar++) {
+      direct_solver->GetNodes()->SetSolution_DeltaStore(iPoint, iVar, direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar));
+      nodes->SetSolution_DeltaStore(iPoint, iVar, nodes->GetSolution_Delta(iPoint,iVar));
     }
   }
 }
