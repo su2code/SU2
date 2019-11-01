@@ -2560,7 +2560,7 @@ inline void CSolver::UpdateStateVariable(CConfig *config){}
 
 inline void CSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* config){}
 
-inline void CSolver::SetSolutionDelta(){}
+inline void CSolver::SetSolutionDelta(CGeometry *geometry){}
 
 inline void CSolver::SetConstrDerivative(unsigned short iConstr){}
 

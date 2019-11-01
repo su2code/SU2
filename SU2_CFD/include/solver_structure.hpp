@@ -4690,7 +4690,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetSolutionDelta();
+  virtual void SetSolutionDelta(CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
@@ -16051,7 +16051,7 @@ public:
   /*!
    * \brief Set Solution_Delta for this time step.
    */
-  void SetSolutionDelta();
+  void SetSolutionDelta(CGeometry *geometry);
 
   /*!
    * \brief Calculate estimates for alpha, beta, and gamma of the doubly augmented Lagrangian
