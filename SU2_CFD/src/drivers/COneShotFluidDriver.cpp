@@ -228,6 +228,10 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
+  /*--- Do a primal and adjoint update ---*/
+  PrimalDualStep();
+  solver[ADJFLOW_SOL]->SetSaveSolution();
+
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
 
@@ -242,6 +246,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
+        solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
       }
@@ -254,6 +259,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
+        solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
       }
@@ -283,9 +289,6 @@ void COneShotFluidDriver::RunOneShot(){
       config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
 
     }
-
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian(true);
@@ -1010,7 +1013,7 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
                                    surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Extract the computed sensitivity values. ---*/
-      solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
+    solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

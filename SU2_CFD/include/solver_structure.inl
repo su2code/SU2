@@ -2554,6 +2554,8 @@ inline void CSolver::SetSaveSolution(){}
 
 inline void CSolver::LoadSaveSolution(){}
 
+inline void CSolver::LoadStepSolution(su2double stepsize){}
+
 inline void CSolver::UpdateStateVariable(CConfig *config){}
 
 inline void CSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* config){}

@@ -234,6 +234,19 @@ void COneShotSolver::LoadSaveSolution(){
   }
 }
 
+void COneShotSolver::LoadStepSolution(su2double stepsize){
+  unsigned long iPoint;
+  unsigned short iVar;
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for(iVar = 0; iVar < nVar; iVar++){
+      const su2double dy    = direct_solver->GetNodes()->GetSolution_Save(iPoint,iVar) - direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar);
+      const su2double dbary = nodes->GetSolution_Save(iPoint,iVar) - nodes->GetSolution_Store(iPoint,iVar);
+      direct_solver->GetNodes()->SetSolution(iPoint,iVar,direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar) + stepsize*dy);
+      nodes->SetSolution(iPoint,iVar,nodes->GetSolution_Store(iPoint,iVar) + stepsize*dbary);
+    }
+  }
+}
+
 void COneShotSolver::CalculateRhoTheta(CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;

@@ -4685,6 +4685,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void LoadStepSolution(su2double stepsize);
+
+  /*!
+   * \brief A virtual member.
+   */
   virtual void SetSolutionDelta();
 
   /*!
@@ -16023,6 +16028,11 @@ public:
    * \brief Load the current solution from Solution_Save.
    */
   void LoadSaveSolution();
+
+  /*!
+   * \brief Increment the solution by stepsize*d(bar)y.
+   */
+  void LoadStepSolution(su2double stepsize);
 
   /*!
    * \brief Set the geometry sensitivity to the sensitivity of the shifted Lagrangian
