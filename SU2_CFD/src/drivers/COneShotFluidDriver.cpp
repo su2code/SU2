@@ -321,7 +321,13 @@ void COneShotFluidDriver::RunOneShot(){
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
-  if (!CheckFirstWolfe() && config->GetZeroStep()) stepsize = 0.0;
+  if (!CheckFirstWolfe() && config->GetZeroStep()) {
+    stepsize = 0.0;
+    /*--- Rerun primal-dual so Deltay and DeltaBary aren't 0 ---*/
+    PrimalDualStep();
+    /*--- Set Deltay and DeltaBary ---*/
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  }
 
   /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
   if(InnerIter >= config->GetOneShotStart() && InnerIter > 1) {
