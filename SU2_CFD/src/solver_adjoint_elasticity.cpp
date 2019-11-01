@@ -342,10 +342,10 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
   if (Rho_i       != NULL) delete [] Rho_i;
   if (Rho_DL_i    != NULL) delete [] Rho_DL_i;
 
-  if (AD_Idx_E_i       != NULL) delete [] E_i;
-  if (AD_Idx_Nu_i      != NULL) delete [] Nu_i;
-  if (AD_Idx_Rho_i     != NULL) delete [] Rho_i;
-  if (AD_Idx_Rho_DL_i  != NULL) delete [] Rho_DL_i;
+  if (AD_Idx_E_i       != NULL) delete [] AD_Idx_E_i;
+  if (AD_Idx_Nu_i      != NULL) delete [] AD_Idx_Nu_i;
+  if (AD_Idx_Rho_i     != NULL) delete [] AD_Idx_Rho_i;
+  if (AD_Idx_Rho_DL_i  != NULL) delete [] AD_Idx_Rho_DL_i;
 
   if (Local_Sens_E        != NULL) delete [] Local_Sens_E;
   if (Local_Sens_Nu       != NULL) delete [] Local_Sens_Nu;
