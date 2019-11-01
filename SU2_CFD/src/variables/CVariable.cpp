@@ -99,6 +99,8 @@ void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
 
 void CVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
 
+void CVariable::Restore_BGSSolution_k() { Solution = Solution_BGS_k; }
+
 void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
 
 void CVariable::SetAuxVarGradientZero() { Grad_AuxVar.setConstant(0.0); }

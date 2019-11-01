@@ -81,8 +81,6 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
           direct_output[iZone] = new CHeatOutput(config_container[iZone], nDim);
           break;
         case DISC_ADJ_FEM:
-          SU2_MPI::Error("There is no multizone discrete adjoint functionality for problems including elasticity yet.",
-                         CURRENT_FUNCTION);
           direct_iteration[iZone][iInst] = new CFEAIteration(config_container[iZone]);
           direct_output[iZone] = new CElasticityOutput(config_container[iZone], nDim);
           break;
@@ -115,11 +113,10 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  if (rank == MASTER_NODE) {
+    cout <<"\n------------------------------ Begin Solver -----------------------------" << endl;
 
-  if (rank == MASTER_NODE){
-    cout << endl << "Simulation Run using the Discrete Adjoint Multizone Driver" << endl;
+    cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
     if (driver_config->GetTime_Domain())
       SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
@@ -146,13 +143,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 void CDiscAdjMultizoneDriver::Run() {
 
-  bool            checkSensitivity  = false;
-  unsigned short  jZone             = 0,
-                  wrt_sol_freq      = config_container[ZONE_0]->GetVolume_Wrt_Freq();
-  unsigned long   nIter             = 0,
-                  iOuter_Iter       = 0;
-
-  nIter = driver_config->GetnOuter_Iter();
+  unsigned short wrt_sol_freq = config_container[ZONE_0]->GetVolume_Wrt_Freq();
+  unsigned long  nOuterIter = driver_config->GetnOuter_Iter();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -167,11 +159,11 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Loop over the number of outer iterations. ---*/
 
-  for (iOuter_Iter = 0; iOuter_Iter < nIter; iOuter_Iter++) {
+  for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      config_container[iZone]->SetOuterIter(iOuter_Iter);
-      driver_config->SetOuterIter(iOuter_Iter);
+      config_container[iZone]->SetOuterIter(iOuterIter);
+      driver_config->SetOuterIter(iOuterIter);
     }
 
 
@@ -199,7 +191,6 @@ void CDiscAdjMultizoneDriver::Run() {
       SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else if (RecordingState != FLOW_CONS_VARS) {
-
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
     }
@@ -216,8 +207,7 @@ void CDiscAdjMultizoneDriver::Run() {
         SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
-      /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone.
-       *    (We always initialize from Solution_BGS_k and extract to Solution.) ---*/
+      /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone. ---*/
 
       AD::ClearAdjoints();
 
@@ -233,13 +223,28 @@ void CDiscAdjMultizoneDriver::Run() {
 
       Add_Solution_To_ExternalOld(iZone);
 
+      /*--- If the contents of BGSSolution are valid we initialize the inner iterations from them by moving
+       *    them to Solution, otherwise Solution contains only the contributions from the OF.
+       *    Note: This is not 100% correct as on the first inner iteration the updated cross terms
+       *          (from the previous zone) are missed. ---*/
+
+      if (iOuterIter > 0 || driver_config->GetRestart())
+        Set_Solution_To_BGSSolution(iZone);
+
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
+
+      bool eval_transfer = false;
 
       for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
-        /*--- Evaluate the tape section belonging to solvers in iZone. ---*/
+        config_container[iZone]->SetInnerIter(iInnerIter);
 
-        ComputeAdjoints(iZone);
+        /*--- Evaluate the tape section belonging to solvers in iZone.
+         *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
+
+        eval_transfer = eval_transfer || (iInnerIter == nInnerIter[iZone]-1);
+
+        ComputeAdjoints(iZone, eval_transfer);
 
         /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
 
@@ -253,13 +258,17 @@ void CDiscAdjMultizoneDriver::Run() {
 
         /*--- Print out the convergence data to screen and history file ---*/
 
-        output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
-                                                   config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInnerIter);
+        bool converged = iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container,
+                                                    geometry_container, solver_container, numerics_container,
+                                                    config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+        if (eval_transfer) break;
+        eval_transfer = converged;
+
       }
 
       /*--- Off-diagonal (coupling term) update for next outer evaluation. ---*/
 
-      for (jZone = 0; jZone < nZone; jZone++) {
+      for (unsigned short jZone = 0; jZone < nZone; jZone++) {
 
         if (jZone != iZone) {
 
@@ -286,17 +295,13 @@ void CDiscAdjMultizoneDriver::Run() {
        *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
-        
-      /*--- make sure that everything is loaded into the output container ---*/
-      
-      output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
-      
+
+      /*--- Now all iZone coupling terms are summed up, set External_Old to External so the
+       *    next zone receives the contributions from iZone (BGS-type iteration). ---*/
+
+      Set_OldExternal();
     }
 
-    /*--- Now all coupling terms are summed up, set External_Old to External for next outer iteration. ---*/
-
-    Set_OldExternal();
-    
     /*--- Set the multizone output. ---*/
 
     driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
@@ -304,7 +309,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Check for convergence. ---*/
 
-    StopCalc = driver_output->GetConvergence();
+    StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1);
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
@@ -312,10 +317,9 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Compute the geometrical sensitivities and write them to file. ---*/
 
-    checkSensitivity = ((iOuter_Iter+1 >= nIter) ||
-                        (iOuter_Iter % wrt_sol_freq == 0));
+    bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
 
-    if (checkSensitivity || StopCalc){
+    if (checkSensitivity) {
 
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
        *    as argument ensures that all information from a previous recording is removed. ---*/
@@ -330,6 +334,8 @@ void CDiscAdjMultizoneDriver::Run() {
        *    of the current iteration. The values are passed to the AD tool. ---*/
 
       for (iZone = 0; iZone < nZone; iZone++) {
+
+        Set_Solution_To_BGSSolution(iZone);
 
         iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
                                                               config_container, iZone, INST_0);
@@ -364,7 +370,8 @@ void CDiscAdjMultizoneDriver::Run() {
             break;
 
           default:
-            cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
+            if (rank == MASTER_NODE)
+              cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
             break;
         }
       }
@@ -377,11 +384,9 @@ void CDiscAdjMultizoneDriver::Run() {
 
         output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
                                                  config_container[iZone],
-                                                 solver_container[iZone][INST_0][MESH_0], iOuter_Iter, StopCalc);
+                                                 solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
       }
     }
-
-    if (StopCalc) break;
   }
 }
 
@@ -412,7 +417,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   if(kind_recording != NONE) {
 
     if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
-      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << "\n-------------------------------------------------------------------------\n";
       cout << "Storing computational graph." << endl;
     }
 
@@ -493,7 +498,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
       AD::PrintStatistics();
     }
 
-    cout << "-------------------------------------------------------------------------" << endl << endl;
+    cout << "-------------------------------------------------------------------------\n" << endl;
   }
 
   AD::StopRecording();
@@ -524,6 +529,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
         cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
              << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
         break;
+
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
         cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
              << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
@@ -534,9 +540,18 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
                << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
         }
         break;
+
       case DISC_ADJ_HEAT:
         cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: "
              << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
+        break;
+
+      case DISC_ADJ_FEM:
+        cout << " Zone " << iZone << " (elasticity) - log10[RMS Solution_0]: "
+             << log10(solver_container[iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(0)) << endl;
+        break;
+
+      default:
         break;
     }
   }
@@ -608,6 +623,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     /*--- Not-per-surface objective functions (shall not be included above) ---*/
 
     Weight_ObjFunc = config_container[iZone]->GetWeight_ObjFunc(0);
+
+    bool ObjectiveNotCovered = false;
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
@@ -689,12 +706,12 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             break;
 
           default:
-            cout << "Objective function not covered for discrete adjoint multiphysics." << endl;
+            ObjectiveNotCovered = true;
             break;
         }
         break;
 
-        case DISC_ADJ_HEAT:
+      case DISC_ADJ_HEAT:
 
         switch(config_container[iZone]->GetKind_ObjFunc()) {
 
@@ -708,14 +725,50 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             break;
 
           default:
-            cout << "Objective function not covered for discrete adjoint multiphysics." << endl;
+            ObjectiveNotCovered = true;
             break;
         }
         break;
 
+      case DISC_ADJ_FEM:
+        {
+          auto geometry = geometry_container[iZone][INST_0][MESH_0];
+          auto solver  = solver_container[iZone][INST_0][MESH_0];
+          auto config = config_container[iZone];
+
+          switch(config_container[iZone]->GetKind_ObjFunc()) {
+
+            case REFERENCE_NODE:
+              solver[FEA_SOL]->Compute_OFRefNode(geometry, solver, config);
+              ObjFunc += solver[FEA_SOL]->GetTotal_OFRefNode()*Weight_ObjFunc;
+              break;
+            case REFERENCE_GEOMETRY:
+              solver[FEA_SOL]->Compute_OFRefGeom(geometry, solver, config);
+              ObjFunc += solver[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
+              break;
+            case TOPOL_COMPLIANCE:
+              solver[FEA_SOL]->Compute_OFCompliance(geometry, solver, config);
+              ObjFunc += solver[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
+              break;
+            case VOLUME_FRACTION:
+            case TOPOL_DISCRETENESS:
+              solver[FEA_SOL]->Compute_OFVolFrac(geometry, solver, config);
+              ObjFunc += solver[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
+              break;
+
+            default:
+              ObjectiveNotCovered = true;
+              break;
+          }
+        }
+        break;
+        
       default:
         break;
     }
+
+    if (ObjectiveNotCovered && rank == MASTER_NODE)
+      cout << "Objective function not covered in Zone " << iZone << endl;
   }
 
   if (rank == MASTER_NODE) {
@@ -752,7 +805,7 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
   }
 }
 
-void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
   unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
   unsigned short leave_izone = iZone*2 + ITERATION_READY;
@@ -768,8 +821,17 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone) {
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
-  AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
+  /*--- Compute adjoints of transfer and mesh deformation routines,
+   *    only needed on the last inner iteration. ---*/
+
+  if (eval_transfer)
+    AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
+
+  /*--- Adjoints of dependencies, needed if derivatives of variables
+   *    are extracted (e.g. AoA, Mach, etc.) ---*/
+
   AD::ComputeAdjoint(DEPENDENCIES, START);
+
 }
 
 void CDiscAdjMultizoneDriver::Add_ExternalOld_To_Solution(unsigned short iZone) {
@@ -852,6 +914,19 @@ void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
       if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
         solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
                                                                           config_container[iZone]);
+      }
+    }
+  }
+}
+
+void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution(unsigned short iZone) {
+
+  unsigned short iSol;
+
+  for (iSol=0; iSol < MAX_SOLS; iSol++) {
+    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+        solver_container[iZone][INST_0][MESH_0][iSol]->GetNodes()->Restore_BGSSolution_k();
       }
     }
   }

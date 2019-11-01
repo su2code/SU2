@@ -3058,39 +3058,40 @@ void CDiscAdjFEAIteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CGeo
 }
 
 void CDiscAdjFEAIteration::Update(COutput *output,
-                                       CIntegration ****integration,
-                                       CGeometry ****geometry,
-                                       CSolver *****solver,
-                                       CNumerics ******numerics,
-                                       CConfig **config,
-                                       CSurfaceMovement **surface_movement,
-                                       CVolumetricMovement ***grid_movement,
-                                       CFreeFormDefBox*** FFDBox,
-                                       unsigned short val_iZone,
-                                       unsigned short val_iInst)      { }
+                                  CIntegration ****integration,
+                                  CGeometry ****geometry,
+                                  CSolver *****solver,
+                                  CNumerics ******numerics,
+                                  CConfig **config,
+                                  CSurfaceMovement **surface_movement,
+                                  CVolumetricMovement ***grid_movement,
+                                  CFreeFormDefBox*** FFDBox,
+                                  unsigned short val_iZone,
+                                  unsigned short val_iInst) { }
+
 bool CDiscAdjFEAIteration::Monitor(COutput *output,
-    CIntegration ****integration,
-    CGeometry ****geometry,
-    CSolver *****solver,
-    CNumerics ******numerics,
-    CConfig **config,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement ***grid_movement,
-    CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone,
-    unsigned short val_iInst)     { 
+                                   CIntegration ****integration,
+                                   CGeometry ****geometry,
+                                   CSolver *****solver,
+                                   CNumerics ******numerics,
+                                   CConfig **config,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement ***grid_movement,
+                                   CFreeFormDefBox*** FFDBox,
+                                   unsigned short val_iZone,
+                                   unsigned short val_iInst) { 
 
   /*--- Write the convergence history (only screen output) ---*/
-  
+
   output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], 
                             solver[val_iZone][INST_0][MESH_0],
                             config[val_iZone], 
                             config[val_iZone]->GetTimeIter(), 
                             config[val_iZone]->GetOuterIter(),
                             config[val_iZone]->GetInnerIter());
-  
-  return false;
-  
+
+  return output->GetConvergence();
+
 }
 void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CIntegration ****integration,
@@ -3519,8 +3520,17 @@ bool CDiscAdjHeatIteration::Monitor(COutput *output,
                                     CVolumetricMovement ***grid_movement,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone,
-                                    unsigned short val_iInst) { return false; }
+                                    unsigned short val_iInst) {
 
+  output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], 
+                            solver[val_iZone][INST_0][MESH_0],
+                            config[val_iZone], 
+                            config[val_iZone]->GetTimeIter(), 
+                            config[val_iZone]->GetOuterIter(),
+                            config[val_iZone]->GetInnerIter());
+
+  return output->GetConvergence();
+}
 
 void  CDiscAdjHeatIteration::Output(COutput *output,
                                     CGeometry ****geometry,
