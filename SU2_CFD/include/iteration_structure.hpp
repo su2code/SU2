@@ -504,6 +504,17 @@ virtual bool Monitor(COutput *output,
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
+
+  /*!
+   * \brief Fixed CL monitoring function
+   * \author J. Mukhopadhaya
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Pointer to the flow solver
+   * \param[in] config - Definition of the particular problem.
+   * \return Boolean indicating weather calculation should be stopped  
+   */
+  bool MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config);
 };
 
 

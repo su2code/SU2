@@ -34,7 +34,7 @@
 CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
   
   turb_model = config->GetKind_Turb_Model();
-  
+  lastInnerIter = curInnerIter;  
   gridMovement = config->GetGrid_Movement(); 
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -81,7 +81,20 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   /*--- Set the default convergence field --- */
 
   if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
-  
+
+  if (config->GetFixed_CL_Mode()) {
+    bool found = false;
+    for (unsigned short iField = 0; iField < convFields.size(); iField++)
+      if (convFields[iField] == "LIFT") found = true;
+    if (!found) {
+      if (rank == MASTER_NODE) 
+        cout<<"  Fixed CL: Adding LIFT as Convergence Field to ensure convergence to target CL"<<endl;
+      convFields.emplace_back("LIFT");
+      newFunc.resize(convFields.size());
+      oldFunc.resize(convFields.size());
+      cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
+    }
+  }
 }
 
 CFlowCompOutput::~CFlowCompOutput(void) {}
@@ -226,6 +239,18 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
   
+  ///   /// BEGIN_GROUP: FIXED_CL, DESCRIPTION: Relevant outputs for the Fixed CL mode 
+  if (config->GetFixed_CL_Mode()){
+    /// DESCRIPTION: Difference between current and target CL
+    AddHistoryOutput("DELTA_CL", "Delta_CL", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "Difference between Target CL and current CL", HistoryFieldType::COEFFICIENT);
+    /// DESCRIPTION: Angle of attack before the most recent update
+    AddHistoryOutput("PREV_AOA", "Previous_AOA", ScreenOutputFormat::FIXED, "FIXED_CL", "Angle of Attack at the previous iteration of the Fixed CL driver");
+    /// DESCRIPTION: Last change in angle of attack by the Fixed CL driver
+    AddHistoryOutput("CHANGE_IN_AOA", "Change_in_AOA", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "Last change in Angle of Attack by Fixed CL Driver", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: AOA control command by the CL Driver
+    AddHistoryOutput("CL_DRIVER_COMMAND", "CL_Driver_Command", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "CL Driver's control command", HistoryFieldType::RESIDUAL);
+  }
+
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
     AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
@@ -622,6 +647,14 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetLinSol_Residual()));    
   }
+
+  if(config->GetFixed_CL_Mode()){
+    SetHistoryOutputValue("DELTA_CL", fabs(flow_solver->GetTotal_CL() - config->GetTarget_CL()));
+    SetHistoryOutputValue("PREV_AOA", flow_solver->GetPrevious_AoA());
+    SetHistoryOutputValue("CHANGE_IN_AOA", config->GetAoA()-flow_solver->GetPrevious_AoA());
+    SetHistoryOutputValue("CL_DRIVER_COMMAND", flow_solver->GetAoA_inc());
+
+  }
   
   /*--- Set the analyse surface history values --- */
   
@@ -655,3 +688,53 @@ bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
 }
 
 
+void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
+
+  if (config->GetFixed_CL_Mode()){
+    SetFixedCLScreenOutput(config);
+  } 
+}
+
+void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
+  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);    
+  
+  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+    FixedCLSummary.AddColumn("Fixed CL Mode", 40); 
+    FixedCLSummary.AddColumn("Value", 30);  
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
+    FixedCLSummary << "Target CL" << config->GetTarget_CL();
+    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
+    if (config->GetFinite_Difference_Mode()){
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      lastInnerIter = curInnerIter - 1;
+    }
+    else 
+      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+    FixedCLSummary.PrintFooter();
+    SetScreen_Header(config);
+  }
+
+  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40); 
+    FixedCLSummary.AddColumn("Value", 30);  
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
+    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
+    if (nDim == 3){
+      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
+      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
+    }
+    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
+    FixedCLSummary.PrintFooter();
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = config->GetInnerIter();
+  }
+}
+
+bool CFlowCompOutput::WriteHistoryFile_Output(CConfig *config) {
+  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
+}

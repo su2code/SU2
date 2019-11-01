@@ -4611,6 +4611,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool energy               = config[val_iZone]->GetEnergy_Equation();
   bool incload              = config[val_iZone]->GetIncrementalLoad();
+  bool fixed_cl             = config[val_iZone]->GetFixed_CL_Mode();
   bool output_files         = true;
 
   bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
@@ -4618,8 +4619,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
-    if ((config[val_iZone]->GetFixed_CL_Mode()) &&
-        (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
+    if (fixed_cl &&
+        (solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD()) && 
+        (iExtIter != solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA())) {
       output_files = false;
     }
     
@@ -4629,10 +4631,11 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
     if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
-        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
+        (!fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2))) ||
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+        (fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2) ||
+          (solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD() && 
+          iExtIter == solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA())))) {
 
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
@@ -12413,7 +12416,9 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnInner_Iter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
+        (solver_container[iZone][iInst][MESH_0][FLOW_SOL]->GetStart_AoA_FD()) && 
+        iExtIter == solver_container[iZone][iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA()) {
+        //(config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
 
       if (rank == MASTER_NODE)
         cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
@@ -12434,7 +12439,9 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnInner_Iter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
+        (solver_container[iZone][iInst][MESH_0][FLOW_SOL]->GetEnd_AoA_FD()) &&
+        //(iExtIter - solver_container[iZone][iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA() == config[iZone]->GetIter_dCL_dAlpha()) && 
+        (Local_Data_Copy != NULL)) {
 
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;

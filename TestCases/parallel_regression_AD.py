@@ -135,7 +135,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.104640, -2.004547, 0.0000e+00] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.188743, -2.068616, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -284,7 +284,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.403180, -3.097866, -3.097837, -3.095571] #last 4 columns
+    discadj_cht.test_vals = [-2.403782, -3.097868, -3.097839, -3.097835] #last 4 columns
     discadj_cht.su2_exec  = "parallel_computation.py -f"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001

@@ -95,10 +95,9 @@ protected:
   
   /*!
    * \brief Write information to meta data file
-   * \param[in] output - Container holding the output instances per zone.   
    * \param[in] config - Definition of the particular problem per zone.
    */
-  void WriteMetaData(CConfig *config, CGeometry *geometry);
+  void WriteMetaData(CConfig *config);
   
   /*!
    * \brief Write any additional files defined for the current solver.
@@ -112,8 +111,9 @@ protected:
    * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
+   * \param[in] force_writing - boolean that forces writing of volume output
    */
-  bool WriteVolume_Output(CConfig *config, unsigned long Iter) override;
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing) override;
   
   /*!
    * \brief Write the forces breakdown file
