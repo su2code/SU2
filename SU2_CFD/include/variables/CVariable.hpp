@@ -2108,7 +2108,12 @@ public:
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
   virtual void Set_BGSSolution_k();
-  
+
+  /*!
+   * \brief Restore the previous BGS subiteration to solution.
+   */
+  void Restore_BGSSolution_k();
+
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */

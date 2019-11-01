@@ -136,8 +136,9 @@ public:
   /*!
    * \brief Summary of all routines to evaluate the adjoints in iZone.
    * \param[in] iZone - Zone in which adjoints are evaluated depending on their (preceding) seeding.
+   * \param[in] eval_transfer - Evaluate adjoints of transfer and mesh deformation routines.
    */
-  void ComputeAdjoints(unsigned short iZone);
+  void ComputeAdjoints(unsigned short iZone, bool eval_transfer = true);
 
   /*!
    * \brief Add External_Old vector to Solution.
@@ -172,6 +173,12 @@ public:
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
   void Set_BGSSolution(unsigned short iZone);
+
+  /*!
+   * \brief Puts BGSSolution back into Solution.
+   * \param[in] iZone - Zone where data between solvers is transferred.
+   */
+  void Set_Solution_To_BGSSolution(unsigned short iZone);
 
   /*!
    * \brief Compute BGS residuals.

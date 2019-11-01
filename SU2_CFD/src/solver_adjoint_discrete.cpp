@@ -263,9 +263,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
   bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
   bool input          = true;
-  bool push_index     = true;
-
-  if(config->GetMultizone_Problem()) push_index = false;
+  bool push_index     = !config->GetMultizone_Problem();
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
@@ -376,9 +374,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   bool input        = false;
-  bool push_index   = true;
-
-  if(config->GetMultizone_Problem()) push_index = false;
+  bool push_index   = !config->GetMultizone_Problem();
 
   /*--- Register variables as output of the solver iteration ---*/
 
@@ -748,7 +744,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
-      config->GetTime_Marching() == DT_STEPPING_2ND);
+                    config->GetTime_Marching() == DT_STEPPING_2ND);
   bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
@@ -756,12 +752,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetMultizone_Problem() && !fsi) {
-        Solution[iVar] = nodes->Get_BGSSolution_k(iPoint,iVar);
-      }
-      else {
-        Solution[iVar] = nodes->GetSolution(iPoint,iVar);
-      }
+      Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     }
     if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -1076,7 +1067,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 }
 
-void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -1125,7 +1116,7 @@ void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
   /*--- As there might be crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++)
-        nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
+      nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
   }
 
 }

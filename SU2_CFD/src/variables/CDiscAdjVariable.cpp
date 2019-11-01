@@ -78,7 +78,6 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
 
   if (config->GetMultizone_Problem()) {
     Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
-    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
   }
 }
 

@@ -863,10 +863,8 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
   delete [] rbuf_conv;
   
 #endif
-  
-  
-  
-    return convergence;
+
+  return convergence;
 }
 
 void COutput::SetHistoryFile_Header(CConfig *config) { 

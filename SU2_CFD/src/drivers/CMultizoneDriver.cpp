@@ -628,6 +628,15 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                                                               config_container[targetZone]);
     UpdateMesh = true;
   }
+  else if (interface_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_DISC_ADJ) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],
+                                                              solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                              geometry_container[donorZone][INST_0][MESH_0],
+                                                              geometry_container[targetZone][INST_0][MESH_0],
+                                                              config_container[donorZone],
+                                                              config_container[targetZone]);
+    UpdateMesh = true;
+  }
   else if (interface_types[donorZone][targetZone] == FLOW_TRACTION) {
     interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
                                                               solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
@@ -636,11 +645,12 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                                                               config_container[donorZone],
                                                               config_container[targetZone]);
   }
-  else if ((interface_types[donorZone][targetZone] == NO_TRANSFER)
-           || (interface_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-           || (interface_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
+  else if ((interface_types[donorZone][targetZone] == NO_TRANSFER) ||
+           (interface_types[donorZone][targetZone] == ZONES_ARE_EQUAL) ||
+           (interface_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
   else {
-    cout << "WARNING: One of the intended interface transfer routines is not known to the chosen driver and has not been executed." << endl;
+    if(rank == MASTER_NODE)
+      cout << "WARNING: One of the intended interface transfer routines is not known to the chosen driver and has not been executed." << endl;
   }
 
   return UpdateMesh;
