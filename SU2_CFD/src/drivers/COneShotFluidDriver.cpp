@@ -232,6 +232,9 @@ void COneShotFluidDriver::RunOneShot(){
   PrimalDualStep();
   solver[ADJFLOW_SOL]->SetSaveSolution();
 
+  /*--- Set Deltay and DeltaBary ---*/
+  solver[ADJFLOW_SOL]->SetSolutionDelta();
+
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
 
@@ -249,6 +252,9 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
+
+        /*--- Set Deltay and DeltaBary ---*/
+        solver[ADJFLOW_SOL]->SetSolutionDelta();
       }
       else if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
@@ -262,6 +268,9 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
+
+        /*--- Set Deltay and DeltaBary ---*/
+        solver[ADJFLOW_SOL]->SetSolutionDelta();
       }
       else{
         /*--- Compute and store GradL dot p ---*/
@@ -273,7 +282,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
-      solver[ADJFLOW_SOL]->LoadSolution();
+      // solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (ArmijoIter != nArmijoIter || (!config->GetZeroStep())) {
@@ -320,9 +329,6 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     CalculateLagrangian(true);
   }
-
-  /*--- Set Deltay and DeltaBary ---*/
-  solver[ADJFLOW_SOL]->SetSolutionDelta();
 
   if(InnerIter >= config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
 
