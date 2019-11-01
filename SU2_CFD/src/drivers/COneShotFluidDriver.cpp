@@ -297,6 +297,10 @@ void COneShotFluidDriver::RunOneShot(){
       SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
       config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
 
+      /*--- Compute objective function at new design ---*/
+      SetObjFunction();
+      SetConstrFunction();
+
     }
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
