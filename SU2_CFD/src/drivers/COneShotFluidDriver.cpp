@@ -330,6 +330,9 @@ void COneShotFluidDriver::RunOneShot(){
     CalculateLagrangian(true);
   }
 
+  /*--- Set Deltay and DeltaBary ---*/
+  // solver[ADJFLOW_SOL]->SetSolutionDelta();
+
   if(InnerIter >= config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
 
     /*--- Update design variable ---*/
