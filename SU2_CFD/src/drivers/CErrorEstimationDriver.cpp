@@ -1021,16 +1021,16 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
+    // for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
 
-    CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+    // CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[0][2]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[1][1]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[1][2]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[0][2]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[1][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[1][2]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -1097,6 +1097,14 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
 
 void CErrorEstimationDriver::Output() {
