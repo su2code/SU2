@@ -876,13 +876,13 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
+    // for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
 
-    CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+    // CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
