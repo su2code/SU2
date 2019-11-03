@@ -223,6 +223,7 @@ void COneShotFluidDriver::RunOneShot(){
   su2double stepsize = 1.0, stepsize_p, stepsize_tmp, tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned long InnerIter = config->GetInnerIter();
+  bool bool_tol = false;
 
   /*--- Store the old solution and the old design for line search ---*/
   solver[ADJFLOW_SOL]->SetStoreSolution();
@@ -246,6 +247,10 @@ void COneShotFluidDriver::RunOneShot(){
         Lagrangian_p = Lagrangian;
         stepsize_p   = stepsize;
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+        if(stepsize < tol) {
+          stepsize = tol;
+          bool_tol = true;
+        }
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
@@ -262,6 +267,10 @@ void COneShotFluidDriver::RunOneShot(){
         Lagrangian_p = Lagrangian;
         stepsize_p   = stepsize;
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+        if(stepsize < tol) {
+          stepsize = tol;
+          bool_tol = true;
+        }
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
@@ -312,7 +321,7 @@ void COneShotFluidDriver::RunOneShot(){
           InnerIter < config->GetOneShotStop() &&
           !CheckFirstWolfe() && 
           ArmijoIter < nArmijoIter+1 &&
-          stepsize >= tol);
+          !bool_tol);
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);

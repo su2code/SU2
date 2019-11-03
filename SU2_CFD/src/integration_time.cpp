@@ -63,7 +63,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)            ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)               ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS)                 ||
+                       (config[iZone]->GetKind_Solver() == ONE_SHOT_EULER)                ||
+                       (config[iZone]->GetKind_Solver() == ONE_SHOT_NAVIER_STOKES)        ||
+                       (config[iZone]->GetKind_Solver() == ONE_SHOT_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
   

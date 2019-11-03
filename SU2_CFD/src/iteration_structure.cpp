@@ -562,7 +562,8 @@ void CFluidIteration::Iterate(COutput *output,
   if ((config[val_iZone]->GetKind_Solver() == RANS ||
        config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
        config[val_iZone]->GetKind_Solver() == INC_RANS ||
-       config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS ) && !frozen_visc) {
+       config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS ||
+       config[val_iZone]->GetKind_Solver() == ONE_SHOT_RANS ) && !frozen_visc) {
     
     /*--- Solve the turbulence model ---*/
     
