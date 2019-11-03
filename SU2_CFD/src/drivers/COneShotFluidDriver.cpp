@@ -294,18 +294,19 @@ void COneShotFluidDriver::RunOneShot(){
       // solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
-      if (ArmijoIter != nArmijoIter || (!config->GetZeroStep())) {
+      if ((ArmijoIter != nArmijoIter && !bool_tol) || (!config->GetZeroStep())) {
         ComputeDesignVarUpdate(stepsize);
+        config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
+        SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
+        config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
       }
       else {
+        stepsize = 0.0;
+        grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         LoadMultiplier();
         ComputeDesignVarUpdate(0.0);
       }
       
-      config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
-      SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
-      config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
-
       /*--- Compute objective function at new design ---*/
       SetObjFunction();
       SetConstrFunction();
@@ -334,8 +335,7 @@ void COneShotFluidDriver::RunOneShot(){
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
-  if (!CheckFirstWolfe() && config->GetZeroStep()) {
-    stepsize = 0.0;
+  if ((!CheckFirstWolfe() || bool_tol) && config->GetZeroStep()) {
     /*--- Rerun primal-dual so Deltay and DeltaBary aren't 0 ---*/
     PrimalDualStep();
     /*--- Set Deltay and DeltaBary ---*/
