@@ -319,27 +319,29 @@ void COneShotFluidDriver::RunOneShot(){
     ArmijoIter++;
 
   } while(InnerIter > config->GetOneShotStart() && 
-          InnerIter < config->GetOneShotStop() &&
-          !CheckFirstWolfe() && 
-          ArmijoIter < nArmijoIter+1 &&
+          InnerIter < config->GetOneShotStop()  &&
+          !CheckFirstWolfe()                    && 
+          ArmijoIter < nArmijoIter+1            &&
           !bool_tol);
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  /*--- Store FFD info in file ---*/
-  if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
-       (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
-       update) {
-    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
-    config->SetMesh_FileName(config->GetMesh_Out_FileName());
-  }
-
-  if ((!CheckFirstWolfe() || bool_tol) && config->GetZeroStep()) {
+  if (InnerIter > config->GetOneShotStart() && 
+      InnerIter < config->GetOneShotStop()  &&
+      (!CheckFirstWolfe() || bool_tol)      && 
+      config->GetZeroStep()) {
     /*--- Rerun primal-dual so Deltay and DeltaBary aren't 0 ---*/
     PrimalDualStep();
     /*--- Set Deltay and DeltaBary ---*/
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  }
+  /*--- Store FFD info in file ---*/
+  else if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
+            (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
+            update) {
+    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
+    config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
   /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
