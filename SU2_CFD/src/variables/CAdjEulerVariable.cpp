@@ -55,7 +55,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
       break;
     }
   }
-  
+
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
   if (config->GetReconstructionGradientRequired()) {
@@ -91,7 +91,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
   }
-  
+
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
   AuxVar.resize(nPoint);
   Grad_AuxVar.resize(nPoint,nDim);

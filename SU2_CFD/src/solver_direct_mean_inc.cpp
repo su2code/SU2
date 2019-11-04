@@ -1603,7 +1603,7 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
     physical = nodes->SetPrimVar(iPoint,FluidModel);
 
     /* Check for non-realizable states for reporting. */
-    
+
     if (!physical) nonPhysicalPoints++;
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
@@ -7859,7 +7859,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
     
     /* Check for non-realizable states for reporting. */
-    
+
     if (!physical) nonPhysicalPoints++;
 
     /*--- Set the DES length scale ---*/

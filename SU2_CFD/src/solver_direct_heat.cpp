@@ -574,7 +574,7 @@ void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_con
 void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-          **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
+            **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
   unsigned short iDim, iVar;
   unsigned long iEdge, iPoint, jPoint;
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)

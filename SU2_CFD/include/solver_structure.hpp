@@ -282,7 +282,7 @@ public:
   
   /*!
    * \brief Set the final linear solver residual.
-   * \param[in] val_relinsolver - Value of final linear solver residual.
+   * \param[in] val_reslinsolver - Value of final linear solver residual.
    */
   void SetResLinSolver(su2double val_reslinsolver);
   

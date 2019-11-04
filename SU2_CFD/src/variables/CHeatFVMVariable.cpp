@@ -80,7 +80,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-    
+
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 
