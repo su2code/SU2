@@ -3205,21 +3205,18 @@ public:
  */
 class CCentPB_Flow : public CNumerics {
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, /*!< \brief Difference of conservative variables. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
-  Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
-  Epsilon_0; /*!< \brief Artificial dissipation values. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
-  gravity; /*!< \brief Modification for for gravity force. */
-  su2double Froude;
+  bool implicit, dynamic_grid;
+  bool gravity;
+  su2double Froude, Upw_i, Upw_j;
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *MeanVelocity, *Velocity_upw;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor,**val_Jacobian_upw;
+  su2double Proj_ModJac_Tensor_ij, Pressure_i,
+  Pressure_j, MeanDensity, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
+  ProjVelocity, FaceVel;
+  unsigned short iDim, iVar, jVar, kVar;
   
 public:
   

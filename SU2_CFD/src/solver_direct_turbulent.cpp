@@ -3530,8 +3530,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     kine  = node[iPoint]->GetSolution(0);
     omega = node[iPoint]->GetSolution(1);
+    /*-- Based on Non linear iter control routine(now commented out). --*/
     zeta = min(1.0/omega, a1/(strMag*F2));
+    //zeta = min(1.0/omega, a1/(omega*F2));
+    
     muT = min(max(rho*kine*zeta,0.0),1.0);
+    //muT =max(rho*kine*zeta,0.0);
+    
     node[iPoint]->SetmuT(muT);
     
   }

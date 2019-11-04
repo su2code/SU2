@@ -2062,8 +2062,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         }
         if (incompressible) {
 		 /*--- Incompressible flow, use pressure-based method ---*/
-		 if (pressure_based) 	     
-            SU2_MPI::Error("Centered scheme not implemented.\n Currently only upwind scheme is available. Please use the option SACALR_UPWIND.", CURRENT_FUNCTION); 
+		 if (pressure_based) {
+			 switch (config->GetKind_Centered_Flow()) {
+				case NO_CENTERED : cout << "No centered scheme." << endl; break;
+				case JST : numerics[MESH_0][FLOW_SOL][CONV_TERM] = new CCentPB_Flow(nDim, nVar_Flow, config); break;
+				default : SU2_MPI::Error("Centered scheme not implemented.\n Currently, use the keyword JST for pressure based incompressible flows.", CURRENT_FUNCTION); break;
+		     }
+             for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+				numerics[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentPB_Flow(nDim, nVar_Flow, config);
+
+			 /*--- Definition of the boundary condition method ---*/
+			 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+				numerics[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwPB_Flow(nDim, nVar_Flow, config);
+		}
           else {
           /*--- Incompressible flow, use preconditioning method ---*/
 			switch (config->GetKind_Centered_Flow()) {
@@ -2087,7 +2098,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           switch (config->GetKind_Upwind_Flow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
-            cout<<"Roe compressible"<<endl;
               if (ideal_gas) {
                 
                 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {

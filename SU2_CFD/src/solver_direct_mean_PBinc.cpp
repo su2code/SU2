@@ -1709,7 +1709,59 @@ void CPBIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *c
 
 void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, Normal[3], *GV,
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, Non_Physical = 1.0;
+  
+  unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
+  unsigned short iDim, iVar;
+  
+  unsigned long ExtIter = config->GetExtIter();
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  bool disc_adjoint     = config->GetDiscrete_Adjoint();
+  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
+  /*--- Loop over all the edges ---*/
+  //cout<<"In centered residual routine"<<endl;
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+    /*--- Points in edge and normal vectors ---*/
+    
+    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    
+    /*--- Grid movement ---*/
+    
+    if (dynamic_grid) 
+      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+    
+    /*--- Get primitive variables ---*/
+    
+    V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
+    S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
+    
+    numerics->SetPrimitive(Primitive_i, Primitive_j);
+  
+    /*--- Compute the residual ---*/
+    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+       
+    /*--- Update residual value ---*/
+    
+    LinSysRes.AddBlock(iPoint, Res_Conv);
+    LinSysRes.SubtractBlock(jPoint, Res_Conv);
+   
+    
+    /*--- Set implicit Jacobians ---*/
+    
+    if (implicit) {
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    }
+  }
 }
 
 
@@ -3544,8 +3596,8 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 		  }
 	  }
 	  for (iVar = 0; iVar < nVar; iVar++) {
-		  //Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar) - Vol/delT;
-		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar);
+		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar) - Vol/delT;
+		  //Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar);
 		  Mom_Coeff[iVar] = node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff[iVar];
 		  Mom_Coeff[iVar] = K_c*Mom_Coeff[iVar];
 	  }
