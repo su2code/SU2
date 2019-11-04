@@ -1423,6 +1423,11 @@ public:
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
   
   /*!
+   * \brief Reset the local CFL adaption variables
+   */
+  void ResetCFLAdapt();
+  
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
