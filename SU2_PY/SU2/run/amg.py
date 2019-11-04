@@ -254,7 +254,7 @@ def amg ( config , kind='' ):
     if 'ADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
 
-    config_amg['options'] = "-back " + config_amg['adap_back']
+    config_amg['options'] = "-back " + config_amg['adap_back'] + ' -inv-back'
     
     #--- Start adaptive loop
 
