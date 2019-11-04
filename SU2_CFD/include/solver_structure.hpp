@@ -12927,6 +12927,18 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
+    /*! 
+  * \brief Set the objective function value.  
+  * \param[in] val_ObjFunc - Value of the objective function. 
+  */  
+  void SetObjFunc_Value(su2double val_ObjFunc); 
+
+  /*! 
+  * \brief Get the objective function value.  
+  * \return Value of the objective function.  
+  */  
+  su2double GetObjFunc_Value(void);
 };
 
 /*!
