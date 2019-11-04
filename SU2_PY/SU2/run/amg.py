@@ -220,10 +220,9 @@ def amg ( config , kind='' ):
             if not os.path.exists(fil):
                 err += fil + '\n'
         raise RuntimeError , err
-    
-    #--- Start looping
-    
-    # Get mesh dimension
+        
+    #--- Get mesh dimension
+
     dim = su2amg.get_su2_dim(current_mesh)
     if ( dim != 2 and dim != 3 ):
         raise RuntimeError , "Wrong dimension number\n"
@@ -254,7 +253,11 @@ def amg ( config , kind='' ):
     
     if 'ADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
+
+    config_amg['options'] = "-back " + config_amg['adap_back']
     
+    #--- Start adaptive loop
+
     global_iter = 0
     
     sys.stdout.write("\nStarting mesh adaptation process.\n")
@@ -281,9 +284,14 @@ def amg ( config , kind='' ):
             
             mesh = su2amg.read_mesh(current_mesh, current_solution)
 
-            #--- Write initial solution
-            if global_iter == 0 :
-                su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
+            #--- Write solution
+            if config_cfd.WRT_INRIA_MESH == 'YES':
+                if global_iter == 0 :
+                    su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
+                else :
+                    current_gmf_mesh = "ite%d.meshb" % global_iter-1
+                    current_gmf_solution = "ite%d.solb" % global_iter-1
+                    su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh)
                                     
             if not amg_python : 
                 
@@ -376,11 +384,6 @@ def amg ( config , kind='' ):
                     current_solution = "ite%d.csv" % global_iter
                                     
                     su2amg.write_mesh(current_mesh, current_solution, mesh_new)
-
-                    if config_cfd.WRT_INRIA_MESH == 'YES':
-                        current_gmf_mesh = "ite%d.meshb" % global_iter
-                        current_gmf_solution = "ite%d.solb" % global_iter
-                        su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh_new)
 
                 else:
                 
