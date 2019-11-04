@@ -306,6 +306,18 @@ void COneShotFluidDriver::RunOneShot(){
         LoadMultiplier();
         ComputeDesignVarUpdate(0.0);
       }
+
+      /*--- Calculate the inviscid and viscous forces ---*/
+      
+      solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+      solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+      solver[FLOW_SOL]->Friction_Forces(geometry, config);
+          
+      /*--- Evaluate the buffet metric if requested ---*/
+      
+      if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+          solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+      }
       
       /*--- Compute objective function at new design ---*/
       SetObjFunction();
