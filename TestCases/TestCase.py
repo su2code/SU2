@@ -93,7 +93,12 @@ class TestCase:
         iter_missing = True
         start_solver = True
 
-        # Adjust the number of iterations in the config file
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+
+        # Adjust the number of iterations in the config file   
         self.adjust_iter()
 
         # Check for disabling the restart
@@ -228,6 +233,11 @@ class TestCase:
 
         # Adjust the number of iterations in the config file
         self.adjust_iter()
+
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
@@ -438,6 +448,11 @@ class TestCase:
         found_twist  = False
         found_chord  = False
 
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+                
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
@@ -556,6 +571,11 @@ class TestCase:
         timed_out    = False
         iter_missing = True
         start_solver = True
+
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]

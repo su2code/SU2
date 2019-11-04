@@ -11,8 +11,7 @@ For an overview of the technical details in SU2, please see the following AIAA J
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
 
 Continuous Integration:<br/>
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84504379514e446a8f6251e7499ecc86)](https://app.codacy.com/app/talbring/SU2?utm_source=github.com&utm_medium=referral&utm_content=su2code/SU2&utm_campaign=Badge_Grade_Settings)
-[![Build Status](https://travis-ci.org/su2code/SU2.svg?branch=develop)](https://travis-ci.org/su2code/SU2)
+[![Regression Testing](https://github.com/su2code/SU2/workflows/Regression%20Testing/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
 
 
 ----------------------------------------------------------
