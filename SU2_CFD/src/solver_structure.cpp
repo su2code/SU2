@@ -2256,6 +2256,16 @@ void CSolver::CompleteComms(CGeometry *geometry,
   
 }
 
+void CSolver::ResetCFLAdapt(){
+  NonLinRes_Series.clear();  
+  NonLinRes_Value = 0;
+  NonLinRes_Func = 0;
+  Old_Func = 0;
+  New_Func = 0;
+  NonLinRes_Counter = 0;
+}
+
+
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {
