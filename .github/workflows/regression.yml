@@ -5,6 +5,7 @@ on:
     branches:
       - 'develop'
       - 'master'
+      - 'feature_periodic_streamwise'
   pull_request:
     branches: 
       - 'develop'
@@ -85,5 +86,5 @@ jobs:
       - name: Run Tests in Container
         uses: docker://su2code/test-su2:20191031
         with:
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c feature_periodic_streamwise -s ${{matrix.testscript}}
   
