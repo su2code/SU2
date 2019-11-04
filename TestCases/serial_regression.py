@@ -67,7 +67,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.021036, -3.511771, 0.339316, 0.022257] #last 4 columns
+    naca0012.test_vals = [-4.024286, -3.515166, 0.339392, 0.022217] #last 4 columns
     naca0012.su2_exec  = "SU2_CFD"
     naca0012.timeout   = 1600
     naca0012.new_output= True
@@ -91,7 +91,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-7.077986, -6.539796, 0.282344, 0.011807] #last 4 columns
+    oneram6.test_vals = [-6.952991, -6.364311, 0.282263, 0.011762] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.new_output = True
@@ -103,7 +103,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-12.181731, -6.784160, 0.300000, 0.019470] #last 4 columns
+    fixedCL_naca0012.test_vals = [-12.129591, -6.702940, 0.300000, 0.019470] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.new_output = True
     fixedCL_naca0012.timeout   = 1600
@@ -117,7 +117,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.new_output= True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals = [-1.308958, 4.123692, 0.011587, 0.009698] #last 4 columns
+    polar_naca0012.test_vals = [-1.244014, 4.220468, 0.016275, 0.015988] #last 4 columns
     polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -129,7 +129,7 @@ def main():
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.new_output = True
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.553700, 6.926057, -0.000000, 1.792561] #last 4 columns
+    bluntbody.test_vals = [0.540009, 6.916653, -0.000000, 1.868975] #last 4 columns
     bluntbody.su2_exec  = "SU2_CFD"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001

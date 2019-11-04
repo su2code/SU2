@@ -68,7 +68,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.052370, -3.563380, 0.336120, 0.021570] #last 4 columns
+    naca0012.test_vals = [-4.056135, -3.565160, 0.336703, 0.021541] #last 4 columns
     naca0012.su2_exec  = "parallel_computation.py -f"
     naca0012.timeout   = 1600
     naca0012.tol       = 0.00001
@@ -90,7 +90,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-7.079068, -6.542899, 0.282322, 0.011804] #last 4 columns
+    oneram6.test_vals = [-6.952066, -6.361272, 0.282282, 0.011747] #last 4 columns
     oneram6.su2_exec  = "parallel_computation.py -f"
     oneram6.timeout   = 3200
     oneram6.tol       = 0.00001
@@ -101,7 +101,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-12.175228, -6.778440, 0.300000, 0.019470] #last 4 columns
+    fixedCL_naca0012.test_vals = [-12.137680, -6.705671, 0.300000, 0.019470] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -124,7 +124,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.553700, 6.926057, -0.000000, 1.792561] #last 4 columns
+    bluntbody.test_vals = [0.540009, 6.916653, 0.000000, 1.868976] #last 4 columns
     bluntbody.su2_exec  = "parallel_computation.py -f"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001
