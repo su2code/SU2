@@ -333,8 +333,6 @@ CPBIncEulerVariable::~CPBIncEulerVariable(void) {
       if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
   if (Mom_Coeff != NULL) delete [] Mom_Coeff;
   if (Mom_Coeff_nb != NULL) delete [] Mom_Coeff_nb;
