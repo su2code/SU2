@@ -51,6 +51,7 @@ COneShotFluidOutput::COneShotFluidOutput(CConfig *config, unsigned short nDim) :
   if (nRequestedHistoryFields == 0){
     requestedHistoryFields.emplace_back("ITER");
     requestedHistoryFields.emplace_back("SEARCH_ITER");
+    requestedHistoryFields.emplace_back("ACTIVE_DV");
     requestedHistoryFields.emplace_back("RMS_RES");
     requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
@@ -60,6 +61,7 @@ COneShotFluidOutput::COneShotFluidOutput(CConfig *config, unsigned short nDim) :
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("SEARCH_ITER");
+    requestedHistoryFields.emplace_back("ACTIVE_DV");
     requestedScreenFields.emplace_back("RMS_DENSITY");
     requestedScreenFields.emplace_back("RMS_MOMENTUM-X");
     requestedScreenFields.emplace_back("RMS_ADJ_DENSITY");
@@ -105,9 +107,11 @@ COneShotFluidOutput::~COneShotFluidOutput(void) {}
 
 void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
 
-  /// BEGIN_GROUP: ARMIJO_SEARCH, DESCRIPTION: Iteration identifier.
-  /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("SEARCH_ITER",     "Search_Iter",  ScreenOutputFormat::INTEGER, "ARMIJO_SEARCH", "Number of Armijo search iterations."); 
+  /// BEGIN_GROUP: ONE_SHOT, DESCRIPTION: One-shot specific outputs.
+  /// DESCRIPTION: Number of Armijo search iterations.
+  AddHistoryOutput("SEARCH_ITER", "Search_Iter", ScreenOutputFormat::INTEGER, "ONE_SHOT", "Number of Armijo search iterations."); 
+  /// DESCRIPTION: Number of DVs in the active set.
+  AddHistoryOutput("ACTIVE_DV",   "Active_DV",   ScreenOutputFormat::INTEGER, "ONE_SHOT", "Number of DVs in the active set."); 
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
@@ -675,6 +679,7 @@ void COneShotFluidOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, 
   CSolver* adjturb_solver = solver[ADJTURB_SOL];  
 
   SetHistoryOutputValue("SEARCH_ITER", adjflow_solver->GetArmijoIter());
+  SetHistoryOutputValue("ACTIVE_DV", adjflow_solver->GetnActiveDV());
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));

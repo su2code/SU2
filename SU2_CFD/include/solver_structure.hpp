@@ -4787,6 +4787,10 @@ public:
   virtual void SetArmijoIter(unsigned short val_iter);
 
   virtual unsigned short GetArmijoIter(void);
+
+  virtual void SetnActiveDV(unsigned short val_active);
+
+  virtual unsigned short GetnActiveDV(void);
   
 protected:
   /*!
@@ -15945,7 +15949,7 @@ private:
 class COneShotSolver : public CDiscAdjSolver {
 private:
   su2double theta, theta_old, rho, rho_old;
-  unsigned short nConstr, ArmijoIter;
+  unsigned short nConstr, ArmijoIter, nActiveDV;
   su2double ConFunc_Value;
   su2double *** DConsVec;
 
@@ -16137,6 +16141,10 @@ public:
   void SetArmijoIter(unsigned short val_iter);
 
   unsigned short GetArmijoIter(void);
+
+  void SetnActiveDV(unsigned short val_active);
+
+  unsigned short GetnActiveDV(void);
 
 };
 

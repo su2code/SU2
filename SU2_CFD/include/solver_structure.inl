@@ -2582,6 +2582,10 @@ inline void CSolver::SetArmijoIter(unsigned short val_iter) { }
 
 inline unsigned short CSolver::GetArmijoIter(void) { return 0; }
 
+inline void CSolver::SetnActiveDV(unsigned short val_active) { }
+
+inline unsigned short CSolver::GetnActiveDV(void) { return 0; }
+
 inline void CDiscAdjSolver::SetObjFunc_Value(su2double val_ObjFunc) { ObjFunc_Value = val_ObjFunc; }
 
 inline su2double CDiscAdjSolver::GetObjFunc_Value(void) { return ObjFunc_Value; }
@@ -2595,3 +2599,7 @@ inline su2double COneShotSolver::GetConFunc_Value(void)  { return ConFunc_Value;
 inline void COneShotSolver::SetArmijoIter(unsigned short val_iter) { ArmijoIter = val_iter; }
 
 inline unsigned short COneShotSolver::GetArmijoIter(void) { return ArmijoIter; }
+
+inline void COneShotSolver::SetnActiveDV(unsigned short val_active) { nActiveDV = val_active; }
+
+inline unsigned short COneShotSolver::GetnActiveDV(void) { return nActiveDV; }
