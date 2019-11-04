@@ -198,7 +198,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-1.999739, -5.231505, 0.826880, 0.052973] #last 4 columns
+    rae2822_sa.test_vals = [-2.013881, -5.271311, 0.814981, 0.061858] #last 4 columns
     rae2822_sa.su2_exec  = "parallel_computation.py -f"
     rae2822_sa.timeout   = 1600
     rae2822_sa.tol       = 0.00001
@@ -209,7 +209,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.510806, 4.916635, 0.827705, 0.053331] #last 4 columns
+    rae2822_sst.test_vals = [-0.510623, 4.874845, 0.817046, 0.062059] #last 4 columns
     rae2822_sst.su2_exec  = "parallel_computation.py -f"
     rae2822_sst.timeout   = 1600
     rae2822_sst.tol       = 0.00001
@@ -220,7 +220,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.407053, 4.916635, 0.827705, 0.053331] #last 4 columns
+    rae2822_sst_sust.test_vals = [-2.427686, 4.874845, 0.817046, 0.062059] #last 4 columns
     rae2822_sst_sust.su2_exec  = "parallel_computation.py -f"
     rae2822_sst_sust.timeout   = 1600
     rae2822_sst_sust.tol       = 0.00001
@@ -242,7 +242,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.327430, -6.564331, 0.230257, 0.155839] #last 4 columns
+    turb_oneram6.test_vals = [-2.372511, -6.579340, 0.229864, 0.147639] #last 4 columns
     turb_oneram6.su2_exec  = "parallel_computation.py -f"
     turb_oneram6.timeout   = 3200
     turb_oneram6.tol       = 0.00001
