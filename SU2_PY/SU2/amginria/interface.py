@@ -60,7 +60,7 @@ def amg_call_met(config):
 def amg_call_python(mesh, config):
     
     remesh_options                = {}
-    remesh_options['Lp']          = 1
+    # remesh_options['Lp']          = 1
     remesh_options['gradation']   = config['hgrad']
     remesh_options['logfile']     = config['amg_log']
     remesh_options['options']     = config['options']
