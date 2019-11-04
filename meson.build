@@ -16,7 +16,8 @@ default_warning_flags = ['-Wno-unused-parameter',
                          '-Wno-empty-body',
                          '-Wno-format-security',
                          '-Wno-deprecated-declarations',
-                         '-Wno-non-virtual-dtor']
+                         '-Wno-non-virtual-dtor',
+                         '-Wno-inconsistent-missing-override']
 
 # external dependencies 
 mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 

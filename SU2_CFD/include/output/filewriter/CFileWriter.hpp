@@ -36,8 +36,8 @@
  */
 
 #pragma once
-#include "../../../Common/include/mpi_structure.hpp"
-#include "../../../Common/include/option_structure.hpp"
+#include "../../../../Common/include/mpi_structure.hpp"
+#include "../../../../Common/include/option_structure.hpp"
 #include <sys/stat.h>
 #include <vector>
 #include <string>

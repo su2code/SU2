@@ -37,9 +37,9 @@
 
 #include "../../include/variables/CAdjEulerVariable.hpp"
 
-
 CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie, unsigned long npoint, unsigned long ndim,
-                                     unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+                                     unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
+                                     Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -55,10 +55,14 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
       break;
     }
   }
-
+  
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
+  }
+  
+  if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
@@ -87,7 +91,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
   }
-
+  
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
   AuxVar.resize(nPoint);
   Grad_AuxVar.resize(nPoint,nDim);
@@ -106,7 +110,11 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
     Set_BGSSolution_k();
 
   Sensor.resize(nPoint);
-
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+  
 }
 
 bool CAdjEulerVariable::SetPrimVar(unsigned long iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {

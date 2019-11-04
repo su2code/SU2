@@ -31,9 +31,16 @@ void CSU2MeshFileWriter::Write_Data(){
   strcpy (cstr, out_file); 
   
   if (rank == MASTER_NODE){
-    
-    
-    output_file.open(cstr, ios::out);
+
+    if (iZone==0) {
+      output_file.open(cstr, ios::out);
+    } else {
+      output_file.open(cstr, ios::out | ios::app);
+    }
+
+    if (iZone==0 && nZone>1) {
+      output_file << "NZONE= " << nZone << endl;
+    }
     
     if (nZone > 1){
       output_file << "IZONE= " << iZone+1 << endl;

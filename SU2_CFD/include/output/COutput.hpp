@@ -227,7 +227,7 @@ protected:
   su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
   cauchyFunc;                    /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter; /*!< \brief Number of elements of the Cauchy serial. */
-  vector<vector<su2double>> cauchySerie;        /*!< \brief Complete Cauchy serial. */
+  vector<vector<su2double> > cauchySerie;        /*!< \brief Complete Cauchy serial. */
   unsigned long nCauchy_Elems;  /*!< \brief Total number of cauchy elems to monitor */ 
   su2double cauchyEps;           /*!< \brief Defines the threshold when to stop the solver. */   
   su2double minLogResidual;     /*!< \brief Minimum value of the residual to reach */     
@@ -250,6 +250,12 @@ public:
    * \brief Constructor of the class. 
    */
   COutput(CConfig *config, unsigned short nDim, bool femOutput);
+
+  /*!
+   * \brief Write information to meta data file
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  virtual void WriteMetaData(CConfig *config){cout << "virtual void WriteMetaData" << endl;}
 
   /*!
    * \brief Preprocess the volume output by setting the requested volume output fields.
@@ -350,14 +356,7 @@ public:
    * \return - The current restart filename
    */
   inline string GetRestart_Filename() {return restartFilename;}
-  
-  /*!
-   * \brief Set the CFL number based on the current residuals
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCFL_Number(CSolver ****solver_container, CConfig *config);  
-  
+
   /*!
    * \brief Set the current iteration indices
    * \param[in] TimeIter  - Timer iteration index

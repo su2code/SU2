@@ -39,7 +39,8 @@
 
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
-                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
+                                     Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
   bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                       (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -106,14 +107,18 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
+  
+  if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-
+  
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-
+  
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
-
+  
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
@@ -126,6 +131,14 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   Streamwise_Periodic_RecoveredPressure.resize(nPoint)    = su2double(0.0);
   Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
 
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+  
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+  
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero() {

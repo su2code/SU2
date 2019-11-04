@@ -39,7 +39,7 @@
 
 
 CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config) {
+  : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
   bool low_fidelity = false;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -72,11 +72,15 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
 
   /*--- Gradient related fields ---*/
   Gradient.resize(nPoint,nVar,nDim,0.0);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
+  }
+  
+  if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-
+    
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 

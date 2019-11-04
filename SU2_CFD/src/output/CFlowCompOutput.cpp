@@ -246,7 +246,12 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
   
-  AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+  AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
+  AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
+  
+  AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
+  AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
+  AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
   
   ///   /// BEGIN_GROUP: FIXED_CL, DESCRIPTION: Relevant outputs for the Fixed CL mode 
   if (config->GetFixed_CL_Mode()){
@@ -645,16 +650,21 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
   SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
   
-  SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
+  SetHistoryOutputValue("MIN_DELTA_TIME", flow_solver->GetMin_Delta_Time());
+  SetHistoryOutputValue("MAX_DELTA_TIME", flow_solver->GetMax_Delta_Time());
+  
+  SetHistoryOutputValue("MIN_CFL", flow_solver->GetMin_CFL_Local());
+  SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
+  SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
   
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
   
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
     SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
-    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetLinSol_Residual()));    
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetResLinSolver()));    
   }
 
   if(config->GetFixed_CL_Mode()){

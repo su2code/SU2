@@ -39,6 +39,8 @@
 
 inline void CSolver::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
 
+inline void CSolver::SetResLinSolver(su2double val_reslinsolver) { ResLinSolver = val_reslinsolver; }
+
 inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
 inline bool CSolver::GetAdjoint(void) { return adjoint; }
@@ -104,9 +106,9 @@ inline su2double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
 
 inline su2double CSolver::GetPsiE_Inf(void) { return 0; }
 
-inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) { }
 
-inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) { }
 
 inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
@@ -877,6 +879,8 @@ inline void CSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solve
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+inline void CSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 

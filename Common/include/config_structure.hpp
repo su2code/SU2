@@ -111,7 +111,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
-  su2double StartTime;
+  su2double StartTime;        /*!< \brief Start time for performance tracking of each phase of the code: preprocessing, compute, and output. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -463,6 +463,7 @@ private:
   *Kind_SurfaceMovement,    /*!< \brief Kind of the static mesh movement. */
   nKind_SurfaceMovement,    /*!< \brief Kind of the dynamic mesh movement. */  
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
+  Kind_Gradient_Method_Recon,    /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
@@ -518,6 +519,8 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
+  bool LeastSquaresRequired;  /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -558,8 +561,6 @@ private:
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
-  su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
-  su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
   su2double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
   su2double Relaxation_Factor_CHT;  /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -759,7 +760,6 @@ private:
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,          /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,            /*!< \brief Write the mesh quality statistics to the visualization files.  */
-  Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
@@ -1634,6 +1634,12 @@ public:
    * \return Value of CFL adapation
    */
   su2double GetCFL_AdaptParam(unsigned short val_index);
+  
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  inline void SetCFL_AdaptParam(unsigned short val_index, su2double val_cfl_param) { CFL_AdaptParam[val_index] = val_cfl_param; }
   
   /*!
    * \brief Get the values of the CFL adapation.
@@ -3269,18 +3275,6 @@ public:
    * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
    */
   bool GetWrt_MeshQuality(void);
-  
-  /*!
-   * \brief Get information about writing a template inlet profile file.
-   * \return <code>TRUE</code> means that a template inlet profile file will be written.
-   */
-  bool GetWrt_InletFile(void);
-
-  /*!
-   * \brief Set information about writing a template inlet profile file.
-   * \param[in] val_wrt_inletfile - flag for whether to write a template inlet profile file.
-   */
-  void SetWrt_InletFile(bool val_wrt_inletfile);
 
   /*!
    * \brief Get information about writing a 1D slice of a 2D cartesian solution.
@@ -4009,10 +4003,28 @@ public:
   void SetKt_PolyCoeffND(su2double val_coeff, unsigned short val_index);
   
   /*!
-   * \brief Get the kind of method for computation of spatial gradients.
-   * \return Numerical method for computation of spatial gradients.
+   * \brief Get the kind of method for computation of spatial gradients used for viscous and source terms.
+   * \return Numerical method for computation of spatial gradients used for viscous and source terms.
    */
   unsigned short GetKind_Gradient_Method(void);
+  
+  /*!
+   * \brief Get the kind of method for computation of spatial gradients used for upwind reconstruction.
+   * \return Numerical method for computation of spatial gradients used for upwind reconstruction.
+   */
+  unsigned short GetKind_Gradient_Method_Recon(void);
+  
+  /*!
+   * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
+   * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
+   */
+  bool GetReconstructionGradientRequired(void);
+  
+  /*!
+   * \brief Get flag for whether a least-squares gradient method is being applied.
+   * \return <code>TRUE</code> means that a least-squares gradient method is being applied.
+   */
+  bool GetLeastSquaresRequired(void);
   
   /*!
    * \brief Get the kind of solver for the implicit solver.
@@ -4091,19 +4103,7 @@ public:
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
-  su2double GetRelaxation_Factor_Flow(void);
-  
-  /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
-   */
   su2double GetRelaxation_Factor_AdjFlow(void);
-  
-  /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
-   */
-  su2double GetRelaxation_Factor_Turb(void);
 
   /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
@@ -9294,14 +9294,14 @@ public:
   unsigned short GetnConv_Field();  
   
   /*!
-   * \brief Set_StartTime
-   * \param starttime
+   * \brief Set the start time to track a phase of the code (preprocessing, compute, output).
+   * \param[in] Value of the start time to track a phase of the code.
    */
   void Set_StartTime(su2double starttime);
   
   /*!
-   * \brief Get_StartTime
-   * \return 
+   * \brief Get the start time to track a phase of the code (preprocessing, compute, output).
+   * \return Value of the start time to track a phase of the code.
    */
   su2double Get_StartTime();
 
