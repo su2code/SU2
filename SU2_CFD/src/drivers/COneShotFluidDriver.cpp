@@ -240,7 +240,7 @@ void COneShotFluidDriver::RunOneShot(){
       //   LoadMultiplier();
       //   UpdateMultiplier(stepsize);
       // }
-      else if(ArmijoIter > 0){
+      // else if(ArmijoIter > 0){
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         stepsize_tmp = UpdateStepSizeQuadratic();
