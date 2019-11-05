@@ -179,14 +179,6 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
   config->SetTimeIter(TimeIter);
 
-  //   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
-
-  //   /*--- Preprocess the adjoint iteration ---*/
-
-  //   iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
-  //                         solver_container, numerics_container, config_container,
-  //                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
 }
 
 
@@ -834,7 +826,8 @@ void COneShotFluidDriver::StoreGradDotDir(){
   GradDotDir = 0.0;
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    // GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    GradDotDir += SearchDirection[iDV]*AugmentedLagrangianGradient[iDV];
   }
 }
 
