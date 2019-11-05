@@ -1121,6 +1121,7 @@ public:
 class CDiscAdjFSIDriver : public CDriver {
   
   COutputLegacy* output_legacy;
+  
   CIteration** direct_iteration;
   unsigned short RecordingState;
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
@@ -1162,6 +1163,17 @@ public:
    * \brief Destructor of the class.
    */
   ~CDiscAdjFSIDriver(void);
+
+  /*!
+   * \brief Launch the computation for FSI adjoint (legacy) driver
+   */
+  inline void StartSolver(){
+
+      /*--- Run the solver. ---*/
+      if (rank == MASTER_NODE)
+        cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+      Run();
+  }
 
   /*!
    * \brief Run a Discrete Adjoint iteration for the FSI problem.
@@ -1352,11 +1364,6 @@ public:
    */
   void Postprocess(unsigned short ZONE_FLOW,
                      unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Overload, does nothing but avoids updates in adjoint FSI problems before the iteration
-   */
-  void Update(void);
 
   /*!
    * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration

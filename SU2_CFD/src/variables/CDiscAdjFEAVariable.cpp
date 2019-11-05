@@ -59,7 +59,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   }
   
   if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
+    Solution_BGS_k.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Nothing else to allocate ---*/
   if (!unsteady) return;

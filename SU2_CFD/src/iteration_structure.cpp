@@ -610,7 +610,6 @@ void CFluidIteration::Iterate(COutput *output,
     }
     
   }
-  
 }
 
 void CFluidIteration::Update(COutput *output,
@@ -696,11 +695,17 @@ bool CFluidIteration::Monitor(COutput *output,
 
   /*--- If convergence was reached --*/
   StopCalc =  output->GetConvergence();
+  
+  /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
+
+  if (config[val_iZone]->GetFixed_CL_Mode()){
+    StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
+  }
 
   return StopCalc;
 
-
 }
+
 void CFluidIteration::Postprocess(COutput *output,
                                   CIntegration ****integration,
                                   CGeometry ****geometry,
@@ -1037,6 +1042,29 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long &nVortex, vecto
   
 }
 
+bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
+
+  CSolver* flow_solver= solver[FLOW_SOL];
+
+  bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config, output->GetConvergence());
+
+  /* --- If Fixed CL mode has ended and Finite Differencing has started: --- */
+
+  if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config->GetInnerIter()){
+    
+    /* --- Print convergence history and volume files since fixed CL mode has converged--- */
+    if (rank == MASTER_NODE) output->PrintConvergenceSummary();
+    
+    output->SetResult_Files(geometry, config, solver, 
+                            config->GetInnerIter(), true);
+
+    /* --- Set finite difference mode in config (disables output) --- */
+    config->SetFinite_Difference_Mode(true);
+  }
+
+  /* --- Set convergence based on fixed CL convergence  --- */
+  return fixed_cl_convergence;
+}
 
 CTurboIteration::CTurboIteration(CConfig *config) : CFluidIteration(config) { }
 CTurboIteration::~CTurboIteration(void) { }
