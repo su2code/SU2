@@ -2314,25 +2314,27 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   if (vol_heat){
 
+    su2double Volume;
+
     /*--- loop over points ---*/
 
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Set control volume ---*/
+      /*--- Get control volume size. ---*/
+      Volume = geometry->node[iPoint]->GetVolume();
 
-      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      /*--- Zero the continuity contribution ---*/
+      Residual[0] = 0.0;
 
-      /*--- Compute the residual ---*/
+      /*--- Zero the momentum contribution. ---*/
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Residual[iDim+1] = 0.0;
 
-      second_numerics->ComputeResidual(Residual, Jacobian_i, config);
+      /*--- Set the energy contribution ---*/
+      Residual[nDim+1] = config->GetValHeatSource()*Volume;
 
-      /*--- Add Residual ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
-
-      /*--- Add the implicit Jacobian contribution ---*/
-
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      /*--- Subtract Residual ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
 
     }
 
