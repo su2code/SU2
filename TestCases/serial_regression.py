@@ -67,7 +67,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.021036, -3.511771, 0.339316, 0.022257] #last 4 columns
+    naca0012.test_vals = [-4.024286, -3.515166, 0.339392, 0.022217] #last 4 columns
     naca0012.su2_exec  = "SU2_CFD"
     naca0012.timeout   = 1600
     naca0012.new_output= True
@@ -91,7 +91,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-7.077986, -6.539796, 0.282344, 0.011807] #last 4 columns
+    oneram6.test_vals = [-6.952991, -6.364311, 0.282263, 0.011762] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.new_output = True
@@ -103,7 +103,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-12.181731, -6.784160, 0.300000, 0.019470] #last 4 columns
+    fixedCL_naca0012.test_vals = [-12.129591, -6.702940, 0.300000, 0.019470] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.new_output = True
     fixedCL_naca0012.timeout   = 1600
@@ -117,7 +117,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.new_output= True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals = [-1.308958, 4.123692, 0.011587, 0.009698] #last 4 columns
+    polar_naca0012.test_vals = [-1.244014, 4.220468, 0.016275, 0.015988] #last 4 columns
     polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -129,7 +129,7 @@ def main():
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.new_output = True
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.553700, 6.926057, -0.000000, 1.792561] #last 4 columns
+    bluntbody.test_vals = [0.540009, 6.916653, -0.000000, 1.868975] #last 4 columns
     bluntbody.su2_exec  = "SU2_CFD"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001
@@ -208,7 +208,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.000469, -5.228296, 0.820188, 0.052004] #last 4 columns
+    rae2822_sa.test_vals = [-2.021218, -5.268447, 0.807465, 0.060897] #last 4 columns
     rae2822_sa.su2_exec  = "SU2_CFD"
     rae2822_sa.timeout   = 1600
     rae2822_sa.new_output = True
@@ -220,7 +220,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.510826, 4.909241, 0.825023, 0.052675] #last 4 columns
+    rae2822_sst.test_vals = [-0.510641, 4.874876, 0.813353, 0.061455] #last 4 columns
     rae2822_sst.su2_exec  = "SU2_CFD"
     rae2822_sst.new_output = True
     rae2822_sst.timeout   = 1600
@@ -232,7 +232,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.401009, 4.909241, 0.825023, 0.052675] #last 4 columns
+    rae2822_sst_sust.test_vals = [-2.427577, 4.874876, 0.813353, 0.061455] #last 4 columns
     rae2822_sst_sust.su2_exec  = "SU2_CFD"
     rae2822_sst_sust.timeout   = 1600
     rae2822_sst_sust.tol       = 0.00001
@@ -255,7 +255,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.327431, -6.564331, 0.230257, 0.155839]#last 4 columns
+    turb_oneram6.test_vals = [-2.372511, -6.579339, 0.229864, 0.147639]#last 4 columns
     turb_oneram6.su2_exec  = "SU2_CFD"
     turb_oneram6.new_output = True
     turb_oneram6.timeout   = 3200
