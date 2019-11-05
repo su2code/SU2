@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ccache
-          key: ${{ matrix.config_set }}
+          key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Build 
         uses: docker://su2code/build-su2:20191105
