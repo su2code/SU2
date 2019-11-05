@@ -977,12 +977,13 @@ void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
   }
   norm = sqrt(norm);
   epsilon = min(norm, (ub-lb)/2.0);
-  unsigned short nActive = 0;
+  unsigned short nActive = nDV_Total;
 
   for (iDV = 0; iDV < nDV_Total; iDV++) {
     activeset[iDV] = false;
-    if(ub-DesignVariable[iDV] <= epsilon) {activeset[iDV] = true; nActive++;}
-    if(DesignVariable[iDV]-lb <= epsilon) {activeset[iDV] = true; nActive++;}
+    if(ub-DesignVariable[iDV] <= epsilon)      activeset[iDV] = true;
+    else if(DesignVariable[iDV]-lb <= epsilon) activeset[iDV] = true;
+    else                                       nActive--;
   }
   solver[ADJFLOW_SOL]->SetnActiveDV(nActive);
 }
