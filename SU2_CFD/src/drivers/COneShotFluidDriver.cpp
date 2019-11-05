@@ -221,12 +221,12 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
-  /*--- Do a primal and adjoint update ---*/
-  PrimalDualStep();
-  solver[ADJFLOW_SOL]->SetSaveSolution();
+  // /*--- Do a primal and adjoint update ---*/
+  // PrimalDualStep();
+  // solver[ADJFLOW_SOL]->SetSaveSolution();
 
-  /*--- Set Deltay and DeltaBary ---*/
-  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  // /*--- Set Deltay and DeltaBary ---*/
+  // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
@@ -246,12 +246,12 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
+        // solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
 
         /*--- Set Deltay and DeltaBary ---*/
-        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+        // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
       }
       else if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
@@ -266,12 +266,12 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
+        // solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
         LoadMultiplier();
         UpdateMultiplier(stepsize);
 
         /*--- Set Deltay and DeltaBary ---*/
-        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+        // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
       }
       else{
         /*--- Compute and store GradL dot p ---*/
@@ -283,7 +283,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
-      // solver[ADJFLOW_SOL]->LoadSolution();
+      solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if ((ArmijoIter != nArmijoIter && !bool_tol) || (!config->GetZeroStep())) {
@@ -299,23 +299,27 @@ void COneShotFluidDriver::RunOneShot(){
         ComputeDesignVarUpdate(0.0);
       }
 
-      /*--- Calculate the inviscid and viscous forces ---*/
+      // /*--- Calculate the inviscid and viscous forces ---*/
       
-      solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-      solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-      solver[FLOW_SOL]->Friction_Forces(geometry, config);
+      // solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+      // solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+      // solver[FLOW_SOL]->Friction_Forces(geometry, config);
           
-      /*--- Evaluate the buffet metric if requested ---*/
+      // /*--- Evaluate the buffet metric if requested ---*/
       
-      if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-          solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-      }
+      // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+      //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+      // }
       
-      /*--- Compute objective function at new design ---*/
-      SetObjFunction();
-      SetConstrFunction();
+      // /*--- Compute objective function at new design ---*/
+      // SetObjFunction();
+      // SetConstrFunction();
 
     }
+
+    /*--- Do a primal and adjoint update ---*/
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian(true);
@@ -331,19 +335,21 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  if (InnerIter > config->GetOneShotStart() && 
-      InnerIter < config->GetOneShotStop()  &&
-      (!CheckFirstWolfe() || bool_tol)      && 
-      config->GetZeroStep()) {
-    /*--- Rerun primal-dual so Deltay and DeltaBary aren't 0 ---*/
-    PrimalDualStep();
-    /*--- Set Deltay and DeltaBary ---*/
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  }
+  // if (InnerIter > config->GetOneShotStart() && 
+  //     InnerIter < config->GetOneShotStop()  &&
+  //     (!CheckFirstWolfe() || bool_tol)      && 
+  //     config->GetZeroStep()) {
+  //   --- Rerun primal-dual so Deltay and DeltaBary aren't 0 ---
+  //   PrimalDualStep();
+  //   /*--- Set Deltay and DeltaBary ---*/
+  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  // }
   /*--- Store FFD info in file ---*/
-  else if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
-            (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
-            update) {
+  if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
+       (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
+       update                                                  &&
+       (!CheckFirstWolfe() || bool_tol)                        && 
+       config->GetZeroStep()) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
