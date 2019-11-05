@@ -127,8 +127,8 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
-  su2matrix<int> Input_AdjIndices;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> Output_AdjIndices;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
   unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
   unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
@@ -2632,20 +2632,9 @@ public:
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
+   * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterSolution(bool input);
-
-  /*!
-   * \brief Register the variables in the solution array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void RegisterSolution_intIndexBased(bool input);
-
-  /*!
-   * \brief Saving the adjoint vector position with respect to the solution variables.
-   * \param[in] input - input or output variables.
-   */
-  void SetAdjIndices(bool input);
+  void RegisterSolution(bool input, bool push_index = true);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -2670,9 +2659,9 @@ public:
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void SetAdjointSolution_intIndexBased(unsigned long iPoint, const su2double *adj_sol) {
+  inline void SetAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      AD::SetDerivative(Output_AdjIndices(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
+      AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!
@@ -2688,9 +2677,9 @@ public:
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void GetAdjointSolution_intIndexBased(unsigned long iPoint, su2double *adj_sol) const {
+  inline void GetAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(Input_AdjIndices(iPoint,iVar));
+      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar));
   }
 
   /*!

@@ -262,16 +262,14 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
   bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
-  bool input = true;
+  bool input          = true;
+  bool push_index     = true;
+
+  if(config->GetMultizone_Problem()) push_index = false;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  if(config->GetMultizone_Problem()) {
-    direct_solver->GetNodes()->RegisterSolution_intIndexBased(input);
-    direct_solver->GetNodes()->SetAdjIndices(input);
-  } else {
-    direct_solver->GetNodes()->RegisterSolution(input);
-  }
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
@@ -402,16 +400,14 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
-  /*--- Register variables as output of the solver iteration ---*/
-  bool input = false;
+  bool input        = false;
+  bool push_index   = true;
 
-  if(config->GetMultizone_Problem()) {
-    direct_solver->GetNodes()->RegisterSolution_intIndexBased(input);
-    direct_solver->GetNodes()->SetAdjIndices(input);
-  }
-  else {
-    direct_solver->GetNodes()->RegisterSolution(input);
-  }
+  if(config->GetMultizone_Problem()) push_index = false;
+
+  /*--- Register variables as output of the solver iteration ---*/
+
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 }
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
@@ -522,7 +518,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     /*--- Extract the adjoint solution ---*/
     
     if(config->GetMultizone_Problem()) {
-      direct_solver->GetNodes()->GetAdjointSolution_intIndexBased(iPoint,Solution);
+      direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
       direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
@@ -685,7 +681,10 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if (config->GetMultizone_Problem())
+      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
+    else
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
     /*--- Store the adjoint solution ---*/
 
@@ -741,7 +740,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
 
     for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
 
@@ -759,7 +758,10 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if (config->GetMultizone_Problem())
+      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
+    else
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
     for (iDim = 0; iDim < nDim; iDim++) nodes->SetGeometry_CrossTerm_Derivative(iPoint,iDim, Solution_Geometry[iDim]);
 
@@ -777,7 +779,10 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if (config->GetMultizone_Problem())
+      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
+    else
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
 
     for (iDim = 0; iDim < nDim; iDim++) nodes->SetGeometry_CrossTerm_Derivative_Flow(iPoint,iDim, Solution_Geometry[iDim]);
 
@@ -797,7 +802,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetMultizone_Problem()) {
+      if(config->GetMultizone_Problem() && !fsi) {
         Solution[iVar] = nodes->Get_BGSSolution_k(iPoint,iVar);
       }
       else {
@@ -815,7 +820,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
     if(config->GetMultizone_Problem()) {
-      direct_solver->GetNodes()->SetAdjointSolution_intIndexBased(iPoint,Solution);
+      direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
@@ -1141,7 +1146,7 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   /*--- Compute the BGS solution (adding the cross term) ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      if(config->GetMultizone_Problem()) {
+      if(config->GetMultizone_Problem() && !config->GetFSI_Simulation()) {
         bgs_sol = nodes->GetSolution(iPoint,iVar);
       }
       else {
@@ -1164,3 +1169,18 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   SetResidual_BGS(geometry, config);
 
 }
+
+void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  /*--- As there might be crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++)
+        nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
+  }
+
+}
+

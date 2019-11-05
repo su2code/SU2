@@ -172,7 +172,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   }
   
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
-    if ( iMesh < config[iZone]->GetnMGLevels() ) {
+  if ( iMesh < config[iZone]->GetnMGLevels() ) {
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
