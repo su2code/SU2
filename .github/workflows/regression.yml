@@ -37,10 +37,10 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ccache
-          key: ${{ github.ref }}-${{ hashFiles(matrix.flags) }}
+          key: ${{ github.ref }}-${{ matrix.config_set }}
           restore-keys: |
-            refs/heads/develop-${{ hashFiles(matrix.flags) }}
-            refs/heads/master-${{ hashFiles(matrix.flags) }}
+            refs/heads/develop-${{ matrix.config_set }}
+            refs/heads/master-${{ matrix.config_set }}
       - name: Build 
         uses: docker://su2code/build-su2:20191105
         with:
