@@ -50,7 +50,7 @@
 from __future__ import print_function
 
 # imports
-import os, sys
+import os, sys, shutil
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -68,10 +68,10 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-i", "--iterations", dest="iterations", default=-1,
                       help="number of ITERATIONS", metavar="ITERATIONS")
-    parser.add_option("-d", "--dimmension", dest="geomDim", default=2,
+    parser.add_option("-d", "--dimension", dest="geomDim", default=2,
                       help="Geometry dimension (2 or 3)", metavar="geomDim")
     parser.add_option("-w", "--Wind", action="store_true", dest="Wind", default=False,
-                      help=" Wind system (default is body system")
+                      help=" Wind system (default is body system)")
     parser.add_option("-v", "--Verbose", action="store_true", dest="verbose", default=False,
                       help=" Verbose printout (if activated)")
 
@@ -157,14 +157,14 @@ def main():
     # Set SU2 defaults units, if definitions are not included in the cfg file
     if 'SYSTEM_MEASUREMENTS' not in config:
         config.SYSTEM_MEASUREMENTS = 'SI'
-    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+    if config.SOLVER == 'NAVIER_STOKES':
         if 'REYNOLDS_LENGTH' not in config:
             config.REYNOLDS_LENGTH = 1.0
 
     # prepare config
     config.NUMBER_PART = options.partitions
     if options.iterations > 0:
-        config.EXT_ITER = options.iterations
+        config.ITER = options.iterations
     config.NZONES = 1
 
     # find solution files if they exist
@@ -282,12 +282,12 @@ def main():
     f.write('\n%  ')
     line_text = 'Mach : %7.2f  ,  '%(config.MACH_NUMBER)
     f.write(line_text)
-    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+    if config.SOLVER == 'NAVIER_STOKES':
         line_text = 'Reynolds Number  :  %s   '%(config.REYNOLDS_NUMBER)
         f.write(line_text)
         line_text = 'Reynolds length :   %s   [ %s ] '%(config.REYNOLDS_LENGTH, length_dimension)
     else:
-        line_text = 'Physical problem : %s '%( config.PHYSICAL_PROBLEM)
+        line_text = 'Physical problem : %s '%( config.SOLVER)
     f.write(line_text)
     f.write('\n%  ')
     rho = float(config.FREESTREAM_PRESSURE)/\
@@ -396,10 +396,10 @@ def main():
                 # if caseName exists copy the restart file from it for run continuation
                 # Continue from previous sweep point if this is not he first
                 if os.path.isdir(caseName):
-                    command = 'cp '+caseName+'/'+config.SOLUTION_FLOW_FILENAME+' .'
+                    command = 'cp '+caseName+'/'+config.SOLUTION_FILENAME+' .'
                     if options.verbose:
                         print(command)
-                    os.system(command)
+                    shutil.copy2(caseName+'/'+config.SOLUTION_FILENAME, os.getcwd())
                     konfig.RESTART_SOL = 'YES'
                 else:
                     konfig.RESTART_SOL = 'NO'
@@ -407,7 +407,7 @@ def main():
             else:
                 konfig.RESTART_SOL = 'YES'
             if  konfig.RESTART_SOL == 'YES':
-                ztate.FILES.DIRECT = config.SOLUTION_FLOW_FILENAME
+                ztate.FILES.DIRECT = config.SOLUTION_FILENAME
             # run su2
             if options.Wind:
                 drag = SU2.eval.func('DRAG', konfig, ztate)
@@ -463,8 +463,8 @@ def main():
             f.write(output)
             # save data
             SU2.io.save_data('results.pkl', results)
-            os.system('cp results.pkl  DIRECT/.')
-            os.system('cp '+config.SOLUTION_FLOW_FILENAME+' DIRECT/.')
+            shutil.copy2('results.pkl', 'DIRECT')
+            shutil.copy2(config.SOLUTION_FILENAME, 'DIRECT')
 
             if os.path.isdir(caseName):
                 command = 'cat '+caseName+\
@@ -473,21 +473,21 @@ def main():
                 if options.verbose:
                     print(command)
                 os.system(command)
-                os.system('rm -R '+caseName)
+                shutil.rmtree(caseName)
 
             command = 'cp -p -R DIRECT '+caseName
             if options.verbose:
                 print(command)
-            os.system(command)
+            shutil.copytree('DIRECT', caseName)
 
     # Close open file
     f.close()
     if os.path.isdir('DIRECT'):
-        os.system('rm -R DIRECT')
-    if os.path.isfile(config.SOLUTION_FLOW_FILENAME):
-        os.system('rm '+config.SOLUTION_FLOW_FILENAME)
+        shutil.rmtree('DIRECT')
+    if os.path.isfile(config.SOLUTION_FILENAME):
+        os.remove(config.SOLUTION_FILENAME)
     if os.path.isfile('results.pkl'):
-        os.system('rm results.pkl')
+        os.remove('results.pkl')
     print('Post sweep cleanup completed')
 
     #         sys.exit(0)

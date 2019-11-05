@@ -101,6 +101,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   val_DHiHj = new su2double[nDim];
 
   su2double epsilon = config->GetSmoothingParam();
+  su2double zeta = config->GetSmoothingParamSecond();
 
   /*--- Set element properties  if they need to be set ---*/
   SetElement_Properties(element, config);
@@ -169,7 +170,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (jNode = 0; jNode < nNode; jNode++) {
-        val_HiHj = Weight * Jac_X * Ni_Vec[iNode] * Ni_Vec[jNode];
+        val_HiHj = Weight * Jac_X * zeta * Ni_Vec[iNode] * Ni_Vec[jNode];
         element->Add_HiHj(val_HiHj, iNode, jNode);
       }
     }

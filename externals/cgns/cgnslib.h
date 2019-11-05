@@ -35,8 +35,8 @@
 #ifndef CGNSLIB_H
 #define CGNSLIB_H
 
-#define CGNS_VERSION 3300
-#define CGNS_DOTVERS 3.30
+#define CGNS_VERSION 3400
+#define CGNS_DOTVERS 3.40
 
 #define CGNS_COMPATVERSION 2540
 #define CGNS_COMPATDOTVERS 2.54
@@ -56,9 +56,9 @@
 #ifndef CGNSDLL
 # ifdef _WIN32
 #  if defined(BUILD_DLL)
-#    define CGNSDLL _declspec(dllexport)
+#    define CGNSDLL __declspec(dllexport)
 #  elif defined(USE_DLL)
-#    define CGNSDLL _declspec(dllimport)
+#    define CGNSDLL __declspec(dllimport)
 #  else
 #    define CGNSDLL
 #  endif
@@ -98,7 +98,6 @@
 #define CG_FILE_ADF   1
 #define CG_FILE_HDF5  2
 #define CG_FILE_ADF2  3
-#define CG_FILE_PHDF5 4
 
 /* function return codes */
 
@@ -119,14 +118,26 @@
 
 /* configuration options */
 
-#define CG_CONFIG_ERROR     1
-#define CG_CONFIG_COMPRESS  2
-#define CG_CONFIG_SET_PATH  3
-#define CG_CONFIG_ADD_PATH  4
-#define CG_CONFIG_FILE_TYPE 5
+#define CG_CONFIG_ERROR      1
+#define CG_CONFIG_COMPRESS   2
+#define CG_CONFIG_SET_PATH   3
+#define CG_CONFIG_ADD_PATH   4
+#define CG_CONFIG_FILE_TYPE  5
+#define CG_CONFIG_RIND_INDEX 6
 
 #define CG_CONFIG_HDF5_COMPRESS   201
 #define CG_CONFIG_HDF5_MPI_COMM   202
+
+/* HDF5 dataset storage layout */
+
+#define CG_CONTIGUOUS 0
+#define CG_COMPACT    1
+#define CG_CHUNKED    2
+
+/* note: CG_CONFIG_RIND_ZERO is obsolete and considered a bug.  Users are given
+ *       the option only for backwards compatibilty */
+#define CG_CONFIG_RIND_ZERO (void*)0
+#define CG_CONFIG_RIND_CORE (void*)1
 
 #ifdef __cplusplus
 extern "C" {
@@ -915,6 +926,10 @@ CGNSDLL int cg_coord_info(int fn, int B, int Z, int C,
 CGNSDLL int cg_coord_read(int fn, int B, int Z, const char * coordname,
 	CGNS_ENUMT(DataType_t) type, const cgsize_t * rmin,
 	const cgsize_t * rmax, void *coord);
+CGNSDLL int cg_coord_general_read(int fn, int B, int Z,
+        const char * coordname, const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+        CGNS_ENUMT(DataType_t) m_type, int m_numdim, const cgsize_t *m_dimvals,
+        const cgsize_t *m_rmin, const cgsize_t *m_rmax, void *coord_ptr);
 CGNSDLL int cg_coord_id(int fn, int B, int Z, int C, double *coord_id);
 CGNSDLL int cg_coord_write(int fn, int B, int Z,
 	CGNS_ENUMT(DataType_t) type, const char * coordname,
@@ -922,8 +937,14 @@ CGNSDLL int cg_coord_write(int fn, int B, int Z,
 
 CGNSDLL int cg_coord_partial_write(int fn, int B, int Z,
 	CGNS_ENUMT(DataType_t) type, const char * coordname,
-        const cgsize_t *rmin, const cgsize_t *rmax,
-        const void * coord_ptr, int *C);
+    const cgsize_t *rmin, const cgsize_t *rmax,
+    const void * coord_ptr, int *C);
+CGNSDLL int cg_coord_general_write(int fn, int B, int Z,
+	const char *coordname, CGNS_ENUMT(DataType_t) s_type,
+	const cgsize_t *rmin, const cgsize_t *rmax,
+	CGNS_ENUMT(DataType_t) m_type, int m_numdim, const cgsize_t *m_dims,
+	const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+	const void *coord_ptr, int *C);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write Elements_t Nodes                                  *
@@ -935,10 +956,16 @@ CGNSDLL int cg_section_read(int file_number, int B, int Z, int S,
 	cgsize_t *start, cgsize_t *end, int *nbndry, int *parent_flag);
 CGNSDLL int cg_elements_read(int file_number, int B, int Z, int S,
 	cgsize_t *elements, cgsize_t *parent_data);
+CGNSDLL int cg_poly_elements_read(int file_number, int B, int Z, int S,
+	cgsize_t *elements, cgsize_t *connect_offset, cgsize_t *parent_data);
 CGNSDLL int cg_section_write(int file_number, int B, int Z,
 	const char * SectionName, CGNS_ENUMT(ElementType_t) type,
 	cgsize_t start, cgsize_t end, int nbndry, const cgsize_t * elements,
 	int *S);
+CGNSDLL int cg_poly_section_write(int file_number, int B, int Z,
+	const char * SectionName, CGNS_ENUMT(ElementType_t) type,
+	cgsize_t start, cgsize_t end, int nbndry, const cgsize_t * elements,
+	const cgsize_t * connect_offset, int *S);
 CGNSDLL int cg_parent_data_write(int file_number, int B, int Z, int S,
 	const cgsize_t * parent_data);
 CGNSDLL int cg_npe( CGNS_ENUMT(ElementType_t) type, int *npe);
@@ -951,12 +978,16 @@ CGNSDLL int cg_section_partial_write(int file_number, int B, int Z,
 
 CGNSDLL int cg_elements_partial_write(int fn, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, const cgsize_t *elements);
+CGNSDLL int cg_poly_elements_partial_write(int fn, int B, int Z, int S,
+	cgsize_t start, cgsize_t end, const cgsize_t *elements, const cgsize_t *connect_offset);
 
 CGNSDLL int cg_parent_data_partial_write(int fn, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, const cgsize_t *ParentData);
 
 CGNSDLL int cg_elements_partial_read(int file_number, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, cgsize_t *elements, cgsize_t *parent_data);
+CGNSDLL int cg_poly_elements_partial_read(int file_number, int B, int Z, int S,
+	cgsize_t start, cgsize_t end, cgsize_t *elements, cgsize_t *connect_offset, cgsize_t *parent_data);
 
 CGNSDLL int cg_ElementPartialSize(int file_number, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, cgsize_t *ElementDataSize);
@@ -992,6 +1023,10 @@ CGNSDLL int cg_field_info(int fn,int B,int Z,int S, int F,
 CGNSDLL int cg_field_read(int fn, int B, int Z, int S, const char *fieldname,
 	CGNS_ENUMT(DataType_t) type, const cgsize_t *rmin,
         const cgsize_t *rmax, void *field_ptr);
+CGNSDLL int cg_field_general_read(int fn, int B, int Z, int S,
+        const char *fieldname, const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+        CGNS_ENUMT(DataType_t) m_type, int m_numdim, const cgsize_t *m_dimvals,
+        const cgsize_t *m_rmin, const cgsize_t *m_rmax, void *field_ptr);
 CGNSDLL int cg_field_id(int fn, int B, int Z,int S, int F, double *field_id);
 CGNSDLL int cg_field_write(int fn,int B,int Z,int S,
 	CGNS_ENUMT(DataType_t) type, const char * fieldname,
@@ -1001,6 +1036,12 @@ CGNSDLL int cg_field_partial_write(int fn, int B, int Z, int S,
 	CGNS_ENUMT(DataType_t) type, const char * fieldname,
 	const cgsize_t *rmin, const cgsize_t *rmax,
         const void * field_ptr, int *F);
+CGNSDLL int cg_field_general_write(int fn, int B, int Z, int S,
+        const char * fieldname, CGNS_ENUMT(DataType_t) s_type,
+        const cgsize_t *rmin, const cgsize_t *rmax,
+        CGNS_ENUMT(DataType_t) m_type, int m_numdim, const cgsize_t *m_dims,
+        const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+        const void *field_ptr, int *F);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write ZoneSubRegion_t Nodes                             *
@@ -1366,9 +1407,18 @@ CGNSDLL int cg_array_info(int A, char *ArrayName,
 	int *DataDimension, cgsize_t *DimensionVector);
 CGNSDLL int cg_array_read(int A, void *Data);
 CGNSDLL int cg_array_read_as(int A, CGNS_ENUMT(DataType_t) type, void *Data);
+CGNSDLL int cg_array_general_read(int A,
+        const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+        CGNS_ENUMT(DataType_t) m_type, int m_numdim, const cgsize_t *m_dimvals,
+        const cgsize_t *m_rmin, const cgsize_t *m_rmax, void *data);
 CGNSDLL int cg_array_write(const char * ArrayName,
 	CGNS_ENUMT(DataType_t) DataType, int DataDimension,
 	const cgsize_t * DimensionVector, const void * Data);
+CGNSDLL int cg_array_general_write(const char *arrayname,
+        CGNS_ENUMT(DataType_t) s_type, int s_numdim, const cgsize_t *s_dimvals,
+        const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+        CGNS_ENUMT(DataType_t) m_type, int m_numdim, const cgsize_t *m_dimvals,
+        const cgsize_t *m_rmin, const cgsize_t *m_rmax, const void *data);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write UserDefinedData_t Nodes - new in version 2.1      *

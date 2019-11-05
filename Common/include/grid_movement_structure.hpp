@@ -50,10 +50,9 @@
 
 #include "geometry_structure.hpp"
 #include "config_structure.hpp"
-#include "matrix_structure.hpp"
-#include "vector_structure.hpp"
-#include "linear_solvers_structure.hpp"
-#include "linear_solvers_structure_b.hpp"
+#include "linear_algebra/CSysMatrix.hpp"
+#include "linear_algebra/CSysVector.hpp"
+#include "linear_algebra/CSysSolve.hpp"
 #include "element_structure.hpp"
 
 using namespace std;
@@ -1159,8 +1158,9 @@ public:
   /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Screen_Output - determines if text is written to screen
 	 */
-  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
+  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output);
 
   /*!
 	 * \brief Compute the minimum distance to the nearest solid surface.
@@ -1268,7 +1268,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Set the derivatives of the boundary nodes.
@@ -1393,7 +1393,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -1661,7 +1661,7 @@ public:
    * \param[in] iMarker_Monitoring - Marker we are monitoring.
    * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements);
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long TimeIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.

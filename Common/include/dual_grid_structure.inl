@@ -172,8 +172,8 @@ inline void CPoint::SetnChildren_CV (unsigned short val_nchildren_CV) {	nChildre
 inline void CPoint::SetParent_CV (unsigned long val_parent_CV) { Parent_CV = val_parent_CV; Agglomerate = true; }
 
 inline void CPoint::SetGridVel(su2double *val_gridvel) { 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		GridVel[iDim] = val_gridvel[iDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    GridVel[iDim] = val_gridvel[iDim];
 }
 
 inline void CPoint::SetVolume_n (void) { Volume[1] = Volume[0]; }
@@ -183,6 +183,11 @@ inline void CPoint::SetVolume_nM1 (void) { Volume[2] = Volume[1]; }
 inline su2double CPoint::GetVolume_n (void) { return Volume[1]; }
 
 inline su2double CPoint::GetVolume_nM1 (void) { return Volume[2]; }
+
+inline void CPoint::SetCoord_Old (void) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Coord_Old[iDim] = Coord[iDim];
+}
 
 inline void CPoint::SetCoord_n (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -258,14 +263,23 @@ inline void CPoint::SetZeroValues(void) { }
 inline void CPoint::AddNormal(su2double *val_face_normal) { }
 
 inline void CPoint::SetAdjointCoord(su2double *adj_coor){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
+}
+
+inline void CPoint::SetAdjointCoord_LocalIndex(su2double *adj_coor){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    AD::SetDerivative(AD_OutputIndex[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
 }
 
 inline void CPoint::GetAdjointCoord(su2double *adj_coor){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++){
-      adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord[iDim]);
-    }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord[iDim]);
+}
+
+inline void CPoint::GetAdjointCoord_LocalIndex(su2double *adj_coor){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    adj_coor[iDim] = AD::GetDerivative(AD_InputIndex[iDim]);
 }
 
 inline unsigned short CEdge::GetnNodes() { return 2; }

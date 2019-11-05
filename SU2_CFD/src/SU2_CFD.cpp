@@ -49,9 +49,20 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   
-  unsigned short nZone, nDim;
+  unsigned short nZone;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo, zone_specific;
+  bool fsi, turbo;
+  bool dry_run = false;
+  std::string filename = "default";
+  
+  /*--- Command line parsing ---*/
+  
+  CLI::App app{"SU2 v6.2.0 \"Falcon\", The Open-Source CFD Code"};
+  app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n" 
+                                       "Only execute preprocessing steps using a dummy geometry.");
+  app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
+  
+  CLI11_PARSE(app, argc, argv)
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -79,9 +90,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
-
-  if (argc == 2) { strcpy(config_file_name, argv[1]); }
-  else { strcpy(config_file_name, "default.cfg"); }
+  strcpy(config_file_name, filename.c_str());
 
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
@@ -89,88 +98,95 @@ int main(int argc, char *argv[]) {
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
-  if (config->GetKind_Solver() == MULTIZONE)
-    nZone  = config->GetnConfigFiles();
-  else
-    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  nZone    = config->GetnZone();
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
-  zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
-  if (config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint())) {
-
-    /*--- Single zone problem: instantiate the single zone driver class. ---*/
-
-    if (nZone > 1 ) {
-      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
-    }
-    if (config->GetDiscrete_Adjoint())
-       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, nDim, MPICommunicator);
-    else
-       driver = new CSinglezoneDriver(config_file_name, nZone, nDim, MPICommunicator);
-
-  }
-  else if (config->GetKind_Solver() == MULTIZONE) {
-
-    /*--- Multizone Driver. ---*/
-
-    driver = new CMultizoneDriver(config_file_name, nZone, nDim, MPICommunicator);
-
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-
-    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
-
-    driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
-
-  } else if ((nZone == 2) && fsi) {
-
-    bool stat_fsi = ((config->GetDynamic_Analysis() == STATIC) && (config->GetUnsteady_Simulation() == STEADY));
-    bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
-
-    /*--- If the problem is a discrete adjoint FSI problem ---*/
-    if (disc_adj_fsi) {
-      if (stat_fsi) {
-        driver = new CDiscAdjFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+  
+  if (!dry_run){
+    
+    if ((!config->GetMultizone_Problem() && (config->GetTime_Marching() != HARMONIC_BALANCE) && !turbo)
+        || (turbo && config->GetDiscrete_Adjoint())) {
+      
+      /*--- Single zone problem: instantiate the single zone driver class. ---*/
+      
+      if (nZone > 1 ) {
+        SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
       }
-      else {
-        SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
+      if (config->GetDiscrete_Adjoint()) {
+
+        driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
       }
-    }
-    /*--- If the problem is a direct FSI problem ---*/
-    else{
-      driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
-    }
-
-  } else if (zone_specific) {
-    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, nDim, MPICommunicator);
-  } else {
-
-    /*--- Multi-zone problem: instantiate the multi-zone driver class by default
-    or a specialized driver class for a particular multi-physics problem. ---*/
-
-    if (turbo) {
-
-      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
-
-    } else {
-
-      /*--- Instantiate the class for external aerodynamics ---*/
-
-      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      else
+        driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
       
     }
-    
+    else if (config->GetMultizone_Problem() && !turbo && !fsi) {
+      
+    /*--- Multizone Drivers. ---*/
+
+    if (config->GetDiscrete_Adjoint()) {
+
+      driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, MPICommunicator);
+
+    }
+    else {
+      
+      driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+
+    }
+      
+    } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
+      
+      /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
+      
+      driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
+      
+    } else if ((nZone == 2) && fsi) {
+      
+      bool stat_fsi = ((!config->GetTime_Domain()));
+      bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
+      
+      /*--- If the problem is a discrete adjoint FSI problem ---*/
+      if (disc_adj_fsi) {
+        if (stat_fsi) {
+          driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
+        }
+        else {
+          SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
+        }
+      }
+      
+    } else {
+      
+      /*--- Multi-zone problem: instantiate the multi-zone driver class by default
+    or a specialized driver class for a particular multi-physics problem. ---*/
+      
+      if (turbo) {
+        
+        driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
+        
+      } else {
+        
+        /*--- Instantiate the class for external aerodynamics ---*/
+        
+        driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
+        
+      }
+      
+    }
+  } else {
+    driver = new CDummyDriver(config_file_name, nZone, MPICommunicator);
   }
   
   delete config;
   config = NULL;
-
-  /*--- Launch the main external loop of the solver ---*/
   
+  /*--- Launch the main external loop of the solver ---*/
+
   driver->StartSolver();
 
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/

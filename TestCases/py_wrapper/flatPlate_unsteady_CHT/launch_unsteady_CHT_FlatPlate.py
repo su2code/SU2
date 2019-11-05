@@ -98,13 +98,13 @@ def main():
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
     if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, comm);
     elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, comm);
     elif (options.nZone == 2) and (options.fsi):
-      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
@@ -139,8 +139,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetExtIter()
-  nTimeIter = SU2Driver.GetnExtIter()
+  TimeIter = SU2Driver.GetTime_Iter()
+  nTimeIter = SU2Driver.GetnTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -152,7 +152,7 @@ def main():
 
   while (TimeIter < nTimeIter):
     # Time iteration preprocessing
-    SU2Driver.PreprocessExtIter(TimeIter)
+    SU2Driver.Preprocess(TimeIter)
     # Define the homogeneous unsteady wall temperature on the structure (user defined)
     WallTemp = 293.0 + 57.0*sin(2*pi*time)
     # Set this temperature to all the vertices on the specified CHT marker
