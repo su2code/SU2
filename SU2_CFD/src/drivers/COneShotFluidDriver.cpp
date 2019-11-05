@@ -210,7 +210,7 @@ void COneShotFluidDriver::Run(){
 
 void COneShotFluidDriver::RunOneShot(){
 
-  su2double stepsize = 1.0, stepsize_p, stepsize_tmp, tol = config->GetOneShotSearchTol();
+  su2double stepsize = 1.0, stepsize_tmp, tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned long InnerIter = config->GetInnerIter();
   bool bool_tol = false;
@@ -244,8 +244,8 @@ void COneShotFluidDriver::RunOneShot(){
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         stepsize_tmp = UpdateStepSizeQuadratic();
-        Lagrangian_p = Lagrangian;
-        stepsize_p   = stepsize;
+        // Lagrangian_p = Lagrangian;
+        // stepsize_p   = stepsize;
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         if(stepsize < tol) {
           stepsize = tol;
