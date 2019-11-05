@@ -499,16 +499,15 @@ def amg ( config , kind='' ):
             #     if os.path.exists(fil) : os.remove(fil)
             
             global_iter += 1
-    
-    os.rename(current_solution,os.path.join(cwd,config.RESTART_FILENAME))
-    os.rename(current_mesh,os.path.join(cwd,config.MESH_OUT_FILENAME))
 
     #--- Write final files
 
     if config_cfd.WRT_INRIA_MESH == 'YES':
         mesh = su2amg.read_mesh(current_mesh, current_solution)
-        os.chdir('..')
         su2amg.write_mesh("fin.meshb", "fin.solb", mesh)
+    
+    os.rename(current_solution,os.path.join(cwd,config.RESTART_FILENAME))
+    os.rename(current_mesh,os.path.join(cwd,config.MESH_OUT_FILENAME))
     
     sys.stdout.write("\nMesh adaptation successfully ended. Results files:\n")
     sys.stdout.write("%s\n%s\n\n" % (config.MESH_OUT_FILENAME,config.RESTART_FILENAME))
