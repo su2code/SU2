@@ -224,23 +224,24 @@ void COneShotFluidDriver::RunOneShot(){
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){      
 
-      if(ArmijoIter > 1) {
-        /*--- Cubic backtracking ---*/
-        stepsize_tmp = UpdateStepSizeCubic(stepsize, stepsize_p);
-        Lagrangian_p = Lagrangian;
-        stepsize_p   = stepsize;
-        stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-        if(stepsize < tol) {
-          stepsize = tol;
-          bool_tol = true;
-        }
+      // if(ArmijoIter > 1) {
+      //   /*--- Cubic backtracking ---*/
+      //   stepsize_tmp = UpdateStepSizeCubic(stepsize, stepsize_p);
+      //   Lagrangian_p = Lagrangian;
+      //   stepsize_p   = stepsize;
+      //   stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+      //   if(stepsize < tol) {
+      //     stepsize = tol;
+      //     bool_tol = true;
+      //   }
 
-        /*---Load the old design for line search---*/
-        solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadMultiplier();
-        UpdateMultiplier(stepsize);
-      }
+      //   /*---Load the old design for line search---*/
+      //   solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
+      //   LoadMultiplier();
+      //   UpdateMultiplier(stepsize);
+      // }
       else if(ArmijoIter > 0){
+      if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         stepsize_tmp = UpdateStepSizeQuadratic();
         Lagrangian_p = Lagrangian;
