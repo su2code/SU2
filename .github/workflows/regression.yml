@@ -5,6 +5,7 @@ on:
     branches:
       - 'develop'
       - 'master'
+      - 'workflow_cache'
   pull_request:
     branches: 
       - 'develop'
