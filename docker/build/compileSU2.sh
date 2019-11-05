@@ -11,7 +11,7 @@ Compiled binaries can be found at /install/. Mount that directory for access.
 Note: If you specify a working directory using the --workdir option for docker, 
       append this directory to all paths above (e.g. use --workdir=/tmp if running in user mode)."
 
-flag=""
+flags=""
 branch=""
 workdir=$PWD
 
