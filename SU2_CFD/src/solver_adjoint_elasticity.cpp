@@ -634,7 +634,8 @@ void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool dynamic = (config->GetTime_Domain());
+  bool dynamic = config->GetTime_Domain();
+  bool multizone = config->GetMultizone_Problem();
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -647,9 +648,11 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       SetRes_Max(iVar,0.0,0);
   }
 
-  /*--- Set the old solution ---*/
+  /*--- Set the old solution, for multi-zone problems this is done after computing the
+   *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
+   *    contains contributions from other zones but on extraction it does not. ---*/
 
-  nodes->Set_OldSolution();
+  if(!multizone) nodes->Set_OldSolution();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -772,6 +775,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
         }
       }
   }
+
+  if(multizone) nodes->Set_OldSolution();
 
   SetResidual_RMS(geometry, config);
 
