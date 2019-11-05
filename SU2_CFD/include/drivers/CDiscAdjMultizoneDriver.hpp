@@ -102,29 +102,36 @@ public:
    */
   void StartSolver() override;
 
+protected:
+
   /*!
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
 
   /*!
-   * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Kind of variables with regard to which we are recording.
+   * \brief Record one iteration of the primal problem within each zone.
+   * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    * \param[in] tape_type - indicator which part of a solution update will be recorded
    * \param[in] record_zone - zone where solution update will be recorded
    */
   void SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone);
 
   /*!
+   * \brief Transfer data between zones and update grids when required.
+   */
+  void HandleDataTransfer();
+
+  /*!
    * \brief Run one direct iteration in a zone.
    * \param[in] iZone - Zone in which we run an iteration.
-   * \param[in] kind_recording - Kind of variables with regard to which we are recording.
+   * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    */
   void DirectIteration(unsigned short iZone, unsigned short kind_recording);
 
   /*!
    * \brief Set the objective function.
-   * \param[in] kind_recording - Kind of variables with regard to which we are recording.
+   * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    */
   void SetObjFunction(unsigned short kind_recording);
 

@@ -754,26 +754,26 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   /*--- Set the residuals ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
+
+      AddRes_RMS(iVar,residual*residual);
+      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
+    if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
+        residual = nodes->GetSolution_Accel(iPoint, iVar) - nodes->GetSolution_Old_Accel(iPoint, iVar);
 
-          AddRes_RMS(iVar,residual*residual);
-          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        AddRes_RMS(iVar,residual*residual);
+        AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
-      if (dynamic){
-        for (iVar = 0; iVar < nVar; iVar++){
-            residual = nodes->GetSolution_Accel(iPoint, iVar) - nodes->GetSolution_Old_Accel(iPoint, iVar);
+      for (iVar = 0; iVar < nVar; iVar++){
+        residual = nodes->GetSolution_Vel(iPoint, iVar) - nodes->GetSolution_Old_Vel(iPoint, iVar);
 
-            AddRes_RMS(iVar,residual*residual);
-            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-        }
-        for (iVar = 0; iVar < nVar; iVar++){
-            residual = nodes->GetSolution_Vel(iPoint, iVar) - nodes->GetSolution_Old_Vel(iPoint, iVar);
-
-            AddRes_RMS(iVar,residual*residual);
-            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-        }
+        AddRes_RMS(iVar,residual*residual);
+        AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
+    }
   }
 
   if(multizone) nodes->Set_OldSolution();
@@ -914,18 +914,18 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
 
   if (dynamic){
-      for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
-          for (iVar=0; iVar < nVar; iVar++){
-              nodes->SetDynamic_Derivative_n(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
-          }
-          for (iVar=0; iVar < nVar; iVar++){
-              nodes->SetDynamic_Derivative_Accel_n(iPoint, iVar, nodes->GetSolution_Accel_time_n(iPoint, iVar));
-          }
-          for (iVar=0; iVar < nVar; iVar++){
-              nodes->SetDynamic_Derivative_Vel_n(iPoint, iVar, nodes->GetSolution_Vel_time_n(iPoint, iVar));
-          }
-        }
+    for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
+      for (iVar=0; iVar < nVar; iVar++){
+        nodes->SetDynamic_Derivative_n(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
+      }
+      for (iVar=0; iVar < nVar; iVar++){
+        nodes->SetDynamic_Derivative_Accel_n(iPoint, iVar, nodes->GetSolution_Accel_time_n(iPoint, iVar));
+      }
+      for (iVar=0; iVar < nVar; iVar++){
+        nodes->SetDynamic_Derivative_Vel_n(iPoint, iVar, nodes->GetSolution_Vel_time_n(iPoint, iVar));
+      }
     }
+  }
 
 }
 
@@ -1006,8 +1006,8 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
+    SetRes_BGS(iVar,0.0);
+    SetRes_Max_BGS(iVar,0.0,0);
   }
 
   /*--- Compute the BGS solution (adding the cross term) ---*/
@@ -1040,7 +1040,7 @@ void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config)
   /*--- As there are geometrical crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++)
-        nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
+      nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
   }
 
 }
@@ -1247,11 +1247,9 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   /*--- Detect a wrong solution file ---*/
 
   if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
+
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
