@@ -128,13 +128,13 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetTimeIter(0);
-    
+
   }
-  
+
   /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
 
   Run();
-  
+
   /*--- Output the solution in files. ---*/
 
   Output(TimeIter);
@@ -392,8 +392,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
 
-  unsigned short iZone, jZone, iSol;
-  unsigned long ExtIter = 0;
+  unsigned short iZone, iSol;
 
   AD::Reset();
 
@@ -441,23 +440,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   AD::Push_TapePosition();
 
-  /*--- Extract the objective function and store it --- */
-  
-  for(iZone = 0; iZone < nZone; iZone++) {
+  /*--- Extract the objective function and store it.
+   *    It is necessary to include data transfer and mesh updates in this section as some functions
+   *    computed in one zone depend explicitly on the variables of others through that path. --- */
 
-    /*--- In principle, the mesh does not need to be updated ---*/
-    bool DeformMesh = false;
-
-    /*--- Transfer from all the remaining zones ---*/
-    for (jZone = 0; jZone < nZone; jZone++){
-      /*--- The target zone is iZone ---*/
-      if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
-        DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
-      }
-    }
-    /*--- If a mesh update is required due to the transfer of data ---*/
-    if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
-  }
+  HandleDataTransfer();
 
   SetObjFunction(kind_recording);
 
@@ -465,23 +452,9 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if (tape_type != Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
 
-    /*--- We do the communication here to not derive wrt updated boundary data. ---*/
+    /*--- We do the communication here to not differentiate wrt updated boundary data. ---*/
 
-    for(iZone = 0; iZone < nZone; iZone++) {
-
-      /*--- In principle, the mesh does not need to be updated ---*/
-      bool DeformMesh = false;
-
-      /*--- Transfer from all the remaining zones ---*/
-      for (jZone = 0; jZone < nZone; jZone++){
-        /*--- The target zone is iZone ---*/
-        if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
-          DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
-        }
-      }
-      /*--- If a mesh update is required due to the transfer of data ---*/
-      if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
-    }
+    HandleDataTransfer();
 
     AD::Push_TapePosition();
 
@@ -518,6 +491,28 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   AD::StopRecording();
 
   RecordingState = kind_recording;
+}
+
+void CDiscAdjMultizoneDriver::HandleDataTransfer() {
+
+  unsigned short iZone, jZone;
+  unsigned long ExtIter = 0;
+
+  for(iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- In principle, the mesh does not need to be updated ---*/
+    bool DeformMesh = false;
+
+    /*--- Transfer from all the remaining zones ---*/
+    for (jZone = 0; jZone < nZone; jZone++){
+      /*--- The target zone is iZone ---*/
+      if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
+        DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
+      }
+    }
+    /*--- If a mesh update is required due to the transfer of data ---*/
+    if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
+  }
 }
 
 void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned short kind_recording) {
@@ -776,7 +771,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
           }
         }
         break;
-        
+
       default:
         break;
     }
