@@ -946,9 +946,12 @@ void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
 
 void COneShotFluidDriver::SetShiftedLagrangianGradient(){
   unsigned short iDV;
+  su2double norm = 0.;
   for (iDV = 0; iDV < nDV_Total; iDV++){
     ShiftedLagrangianGradient[iDV] = Gradient[iDV];
+    norm += Gradient[iDV]*Gradient[iDV];
   }
+  solver[ADJFLOW_SOL]->SetShiftedLagGradNorm(sqrt(norm));
 }
 
 void COneShotFluidDriver::SetAugmentedLagrangianGradient(){
