@@ -924,18 +924,10 @@ su2double COneShotFluidDriver::BoundProjection(su2double value){
 
 void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
   //Compute ||x-P(x-gradx)||
-  unsigned short iDV, jDV;
+  unsigned short iDV;
   su2double norm = 0.0;
-  // su2double tmp;
 
   for (iDV = 0; iDV < nDV_Total; iDV++) {
-    // tmp = 0.;
-    // for (jDV = 0; jDV < nDV_Total; jDV++) {
-    //   tmp += BFGS_Inv[iDV][jDV]*ProjectionSet(jDV,-ShiftedLagrangianGradient[jDV],false);
-    // }
-    // tmp = -ProjectionSet(iDV, ShiftedLagrangianGradient[iDV],true) + ProjectionSet(iDV, tmp, false);
-    // norm += (DesignVariable[iDV]-BoundProjection(DesignVariable[iDV]-stepsize*tmp))
-    //       * (DesignVariable[iDV]-BoundProjection(DesignVariable[iDV]-stepsize*tmp));
     norm += (DesignVariable[iDV]-BoundProjection(DesignVariable[iDV]-stepsize*ShiftedLagrangianGradient[iDV]))
           * (DesignVariable[iDV]-BoundProjection(DesignVariable[iDV]-stepsize*ShiftedLagrangianGradient[iDV]));
   }
