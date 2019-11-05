@@ -506,6 +506,7 @@ def amg ( config , kind='' ):
     #--- Write final files
 
     if config_cfd.WRT_INRIA_MESH == 'YES':
+        mesh = su2amg.read_mesh(current_mesh, current_solution)
         os.chdir('..')
         su2amg.write_mesh("fin.meshb", "fin.solb", mesh)
     
