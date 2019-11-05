@@ -392,9 +392,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
 
-  unsigned short iZone, jZone, iSol, UpdateMesh;
+  unsigned short iZone, jZone, iSol;
   unsigned long ExtIter = 0;
-  bool DeformMesh       = false;
 
   AD::Reset();
 
@@ -443,6 +442,22 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   AD::Push_TapePosition();
 
   /*--- Extract the objective function and store it --- */
+  
+  for(iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- In principle, the mesh does not need to be updated ---*/
+    bool DeformMesh = false;
+
+    /*--- Transfer from all the remaining zones ---*/
+    for (jZone = 0; jZone < nZone; jZone++){
+      /*--- The target zone is iZone ---*/
+      if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
+        DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
+      }
+    }
+    /*--- If a mesh update is required due to the transfer of data ---*/
+    if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
+  }
 
   SetObjFunction(kind_recording);
 
@@ -455,18 +470,17 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     for(iZone = 0; iZone < nZone; iZone++) {
 
       /*--- In principle, the mesh does not need to be updated ---*/
-      UpdateMesh = 0;
+      bool DeformMesh = false;
 
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
-        if (jZone != iZone && interface_container[iZone][jZone] != NULL){
-          DeformMesh = Transfer_Data(jZone, iZone);
-          if (DeformMesh) UpdateMesh+=1;
+        if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
+          DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
         }
       }
       /*--- If a mesh update is required due to the transfer of data ---*/
-      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
+      if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
     }
 
     AD::Push_TapePosition();
