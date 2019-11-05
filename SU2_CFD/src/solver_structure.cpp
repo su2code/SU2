@@ -4990,11 +4990,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
    conditions or mass flow, another nDim for the direction vector, and
-   finally entries for the number of turbulence variables. ---*/
+   finally entries for the number of turbulence variables. This is only
+   necessary in case we are writing a template profile file. ---*/
   
   unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
-  vector<su2double> Inlet_Values(nCol_InletFile);
-  vector<su2double> Inlet_Fine(nCol_InletFile);
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -5042,6 +5041,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             
             unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
 
+            vector<su2double> Inlet_Values(nColumns);
+            
             /*--- Loop through the nodes on this marker. ---*/
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
@@ -5127,6 +5128,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           
+          /* Check the number of columns and allocate temp array. */
+          
+          unsigned short nColumns;
+          for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+            if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
+              nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            }
+          }
+          vector<su2double> Inlet_Values(nColumns);
+          vector<su2double> Inlet_Fine(nColumns);
+          
           /*--- Loop through the nodes on this marker. ---*/
 
           for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
@@ -5141,7 +5153,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             /*--- Reset the values for the coarse point. ---*/
 
-            for (iVar = 0; iVar < nCol_InletFile; iVar++) Inlet_Values[iVar] = 0.0;
+            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
 
             /*-- Loop through the children and extract the inlet values
              from those nodes that lie on the boundary as well as their
@@ -5152,9 +5164,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
               Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-              for (iVar = 0; iVar < nCol_InletFile; iVar++) Inlet_Fine[iVar] = 0.0;
+              for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
               Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER, Marker_Tag, geometry[iMesh-1], config);
-              for (iVar = 0; iVar < nCol_InletFile; iVar++) {
+              for (iVar = 0; iVar < nColumns; iVar++) {
                 Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
               }
             }
