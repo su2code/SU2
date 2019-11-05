@@ -11,9 +11,12 @@ Compiled binaries can be found at /install/. Mount that directory for access.
 Note: If you specify a working directory using the --workdir option for docker, 
       append this directory to all paths above (e.g. use --workdir=/tmp if running in user mode)."
 
-flags=""
+flag=""
 branch=""
 workdir=$PWD
+
+export CCACHE_DIR=$workdir/ccache
+
 if [ "$#" -ne 0 ]; then
   while [ "$(echo $1 | cut -c1)" = "-" ]
     do

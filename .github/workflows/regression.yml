@@ -32,12 +32,16 @@ jobs:
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled'  
     runs-on: ubuntu-latest
     steps:
-      - name: Dump matrix context
-        env:
-            MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
+      - name: Cache Object Files
+        uses: actions/cache@v1
+        with:
+          path: ccache
+          key: ${{ github.ref }}-${{ hashFiles(matrix.flags) }}
+          restore-keys: |
+            refs/heads/develop-${{ hashFiles(matrix.flags) }}
+            refs/heads/master-${{ hashFiles(matrix.flags) }}
       - name: Build 
-        uses: docker://su2code/build-su2:20191031
+        uses: docker://su2code/build-su2:20191105
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Upload Binaries 
