@@ -279,7 +279,7 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 #endif
 
   rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 0.9999); // Saturate contractivity
-  theta = max(fabs(helper)/normDelta, 0.9*theta_old);
+  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old);
 }
 
 void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){
