@@ -278,7 +278,7 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   helper       = myHelper;
 #endif
 
-  rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 0.9999); // Saturate contractivity
+  rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 0.99); // Saturate contractivity
   theta = max(fabs(helper)/normDelta, 0.9*theta_old);
 }
 
