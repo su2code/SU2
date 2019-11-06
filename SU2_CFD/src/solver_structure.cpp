@@ -280,7 +280,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   bool boundary_i, boundary_j;
-  
+  bool weighted = true;
+
   unsigned short iVar, jVar, iDim;
   unsigned short iNeighbor, nNeighbor = 0;
   unsigned short COUNT_PER_POINT = 0;
@@ -351,11 +352,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
       break;
-    case PERIODIC_SOL_LS:
+    case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
       COUNT_PER_POINT  = nDim*nDim + nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PERIODIC_PRIM_LS:
+    case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
       COUNT_PER_POINT  = nDim*nDim + nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -868,13 +869,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             break;
             
-          case PERIODIC_SOL_LS:
+          case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
             
             /*--- For L-S gradient calculations with rotational periodicity,
              we will need to rotate the x,y,z components. To make the process
              easier, we choose to rotate the initial periodic point and their
              neighbor points into their location on the donor marker before
              computing the terms that we need to communicate. ---*/
+            
+            /*--- Set a flag for unweighted or weighted least-squares. ---*/
+
+            weighted = true;
+            if (commType == PERIODIC_SOL_ULS) {
+              weighted = false;
+            }
             
             /*--- Get coordinates for the current point. ---*/
             
@@ -993,10 +1001,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   }
                 }
                 
-                weight = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++) {
-                  weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                             (rotCoord_j[iDim]-rotCoord_i[iDim]));
+                if (weighted) {
+                  weight = 0.0;
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                               (rotCoord_j[iDim]-rotCoord_i[iDim]));
+                  }
+                } else {
+                  weight = 1.0;
                 }
                 
                 /*--- Sumations for entries of upper triangular matrix R ---*/
@@ -1066,13 +1078,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             break;
             
-          case PERIODIC_PRIM_LS:
+          case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
             
             /*--- For L-S gradient calculations with rotational periodicity,
              we will need to rotate the x,y,z components. To make the process
              easier, we choose to rotate the initial periodic point and their
              neighbor points into their location on the donor marker before
              computing the terms that we need to communicate. ---*/
+            
+            /*--- Set a flag for unweighted or weighted least-squares. ---*/
+            
+            weighted = true;
+            if (commType == PERIODIC_PRIM_ULS) {
+              weighted = false;
+            }
             
             /*--- Get coordinates ---*/
             
@@ -1191,10 +1210,15 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   }
                 }
                 
-                weight = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++)
-                weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                           (rotCoord_j[iDim]-rotCoord_i[iDim]));
+                if (weighted) {
+                  weight = 0.0;
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                               (rotCoord_j[iDim]-rotCoord_i[iDim]));
+                  }
+                } else {
+                  weight = 1.0;
+                }
                 
                 /*--- Sumations for entries of upper triangular matrix R ---*/
                 
@@ -1710,7 +1734,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                   base_nodes->SetGradient_Primitive(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim] + base_nodes->GetGradient_Primitive(iPoint, iVar, iDim));
               break;
               
-            case PERIODIC_SOL_LS:
+            case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
               
               /*--- For L-S, we build the upper triangular matrix and the
                r.h.s. vector by accumulating from all periodic partial
@@ -1731,7 +1755,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               
               break;
               
-            case PERIODIC_PRIM_LS:
+            case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
               
               /*--- For L-S, we build the upper triangular matrix and the
                r.h.s. vector by accumulating from all periodic partial
@@ -3097,8 +3121,13 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   /*--- Correct the gradient values for any periodic boundaries. ---*/
   
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
+    if (weighted) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
+    } else {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_ULS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_ULS);
+    }
   }
   
   /*--- Second loop over points of the grid to compute final gradient ---*/

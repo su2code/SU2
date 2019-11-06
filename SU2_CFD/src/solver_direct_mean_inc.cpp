@@ -3777,8 +3777,13 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    if (weighted) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    } else {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
+    }
   }
   
   /*--- Second loop over points of the grid to compute final gradient ---*/
