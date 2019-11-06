@@ -783,8 +783,8 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
 
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    // admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
-    admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+    admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
   admissible_step *= cwolfeone;
 
@@ -796,7 +796,8 @@ void COneShotFluidDriver::StoreGradDotDir(){
   GradDotDir = 0.0;
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+    GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
 }
 
