@@ -255,19 +255,19 @@ void COneShotFluidDriver::RunOneShot(){
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
         LoadMultiplier();
-        // UpdateMultiplier(stepsize);
+        UpdateMultiplier(stepsize);
       }
       else{
         /*--- Store and update constraint multiplier ---*/
         StoreMultiplier();
-        // UpdateMultiplier(1.0);
+        UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      UpdateMultiplier(1.0);
+      // UpdateMultiplier(1.0);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -311,7 +311,7 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
        InnerIter > config->GetOneShotStart()                   && 
        InnerIter < config->GetOneShotStop()                    &&
-       (!config->GetZeroStep() || CheckFirstWolfe() || !bool_tol)) {
+       (!config->GetZeroStep() || CheckFirstWolfe())) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
@@ -333,7 +333,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
-    CheckMultiplier();
+    // CheckMultiplier();
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
