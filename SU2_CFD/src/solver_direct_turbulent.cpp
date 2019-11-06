@@ -474,13 +474,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
   
-  /* Only apply the turbulent under-relaxation to the SA variants. */
+  /* Only apply the turbulent under-relaxation to the SA variants. The
+   SA_NEG model is more robust due to allowing for negative nu_tilde,
+   so the under-relaxation is not applied to that variant. */
   
   bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
                    (config->GetKind_Turb_Model() == SA_E)      ||
                    (config->GetKind_Turb_Model() == SA_COMP)   ||
-                   (config->GetKind_Turb_Model() == SA_E_COMP) ||
-                   (config->GetKind_Turb_Model() == SA_NEG));
+                   (config->GetKind_Turb_Model() == SA_E_COMP));
   
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
