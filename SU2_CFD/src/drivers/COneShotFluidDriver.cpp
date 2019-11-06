@@ -258,13 +258,13 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateMultiplier(stepsize);
       }
       else{
-        /*--- Compute and store GradL dot p ---*/
-        StoreGradDotDir();
-
         /*--- Store and update constraint multiplier ---*/
         // StoreMultiplier();
         UpdateMultiplier(1.0);
       }
+
+      /*--- Compute and store GradL dot p ---*/
+      StoreGradDotDir();
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -794,7 +794,7 @@ void COneShotFluidDriver::StoreGradDotDir(){
   GradDotDir = 0.0;
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    GradDotDir += SearchDirection[iDV]*ShiftedLagrangianGradient[iDV];
+    GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
 }
 
