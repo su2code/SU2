@@ -254,17 +254,20 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // LoadMultiplier();
+        LoadMultiplier();
         // UpdateMultiplier(stepsize);
       }
       else{
         /*--- Store and update constraint multiplier ---*/
-        // StoreMultiplier();
-        UpdateMultiplier(1.0);
+        StoreMultiplier();
+        // UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
+
+      /*--- Update multiplier ---*/
+      UpdateMultiplier(1.0);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -308,8 +311,7 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
        InnerIter > config->GetOneShotStart()                   && 
        InnerIter < config->GetOneShotStop()                    &&
-       (!CheckFirstWolfe() || bool_tol)                        && 
-       config->GetZeroStep()) {
+       (!config->GetZeroStep() || CheckFirstWolfe() || !bool_tol)) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
@@ -1235,7 +1237,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
        helper+= BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
-    Multiplier[iConstr] = Multiplier[iConstr] - helper*stepsize*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] = Multiplier[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
   }
 }
 
