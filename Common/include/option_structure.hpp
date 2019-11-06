@@ -1991,13 +1991,15 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_SENSOR     =  6,  /*!< \brief Dissipation sensor communication (periodic only). */
   PERIODIC_SOL_GG     =  7,  /*!< \brief Solution gradient communication for Green-Gauss (periodic only). */
   PERIODIC_PRIM_GG    =  8,  /*!< \brief Primitive gradient communication for Green-Gauss (periodic only). */
-  PERIODIC_SOL_LS     =  9,  /*!< \brief Solution gradient communication for Least Squares (periodic only). */
-  PERIODIC_PRIM_LS    = 10,  /*!< \brief Primitive gradient communication for Least Squares (periodic only). */
+  PERIODIC_SOL_LS     =  9,  /*!< \brief Solution gradient communication for weighted Least Squares (periodic only). */
+  PERIODIC_PRIM_LS    = 10,  /*!< \brief Primitive gradient communication for weighted Least Squares (periodic only). */
   PERIODIC_LIM_SOL_1  = 11,  /*!< \brief Solution limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
-  PERIODIC_IMPLICIT   = 15   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_IMPLICIT   = 15,   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   = 17  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
 };
 
 /*!
