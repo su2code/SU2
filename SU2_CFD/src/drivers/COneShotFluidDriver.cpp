@@ -781,7 +781,8 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
 
   for (iDV=0;iDV<nDV_Total;iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    // admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
   admissible_step *= cwolfeone;
 
