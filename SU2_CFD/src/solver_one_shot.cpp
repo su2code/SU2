@@ -49,9 +49,9 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdj
 COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config, direct_solver, Kind_Solver, iMesh) {
 
   rho       = 0.0;
-  rho_old   = 0.0;
+  rho_old   = 1.0;
   theta     = 0.0;
-  theta_old = 0.0;
+  theta_old = 1.0;
   nConstr   = config->GetnConstr();
   nActiveDV = 0;
   grad_norm = 0.0;
