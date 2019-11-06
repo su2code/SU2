@@ -333,7 +333,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
-    // CheckMultiplier();
+    CheckMultiplier();
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
