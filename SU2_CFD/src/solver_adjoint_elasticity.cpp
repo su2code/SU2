@@ -1045,36 +1045,6 @@ void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config)
 
 }
 
-
-void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-
-  unsigned long iPoint, iVertex;
-  bool dynamic = (config->GetTime_Domain());
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (nDim == 2) {
-      Solution[0] = 0.0;  Solution[1] = 0.0;
-    }
-    else {
-      Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-    }
-
-    nodes->SetSolution(iPoint,Solution);
-
-    if (dynamic){
-      nodes->SetSolution_Vel(iPoint,Solution);
-      nodes->SetSolution_Accel(iPoint,Solution);
-    }
-
-  }
-
-}
-
 void CDiscAdjFEASolver::ReadDV(CConfig *config) {
 
   unsigned long index;

@@ -548,12 +548,10 @@ private:
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
-  su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
   su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
-  unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
@@ -774,7 +772,6 @@ private:
   Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
-  Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
   Specific_Heat_Cv,     /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,     /*!< \brief Non-dimensional specific heat at constant volume. */
   Thermal_Expansion_Coeff,     /*!< \brief Thermal expansion coefficient. */
@@ -1684,12 +1681,6 @@ public:
    * \return Value of the constant: Cp
    */
   su2double GetSpecific_Heat_Cp(void);
-
-  /*!
-   * \brief Get the value of the specific heat for solids.
-   * \return Specific heat number (solid).
-   */
-  su2double GetSpecific_Heat_Cp_Solid(void);
   
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
@@ -1814,10 +1805,10 @@ public:
   su2double GetThermalDiffusivity_Solid(void);
 
   /*!
-   * \brief Get the temperature in solids at freestream conditions.
+   * \brief Get the temperature in solids at initial conditions.
    * \return Freestream temperature (solid).
    */
-  su2double GetTemperature_Freestream_Solid(void);
+  su2double GetTemperature_Initial_Solid(void);
   
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.

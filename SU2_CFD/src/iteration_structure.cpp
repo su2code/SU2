@@ -3217,16 +3217,6 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
 
   }
 
-  unsigned short iMarker;
-
-  /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
-  for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
-  switch (config[val_iZone]->GetMarker_All_KindBC(iMarker)) {
-    case CLAMPED_BOUNDARY:
-    solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry[val_iZone][val_iInst][MESH_0],
-        numerics[val_iZone][val_iInst][MESH_0][FEA_SOL][FEA_TERM], config[val_iZone], iMarker);
-    break;
-  }
 }
 
 CDiscAdjHeatIteration::CDiscAdjHeatIteration(CConfig *config) : CIteration(config) { }

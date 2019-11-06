@@ -37,9 +37,9 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
-#include "../../../Common/include/option_structure.hpp"
-#include "../../../Common/include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../../Common/include/mpi_structure.hpp"
+#include "../../../../Common/include/option_structure.hpp"
+#include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 
 class CGeometry;
 class CConfig;
