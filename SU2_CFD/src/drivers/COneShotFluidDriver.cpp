@@ -259,8 +259,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else{
         /*--- Store and update constraint multiplier ---*/
-        StoreMultiplier();
-        UpdateMultiplier(1.0);
+        // StoreMultiplier();
+        // UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
@@ -291,6 +291,9 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+
+    /*--- Update multiplier ---*/
+    if(ArmijoIter == 0) UpdateMultiplier(1.0);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian(true);
