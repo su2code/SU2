@@ -41,6 +41,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
+  
   unsigned short nZone = SINGLE_ZONE, nDim;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
@@ -48,6 +49,7 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   bool periodic = false;
 
+  
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
@@ -60,9 +62,11 @@ int main(int argc, char *argv[]) {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
+
   
   if (argc == 2) { strcpy(config_file_name, argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
+
 
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
@@ -70,12 +74,14 @@ int main(int argc, char *argv[]) {
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
+
   if (config->GetKind_Solver() == MULTIZONE)
     nZone  = config->GetnConfigFiles();
   else
     nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+
 
   CFEMInterpolationDriver *InterpolationDriver = NULL;
 
@@ -84,6 +90,7 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
+
 
   InterpolationDriver = new CFEMInterpolationDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 

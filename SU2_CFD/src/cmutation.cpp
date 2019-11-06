@@ -49,6 +49,7 @@ CMutation::CMutation(su2double *composition, su2double nSpecies, Mutation::Mixtu
   Ds = new su2double[ns];
   Xs = new su2double[ns];
 
+
   
 }
 
@@ -58,7 +59,8 @@ CMutation::~CMutation(void) {
   delete [] Ds;
   delete [] hs;
   delete [] Xs;
-  
+  delete [] Cp_ks;
+  //delete [] Ws;
 }
 
 vector<su2double> CMutation::Mutation_MolarMass(){
@@ -195,29 +197,31 @@ vector<su2double> CMutation::Mutation_Get_SpeciesEnergies(su2double* cs, su2doub
 }
 
 
-su2double* CMutation::Mutation_Get_NetProductionRates(su2double* cs, su2double rho, su2double T, su2double Tve){
+vector<su2double> CMutation::Mutation_Get_NetProductionRates(su2double* cs, su2double rho, su2double T, su2double Tve){
    
-   Ws = new su2double[ns];
+   //Ws = new su2double[ns];
 
-   int nReactions;
+  Ws.resize(ns);
+
+   //int nReactions;
 
    Mutation_UpdateMixtureState(cs, rho, T, Tve);
 
 
-   nReactions = mix.nReactions();
+   //nReactions = mix.nReactions();
    
    
-   su2double *kf = new su2double[nReactions];
-   su2double *kb = new su2double[nReactions];
+   //su2double *kf = new su2double[nReactions];
+   //su2double *kb = new su2double[nReactions];
 
-   mix.forwardRateCoefficients(kf);
-   mix.backwardRateCoefficients(kb);
+   //mix.forwardRateCoefficients(kf);
+   //mix.backwardRateCoefficients(kb);
 
    //std::cout << "----- MUTATION -----"<<  std::endl ;
 
    //for (i = 0; i < nReactions; i++) std::cout << "kf=" << kf[i] << " kb=" << kb[i] << std::endl ;
 
-   mix.netProductionRates(Ws);
+   mix.netProductionRates(Ws.data());
 
    //std::cout << "W[N2]=" << Ws[0] <<  std::endl ;
    //std::cout << "W[N]="  << Ws[1] <<  std::endl <<  std::endl;
@@ -229,16 +233,17 @@ su2double* CMutation::Mutation_Get_NetProductionRates(su2double* cs, su2double r
 
 }
 
-vector<su2double> CMutation::Mutation_Get_VTEnergysourceTerm(su2double* cs, su2double rho, su2double T, su2double Tve) {
+vector<su2double> CMutation::Mutation_Get_EnergysourceTerm(su2double* cs, su2double rho, su2double T, su2double Tve) {
 
-   OmegaVT.resize(1);
+   Omega.resize(1);
    
    Mutation_UpdateMixtureState(cs, rho, T, Tve);
 
-   mix.energyTransferSource(OmegaVT.data());
+   mix.energyTransferSource(Omega.data());
 
-   return OmegaVT;
+   return Omega;
 }
+
 
 su2double CMutation::Mutation_Get_ReferenceTemperature(su2double* cs, su2double rho, su2double T, su2double Tve) {
 

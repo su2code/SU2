@@ -567,6 +567,8 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   cs_j    = new su2double[nSpecies];
   
 
+  RHOS_INDEX    = 0;
+
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
   if (RHOS_INDEX != 0){
@@ -2638,31 +2640,40 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
                                     CConfig *config) {  //Cat ver esta funcao com cuidado
 
   /*--- Nonequilibrium chemistry ---*/
-  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
-  unsigned short nHeavy, nEl, nEve;
-  int ***RxnMap;
-  su2double T_min, epsilon;
-  su2double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
-  su2double rho, rhoCvtr, rhoCvve, P;
-  su2double *Ms, fwdRxn, bkwRxn, alpha, RuSI, Ru;
-  su2double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
-  su2double *hf, *Tref, *xi;
-  su2double af, bf, ab, bb, coeff;
-  su2double dThf, dThb;
-  su2double *cs, *Ws;
+  //unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
+  //unsigned short nHeavy, nEl, nEve;
+  //int ***RxnMap;
+  //su2double T_min, epsilon;
+  //su2double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
+  //su2double rho, rhoCvtr, rhoCvve, P;
+  //su2double *Ms, fwdRxn, bkwRxn, alpha, RuSI, Ru;
+  //su2double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
+  //su2double *hf, *Tref, *xi;
+  //su2double af, bf, ab, bb, coeff;
+  //su2double dThf, dThb;
+  
+  //Ws = new su2double[nSpecies];
 
-  Ws = new su2double[nSpecies];
+  su2double *cs, rho, T, Tve, OmegaCV;
+  unsigned short iVar, iSpecies;
+
+
+
+
   cs = new su2double[nSpecies];
+  //Ws = new su2double[nSpecies];
+
+  vector<su2double> Ws;
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;
   }
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
-  }
+  //if (implicit) {
+  //  for (iVar = 0; iVar < nVar; iVar++)
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //      val_Jacobian_i[iVar][jVar] = 0.0;
+  //}
 
 
   /*--- Define artificial chemistry parameters ---*/
@@ -2671,105 +2682,130 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   //       source term.
   
 
-  T_min   = 800.0;
-  epsilon = 80;
+  //T_min   = 800.0;
+  //epsilon = 80;
 
   /*--- Define preferential dissociation coefficient ---*/
-  alpha = 0.3;
+  //alpha = 0.3;
 
   /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+  //if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  //else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Rename for convenience ---*/
-  RuSI    = UNIVERSAL_GAS_CONSTANT;
-  Ru      = 1000.0*RuSI;
+  //RuSI    = UNIVERSAL_GAS_CONSTANT;
+  //Ru      = 1000.0*RuSI;
+  //P       = V_i[P_INDEX];
+
   rho     = V_i[RHO_INDEX];
-  P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  rhoCvtr = V_i[RHOCVTR_INDEX];
-  rhoCvve = V_i[RHOCVVE_INDEX];
+  //rhoCvtr = V_i[RHOCVTR_INDEX];
+  //rhoCvve = V_i[RHOCVVE_INDEX];
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
 
   /*--- Acquire parameters from the configuration file ---*/
-  nReactions = config->GetnReactions(); //Cat
-  Ms         = config->GetMolar_Mass();
-  RxnMap     = config->GetReaction_Map();
-  hf         = config->GetEnthalpy_Formation();
-  xi         = config->GetRotationModes();
-  Tref       = config->GetRefTemperature();
-  Tcf_a      = config->GetRxnTcf_a();
-  Tcf_b      = config->GetRxnTcf_b();
-  Tcb_a      = config->GetRxnTcb_a();
-  Tcb_b      = config->GetRxnTcb_b();
+  //nReactions = config->GetnReactions(); //Cat
+  //Ms         = config->GetMolar_Mass();
+  //RxnMap     = config->GetReaction_Map();
+  //hf         = config->GetEnthalpy_Formation();
+  //xi         = config->GetRotationModes();
+  //Tref       = config->GetRefTemperature();
+  //Tcf_a      = config->GetRxnTcf_a();
+  //Tcf_b      = config->GetRxnTcf_b();
+  //Tcb_a      = config->GetRxnTcb_a();
+  //Tcb_b      = config->GetRxnTcb_b();
 
-  for (iReaction = 0; iReaction < nReactions; iReaction++) {
+  //for (iReaction = 0; iReaction < nReactions; iReaction++) {
 
     /*--- Determine the rate-controlling temperature ---*/
-    af = Tcf_a[iReaction];
-    bf = Tcf_b[iReaction];
-    ab = Tcb_a[iReaction];
-    bb = Tcb_b[iReaction];
-    Trxnf = pow(T, af)*pow(Tve, bf);
-    Trxnb = pow(T, ab)*pow(Tve, bb);
+    //af = Tcf_a[iReaction];
+    //bf = Tcf_b[iReaction];
+    //ab = Tcb_a[iReaction];
+    //bb = Tcb_b[iReaction];
+    //Trxnf = pow(T, af)*pow(Tve, bf);
+    //Trxnb = pow(T, ab)*pow(Tve, bb);
+//
+    ///*--- Calculate the modified temperature ---*/
+    //Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
+    //Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
+//
+    ///*--- Get the Keq & Arrhenius coefficients ---*/
+    //GetKeqConstants(A, iReaction, config);
+    //Cf    = config->GetArrheniusCoeff(iReaction);
+    //eta   = config->GetArrheniusEta(iReaction);
+    //theta = config->GetArrheniusTheta(iReaction);
+//
+    ///*--- Calculate Keq ---*/
+    //Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
+    //    + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
+//
+    ///*--- Calculate rate coefficients ---*/
+    //kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
+    //kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
+    //kb  = kfb / Keq;
+//
+    //
+//
+    ///*--- Determine production & destruction of each species ---*/
+    //fwdRxn = 1.0;
+    //bkwRxn = 1.0;
+    //for (ii = 0; ii < 3; ii++) {
+    //  /*--- Reactants ---*/
+    //  iSpecies = RxnMap[iReaction][0][ii];
+    //  if ( iSpecies != nSpecies)
+    //    fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
+//
+    //  /*--- Products ---*/
+    //  jSpecies = RxnMap[iReaction][1][ii];
+    //  if (jSpecies != nSpecies) {
+    //    bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
+    //  }
+    //}
+    //fwdRxn = 1000.0 * kf * fwdRxn;
+    //bkwRxn = 1000.0 * kb * bkwRxn;
+//
+    //for (ii = 0; ii < 3; ii++) {
+    //  /*--- Products ---*/
+    //  iSpecies = RxnMap[iReaction][1][ii];
+    //  if (iSpecies != nSpecies) {
+    //    val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn)* Volume;
+    //    val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+    //        * eve_i[iSpecies] * Volume;
+    //  }
+    //  /*--- Reactants ---*/
+    //  iSpecies = RxnMap[iReaction][0][ii];
+    //  if (iSpecies != nSpecies) {
+    //    val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn)* Volume;
+    //    val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+    //        * eve_i[iSpecies] * Volume;
+    //  }
+    //}
 
-    /*--- Calculate the modified temperature ---*/
-    Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
-    Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
+    //vector<su2double> SpeciesEnergies;
 
-    /*--- Get the Keq & Arrhenius coefficients ---*/
-    GetKeqConstants(A, iReaction, config);
-    Cf    = config->GetArrheniusCoeff(iReaction);
-    eta   = config->GetArrheniusEta(iReaction);
-    theta = config->GetArrheniusTheta(iReaction);
+    Ws      = reactive_source->Get_NetProductionRates(cs, rho, T, Tve);
 
-    /*--- Calculate Keq ---*/
-    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
-        + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
+    //SpeciesEnergies = reactive_source->Get_SpeciesEnergies(cs, rho, T, Tve);
 
-    /*--- Calculate rate coefficients ---*/
-    kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
-    kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
-    kb  = kfb / Keq;
+    //std::cout << "NOT WORKING PROPERLY OMEGA CV"  << std::endl << std::endl << std::endl ;
+
+    //OmegaCV = reactive_source->Get_CVEnergysourceTerm(cs, rho, T, Tve);
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+
+    //std::cout << "Omega chem = "  << Ws[iSpecies]<< std::endl << std::endl << std::endl ;
+
+    val_residual[iSpecies] = Ws[iSpecies]* Volume; }
+  
+    //val_residual[nSpecies+nDim+1] += Ws[iSpecies] * SpeciesEnergies[nSpecies+iSpecies]  * Volume;  }
+
+//std::cout << "NOT WORKING PROPERLY OMEGA CV"  << std::endl << std::endl << std::endl ;
+
+
 
     
-
-    /*--- Determine production & destruction of each species ---*/
-    fwdRxn = 1.0;
-    bkwRxn = 1.0;
-    for (ii = 0; ii < 3; ii++) {
-      /*--- Reactants ---*/
-      iSpecies = RxnMap[iReaction][0][ii];
-      if ( iSpecies != nSpecies)
-        fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
-
-      /*--- Products ---*/
-      jSpecies = RxnMap[iReaction][1][ii];
-      if (jSpecies != nSpecies) {
-        bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
-      }
-    }
-    fwdRxn = 1000.0 * kf * fwdRxn;
-    bkwRxn = 1000.0 * kb * bkwRxn;
-
-    for (ii = 0; ii < 3; ii++) {
-      /*--- Products ---*/
-      iSpecies = RxnMap[iReaction][1][ii];
-      if (iSpecies != nSpecies) {
-        val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn)* Volume;
-        val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-            * eve_i[iSpecies] * Volume;
-      }
-      /*--- Reactants ---*/
-      iSpecies = RxnMap[iReaction][0][ii];
-      if (iSpecies != nSpecies) {
-        val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn)* Volume;
-        val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-            * eve_i[iSpecies] * Volume;
-      }
-    }
 
    
 
@@ -2781,115 +2817,115 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
    
     
 
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dkf[iVar] = 0.0;
-        dkb[iVar] = 0.0;
-        dRfok[iVar] = 0.0;
-        dRbok[iVar] = 0.0;
-      }
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        alphak[iSpecies] = 0;
-        betak[iSpecies]  = 0;
-      }
-
-      dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
-                                             + epsilon*epsilon          ));
-      dThb = 0.5 * (1.0 + (Trxnb-T_min)/sqrt((Trxnb-T_min)*(Trxnb-T_min)
-                                             + epsilon*epsilon          ));
-
-      /*--- Rate coefficient derivatives ---*/
-      // Fwd
-      coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dkf[iVar] = coeff * (  af*Trxnf/T*dTdU_i[iVar]
-                               + bf*Trxnf/Tve*dTvedU_i[iVar] );
-      }
-      // Bkw
-      coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dkb[iVar] = coeff*(  ab*Trxnb/T*dTdU_i[iVar]
-                             + bb*Trxnb/Tve*dTvedU_i[iVar])
-            - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
-            - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb * (  ab*Trxnb/T*dTdU_i[iVar]
-                                                           + bb*Trxnb/Tve*dTvedU_i[iVar]);
-      }
-
-      /*--- Rxn rate derivatives ---*/
-      for (ii = 0; ii < 3; ii++) {
-        /*--- Products ---*/
-        iSpecies = RxnMap[iReaction][1][ii];
-        if (iSpecies != nSpecies)
-          betak[iSpecies]++;
-        /*--- Reactants ---*/
-        iSpecies = RxnMap[iReaction][0][ii];
-        if (iSpecies != nSpecies)
-          alphak[iSpecies]++;
-      }
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        // Fwd
-        dRfok[iSpecies] =  0.001*alphak[iSpecies]/Ms[iSpecies]
-            * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
-                  max(0, alphak[iSpecies]-1)      );
-        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-          if (jSpecies != iSpecies)
-            dRfok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
-                                   alphak[jSpecies]                );
-        dRfok[iSpecies] *= 1000.0;
-        // Bkw
-        dRbok[iSpecies] =  0.001*betak[iSpecies]/Ms[iSpecies]
-            * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
-                  max(0, betak[iSpecies]-1)       );
-        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-          if (jSpecies != iSpecies)
-            dRbok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
-                                   betak[jSpecies]                 );
-        dRbok[iSpecies] *= 1000.0;
-      }
-
-      nEve = nSpecies+nDim+1;
-      for (ii = 0; ii < 3; ii++) {
-        /*--- Products ---*/
-        iSpecies = RxnMap[iReaction][1][ii];
-        if (iSpecies != nSpecies) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            val_Jacobian_i[iSpecies][iVar] +=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
-            val_Jacobian_i[nEve][iVar] +=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                * eve_i[iSpecies] * Volume;
-          }
-
-          for (jVar = 0; jVar < nVar; jVar++) {
-            val_Jacobian_i[nEve][jVar] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
-          }
-        }
-
-        /*--- Reactants ---*/
-        iSpecies = RxnMap[iReaction][0][ii];
-        if (iSpecies != nSpecies) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            val_Jacobian_i[iSpecies][iVar] -=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
-            val_Jacobian_i[nEve][iVar] -=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                * eve_i[iSpecies] * Volume;
-
-          }
-
-          for (jVar = 0; jVar < nVar; jVar++) {
-            val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
-          }
-        } // != nSpecies
-      } // ii
-    } // implicit
-  } // iReaction
+    //if (implicit) {
+    //  for (iVar = 0; iVar < nVar; iVar++) {
+    //    dkf[iVar] = 0.0;
+    //    dkb[iVar] = 0.0;
+    //    dRfok[iVar] = 0.0;
+    //    dRbok[iVar] = 0.0;
+    //  }
+    //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //    alphak[iSpecies] = 0;
+    //    betak[iSpecies]  = 0;
+    //  }
+//
+    //  dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
+    //                                         + epsilon*epsilon          ));
+    //  dThb = 0.5 * (1.0 + (Trxnb-T_min)/sqrt((Trxnb-T_min)*(Trxnb-T_min)
+    //                                         + epsilon*epsilon          ));
+//
+    //  /*--- Rate coefficient derivatives ---*/
+    //  // Fwd
+    //  coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
+    //  for (iVar = 0; iVar < nVar; iVar++) {
+    //    dkf[iVar] = coeff * (  af*Trxnf/T*dTdU_i[iVar]
+    //                           + bf*Trxnf/Tve*dTvedU_i[iVar] );
+    //  }
+    //  // Bkw
+    //  coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
+    //  for (iVar = 0; iVar < nVar; iVar++) {
+    //    dkb[iVar] = coeff*(  ab*Trxnb/T*dTdU_i[iVar]
+    //                         + bb*Trxnb/Tve*dTvedU_i[iVar])
+    //        - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
+    //        - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb * (  ab*Trxnb/T*dTdU_i[iVar]
+    //                                                       + bb*Trxnb/Tve*dTvedU_i[iVar]);
+    //  }
+//
+    //  /*--- Rxn rate derivatives ---*/
+    //  for (ii = 0; ii < 3; ii++) {
+    //    /*--- Products ---*/
+    //    iSpecies = RxnMap[iReaction][1][ii];
+    //    if (iSpecies != nSpecies)
+    //      betak[iSpecies]++;
+    //    /*--- Reactants ---*/
+    //    iSpecies = RxnMap[iReaction][0][ii];
+    //    if (iSpecies != nSpecies)
+    //      alphak[iSpecies]++;
+    //  }
+    //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //    // Fwd
+    //    dRfok[iSpecies] =  0.001*alphak[iSpecies]/Ms[iSpecies]
+    //        * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+    //              max(0, alphak[iSpecies]-1)      );
+    //    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+    //      if (jSpecies != iSpecies)
+    //        dRfok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
+    //                               alphak[jSpecies]                );
+    //    dRfok[iSpecies] *= 1000.0;
+    //    // Bkw
+    //    dRbok[iSpecies] =  0.001*betak[iSpecies]/Ms[iSpecies]
+    //        * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+    //              max(0, betak[iSpecies]-1)       );
+    //    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+    //      if (jSpecies != iSpecies)
+    //        dRbok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
+    //                               betak[jSpecies]                 );
+    //    dRbok[iSpecies] *= 1000.0;
+    //  }
+//
+    //  nEve = nSpecies+nDim+1;
+    //  for (ii = 0; ii < 3; ii++) {
+    //    /*--- Products ---*/
+    //    iSpecies = RxnMap[iReaction][1][ii];
+    //    if (iSpecies != nSpecies) {
+    //      for (iVar = 0; iVar < nVar; iVar++) {
+    //        val_Jacobian_i[iSpecies][iVar] +=
+    //            Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+    //                             -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+    //        val_Jacobian_i[nEve][iVar] +=
+    //            Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+    //                             -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+    //            * eve_i[iSpecies] * Volume;
+    //      }
+//
+    //      for (jVar = 0; jVar < nVar; jVar++) {
+    //        val_Jacobian_i[nEve][jVar] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+    //            * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
+    //      }
+    //    }
+//
+    //    /*--- Reactants ---*/
+    //    iSpecies = RxnMap[iReaction][0][ii];
+    //    if (iSpecies != nSpecies) {
+    //      for (iVar = 0; iVar < nVar; iVar++) {
+    //        val_Jacobian_i[iSpecies][iVar] -=
+    //            Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+    //                             -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+    //        val_Jacobian_i[nEve][iVar] -=
+    //            Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+    //                             -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+    //            * eve_i[iSpecies] * Volume;
+//
+    //      }
+//
+    //      for (jVar = 0; jVar < nVar; jVar++) {
+    //        val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+    //            * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
+    //      }
+    //    } // != nSpecies
+    //  } // ii
+    //} // implicit
+  //} // iReaction
 
 
 
@@ -2903,6 +2939,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   //std::cout << "Nemo: OmegaCV*Volume =" << val_residual[nSpecies+nDim+1] <<  std::endl ;
   //std::cout << "Nemo: OmegaCV =" << val_residual[nSpecies+nDim+1]/Volume <<  std::endl ;
   delete [] cs;
+  //delete [] Ws;
 
 
 }
@@ -2924,133 +2961,100 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   su2double Cs;
   su2double *Ms, *thetav;
 
-  vector<su2double> OmegaVT;
+  su2double OmegaVT;
 
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;
   }
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
-  }
+ //if (implicit) {
+ //  for (iVar = 0; iVar < nVar; iVar++)
+ //    for (jVar = 0; jVar < nVar; jVar++)
+ //      val_Jacobian_i[iVar][jVar] = 0.0;
+ //}
 
   /*--- Determine the number of heavy particle species ---*/
-  //if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  //else            { nHeavy = nSpecies;   nEl = 0; }
+ //if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+ //else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Rename for convenience ---*/
-//  RuSI    = UNIVERSAL_GAS_CONSTANT;
-//  Ru      = 1000.0*RuSI;
-//  P       = V_i[P_INDEX];
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
+  P       = V_i[P_INDEX];
   rho     = V_i[RHO_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-//  rhoCvtr = V_i[RHOCVTR_INDEX];
-//  rhoCvve = V_i[RHOCVVE_INDEX];
+  rhoCvtr = V_i[RHOCVTR_INDEX];
+  rhoCvve = V_i[RHOCVVE_INDEX];
   nEv     = nSpecies+nDim+1;
 
   /*--- Read from CConfig ---*/
-//  Ms        = config->GetMolar_Mass(); //cat
-//  thetav    = config->GetCharVibTemp();
-//
-//  /*--- Calculate mole fractions ---*/
-//  N    = 0.0;
-//  conc = 0.0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
-//    N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
+//Ms        = config->GetMolar_Mass(); //cat
+//thetav    = config->GetCharVibTemp();
+
+///*--- Calculate mole fractions ---*/
+//N    = 0.0;
+//conc = 0.0;
+//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//  conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
+//  N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
+//}
+//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//  X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
+
+///*--- Loop over species to calculate source term --*/
+//Qtv      = 0.0;
+//taunum   = 0.0;
+//taudenom = 0.0;
+//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) { 
+
+//  /*--- Rename for convenience ---*/
+//  rhos   = V_i[RHOS_INDEX+iSpecies];
+
+//  /*--- Millikan & White relaxation time ---*/
+//  num   = 0.0;
+//  denom = 0.0;
+
+//  
+
+//  for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+//    mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
+//    A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
+//    B_sr   = 0.015 * pow(mu, 0.25);
+//    tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42) ;
+
+//    
+//    num   += X[jSpecies]; // -------- Cat
+//    denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
 //  }
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
-//
-//  /*--- Loop over species to calculate source term --*/
-//  Qtv      = 0.0;
-//  taunum   = 0.0;
-//  taudenom = 0.0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) { 
-//
-//    /*--- Rename for convenience ---*/
-//    rhos   = V_i[RHOS_INDEX+iSpecies];
-//
-//    /*--- Millikan & White relaxation time ---*/
-//    num   = 0.0;
-//    denom = 0.0;
-//
-//    
-//
-//    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-//      mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-//      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
-//      B_sr   = 0.015 * pow(mu, 0.25);
-//      tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42) ;
-//
-//      
-//
-//      //std::cout << " Nemo: " << iSpecies << "," << jSpecies <<  std::endl ;
-//      //std::cout << " Nemo: A=" << A_sr << " B=" << B_sr  <<  std::endl ;
-//      //std::cout << " Nemo: tau_sr=" <<tau_sr[iSpecies][jSpecies] <<  std::endl  <<  std::endl ;
-//      
-//
-//
-//      num   += X[jSpecies]; // -------- Cat
-//      denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
-//    }
-//    tauMW[iSpecies] = num / denom;
-//
-//    /*--- Park limiting cross section ---*/
-//    Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
-//    tauP[iSpecies] = T*sqrt(T)/(Cs*N);
-//
-//    /*--- Species relaxation time ---*/
-//    taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
-//
-//    //std::cout << " Nemo:" << iSpecies <<  std::endl ;Ggg
-//    //std::cout << " Nemo: tauP[iSpecies] =" << tauP[iSpecies]  <<  std::endl ;
-//    //std::cout << " Nemo: taus=" << taus[iSpecies] <<  std::endl <<  std::endl ;
-//
-//    /*--- Calculate vib.-el. energies ---*/
-//    estar[iSpecies] = var->CalcEve(config, T, iSpecies);
-//
-//    /*--- Add species contribution to residual ---*/
-//    val_residual[nEv] += rhos * (estar[iSpecies] -
-//                                 eve_i[iSpecies]) / taus[iSpecies] * Volume;
-//
-//    //std::cout << " Nemo: EvibEq =" <<rhos * (estar[iSpecies]) <<  std::endl ;
-//    //std::cout << " Nemo: Evib =" <<  rhos * (eve_i[iSpecies]) <<  std::endl ;
-//
-//    
-//    
-//  }
+//  tauMW[iSpecies] = num / denom;
 
-   cs = new su2double[nSpecies];
+//  /*--- Park limiting cross section ---*/
+//  Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
+//  tauP[iSpecies] = T*sqrt(T)/(Cs*N);
 
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
-
-   //std::cout << " Nemo: ComputeVibRelaxation 1" <<  std::endl ;
-
-   //std::cout << "Mutation ComputeVibRelaxation 1"  << std::endl<< std::endl<< std::endl<< std::endl;
-
-   OmegaVT = reactive_source->Get_VTEnergysourceTerm(cs, rho, T, Tve);
-
-   //std::cout << "Mutation ComputeVibRelaxation 2"  << std::endl<< std::endl<< std::endl<< std::endl;
-
-   val_residual[nEv] = OmegaVT[0]*Volume;
-
-   //std::cout << "Mutation ComputeVibRelaxation 3"  << std::endl<< std::endl<< std::endl<< std::endl;
-
-   //std::cout << " Nemo: ComputeVibRelaxation 2" <<  std::endl ;
+//  /*--- Species relaxation time ---*/
+//  taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
 
 
-  //std::cout << " Nemo: OmegaVT*Volume =" << val_residual[nEv] <<  std::endl ;
+//  /*--- Calculate vib.-el. energies ---*/
+//  estar[iSpecies] = var->CalcEve(config, V_i, iSpecies);
 
-   //std::cout << " Nemo: OmegaVT =" << val_residual[nEv]/Volume <<  std::endl <<  std::endl;
+//  /*--- Add species contribution to residual ---*/
+//  val_residual[nEv] += rhos * (estar[iSpecies] -
+//                               eve_i[iSpecies]) / taus[iSpecies] * Volume;
 
-//  std::cout << " Mutation: OmegaVT =" << Residual[0] <<  std::endl <<  std::endl;
 
-  if (implicit) {
+//  
+//  
+//}
+
+   
+
+   
+
+//  if (implicit) {
     //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 //
     //  /*--- Rename ---*/
@@ -3064,7 +3068,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
     //}
     //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     //  val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
-  }
+//  }
 //<<<<<<< HEAD
 //=======
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -3096,7 +3100,18 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 //
   //std::cout << "Mutation ComputeVibRelaxation 4"  << std::endl<< std::endl<< std::endl<< std::endl;
 
-  delete [] cs;
+cs = new su2double[nSpecies];
+
+for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
+
+OmegaVT = reactive_source->Get_VTEnergysourceTerm(cs, rho, T, Tve);
+
+//std::cout << "OMEGA Total numerics= "  << OmegaVT <<  std::endl << std::endl << std::endl ;
+
+
+val_residual[nEv] = OmegaVT*Volume;
+
+delete [] cs;
 
 
 }

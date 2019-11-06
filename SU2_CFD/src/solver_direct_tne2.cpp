@@ -2718,38 +2718,33 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
 
-    /*--- Compute the non-equilibrium chemistry ---*/                              //Chemistry
-   // numerics->ComputeChemistry(Residual, Jacobian_i, config);
-//
-   // /*--- Check for errors before applying source to the linear system ---*/
-   // err = false;
-   // for (iVar = 0; iVar < nVar; iVar++)
-   //   if (Residual[iVar] != Residual[iVar]) err = true;
-   // if (implicit)
-   //   for (iVar = 0; iVar < nVar; iVar++)
-   //     for (jVar = 0; jVar < nVar; jVar++)
-   //       if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-//
-   // /*--- Apply the chemical sources to the linear system ---*/
-   // if (!err) {
-   //   LinSysRes.SubtractBlock(iPoint, Residual);
-   //   if (implicit)
-   //     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-   // } else
-   //   eChm_local++;
+    /*--- Compute the non-equilibrium chemistry ---*/                             
+    numerics->ComputeChemistry(Residual, Jacobian_i, config);
 
+  /*--- Check for errors before applying source to the linear system ---*/
+    err = false;
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Residual[iVar] != Residual[iVar]) err = true;
+    if (implicit)
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+  
+    /*--- Apply the chemical sources to the linear system ---*/
+    if (!err) {
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    } else
+      eChm_local++;
+  
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
 
-    //std::cout << "Mutation Source residual 2"  << std::endl<< std::endl<< std::endl<< std::endl;
-
+ 
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
 
-    //std::cout << "Mutation Source residual 3"  << std::endl<< std::endl<< std::endl<< std::endl;
-
-   
-    
-
+ 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -4421,7 +4416,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   
   Gamma     = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
   
-  //std::cout << setprecision(6)<< "Mutation: Gamma=" << Gamma << std::endl << std::endl;
+  std::cout << setprecision(6)<< "Mutation: Gamma=" << Gamma << std::endl << std::endl;
 
 
 
@@ -8652,37 +8647,36 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     }
 
     /*--- Compute the non-equilibrium chemistry ---*/    //Chemistry
-    //numerics->ComputeChemistry(Residual, Jacobian_i, config);
-//
-    ///*--- Check for errors in the Chemical source term ---*/
-    //err = false;
-    //for (iVar = 0; iVar < nVar; iVar++) {
-    //  if (err)
-    //    break;
-    //  if (Residual[iVar] != Residual[iVar])
-    //    err = true;
-    //  if (implicit)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
-    //        err = true;
-    //        break;
-    //      }
-    //}
-//
-    ///*--- Apply the chemical sources to the linear system ---*/
-    //if (!err) {
-    //  LinSysRes.SubtractBlock(iPoint, Residual);
-    //  if (implicit)
-    //    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    //} else
-    //  eChm_local++;
-//
-    ///*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-    //if (config->GetExtraOutput()) {
-    //  for (iVar = 0; iVar < nVar; iVar++) {
-    //    OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
-    //  }
-    //}
+  numerics->ComputeChemistry(Residual, Jacobian_i, config);
+  /*--- Check for errors in the Chemical source term ---*/
+  err = false;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    if (err)
+      break;
+    if (Residual[iVar] != Residual[iVar])
+      err = true;
+    if (implicit)
+      for (jVar = 0; jVar < nVar; jVar++)
+        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
+          err = true;
+          break;
+        }
+  }
+
+    /*--- Apply the chemical sources to the linear system ---*/
+    if (!err) {
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    } else
+      eChm_local++;
+
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+      }
+    }
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives

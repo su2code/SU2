@@ -12,7 +12,7 @@
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.p
  *  - Prof. Rafael Palacios' group at Imperial College London.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
  *  - Prof. Edwin van der Weide's group at the University of Twente.
@@ -57,7 +57,10 @@ CReactiveMutation::~CReactiveMutation(void) {
    delete [] mutation;
    delete [] Ds;
    delete [] hs;
-
+   delete [] comp;
+   delete [] Cp_trs;
+   delete [] Cp_ves;
+   //delete [] Ws;
  }
 
 void CReactiveMutation::InitializeMixture(CConfig *config) {
@@ -209,10 +212,10 @@ vector<su2double> CReactiveMutation::Get_SpeciesEnergies(su2double* cs, su2doubl
 }
 
 
-su2double* CReactiveMutation::Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve) {
+vector<su2double> CReactiveMutation::Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve) {
  
-  
-  Ws = new su2double[nSpecies];
+
+  //Ws = new su2double[nSpecies];
 
   Ws = mutation->Mutation_Get_NetProductionRates(cs, rho, T, Tve);
 
@@ -220,13 +223,27 @@ su2double* CReactiveMutation::Get_NetProductionRates(su2double *cs, su2double rh
 
 }
 
-vector<su2double> CReactiveMutation::Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve) {
+su2double CReactiveMutation::Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve) {
 
   
-  OmegaVT = mutation->Mutation_Get_VTEnergysourceTerm(cs, rho, T, Tve);
+  Omega = mutation->Mutation_Get_EnergysourceTerm(cs, rho, T, Tve);
+  OmegaVT = Omega[0];
+
+  //std::cout << "OMEGA Total = "  << OmegaVT <<  std::endl << std::endl << std::endl ;
 
   return OmegaVT;
 }
+
+//su2double CReactiveMutation::Get_CVEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve) {
+
+  
+  //Omega = mutation->Mutation_Get_EnergysourceTerm(cs, rho, T, Tve);
+  //OmegaCV = Omega[1];
+
+  //std::cout << "OMEGA CV = "  << OmegaCV <<  std::endl << std::endl << std::endl ;
+
+  //return OmegaCV;
+//}
 
 su2double CReactiveMutation::Get_ReferenceTemperature(su2double *cs, su2double rho, su2double T, su2double Tve) {
 
@@ -342,9 +359,11 @@ vector<su2double> CReactiveHardCode::Get_MixtureEnergies(su2double* cs, su2doubl
 
 vector<su2double> CReactiveHardCode::Get_SpeciesEnergies(su2double* cs, su2double rho, su2double T, su2double Tve) {}
 
-su2double* CReactiveHardCode::Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve) {}
+vector<su2double> CReactiveHardCode::Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 
-vector<su2double> CReactiveHardCode::Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve){}
+su2double CReactiveHardCode::Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve){}
+
+//su2double CReactiveHardCode::Get_CVEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve){}
 
 su2double  CReactiveHardCode::Get_ReferenceTemperature(su2double *cs, su2double rho, su2double T, su2double Tve) {}
   

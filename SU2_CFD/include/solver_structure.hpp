@@ -11,7 +11,7 @@
  * SU2 International Developers Society <www.su2devsociety.org>
  * with selected contributions from the open-source community.
  *
- * The main research teams contributing to the current release are:
+ * The main research teams contributing to the current release are:f
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
@@ -9255,6 +9255,9 @@ protected:
   /* Sliding meshes variables */
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  su2double Temperature_r, Temperature_l, Tve_r, Tve_l, pressure_r, pressure_l, Mach_r, Mach_l; 
+  su2double  *MassFrac_r, *MassFrac_l;
 
 
 public:

@@ -449,7 +449,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   Primitive[TVE_INDEX] = val_temperature_ve;
   Primitive[P_INDEX]   = val_pressure; 
 
- // std::cout << "Mutation VARIABLE 9"  << std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "Mutation VARIABLE 9"  << val_temperature_ve << std::endl<< std::endl;
 
 
 
@@ -1127,76 +1127,84 @@ void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
 su2double CTNE2EulerVariable::CalcEve(CConfig *config, su2double *PrimitiveVar, //Cat substituir isto tudo pela minha cena
                                       unsigned short val_Species) {
 
-  su2double *cs;
-  unsigned short iSpecies;
+ 
 
-  vector<su2double> SpeciesEnergies;
+//  unsigned short iEl, *nElStates, iSpecies;
+//  su2double *Ms, *thetav, **thetae, **g, *hf, *Tref, RuSI, Ru, *SpeciesEnergies, *cs;
+//  su2double Tve, Ev, Eel, Ef;
+//  su2double num, denom;
+// /*--- Read gas mixture properties from config ---*/
+//  Ms        = config->GetMolar_Mass();
+//  
+//  /*--- Rename for convenience ---*/
+//  RuSI  = UNIVERSAL_GAS_CONSTANT;
+//  Ru    = 1000.0*RuSI;
+//  Tve   = PrimitiveVar[TVE_INDEX];
+//  
+//  /*--- Electron species energy ---*/
+//  if ((ionization) && (val_Species == nSpecies-1)) {
+//  
+//    /*--- Get quantities from CConfig ---*/
+//    Tref = config->GetRefTemperature();
+//    hf   = config->GetEnthalpy_Formation();
+//  
+//    /*--- Calculate formation energy ---*/
+//    Ef = hf[val_Species] - Ru/Ms[val_Species] * Tref[val_Species];
+//  
+//    /*--- Electron t-r mode contributes to mixture vib-el energy ---*/
+//    Eel = (3.0/2.0) * Ru/Ms[val_Species] * (Tve - Tref[val_Species]) + Ef;
+//    Ev  = 0.0;
+//  
+//  }
+//  
+//  /*--- Heavy particle energy ---*/
+//  else {
+//  
+//    /*--- Read from CConfig ---*/
+//    thetav    = config->GetCharVibTemp();
+//    thetae    = config->GetCharElTemp();
+//    g         = config->GetElDegeneracy();
+//    nElStates = config->GetnElStates();
+//  
+//    /*--- Calculate vibrational energy (harmonic-oscillator model) ---*/
+//    if (thetav[val_Species] != 0.0)
+//      Ev = Ru/Ms[val_Species] * thetav[val_Species] / (exp(thetav[val_Species]/Tve)-1.0);
+//    else
+//      Ev = 0.0;
+//  
+//    /*--- Calculate electronic energy ---*/
+//    num = 0.0;
+//    denom = g[val_Species][0] * exp(-thetae[val_Species][0]/Tve);
+//    for (iEl = 1; iEl < nElStates[val_Species]; iEl++) {
+//      num   += g[val_Species][iEl] * thetae[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
+//      denom += g[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
+//    }
+//    Eel = Ru/Ms[val_Species] * (num/denom);
+//  }
+//
+//
+//return Ev + Eel;
 
-  //unsigned short iEl, *nElStates, iSpecies;
-  //su2double *Ms, *thetav, **thetae, **g, *hf, *Tref, RuSI, Ru, *SpeciesEnergies, *cs;
-  //su2double Tve, Ev, Eel, Ef;
-  //su2double num, denom;
 
-  ///*--- Read gas mixture properties from config ---*/
-  //Ms        = config->GetMolar_Mass();
-  //
-  ///*--- Rename for convenience ---*/
-  //RuSI  = UNIVERSAL_GAS_CONSTANT;
-  //Ru    = 1000.0*RuSI;
-  //Tve   = PrimitiveVar[TVE_INDEX];
-  //
-  ///*--- Electron species energy ---*/
-  //if ((ionization) && (val_Species == nSpecies-1)) {
-  //
-  //  /*--- Get quantities from CConfig ---*/
-  //  Tref = config->GetRefTemperature();
-  //  hf   = config->GetEnthalpy_Formation();
-  //
-  //  /*--- Calculate formation energy ---*/
-  //  Ef = hf[val_Species] - Ru/Ms[val_Species] * Tref[val_Species];
-  //
-  //  /*--- Electron t-r mode contributes to mixture vib-el energy ---*/
-  //  Eel = (3.0/2.0) * Ru/Ms[val_Species] * (Tve - Tref[val_Species]) + Ef;
-  //  Ev  = 0.0;
-  //
-  //}
-  //
-  ///*--- Heavy particle energy ---*/
-  //else {
-  //
-  //  /*--- Read from CConfig ---*/
-  //  thetav    = config->GetCharVibTemp();
-  //  thetae    = config->GetCharElTemp();
-  //  g         = config->GetElDegeneracy();
-  //  nElStates = config->GetnElStates();
-  //
-  //  /*--- Calculate vibrational energy (harmonic-oscillator model) ---*/
-  //  if (thetav[val_Species] != 0.0)
-  //    Ev = Ru/Ms[val_Species] * thetav[val_Species] / (exp(thetav[val_Species]/Tve)-1.0);
-  //  else
-  //    Ev = 0.0;
-  //
-  //  /*--- Calculate electronic energy ---*/
-  //  num = 0.0;
-  //  denom = g[val_Species][0] * exp(-thetae[val_Species][0]/Tve);
-  //  for (iEl = 1; iEl < nElStates[val_Species]; iEl++) {
-  //    num   += g[val_Species][iEl] * thetae[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
-  //    denom += g[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
-  //  }
-  //  Eel = Ru/Ms[val_Species] * (num/denom);
-  //}
+
+ 
+
+
+
 
   
+su2double *cs;
+unsigned short iSpecies;
 
-  cs = new su2double[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = PrimitiveVar[RHOS_INDEX+iSpecies]/PrimitiveVar[RHO_INDEX];
+ vector<su2double> SpeciesEnergies;
+ cs = new su2double[nSpecies];
+ for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = PrimitiveVar[RHOS_INDEX+iSpecies]/PrimitiveVar[RHO_INDEX];
 
-  
-  SpeciesEnergies = reactive_TNE2variable->Get_SpeciesEnergies(cs, PrimitiveVar[RHO_INDEX], PrimitiveVar[T_INDEX], PrimitiveVar[TVE_INDEX]);
-  
-  delete [] cs;
-  
-  return SpeciesEnergies[nSpecies+val_Species];
+ SpeciesEnergies = reactive_TNE2variable->Get_SpeciesEnergies(cs, PrimitiveVar[RHO_INDEX], PrimitiveVar[T_INDEX], PrimitiveVar[TVE_INDEX]);
+ 
+ delete [] cs;
+ 
+ return SpeciesEnergies[nSpecies+val_Species];
 }
 
 su2double CTNE2EulerVariable::CalcHs(CConfig *config, su2double *PrimitiveVar, unsigned short val_Species) { //Cat

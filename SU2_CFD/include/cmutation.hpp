@@ -74,11 +74,11 @@ protected:
    
    Mutation::Mixture mix; //!<Mixture object
    unsigned short ns, i;
-   su2double  *Cp_ks, E,  *Ws,  gammaFrozen, gammaEquilibrium, Tref, *hs;
+   su2double  *Cp_ks, E,  gammaFrozen, gammaEquilibrium, Tref, *hs;
    su2double mu, *Ds;
    su2double  a, Density, *Xs;
 
-   vector<su2double> MolarMass, Cv_ks, Energies, OmegaVT, hf, Energies_species,  Temp,  lambda, rhos, temperatures;
+   vector<su2double> MolarMass, Cv_ks, Energies, Omega, hf, Energies_species,  Temp,  lambda, rhos, temperatures, Ws;
 
 
 public:
@@ -113,9 +113,9 @@ public:
 
     vector<su2double> Mutation_Get_SpeciesEnergies(su2double* cs, su2double rho, su2double T, su2double Tve);
     
-    su2double* Mutation_Get_NetProductionRates(su2double* cs, su2double rho, su2double T, su2double Tve);
+    vector<su2double> Mutation_Get_NetProductionRates(su2double* cs, su2double rho, su2double T, su2double Tve);
 
-    vector<su2double> Mutation_Get_VTEnergysourceTerm(su2double* cs, su2double rho, su2double T, su2double Tve);
+    vector<su2double> Mutation_Get_EnergysourceTerm(su2double* cs, su2double rho, su2double T, su2double Tve);
 
     su2double  Mutation_Get_ReferenceTemperature(su2double* cs, su2double rho, su2double T, su2double Tve);
 

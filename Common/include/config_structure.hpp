@@ -1175,6 +1175,7 @@ private:
   string GasModel;        /*!< \brief Gas Model. */
   string TransportModel;
   bool MUTATION_PP;             /*!< \brief Determines if Mutation++ is to be used  */ 
+
   
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1187,7 +1188,8 @@ private:
    class of COptionBase that turns the string into a value) ---*/
   
   map<string, COptionBase*> option_map;
-  
+
+
   
   // All of the addXxxOptions take in the name of the option, and a refernce to the field of that option
   // in the option structure. Depending on the specific type, it may take in a default value, and may
@@ -2011,6 +2013,7 @@ public:
    * \return Non-dimensionalized freestream pressure.
    */
   su2double GetPressure_FreeStream(void);
+
   
   /*!
    * \brief Get the value of the non-dimensionalized freestream pressure.
@@ -3841,6 +3844,8 @@ public:
 
 
   bool GetMUTATION_PP( void);
+
+  
 
 
   /*!
@@ -9482,6 +9487,53 @@ public:
    * \return File name of the target grid.
    */
   string GetTarget_Mesh_FileName(void);
+
+
+  // Shocktube
+  /*!
+   * \brief Check if shocktube problem is to be simulated 
+   * \return YES  if shocktube problem is to be simulated 
+   */
+  bool ShockTube(void);
+
+  /*!
+   * \brief Get the value of the diafragm position.
+   */
+  su2double Get_DiafragmPosition(void);
+
+   /*!
+   * \brief Get the values of the mach for shocktube left and right states.
+   */
+  su2double GetMach_LeftState(void);
+  su2double GetMach_RightState(void);
+
+  /*!
+   * \brief Get the values of the non-dimensionalized temperature for shocktube left and right states.
+   */
+  su2double GetTemperature_LeftState(void);
+  su2double GetTemperature_RightState(void);
+
+
+  /*!
+   * \brief Get the values of the non-dimensionalized vib-electronic temperature for shocktube left and right states.
+   */
+  su2double GetTemperature_ve_LeftState(void);
+  su2double GetTemperature_ve_RightState(void);
+
+  /*!
+   * \brief Get the values of the non-dimensionalized pressure for shocktube left and right states.
+   */
+  su2double GetPressure_LeftState(void);
+  su2double GetPressure_RightState(void);
+
+  /*!
+   * \brief Get the values of the mass fractions for shocktube left and right states.
+   */
+  su2double* GetMassFrac_LeftState(void);
+  su2double* GetMassFrac_RightState(void);
+
+
+
 };
 
 #include "config_structure.inl"

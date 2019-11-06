@@ -55,8 +55,9 @@ inline su2double  CReactive::Get_GammaEquilibrium(su2double *cs, su2double rho, 
 inline su2double  CReactive::Get_MixtureEnergy(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 inline vector<su2double> CReactive::Get_MixtureEnergies(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 inline vector<su2double> CReactive::Get_SpeciesEnergies(su2double* cs, su2double rho, su2double T, su2double Tve) {}
-inline su2double* CReactive::Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve) {}
-inline vector<su2double> CReactive::Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve) {}
+inline vector<su2double> CReactive::Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve) {}
+inline su2double CReactive::Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve) {}
+//inline su2double CReactive::Get_CVEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 inline su2double  CReactive::Get_ReferenceTemperature(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 inline vector<su2double> CReactive::Get_EnthalpiesFormation(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 inline su2double* CReactive::Get_Enthalpies(su2double *cs, su2double rho, su2double T, su2double Tve) {}

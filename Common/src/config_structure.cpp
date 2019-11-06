@@ -61,6 +61,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   
   /*--- Store MPI rank and size ---*/ 
   
+ 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
@@ -68,6 +69,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   SetPointersNull();
 
+  
   /*--- Reading config options  ---*/
 
   
@@ -79,15 +81,18 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetConfig_Parsing(case_filename);
 
   
+  
   /*--- Configuration file postprocessing ---*/
 
   SetPostprocessing(val_software, val_iZone, val_nDim);
+
 
   
   /*--- Configuration file boundaries/markers setting ---*/
 
   SetMarkers(val_software);
 
+ 
   
   /*--- Configuration file output ---*/
 
@@ -103,26 +108,38 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+   
   
   /*--- Initialize pointers to Null---*/
 
   SetPointersNull();
 
+  
+
   /*--- Reading config options  ---*/
 
   SetConfig_Options(0, 1);
+
+  
 
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_filename);
 
+  
+
   /*--- Configuration file postprocessing ---*/
 
   SetPostprocessing(val_software, 0, 1);
 
+  
+
   /*--- Configuration file boundaries/markers setting ---*/
 
   SetMarkers(val_software);
+
+  
 
 }
 
@@ -760,6 +777,20 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
+ 
+  /*!\par CONFIG_CATEGORY: Species Model \ingroup Config*/
+   /* DESCRIPTION: Specify if Mutation++ library is used */
+  addBoolOption("MUTATION_PP", MUTATION_PP, true);
+  /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ */
+  addStringOption("GAS_MODEL", GasModel, string("N2"));
+  /* DESCRIPTION: Specify chemical model for multi-species simulations */
+  addEnumOption(GasModel, Kind_GasModel, GasModel_Map, N2);
+  /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
+  addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WBE);
+  /* DESCRIPTION: Specify mass fraction of each species */
+  addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+  
+
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -801,17 +832,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
-  /*!\par CONFIG_CATEGORY: Species Model \ingroup Config*/
-   /* DESCRIPTION: Specify if Mutation++ library is used */
-  addBoolOption("MUTATION_PP", MUTATION_PP, true);
-  /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ */
-  addStringOption("GAS_MODEL", GasModel, string("N2"));
-  /* DESCRIPTION: Specify chemical model for multi-species simulations */
-  addEnumOption(GasModel, Kind_GasModel, GasModel_Map, N2);
-  /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
-  addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WBE);
-  /* DESCRIPTION: Specify mass fraction of each species */
-  addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+
+   
+
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
@@ -889,6 +912,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -2654,8 +2678,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
+  
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/
+
 
   Wall_Functions = false;
   if (nMarker_WallFunctions > 0) {
@@ -2670,6 +2696,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     }
   }
+
   
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
@@ -2711,6 +2738,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
 
+  
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
 
   if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
@@ -2727,6 +2755,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
   if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
 
+  
   /*--- Set the default for thrust in ActDisk ---*/
   
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
@@ -2747,6 +2776,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObjW=1;
   }
 
+  
   /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
@@ -2786,6 +2816,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
   }
+
 
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
@@ -2877,6 +2908,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Multizone_Problem = false;
   }
 
+  
 
   if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
     Linear_Solver_Iter = Linear_Solver_Iter_Heat;
@@ -2941,6 +2973,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Gas_Constant = 287.058;
     }
   }
+
 
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
@@ -3641,6 +3674,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_2nd_Heat = Kappa_Heat[0];
   Kappa_4th_Heat = Kappa_Heat[1];
   
+
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
   
@@ -3777,6 +3811,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
   Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
 
+ 
   /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
 
   if (ContinuousAdjoint) {
@@ -3925,6 +3960,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("PHYSICAL_PROBLEM must be set in the configuration file", CURRENT_FUNCTION);
   }
   
+
   /*--- Set a flag for viscous simulations ---*/
   
   Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
@@ -3936,6 +3972,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == FEM_RANS               ) ||
              ( Kind_Solver == FEM_LES                ));
 
+  
   /*--- Reacting flows iniatilization ---*/
   if (( Kind_Solver == TNE2_EULER             ) ||
       ( Kind_Solver == TNE2_NAVIER_STOKES     )  ) {
@@ -3992,6 +4029,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
         case N2:
 
+          
           /*--- Check for errors in the initialization ---*/
           init_err = false;
           if (nSpecies != 2) {
@@ -4053,6 +4091,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
             MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
 
+
           /*--- Assign gas properties ---*/
 
           // Wall mass fractions for catalytic boundaries
@@ -4098,7 +4137,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             CharElTemp[iSpecies] = new su2double[maxEl];
             degen[iSpecies]      = new su2double[maxEl];
           }
-
+          
           /*--- Initialize the arrays ---*/
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
             for (iEl = 0; iEl < maxEl; iEl++) {
@@ -4147,6 +4186,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           degen[1][1] = 10;
           degen[1][2] = 6;
 
+          
           /*--- Set Arrhenius coefficients for chemical reactions ---*/
           // Note: Data lists coefficients in (cm^3/mol-s) units, need to convert
           //       to (m^3/kmol-s) to be consistent with the rest of the code
@@ -4168,6 +4208,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
           Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
 
+          
           /*--- Set rate-controlling temperature exponents ---*/
           //  -----------  Tc = Ttr^a * Tve^b  -----------
           //
@@ -4184,20 +4225,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
           Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
 
+          
           /*--- Dissociation potential [KJ/kg] ---*/
           Diss[0] = 3.36E4;
           Diss[1] = 0.0;
 
+          
           /*--- Collision integral data ---*/
           Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
           Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
           Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
           Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
 
+          
           Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
           Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
           Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
           Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+
 
           break;
 
@@ -4632,6 +4677,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
 
+
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
   if (Geo_Description == NACELLE) {
@@ -4789,6 +4835,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     }
 
+    
+
     switch(Kind_Solver) {
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
@@ -4855,6 +4903,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}
   }
 
+  
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
   if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
@@ -5011,6 +5060,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
+
   
   /*--- Handle default options for topology optimization ---*/
   
@@ -5077,6 +5127,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
     
+  
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5801,7 +5853,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         else {cout << "Mutation++ = NO." << endl;
              if ((GasModel != "NONE")  && (GasModel != "ARGON") && (GasModel != "AIR-7") && (GasModel != "AIR-21")&& (GasModel != "O2") && (GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON_SID") && (GasModel != "ONESPECIES"))  {
                 SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: ARGON, AIR-7, AIR-21, O2, N2, AIR-5, ARGON_SID, ONESPECIES.", CURRENT_FUNCTION);}}
-        break;
+                break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
@@ -5812,7 +5864,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         else {cout << "Mutation++ = NO." << endl;
              if ((GasModel != "NONE")  && (GasModel != "ARGON") && (GasModel != "AIR-7") && (GasModel != "AIR-21")&& (GasModel != "O2") && (GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON_SID") && (GasModel != "ONESPECIES"))  {
                 SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: ARGON, AIR-7, AIR-21, O2, N2, AIR-5, ARGON_SID, ONESPECIES.", CURRENT_FUNCTION);}}
-        break;
+                break;
       case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
@@ -5880,7 +5932,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY)) {
-      cout << "Mach number: " << Mach <<"."<< endl;
+      cout << endl << endl << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||

@@ -77,11 +77,11 @@ protected:
   string MixtureFile;
   unsigned short nSpecies, iSpecies;
   CMutation *mutation;
-  su2double *comp, *Cp_ks,  *Cp_trs, *Cp_ves, E, gamma, gammaFrozen, gammaEquilibrium, *Ws, Tref, *hs;
+  su2double *comp, *Cp_ks,  *Cp_trs, *Cp_ves, E, gamma, gammaFrozen, gammaEquilibrium, Tref, *hs;
   su2double  mu, *Ds;
-  su2double  a, Density, *Xs;
+  su2double  a, Density, *Xs, OmegaVT, OmegaCV;
 
-  vector<su2double> Ms, Cv_trs, Cv_ks, Energies, OmegaVT, hf, Energies_Species,  Cv_ves, Temp, lambda;
+  vector<su2double> Ms, Cv_trs, Cv_ks, Energies, Omega, hf, Energies_Species,  Cv_ves, Temp, lambda, Ws;
 
   
 public:
@@ -122,9 +122,11 @@ public:
 
     virtual vector<su2double> Get_SpeciesEnergies(su2double* cs, su2double rho, su2double T, su2double Tve);
 
-    virtual su2double* Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve);
+    virtual vector<su2double> Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve);
 
-    virtual vector<su2double> Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
+    virtual su2double Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
+
+    //virtual su2double Get_CVEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
 
     virtual su2double  Get_ReferenceTemperature(su2double *cs, su2double rho, su2double T, su2double Tve);
   
@@ -189,9 +191,11 @@ public:
 
   vector<su2double> Get_SpeciesEnergies(su2double* cs, su2double rho, su2double T, su2double Tve);
 
-  su2double* Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve);
+  vector<su2double> Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve);
 
-  vector<su2double> Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
+  su2double Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
+
+  //su2double Get_CVEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
 
   su2double  Get_ReferenceTemperature(su2double *cs, su2double rho, su2double T, su2double Tve);
   
@@ -256,9 +260,11 @@ public:
 
   vector<su2double> Get_SpeciesEnergies(su2double* cs, su2double rho, su2double T, su2double Tve);
 
-  su2double* Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve);
+  vector<su2double> Get_NetProductionRates(su2double *cs, su2double rho, su2double T, su2double Tve);
 
-  vector<su2double> Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
+  su2double Get_VTEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
+
+  //su2double Get_CVEnergysourceTerm(su2double *cs, su2double rho, su2double T, su2double Tve);
   
   su2double  Get_ReferenceTemperature(su2double *cs, su2double rho, su2double T, su2double Tve);
   
