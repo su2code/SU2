@@ -12,8 +12,11 @@ RUN apt-get update && apt-get install -y \
     swig \
     libopenmpi-dev \
     openmpi-bin \
+    ccache \
  && rm -rf /var/lib/apt/lists/* \
- && update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+ && update-alternatives --install /usr/bin/python python /usr/bin/python3 10 \
+ && /usr/sbin/update-ccache-symlinks \
+ && echo 'export PATH="/usr/lib/ccache:$PATH"' | tee -a ~/.bashrc 
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY compileSU2.sh /compileSU2.sh
