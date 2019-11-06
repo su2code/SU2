@@ -316,10 +316,13 @@ void COneShotFluidDriver::RunOneShot(){
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
-  /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
   if(InnerIter >= config->GetOneShotStart() && InnerIter > 1) {
+    /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
     solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+    /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
+    StoreConstrFunction();
+    CheckMultiplier();
     CalculateLagrangian(true);
   }
 
@@ -330,10 +333,6 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Update design variable ---*/
     UpdateDesignVariable();
-
-    /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
-    StoreConstrFunction();
-    CheckMultiplier();
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
