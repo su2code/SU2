@@ -253,29 +253,18 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.981164, -9.145363, 1.070528, 0.019417] #last 4 columns
+    turb_naca0012_sa.test_vals = [-12.081762, -16.111167, 1.064326, 0.019770] #last 4 columns
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
-
-    # NACA0012 (SA, FUN3D results for finest grid: CL=1.0983, CD=0.01242) with binary restart
-    turb_naca0012_sa_bin           = TestCase('turb_naca0012_sa_bin')
-    turb_naca0012_sa_bin.cfg_dir   = "rans/naca0012"
-    turb_naca0012_sa_bin.cfg_file  = "turb_NACA0012_sa_binary.cfg"
-    turb_naca0012_sa_bin.test_iter = 10
-    turb_naca0012_sa_bin.test_vals = [-11.981288, -9.145363, 1.070528, 0.019417] #last 4 columns
-    turb_naca0012_sa_bin.su2_exec  = "parallel_computation.py -f"
-    turb_naca0012_sa_bin.timeout   = 3200
-    turb_naca0012_sa_bin.tol       = 0.00001
-    test_list.append(turb_naca0012_sa_bin)
     
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.454442, -6.574917, 1.059622, 0.019138] #last 4 columns
+    turb_naca0012_sst.test_vals = [-15.805904, -6.248662, 1.049989, 0.019166] #last 4 columns
     turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -286,7 +275,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-13.280836, -5.645158, 1.022304, 0.019539] #last 4 columns
+    turb_naca0012_sst_sust.test_vals = [-16.140320, -5.980468, 1.005228, 0.019014] #last 4 columns
     turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
