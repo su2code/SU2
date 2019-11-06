@@ -254,12 +254,12 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadMultiplier();
-        UpdateMultiplier(stepsize);
+        // LoadMultiplier();
+        // UpdateMultiplier(stepsize);
       }
       else{
         /*--- Store and update constraint multiplier ---*/
-        StoreMultiplier();
+        // StoreMultiplier();
         UpdateMultiplier(1.0);
       }
 
@@ -1235,7 +1235,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
        helper+= BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
-    Multiplier[iConstr] = Multiplier[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] = Multiplier[iConstr] - helper*stepsize*config->GetMultiplierScale(iConstr);
   }
 }
 
