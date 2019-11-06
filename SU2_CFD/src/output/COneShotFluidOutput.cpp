@@ -51,6 +51,8 @@ COneShotFluidOutput::COneShotFluidOutput(CConfig *config, unsigned short nDim) :
   if (nRequestedHistoryFields == 0){
     requestedHistoryFields.emplace_back("ITER");
     requestedHistoryFields.emplace_back("SEARCH_ITER");
+    requestedScreenFields.emplace_back("ONE_SHOT_RHO");
+    requestedScreenFields.emplace_back("ONE_SHOT_THETA");
     requestedHistoryFields.emplace_back("GRAD_NORM");
     requestedHistoryFields.emplace_back("RMS_RES");
     requestedHistoryFields.emplace_back("SENSITIVITY");
@@ -61,6 +63,8 @@ COneShotFluidOutput::COneShotFluidOutput(CConfig *config, unsigned short nDim) :
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("SEARCH_ITER");
+    requestedScreenFields.emplace_back("ONE_SHOT_RHO");
+    requestedScreenFields.emplace_back("ONE_SHOT_THETA");
     requestedHistoryFields.emplace_back("GRAD_NORM");
     requestedScreenFields.emplace_back("RMS_DENSITY");
     requestedScreenFields.emplace_back("RMS_MOMENTUM-X");
@@ -109,11 +113,15 @@ void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: ONE_SHOT, DESCRIPTION: One-shot specific outputs.
   /// DESCRIPTION: Number of Armijo search iterations.
-  AddHistoryOutput("SEARCH_ITER", "Search_Iter", ScreenOutputFormat::INTEGER, "ONE_SHOT", "Number of Armijo search iterations."); 
+  AddHistoryOutput("SEARCH_ITER",    "Search_Iter", ScreenOutputFormat::INTEGER, "ONE_SHOT", "Number of Armijo search iterations."); 
   /// DESCRIPTION: Number of DVs in the active set.
-  AddHistoryOutput("ACTIVE_DV",   "Active_DV",   ScreenOutputFormat::INTEGER, "ONE_SHOT", "Number of DVs in the active set."); 
+  AddHistoryOutput("ACTIVE_DV",      "Active_DV",   ScreenOutputFormat::INTEGER, "ONE_SHOT", "Number of DVs in the active set."); 
+  /// DESCRIPTION: Primal contraction ratio.
+  AddHistoryOutput("ONE_SHOT_RHO",   "Rho_G_u",     ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Primal contraction ratio."); 
+  /// DESCRIPTION: Adjoint contraction ratio.
+  AddHistoryOutput("ONE_SHOT_THETA", "Theta_N_uu",  ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Adjoint contraction ratio."); 
   /// DESCRIPTION: Norm of the shifted Lagrangian gradient.
-  AddHistoryOutput("GRAD_NORM",   "||N_x||",     ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Norm of the shifted Lagrangian gradient."); 
+  AddHistoryOutput("GRAD_NORM",      "||N_x||",     ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Norm of the shifted Lagrangian gradient."); 
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
@@ -682,6 +690,8 @@ void COneShotFluidOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, 
 
   SetHistoryOutputValue("SEARCH_ITER", adjflow_solver->GetArmijoIter());
   SetHistoryOutputValue("ACTIVE_DV", adjflow_solver->GetnActiveDV());
+  SetHistoryOutputValue("ONE_SHOT_RHO", adjflow_solver->GetOneShotRho());
+  SetHistoryOutputValue("ONE_SHOT_THETA", adjflow_solver->GetOneShotTheta());
   SetHistoryOutputValue("GRAD_NORM", adjflow_solver->GetShiftedLagGradNorm());
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));

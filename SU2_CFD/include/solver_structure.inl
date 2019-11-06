@@ -2574,6 +2574,10 @@ inline void CSolver::SetnActiveDV(unsigned short val_active) { }
 
 inline unsigned short CSolver::GetnActiveDV(void) { return 0; }
 
+inline su2double CSolver::GetOneShotRho(void) { return 0.; }
+
+inline su2double CSolver::GetOneShotTheta(void) { return 0.; }
+
 inline void CSolver::SetShiftedLagGradNorm(su2double val_norm) { }
 
 inline su2double CSolver::GetShiftedLagGradNorm(void) { return 0.; }
@@ -2595,6 +2599,10 @@ inline unsigned short COneShotSolver::GetArmijoIter(void) { return ArmijoIter; }
 inline void COneShotSolver::SetnActiveDV(unsigned short val_active) { nActiveDV = val_active; }
 
 inline unsigned short COneShotSolver::GetnActiveDV(void) { return nActiveDV; }
+
+inline su2double CSolver::GetOneShotRho(void) { return rho; }
+
+inline su2double CSolver::GetOneShotTheta(void) { return theta; }
 
 inline void COneShotSolver::SetShiftedLagGradNorm(su2double val_norm) { grad_norm = val_norm; }
 

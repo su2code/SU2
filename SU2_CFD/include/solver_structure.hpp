@@ -4747,6 +4747,10 @@ public:
 
   virtual unsigned short GetnActiveDV(void);
 
+  virtual su2double GetOneShotRho(void);
+
+  virtual su2double GetOneShotTheta(void);
+
   virtual void SetShiftedLagGradNorm(su2double val_norm);
 
   virtual su2double GetShiftedLagGradNorm(void);
@@ -16038,6 +16042,10 @@ public:
   void SetnActiveDV(unsigned short val_active);
 
   unsigned short GetnActiveDV(void);
+
+  su2double GetOneShotRho(void);
+
+  su2double GetOneShotTheta(void);
 
   void SetShiftedLagGradNorm(su2double val_norm);
 
