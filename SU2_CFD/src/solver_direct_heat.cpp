@@ -52,11 +52,6 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   bool multizone = config->GetMultizone_Problem();
 
   int rank = MASTER_NODE;
-
-  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == INC_RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
@@ -193,20 +188,21 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   }
   config->SetTemperature_Ref(Temperature_Ref);
 
-  config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
 
   /*--- Set the reference values for heat fluxes. If the heat solver runs stand-alone,
    *    thermal conductivity is read directly from config file ---*/
 
   if (heat_equation) {
 
-    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
-
+    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
     config->SetThermalDiffusivity_Solid(config->GetThermalConductivity_Solid() / rho_cp);
+
+    config->SetTemperature_FreeStreamND(config->GetTemperature_Initial_Solid()/config->GetTemperature_Ref());
     config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);
   }
   else {
 
+    config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
     config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
   }
 
@@ -253,13 +249,10 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
-  if (flow) {
-    nodes = new CHeatFVMVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
-  }
-  else {
-    su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
-    nodes = new CHeatFVMVariable(Temperature_Solid_Freestream_ND, nPoint, nDim, nVar, config);
-  }
+  /*--- Initialize the nodes vector. ---*/
+
+  nodes = new CHeatFVMVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
+
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -879,11 +872,6 @@ void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, iPoint;
   su2double Wall_HeatFlux, Area, *Normal;
 
-  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == INC_RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
 
@@ -905,12 +893,7 @@ void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     }
   }
 
-  if(flow) {
-    Wall_HeatFlux = Wall_HeatFlux/(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp()*config->GetTemperature_Ref());
-  }
-  else {
-    Wall_HeatFlux = Wall_HeatFlux/(config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid()*config->GetTemperature_Ref());
-  }
+  Wall_HeatFlux = Wall_HeatFlux/config->GetHeat_Flux_Ref();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -1141,7 +1124,7 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
   su2double *Normal = new su2double[nDim];
 
   Temperature_Ref       = config->GetTemperature_Ref();
-  rho_cp_solid          = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
+  rho_cp_solid          = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
 
   if (flow) {
 
@@ -1190,7 +1173,7 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
+            Area = sqrt(Area);
 
             thermal_diffusivity = GetConjugateHeatVariable(iMarker, iVertex, 2)/rho_cp_solid;
 

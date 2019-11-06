@@ -355,7 +355,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Residuals
-  AddVolumeOutput("RES_DENSITY", "Residual_Pressure", "RESIDUAL", "Residual of the density");
+  AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL", "Residual of the density");
   AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
   AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL", "Residual of the y-momentum component");
   if (nDim == 3)
