@@ -325,7 +325,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
-    // CheckMultiplier();
+    CheckMultiplier();
     CalculateLagrangian(true);
   }
 
