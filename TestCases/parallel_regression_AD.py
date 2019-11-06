@@ -239,7 +239,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708681] #last 4 columns
+    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -269,7 +269,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 3000
-    discadj_fsi.test_vals = [0.958848,-0.157601,0.726660,1.303625] #last 4 columns
+    discadj_fsi.test_vals = [0.958848,-0.157601,2.726147,1.798362] #last 4 columns
     discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
