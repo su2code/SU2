@@ -254,12 +254,12 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // LoadMultiplier();
+        LoadMultiplier();
         // UpdateMultiplier(stepsize);
       }
       else{
         /*--- Store and update constraint multiplier ---*/
-        // StoreMultiplier();
+        StoreMultiplier();
         // UpdateMultiplier(1.0);
       }
 
@@ -267,7 +267,7 @@ void COneShotFluidDriver::RunOneShot(){
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      // UpdateMultiplier(1.0);
+      UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -293,7 +293,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Update multiplier ---*/
-    if(ArmijoIter == 0) UpdateMultiplier(1.0);
+    // if(ArmijoIter == 0) UpdateMultiplier(1.0);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian(true);
