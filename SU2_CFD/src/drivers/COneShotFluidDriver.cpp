@@ -314,7 +314,7 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
        InnerIter > config->GetOneShotStart()                   && 
        InnerIter < config->GetOneShotStop()                    &&
-       (!config->GetZeroStep() || CheckFirstWolfe() || !bool_tol)) {
+       (!config->GetZeroStep() || CheckFirstWolfe()) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
