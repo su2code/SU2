@@ -18,7 +18,7 @@ configure
 depcomp
 missing
 install-sh
-aclocal.m4
+aclocal.m4 
 
 # Compiled Dynamic libraries
 *.so
