@@ -2600,9 +2600,9 @@ inline void COneShotSolver::SetnActiveDV(unsigned short val_active) { nActiveDV 
 
 inline unsigned short COneShotSolver::GetnActiveDV(void) { return nActiveDV; }
 
-inline su2double CSolver::GetOneShotRho(void) { return rho; }
+inline su2double COneShotSolver::GetOneShotRho(void) { return rho; }
 
-inline su2double CSolver::GetOneShotTheta(void) { return theta; }
+inline su2double COneShotSolver::GetOneShotTheta(void) { return theta; }
 
 inline void COneShotSolver::SetShiftedLagGradNorm(su2double val_norm) { grad_norm = val_norm; }
 
