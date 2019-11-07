@@ -2,7 +2,6 @@ name: Release Management
 
 on:
   push:
-    # branches to consider in the event; optional, defaults to all
     branches:
       - feature_release_drafter
 
@@ -11,7 +10,7 @@ jobs:
     name: Update Draft Release 
     runs-on: ubuntu-latest
     steps:
-      # Drafts your next Release notes as Pull Requests are merged into "master"
-      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-5
+      - name: Run Drafter
+        uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
