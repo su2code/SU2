@@ -254,20 +254,20 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadMultiplier();
+        // LoadMultiplier();
         // UpdateMultiplier(stepsize);
       }
       else{
         /*--- Store and update constraint multiplier ---*/
-        StoreMultiplier();
-        // UpdateMultiplier(1.0);
+        // StoreMultiplier();
+        UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
