@@ -11,7 +11,7 @@ categories:
       - 'bugfix'
       - 'bug'
   - title: ':wrench: Maintenance'
-    label:
+    labels:
       - 'chore'
       - 'maintenance'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
