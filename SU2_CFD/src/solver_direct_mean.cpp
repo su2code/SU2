@@ -3797,12 +3797,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
   bool slau2_kep        = (config->GetKind_Upwind_Flow() == SLAU2_KEP);
   
-  su2double **P_Tensor, **invP_Tensor;
-  P_Tensor = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++){
-    P_Tensor[iVar] = new su2double [nVar];
-    invP_Tensor[iVar] = new su2double [nVar];
+  su2double **P_Tensor = NULL, **invP_Tensor = NULL;
+  if (slau2_kep){
+    P_Tensor = new su2double* [nVar];
+    invP_Tensor = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++){
+      P_Tensor[iVar] = new su2double [nVar];
+      invP_Tensor[iVar] = new su2double [nVar];
+    }
   }
   /*--- Loop over all the edges ---*/
 
@@ -3866,20 +3868,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-        
-        if (slau2_kep){
-
-          /*--- Only velocity and pressure are extrapolated ---*/
-          su2double alpha;
-          if ((iVar > 0) && (iVar <nDim+2))
-            alpha = 0.36;
-          else
-            alpha = 0.0;
-
-          Primitive_i[iVar] = V_i[iVar] + alpha * Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + alpha * Project_Grad_j;
-
         }
       }
 
@@ -4005,27 +3993,55 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- SLAU2 Kinetic Energy Preserving ---*/
     if (slau2_kep){
       
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+      
+      Gradient_i = node[iPoint]->GetGradient_Primitive();
+      Gradient_j = node[jPoint]->GetGradient_Primitive();
+      Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
+      
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+        }
+      
+        /*--- Only velocity and pressure are extrapolated ---*/
+        su2double alpha;
+        if ((iVar > 0) && (iVar <nDim+2))
+          alpha = 0.36;
+        else
+          alpha = 0.0;
+
+        Primitive_i[iVar] = V_i[iVar] + alpha * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + alpha * Project_Grad_j;
+      }
+      
       /*--- Pressure, density, enthalpy and velocity at points i and j ---*/
 
-      su2double MeanTemperature = 0.5 * (V_i[0] + V_j[0]);
-      su2double MeanPressure    = 0.5 * (V_i[nDim+1] + V_j[nDim+1]);
-      su2double MeanDensity     = 0.5 * (V_i[nDim+2] + V_j[nDim+2]);
-      su2double MeanEnthalpy    = 0.5 * (V_i[nDim+3] + V_j[nDim+3]);
+      su2double MeanTemperature = 0.5 * (Primitive_i[0]      + Primitive_j[0]);
+      su2double MeanPressure    = 0.5 * (Primitive_i[nDim+1] + Primitive_j[nDim+1]);
+      su2double MeanDensity     = 0.5 * (Primitive_i[nDim+2] + Primitive_j[nDim+2]);
+      su2double MeanEnthalpy    = 0.5 * (Primitive_i[nDim+3] + Primitive_j[nDim+3]);
       su2double MeanVelocity[3] = {0.0, 0.0, 0.0};
       su2double *Normal         = geometry->edge[iEdge]->GetNormal();
       su2double ProjFlux[5]     = {0.0, 0.0, 0.0, 0.0, 0.0};
-      su2double Dissipation_ij  = 0.05;
+      su2double Dissipation_ij  = 0.00;
       
       for (iDim = 0; iDim < nDim; iDim++) {
-        MeanVelocity[iDim] = 0.5 * (V_i[iDim+1] + V_j[iDim+1]);
+        MeanVelocity[iDim] = 0.5 * (Primitive_i[iDim+1] + Primitive_j[iDim+1]);
       }
       su2double BetaInc2 = pow(config->GetModVel_FreeStreamND(),2.);
       su2double Cp = (Gamma * config->GetGas_ConstantND()) / Gamma_Minus_One;
       su2double MeandRhodT = -MeanDensity/MeanTemperature;
       
       /*--- Get projected flux tensor ---*/
-      //numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
-      numerics->GetInviscidProjFlux_SkewSym(V_i, V_j, Normal, ProjFlux);
+      numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
+      //numerics->GetInviscidProjFlux_SkewSym(Primitive_i, Primitive_j, Normal, ProjFlux);
       //numerics->GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &BetaInc2, &MeanEnthalpy, Normal, ProjFlux);
       
       //
@@ -4062,7 +4078,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 //      /*--- Compute P and Lambda (do it with the Normal) ---*/
 //
 //      numerics->GetPMatrix(&MeanDensity, MeanVelocity, &MeanSoundSpeed, UnitNormal, P_Tensor);
-
+//
 //      /*--- Flow eigenvalues and entropy correctors ---*/
 //
 //      for (iDim = 0; iDim < nDim; iDim++)
@@ -4135,9 +4151,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
             Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*invP_Tensor[kVar][jVar];
           ProjFlux[iVar] -= 0.001*Proj_ModJac_Tensor_ij*Diff_Lapl[jVar]*Area;
         }
-        //cout << ProjFlux[iVar] << " ";
       }
-      //cout << endl;
 
       //End Incompressible
       //
@@ -4190,12 +4204,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] P_Tensor[iVar];
-    delete [] invP_Tensor[iVar];
+  if (slau2_kep){
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] P_Tensor[iVar];
+      delete [] invP_Tensor[iVar];
+    }
+    delete [] P_Tensor;
+    delete [] invP_Tensor;
   }
-  delete [] P_Tensor;
-  delete [] invP_Tensor;
 }
 
 void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
