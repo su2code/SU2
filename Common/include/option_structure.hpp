@@ -2053,6 +2053,7 @@ enum ENUM_VERIFICATION_SOLUTIONS {
   NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
   TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
   INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  TURBULENT_CHANNEL        = 41,       /*!< \brief Turbulent channel. */
   MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
   MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
   MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
@@ -2068,6 +2069,7 @@ static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map 
 ("NS_UNIT_QUAD",             NS_UNIT_QUAD)
 ("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
 ("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
+("TURBULENT_CHANNEL",  TURBULENT_CHANNEL)
 ("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
 ("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
 ("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
