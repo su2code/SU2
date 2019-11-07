@@ -245,7 +245,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
           data_to_send[index++] =dataSorter->GetData(iVar,node_offset);
         }
     }
-    SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
+    CBaseMPIWrapper::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                        &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
                        MPI_COMM_WORLD);
   }
