@@ -69,6 +69,9 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
 
   // Friction velocity
   su2double uTau = (2.0*ReynoldsFriction*muLam)/(rhoDim*config->GetLength_Reynolds());
+    
+  // Friction Length
+  su2double lTau = (muLam/rhoDim) / uTau;
 
   // Compute the wall shear stress and the body force.
   su2double tauWall = rhoDim*uTau*uTau;
@@ -93,7 +96,6 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
   su2double kCondLam = muLam*Gamma*Cv/Prandtl_Lam;
   TWall    = 273.15; // Need to fix this
   TMiddle  = TWall + halfChan*halfChan*uMean*fBodyX/(kCondLam*(alpha+2.0));
-  cout << muLam << " " << pRef << " " << kCondLam << " " << TMiddle <<endl;
     
   /*--- Write a message that the solution is initialized for the
    Turbulent Channel test case. ---*/
@@ -102,8 +104,12 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the Turbulent Channel case!!!" << endl;
-    cout << setprecision(9) << "Friction Reynolds: " << ReynoldsFriction << " Reynolds Number based on velocity: " << ReynoldsMeanVelocity << endl;
+    cout << setprecision(9) << "Friction Reynolds Number: " << ReynoldsFriction << endl;
+    cout << setprecision(9) << "Mean Flow Reynolds Number: " << ReynoldsMeanVelocity << endl;
     cout << setprecision(9) << "Body Force: " << fBodyX << endl;
+    cout << setprecision(6) << "YPlus~1.: " << lTau << endl;
+    cout << setprecision(4) << "dt+: " << config->GetDelta_UnstTime() * uTau/lTau << endl;
+    cout << setprecision(4) << "Total CTUs: " << config->GetTotal_UnstTime() * uMean/ (2.0* PI_NUMBER) << endl;
     cout << endl << flush;
   }
 
@@ -112,21 +118,21 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
   if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
      (config->GetUnsteady_Simulation() != DT_STEPPING_1ST) &&
      (config->GetUnsteady_Simulation() != DT_STEPPING_2ND))
-    SU2_MPI::Error("Unsteady mode must be selected for the Taylor Green Vortex",
+    SU2_MPI::Error("Unsteady mode must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
 
   if(config->GetKind_Regime() != COMPRESSIBLE)
-    SU2_MPI::Error("Compressible flow equations must be selected for the Taylor Green Vortex",
+    SU2_MPI::Error("Compressible flow equations must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
 
   if((config->GetKind_Solver() != NAVIER_STOKES) &&
      (config->GetKind_Solver() != FEM_NAVIER_STOKES))
-    SU2_MPI::Error("Navier Stokes equations must be selected for the Taylor Green Vortex",
+    SU2_MPI::Error("Navier Stokes equations must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
 
   if((config->GetKind_FluidModel() != STANDARD_AIR) &&
      (config->GetKind_FluidModel() != IDEAL_GAS))
-    SU2_MPI::Error("Standard air or ideal gas must be selected for the Taylor Green Vortex",
+    SU2_MPI::Error("Standard air or ideal gas must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
 
 //  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
@@ -134,7 +140,7 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
 //                   CURRENT_FUNCTION);
 
   if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
-    SU2_MPI::Error("Constant Prandtl number must be selected for the Taylor Green Vortex",
+    SU2_MPI::Error("Constant Prandtl number must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
   
 }
