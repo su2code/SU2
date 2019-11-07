@@ -4727,6 +4727,8 @@ public:
 
   virtual void SetConstrDerivative(unsigned short iConstr);
 
+  virtual su2double GetConstrDerivative(unsigned short iConstr, unsigned long iPoint, unsigned long iVar);
+
   virtual su2double MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr);
 
   virtual void SetObjFunc_Value(su2double val_ObjFunc);
@@ -16026,6 +16028,8 @@ public:
   void SetFiniteDifferenceSens(CGeometry *geometry, CConfig *config);
 
   void SetConstrDerivative(unsigned short iConstr);
+
+  su2double GetConstrDerivative(unsigned short iConstr, unsigned long iPoint, unsigned long iVar);
 
   su2double MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr);
 

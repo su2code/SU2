@@ -2554,6 +2554,8 @@ inline void CSolver::SetStoreSolutionDelta(){}
 
 inline void CSolver::SetConstrDerivative(unsigned short iConstr){}
 
+inline su2double CSolver::GetConstrDerivative(unsigned short iConstr, unsigned long iPoint, unsigned long iVar) { return 0.; }
+
 inline su2double CSolver::MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr){ return 0; }
 
 inline void CSolver::SetObjFunc_Value(su2double val_ObjFunc) { }
@@ -2585,6 +2587,8 @@ inline su2double CSolver::GetShiftedLagGradNorm(void) { return 0.; }
 inline void CDiscAdjSolver::SetObjFunc_Value(su2double val_ObjFunc) { ObjFunc_Value = val_ObjFunc; }
 
 inline su2double CDiscAdjSolver::GetObjFunc_Value(void) { return ObjFunc_Value; }
+
+inline su2double COneShotSolver::GetConstrDerivative(unsigned short iConstr, unsigned long iPoint, unsigned long iVar) { return DConsVec[iConstr][iPoint][iVar]; }
 
 inline void COneShotSolver::SetConFunc_Value(su2double val_ConFunc) { ConFunc_Value = val_ConFunc; }
 

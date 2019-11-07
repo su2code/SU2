@@ -70,9 +70,10 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
 
   if(nConstr > 0){
     ConstrFunc = new su2double[nConstr];
+    ConstrFunc_Store = new su2double[nConstr];
     Multiplier = new su2double[nConstr];
     Multiplier_Old = new su2double[nConstr];
-    ConstrFunc_Store = new su2double[nConstr];
+    AugmentedLagrangianMultiplierGradient = new su2double[nConstr];
     BCheck_Inv = new su2double*[nConstr];
   }
 
@@ -106,6 +107,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     ConstrFunc_Store[iConstr] = 0.0;
     Multiplier[iConstr] = 0.0;
     Multiplier_Old[iConstr] = 0.0;
+    AugmentedLagrangianMultiplierGradient[iConstr] = 0.0;
     BCheck_Inv[iConstr] = new su2double[nConstr];
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck_Inv[iConstr][jConstr] = 0.0;
@@ -778,13 +780,18 @@ void COneShotFluidDriver::LBFGSUpdateRecursive(CConfig *config, unsigned short n
 }
 
 bool COneShotFluidDriver::CheckFirstWolfe(){
-  unsigned short iDV;
+  unsigned short iDV, iConstr;
   su2double admissible_step = 0.0;
 
-  for (iDV=0;iDV<nDV_Total;iDV++){
+  for (iDV = 0; iDV < nDV_Total; iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+  }
+  if (nConstr > 0) {
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
   }
   admissible_step *= cwolfeone;
 
@@ -792,12 +799,17 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
 }
 
 void COneShotFluidDriver::StoreGradDotDir(){
-  unsigned short iDV;
+  unsigned short iDV, iConstr;
   GradDotDir = 0.0;
-  for (iDV=0;iDV<nDV_Total;iDV++){
+  for (iDV = 0; iDV < nDV_Total; iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+  }
+  if (nConstr > 0) {
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
   }
 }
 
@@ -1236,6 +1248,24 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
        helper+= BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
     Multiplier[iConstr] = Multiplier[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+  }
+}
+
+void COneShotFluidDriver::StoreMultiplierGrad() {
+  if(nConstr > 0) {
+    unsigned short iConstr;
+    su2double beta = config->GetOneShotBeta();
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      AugmentedLagrangianMultiplierGradient[iConstr] = 0.;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          AugmentedLagrangianMultiplierGradient[iConstr] += beta
+              * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
+              * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar)
+              + ConstrFunc[iConstr];
+        }
+      }
+    }
   }
 }
 

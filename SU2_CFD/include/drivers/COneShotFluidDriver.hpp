@@ -63,6 +63,7 @@ protected:
   su2double* DesignVariable; /*!< \brief Current design variable value.*/
   su2double* AugmentedLagrangianGradient; /*!< \brief Gradient of doubly augmented Lagrangian.*/
   su2double* AugmentedLagrangianGradient_Old; /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
+  su2double* AugmentedLagrangianMultiplierGradient; /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
   su2double Lagrangian, Lagrangian_Old, Lagrangian_p; /*!< \brief Value of doubly augmented Lagrangian.*/
   su2double GradDotDir; /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
   
@@ -308,6 +309,12 @@ public:
    * \brief Update the constraint multiplier.
    */
   void UpdateMultiplier(su2double stepsize);
+
+  /*!
+   * \brief Store the gradient of the augmented Lagrangian wrt the constraint multiplier.
+   */
+  void StoreMultiplierGrad();
+
 
   /*!
    * \brief Check the sign of the constraint multiplier.
