@@ -1253,7 +1253,8 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
 
 void COneShotFluidDriver::StoreMultiplierGrad() {
   if(nConstr > 0) {
-    unsigned short iConstr;
+    unsigned short iConstr, nVar = solver[ADJFLOW_SOL]->GetnVar();
+    unsigned long nPoint = geometry->GetnPoint()
     su2double beta = config->GetOneShotBeta();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       AugmentedLagrangianMultiplierGradient[iConstr] = 0.;
