@@ -756,6 +756,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
               ObjFunc += solver[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
               break;
             case TOPOL_COMPLIANCE:
+              static_cast<CFEASolver*>(solver[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
               solver[FEA_SOL]->Compute_OFCompliance(geometry, solver, config);
               ObjFunc += solver[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
               break;
