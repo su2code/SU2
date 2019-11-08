@@ -541,7 +541,7 @@ def main():
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10  
-    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 7.0328e-14] #last 4 columns
+    contadj_wedge.test_vals = [2.872691, -2.755572, 853010.000000, 0.000000] #last 4 columns
     contadj_wedge.su2_exec  = "parallel_computation.py -f"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -552,7 +552,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 100
-    contadj_fixed_CL_naca0012.test_vals = [0.319630, -5.191448, 0.361280, 0.000084] #last 4 columns
+    contadj_fixed_CL_naca0012.test_vals = [0.317289, -5.193066, 0.360470, 0.000069] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
@@ -641,7 +641,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.947380, 1.257714, 5.477923, 1.995089] #last 4 columns
+    turb_naca0012_1c.test_vals = [-4.906256, 1.337943, 6.052217, 2.395627] #last 4 columns
     turb_naca0012_1c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_1c.timeout   = 1600
     turb_naca0012_1c.tol       = 0.00001
@@ -652,7 +652,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.348057, 1.132068, 5.213200, 1.842256] #last 4 columns
+    turb_naca0012_2c.test_vals = [-5.230215, 1.262233, 6.052131, 2.395642] #last 4 columns
     turb_naca0012_2c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_2c.timeout   = 1600
     turb_naca0012_2c.tol       = 0.00001
@@ -663,7 +663,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.422180, 1.098616, 5.101282, 1.780416] #last 4 columns
+    turb_naca0012_3c.test_vals = [-5.277132, 1.246269, 6.052474, 2.395999] #last 4 columns
     turb_naca0012_3c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_3c.timeout   = 1600
     turb_naca0012_3c.tol       = 0.00001
@@ -674,7 +674,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.025765, 1.280442, 5.928243, 2.285755] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [-5.007909, 1.310935, 6.054741, 2.397402] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c1.timeout   = 1600
     turb_naca0012_p1c1.tol       = 0.00001
@@ -685,7 +685,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.359000, 1.152959, 5.569891, 2.048355] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.264043, 1.251313, 6.055013, 2.397532] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c2.timeout   = 1600
     turb_naca0012_p1c2.tol       = 0.00001
