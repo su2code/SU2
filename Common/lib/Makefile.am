@@ -109,6 +109,7 @@ lib_sources = \
   ../include/toolboxes/MMS/CRinglebSolution.hpp \
   ../include/toolboxes/MMS/CTGVSolution.hpp \
   ../include/toolboxes/MMS/CUserDefinedSolution.hpp \
+  ../include/toolboxes/MMS/CTurbChannelSolution.hpp \
   ../src/fem_cgns_elements.cpp \
   ../src/config_structure.cpp \
   ../src/blas_structure.cpp \
@@ -150,6 +151,7 @@ lib_sources = \
   ../src/toolboxes/MMS/CNSUnitQuadSolution.cpp \
   ../src/toolboxes/MMS/CRinglebSolution.cpp \
   ../src/toolboxes/MMS/CTGVSolution.cpp \
+  ../src/toolboxes/MMS/CTurbChannelSolution.cpp \
   ../src/toolboxes/MMS/CUserDefinedSolution.cpp
 
 lib_cxxflags = -fPIC

@@ -69,6 +69,7 @@ ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
   ../../Common/src/toolboxes/MMS/libSU2_a-CNSUnitQuadSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CRinglebSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CTGVSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CTurbChannelSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CUserDefinedSolution.o
 
 # always link to built dependencies from ./externals
