@@ -352,10 +352,12 @@ void COneShotFluidDriver::RunOneShot(){
       ComputeGammaTerm();
       solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotGamma());
     }
+    solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
     solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotAlpha());
+    solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
     solver[ADJFLOW_SOL]->LoadSolution();
@@ -1127,6 +1129,8 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
 
     AD::ClearAdjoints();
+
+    solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     seeding[iConstr]=0.0;
 
