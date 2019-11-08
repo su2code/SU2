@@ -360,7 +360,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
-    solver[ADJFLOW_SOL]->LoadSolution();
+    // solver[ADJFLOW_SOL]->LoadSolution();
     solver[ADJFLOW_SOL]->UpdateStateVariable(config);
     ComputeBetaTerm();
     solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
