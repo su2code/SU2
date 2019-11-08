@@ -12987,10 +12987,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         nVar_Par +=1;
         Variable_Names.push_back("Q_Criterion");
       }
-      if(wall_function){
-        nVar_Par +=1;
-        Variable_Names.push_back("TauWall_WM");
-      }
     }
     
     if (rotating_frame) {
@@ -13408,9 +13404,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Local_Data[jPoint][iVar] = Q; iVar++;
           }
           
-          if(wall_function){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTauWall(); iVar++;
-          }
         }
         
         /*--- For rotating frame problems, compute the relative velocity. ---*/
@@ -13429,7 +13422,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
                     
           if(wall_model){
-            Local_Data[jPoint][iVar] = pow(geometry->node[iPoint]->GetVolume(),1./3.); iVar++;
+            su2double Vol = (geometry->node[iPoint]->GetVolume() +
+                   geometry->node[iPoint]->GetPeriodicVolume());
+            Local_Data[jPoint][iVar] = pow(Vol,1./3.); iVar++;
           }
 
           if(wall_model || wall_function){
