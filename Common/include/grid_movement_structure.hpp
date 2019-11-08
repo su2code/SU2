@@ -1253,13 +1253,19 @@ public:
   void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
 
   /*!
-   * \brief Multiply by the stiffness matrix of the volume deformation.
+   * \brief Get the object for multiplication by the stiffness matrix of the volume deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] UpdateGeo - Update geometry.
-   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
+   * \param[in] Transpose - Wether or not you want to multiply by the transposed matrix
    */
-  void Multiply_by_Volume_Deformation_Stiffness(CGeometry *geometry, CConfig *config, bool Transpose);
+  CMatrixVectorProduct<su2double>* GetStiffnessMatrixVectorProduct(CGeometry *geometry, CConfig *config, bool Transpose);
+
+  /*!
+   * \brief Get the stiffness matrix of the volume deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSysMatrix<su2double> &GetStiffnessMatrix(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Grid deformation using the spring analogy method.

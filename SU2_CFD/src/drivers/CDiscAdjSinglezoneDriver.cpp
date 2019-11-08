@@ -522,15 +522,14 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- If necessary smooth the calculated geometry sensitivities ---*/
 
-  if (config->GetSmoothGradient()) {
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics_container[ZONE_0 ][INST_0][MESH_0][GRADIENT_SMOOTHING], config);
-  } else if ( config->GetSmoothGradient() && config->GetProject2Surface() && false ) {
-    grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
-    grid_movement[ZONE_0][INST_0]->Multiply_by_Volume_Deformation_Stiffness(geometry, config, true);
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics_container[ZONE_0 ][INST_0][MESH_0][GRADIENT_SMOOTHING], config);
-    grid_movement[ZONE_0][INST_0]->Multiply_by_Volume_Deformation_Stiffness(geometry, config, false);
+  if ( config->GetSmoothGradient() && config->GetProject2Surface() ) {
+    std::cout << "Smoothing the gradient in the volume." <<std::endl;
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
+    std::cout << "Calculating projection of the gradient onto the surface." <<std::endl;
+    solver[GRADIENT_SMOOTHING]->MultiplyByVolumeDeformationStiffness(geometry, solver[ADJFLOW_SOL], grid_movement[ZONE_0][INST_0], config, false);
+  } else if ( config->GetSmoothGradient() ) {
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
   }
-
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

@@ -341,13 +341,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
-void CVolumetricMovement::Multiply_by_Volume_Deformation_Stiffness(CGeometry *geometry, CConfig *config, bool Transpose) {
+CMatrixVectorProduct<su2double>* CVolumetricMovement::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CConfig *config, bool Transpose) {
 
   su2double MinVolume;
 
   /*--- Initialize vector and sparse matrix ---*/
-  LinSysSol.SetValZero();
-  LinSysRes.SetValZero();
   StiffMatrix.SetValZero();
 
   /*--- Compute the stiffness matrix entries for all nodes/elements in the
@@ -355,24 +353,7 @@ void CVolumetricMovement::Multiply_by_Volume_Deformation_Stiffness(CGeometry *ge
         elasticity equations (transfers element stiffnesses to point-to-point). ---*/
   MinVolume = SetFEAMethodContributions_Elem(geometry, config);
 
-  /*--- Fix the location of any points in the domain, if requested. ---*/
-  SetDomainDisplacements(geometry, config);
-
-  /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
-  SetBoundaryDerivatives(geometry, config);
-
   CMatrixVectorProduct<su2double>* mat_vec = NULL;
-
-  /*--- Communicate any prescribed boundary displacements via MPI,
-     so that all nodes have the same solution and r.h.s. entries
-     across all partitions. ---*/
-
-  StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-  StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-
-  StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
-  StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
-
 
   /*--- Create an instance of the MatrixVectorProduct class  ---*/
   if (!Transpose) {
@@ -381,14 +362,26 @@ void CVolumetricMovement::Multiply_by_Volume_Deformation_Stiffness(CGeometry *ge
     mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
   }
 
-  (*mat_vec)(LinSysRes, LinSysSol);
 
-  /*--- Deallocate memory needed by the matrix vector product ---*/
-  delete mat_vec;
+  /*--- return the matrix vector product class ---*/
+  return mat_vec;
 
-  /*--- Update the derivatives using the solution
-        of the linear system (usol contains the x, y, z displacements). ---*/
-  UpdateGridCoord_Derivatives(geometry, config);
+}
+
+CSysMatrix<su2double>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *geometry, CConfig *config) {
+
+  su2double MinVolume;
+
+  /*--- Initialize vector and sparse matrix ---*/
+  StiffMatrix.SetValZero();
+
+  /*--- Compute the stiffness matrix entries for all nodes/elements in the
+        mesh. FEA uses a finite element method discretization of the linear
+        elasticity equations (transfers element stiffnesses to point-to-point). ---*/
+  MinVolume = SetFEAMethodContributions_Elem(geometry, config);
+
+  /*--- return a pointer to the matrix ---*/
+  return StiffMatrix;
 
 }
 

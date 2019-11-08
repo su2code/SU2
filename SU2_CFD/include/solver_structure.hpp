@@ -4456,10 +4456,22 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
-   * \param[in] solver - Definition of the particular problem.
-   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
    */
   virtual void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] grid_movement - the grid movement to get the stiffness matrix from.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Transpose - wether or not we multiply by the transposed matrix.
+   *
+   */
+  virtual void MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose);
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -12299,6 +12311,16 @@ public:
    * \param[in] iDim - Dimension required.
    */
   su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
+
+  /*!
+   * \brief Multiply the current sensitivities by the stiffness matrix of the adjoint mesh deformation
+   */
+  void MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose);
+
+  /*!
+   * \brief Extract the sensitivities or the sensitivities on the boundary from the discrete adjoint solver
+   */
+  void SetBoundaryDerivativesForMultiplication(CGeometry *geometry, CSolver *solver, CConfig *config, bool Transpose);
 
 };
 

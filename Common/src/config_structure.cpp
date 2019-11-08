@@ -8148,6 +8148,10 @@ bool CConfig::GetVolumetric_Movement(){
       Kind_SU2 == SU2_DOT || 
       DirectDiff)
   { volumetric_movement = true;}
+
+  if (GetProject2Surface())
+  { volumetric_movement=true; }
+
   return volumetric_movement;
 }
 

@@ -463,8 +463,6 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    std::cout << "impose boundary in point " << iPoint << std::endl;
-
     /*--- Get node index ---*/
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -583,7 +581,70 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
         solver->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
       }
     }
-  }
 
+  }
 }
 
+
+void CGradientSmoothingSolver::MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose) {
+
+  LinSysRes.SetValZero();
+  LinSysSol.SetValZero();
+
+  // extract the sensitivities
+  SetBoundaryDerivativesForMultiplication(geometry, solver, config, Transpose);
+
+  for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
+    for (auto iDim = 0; iDim < nDim ; iDim++) {
+      LinSysRes.SetBlock(iPoint, iDim, 1.0);
+    }
+  }
+
+  // get the matrix vector product class (implicite version of get matrix)
+  CMatrixVectorProduct<su2double>* mat_vec = grid_movement->GetStiffnessMatrixVectorProduct(geometry, config, Transpose);
+
+  // perform the matrix vector product
+  (*mat_vec)(LinSysRes, LinSysSol);
+
+  CSysMatrix<su2double>& StiffMatrix = grid_movement->GetStiffnessMatrix(geometry, config);
+  ofstream matrix ("stiffness.dat");
+  StiffMatrix.printMat(matrix);
+  matrix.close();
+
+  // set the calculated sensitivities
+  Set_Sensitivities(geometry, solver, config);
+
+  delete mat_vec;
+}
+
+
+void CGradientSmoothingSolver::SetBoundaryDerivativesForMultiplication(CGeometry *geometry, CSolver *solver, CConfig *config, bool Transpose) {
+  unsigned short iDim, iMarker;
+  unsigned long iPoint, total_index, iVertex;
+
+  if ( Transpose ) {
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_SobolevBC(iMarker) == YES)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++) {
+            total_index = iPoint*nDim + iDim;
+            LinSysRes[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
+            LinSysSol[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
+          }
+        }
+      }
+    }
+    if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
+  } else {
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        total_index = iPoint*nDim + iDim;
+        LinSysRes[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
+        LinSysSol[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
+      }
+    }
+  }
+}
