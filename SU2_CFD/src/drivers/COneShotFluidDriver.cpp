@@ -112,7 +112,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck_Inv[iConstr][jConstr] = 0.0;
     }
-    BCheck_Inv[iConstr][iConstr] = config->GetBCheckEpsilon();
+    BCheck_Inv[iConstr][iConstr] = -config->GetBCheckEpsilon();
   }
   BCheck_Norm = sqrt(su2double(nConstr))*config->GetBCheckEpsilon();
 
@@ -1134,20 +1134,20 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
   su2double bcheck=0;
   for (iConstr = 0; iConstr  < nConstr; iConstr++){
-    BCheck[iConstr][iConstr] = config->GetBCheckEpsilon();
+    BCheck[iConstr][iConstr] = -config->GetBCheckEpsilon();
     for (jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck[iConstr][jConstr] += config->GetOneShotBeta()*solver[ADJFLOW_SOL]->MultiplyConstrDerivative(iConstr,jConstr);
     }
   }
   if (nConstr == 1){
-    if(BCheck[0][0]-config->GetBCheckEpsilon() > 0.) {
-      BCheck_Norm = BCheck[0][0] - config->GetBCheckEpsilon()/config->GetMultiplierScale(0);
+    if(BCheck[0][0]+config->GetBCheckEpsilon() > 0.) {
+      BCheck_Norm = BCheck[0][0] + config->GetBCheckEpsilon();
       BCheck_Inv[0][0] = 1./BCheck[0][0];
     }
     else{
       // if (rank == MASTER_NODE) cout << "BCheck not positive definite!!!" << endl;
       BCheck_Norm = config->GetBCheckEpsilon();
-      BCheck_Inv[0][0] = 1./config->GetBCheckEpsilon();
+      BCheck_Inv[0][0] = -1./config->GetBCheckEpsilon();
     }
 
   } else {
