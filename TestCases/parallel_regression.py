@@ -264,7 +264,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.804072, -6.250381, 1.049989, 0.019166] #last 4 columns
+    turb_naca0012_sst.test_vals = [-15.274205, -6.250384, 1.049989, 0.019166] #last 4 columns
     turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -275,7 +275,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-16.136012, -5.980662, 1.005228, 0.019014] #last 4 columns
+    turb_naca0012_sst_sust.test_vals = [-14.851291, -5.980663, 1.005228, 0.019014] #last 4 columns
     turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
@@ -286,7 +286,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.378876, -8.396837, 0.000047, 0.055591] #last 4 columns
+    propeller.test_vals = [-3.389575, -8.409529, 0.000048, 0.056329] #last 4 columns
     propeller.su2_exec  = "parallel_computation.py -f"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
@@ -402,7 +402,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.277551, 0.147212, -0.000000, 0.311977] #last 4 columns
+    inc_turb_naca0012_sst_sust.test_vals = [-7.276357, 0.146097, -0.000000, 0.312019] #last 4 columns
     inc_turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
     inc_turb_naca0012_sst_sust.timeout   = 1600
     inc_turb_naca0012_sst_sust.tol       = 0.00001
@@ -504,7 +504,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-7.994738, -14.278082, 0.000046, 0.007987] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-7.994738, -14.268367, 0.000046, 0.007987] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
