@@ -19369,6 +19369,12 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
         break;
     }
   }
+  
+  /*--- MPI parallelization ---*/
+  
+  InitiateComms(geometry, config, SGS_MODEL);
+  CompleteComms(geometry, config, SGS_MODEL);
+  
 }
 
 void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep) {

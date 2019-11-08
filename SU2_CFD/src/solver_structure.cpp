@@ -1838,6 +1838,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       break;
     case MAX_EIGENVALUE:
     case SENSOR:
+    case SGS_MODEL:
       COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1961,6 +1962,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SENSOR:
             bufDSend[buf_offset] = node[iPoint]->GetSensor();
             break;
+          case SGS_MODEL:
+            bufDSend[buf_offset] = node[iPoint]->GetEddyViscosity();
           case SOLUTION_GRADIENT:
             for (iVar = 0; iVar < nVar; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
@@ -2110,6 +2113,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case SENSOR:
             node[iPoint]->SetSensor(bufDRecv[buf_offset]);
+            break;
+          case SGS_MODEL:
+            node[iPoint]->SetEddyViscosity(bufDRecv[buf_offset]);
             break;
           case SOLUTION_GRADIENT:
             for (iVar = 0; iVar < nVar; iVar++)

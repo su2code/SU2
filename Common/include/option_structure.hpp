@@ -1997,7 +1997,8 @@ enum MPI_QUANTITIES {
   SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
+  SOLUTION_FEA_OLD     = 26,   /*!< \brief FEA solution old communication. */
+  SGS_MODEL            = 27   /*!< \brief NS SGS model communication. */
 };
 
 /*!
