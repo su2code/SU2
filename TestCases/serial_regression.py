@@ -319,7 +319,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 50
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.459444, -4.595710, 1.201844, -0.007146, 0.080517] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-7.708053, -8.082473, -3.175091, -0.000015, 0.081277] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_restart_mg.new_output  = True
     turb_naca0012_sst_restart_mg.timeout   = 3200
@@ -748,7 +748,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.592454, 3.916019, -0.001014, 0.096794] #last 4 columns
+    harmonic_balance.test_vals = [-1.589862, 3.922099, -0.001443, 0.099456] #last 4 columns
     harmonic_balance.su2_exec  = "SU2_CFD"
     harmonic_balance.new_output = False
     harmonic_balance.timeout   = 1600
@@ -760,7 +760,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.900982, -5.880438, 0.007758, 0.125934] #last 4 columns
+    hb_rans_preconditioning.test_vals = [-1.909598, -5.954721, 0.007773, 0.131219] #last 4 columns
     hb_rans_preconditioning.su2_exec  = "SU2_CFD"
     hb_rans_preconditioning.new_output= False
     hb_rans_preconditioning.timeout   = 1600
@@ -804,7 +804,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.163944, 0.077283, 1.398548, 2.197047] #last 4 columns
+    square_cylinder.test_vals = [-1.162581, 0.066412, 1.399788, 2.220411] #last 4 columns
     square_cylinder.su2_exec  = "SU2_CFD"
     square_cylinder.timeout   = 1600
     square_cylinder.tol       = 0.00001
@@ -817,7 +817,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977545, 3.481778, 0.001295, -0.003793] #last 4 columns
+    sine_gust.test_vals = [-1.977545, 3.481778, -0.001572, -0.007286] #last 4 columns
     sine_gust.su2_exec  = "SU2_CFD"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -830,7 +830,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.080202, 0.033233, -0.001666, -0.000155] #last 4 columns
+    aeroelastic.test_vals = [0.079371, 0.033176, -0.001665, -0.000156] #last 4 columns
     aeroelastic.su2_exec  = "SU2_CFD"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.00001
