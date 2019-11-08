@@ -1262,17 +1262,22 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
 void COneShotFluidDriver::StoreMultiplierGrad() {
   if(nConstr > 0) {
     unsigned short iConstr, iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
-    unsigned long iPoint, nPoint = geometry->GetnPoint();
+    unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
     su2double beta = config->GetOneShotBeta();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      AugmentedLagrangianMultiplierGradient[iConstr] = ConstrFunc[iConstr] + config->GetBCheckEpsilon()*Multiplier[iConstr];
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      su2double my_Gradient = ConstrFunc[iConstr] + config->GetBCheckEpsilon()*Multiplier[iConstr];
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          AugmentedLagrangianMultiplierGradient[iConstr] += beta
+          my_Gradient += beta
               * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
               * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
         }
       }
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&my_Gradient, &AugmentedLagrangianMultiplierGradient[iConstr], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  AugmentedLagrangianMultiplierGradient[iConstr] = my_Gradient;
+#endif
     }
   }
 }
