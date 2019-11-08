@@ -788,7 +788,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.719673, -2.279643, 1.721389, 1.710467] #last 4 columns
+    spinning_cylinder.test_vals = [-7.889994, -2.469385, 1.708162, 1.670039] #last 4 columns
     spinning_cylinder.su2_exec  = "SU2_CFD"
     spinning_cylinder.new_output = True
     spinning_cylinder.timeout   = 1600
@@ -872,7 +872,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.046850, -13.386345, 0.174911, 0.430700] #last 4 columns
+    ls89_sa.test_vals = [-5.060859, -13.398192, 0.174451, 0.429491] #last 4 columns
     ls89_sa.su2_exec  = "SU2_CFD"
     ls89_sa.new_output= True
     ls89_sa.timeout   = 1600
@@ -884,7 +884,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 20
-    edge_VW.test_vals = [-0.711006, 5.491025, -0.000971, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-0.711552, 5.490479, -0.000975, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "SU2_CFD"
     edge_VW.new_output = True
     edge_VW.timeout   = 1600
@@ -896,7 +896,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals = [-1.671554, 4.521719, 0.001027, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-1.670439, 4.522842, 0.001027, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "SU2_CFD"
     edge_PPR.new_output = True
     edge_PPR.timeout   = 1600
@@ -913,7 +913,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.301588, 0.418684, 78.467650, 0.990182] #last 4 columns
+    Jones_tc.test_vals = [-5.316334, 0.355080, 44.772250, 2.269935] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -925,7 +925,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.344742, -1.553279, 82.250600, 2.791916] #last 4 columns
+    Jones_tc_rst.test_vals = [-3.034158, 0.013762, 82.263710, 2.792251] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
@@ -937,7 +937,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.790262, 5.696645, 73.362820, 0.904310] #last 4 columns
+    axial_stage2D.test_vals = [-1.933250, 5.305273, 73.357650, 1.841297] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -949,7 +949,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-1.201657, 6.150672, 96.239670, 0.062740] #last 4 columns
+    transonic_stator.test_vals = [-0.560481, 5.828675, 96.593740, 0.062507] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.new_output  = False
     transonic_stator.timeout   = 1600
@@ -961,7 +961,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-8.248816, -2.976167, 5.285722, 0.003100] #last 4 columns
+    transonic_stator_rst.test_vals = [-2.127925, 2.936696, 5.298641, 0.003102] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.new_output  = False
     transonic_stator_rst.timeout   = 1600
