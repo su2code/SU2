@@ -38,6 +38,7 @@
 
 #pragma once
 
+#include <iomanip>
 #include <cmath>
 #include "CVerificationSolution.hpp"
 
