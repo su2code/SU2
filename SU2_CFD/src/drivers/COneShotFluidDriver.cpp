@@ -908,6 +908,7 @@ void COneShotFluidDriver::CalculateLagrangian(bool augmented){
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Lagrangian += ConstrFunc[iConstr]*Multiplier[iConstr];
+    Lagrangian += config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
   }
 
   if(augmented){
@@ -1270,7 +1271,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
           AugmentedLagrangianMultiplierGradient[iConstr] += beta
               * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
               * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar)
-              + ConstrFunc[iConstr];
+              + ConstrFunc[iConstr] + config->GetBCheckEpsilon()*Multiplier[iConstr];
         }
       }
     }
