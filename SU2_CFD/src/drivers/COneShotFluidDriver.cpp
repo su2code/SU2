@@ -1144,7 +1144,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
     }
   }
   if (nConstr == 1){
-    if(BCheck[0][0]-config->GetBCheckEpsilon() < 0.) {
+    if(BCheck[0][0]-config->GetBCheckEpsilon() > 0.) {
       BCheck_Norm = BCheck[0][0] - config->GetBCheckEpsilon();
       BCheck_Inv[0][0] = 1./BCheck[0][0];
     }
