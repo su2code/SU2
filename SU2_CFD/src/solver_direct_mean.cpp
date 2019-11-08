@@ -19326,7 +19326,8 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     /* Length Scale can be precompute from DES LengthScale.
      I would like to test the Shear Layer Adapted one*/
     //lenScale    = node[iPoint]->GetDES_LengthScale();
-    lenScale = pow(geometry->node[iPoint]->GetVolume(),1./3.);
+    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
+    lenScale = pow(Vol,1./3.);
     //lenScale = geometry->node[iPoint]->GetMaxLength();
 
     /* Compute the eddy viscosity. */
