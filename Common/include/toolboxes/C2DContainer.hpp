@@ -90,9 +90,9 @@ protected:
    * runtime internal value that depend on the number of rows/columns.
    * What values need setting depends on the specialization as not all have
    * members for e.g. number of rows and cols (static size optimization).
-   * \note Aligned dynamic allocation is disabled for compilation on MAC.
+   * \note Aligned dynamic allocation is disabled for compilation on MAC and Windows.
    */
-#ifndef __APPLE__
+#if !defined __APPLE__ && !defined _WIN64
 #define REAL_ALLOCATOR(EXTRA)                                             \
   static_assert(AlignSize % alignof(Scalar_t)==0,                         \
     "AlignSize is not a multiple of the type's alignment spec.");         \
