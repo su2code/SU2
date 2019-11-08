@@ -112,7 +112,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck_Inv[iConstr][jConstr] = 0.0;
     }
-    BCheck_Inv[iConstr][iConstr] = -config->GetBCheckEpsilon();
+    BCheck_Inv[iConstr][iConstr] = -1./config->GetBCheckEpsilon();
   }
   BCheck_Norm = sqrt(su2double(nConstr))*config->GetBCheckEpsilon();
 
