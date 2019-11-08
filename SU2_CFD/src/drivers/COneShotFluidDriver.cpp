@@ -1265,13 +1265,12 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     unsigned long iPoint, nPoint = geometry->GetnPoint();
     su2double beta = config->GetOneShotBeta();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      AugmentedLagrangianMultiplierGradient[iConstr] = 0.;
+      AugmentedLagrangianMultiplierGradient[iConstr] = ConstrFunc[iConstr] + config->GetBCheckEpsilon()*Multiplier[iConstr];
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
           AugmentedLagrangianMultiplierGradient[iConstr] += beta
               * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
-              * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar)
-              + ConstrFunc[iConstr] + config->GetBCheckEpsilon()*Multiplier[iConstr];
+              * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
         }
       }
     }
