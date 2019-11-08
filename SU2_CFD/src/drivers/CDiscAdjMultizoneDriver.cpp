@@ -143,10 +143,13 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 void CDiscAdjMultizoneDriver::Run() {
 
-  unsigned short wrt_sol_freq = config_container[ZONE_0]->GetVolume_Wrt_Freq();
-  unsigned long  nOuterIter = driver_config->GetnOuter_Iter();
+  unsigned long wrt_sol_freq = 9999;
+  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  unsigned short MZSolver = driver_config->GetKind_MZSolver();
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
     iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                                    solver_container, numerics_container, config_container, surface_movement,
@@ -297,8 +300,15 @@ void CDiscAdjMultizoneDriver::Run() {
       Set_BGSSolution(iZone);
 
       /*--- Now all iZone coupling terms are summed up, set External_Old to External so the
-       *    next zone receives the contributions from iZone (BGS-type iteration). ---*/
+       *    next zone receives the contributions from iZone (BGS-type iteration) alternatively,
+       *    do it outside the "iZone loop" for Block-Jacobi type iterations. ---*/
 
+      if (MZSolver == MZ_BLOCK_GAUSS_SEIDEL) {
+        Set_OldExternal();
+      }
+    }
+
+    if (MZSolver != MZ_BLOCK_GAUSS_SEIDEL) {
       Set_OldExternal();
     }
 
