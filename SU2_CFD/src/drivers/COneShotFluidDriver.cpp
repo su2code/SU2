@@ -907,7 +907,7 @@ void COneShotFluidDriver::CalculateLagrangian(bool augmented){
   Lagrangian += ObjFunc; //TODO use for BFGS either only objective function or normal Lagrangian
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    Lagrangian -= ConstrFunc[iConstr]*Multiplier[iConstr];
+    Lagrangian += ConstrFunc[iConstr]*Multiplier[iConstr];
   }
 
   if(augmented){
