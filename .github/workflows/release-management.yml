@@ -3,7 +3,7 @@ name: Release Management
 on:
   push:
     branches:
-      - feature_release_drafter
+      - develop
 
 jobs:
   update_draft_release:
