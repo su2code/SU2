@@ -2577,8 +2577,6 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     unsigned short val_iZone,
     unsigned short val_iInst)     {
 
-  bool StopCalc = false;
-  
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -2588,16 +2586,14 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
 
   /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-  output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], 
-                            solver[ZONE_0][INST_0][MESH_0], 
-                            config[ZONE_0], 
-                            config[ZONE_0]->GetTimeIter(),
-                            config[ZONE_0]->GetOuterIter(), 
-                            config[ZONE_0]->GetInnerIter());
-  
-  StopCalc = output->GetConvergence();
-  
-  return StopCalc;
+  output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0],
+                            solver[val_iZone][INST_0][MESH_0],
+                            config[val_iZone],
+                            config[val_iZone]->GetTimeIter(),
+                            config[val_iZone]->GetOuterIter(),
+                            config[val_iZone]->GetInnerIter());
+
+  return output->GetConvergence();
 
 }
 void CDiscAdjFluidIteration::Postprocess(COutput *output,
@@ -3143,12 +3139,12 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
     }
 
     for (iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++)
-      myfile_res << scientific << solver[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
+      myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
     for (iVar = 0; iVar < config[val_iZone]->GetnPoissonRatio(); iVar++)
-      myfile_res << scientific << solver[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
+      myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
     if (dynamic){
       for (iVar = 0; iVar < config[val_iZone]->GetnMaterialDensity(); iVar++)
-        myfile_res << scientific << solver[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
+        myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
     }
 
     if (de_effects){
