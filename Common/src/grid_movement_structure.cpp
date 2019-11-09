@@ -5796,14 +5796,14 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config, 
+void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
                                            unsigned long iter, unsigned short iZone) {
   
   su2double deltaT, time_new, time_old, Lref;
   su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   unsigned short iMarker, jMarker, Moving;
-  unsigned long iPoint, iVertex;
+  unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
   
@@ -5867,16 +5867,8 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
           
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             
-            // if (!config->GetDeform_Mesh()) {
-              /*--- Set node displacement for volume deformation ---*/
-              geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-            // }
-            // else {
-            //   /*--- Get node index ---*/
-            //   iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-            //   solver[MESH_SOL]->node[iPoint]->SetBound_Disp(VarCoord);
-            // }
+            /*--- Set node displacement for volume deformation ---*/
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }

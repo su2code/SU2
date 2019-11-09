@@ -3215,7 +3215,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
     surface_movement->CopyBoundary(geometry[MESH_0], config);
     if (config->GetTime_Marching() == HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
-      iteration->SetGrid_Movement(geometry, surface_movement, grid_movement, numerics_container[iZone][iInst], solver, config, 0, iInst);
+      iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, iInst);
     }
   }
   
@@ -4124,7 +4124,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
    harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], numerics_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );
     }
   }
 
@@ -5805,7 +5805,7 @@ void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsign
   /*-----------------------------------------------------------------*/
 
   direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
-                                                               surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0], numerics_container[ZONE_FLOW][INST_0],
+                                                               surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
                                                                solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
 
   geometry_container[ZONE_FLOW][INST_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);

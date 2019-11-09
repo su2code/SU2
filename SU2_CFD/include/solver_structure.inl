@@ -1152,7 +1152,13 @@ inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, C
 
 inline void CSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 
-// inline void CSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, CSolver **solver, unsigned long iter, unsigned short iZone) { }
+inline void CSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter, unsigned short iZone) { }
+
+inline void CSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter, unsigned short iZone) { }
+
+inline void CSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter, unsigned short iZone) { }
+
+inline void CSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter, unsigned short iZone) { }
 
 inline void CSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 

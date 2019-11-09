@@ -179,7 +179,6 @@ public:
    * \brief Get minimun volume in the mesh
    * \return 
    */
-  // void Surface_Plunging(CGeometry *geometry, CConfig *config, CSolver **solver, unsigned long iter, unsigned short iZone);
   su2double GetMinimum_Volume(){return MinVolume_Curr;}
   
   /*!
@@ -188,4 +187,16 @@ public:
    */
   su2double GetMaximum_Volume(){return MaxVolume_Curr;}
   
+  void Surface_Pitching(CGeometry *geometry, CConfig *config,
+                             unsigned long iter, unsigned short iZone);
+
+  void Surface_Rotating(CGeometry *geometry, CConfig *config,
+                             unsigned long iter, unsigned short iZone);
+
+  void Surface_Plunging(CGeometry *geometry, CConfig *config,
+                             unsigned long iter, unsigned short iZone);
+
+  void Surface_Translating(CGeometry *geometry, CConfig *config,
+                             unsigned long iter, unsigned short iZone);
+
 };

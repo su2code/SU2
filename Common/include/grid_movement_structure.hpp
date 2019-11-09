@@ -50,8 +50,6 @@
 
 #include "geometry_structure.hpp"
 #include "config_structure.hpp"
-//#include "../../SU2_CFD/include/solver_structure.hpp"
-//#include "../../SU2_CFD/include/solvers/CMeshSolver.hpp"
 #include "linear_algebra/CSysMatrix.hpp"
 #include "linear_algebra/CSysVector.hpp"
 #include "linear_algebra/CSysSolve.hpp"
@@ -1612,7 +1610,7 @@ public:
 	 * \param[in] iter - Current physical time iteration.
    * \param[in] iZone - Zone number in the mesh.
 	 */
-	void Surface_Plunging(CGeometry *geometry, CConfig *config,// CSolver **solver, 
+	void Surface_Plunging(CGeometry *geometry, CConfig *config,
                            unsigned long iter, unsigned short iZone);
   
   /*!
