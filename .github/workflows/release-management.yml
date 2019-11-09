@@ -31,7 +31,7 @@ jobs:
           cd install
           zip -r ../${{matrix.os_bin}}.zip bin/*  
         # Drafts your next Release notes as Pull Requests are merged into "master"
-      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-8
+      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-10
         name: Update Release
         id: update_release
         env:
