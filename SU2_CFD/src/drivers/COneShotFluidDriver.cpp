@@ -809,7 +809,7 @@ void COneShotFluidDriver::StoreGradDotDir(){
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
+  // if (nConstr > 0) {
   //   unsigned short iConstr;
   //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
   //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
