@@ -43,54 +43,43 @@
 class CMeshVariable : public CVariable {
 protected:
 
-  unsigned short nDim;
-
-  su2double WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
-
-  su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
-
-
-public:
+  VectorType WallDistance;  /*!< \brief Store the wall distance in reference coordinates. */
+  MatrixType Mesh_Coord;    /*!< \brief Store the reference coordinates of the mesh. */
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_coor - Values of the coordinates (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshVariable(const su2double *val_coor, unsigned short val_nDim, CConfig *config);
+  CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config);
 
+public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshVariable(void);
+  ~CMeshVariable() = default;
 
   /*!
    * \brief Get the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the original coordinate iDim.
    */
-  inline su2double GetMesh_Coord(unsigned short iDim) const final { return Mesh_Coord[iDim]; }
+  inline su2double GetMesh_Coord(unsigned long iPoint, unsigned long iDim) const final { return Mesh_Coord(iPoint,iDim); }
 
   /*!
    * \brief Get the undeformed coordinates.
    * \return Pointer to the reference coordinates.
    */
-  inline su2double *GetMesh_Coord() final { return Mesh_Coord; }
+  inline const su2double *GetMesh_Coord(unsigned long iPoint) const final { return Mesh_Coord[iPoint]; }
 
   /*!
    * \brief Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
    */
-  inline void SetMesh_Coord(unsigned short iDim, const su2double val_coord) final { Mesh_Coord[iDim] = val_coord;}
-
-  /*!
-   * \brief Move Displacement into Displacement_Old.
-   */
-  inline void SetSolution_Old(void){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution_Old[iDim] = Solution[iDim];
+  inline void SetMesh_Coord(unsigned long iPoint, unsigned long iDim, su2double val_coord) final {
+    Mesh_Coord(iPoint,iDim) = val_coord;
   }
 
   /*!
@@ -98,41 +87,26 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.
    */
-  inline su2double GetWallDistance(void) const final { return WallDistance; }
+  inline su2double GetWallDistance(unsigned long iPoint) const final { return WallDistance(iPoint); }
 
   /*!
    * \brief Set the value of the wall distance in reference coordinates.
    * \param[in] val_dist - Value of wall distance.
    */
-  inline void SetWallDistance(const su2double val_dist) final { WallDistance = val_dist; }
-
-  /*!
-   * \brief Determine whether the node is a moving vertex.
-   * \return False. The node is not at the boundary.
-   */
-  inline virtual bool Get_isVertex(void) const override { return false; }
+  inline void SetWallDistance(unsigned long iPoint, su2double val_dist) final { WallDistance(iPoint) = val_dist; }
 
   /*!
    * \brief Register the reference coordinates of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_MeshCoord(bool input) final {
-    if (input) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterInput(Mesh_Coord[iVar]);
-    }
-    else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterOutput(Mesh_Coord[iVar]);
-    }
-  }
+  void Register_MeshCoord(bool input) final;
 
   /*!
    * \brief Recover the value of the adjoint of the mesh coordinates.
    */
-  inline void GetAdjoint_MeshCoord(su2double *adj_mesh) const final{
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        adj_mesh[iVar] = SU2_TYPE::GetDerivative(Mesh_Coord[iVar]);
-    }
+  inline void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) const final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      adj_mesh[iDim] = SU2_TYPE::GetDerivative(Mesh_Coord(iPoint,iDim));
   }
 
 };

@@ -37,155 +37,111 @@
 
 #include "../../include/variables/CVariable.hpp"
 
-unsigned short CVariable::nDim = 0;
 
-CVariable::CVariable(void) {
-
-  /*--- Array initialization ---*/
-  Solution = NULL;
-  Solution_Old = NULL;
-  Solution_time_n = NULL;
-  Solution_time_n1 = NULL;
-  Gradient = NULL;
-  Limiter = NULL;
-  Solution_Max = NULL;
-  Solution_Min = NULL;
-  Grad_AuxVar = NULL;
-  Undivided_Laplacian = NULL;
-  Res_TruncError = NULL;
-  Residual_Old = NULL;
-  Residual_Sum = NULL;
-  Solution_Adj_Old = NULL;
-
-}
-
-CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
-
-  /*--- Array initialization ---*/
-  Solution = NULL;
-  Solution_Old = NULL;
-  Solution_time_n = NULL;
-  Solution_time_n1 = NULL;
-  Gradient = NULL;
-  Rmatrix = NULL;
-  Limiter = NULL;
-  Solution_Max = NULL;
-  Solution_Min = NULL;
-  Grad_AuxVar = NULL;
-  Undivided_Laplacian = NULL;
-  Res_TruncError = NULL;
-  Residual_Old = NULL;
-  Residual_Sum = NULL;
-  Solution_Adj_Old = NULL;
+CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) {
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
-  nVar = val_nvar;
+  nPoint = npoint;
+  nVar = nvar;
 
-  /*--- Allocate the solution array - here it is also possible
-   to allocate some extra flow variables that do not participate
-   in the simulation ---*/
-  Solution = new su2double [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution[iVar] = 0.0;
+  /*--- Allocate the solution array. ---*/
+  Solution.resize(nPoint,nVar) = su2double(0.0);
 
+  if (config->GetMultizone_Problem())
+    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
-CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
-
-  unsigned short iVar, iDim, jDim;
-
-  /*--- Array initialization ---*/
-  Solution = NULL;
-  Solution_Old = NULL;
-  Solution_time_n = NULL;
-  Solution_time_n1 = NULL;
-  Gradient = NULL;
-  Rmatrix = NULL;
-  Limiter = NULL;
-  Solution_Max = NULL;
-  Solution_Min = NULL;
-  Grad_AuxVar = NULL;
-  Undivided_Laplacian = NULL;
-  Res_TruncError = NULL;
-  Residual_Old = NULL;
-  Residual_Sum = NULL;
-  Solution_Adj_Old = NULL;
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
-  nDim = val_nDim;
-  nVar = val_nvar;
+  nPoint = npoint;
+  nDim = ndim;
+  nVar = nvar;
 
-  /*--- Allocate solution, solution old, residual and gradient
-   which is common for all the problems, here it is also possible
-   to allocate some extra flow variables that do not participate
-   in the simulation ---*/
-  Solution = new su2double [nVar];
+  /*--- Allocate fields common to all problems. Do not allocate fields
+   that are specific to one solver, i.e. not common, in this class. ---*/
+  Solution.resize(nPoint,nVar) = su2double(0.0);
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    Solution[iVar] = 0.0;
+  Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  Solution_Old = new su2double [nVar];
-
-  Gradient = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Gradient[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim ++)
-      Gradient[iVar][iDim] = 0.0;
+  if (config->GetTime_Marching() != NO) {
+    Solution_time_n.resize(nPoint,nVar);
+    Solution_time_n1.resize(nPoint,nVar);
+  }
+  else if (config->GetTime_Domain()) {
+    Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
-  if (config->GetUnsteady_Simulation() != NO) {
-    Solution_time_n = new su2double [nVar];
-    Solution_time_n1 = new su2double [nVar];
-  }
-  else if (config->GetDynamic_Analysis() == DYNAMIC) {
-    Solution_time_n = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = 0.0;
-  }
-
-	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
-	  Solution_Adj_Old = new su2double [nVar];
+	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
+	  Solution_Adj_Old.resize(nPoint,nVar);
 	}
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    Rmatrix = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Rmatrix[iDim] = new su2double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        Rmatrix[iDim][jDim] = 0.0;
-    }
+  Non_Physical.resize(nPoint) = false;
+
+  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
+    AD_InputIndex.resize(nPoint,nVar) = -1;
+    AD_OutputIndex.resize(nPoint,nVar) = -1;
   }
 
+  if (config->GetMultizone_Problem())
+    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
-CVariable::~CVariable(void) {
-  unsigned short iVar, iDim;
+void CVariable::Set_OldSolution() { Solution_Old = Solution; }
 
-  if (Solution            != NULL) delete [] Solution;
-  if (Solution_Old        != NULL) delete [] Solution_Old;
-  if (Solution_time_n     != NULL) delete [] Solution_time_n;
-  if (Solution_time_n1    != NULL) delete [] Solution_time_n1;
-  if (Limiter             != NULL) delete [] Limiter;
-  if (Solution_Max        != NULL) delete [] Solution_Max;
-  if (Solution_Min        != NULL) delete [] Solution_Min;
-  if (Grad_AuxVar         != NULL) delete [] Grad_AuxVar;
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
-  if (Res_TruncError      != NULL) delete [] Res_TruncError;
-  if (Residual_Old        != NULL) delete [] Residual_Old;
-  if (Residual_Sum        != NULL) delete [] Residual_Sum;
-  if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
+void CVariable::Set_Solution() { Solution = Solution_Old; }
 
-  if (Gradient != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete [] Gradient[iVar];
-    delete [] Gradient;
+void CVariable::Set_Solution_time_n() { Solution_time_n = Solution; }
+
+void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
+
+void CVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
+
+void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
+
+void CVariable::SetAuxVarGradientZero() { Grad_AuxVar.setConstant(0.0); }
+
+void CVariable::SetGradientZero() { Gradient.storage.setConstant(0.0); }
+
+void CVariable::SetRmatrixZero() { Rmatrix.storage.setConstant(0.0); }
+
+void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }
+
+void CVariable::SetExternalZero() { External.setConstant(0.0); }
+
+void CVariable::Set_OldExternal() { External_Old = External; }
+
+void CVariable::RegisterSolution(bool input, bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      if(input) {
+        if(push_index) {
+          AD::RegisterInput(Solution(iPoint,iVar));
+        }
+        else {
+          AD::RegisterInput(Solution(iPoint,iVar), false);
+          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
+        }
+      }
+      else {
+        AD::RegisterOutput(Solution(iPoint,iVar));
+        if(!push_index)
+          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
+      }
+    }
   }
+}
 
-  if (Rmatrix != NULL) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      delete [] Rmatrix[iDim];
-    delete [] Rmatrix;
-  }
+void CVariable::RegisterSolution_time_n() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for(unsigned long iVar=0; iVar<nVar; ++iVar)
+      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+}
 
+void CVariable::RegisterSolution_time_n1() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for(unsigned long iVar=0; iVar<nVar; ++iVar)
+      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
 }

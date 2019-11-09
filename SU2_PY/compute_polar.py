@@ -68,10 +68,10 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-i", "--iterations", dest="iterations", default=-1,
                       help="number of ITERATIONS", metavar="ITERATIONS")
-    parser.add_option("-d", "--dimmension", dest="geomDim", default=2,
+    parser.add_option("-d", "--dimension", dest="geomDim", default=2,
                       help="Geometry dimension (2 or 3)", metavar="geomDim")
     parser.add_option("-w", "--Wind", action="store_true", dest="Wind", default=False,
-                      help=" Wind system (default is body system")
+                      help=" Wind system (default is body system)")
     parser.add_option("-v", "--Verbose", action="store_true", dest="verbose", default=False,
                       help=" Verbose printout (if activated)")
 
@@ -164,7 +164,7 @@ def main():
     # prepare config
     config.NUMBER_PART = options.partitions
     if options.iterations > 0:
-        config.EXT_ITER = options.iterations
+        config.ITER = options.iterations
     config.NZONES = 1
 
     # find solution files if they exist
@@ -396,10 +396,10 @@ def main():
                 # if caseName exists copy the restart file from it for run continuation
                 # Continue from previous sweep point if this is not he first
                 if os.path.isdir(caseName):
-                    command = 'cp '+caseName+'/'+config.SOLUTION_FLOW_FILENAME+' .'
+                    command = 'cp '+caseName+'/'+config.SOLUTION_FILENAME+' .'
                     if options.verbose:
                         print(command)
-                    shutil.copy2(caseName+'/'+config.SOLUTION_FLOW_FILENAME, os.getcwd())
+                    shutil.copy2(caseName+'/'+config.SOLUTION_FILENAME, os.getcwd())
                     konfig.RESTART_SOL = 'YES'
                 else:
                     konfig.RESTART_SOL = 'NO'
@@ -407,7 +407,7 @@ def main():
             else:
                 konfig.RESTART_SOL = 'YES'
             if  konfig.RESTART_SOL == 'YES':
-                ztate.FILES.DIRECT = config.SOLUTION_FLOW_FILENAME
+                ztate.FILES.DIRECT = config.SOLUTION_FILENAME
             # run su2
             if options.Wind:
                 drag = SU2.eval.func('DRAG', konfig, ztate)
@@ -464,7 +464,7 @@ def main():
             # save data
             SU2.io.save_data('results.pkl', results)
             shutil.copy2('results.pkl', 'DIRECT')
-            shutil.copy2(config.SOLUTION_FLOW_FILENAME, 'DIRECT')
+            shutil.copy2(config.SOLUTION_FILENAME, 'DIRECT')
 
             if os.path.isdir(caseName):
                 command = 'cat '+caseName+\
@@ -484,8 +484,8 @@ def main():
     f.close()
     if os.path.isdir('DIRECT'):
         shutil.rmtree('DIRECT')
-    if os.path.isfile(config.SOLUTION_FLOW_FILENAME):
-        os.remove(config.SOLUTION_FLOW_FILENAME)
+    if os.path.isfile(config.SOLUTION_FILENAME):
+        os.remove(config.SOLUTION_FILENAME)
     if os.path.isfile('results.pkl'):
         os.remove('results.pkl')
     print('Post sweep cleanup completed')

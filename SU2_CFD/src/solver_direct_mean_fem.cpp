@@ -53,8 +53,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
 
-  Cauchy_Serie = NULL;
-
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
 
@@ -88,8 +86,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
-
-  Cauchy_Serie = NULL;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -134,8 +130,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
   Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
-
-  Cauchy_Serie = NULL;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -732,6 +726,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
      computation of the spatial residual, while for ADER this list contains
      the tasks to be done for one space time step. */
   SetUpTaskList(config);
+
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "DG FLOW";
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
@@ -771,7 +768,6 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
   if (Surface_CMz != NULL)      delete [] Surface_CMz;
   if (CEff_Inv != NULL)         delete [] CEff_Inv;
 
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 }
 
 void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
@@ -799,7 +795,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   su2double Beta             = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
   su2double Reynolds         = config->GetReynolds();
-  bool unsteady           = (config->GetUnsteady_Simulation() != NO);
+  bool unsteady           = (config->GetTime_Marching() != NO);
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
@@ -1295,9 +1291,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     if (unsteady){
       NonDimTableOut << "-- Unsteady conditions" << endl;      
       NonDimTable.PrintHeader();
-      NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
+      NonDimTable << "Total Time" << config->GetMax_Time() << config->GetTime_Ref() << "s" << config->GetMax_Time()/config->GetTime_Ref();
       Unit.str("");
-      NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
+      NonDimTable << "Time Step" << config->GetTime_Step() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
       Unit.str("");
       NonDimTable.PrintFooter();
     }
@@ -3115,10 +3111,10 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
   return true;
 }
 
-void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution)  && (ExtIter == 0)) {
+  if ((VerificationSolution)  && (TimeIter == 0)) {
 
     /* Loop over the owned elements. */
     for(unsigned long i=0; i<nVolElemOwned; ++i) {
@@ -3219,7 +3215,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   /*                       Check for grid motion.                                */
   /*-----------------------------------------------------------------------------*/
 
-  const bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  const bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
   if(config->GetGrid_Movement() && !harmonic_balance) {
 
     /*--- Determine the type of grid motion. ---*/
@@ -3242,10 +3238,10 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
                          CURRENT_FUNCTION);
 
         /* Determine whether or not it is needed to compute the motion data. */
-        const unsigned long ExtIter = config->GetExtIter();
+        const unsigned long TimeIter = config->GetTimeIter();
 
         bool computeMotion = false, firstTime = false;
-        if(ExtIter == 0 && iStep == 0) computeMotion = firstTime = true;
+        if(TimeIter == 0 && iStep == 0) computeMotion = firstTime = true;
         if(iStep == 1 || iStep == 3)   computeMotion = true;
 
         if( computeMotion ) {
@@ -3257,7 +3253,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
           /* Determine the time for which the motion data must be determined. */
           const su2double deltaT = config->GetDelta_UnstTimeND();
 
-          su2double tNew = ExtIter*deltaT;
+          su2double tNew = TimeIter*deltaT;
           if( iStep ) tNew += 0.25*(iStep+1)*deltaT;
 
           /* Determine the time for which the currently stored position was
@@ -3595,7 +3591,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
                                     unsigned short iMesh, unsigned long Iteration) {
   
   /* Check whether or not a time stepping scheme is used. */
-  const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
@@ -3741,6 +3737,8 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     if (time_stepping) {
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
+      
+      config->SetDelta_UnstTimeND(Min_Delta_Time);
     }
   }
 }
@@ -5768,7 +5766,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
   /*--- Get the physical time for MMS if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
   
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -7327,9 +7325,9 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
-                       && (config->GetExtIter()!= 0))
-                      || (config->GetExtIter() == 1));
+  bool write_heads = ((((config->GetTimeIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetTimeIter()!= 0))
+                      || (config->GetTimeIter() == 1));
   if( !write_heads ) return;
   
   /*--- Check if there actually is an exact solution for this
@@ -7339,7 +7337,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
       /*--- Get the physical time if necessary. ---*/
       su2double time = 0.0;
-      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
       /*--- Reset the global error measures to zero. ---*/
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -8674,7 +8672,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
   
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
@@ -9403,12 +9401,9 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short iVar;
   unsigned long index;
 
-  string UnstExt, text_line;
-  ifstream restart_file;
-  
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
@@ -9418,6 +9413,8 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  
+  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -9551,8 +9548,6 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
   MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
 
-  Cauchy_Serie = NULL;
-
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
@@ -9667,8 +9662,6 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
   if (Heat_Visc        != NULL)  delete [] Heat_Visc;
   if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
-
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 
   if( SGSModel ) delete SGSModel;
 }
@@ -10407,7 +10400,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short iMesh, unsigned long Iteration) {
   
   /* Check whether or not a time stepping scheme is used. */
-  const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -10811,6 +10804,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if (time_stepping) {
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
+      
+      config->SetDelta_UnstTimeND(Min_Delta_Time);
     }
   }
 }
@@ -12669,7 +12664,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
   
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -15571,7 +15566,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
   
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
