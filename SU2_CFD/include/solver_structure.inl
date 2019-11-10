@@ -1049,6 +1049,36 @@ inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
     node[iPoint]->SetSolution_New();
 }
 
+inline passivedouble CSolver::Get_Pi(unsigned long iRow, unsigned long index) 
+{return (Inlet_Data[maxCol_InletFile*(iRow+1)+index] - Inlet_Data[maxCol_InletFile*iRow+index])/(Inlet_Data[maxCol_InletFile*(iRow+1)] - Inlet_Data[maxCol_InletFile*iRow]);};
+
+inline passivedouble CSolver::Get_Wi(unsigned long iRow,unsigned long index) {return fabs(Get_Pi(iRow,index) - Get_Pi(iRow-1,index));};
+
+inline passivedouble CSolver::Get_Ai_dash(unsigned long iRow, unsigned long index)
+{
+   double nRow = 42;
+    if(iRow == 0) {return Get_Pi(iRow,index);}
+    else if (iRow == 1) {return (Get_Pi(iRow-1,index)+Get_Pi(iRow,index))/2;}
+    else if (iRow == nRow-2) {return (Get_Pi(nRow-2,index)+Get_Pi(nRow-3,index))/2;}
+    else if (iRow == nRow-1) {return Get_Pi(nRow-2,index);}
+    else{
+    double W_iplus1 = Get_Wi(iRow+1,index);
+    double W_iminus1 = Get_Wi(iRow-1,index);
+    double Pi = Get_Pi(iRow,index);
+    double Pi_minus1 = Get_Pi(iRow-1,index);
+
+    if(W_iplus1+W_iminus1 != 0)
+    {
+        return (W_iplus1*Pi_minus1 + W_iminus1*Pi)/(W_iplus1 + W_iminus1);
+    }
+    else
+    {
+        return ((Pi_minus1-Pi)/2);
+    }
+    }
+};
+
+
 inline void CSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}

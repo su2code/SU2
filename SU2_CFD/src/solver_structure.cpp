@@ -5138,7 +5138,7 @@ if (myfile.is_open())
 }
 
 
- void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
+void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                                 CSolver ***solver,
                                 CConfig *config,
                                 int val_iter,
@@ -5156,6 +5156,7 @@ if (myfile.is_open())
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow, nVertex;
+  passivedouble ai,bi,ci,di,delta,dxi;
   su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius, Theta, Parameter1, Parameter2, Vr, VTheta, Vm, Vz, Alpha, Phi;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -5263,16 +5264,37 @@ if (myfile.is_open())
                       for (index=1; index<maxCol_InletFile; index++)
                       {
                       Point_Match = true;
+                      switch(config->GetKindInletInterpolationFunction())
+                        {
+                        case (ONED_LINEAR_SPANWISE):
+                          /*--- 1D interpolate data for every index (column) using equation of a line. ---*/
+                          slope=(Inlet_Data[index+maxCol_InletFile*(iRow+1)]-Inlet_Data[index+maxCol_InletFile*iRow])/(Inlet_Data[maxCol_InletFile*(iRow+1)]-Inlet_Data[maxCol_InletFile*iRow]);
+                    
+                          /*--- If interpolating turbulence variables, shift them one column ahead ---*/
+                          if (index > nDim+1)
+                            Inlet_Values[index+(nDim-1)+1]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
+                          else
+                            Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
+                          
+                          break;
 
-                      /*--- 1D interpolate data for every index (column) using equation of a line. ---*/
-                      slope=(Inlet_Data[index+maxCol_InletFile*(iRow+1)]-Inlet_Data[index+maxCol_InletFile*iRow])/(Inlet_Data[maxCol_InletFile*(iRow+1)]-Inlet_Data[maxCol_InletFile*iRow]);
-                
-                      /*--- If interpolating turbulence variables, shift them one column ahead ---*/
-                      if (index > nDim+1)
-                        Inlet_Values[index+(nDim-1)+1]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
-                      else
-                        Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
-                      
+                        case (ONED_AKIMASPLINE_SPANWISE):
+
+                          dxi = Inlet_Data[maxCol_InletFile*(iRow+1)] - Inlet_Data[maxCol_InletFile*iRow];
+                          ai = Inlet_Data[maxCol_InletFile*iRow + index];
+                          bi = Get_Ai_dash(iRow, index);
+                          //cout<<"dxi: "<<dxi<<endl;
+                          ci = (3*Get_Pi(iRow, index)-2*bi-Get_Ai_dash(iRow+1, index))/dxi;
+                          di = (bi + Get_Ai_dash(iRow+1, index) - 2*Get_Pi(iRow,index))/pow(dxi,2);
+                          delta = Interp_Radius - Inlet_Data[maxCol_InletFile*iRow];
+                          
+                          if (index > nDim+1)
+                            Inlet_Values[index+(nDim-1)+1]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
+                          else
+                            Inlet_Values[index+(nDim-1)]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
+
+                          break;
+                        }
                       }
 
                       /*--- New interpolated parameters for that Interp_Radius. ---*/

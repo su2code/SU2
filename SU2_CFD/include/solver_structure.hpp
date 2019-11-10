@@ -1016,7 +1016,7 @@ public:
    */
   virtual void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3491,6 +3491,11 @@ public:
                                 int val_iter,
                                 unsigned short val_kind_solver,
                                 unsigned short val_kind_marker);
+
+
+  inline passivedouble Get_Pi(unsigned long iRow, unsigned long index);
+  inline passivedouble Get_Wi(unsigned long iRow,unsigned long index);
+  inline passivedouble Get_Ai_dash(unsigned long iRow, unsigned long index);
 
   /*!
    * \brief Prints the interpolated Inlet_Values to a file.
