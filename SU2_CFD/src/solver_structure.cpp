@@ -5155,8 +5155,8 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
   /*--- Local variables ---*/
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
-  unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow, nVertex;
-  passivedouble ai,bi,ci,di,delta,dxi;
+  unsigned long iPoint, iVertex, iChildren, Point_Fine, iRow, nVertex;
+  passivedouble ai,bi,ci,di,delta,dxi; //akima interpolation variables
   su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius, Theta, Parameter1, Parameter2, Vr, VTheta, Vm, Vz, Alpha, Phi;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -5248,7 +5248,7 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
 
               /*--- Finding radius and theta for the specific vertex. ---*/ 
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-              Theta = abs(atan(Coord[0]/Coord[1]));
+              Theta = fabs(atan(Coord[0]/Coord[1]));
 
               /*--- Set the x,y,z coordinates in Inlet_Values container ---*/
               for  (iVar=0; iVar < nDim; iVar++)
@@ -5261,46 +5261,43 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                   if (Inlet_Data[maxCol_InletFile*iRow] <= Interp_Radius && Inlet_Data[maxCol_InletFile*(iRow+1)] >= Interp_Radius){
                       
                       /*--- Loop through all values in the inlet file except the radii---*/
-                      for (index=1; index<maxCol_InletFile; index++)
-                      {
-                      Point_Match = true;
-                      switch(config->GetKindInletInterpolationFunction())
-                        {
-                        case (ONED_LINEAR_SPANWISE):
+                      for (unsigned short index=1; index<maxCol_InletFile; index++){
+                        Point_Match = true;
+                        switch(config->GetKindInletInterpolationFunction()){
+                          case (ONED_LINEAR_SPANWISE):
                           /*--- 1D interpolate data for every index (column) using equation of a line. ---*/
                           slope=(Inlet_Data[index+maxCol_InletFile*(iRow+1)]-Inlet_Data[index+maxCol_InletFile*iRow])/(Inlet_Data[maxCol_InletFile*(iRow+1)]-Inlet_Data[maxCol_InletFile*iRow]);
-                    
-                          /*--- If interpolating turbulence variables, shift them one column ahead ---*/
+                      
+                          /*--- If interpolating turbulence variables, shift them one index ahead ---*/
                           if (index > nDim+1)
                             Inlet_Values[index+(nDim-1)+1]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
                           else
                             Inlet_Values[index+(nDim-1)]=slope*(Interp_Radius - Inlet_Data[maxCol_InletFile*iRow]) + Inlet_Data[index+maxCol_InletFile*iRow];
-                          
+                        
                           break;
 
-                        case (ONED_AKIMASPLINE_SPANWISE):
+                          case (ONED_AKIMASPLINE_SPANWISE):
+                            /*--- Finding the cofficients of the third order polynomial for Akima Interpolation ---*/
+                            dxi = Inlet_Data[maxCol_InletFile*(iRow+1)] - Inlet_Data[maxCol_InletFile*iRow];
+                            ai = Inlet_Data[maxCol_InletFile*iRow + index];
+                            bi = Get_Ai_dash(iRow, index, jMarker);
+                            ci = (3*Get_Pi(iRow, index)-2*bi-Get_Ai_dash(iRow+1, index, jMarker))/dxi;
+                            di = (bi + Get_Ai_dash(iRow+1, index, jMarker) - 2*Get_Pi(iRow,index))/pow(dxi,2);
+                            delta = Interp_Radius - Inlet_Data[maxCol_InletFile*iRow];
+                            
+                            /*--- If interpolating turbulence variables, shift them one index ahead ---*/
+                            if (index > nDim+1)
+                              Inlet_Values[index+(nDim-1)+1]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
+                            else
+                              Inlet_Values[index+(nDim-1)]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
 
-                          dxi = Inlet_Data[maxCol_InletFile*(iRow+1)] - Inlet_Data[maxCol_InletFile*iRow];
-                          ai = Inlet_Data[maxCol_InletFile*iRow + index];
-                          bi = Get_Ai_dash(iRow, index);
-                          //cout<<"dxi: "<<dxi<<endl;
-                          ci = (3*Get_Pi(iRow, index)-2*bi-Get_Ai_dash(iRow+1, index))/dxi;
-                          di = (bi + Get_Ai_dash(iRow+1, index) - 2*Get_Pi(iRow,index))/pow(dxi,2);
-                          delta = Interp_Radius - Inlet_Data[maxCol_InletFile*iRow];
-                          
-                          if (index > nDim+1)
-                            Inlet_Values[index+(nDim-1)+1]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
-                          else
-                            Inlet_Values[index+(nDim-1)]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
-
-                          break;
-                        }
+                            break;
+                          }
                       }
 
                       /*--- New interpolated parameters for that Interp_Radius. ---*/
                       Parameter1=Inlet_Values[nDim+2];
                       Parameter2=Inlet_Values[nDim+3];
-
 
                       switch(config->GetKindInletInterpolationType()){
                       
@@ -5334,10 +5331,7 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                       Inlet_Values[nDim+3] = Vr*cos(Theta) - VTheta*sin(Theta); //for Vy
                       Inlet_Values[nDim+4] = sqrt(1-pow(Vr,2)- pow(VTheta,2));  //for Vz
 
-
-
-                     solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
-                      
+                     solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);                      
                  
                      for  (iVar=0; iVar < (maxCol_InletFile+nDim); iVar++)
                         Inlet_InterpolatedData[iVertex*(maxCol_InletFile+nDim)+iVar]=Inlet_Values[iVar];

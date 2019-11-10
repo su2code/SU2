@@ -3492,10 +3492,27 @@ public:
                                 unsigned short val_kind_solver,
                                 unsigned short val_kind_marker);
 
+  /*!
+   * \brief Get Pi (as (f(x+1)-f(x))/delta_x) for Akima interpolation for inlet file
+   * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
+   * \param[in] index - Current interpolating column in inlet file
+   */
+  inline passivedouble Get_Pi(unsigned long iRow, unsigned short index);
 
-  inline passivedouble Get_Pi(unsigned long iRow, unsigned long index);
-  inline passivedouble Get_Wi(unsigned long iRow,unsigned long index);
-  inline passivedouble Get_Ai_dash(unsigned long iRow, unsigned long index);
+    /*!
+   * \brief Get the weights Wi for Akima interpolation for inlet file 
+   * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
+   * \param[in] index - Current interpolating column in inlet file
+   */
+  inline passivedouble Get_Wi(unsigned long iRow,unsigned short index);
+
+    /*!
+   * \brief Get the weighed slope of the interval being interpolated by Akima.
+   * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
+   * \param[in] index - Current interpolating column in inlet file
+   * \param[in] jMarker - Current Marker to retrive the number of Rows for that Marker
+   */
+  inline passivedouble Get_Ai_dash(unsigned long iRow, unsigned short index,unsigned long jMarker);
 
   /*!
    * \brief Prints the interpolated Inlet_Values to a file.
