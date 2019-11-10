@@ -5157,7 +5157,8 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, iChildren, Point_Fine, iRow, nVertex;
   passivedouble ai,bi,ci,di,delta,dxi; //akima interpolation variables
-  su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius, Theta, Parameter1, Parameter2, Vr, VTheta, Vm, Vz, Alpha, Phi;
+  passivedouble Theta, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, unit_z, Alpha, Phi;
+  su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -5248,7 +5249,7 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
 
               /*--- Finding radius and theta for the specific vertex. ---*/ 
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-              Theta = fabs(atan(Coord[0]/Coord[1]));
+              Theta = atan2(Coord[1],Coord[0]);
 
               /*--- Set the x,y,z coordinates in Inlet_Values container ---*/
               for  (iVar=0; iVar < nDim; iVar++)
@@ -5284,7 +5285,7 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                             ci = (3*Get_Pi(iRow, index)-2*bi-Get_Ai_dash(iRow+1, index, jMarker))/dxi;
                             di = (bi + Get_Ai_dash(iRow+1, index, jMarker) - 2*Get_Pi(iRow,index))/pow(dxi,2);
                             delta = Interp_Radius - Inlet_Data[maxCol_InletFile*iRow];
-                            
+
                             /*--- If interpolating turbulence variables, shift them one index ahead ---*/
                             if (index > nDim+1)
                               Inlet_Values[index+(nDim-1)+1]=ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
@@ -5302,18 +5303,18 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                       switch(config->GetKindInletInterpolationType()){
                       
                         case(VR_VTHETA):
-                          Vr=Parameter1;
-                          VTheta=Parameter2;
+                          unit_r=Parameter1;
+                          unit_Theta=Parameter2;
 
                           break;
                         
                         case(ALPHA_PHI):
                           Alpha=Parameter1;
                           Phi=Parameter2;
-                          Vm = sqrt(1/(1+pow(tan(Alpha),2)));
+                          unit_m = sqrt(1/(1+pow(tan(Alpha),2)));
 
-                          VTheta = tan(Alpha)*Vm;
-                          Vr=Vm*sin(Phi);
+                          unit_Theta = tan(Alpha)*unit_m;
+                          unit_r=unit_m*sin(Phi);
 
                           break;
                         
@@ -5327,9 +5328,9 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
                               break;
                       }
 
-                      Inlet_Values[nDim+2] = Vr*sin(Theta) + VTheta*cos(Theta); //for Vx
-                      Inlet_Values[nDim+3] = Vr*cos(Theta) - VTheta*sin(Theta); //for Vy
-                      Inlet_Values[nDim+4] = sqrt(1-pow(Vr,2)- pow(VTheta,2));  //for Vz
+                      Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta); //for ix
+                      Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
+                      Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
 
                      solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);                      
                  
