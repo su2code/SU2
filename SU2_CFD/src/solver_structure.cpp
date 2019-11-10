@@ -4871,9 +4871,9 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
   passivedouble ai,bi,ci,di,delta,dxi; //akima interpolation variables
   passivedouble Theta, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, unit_z, Alpha, Phi;
   su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   bool Point_Match = false;
   string UnstExt, text_line;
@@ -4895,12 +4895,12 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone);
+    profile_filename = config->GetMultizone_FileName(profile_filename, iZone,".dat");
 
   /*--- Modify file name for an unsteady restart ---*/
 
   if (dual_time || time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter);
+    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter,".dat");
 
   /*--- Open the file and check for problems. If a file can not be found,
    then a warning will be printed, but the calculation will continue

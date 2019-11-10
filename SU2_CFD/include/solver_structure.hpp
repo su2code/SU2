@@ -1092,11 +1092,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-<<<<<<< HEAD
-  virtual void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
-
-=======
   virtual void BC_Sym_Plane(CGeometry      *geometry, 
                             CSolver        **solver_container, 
                             CNumerics      *conv_numerics, 
@@ -1104,7 +1099,6 @@ public:
                             CConfig        *config, 
                             unsigned short val_marker);
   
->>>>>>> develop
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
