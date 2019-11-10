@@ -4030,7 +4030,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double MeanVelocity[3] = {0.0, 0.0, 0.0};
       su2double *Normal         = geometry->edge[iEdge]->GetNormal();
       su2double ProjFlux[5]     = {0.0, 0.0, 0.0, 0.0, 0.0};
-      su2double Dissipation_ij  = 0.00;
+      su2double Dissipation_ij  = 0.01;
       
       for (iDim = 0; iDim < nDim; iDim++) {
         MeanVelocity[iDim] = 0.5 * (Primitive_i[iDim+1] + Primitive_j[iDim+1]);
@@ -16449,6 +16449,12 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
         DES_LengthScale = solver_container[TURB_SOL]->node[iPoint]->GetDES_LengthScale();
       }
     }
+    else{
+      if (SGSModelUsed){
+        eddy_visc = node[iPoint]->GetEddyViscosity();
+      }
+    }
+
     
     /*--- Initialize the non-physical points vector ---*/
     
