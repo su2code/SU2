@@ -424,7 +424,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string::size_type position;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
-  bool time_spectral = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool time_spectral = config->GetTime_Marching() == HARMONIC_BALANCE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   nZone = val_nZone;
 

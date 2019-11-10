@@ -37,210 +37,85 @@
 
 #include "../../include/variables/CAdjEulerVariable.hpp"
 
-CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
 
-  /*--- Array initialization ---*/
-  Psi = NULL;
-  ForceProj_Vector = NULL;
-  ObjFuncSource = NULL;
-  IntBoundary_Jump = NULL;
-  HB_Source = NULL;
+CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie, unsigned long npoint, unsigned long ndim,
+                                     unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
-}
-
-CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
-                                     unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-                                     CVariable(val_nDim, val_nvar, config) {
-
-  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  /*--- Array initialization ---*/
-  Psi = NULL;
-  ForceProj_Vector = NULL;
-  ObjFuncSource = NULL;
-  IntBoundary_Jump = NULL;
-  HB_Source = NULL;
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
 
   /*--- Allocate residual structures ---*/
-  Res_TruncError = new su2double [nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-
-  if (nMGSmooth > 0) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
-  }
-
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-  if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
-    Undivided_Laplacian = new su2double [nVar];
-
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  Limiter = new su2double [nVar];
-  Solution_Max = new su2double [nVar];
-  Solution_Min = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Limiter[iVar] = 0.0;
-    Solution_Max[iVar] = 0.0;
-    Solution_Min[iVar] = 0.0;
-  }
-
-  /*--- Allocate and initialize solution ---*/
-  Solution[0] = val_psirho;   Solution_Old[0] = val_psirho;
-  Solution[nVar-1] = val_psie; Solution_Old[nVar-1] = val_psie;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Solution[iDim+1] = val_phi[iDim];
-    Solution_Old[iDim+1] = val_phi[iDim];
-  }
-
-  /*--- Allocate and initialize solution for dual time strategy ---*/
-  if (dual_time) {
-    Solution_time_n[0] = val_psirho;
-    Solution_time_n1[0] = val_psirho;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_time_n[iDim+1] = val_phi[iDim];
-      Solution_time_n1[iDim+1] = val_phi[iDim];
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+      Residual_Sum.resize(nPoint,nVar);
+      Residual_Old.resize(nPoint,nVar);
+      break;
     }
-    Solution_time_n[nVar-1] = val_psie;
-    Solution_time_n1[nVar-1] = val_psie;
-
-
   }
 
-  /*--- Allocate auxiliar vector for sensitivity computation ---*/
-  Grad_AuxVar = new su2double [nDim];
+  Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  /*--- Allocate and initialize projection vector for wall boundary condition ---*/
-  ForceProj_Vector = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    ForceProj_Vector[iDim] = 0.0;
-
-  /*--- Allocate and initialize interior boundary jump vector for near field boundary condition ---*/
-  IntBoundary_Jump = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    IntBoundary_Jump[iVar] = 0.0;
-
-  /*--- Allocate space for the harmonic balance source terms ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      HB_Source[iVar] = 0.0;
-  }
-
-}
-
-CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
-                                     CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-
-  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  /*--- Array initialization ---*/
-  Psi = NULL;
-  ForceProj_Vector = NULL;
-  ObjFuncSource = NULL;
-  IntBoundary_Jump = NULL;
-  HB_Source = NULL;
-
-  /*--- Allocate residual structures ---*/
-  Res_TruncError = new su2double [nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
-
-  /*--- Only for residual smoothing (multigrid) ---*/
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-
-  if (nMGSmooth > 0) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
-    Undivided_Laplacian = new su2double [nVar];
+    Undivided_Laplacian.resize(nPoint,nVar);
 
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  Limiter = new su2double [nVar];
-  Solution_Max = new su2double [nVar];
-  Solution_Min = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Limiter[iVar] = 0.0;
-    Solution_Max[iVar] = 0.0;
-    Solution_Min[iVar] = 0.0;
-  }
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Solution initialization ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_solution[iVar];
-    Solution_Old[iVar] = val_solution[iVar];
-  }
+  su2double val_solution[5] = {psirho, phi[0], phi[1], psie, psie};
+  if(nDim==3) val_solution[3] = phi[2];
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = val_solution[iVar];
+
+  Solution_Old = Solution;
 
   /*--- Allocate and initializate solution for dual time strategy ---*/
   if (dual_time) {
-    Solution_time_n = new su2double [nVar];
-    Solution_time_n1 = new su2double [nVar];
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar] = val_solution[iVar];
-      Solution_time_n1[iVar] = val_solution[iVar];
-    }
+    Solution_time_n = Solution;
+    Solution_time_n1 = Solution;
   }
 
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
-  Grad_AuxVar = new su2double [nDim];
+  AuxVar.resize(nPoint);
+  Grad_AuxVar.resize(nPoint,nDim);
 
   /*--- Allocate and initializate projection vector for wall boundary condition ---*/
-  ForceProj_Vector = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    ForceProj_Vector[iDim] = 0.0;
+  ForceProj_Vector.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Allocate and initializate interior boundary jump vector for near field boundary condition ---*/
-  IntBoundary_Jump = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    IntBoundary_Jump[iVar] = 0.0;
+  IntBoundary_Jump.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Allocate space for the harmonic balance source terms ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      HB_Source[iVar] = 0.0;
-  }
+  if (config->GetTime_Marching() == HARMONIC_BALANCE)
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
+
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+
+  Sensor.resize(nPoint);
 
 }
 
-CAdjEulerVariable::~CAdjEulerVariable(void) {
+bool CAdjEulerVariable::SetPrimVar(unsigned long iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {
 
-  if (Psi               != NULL) delete [] Psi;
-  if (ForceProj_Vector  != NULL) delete [] ForceProj_Vector;
-  if (ObjFuncSource     != NULL) delete [] ObjFuncSource;
-  if (IntBoundary_Jump  != NULL) delete [] IntBoundary_Jump;
-  if (HB_Source         != NULL) delete [] HB_Source;
-
-}
-
-bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) {
-  unsigned short iVar;
-  bool check_dens = false, RightVol = true;
+  bool RightVol = true;
 
   su2double adj_limit = config->GetAdjointLimit();
 
-  check_dens = (fabs(Solution[0]) > adj_limit);
+  bool check_dens = (fabs(Solution(iPoint,0)) > adj_limit);
 
   /*--- Check that the adjoint solution is bounded ---*/
 
@@ -248,13 +123,12 @@ bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CCo
 
     /*--- Copy the old solution ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     RightVol = false;
 
   }
 
   return RightVol;
-
 }

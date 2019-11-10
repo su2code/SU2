@@ -321,6 +321,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
+  vector<bool> bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
   unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
   unsigned short *nSpanSectionsByMarker; /*! <\brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
   unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
@@ -925,19 +926,19 @@ public:
 	 */	
 	virtual void SetCoord(CGeometry *geometry);
 
-        /*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-         * \param[in] val_marker - Index of the boundary marker.
-	 */
-        virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+  /*! 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   */
+  virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
 
-        /*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-         * \param[in] val_marker - Index of the boundary marker.
-	 */
-        virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
+  /*! 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   */
+  virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1035,6 +1036,16 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
+
+  /*!
+   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE 
+   *        only and store the information in bound_is_straight. For all other boundary types
+   *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] print_on_screen - Boolean whether to print result on screen.
+   */
+  void ComputeSurf_Straightness(CConfig *config, 
+                                bool    print_on_screen);
 
 	/*!
 	 * \brief Find and store all vertices on a sharp corner in the geometry.
@@ -1679,6 +1690,12 @@ public:
    * \return Multigrid index for current geometry object.
    */
   unsigned short GetMGLevel(void);
+
+  /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void UpdateBoundaries(CConfig *config);
 
   /*!
    * \brief A virtual member.

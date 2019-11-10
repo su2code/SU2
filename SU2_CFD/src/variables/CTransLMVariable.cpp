@@ -37,15 +37,18 @@
 
 #include "../../include/variables/CTransLMVariable.hpp"
 
-CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
-CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,
-                                   unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-                                   CTurbVariable(val_nDim, val_nvar, config) {
-  // Initialization of variables
-  Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
-  Solution[1] = val_REth;          Solution_Old[1] = val_REth;
+CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim,
+                                   unsigned long nvar, CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
 
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+  {
+    Solution_Old(iPoint,0) = Solution(iPoint,0) = intermittency;
+    Solution_Old(iPoint,1) = Solution(iPoint,1) = REth;
+  }
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+
+  gamma_sep.resize(nPoint);
 }
-
-CTransLMVariable::~CTransLMVariable(void) { }

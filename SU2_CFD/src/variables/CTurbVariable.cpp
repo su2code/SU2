@@ -37,46 +37,30 @@
 
 #include "../../include/variables/CTurbVariable.hpp"
 
-CTurbVariable::CTurbVariable(void) : CVariable() {
 
-  /*--- Array initialization ---*/
-  HB_Source = NULL;
-
-}
-
-CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar, config) {
-
-  unsigned short iVar;
-
-  /*--- Array initialization ---*/
-
-  HB_Source = NULL;
+CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+  : CVariable(npoint, ndim, nvar, config) {
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      HB_Source[iVar] = 0.0;
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
   }
 
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  /*--- Gradient related fields ---*/
 
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
+  Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  Solution_Max = new su2double [nVar];
-  Solution_Min = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution_Max[iVar] = 0.0;
-    Solution_Min[iVar] = 0.0;
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
-}
+  /*--- Always allocate the slope limiter, and the auxiliar
+   variables (check the logic - JST with 2nd order Turb model) ---*/
 
-CTurbVariable::~CTurbVariable(void) {
-  if (HB_Source != NULL) delete [] HB_Source;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
+
+  Delta_Time.resize(nPoint) = su2double(0.0);
 }

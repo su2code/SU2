@@ -94,10 +94,10 @@ def main():
       SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
     elif options.harmonic_balance:
       SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, comm);
-    elif (options.nZone == 2) and (options.fsi):
+    elif (options.nZone >= 2):
       SU2Driver = pysu2.CMultizoneDriver(options.filename, options.nZone, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:

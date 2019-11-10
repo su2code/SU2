@@ -38,31 +38,29 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 
 
-CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
+CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar,
+                                 CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
 
-CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim,
-                                 unsigned short val_nvar, CConfig *config) : CTurbVariable(val_nDim, val_nvar, config) {
+  Solution_Old = Solution = val_nu_tilde;
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  /*--- Initialization of S-A variables ---*/
-  Solution[0] = val_nu_tilde;    Solution_Old[0] = val_nu_tilde;
-
-  /*--- Initialization of the eddy viscosity ---*/
-  muT = val_muT;
+  muT.resize(nPoint) = val_muT;
 
   /*--- Allocate and initialize solution for the dual time strategy ---*/
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+
   if (dual_time) {
-    Solution_time_n[0]  = val_nu_tilde;
-    Solution_time_n1[0] = val_nu_tilde;
+    Solution_time_n  = Solution;
+    Solution_time_n1 = Solution;
   }
 
-  DES_LengthScale = 0.0;
-
+  gamma_BC.resize(nPoint);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint);
 }
 
-void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity){
+void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow,
+                                        su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
   su2double numerator, trace0, trace1, denominator;
@@ -71,7 +69,7 @@ void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vo
   AD::SetPreaccIn(PrimGrad_Flow, nDim+1, nDim);
   AD::SetPreaccIn(Vorticity, 3);
   /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(muT);
+  AD::SetPreaccIn(muT(iPoint));
   /*--- Laminar viscosity --- */
   AD::SetPreaccIn(LaminarViscosity);
 
@@ -102,10 +100,8 @@ void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vo
   trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
   denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
 
-  Vortex_Tilting = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT);
+  Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT(iPoint));
 
-  AD::SetPreaccOut(Vortex_Tilting);
+  AD::SetPreaccOut(Vortex_Tilting(iPoint));
   AD::EndPreacc();
 }
-
-CTurbSAVariable::~CTurbSAVariable(void) {}
