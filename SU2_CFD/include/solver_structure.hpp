@@ -156,12 +156,9 @@ protected:
   unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
-<<<<<<< HEAD
   passivedouble *Inlet_InterpolatedData; /*!< \brief Auxiliary structure for holding the interpolated data values from an inlet profile file. */
 
-=======
   
->>>>>>> develop
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
 
