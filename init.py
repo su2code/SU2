@@ -38,9 +38,9 @@ def init_submodules(method = 'auto'):
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_meson = 'e9bd7d49bdc8c630cca3bf4cc02c437841b6aaf6'
+  sha_version_meson = 'c904d3eefe2a01ca60027e2a5192e1f1c7ca5d9d'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
-  sha_version_ninja = '20b30dac6698d119e7797b34d6ed2c4ed8f48417'
+  sha_version_ninja = 'e0bc2e5fd9036a31d507881e1383adde3672aaef'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
 
   medi_name = 'MeDiPack'
