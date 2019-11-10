@@ -1,40 +1,230 @@
-cmake_minimum_required(VERSION 2.8.12) # requiring 2.8.12 sets the CMP0022 policy to new (non-transitive linking, i.e. just the interfaces) by default
+project(tecio CXX)
 
-if (NOT CMAKE_BUILD_TYPE)
-    set (CMAKE_BUILD_TYPE Release CACHE STRING "CMake build type (Debug|Release)" FORCE)
-endif ()
+set(TECIO_SOURCES
+    ALLOC.h
+    AltTecUtil.h
+    AnyTypeLightweightVector.h
+    ARRLIST.h
+    AtomicMinMax.h
+    AUXDATA.h
+    AuxData_s.h
+    basicTypes.h
+    CHARTYPE.h
+    checkPercentDone.h
+    clampToDataTypeRange.h
+    ClassicFEZoneConnectivityWriter.h
+    ClassicFEZoneFaceNeighborGenerator.h
+    ClassicFEZoneWriter.h
+    ClassicOrderedZoneFaceNeighborGenerator.h
+    ClassicOrderedZoneWriter.h
+    ClassicZoneFaceNeighborWriter.h
+    ClassicZoneFileLocations.h
+    ClassicZoneHeaderWriter.h
+    ClassicZoneVariableWriter.h
+    ClassicZoneWriterAbstract.h
+    ClassMacros.h
+    CodeContract.h
+    CszConnectivity.h
+    DATAIO4.h
+    DATAIO.h
+    DATASET0.h
+    DATASET.h
+    DataSetWriter.h
+    DATASHR.h
+    DATAUTIL.h
+    DataWriteStatisticsInterface.h
+    exportSubzonePlt.h
+    FACE.h
+    FaceNeighborGeneratorAbstract.h
+    FECellSubzoneCompressor.h
+    FESubzonePartitionerInterface.h
+    FEZoneInfo.h
+    FieldData.h
+    FieldData_s.h
+    FileDescription.h
+    fileio.h
+    FileIOStatistics.h
+    FileIOStream.h
+    FileIOStreamInterface.h
+    FileReaderInterface.h
+    FILESTREAM.h
+    FileStreamReader.h
+    FileStreamWriter.h
+    fileStuff.h
+    FileSystem.h
+    FileWriterInterface.h
+    gatherOffsets.h
+    GEOM2.h
+    GEOM.h
+    Geom_s.h
+    GhostInfo_s.h
+    GLOBAL.h
+    IJK.h
+    IJKPartitionTree.h
+    IJKSubzoneInfo.h
+    IJKZoneInfo.h
+    importSzPltFile.h
+    INPUT.h
+    IntervalTree.h
+    ioDescription.h
+    ItemAddress.h
+    ItemSetIterator.h
+    JobControl_s.h
+    LightweightVector.h
+    MASTER.h
+    MinMax.h
+    MinMaxTree.h
+    MiscMacros.h
+    Mutex_s.h
+    NodeMap.h
+    NodeMap_s.h
+    NodeToElemMap_s.h
+    NoOpFESubzonePartitioner.h
+    ORBFESubzonePartitioner.h
+    OrthogonalBisection.h
+    PartitionMetadata.h
+    PartitionTecUtilDecorator.h
+    Q_MSG.h
+    Q_UNICODE.h
+    RawArray.h
+    readValueArray.h
+    Scanner.h
+    SET.h
+    showMessage.h
+    StandardIntegralTypes.h
+    stdafx.h
+    stringformat.h
+    STRLIST.h
+    STRUTIL.h
+    SYSTEM.h
+    SZLFEPartitionedZoneHeaderWriter.h
+    SZLFEPartitionedZoneWriter.h
+    SZLFEPartitionWriter.h
+    SZLFEZoneHeaderWriter.h
+    SZLFEZoneWriter.h
+    SzlFileLoader.h
+    SZLOrderedPartitionedZoneHeaderWriter.h
+    SZLOrderedPartitionedZoneWriter.h
+    SZLOrderedPartitionWriter.h
+    SZLOrderedZoneHeaderWriter.h
+    SZLOrderedZoneWriter.h
+    TASSERT.h
+    TECGLBL.h
+    TecioData.h
+    tecio_Exports.h
+    TECIO.h
+    TecioPLT.h
+    TecioSZL.h
+    TecioTecUtil.h
+    TecplotMinorRev.h
+    TecplotVersion.h
+    TEXT.h
+    Text_s.h
+    ThirdPartyHeadersBegin.h
+    ThirdPartyHeadersEnd.h
+    TranslatedString.h
+    UnicodeStringUtils.h
+    Version.h
+    writeValueArray.h
+    xyz.h
+    ZoneHeaderWriterAbstract.h
+    ZoneInfoCache.h
+    ZoneMetadata.h
+    Zone_s.h
+    zoneUtil.h
+    ZoneVarMetadata.h
+    ZoneWriterAbstract.h
+    ZoneWriterFactory.h
+    arrlist.cpp
+    auxdata.cpp
+    checkPercentDone.cpp
+    ClassicFEZoneConnectivityWriter.cpp
+    ClassicFEZoneFaceNeighborGenerator.cpp
+    ClassicFEZoneWriter.cpp
+    ClassicOrderedZoneFaceNeighborGenerator.cpp
+    ClassicOrderedZoneWriter.cpp
+    ClassicZoneFaceNeighborWriter.cpp
+    ClassicZoneHeaderWriter.cpp
+    ClassicZoneVariableWriter.cpp
+    ClassicZoneWriterAbstract.cpp
+    dataio4.cpp
+    dataio.cpp
+    dataset0.cpp
+    dataset.cpp
+    DataSetWriter.cpp
+    datautil.cpp
+    exportSubzonePlt.cpp
+    FaceNeighborGeneratorAbstract.cpp
+    FECellSubzoneCompressor.cpp
+    FieldData.cpp
+    FieldData_s.cpp
+    FileIOStream.cpp
+    filestream.cpp
+    FileStreamReader.cpp
+    FileStreamWriter.cpp
+    fileStuff.cpp
+    FileSystem.cpp
+    geom2.cpp
+    IJKSubzoneInfo.cpp
+    IJKZoneInfo.cpp
+    importSzPltFile.cpp
+    IntervalTree.cpp
+    MinMaxTree.cpp
+    NodeMap.cpp
+    NodeToElemMap_s.cpp
+    ORBFESubzonePartitioner.cpp
+    OrthogonalBisection.cpp
+    PartitionTecUtilDecorator.cpp
+    q_msg.cpp
+    readValueArray.cpp
+    Scanner.cpp
+    set.cpp
+    strlist.cpp
+    strutil.cpp
+    szcombine.cpp
+    SZLFEPartitionedZoneHeaderWriter.cpp
+    SZLFEPartitionedZoneWriter.cpp
+    SZLFEPartitionWriter.cpp
+    SZLFEZoneHeaderWriter.cpp
+    SZLFEZoneWriter.cpp
+    SZLOrderedPartitionedZoneHeaderWriter.cpp
+    SZLOrderedPartitionedZoneWriter.cpp
+    SZLOrderedPartitionWriter.cpp
+    SZLOrderedZoneHeaderWriter.cpp
+    SZLOrderedZoneWriter.cpp
+    tecio.cpp
+    TecioData.cpp
+    TecioPLT.cpp
+    TecioSZL.cpp
+    TecioTecUtil.cpp
+    TranslatedString.cpp
+    UnicodeStringUtils.cpp
+    writeValueArray.cpp
+    ZoneHeaderWriterAbstract.cpp
+    ZoneInfoCache.cpp
+    Zone_s.cpp
+    ZoneVarMetadata.cpp
+    ZoneWriterAbstract.cpp
+    ZoneWriterFactory.cpp
+    ../boost/algorithm/string.hpp
+    ../boost/assign.hpp
+    ../boost/atomic.hpp
+    ../boost/bind.hpp
+    ../boost/foreach.hpp
+    ../boost/function.hpp
+    ../boost/make_shared.hpp
+    ../boost/ref.hpp
+    ../boost/scoped_array.hpp
+    ../boost/scoped_ptr.hpp
+    ../boost/shared_ptr.hpp
+    ../boost/static_assert.hpp
+    ../boost/tokenizer.hpp
+    ../boost/unordered_map.hpp
+    ../boost/unordered_set.hpp)
 
-project (tecio C CXX)
+add_library(tecio STATIC ${TECIO_SOURCES})
+target_compile_definitions(tecio PRIVATE ${SU2_TECIO_CPPFLAGS} ${TECIO_CPPFLAGS})
+set_target_properties(tecio PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-FIND_PACKAGE(Boost)
-IF (Boost_FOUND)
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
-ELSE()
-    Set (Boost_INCLUDE_DIR /3rdpartylibs/boost/1.59.0/build/linux64-centos6.5/include)
-    message ("Warning:  Cannot find boost include directories.  Hardcoding to ${Boost_INCLUDE_DIR}")
-    INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
-ENDIF()
-include_directories(.)
-
-IF (WIN32)
-    set(BaseFlags "/EHsc /MP /wd\"4996\" /D MSWIN /D TP_PROJECT_USES_BOOST /D BOOST_ALL_NO_LIB /D MAKEARCHIVE /D NO_THIRD_PARTY_LIBS /D NO_ASSERTS")
-ELSE ()
-	set(BaseFlags "-DLINUX -DLINUX64 -DTP_PROJECT_USES_BOOST -DBOOST_ALL_NO_LIB -DMAKEARCHIVE -DNO_THIRD_PARTY_LIBS -DNO_ASSERTS -fmessage-length=0 -fPIC -fvisibility=hidden -w")
-ENDIF ()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BaseFlags}")
-                    
-FILE(GLOB mainFiles "*.cpp" "*.h")
-LIST(REMOVE_ITEM mainFiles "${CMAKE_CURRENT_SOURCE_DIR}/szcombine.cpp")
-
-add_library(tecio STATIC ${mainFiles})
-
-add_executable(szcombine "szcombine.cpp")
-if (WIN32)
-    target_link_libraries(szcombine tecio)
-else ()
-    target_link_libraries(szcombine tecio pthread)
-endif ()
-
-# Had to add this so building tecio care package within loci-chem works...
-set_target_properties(tecio PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(szcombine PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories(tecio PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+add_library(Tecio::Tecio ALIAS tecio)
