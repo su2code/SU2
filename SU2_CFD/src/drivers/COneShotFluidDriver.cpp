@@ -322,14 +322,16 @@ void COneShotFluidDriver::RunOneShot(){
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
-  if(InnerIter >= config->GetOneShotStart() && InnerIter > 1) {
+  if(InnerIter >= config->GetOneShotStart() && 
+     InnerIter < config->GetOneShotStop()   && 
+     InnerIter > 1) {
     /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-    solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+    // solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
     // CheckMultiplier();
-    CalculateLagrangian(true);
+    // CalculateLagrangian(true);
   }
 
   /*--- Store Deltay and DeltaBary ---*/
@@ -686,6 +688,9 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
       }
 
     }else{
+      /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
+      solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+      CalculateLagrangian(true);
       if(config->GetBoolBFGSReset()){
         for (iDV = 0; iDV < nDV_Total; iDV++){
           for (jDV = 0; jDV < nDV_Total; jDV++){
