@@ -4950,7 +4950,7 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
             nVertex = geometry[MESH_0]->nVertex[iMarker];
 
             /*--- Initializing a new container for inlet data for printing if INLET_DATA_OUT is true. ---*/
-            Inlet_InterpolatedData = new passivedouble[nVertex*(maxCol_InletFile+nDim)];
+            Inlet_InterpolatedData = new su2double[nVertex*(maxCol_InletFile+nDim)];
 
             /*--- Loop through the nodes on this marker. ---*/
 
