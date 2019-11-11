@@ -2120,7 +2120,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-        /*--- Only "outlet"/donor periodic marker ---*/
+        /*--- Only "inlet"/master periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) {
             
@@ -2155,11 +2155,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(&Temperature_Local, &Temperature_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       Temperature_Global /= Area_Global;
-      if(rank==MASTER_NODE) cout << "Source Res outlet area: " << Area_Global << endl << "Outlet Area Avg Temperature: " << Temperature_Global* config->GetTemperature_Ref() << endl;
+      if(rank==MASTER_NODE && false) cout << "Source Res outlet area: " << Area_Global << endl << "Outlet Area Avg Temperature: " << Temperature_Global* config->GetTemperature_Ref() << endl;
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-        /*--- Only "outlet"/donor periodic marker ---*/
+        /*--- Only "inlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) {
             
@@ -5403,7 +5403,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
-    if (iVertex == 0 || 
+    if (iVertex == 0 ||
         geometry->bound_is_straight[val_marker] != true) {
 
       /*----------------------------------------------------------------------------------------------*/
@@ -6527,8 +6527,8 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
   Average_Density_Global /= Area_Global;
   config->SetStreamwise_Periodic_MassFlow(MassFlow_Global);
 
-  if (rank == MASTER_NODE) { cout << "MassFlow_Global: " << fabs(MassFlow_Global) * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
-  if (rank == MASTER_NODE) { cout << "Average_Density_Global: " << Average_Density_Global << endl; }
+  if (rank == MASTER_NODE && false) { cout << "MassFlow_Global: " << fabs(MassFlow_Global) * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
+  if (rank == MASTER_NODE && false) { cout << "Average_Density_Global: " << Average_Density_Global << endl; }
 
   if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
     /*------------------------------------------------------------------------------------------------*/
@@ -6561,7 +6561,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
       config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
     
     /*--- Output the new value of Delta P and ddp ---*/
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) { //TK:: Move whole computation up in front of output
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0)  && false) { //TK:: Move whole computation up in front of output
     
       cout.precision(5);
       cout.setf(ios::fixed, ios::floatfield);
@@ -7781,7 +7781,7 @@ if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
     }
     
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-    if(rank==MASTER_NODE) cout << "NSPrepsocessing GetStreamwise_Periodic_Properties." << endl;
+    if(rank==MASTER_NODE && false) cout << "NSPrepsocessing GetStreamwise_Periodic_Properties." << endl;
     GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
     /*--- Free allocated memory. ---*/
