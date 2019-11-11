@@ -474,13 +474,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
   
-  /* Only apply the turbulent under-relaxation to the SA variants. */
+  /* Only apply the turbulent under-relaxation to the SA variants. The
+   SA_NEG model is more robust due to allowing for negative nu_tilde,
+   so the under-relaxation is not applied to that variant. */
   
   bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
                    (config->GetKind_Turb_Model() == SA_E)      ||
                    (config->GetKind_Turb_Model() == SA_COMP)   ||
-                   (config->GetKind_Turb_Model() == SA_E_COMP) ||
-                   (config->GetKind_Turb_Model() == SA_NEG));
+                   (config->GetKind_Turb_Model() == SA_E_COMP));
   
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
@@ -3410,8 +3411,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   lowerlimit = new su2double[nVar];
   upperlimit = new su2double[nVar];
   
-  lowerlimit[0] = 0.0;
-  upperlimit[0] = 1.0e30;
+  lowerlimit[0] = 1.0e-10;
+  upperlimit[0] = 1.0e10;
   
   lowerlimit[1] = 1.0e-4;
   upperlimit[1] = 1.0e15;
@@ -3599,9 +3600,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     dist = geometry->node[iPoint]->GetWall_Distance();
     
     su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-    su2double Omega = sqrt(Vorticity[0]*Vorticity[0] +
-                           Vorticity[1]*Vorticity[1] +
-                           Vorticity[2]*Vorticity[2]);
+    su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+                                  Vorticity[1]*Vorticity[1] +
+                                  Vorticity[2]*Vorticity[2]);
     
     nodes->SetBlendingFunc(iPoint,mu, dist, rho);
     
@@ -3611,7 +3612,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     kine  = nodes->GetSolution(iPoint,0);
     omega = nodes->GetSolution(iPoint,1);
-    zeta  = min(1.0/omega, a1/(Omega*F2));
+    zeta  = min(1.0/omega, a1/(VorticityMag*F2));
     muT   = max(rho*kine*zeta,0.0);
     nodes->SetmuT(iPoint,muT);
     

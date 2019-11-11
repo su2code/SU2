@@ -4179,8 +4179,114 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 }
 
 
-void CFluidDriver::Output(unsigned long InnerIter) {
- 
+void CFluidDriver::Output(unsigned long Iter) {
+  
+  bool output_files = false;
+  
+  /*--- Determine whether a solution needs to be written
+   after the current iteration ---*/
+  
+  if (
+      
+      /*--- General if statements to print output statements ---*/
+      
+      (Iter+1 >= Max_Iter) || (StopCalc) ||
+      
+      /*--- Fixed CL problem ---*/
+      
+      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
+       (config_container[ZONE_0]->GetnIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
+      
+      /*--- Steady problems ---*/
+      
+      ((Iter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (Iter != 0) &&
+       ((config_container[ZONE_0]->GetTime_Marching() == STEADY) ||
+        (config_container[ZONE_0]->GetTime_Marching() == HARMONIC_BALANCE) ||
+        (config_container[ZONE_0]->GetTime_Marching() == ROTATIONAL_FRAME))) ||
+      
+      /*--- Unsteady problems ---*/
+      
+      (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+        (config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) &&
+       ((Iter == 0) || (Iter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+      
+      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) && (!fsi) &&
+       ((Iter == 0) || ((Iter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                           ((Iter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+      
+      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) && (fsi) &&
+       ((Iter == 0) || ((Iter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+      
+      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+       ((Iter == 0) || (Iter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+      ) {
+    
+    output_files = true;
+    
+  }
+  
+  /*--- Determine whether a solution doesn't need to be written
+   after the current iteration ---*/
+  
+  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+    if (config_container[ZONE_0]->GetnIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < Iter) output_files = false;
+    if (config_container[ZONE_0]->GetnIter() - 1 == Iter) output_files = true;
+  }
+  
+  /*--- write the solution ---*/
+  
+  if (output_files) {
+    
+    /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+    
+    /*--- Add a statement about the type of solver exit. ---*/
+    
+    if (((Iter+1 >= Max_Iter) || StopCalc) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of external iterations reached (ITER)." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+
+    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------" << endl;
+    
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+    
+    for (iZone = 0; iZone < nZone; iZone++){
+      output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                                config_container[iZone],
+                                                solver_container[iZone][INST_0][MESH_0], Iter, output_files);
+    }
+    if (rank == MASTER_NODE) cout << endl << "-------------------------------------------------------------------------" << endl << endl;
+    
+    /*--- Store output time and restart the timer for the compute phase. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeOutput += StopTime-StartTime;
+    OutputCount++;
+    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+    
+  }
 }
 
 

@@ -5484,8 +5484,13 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    if (weighted) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    } else {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
+    }
   }
   
   /*--- Second loop over points of the grid to compute final gradient ---*/
@@ -12457,7 +12462,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       
     }
     
-    /*---   Loop over the boundary edges ---*/
+    /*--- Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&

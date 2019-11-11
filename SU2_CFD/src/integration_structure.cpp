@@ -447,8 +447,18 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
+  solver->ResetCFLAdapt();
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Initialize the underrelaxation ---*/
+    
+    solver->GetNodes()->SetUnderRelaxation(iPoint, 1.0);
+    
+    /*--- Initialize the local CFL number ---*/
+    
+    solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
+    
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
     
