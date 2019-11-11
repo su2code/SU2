@@ -4825,7 +4825,7 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
   
 }
 
-void CSolver::PrintNewInletData (passivedouble *Inlet_InterpolatedData, unsigned long nVertex,string Marker_Tag)
+void CSolver::PrintNewInletData (su2double *Inlet_InterpolatedData, unsigned long nVertex,string Marker_Tag)
 {
 
 ofstream myfile;
@@ -4868,8 +4868,8 @@ void CSolver::LoadSpanwiseInletProfile(CGeometry **geometry,
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, iChildren, Point_Fine, iRow, nVertex;
-  passivedouble ai,bi,ci,di,delta,dxi; //akima interpolation variables
-  passivedouble Theta, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, unit_z, Alpha, Phi;
+  su2double ai,bi,ci,di,delta,dxi; //akima interpolation variables
+  su2double Theta, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, unit_z, Alpha, Phi;
   su2double Area_Children, Area_Parent, *Coord, dist, slope, Interp_Radius;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));

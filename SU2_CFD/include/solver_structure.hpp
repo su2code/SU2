@@ -156,7 +156,7 @@ protected:
   unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
-  passivedouble *Inlet_InterpolatedData; /*!< \brief Auxiliary structure for holding the interpolated data values from an inlet profile file. */
+  su2double *Inlet_InterpolatedData; /*!< \brief Auxiliary structure for holding the interpolated data values from an inlet profile file. */
   
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
@@ -3639,7 +3639,7 @@ public:
    * \param[in] Inlet_Values - the container for inlet data
    * \param[in] The geometry defination
    */
-  void PrintNewInletData (passivedouble *Inlet_InterpolatedData, unsigned long nVertex, string Marker_Tag);
+  void PrintNewInletData (su2double *Inlet_InterpolatedData, unsigned long nVertex, string Marker_Tag);
 
   /*!
    * \brief A virtual member.
