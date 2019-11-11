@@ -564,24 +564,23 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
-  
+
   /*!
-   * \brief Add External_Old to Solution vector.
-   * \param[in] geometry - The geometrical definition of the problem.
+   * \brief Add External to Solution vector.
    */
-  void Add_ExternalOld_To_Solution(CGeometry *geometry);
+  void Add_External_To_Solution();
 
   /*!
    * \brief Add the current Solution vector to External.
-   * \param[in] geometry - The geometrical definition of the problem.
    */
-  void Add_Solution_To_External(CGeometry *geometry);
+  void Add_Solution_To_External();
 
   /*!
-   * \brief Add the current Solution vector to External_Old.
-   * \param[in] geometry - The geometrical definition of the problem.
+   * \brief Update a given cross-term with relaxation and the running total (External).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in,out] cross_term - The cross-term being updated.
    */
-  void Add_Solution_To_ExternalOld(CGeometry *geometry);
+  void Update_Cross_Term(CConfig *config, su2passivematrix &cross_term);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.

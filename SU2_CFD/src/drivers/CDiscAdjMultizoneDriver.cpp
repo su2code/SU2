@@ -131,6 +131,10 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   }
 
+  /*--- Size and initialize the matrix of cross-terms. ---*/
+
+  InitializeCrossTerms();
+
   /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
 
   Run();
@@ -139,6 +143,36 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   Output(TimeIter);
 
+}
+
+void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
+
+  Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
+
+  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+      if (iZone != jZone || interface_container[jZone][iZone] != NULL) {
+
+        /*--- If jZone contributes to iZone in the primal problem, then
+         *    iZone contributes to jZone in the adjoint problem. On the
+         *    diagonal entry we will store the Solution without any
+         *    cross-term to restart inner iterations. ---*/
+
+        Cross_Terms[iZone][jZone].resize(MAX_SOLS);
+
+        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+          CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
+          if (solver != NULL) {
+            if (solver->GetAdjoint()) {
+              unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+              unsigned short nVar = solver->GetnVar();
+              Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void CDiscAdjMultizoneDriver::Run() {
@@ -160,6 +194,31 @@ void CDiscAdjMultizoneDriver::Run() {
     Set_BGSSolution(iZone);
   }
 
+  /*--- Initialize External with the objective function gradient. ---*/
+
+  SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  RecordingState = NONE;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone. ---*/
+
+    AD::ClearAdjoints();
+
+    SetAdj_ObjFunction();
+
+    AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
+
+    iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                                solver_container, numerics_container, config_container,
+                                                surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+    /*--- Add the objective function contribution to the external contributions for solvers in iZone. ---*/
+
+    Add_Solution_To_External(iZone);
+  }
+
   /*--- Loop over the number of outer iterations. ---*/
 
   for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
@@ -168,7 +227,6 @@ void CDiscAdjMultizoneDriver::Run() {
       config_container[iZone]->SetOuterIter(iOuterIter);
       driver_config->SetOuterIter(iOuterIter);
     }
-
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
      *    respect to the state (and possibly the mesh coordinate) variables.
@@ -189,17 +247,10 @@ void CDiscAdjMultizoneDriver::Run() {
      *    we just record the objective function section here.
      *    If not, the whole tape of a coupled run will be created. ---*/
 
-    if (retape) {
-      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-      SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-    }
-    else if (RecordingState != FLOW_CONS_VARS) {
+    if (!retape && (RecordingState != FLOW_CONS_VARS)) {
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
     }
-
-
-    SetExternal_Zero();
 
     /*-- Start loop over zones. ---*/
 
@@ -210,29 +261,9 @@ void CDiscAdjMultizoneDriver::Run() {
         SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
-      /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone. ---*/
+      /*--- Start inner iterations from where we stopped. ---*/
 
-      AD::ClearAdjoints();
-
-      SetAdj_ObjFunction();
-
-      AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
-
-      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                                  solver_container, numerics_container, config_container,
-                                                  surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-      /*--- Add the objective function contribution to the external contributions for solvers in iZone. ---*/
-
-      Add_Solution_To_ExternalOld(iZone);
-
-      /*--- If the contents of BGSSolution are valid we initialize the inner iterations from them by moving
-       *    them to Solution, otherwise Solution contains only the contributions from the OF.
-       *    Note: This is not 100% correct as on the first inner iteration the updated cross terms
-       *          (from the previous zone) are missed. ---*/
-
-      if (iOuterIter > 0 || driver_config->GetRestart())
-        Set_Solution_To_BGSSolution(iZone);
+      Set_Solution_To_BGSSolution(iZone);
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
@@ -255,10 +286,6 @@ void CDiscAdjMultizoneDriver::Run() {
                                                     solver_container, numerics_container, config_container,
                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-        /*--- Add off-diagonal contribution (including the OF gradient) to Solution for next inner evaluation. ---*/
-
-        Add_ExternalOld_To_Solution(iZone);
-
         /*--- Print out the convergence data to screen and history file ---*/
 
         bool converged = iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container,
@@ -269,11 +296,11 @@ void CDiscAdjMultizoneDriver::Run() {
 
       }
 
-      /*--- Off-diagonal (coupling term) update for next outer evaluation. ---*/
+      /*--- Off-diagonal (coupling term) BGS update. ---*/
 
       for (unsigned short jZone = 0; jZone < nZone; jZone++) {
 
-        if (jZone != iZone) {
+        if (jZone != iZone && interface_container[jZone][iZone] != NULL) {
 
           /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
            *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
@@ -282,13 +309,11 @@ void CDiscAdjMultizoneDriver::Run() {
                                                       solver_container, numerics_container, config_container,
                                                       surface_movement, grid_movement, FFDBox, jZone, INST_0);
 
-          /*--- Add the cross derivatives from iZone<-jZone dependencies to the External vector. ---*/
+          /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
-          Add_Solution_To_External(jZone);
+          Update_Cross_Term(iZone,jZone);
         }
       }
-
-      // TODO: Add an option to _already_ update off-diagonals here (i.e., in the zone-loop)
 
       /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
 
@@ -298,18 +323,6 @@ void CDiscAdjMultizoneDriver::Run() {
        *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
-
-      /*--- Now all iZone coupling terms are summed up, set External_Old to External so the
-       *    next zone receives the contributions from iZone (BGS-type iteration) alternatively,
-       *    do it outside the "iZone loop" for Block-Jacobi type iterations. ---*/
-
-      if (MZSolver == MZ_BLOCK_GAUSS_SEIDEL) {
-        Set_OldExternal();
-      }
-    }
-
-    if (MZSolver != MZ_BLOCK_GAUSS_SEIDEL) {
-      Set_OldExternal();
     }
 
     /*--- Set the multizone output. ---*/
@@ -346,6 +359,8 @@ void CDiscAdjMultizoneDriver::Run() {
       for (iZone = 0; iZone < nZone; iZone++) {
 
         Set_Solution_To_BGSSolution(iZone);
+
+        Add_External_To_Solution(iZone);
 
         iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
                                                               config_container, iZone, INST_0);
@@ -832,6 +847,10 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   AD::ClearAdjoints();
 
+  /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
+
+  Add_External_To_Solution(iZone);
+
   /*--- Initialize the adjoints in iZone ---*/
 
   iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
@@ -854,51 +873,6 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
 }
 
-void CDiscAdjMultizoneDriver::Add_ExternalOld_To_Solution(unsigned short iZone) {
-
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++){
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->Add_ExternalOld_To_Solution(geometry_container[iZone][INST_0][MESH_0]);
-      }
-    }
-  }
-}
-
-void CDiscAdjMultizoneDriver::SetExternal_Zero(void) {
-
-  unsigned short iZone, iSol;
-
-  for(iZone=0; iZone < nZone; iZone++) {
-
-    for (iSol=0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->GetNodes()->SetExternalZero();
-        }
-      }
-    }
-  }
-}
-
-void CDiscAdjMultizoneDriver::Set_OldExternal(void) {
-
-  unsigned short iZone, iSol;
-
-  for(iZone=0; iZone < nZone; iZone++) {
-
-    for (iSol=0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->GetNodes()->Set_OldExternal();
-        }
-      }
-    }
-  }
-}
-
 void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
   unsigned short iSol;
@@ -906,20 +880,35 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
   for (iSol=0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
       if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->Add_Solution_To_External(geometry_container[iZone][INST_0][MESH_0]);
+        solver_container[iZone][INST_0][MESH_0][iSol]->Add_Solution_To_External();
       }
     }
   }
 }
 
-void CDiscAdjMultizoneDriver::Add_Solution_To_ExternalOld(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
 
   unsigned short iSol;
 
   for (iSol=0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
       if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->Add_Solution_To_ExternalOld(geometry_container[iZone][INST_0][MESH_0]);
+        solver_container[iZone][INST_0][MESH_0][iSol]->Add_External_To_Solution();
+      }
+    }
+  }
+}
+
+void CDiscAdjMultizoneDriver::Update_Cross_Term(unsigned short iZone, unsigned short jZone) {
+
+  unsigned short iSol;
+
+  for (iSol=0; iSol < MAX_SOLS; iSol++) {
+    CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
+    if (solver != NULL) {
+      if (solver->GetAdjoint()) {
+        solver->Update_Cross_Term(config_container[jZone],
+                                  Cross_Terms[iZone][jZone][iSol]);
       }
     }
   }
