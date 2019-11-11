@@ -79,6 +79,10 @@ protected:
   unsigned short* direct_nInst;   /*!< \brief Total number of instances in the direct problem. */
   unsigned short* nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
 
+  /*!< \brief Individual cross-terms of the coupled problem, 5D array [iZone][jZone][iSol](iPoint,iVar).
+              The column sum, i.e. along all iZones for each jZone, gives the External (total cross-term)
+              for jZone, we need to store all terms to have BGS-type updates with relaxation. */
+  vector<vector<vector<su2passivematrix> > > Cross_Terms;
 
 public:
 
@@ -108,6 +112,11 @@ protected:
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
+
+  /*!
+   * \brief Setup the matrix of cross-terms.
+   */
+  void InitializeCrossTerms();
 
   /*!
    * \brief Record one iteration of the primal problem within each zone.
@@ -148,32 +157,23 @@ protected:
   void ComputeAdjoints(unsigned short iZone, bool eval_transfer = true);
 
   /*!
-   * \brief Add External_Old vector to Solution.
-   * \param[in] iZone - Zone where data between solvers is transferred.
-   */
-  void Add_ExternalOld_To_Solution(unsigned short iZone);
-
-  /*!
-   * \brief Sets External to zero.
-   */
-  void SetExternal_Zero(void);
-
-  /*!
-   * \brief Set External_Old to External.
-   */
-  void Set_OldExternal(void);
-
-  /*!
    * \brief Add Solution vector to External.
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
   void Add_Solution_To_External(unsigned short iZone);
 
   /*!
-   * \brief Add Solution vector to External_Old.
+   * \brief Add External_Old vector to Solution.
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
-  void Add_Solution_To_ExternalOld(unsigned short iZone);
+  void Add_External_To_Solution(unsigned short iZone);
+
+  /*!
+   * \brief Extract contribution of iZone to jZone with BGS relaxation.
+   * \param[in] iZone - Source zone (the one that was initialized).
+   * \param[in] jZone - Target zone (the one that transfers to iZone in the primal problem).
+   */
+  void Update_Cross_Term(unsigned short iZone, unsigned short jZone);
 
   /*!
    * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
