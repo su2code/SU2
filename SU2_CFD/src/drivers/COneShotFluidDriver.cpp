@@ -324,6 +324,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
     solver[ADJFLOW_SOL]->SetSaveSolution();
+    solver[ADJFLOW_SOL]->LoadSolution();
     solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
     solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
 
@@ -334,15 +335,14 @@ void COneShotFluidDriver::RunOneShot(){
       ComputeGammaTerm();
       solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotGamma());
     }
-    solver[ADJFLOW_SOL]->LoadSaveSolution();
+    solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
     solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotAlpha());
-    solver[ADJFLOW_SOL]->LoadSaveSolution();
+    solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
-    // solver[ADJFLOW_SOL]->LoadSolution();
     solver[ADJFLOW_SOL]->UpdateStateVariable(config);
     ComputeBetaTerm();
     solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
@@ -1031,7 +1031,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
     AD::ClearAdjoints();
 
-    solver[ADJFLOW_SOL]->LoadSaveSolution();
+    solver[ADJFLOW_SOL]->LoadSolution();
 
     seeding[iConstr]=0.0;
 
