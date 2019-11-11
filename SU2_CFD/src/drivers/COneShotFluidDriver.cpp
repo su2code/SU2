@@ -77,11 +77,6 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     BCheck_Inv = new su2double*[nConstr];
   }
 
-  nBFGSmax = config->GetLimitedMemoryIter();
-  nBFGS = 0;
-  ykvec = new su2double*[nBFGSmax];
-  skvec = new su2double*[nBFGSmax];
-
   BFGS_Init = config->GetBFGSInitValue();
 
   for (iDV = 0; iDV  < nDV_Total; iDV++){
@@ -115,15 +110,6 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     BCheck_Inv[iConstr][iConstr] = 1./config->GetBCheckEpsilon();
   }
   BCheck_Norm = sqrt(su2double(nConstr))*config->GetBCheckEpsilon();
-
-  for (unsigned short iBFGS = 0; iBFGS < nBFGSmax; iBFGS++){
-    ykvec[iBFGS] = new su2double[nDV_Total];
-    skvec[iBFGS] = new su2double[nDV_Total];
-    for (jDV = 0; jDV < nDV_Total; jDV++){
-      ykvec[iBFGS][jDV] = 0.0;
-      skvec[iBFGS][jDV] = 0.0;
-    }
-  }
 
   /*----- calculate values for bound projection algorithm -------*/
   lb=-config->GetBound()*config->GetDesignScale();
@@ -165,13 +151,6 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
     delete [] Multiplier_Old;
     delete [] ConstrFunc_Store;
   }
-
-  for (unsigned short iBFGS = 0; iBFGS < nBFGSmax; iBFGS++){
-    delete [] ykvec[iBFGS];
-    delete [] skvec[iBFGS];
-  }
-  delete [] ykvec;
-  delete [] skvec;
 
 }
 
@@ -637,154 +616,71 @@ void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *confi
 void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   unsigned long iDV, jDV, kDV, lDV;
 
-    su2double *yk, *sk;
-    su2double vk=0;
-    su2double normyk=0;
-    su2double normsk=0;
+  su2double *yk, *sk;
+  su2double vk=0;
+  su2double normyk=0;
+  su2double normsk=0;
 
-    yk=new su2double[nDV_Total];
-    sk=new su2double[nDV_Total];
-    for (iDV = 0; iDV < nDV_Total; iDV++){
-      yk[iDV]=ProjectionSet(iDV, AugmentedLagrangianGradient[iDV]-AugmentedLagrangianGradient_Old[iDV], false);
-      sk[iDV]=ProjectionSet(iDV, DesignVarUpdate[iDV], false);
-      vk+=yk[iDV]*sk[iDV];
-      normyk+=yk[iDV]*yk[iDV];
-      normsk+=sk[iDV]*sk[iDV];
-    }
-
-    if (vk>0){
-      su2double** MatA;
-      MatA=new su2double*[nDV_Total];
-      for (iDV=0;iDV<nDV_Total;iDV++){
-        MatA[iDV]=new su2double[nDV_Total];
-        for (jDV=0;jDV<nDV_Total;jDV++){
-            MatA[iDV][jDV]=0.0;
-        }
-      }
-      for (iDV=0;iDV<nDV_Total;iDV++){
-        for (jDV=0;jDV<nDV_Total;jDV++){
-          MatA[iDV][jDV]=ProjectionPAP(iDV,jDV,BFGS_Inv[iDV][jDV],false)+(1.0/vk)*sk[iDV]*sk[jDV];
-          for (kDV=0; kDV<nDV_Total; kDV++){
-            MatA[iDV][jDV]+=-(1.0/vk)*sk[iDV]*ProjectionPAP(kDV,jDV,BFGS_Inv[kDV][jDV],false)*yk[kDV]-(1.0/vk)*sk[jDV]*ProjectionPAP(iDV,kDV,BFGS_Inv[iDV][kDV],false)*yk[kDV];
-            for (lDV=0; lDV<nDV_Total; lDV++){
-              MatA[iDV][jDV]+=(1.0/vk)*(1.0/vk)*sk[iDV]*sk[jDV]*yk[lDV]*ProjectionPAP(lDV,kDV,BFGS_Inv[lDV][kDV],false)*yk[kDV];
-            }
-          }
-        }
-      }
-      for (iDV=0;iDV<nDV_Total;iDV++){
-        for (jDV=0;jDV<nDV_Total;jDV++){
-          BFGS_Inv[iDV][jDV]=MatA[iDV][jDV];
-        }
-      }
-      for (iDV=0;iDV<nDV_Total;iDV++){
-        delete [] MatA[iDV];
-      }
-      delete [] MatA;
-      if(config->GetBFGSInit()){
-        for (iDV=0;iDV<nDV_Total;iDV++){
-          BFGS_Init = vk/normyk;
-        }
-      }
-
-    }else{
-      /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
-      solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
-      CalculateLagrangian(true);
-      if(config->GetBoolBFGSReset()){
-        for (iDV = 0; iDV < nDV_Total; iDV++){
-          for (jDV = 0; jDV < nDV_Total; jDV++){
-            BFGS_Inv[iDV][jDV]=0.0;
-            if(iDV==jDV){ BFGS_Inv[iDV][jDV]=ProjectionSet(iDV,BFGS_Init,false); }
-          }
-        }
-      }
-    }
-    delete [] yk;
-    delete [] sk;
-}
-
-void COneShotFluidDriver::LBFGSUpdate(CConfig *config){
-  unsigned long iDV;
-  su2double vk=0.0;
-
-  if (nBFGS == nBFGSmax) {
-    nBFGS--;
-    for (unsigned short iBFGS=0; iBFGS<nBFGSmax-1; iBFGS++){
-      for (iDV = 0; iDV < nDV_Total; iDV++){
-        ykvec[iBFGS][iDV]= ykvec[iBFGS+1][iDV];
-        skvec[iBFGS][iDV]= skvec[iBFGS+1][iDV];
-      }
-    }
-  }
+  yk=new su2double[nDV_Total];
+  sk=new su2double[nDV_Total];
   for (iDV = 0; iDV < nDV_Total; iDV++){
-    ykvec[nBFGS][iDV]=ProjectionSet(iDV, AugmentedLagrangianGradient[iDV]-AugmentedLagrangianGradient_Old[iDV], false);
-    skvec[nBFGS][iDV]=ProjectionSet(iDV, DesignVarUpdate[iDV], false);
-    SearchDirection[iDV]=-ShiftedLagrangianGradient[iDV];
-    vk+=ykvec[nBFGS][iDV]*skvec[nBFGS][iDV];
-  }
-  if(vk>0){
-    nBFGS = nBFGS + 1;
-    if(config->GetBFGSInit()){
-      su2double helper = 0.0;
-      for (iDV=0;iDV<nDV_Total;iDV++){
-        helper+=ykvec[nBFGS-1][iDV]*ykvec[nBFGS-1][iDV];
-      }
-      for (iDV=0;iDV<nDV_Total;iDV++){
-        for (unsigned short jDV=0;jDV<nDV_Total;jDV++){
-          BFGS_Inv[iDV][jDV]= (ykvec[nBFGS-1][iDV]*skvec[nBFGS-1][jDV])/helper;
-        }
-      }
-    }
-  }else{
-    nBFGS = 0;
+    yk[iDV]=ProjectionSet(iDV, AugmentedLagrangianGradient[iDV]-AugmentedLagrangianGradient_Old[iDV], false);
+    sk[iDV]=ProjectionSet(iDV, DesignVarUpdate[iDV], false);
+    vk+=yk[iDV]*sk[iDV];
+    normyk+=yk[iDV]*yk[iDV];
+    normsk+=sk[iDV]*sk[iDV];
   }
 
-  LBFGSUpdateRecursive(config, nBFGS);
-}
-
-void COneShotFluidDriver::LBFGSUpdateRecursive(CConfig *config, unsigned short nCounter){
-  unsigned long iDV, jDV;
-  su2double *helper = new su2double [nDV_Total];
-  su2double alpha = 0.0;
-  su2double alphahelpone = 0.0;
-  su2double alphahelptwo = 0.0;
-  for (iDV = 0; iDV < nDV_Total; iDV++){
-    SearchDirection[iDV]=ProjectionSet(iDV,SearchDirection[iDV],false);
-  }
-  if(nCounter == 0){
+  if (vk>0){
+    su2double** MatA;
+    MatA=new su2double*[nDV_Total];
     for (iDV=0;iDV<nDV_Total;iDV++){
-      helper[iDV]=0.0;
+      MatA[iDV]=new su2double[nDV_Total];
       for (jDV=0;jDV<nDV_Total;jDV++){
-        helper[iDV]+=BFGS_Inv[iDV][jDV]*SearchDirection[jDV];
+          MatA[iDV][jDV]=0.0;
       }
     }
     for (iDV=0;iDV<nDV_Total;iDV++){
-      SearchDirection[iDV] = helper[iDV];
+      for (jDV=0;jDV<nDV_Total;jDV++){
+        MatA[iDV][jDV]=ProjectionPAP(iDV,jDV,BFGS_Inv[iDV][jDV],false)+(1.0/vk)*sk[iDV]*sk[jDV];
+        for (kDV=0; kDV<nDV_Total; kDV++){
+          MatA[iDV][jDV]+=-(1.0/vk)*sk[iDV]*ProjectionPAP(kDV,jDV,BFGS_Inv[kDV][jDV],false)*yk[kDV]-(1.0/vk)*sk[jDV]*ProjectionPAP(iDV,kDV,BFGS_Inv[iDV][kDV],false)*yk[kDV];
+          for (lDV=0; lDV<nDV_Total; lDV++){
+            MatA[iDV][jDV]+=(1.0/vk)*(1.0/vk)*sk[iDV]*sk[jDV]*yk[lDV]*ProjectionPAP(lDV,kDV,BFGS_Inv[lDV][kDV],false)*yk[kDV];
+          }
+        }
+      }
+    }
+    for (iDV=0;iDV<nDV_Total;iDV++){
+      for (jDV=0;jDV<nDV_Total;jDV++){
+        BFGS_Inv[iDV][jDV]=MatA[iDV][jDV];
+      }
+    }
+    for (iDV=0;iDV<nDV_Total;iDV++){
+      delete [] MatA[iDV];
+    }
+    delete [] MatA;
+    if(config->GetBFGSInit()){
+      for (iDV=0;iDV<nDV_Total;iDV++){
+        BFGS_Init = vk/normyk;
+      }
+    }
+
+  }else{
+    /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
+    solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+    CalculateLagrangian(true);
+    if(config->GetBoolBFGSReset()){
+      for (iDV = 0; iDV < nDV_Total; iDV++){
+        for (jDV = 0; jDV < nDV_Total; jDV++){
+          BFGS_Inv[iDV][jDV]=0.0;
+          if(iDV==jDV){ BFGS_Inv[iDV][jDV]=ProjectionSet(iDV,BFGS_Init,false); }
+        }
+      }
     }
   }
-  else{
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      ykvec[nCounter-1][iDV] = ProjectionSet(iDV, ykvec[nCounter-1][iDV], false);
-      skvec[nCounter-1][iDV] = ProjectionSet(iDV, skvec[nCounter-1][iDV], false);
-      alphahelpone+=skvec[nCounter-1][iDV]*SearchDirection[iDV];
-      alphahelptwo+=ykvec[nCounter-1][iDV]*skvec[nCounter-1][iDV];
-    }
-    alpha = alphahelpone/alphahelptwo;
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      SearchDirection[iDV] -= alpha*ykvec[nCounter-1][iDV];
-    }
-    LBFGSUpdateRecursive(config, nCounter-1);
-    alphahelpone = 0.0;
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      alphahelpone+=ykvec[nCounter-1][iDV]*SearchDirection[iDV];
-    }
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      SearchDirection[iDV] += (alpha - alphahelpone/alphahelptwo)*skvec[nCounter-1][iDV];
-      SearchDirection[iDV] = ProjectionSet(iDV,SearchDirection[iDV],false);
-    }
-  }
-  delete [] helper;
+  delete [] yk;
+  delete [] sk;
 }
 
 bool COneShotFluidDriver::CheckFirstWolfe(){
@@ -862,11 +758,9 @@ void COneShotFluidDriver::ComputeDesignVarUpdate(su2double stepsize){
 void COneShotFluidDriver::ComputeSearchDirection(){
   unsigned short iDV, jDV;
   for (iDV=0;iDV<nDV_Total;iDV++){
-    if(!config->GetLimitedMemory()){
-      SearchDirection[iDV]=0.0;
-      for (jDV=0;jDV<nDV_Total;jDV++){
-        SearchDirection[iDV]+= BFGS_Inv[iDV][jDV]*ProjectionSet(jDV,-ShiftedLagrangianGradient[jDV],false);
-      }
+    SearchDirection[iDV]=0.0;
+    for (jDV=0;jDV<nDV_Total;jDV++){
+      SearchDirection[iDV]+= BFGS_Inv[iDV][jDV]*ProjectionSet(jDV,-ShiftedLagrangianGradient[jDV],false);
     }
     SearchDirection[iDV]=-ProjectionSet(iDV, ShiftedLagrangianGradient[iDV],true)+ProjectionSet(iDV, SearchDirection[iDV], false);
   }
