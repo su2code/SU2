@@ -706,8 +706,9 @@ private:
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
+  unsigned long StartWindowIteration;  /*!< \brief Starting Iteration for long time Windowing apporach . */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
-  bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
+  bool HB_Precondition;    /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -5414,6 +5415,13 @@ public:
    * \return Name of the file with convergence history of the problem.
    */
   string GetConv_FileName(void);
+
+  /*!
+   * \brief Get the Starting Iteration for the windowing approach
+   *        in Sensitivity Analysis for LCOs.
+   * \return
+   */
+  unsigned long GetStartWindowIteration(void);
 
   /*!
    * \brief Get Index of the window function used as weight in the cost functional
