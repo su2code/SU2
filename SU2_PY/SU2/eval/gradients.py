@@ -440,8 +440,9 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
-    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FLOW_FILENAME, config)
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FILENAME, config)
     solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
+    flow_meta_list = su2io.expand_multipoint('flow.meta', config)
     restart_sol = config['RESTART_SOL']
     grads = []
     folder = []
@@ -451,6 +452,11 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
     for i in range(len(weight_list)):
         folder[i] = 'MULTIPOINT_' + str(i)
+
+    opt_names = []
+    for key in su2io.historyOutFields:
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
     
     # ----------------------------------------------------
     #  Initialize
@@ -463,7 +469,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     special_cases = su2io.get_specialCases(config)
     
     # find base func name
-    matches = [ k for k in su2io.optnames_aero if k in func_name ]
+    matches = [ k for k in opt_names if k in func_name ]
     if not len(matches) == 1:
         raise Exception('could not find multipoint function name')
     base_name = matches[0]
@@ -497,18 +503,25 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
     config.FREESTREAM_PRESSURE = freestream_press_list[0]
     config.TARGET_CL = target_cl_list[0]
-    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.SOLUTION_FILENAME = solution_flow_list[0]
     config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
     if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][0]:
         state.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][0]
 
-    #state.find_files(config)
+    # If flow.meta file for the first point is available, rename it before using it
+    if os.path.exists(flow_meta_list[0]):
+        os.rename(flow_meta_list[0], 'flow.meta')
+        state.FILES['FLOW_META'] = 'flow.meta'
 
     grads[0] = gradient(base_name,'DISCRETE_ADJOINT',config,state)
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/') + '/' + ADJ_NAME + '/'
 
+    # change name of flow.meta back to multipoint name
+    if os.path.exists('flow.meta'):
+        os.rename('flow.meta',flow_meta_list[0])
+        state.FILES['FLOW_META'] = flow_meta_list[0]
 
     # ----------------------------------------------------
     #  Run Multipoint
@@ -560,7 +573,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # Reset RESTART_SOL to original value
         konfig['RESTART_SOL'] = restart_sol
         # Set correct config option names
-        konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+        konfig.SOLUTION_FILENAME = solution_flow_list[i+1]
         konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
         
         # Delete file run in previous case
@@ -578,6 +591,10 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
             else:
                 ztate.FILES.MESH = ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
                 konfig.MESH_FILENAME= ztate.FILES.MULTIPOINT_MESH_FILENAME[i+1]
+
+        # use flow.meta file from relevant point
+        if 'MULTIPOINT_FLOW_META' in state.FILES and state.FILES.MULTIPOINT_FLOW_META[i+1]:
+            ztate.FILES['FLOW_META'] = state.FILES.MULTIPOINT_FLOW_META[i+1]
 
         files = ztate.FILES
         link = []
@@ -602,9 +619,14 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         else:
             konfig['RESTART_SOL'] = 'NO'
 
-      # pull needed files, start folder
+        # files: meta data of solution
+        if 'FLOW_META' in files:
+            pull.append(files['FLOW_META'])
+
+        # pull needed files, start folder
         with redirect_folder( folder[i+1], pull, link ) as push:
             with redirect_output(log_direct):
+                
                 # Set the multipoint options   
                 konfig.AOA = aoa_list[i+1]
                 konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
@@ -612,13 +634,22 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
                 konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
                 konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
                 konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
-                konfig.TARGET_CL = target_cl_list[i+1]     
+                konfig.TARGET_CL = target_cl_list[i+1]  
+
+                # rename meta data to flow.meta
+                if 'FLOW_META' in ztate.FILES:
+                    os.rename(ztate.FILES.MULTIPOINT_FLOW_META[i+1], 'flow.meta')
+                    ztate.FILES['FLOW_META'] = 'flow.meta'
  
                 # let's start somethin somthin
                 ztate.GRADIENTS.clear()
 
                 # the gradient
                 grads[i+1] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
+
+                # rename meta data to multipoint name
+                if os.path.exists('flow.meta'):
+                    os.rename('flow.meta', flow_meta_list[i+1])
 
                 # adjoint files to push
                 dst = os.getcwd()
@@ -631,7 +662,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
         # Link adjoint solution to MULTIPOINT_# folder
         src = os.getcwd()
-        src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
+        src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES[ADJ_NAME]
       
         # make unix link
         string = "ln -s " + src + " " + dst

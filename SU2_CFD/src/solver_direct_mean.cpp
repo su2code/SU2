@@ -106,16 +106,12 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
  
   Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+  /*--- Fixed CL mode initialization ---*/
   
-  Cauchy_Value   = 0;
-  Cauchy_Func    = 0;
-  Old_Func       = 0;
-  New_Func       = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
-  
-  AoA_FD_Change = false;
+  Start_AoA_FD = false;
+  End_AoA_FD = false;
+  Update_AoA = false;
+  Iter_Update_AoA = 0;
 
   FluidModel   = NULL;
   
@@ -201,7 +197,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) &&
+      (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode())) {
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -223,7 +220,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
 
@@ -291,16 +288,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
-  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
-  Cauchy_Serie = NULL;
+  /*--- Fixed CL mode initialization ---*/
   
-  AoA_FD_Change = false;
+  Start_AoA_FD = false;
+  End_AoA_FD = false;
+  Update_AoA = false;
+  Iter_Update_AoA = 0;
 
   FluidModel = NULL;
   
@@ -1120,8 +1113,6 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] YPlus;
   }
 
-  if (Cauchy_Serie != NULL)  delete [] Cauchy_Serie;
-  
   if (FluidModel != NULL) delete FluidModel;
 
   if(AverageVelocity !=NULL){
@@ -7306,71 +7297,51 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Old_AoA,
-  dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
-  unsigned long Wrt_Con_Freq;
+  su2double AoA = 0.0, Vel_Infty[3], Vel_Infty_Mag;
   unsigned short iDim;
-  
-  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long Update_Alpha = config->GetUpdate_Alpha();
-  
-  unsigned long InnerIter       = config->GetInnerIter();
-  bool write_heads = ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0));
-  su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
-  bool Update_AoA             = false;
-  
-  if (InnerIter == 0) AoA_Counter = 0;
-  
-  /*--- Only the fine mesh level should check the convergence criteria ---*/
-  
-  if ((iMesh == MESH_0) && Output) {
-    
-    /*--- Initialize the update flag to false ---*/
-    
-    Update_AoA = false;
+  unsigned long InnerIter = config->GetInnerIter();
+  su2double Beta = config->GetAoS();
 
-    /*--- Reevaluate Angle of Attack at a fixed number of iterations ---*/
-    
-    if ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0)) {
-      AoA_Counter++;
-      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
-      else Update_AoA = false;
-    }
-    
-    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
-    
-    config->SetUpdate_AoA(Update_AoA);
-    
+  /* --- Initialize values at first iteration --- */
+  
+  if (InnerIter == 0) {
+    Total_CD_Prev = 0.0;
+    Total_CL_Prev = 0.0;
+    Total_CMx_Prev = 0.0;
+    Total_CMy_Prev = 0.0;
+    Total_CMz_Prev = 0.0;
+    AoA_Prev = config->GetAoA();
+    dCL_dAlpha = config->GetdCL_dAlpha();
   }
   
-  else {
-    Update_AoA = config->GetUpdate_AoA();
-  }
-  
-  if (Update_AoA && Output) {
+  /*--- Retrieve the AoA (degrees) ---*/
     
-    /*--- Retrieve the specified target CL value. ---*/
+  AoA = config->GetAoA();
+
+  /* --- Set new AoA if needed --- */
+
+  if (fabs(AoA_inc) > 0.0 && Output) {
     
-    Target_CL = config->GetTarget_CL();
+    /* --- Update *_Prev values with current coefficients --- */
+
+    SetCoefficient_Gradients(config);
     
-    /*--- Retrieve the old AoA (radians) ---*/
-    
-    AoA_old = config->GetAoA()*PI_NUMBER/180.0;
-    
-    /*--- Estimate the increment in AoA based on dCL_dAlpha (radians) ---*/
-    
-    AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
-    
-    /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
-    
-    if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
-    else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
-    
+    Total_CD_Prev = Total_CD;
+    Total_CL_Prev = Total_CL;
+    Total_CMx_Prev = Total_CMx;
+    Total_CMy_Prev = Total_CMy;
+    Total_CMz_Prev = Total_CMz;
+    AoA_Prev = AoA;
+
+    /*--- Compute a new value for AoA on the fine mesh only (degrees)---*/
+      
+    if (iMesh == MESH_0) AoA = AoA + AoA_inc;
+    else { AoA = config->GetAoA(); }
+
     /*--- Only the fine mesh stores the updated values for AoA in config ---*/
-    
+      
     if (iMesh == MESH_0) {
-      config->SetAoA(AoA*180.0/PI_NUMBER);
+      config->SetAoA(AoA);
     }
     
     /*--- Update the freestream velocity vector at the farfield ---*/
@@ -7388,161 +7359,155 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the new freestream velocity with the updated AoA ---*/
     
     if (nDim == 2) {
-      Vel_Infty[0] = cos(AoA)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(AoA)*Vel_Infty_Mag;
-    }
-    if (nDim == 3) {
-      Vel_Infty[0] = cos(AoA)*cos(Beta)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(Beta)*Vel_Infty_Mag;
-      Vel_Infty[2] = sin(AoA)*cos(Beta)*Vel_Infty_Mag;
-    }
-    
-    /*--- Store the new freestream velocity vector for the next iteration ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_Inf[iDim] = Vel_Infty[iDim];
-    }
-    
-    /*--- Only the fine mesh stores the updated values for velocity in config ---*/
-    
-    if (iMesh == MESH_0) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-    }
-    
-    /*--- Output some information to the console with the headers ---*/
-    
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && !config->GetDiscrete_Adjoint()) {
-      Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      
-      cout.precision(7);
-      cout.setf(ios::fixed, ios::floatfield);
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-      cout << "CL: " << Total_CL;
-      cout << " (target: " << config->GetTarget_CL() <<")." << endl;
-      cout.precision(4);
-      cout << "Previous AoA: " << Old_AoA << " deg";
-      cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
-      cout << "-------------------------------------------------------------------------" << endl << endl;
-    }
-
-  }
-
-	unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
-
-  if ((config->GetnInner_Iter()-Iter_dCL_dAlpha == InnerIter) && Output) {
-
-    AoA_old = config->GetAoA();
-
-    if (config->GetnInner_Iter()-Iter_dCL_dAlpha == InnerIter) {
-      Wrt_Con_Freq = SU2_TYPE::Int(su2double(config->GetIter_dCL_dAlpha())/10.0);
-      config->SetWrt_Con_Freq(Wrt_Con_Freq);
-      Total_CD_Prev = Total_CD;
-      Total_CL_Prev = Total_CL;
-      Total_CMx_Prev = Total_CMx;
-      Total_CMy_Prev = Total_CMy;
-      Total_CMz_Prev = Total_CMz;
-      AoA_inc = 0.001;
-      AoA_FD_Change = true;
-    }
-    
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
-      
-    	if (config->GetnInner_Iter()-Iter_dCL_dAlpha == InnerIter) {
-       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-       cout << " Change AoA by +0.001 deg to evaluate gradient." << endl;
-       cout << "-------------------------------------------------------------------------" << endl << endl;
-    	}
-
-    }
-
-    /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
-
-    if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
-    else { AoA = config->GetAoA(); }
-
-    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
-
-    if (iMesh == MESH_0) { config->SetAoA(AoA); }
-
-    /*--- Update the freestream velocity vector at the farfield ---*/
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vel_Infty[iDim] = GetVelocity_Inf(iDim);
-
-    /*--- Compute the magnitude of the free stream velocity ---*/
-
-    Vel_Infty_Mag = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vel_Infty_Mag += Vel_Infty[iDim]*Vel_Infty[iDim];
-    Vel_Infty_Mag = sqrt(Vel_Infty_Mag);
-
-    /*--- Compute the new freestream velocity with the updated AoA ---*/
-
-    if (nDim == 2) {
       Vel_Infty[0] = cos(AoA*PI_NUMBER/180.0)*Vel_Infty_Mag;
       Vel_Infty[1] = sin(AoA*PI_NUMBER/180.0)*Vel_Infty_Mag;
     }
     if (nDim == 3) {
-      Vel_Infty[0] = cos(AoA*PI_NUMBER/180.0)*cos(Beta)*Vel_Infty_Mag;
+      Vel_Infty[0] = cos(AoA*PI_NUMBER/180.0)*cos(Beta*PI_NUMBER/180.0)*Vel_Infty_Mag;
       Vel_Infty[1] = sin(Beta)*Vel_Infty_Mag;
-      Vel_Infty[2] = sin(AoA*PI_NUMBER/180.0)*cos(Beta)*Vel_Infty_Mag;
+      Vel_Infty[2] = sin(AoA*PI_NUMBER/180.0)*cos(Beta*PI_NUMBER/180.0)*Vel_Infty_Mag;
     }
-
+    
     /*--- Store the new freestream velocity vector for the next iteration ---*/
-
+    
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_Inf[iDim] = Vel_Infty[iDim];
     }
-
+    
     /*--- Only the fine mesh stores the updated values for velocity in config ---*/
-
+    
     if (iMesh == MESH_0) {
       for (iDim = 0; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
     }
 
   }
-  
-  if (AoA_FD_Change && (config->GetnInner_Iter()-1 == InnerIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+}
 
-    /*--- Update angle of attack ---*/
+bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
+  su2double Target_CL = config->GetTarget_CL();
+  unsigned long curr_iter = config->GetInnerIter();
+  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+  bool fixed_cl_conv = false;
+  AoA_inc = 0.0;
 
-    AoA_old = config->GetAoA();
-    AoA = AoA_old - 0.001;
-    config->SetAoA(AoA);
-    
-    /*--- Use finite differences to compute  ---*/
 
-  		dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/0.001;
-  		dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
-  		dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
-  		dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
-  		dCMz_dCL_   = (Total_CMz-Total_CMz_Prev)/(Total_CL-Total_CL_Prev);
+  /*--- if in Fixed CL mode, before finite differencing --- */
 
-  		/*--- Set the value of the  dOF/dCL in the config file ---*/
+  if (!Start_AoA_FD){
+    if (convergence){
 
-  		config->SetdCD_dCL(dCD_dCL_);
-  		config->SetdCMx_dCL(dCMx_dCL_);
-  		config->SetdCMy_dCL(dCMy_dCL_);
-  		config->SetdCMz_dCL(dCMz_dCL_);
+      /* --- C_L and solution are converged, start finite differencing --- */
 
-  		config->SetdCL_dAlpha(dCL_dAlpha_);
+      if (fabs(Total_CL-Target_CL) < (config->GetCauchy_Eps()/2)) {
 
-    if (rank == MASTER_NODE) {
-      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-      cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-      cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-      if (nDim == 3 ) {
-        cout << "Approx. Delta CMx / Delta CL: " << dCMx_dCL_ << ". " << endl;
-        cout << "Approx. Delta CMy / Delta CL: " << dCMy_dCL_ << ". " << endl;
+        /* --- If no finite differencing required --- */
+
+        if (Iter_dCL_dAlpha == 0){
+          fixed_cl_conv = true;
+          return fixed_cl_conv;
+        }
+
+        /* --- Else, set up finite differencing routine ---*/
+        
+        Iter_Update_AoA = curr_iter;
+        Start_AoA_FD = true;
+        fixed_cl_conv = false;
+        AoA_inc = 0.001;
       }
-      cout << "Approx. Delta CMz / Delta CL: " << dCMz_dCL_ << ". " << endl;
-      cout << "-------------------------------------------------------------------------" << endl << endl;
+
+      /* --- C_L is not converged to target value and some iterations 
+          have passed since last update, so update AoA --- */
+
+      else if ((curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter()){
+        Iter_Update_AoA = curr_iter;
+        fixed_cl_conv = false;
+        if (fabs(Total_CL-Target_CL) > (config->GetCauchy_Eps()/2)) {
+          AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
+        }
+      }
     }
-    
+
+    /* --- If the iteration limit between AoA updates is met, so update AoA --- */
+
+    else if ((curr_iter - Iter_Update_AoA) == config->GetUpdate_AoA_Iter_Limit()) {
+      Iter_Update_AoA = curr_iter;
+      fixed_cl_conv = false;
+      if (fabs(Total_CL-Target_CL) > (config->GetCauchy_Eps()/2)) {
+        AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
+      }
+    }
+
+    /* --- If the total iteration limit is reached, start finite differencing --- */
+
+    if (curr_iter == config->GetnInner_Iter() - Iter_dCL_dAlpha){
+      if (Iter_dCL_dAlpha == 0){
+        End_AoA_FD = true;
+      }
+      Iter_Update_AoA = curr_iter;
+      Start_AoA_FD = true;
+      fixed_cl_conv = false;
+      AoA_inc = 0.001;
+    }
   }
 
+  /* --- If Finite Difference Mode has ended, end simulation --- */
+
+  if (End_AoA_FD){
+    //fixed_cl_conv = true;
+    return true;
+  }
+  
+  /* --- If starting Finite Difference Mode --- */
+
+  if (Start_AoA_FD){
+    
+    /* --- Disable history writing --- */
+
+    config->SetHistory_Wrt_Freq(2, 0);
+    
+    /* --- End Finite Difference Mode if iteration limit is reached, so simualtion is converged --- */
+
+    End_AoA_FD = ((curr_iter - Iter_Update_AoA - 2) == Iter_dCL_dAlpha || 
+      curr_iter == config->GetnInner_Iter()- 2 );
+
+    if (convergence && (curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter())
+      End_AoA_FD = true;
+
+    
+    /* --- If Finite Difference mode is ending, reset AoA and calculate Coefficient Gradients --- */
+
+    if (End_AoA_FD){
+      SetCoefficient_Gradients(config);
+      config->SetAoA(AoA_Prev);
+    }
+  }
+
+  return fixed_cl_conv;
+  
+}
+
+void CEulerSolver::SetCoefficient_Gradients(CConfig *config){
+  su2double dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
+  su2double AoA = config->GetAoA();
+  
+  if (AoA != AoA_Prev) {
+  /* --- Calculate gradients of coefficients w.r.t. CL --- */
+
+  dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/(AoA - AoA_Prev);
+  dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+  dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
+  dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
+  dCMz_dCL_   = (Total_CMz-Total_CMz_Prev)/(Total_CL-Total_CL_Prev);
+
+  /*--- Set the value of the  dOF/dCL in the config file ---*/
+
+  config->SetdCD_dCL(dCD_dCL_);
+  config->SetdCMx_dCL(dCMx_dCL_);
+  config->SetdCMy_dCL(dCMy_dCL_);
+  config->SetdCMz_dCL(dCMz_dCL_);
+  config->SetdCL_dAlpha(dCL_dAlpha_);
+  }
 }
 
 void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
@@ -13999,8 +13964,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) &&
+      (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode())) {
+    
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
     if (dual_time) {
@@ -14021,7 +13987,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
     
   }
 
@@ -14043,7 +14009,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
+  CSkinFriction = NULL; HF_Visc = NULL;
   HeatConjugateVar = NULL;
   
   /*--- Initialize quantities for the average process for internal flow ---*/
@@ -14556,15 +14522,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Total_CD         = 0.0;    Total_CL           = 0.0;    Total_CSF          = 0.0;
   Total_CMx        = 0.0;    Total_CMy          = 0.0;    Total_CMz          = 0.0;
-  Total_CoPx        = 0.0;    Total_CoPy          = 0.0;    Total_CoPz          = 0.0;
+  Total_CoPx       = 0.0;    Total_CoPy         = 0.0;    Total_CoPz         = 0.0;
   Total_CEff       = 0.0;    Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
   Total_CFx        = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
   Total_CT         = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat    = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff     = 0.0;    Total_HeatFluxDiff = 0.0;
-  Total_NetThrust = 0.0;     Total_CL_Prev      = 0.0;
-  Total_Power      = 0.0;    AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_CMx_Prev   = 0.0;    Total_CMy_Prev     = 0.0;    Total_CMz_Prev     = 0.0;
+  Total_NetThrust  = 0.0;    Total_Power        = 0.0;
+  Total_CL_Prev    = 0.0;    Total_CD_Prev      = 0.0;    Total_CMx_Prev     = 0.0;
+  Total_CMy_Prev   = 0.0;    Total_CMz_Prev     = 0.0;
   Total_AeroCD     = 0.0;    Total_SolidCD      = 0.0;    Total_IDR          = 0.0;
   Total_IDC           = 0.0;
   Total_Custom_ObjFunc = 0.0;
@@ -15476,9 +15442,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
         thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
-        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
-
         
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
@@ -15514,6 +15477,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           MomentZ_Force[1] += (Force[1]*Coord[0]);
           
         }
+        
+        HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
+        MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
         
       }
        
