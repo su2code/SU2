@@ -330,7 +330,7 @@ su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmente
   helper=0.0;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      helper+=direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*nodes->GetSolution(iPoint,iVar);
+      helper+=direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*nodes->GetSolution_Store(iPoint,iVar);
     }
   }
   myLagrangian+=helper;

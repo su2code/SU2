@@ -66,6 +66,7 @@ protected:
   su2double* AugmentedLagrangianMultiplierGradient; /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
   su2double Lagrangian, Lagrangian_Old, Lagrangian_p; /*!< \brief Value of doubly augmented Lagrangian.*/
   su2double GradDotDir; /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
+  su2double ObjFunc_Store; /*!< \brief Objective function at old flow, new design.*/
   
   su2double lb, ub; /*!< \brief Lower and upper bounds of design variables.*/
   su2double epsilon; /*!< \brief Estimator for the active set.*/

@@ -260,6 +260,18 @@ void COneShotFluidDriver::RunOneShot(){
         config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
         SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
         config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
+
+        /*--- Evaluate the objective at the old solution, new design ---*/
+      
+        solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+        solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+        solver[FLOW_SOL]->Friction_Forces(geometry, config);
+                  
+        if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+            solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+        }
+        SetObjFunction();
+        ObjFunc_Store = ObjFunc;
       }
       else {
         stepsize = 0.0;
@@ -804,16 +816,16 @@ void COneShotFluidDriver::UpdateDesignVariable(){
 void COneShotFluidDriver::CalculateLagrangian(bool augmented){
     
   Lagrangian = 0.0;
-  Lagrangian += ObjFunc; //TODO use for BFGS either only objective function or normal Lagrangian
+  Lagrangian += ObjFunc_Store; //TODO use for BFGS either only objective function or normal Lagrangian
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    Lagrangian += ConstrFunc[iConstr]*Multiplier[iConstr];
+    Lagrangian += ConstrFunc_Store[iConstr]*Multiplier[iConstr];
     Lagrangian += config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
   }
 
   if(augmented){
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-      Lagrangian += config->GetOneShotGamma()/2.*ConstrFunc[iConstr]*ConstrFunc[iConstr];
+      Lagrangian += config->GetOneShotGamma()/2.*ConstrFunc_Store[iConstr]*ConstrFunc_Store[iConstr];
     }
     Lagrangian += solver[ADJFLOW_SOL]->CalculateLagrangianPart(config, augmented);
   }
