@@ -31,10 +31,10 @@ from __future__ import print_function
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
-oldvers = '2012-2018'
-newvers = '2012-2019'
-#oldvers = '6.1.0 "Falcon"'
-#newvers = '6.2.0 "Falcon"'
+#oldvers = '2012-2018'
+#newvers = '2012-2019'
+oldvers = '6.2.0 "Falcon"'
+newvers = '7.0.0 "Blackbird"'
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.

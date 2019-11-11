@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

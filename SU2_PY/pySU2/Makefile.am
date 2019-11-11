@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python wrapper.
 # \author D. Thomas
-# \version 6.2.0 "Falcon"
+# \version 7.0.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
