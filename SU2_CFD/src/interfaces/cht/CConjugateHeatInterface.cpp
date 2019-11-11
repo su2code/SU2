@@ -168,7 +168,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     heat_flux_density       = thermal_diffusivity*dTdn;
 
     if (donor_config->GetCHT_Robin()) {
-      rho_cp_solid            = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
+      rho_cp_solid            = donor_config->GetSpecific_Heat_Cp()*donor_config->GetDensity_Solid();
       conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
     }
   }

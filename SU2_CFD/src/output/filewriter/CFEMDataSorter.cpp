@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../../Common/include/fem_geometry_structure.hpp"
 
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
  

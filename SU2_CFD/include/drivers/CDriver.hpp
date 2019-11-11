@@ -468,7 +468,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the specified vertex is a halo node.
    */
-  bool IsAHaloNode(unsigned short iMarker, unsigned short iVertex);
+  bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the number of external iterations.
@@ -494,7 +494,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vertex global index.
    */
-  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
+  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x coordinate of a vertex on a specified marker.
@@ -502,7 +502,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x coordinate of the vertex.
    */
-  passivedouble GetVertexCoordX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexCoordX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y coordinate of a vertex on a specified marker.
@@ -510,7 +510,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y coordinate of the vertex.
    */
-  passivedouble GetVertexCoordY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexCoordY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z coordinate of a vertex on a specified marker.
@@ -518,7 +518,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z coordinate of the vertex.
    */
-  passivedouble GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexCoordZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Compute the total force (pressure and shear stress) at a vertex on a specified marker (3 components).
@@ -526,7 +526,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the vertex is a halo node (non physical force).
    */
-  bool ComputeVertexForces(unsigned short iMarker, unsigned short iVertex);
+  bool ComputeVertexForces(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x component of the force at a vertex on a specified marker.
@@ -534,7 +534,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x component of the force at the vertex.
    */
-  passivedouble GetVertexForceX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y component of the force at a vertex on a specified marker.
@@ -542,7 +542,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y component of the force at the vertex.
    */
-  passivedouble GetVertexForceY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z component of the force at a vertex on a specified marker.
@@ -550,7 +550,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z component of the force at the vertex.
    */
-  passivedouble GetVertexForceZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x component of the force density at a vertex on a specified marker.
@@ -558,7 +558,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x component of the force density at the vertex.
    */
-  passivedouble GetVertexForceDensityX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceDensityX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y component of the force density at a vertex on a specified marker.
@@ -566,7 +566,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y component of the force density at the vertex.
    */
-  passivedouble GetVertexForceDensityY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceDensityY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z component of the force density at a vertex on a specified marker.
@@ -574,7 +574,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z component of the force density at the vertex.
    */
-  passivedouble GetVertexForceDensityZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceDensityZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the x coordinate of a vertex on a specified marker.
@@ -582,7 +582,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] newPosX - New x coordinate of the vertex.
    */
-  void SetVertexCoordX(unsigned short iMarker, unsigned short iVertex, passivedouble newPosX);
+  void SetVertexCoordX(unsigned short iMarker, unsigned long iVertex, passivedouble newPosX);
 
   /*!
    * \brief Set the y coordinate of a vertex on a specified marker.
@@ -590,7 +590,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] newPosY - New y coordinate of the vertex.
    */
-  void SetVertexCoordY(unsigned short iMarker, unsigned short iVertex, passivedouble newPosY);
+  void SetVertexCoordY(unsigned short iMarker, unsigned long iVertex, passivedouble newPosY);
 
   /*!
    * \brief Set the z coordinate of a vertex on a specified marker.
@@ -598,7 +598,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] newPosZ - New z coordinate of the vertex.
    */
-  void SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, passivedouble newPosZ);
+  void SetVertexCoordZ(unsigned short iMarker, unsigned long iVertex, passivedouble newPosZ);
 
   /*!
    * \brief Set the VarCoord of a vertex on a specified marker.
@@ -606,7 +606,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Norm of the VarCoord.
    */
-  passivedouble SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
+  passivedouble SetVertexVarCoord(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the temperature at a vertex on a specified marker.
@@ -614,7 +614,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Temperature of the vertex.
    */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the temperature of a vertex on a specified marker.
@@ -622,7 +622,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_WallTemp - Value of the temperature.
    */
-  void SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallTemp);
+  void SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp);
 
   /*!
    * \brief Compute the heat flux at a vertex on a specified marker (3 components).
@@ -630,7 +630,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the vertex is a halo node.
    */
-  bool ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex);
+  bool ComputeVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x component of the heat flux at a vertex on a specified marker.
@@ -638,7 +638,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x component of the heat flux at the vertex.
    */
-  passivedouble GetVertexHeatFluxX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexHeatFluxX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y component of the heat flux at a vertex on a specified marker.
@@ -646,7 +646,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y component of the heat flux at the vertex.
    */
-  passivedouble GetVertexHeatFluxY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexHeatFluxY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z component of the heat flux at a vertex on a specified marker.
@@ -654,7 +654,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z component of the heat flux at the vertex.
    */
-  passivedouble GetVertexHeatFluxZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexHeatFluxZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
@@ -662,7 +662,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Wall normal component of the heat flux at the vertex.
    */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
@@ -670,7 +670,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_WallHeatFlux - Value of the normal heat flux.
    */
-  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallHeatFlux);
+  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux);
 
   /*!
    * \brief Get the thermal conductivity at a vertex on a specified marker.
@@ -678,7 +678,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Thermal conductivity at the vertex.
    */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Preprocess the inlets via file input for all solvers.
@@ -695,7 +695,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Unit normal (vector) at the vertex.
    */
-  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get all the boundary markers tags.
@@ -766,7 +766,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of sensitivities.
    */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the load in X direction for the structural solver.
@@ -776,7 +776,7 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  void SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+  void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX,
                     passivedouble LoadY, passivedouble LoadZ);
 
   /*!
@@ -785,7 +785,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of displacements.
    */
-  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -793,7 +793,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities.
    */
-  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -801,7 +801,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities at time n.
    */
-  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
@@ -811,7 +811,7 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
@@ -819,7 +819,7 @@ public:
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the adjoint of the flow tractions (from the extra step -
@@ -830,7 +830,7 @@ public:
    * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
    * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
    */
-  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                     passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
@@ -841,7 +841,7 @@ public:
    * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
    * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
    */
-  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                  passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
@@ -850,7 +850,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Undeformed Vertex Coordinates
    */
-  vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned long iVertex);
 
 };
 
@@ -943,7 +943,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_Ttotal - Value of the total (stagnation) temperature.
    */
-  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ttotal);
+  void SetVertexTtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ttotal);
 
   /*!
    * \brief Set the total pressure of a vertex on a specified inlet marker.
@@ -951,7 +951,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_Ptotal - Value of the total (stagnation) pressure.
    */
-  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ptotal);
+  void SetVertexPtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ptotal);
 
   /*!
    * \brief Set the flow direction of a vertex on a specified inlet marker.
@@ -960,7 +960,7 @@ public:
    * \param[in] iDim - Index of the flow direction unit vector
    * \param[in] val_FlowDir - Component of a unit vector representing the flow direction
    */
-  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_FlowDir);
+  void SetVertexFlowDir(unsigned short iMarker, unsigned long iVertex, unsigned short iDim, passivedouble val_FlowDir);
 
   /*!
    * \brief Set a turbulence variable on a specified inlet marker.
@@ -969,7 +969,7 @@ public:
    * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
    * \param[in] val_turb_var - Value of the turbulence variable to be used.
    */
-  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_tub_var);
+  void SetVertexTurbVar(unsigned short iMarker, unsigned long iVertex, unsigned short iDim, passivedouble val_tub_var);
 
 };
 
@@ -1336,14 +1336,6 @@ public:
   void RegisterOutput(unsigned short ZONE_FLOW,
                     unsigned short ZONE_STRUCT,
                     unsigned short kind_recording);
-
-  /*!
-   * \brief Run the post-processing routines.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Postprocess(unsigned short ZONE_FLOW,
-                     unsigned short ZONE_STRUCT);
 
   /*!
    * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
