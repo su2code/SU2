@@ -163,7 +163,7 @@ protected:
   bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
   
   //! Structure to store the value of the running averages
-  map<string, Signal_Processing::RunningAverage> runningAverages; 
+  map<string, WindowedAverage> windowedTimeAverages;
   
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
