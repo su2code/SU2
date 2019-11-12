@@ -46,6 +46,7 @@ private:
 protected:
 
   MatrixType Radiative_SourceTerm;
+  su2vector<bool> Vol_HeatSource;    /*!< \brief Volumetric heat source. */
 
 public:
 
@@ -74,6 +75,22 @@ public:
    * \param[in] val_RadSourceTerm - value of the radiative source term
    */
   inline void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { Radiative_SourceTerm(iPoint, iVar) = val_RadSourceTerm;}
+
+  /*!
+   * \brief Get whether a volumetric heat source is to be introduced in point iPoint
+   * \return Bool, determines if this point introduces volumetric heat
+   */
+  inline bool GetVol_HeatSource(unsigned long iPoint) final { return Vol_HeatSource(iPoint);}
+
+  /*!
+   * \brief Set as true a volumetric heat source for point iPoint
+   */
+  inline void SetVol_HeatSource(unsigned long iPoint) { Vol_HeatSource(iPoint) = true;}
+
+  /*!
+   * \brief Reset as false a volumetric heat source for all points
+   */
+  inline void ResetVol_HeatSource(void) { for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) Vol_HeatSource(iPoint) = false;}
 
 
 };

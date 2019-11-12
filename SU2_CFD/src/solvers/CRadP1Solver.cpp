@@ -161,6 +161,11 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   nodes = new CRadP1Variable(init_val, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
+  /*--- Initialize the structure for volumetric heat source ---*/
+  if(config->GetHeatSource()){
+   SetVolumetricHeatSource(geometry, config);
+  }
+
 }
 
 CRadP1Solver::~CRadP1Solver(void) {

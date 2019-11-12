@@ -1615,10 +1615,6 @@ inline bool CConfig::GetBody_Force(void) { return Body_Force; }
 
 inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
 
-inline bool CConfig::GetHeatSource(void) { return HeatSource; }
-
-inline su2double CConfig::GetValHeatSource(void) { return ValHeatSource; }
-
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }

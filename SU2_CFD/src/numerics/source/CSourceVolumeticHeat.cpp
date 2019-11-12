@@ -62,7 +62,7 @@ void CSourceVolumetricHeat::ComputeResidual(su2double *val_residual, su2double *
 
   /*--- Set the energy contribution ---*/
 
-  val_residual[nDim+1] = -1.0*config->GetValHeatSource()*Volume;
+  val_residual[nDim+1] = -1.0*config->GetHeatSource_Val()*Volume;
 
   /*--- Jacobian contribution is 0 as the heat source is constant ---*/
 

@@ -3987,6 +3987,13 @@ public:
    */
   
   virtual void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief A virtual member. Set the volumetric heat source
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) { }
   
   /*!
    * \brief A virtual member.
@@ -8473,6 +8480,16 @@ public:
    * \return Component of a unit vector representing the flow direction.
    */
   su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+
+  /*!
+   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
+   */
+  void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
+
   
   /*!
    * \brief Set a uniform inlet profile
