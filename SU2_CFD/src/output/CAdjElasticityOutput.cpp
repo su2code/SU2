@@ -72,7 +72,7 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   }
 
   stringstream ss;
-  ss << "Zone " << config->GetiZone() << " (Adj. Elasticity)";
+  ss << "Zone " << config->GetiZone() << " (Adj. Structure)";
   multiZoneHeaderString = ss.str();
 
   /*--- Set the volume filename --- */
