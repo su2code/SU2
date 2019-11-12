@@ -1199,7 +1199,7 @@ void COneShotFluidDriver::CheckMultiplier(){
     if(Multiplier[iConstr]*ConstrFunc_Store[iConstr] < 0.) {
       Multiplier[iConstr] = 0.;
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++) {
-        Multiplier += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+        Multiplier[iConstr] += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
       }
   }
 }
