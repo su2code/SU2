@@ -50,12 +50,13 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
   direct_nInst  = new unsigned short[nZone];
   nInnerIter    = new unsigned short[nZone];
 
-
   for (iZone = 0; iZone < nZone; iZone++) {
 
     direct_nInst[iZone] = 1;
     nInnerIter[iZone]   = config_container[iZone]->GetnInner_Iter();
   }
+
+  Has_Deformation.resize(nZone) = false;
 
   direct_iteration = new CIteration**[nZone];
   direct_output = new COutput*[nZone];
@@ -143,34 +144,6 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   Output(TimeIter);
 
-}
-
-void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
-
-  Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
-
-  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short jZone = 0; jZone < nZone; jZone++) {
-      if (iZone != jZone || interface_container[jZone][iZone] != NULL) {
-
-        /*--- If jZone contributes to iZone in the primal problem, then
-         *    iZone contributes to jZone in the adjoint problem. ---*/
-
-        Cross_Terms[iZone][jZone].resize(MAX_SOLS);
-
-        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-          CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
-          if (solver != NULL) {
-            if (solver->GetAdjoint()) {
-              unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
-              unsigned short nVar = solver->GetnVar();
-              Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 void CDiscAdjMultizoneDriver::Run() {
@@ -516,27 +489,6 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   RecordingState = kind_recording;
 }
 
-void CDiscAdjMultizoneDriver::HandleDataTransfer() {
-
-  unsigned long ExtIter = 0;
-
-  for(iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- In principle, the mesh does not need to be updated ---*/
-    bool DeformMesh = false;
-
-    /*--- Transfer from all the remaining zones ---*/
-    for (unsigned short jZone = 0; jZone < nZone; jZone++){
-      /*--- The target zone is iZone ---*/
-      if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
-        DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
-      }
-    }
-    /*--- If a mesh update is required due to the transfer of data ---*/
-    if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
-  }
-}
-
 void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned short kind_recording) {
 
   /*--- Do one iteration of the direct solver ---*/
@@ -821,10 +773,11 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
-  /*--- Compute adjoints of transfer and mesh deformation routines,
-   *    only needed on the last inner iteration. ---*/
+  /*--- Compute adjoints of transfer and mesh deformation routines, only stricktly needed
+   *    on the last inner iteration, so if for this zone this section is expensive
+   *    (due to mesh deformation) we delay its evaluation. ---*/
 
-  if (eval_transfer)
+  if (eval_transfer || !Has_Deformation(iZone))
     AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
 
   /*--- Adjoints of dependencies, needed if derivatives of variables
@@ -832,6 +785,57 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   AD::ComputeAdjoint(DEPENDENCIES, START);
 
+}
+
+void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
+
+  Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
+
+  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+      if (iZone != jZone || interface_container[jZone][iZone] != NULL) {
+
+        /*--- If jZone contributes to iZone in the primal problem, then
+         *    iZone contributes to jZone in the adjoint problem. ---*/
+
+        Cross_Terms[iZone][jZone].resize(MAX_SOLS);
+
+        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+          CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
+          if (solver != NULL) {
+            if (solver->GetAdjoint()) {
+              unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+              unsigned short nVar = solver->GetnVar();
+              Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void CDiscAdjMultizoneDriver::HandleDataTransfer() {
+
+  unsigned long ExtIter = 0;
+
+  for(iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- In principle, the mesh does not need to be updated ---*/
+    bool DeformMesh = false;
+
+    /*--- Transfer from all the remaining zones ---*/
+    for (unsigned short jZone = 0; jZone < nZone; jZone++){
+      /*--- The target zone is iZone ---*/
+      if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
+        DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
+      }
+    }
+    /*--- If a mesh update is required due to the transfer of data ---*/
+    if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
+
+    Has_Deformation(iZone) = DeformMesh;
+  }
 }
 
 void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
