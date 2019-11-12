@@ -127,15 +127,11 @@
 		E9225F761FCBC36D002F3682 /* solver_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */; };
 		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
 		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
-		E96008AA235557AA0002EADD /* signal_processing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96008A9235557A90002EADD /* signal_processing_toolbox.cpp */; };
-		E96008AD23565F460002EADD /* CDiscAdjMultizoneDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96008AC23565F460002EADD /* CDiscAdjMultizoneDriver.cpp */; };
+		E967669F237365CA009FBEE1 /* CMarkerProfileReaderFVM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E967669E237365CA009FBEE1 /* CMarkerProfileReaderFVM.cpp */; };
 		E96FAF102189FE9C0046BF5D /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF0F2189FE9C0046BF5D /* blas_structure.cpp */; };
 		E96FAF142189FECA0046BF5D /* graph_coloring_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF112189FECA0046BF5D /* graph_coloring_structure.cpp */; };
 		E96FAF152189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */; };
 		E96FAF162189FECA0046BF5D /* fem_cgns_elements.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF132189FECA0046BF5D /* fem_cgns_elements.cpp */; };
-		E97429B0231F1577006DA2D3 /* CMeshSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E97429AE231F1576006DA2D3 /* CMeshSolver.cpp */; };
-		E97429B1231F1577006DA2D3 /* CDiscAdjMeshSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E97429AF231F1577006DA2D3 /* CDiscAdjMeshSolver.cpp */; };
-		E97429BF231F1614006DA2D3 /* CMeshElement.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E97429B8231F1613006DA2D3 /* CMeshElement.cpp */; };
 		E9C8307F2061E60E004417A9 /* fem_geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830752061E60E004417A9 /* fem_geometry_structure.cpp */; };
 		E9C830802061E60E004417A9 /* fem_integration_rules.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830762061E60E004417A9 /* fem_integration_rules.cpp */; };
 		E9C830812061E60E004417A9 /* fem_standard_element.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830772061E60E004417A9 /* fem_standard_element.cpp */; };
@@ -418,12 +414,8 @@
 		E941BBA31B71D1AB005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = primitive_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBA51B71D1AB005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBA61B71D1AB005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E96008A6235557790002EADD /* CVertexMap.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CVertexMap.hpp; path = ../../Common/include/toolboxes/CVertexMap.hpp; sourceTree = "<group>"; };
-		E96008A7235557790002EADD /* signal_processing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = signal_processing_toolbox.hpp; path = ../../Common/include/toolboxes/signal_processing_toolbox.hpp; sourceTree = "<group>"; };
-		E96008A82355577A0002EADD /* C2DContainer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = C2DContainer.hpp; path = ../../Common/include/toolboxes/C2DContainer.hpp; sourceTree = "<group>"; };
-		E96008A9235557A90002EADD /* signal_processing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = signal_processing_toolbox.cpp; path = ../../Common/src/toolboxes/signal_processing_toolbox.cpp; sourceTree = "<group>"; };
-		E96008AC23565F460002EADD /* CDiscAdjMultizoneDriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjMultizoneDriver.cpp; path = ../../SU2_CFD/src/drivers/CDiscAdjMultizoneDriver.cpp; sourceTree = "<group>"; };
-		E96008AE23565F580002EADD /* CDiscAdjMultizoneDriver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CDiscAdjMultizoneDriver.hpp; path = ../../SU2_CFD/include/drivers/CDiscAdjMultizoneDriver.hpp; sourceTree = "<group>"; };
+		E967669E237365CA009FBEE1 /* CMarkerProfileReaderFVM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMarkerProfileReaderFVM.cpp; path = ../../SU2_CFD/src/CMarkerProfileReaderFVM.cpp; sourceTree = "<group>"; };
+		E96766A0237365E1009FBEE1 /* CMarkerProfileReaderFVM.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMarkerProfileReaderFVM.hpp; path = ../../SU2_CFD/include/CMarkerProfileReaderFVM.hpp; sourceTree = "<group>"; };
 		E96FAF0F2189FE9C0046BF5D /* blas_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = blas_structure.cpp; path = ../../Common/src/blas_structure.cpp; sourceTree = "<group>"; };
 		E96FAF112189FECA0046BF5D /* graph_coloring_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = graph_coloring_structure.cpp; path = ../../Common/src/graph_coloring_structure.cpp; sourceTree = "<group>"; };
 		E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_gauss_jacobi_quadrature.cpp; path = ../../Common/src/fem_gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
@@ -433,72 +425,7 @@
 		E96FAF1B2189FF620046BF5D /* fem_gauss_jacobi_quadrature.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_gauss_jacobi_quadrature.inl; path = ../../Common/include/fem_gauss_jacobi_quadrature.inl; sourceTree = "<group>"; };
 		E96FAF1C2189FF620046BF5D /* fem_cgns_elements.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_cgns_elements.hpp; path = ../../Common/include/fem_cgns_elements.hpp; sourceTree = "<group>"; };
 		E96FAF1D2189FF620046BF5D /* fem_gauss_jacobi_quadrature.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_gauss_jacobi_quadrature.hpp; path = ../../Common/include/fem_gauss_jacobi_quadrature.hpp; sourceTree = "<group>"; };
-		E97429AE231F1576006DA2D3 /* CMeshSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMeshSolver.cpp; path = ../../SU2_CFD/src/solvers/CMeshSolver.cpp; sourceTree = "<group>"; };
-		E97429AF231F1577006DA2D3 /* CDiscAdjMeshSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjMeshSolver.cpp; path = ../../SU2_CFD/src/solvers/CDiscAdjMeshSolver.cpp; sourceTree = "<group>"; };
-		E97429B8231F1613006DA2D3 /* CMeshElement.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMeshElement.cpp; path = ../../SU2_CFD/src/variables/CMeshElement.cpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
-		E984B64B2345765A00AEDA72 /* output_physics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_physics.cpp; path = ../../SU2_CFD/src/output/output_physics.cpp; sourceTree = "<group>"; };
-		E984B64C2345765B00AEDA72 /* CMeshOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMeshOutput.cpp; path = ../../SU2_CFD/src/output/CMeshOutput.cpp; sourceTree = "<group>"; };
-		E984B64D2345765B00AEDA72 /* CFlowCompFEMOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFlowCompFEMOutput.cpp; path = ../../SU2_CFD/src/output/CFlowCompFEMOutput.cpp; sourceTree = "<group>"; };
-		E984B64E2345765B00AEDA72 /* CFlowIncOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFlowIncOutput.cpp; path = ../../SU2_CFD/src/output/CFlowIncOutput.cpp; sourceTree = "<group>"; };
-		E984B64F2345765B00AEDA72 /* CFlowOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFlowOutput.cpp; path = ../../SU2_CFD/src/output/CFlowOutput.cpp; sourceTree = "<group>"; };
-		E984B6502345765B00AEDA72 /* CFlowCompOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFlowCompOutput.cpp; path = ../../SU2_CFD/src/output/CFlowCompOutput.cpp; sourceTree = "<group>"; };
-		E984B6512345765B00AEDA72 /* CHeatOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CHeatOutput.cpp; path = ../../SU2_CFD/src/output/CHeatOutput.cpp; sourceTree = "<group>"; };
-		E984B6522345765B00AEDA72 /* COutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = COutput.cpp; path = ../../SU2_CFD/src/output/COutput.cpp; sourceTree = "<group>"; };
-		E984B6532345765B00AEDA72 /* CAdjElasticityOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CAdjElasticityOutput.cpp; path = ../../SU2_CFD/src/output/CAdjElasticityOutput.cpp; sourceTree = "<group>"; };
-		E984B6542345765B00AEDA72 /* CAdjFlowCompOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CAdjFlowCompOutput.cpp; path = ../../SU2_CFD/src/output/CAdjFlowCompOutput.cpp; sourceTree = "<group>"; };
-		E984B6552345765B00AEDA72 /* CAdjFlowIncOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CAdjFlowIncOutput.cpp; path = ../../SU2_CFD/src/output/CAdjFlowIncOutput.cpp; sourceTree = "<group>"; };
-		E984B6562345765B00AEDA72 /* CAdjHeatOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CAdjHeatOutput.cpp; path = ../../SU2_CFD/src/output/CAdjHeatOutput.cpp; sourceTree = "<group>"; };
-		E984B6572345765C00AEDA72 /* CElasticityOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CElasticityOutput.cpp; path = ../../SU2_CFD/src/output/CElasticityOutput.cpp; sourceTree = "<group>"; };
-		E984B6582345765C00AEDA72 /* CMultizoneOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMultizoneOutput.cpp; path = ../../SU2_CFD/src/output/CMultizoneOutput.cpp; sourceTree = "<group>"; };
-		E984B6592345765C00AEDA72 /* output_structure_legacy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_structure_legacy.cpp; path = ../../SU2_CFD/src/output/output_structure_legacy.cpp; sourceTree = "<group>"; };
-		E984B65A2345765C00AEDA72 /* CBaselineOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CBaselineOutput.cpp; path = ../../SU2_CFD/src/output/CBaselineOutput.cpp; sourceTree = "<group>"; };
-		E984B66B2345767800AEDA72 /* CCSVFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CCSVFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CCSVFileWriter.cpp; sourceTree = "<group>"; };
-		E984B66C2345767800AEDA72 /* CSU2BinaryFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CSU2BinaryFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CSU2BinaryFileWriter.cpp; sourceTree = "<group>"; };
-		E984B66D2345767800AEDA72 /* CParallelFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CParallelFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CParallelFileWriter.cpp; sourceTree = "<group>"; };
-		E984B66E2345767800AEDA72 /* CSU2MeshFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CSU2MeshFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CSU2MeshFileWriter.cpp; sourceTree = "<group>"; };
-		E984B66F2345767800AEDA72 /* CParallelDataSorter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CParallelDataSorter.cpp; path = ../../SU2_CFD/src/output/filewriter/CParallelDataSorter.cpp; sourceTree = "<group>"; };
-		E984B6702345767800AEDA72 /* CTecplotBinaryFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CTecplotBinaryFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CTecplotBinaryFileWriter.cpp; sourceTree = "<group>"; };
-		E984B6712345767800AEDA72 /* CTecplotFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CTecplotFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CTecplotFileWriter.cpp; sourceTree = "<group>"; };
-		E984B6722345767800AEDA72 /* CSU2FileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CSU2FileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CSU2FileWriter.cpp; sourceTree = "<group>"; };
-		E984B6732345767900AEDA72 /* CFEMDataSorter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFEMDataSorter.cpp; path = ../../SU2_CFD/src/output/filewriter/CFEMDataSorter.cpp; sourceTree = "<group>"; };
-		E984B6742345767900AEDA72 /* CSurfaceFVMDataSorter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CSurfaceFVMDataSorter.cpp; path = ../../SU2_CFD/src/output/filewriter/CSurfaceFVMDataSorter.cpp; sourceTree = "<group>"; };
-		E984B6752345767900AEDA72 /* CParaviewFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CParaviewFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CParaviewFileWriter.cpp; sourceTree = "<group>"; };
-		E984B6762345767900AEDA72 /* CSurfaceFEMDataSorter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CSurfaceFEMDataSorter.cpp; path = ../../SU2_CFD/src/output/filewriter/CSurfaceFEMDataSorter.cpp; sourceTree = "<group>"; };
-		E984B6772345767900AEDA72 /* CFVMDataSorter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFVMDataSorter.cpp; path = ../../SU2_CFD/src/output/filewriter/CFVMDataSorter.cpp; sourceTree = "<group>"; };
-		E984B6782345767900AEDA72 /* CParaviewBinaryFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CParaviewBinaryFileWriter.cpp; path = ../../SU2_CFD/src/output/filewriter/CParaviewBinaryFileWriter.cpp; sourceTree = "<group>"; };
-		E984B687234576E900AEDA72 /* CElasticityOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CElasticityOutput.hpp; path = ../../SU2_CFD/include/output/CElasticityOutput.hpp; sourceTree = "<group>"; };
-		E984B688234576E900AEDA72 /* CFlowCompOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFlowCompOutput.hpp; path = ../../SU2_CFD/include/output/CFlowCompOutput.hpp; sourceTree = "<group>"; };
-		E984B689234576E900AEDA72 /* CHeatOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CHeatOutput.hpp; path = ../../SU2_CFD/include/output/CHeatOutput.hpp; sourceTree = "<group>"; };
-		E984B68A234576E900AEDA72 /* CAdjFlowIncOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CAdjFlowIncOutput.hpp; path = ../../SU2_CFD/include/output/CAdjFlowIncOutput.hpp; sourceTree = "<group>"; };
-		E984B68B234576EA00AEDA72 /* CAdjFlowOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CAdjFlowOutput.hpp; path = ../../SU2_CFD/include/output/CAdjFlowOutput.hpp; sourceTree = "<group>"; };
-		E984B68C234576EA00AEDA72 /* CFlowCompFEMOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFlowCompFEMOutput.hpp; path = ../../SU2_CFD/include/output/CFlowCompFEMOutput.hpp; sourceTree = "<group>"; };
-		E984B68D234576EA00AEDA72 /* COutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = COutput.hpp; path = ../../SU2_CFD/include/output/COutput.hpp; sourceTree = "<group>"; };
-		E984B68E234576EA00AEDA72 /* CAdjHeatOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CAdjHeatOutput.hpp; path = ../../SU2_CFD/include/output/CAdjHeatOutput.hpp; sourceTree = "<group>"; };
-		E984B68F234576EA00AEDA72 /* CFlowIncOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFlowIncOutput.hpp; path = ../../SU2_CFD/include/output/CFlowIncOutput.hpp; sourceTree = "<group>"; };
-		E984B690234576EA00AEDA72 /* CMeshOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMeshOutput.hpp; path = ../../SU2_CFD/include/output/CMeshOutput.hpp; sourceTree = "<group>"; };
-		E984B691234576EA00AEDA72 /* COutputLegacy.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = COutputLegacy.hpp; path = ../../SU2_CFD/include/output/COutputLegacy.hpp; sourceTree = "<group>"; };
-		E984B692234576EA00AEDA72 /* CFlowOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFlowOutput.hpp; path = ../../SU2_CFD/include/output/CFlowOutput.hpp; sourceTree = "<group>"; };
-		E984B693234576EA00AEDA72 /* CMultizoneOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMultizoneOutput.hpp; path = ../../SU2_CFD/include/output/CMultizoneOutput.hpp; sourceTree = "<group>"; };
-		E984B694234576EB00AEDA72 /* CAdjElasticityOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CAdjElasticityOutput.hpp; path = ../../SU2_CFD/include/output/CAdjElasticityOutput.hpp; sourceTree = "<group>"; };
-		E984B695234576EB00AEDA72 /* CBaselineOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CBaselineOutput.hpp; path = ../../SU2_CFD/include/output/CBaselineOutput.hpp; sourceTree = "<group>"; };
-		E984B696234576FE00AEDA72 /* CFEMDataSorter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFEMDataSorter.hpp; path = ../../SU2_CFD/include/output/filewriter/CFEMDataSorter.hpp; sourceTree = "<group>"; };
-		E984B697234576FE00AEDA72 /* CParaviewFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CParaviewFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CParaviewFileWriter.hpp; sourceTree = "<group>"; };
-		E984B698234576FF00AEDA72 /* CParaviewBinaryFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CParaviewBinaryFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CParaviewBinaryFileWriter.hpp; sourceTree = "<group>"; };
-		E984B699234576FF00AEDA72 /* CParallelDataSorter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CParallelDataSorter.hpp; path = ../../SU2_CFD/include/output/filewriter/CParallelDataSorter.hpp; sourceTree = "<group>"; };
-		E984B69A234576FF00AEDA72 /* CSU2MeshFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSU2MeshFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CSU2MeshFileWriter.hpp; sourceTree = "<group>"; };
-		E984B69B234576FF00AEDA72 /* CSU2BinaryFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSU2BinaryFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CSU2BinaryFileWriter.hpp; sourceTree = "<group>"; };
-		E984B69C234576FF00AEDA72 /* CSurfaceFEMDataSorter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSurfaceFEMDataSorter.hpp; path = ../../SU2_CFD/include/output/filewriter/CSurfaceFEMDataSorter.hpp; sourceTree = "<group>"; };
-		E984B69D234576FF00AEDA72 /* CFVMDataSorter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFVMDataSorter.hpp; path = ../../SU2_CFD/include/output/filewriter/CFVMDataSorter.hpp; sourceTree = "<group>"; };
-		E984B69E234576FF00AEDA72 /* CTecplotBinaryFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CTecplotBinaryFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CTecplotBinaryFileWriter.hpp; sourceTree = "<group>"; };
-		E984B69F234576FF00AEDA72 /* CSU2FileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSU2FileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CSU2FileWriter.hpp; sourceTree = "<group>"; };
-		E984B6A0234576FF00AEDA72 /* CTecplotFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CTecplotFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CTecplotFileWriter.hpp; sourceTree = "<group>"; };
-		E984B6A12345770000AEDA72 /* CCSVFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CCSVFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CCSVFileWriter.hpp; sourceTree = "<group>"; };
-		E984B6A22345770000AEDA72 /* CSurfaceFVMDataSorter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSurfaceFVMDataSorter.hpp; path = ../../SU2_CFD/include/output/filewriter/CSurfaceFVMDataSorter.hpp; sourceTree = "<group>"; };
-		E984B6A32345770000AEDA72 /* CFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFileWriter.hpp; path = ../../SU2_CFD/include/output/filewriter/CFileWriter.hpp; sourceTree = "<group>"; };
-		E984B6A42345771900AEDA72 /* output_structure_legacy.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = output_structure_legacy.inl; path = ../../SU2_CFD/include/output/output_structure_legacy.inl; sourceTree = "<group>"; };
-		E9BDB81F23512EB900092CCF /* CMarkerProfileReaderFVM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMarkerProfileReaderFVM.cpp; path = ../../SU2_CFD/src/CMarkerProfileReaderFVM.cpp; sourceTree = "<group>"; };
-		E9BDB82123512F0300092CCF /* CMarkerProfileReaderFVM.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMarkerProfileReaderFVM.hpp; path = ../../SU2_CFD/include/CMarkerProfileReaderFVM.hpp; sourceTree = "<group>"; };
 		E9C2835022A701B5007B4E59 /* CMMSNSTwoHalfSpheresSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMMSNSTwoHalfSpheresSolution.hpp; path = ../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp; sourceTree = "<group>"; };
 		E9C2835122A701B5007B4E59 /* CMMSNSTwoHalfCirclesSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMMSNSTwoHalfCirclesSolution.hpp; path = ../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp; sourceTree = "<group>"; };
 		E9C2835222A701B5007B4E59 /* CMMSIncEulerSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMMSIncEulerSolution.hpp; path = ../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp; sourceTree = "<group>"; };
@@ -596,8 +523,8 @@
 		052D517F17A21FAC003BE8B2 /* Solver */ = {
 			isa = PBXGroup;
 			children = (
+				E967669E237365CA009FBEE1 /* CMarkerProfileReaderFVM.cpp */,
 				E9D6EE662317B80600618E36 /* CDiscAdjMeshSolver.cpp */,
-				E9BDB81F23512EB900092CCF /* CMarkerProfileReaderFVM.cpp */,
 				E9D6EE652317B80500618E36 /* CMeshSolver.cpp */,
 				E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */,
 				E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */,
@@ -711,40 +638,22 @@
 		0541ABE51370DC5E002D668B /* Include */ = {
 			isa = PBXGroup;
 			children = (
+				E96766A0237365E1009FBEE1 /* CMarkerProfileReaderFVM.hpp */,
 				E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */,
 				E9FDF6EC1D2DD0860066E49C /* adt_structure.hpp */,
 				E96FAF1A2189FF620046BF5D /* blas_structure.hpp */,
-				E96008A82355577A0002EADD /* C2DContainer.hpp */,
-				E984B694234576EB00AEDA72 /* CAdjElasticityOutput.hpp */,
-				E984B68A234576E900AEDA72 /* CAdjFlowIncOutput.hpp */,
-				E984B68B234576EA00AEDA72 /* CAdjFlowOutput.hpp */,
-				E984B68E234576EA00AEDA72 /* CAdjHeatOutput.hpp */,
-				E984B695234576EB00AEDA72 /* CBaselineOutput.hpp */,
 				E9D885A72303F8D000917362 /* CBoxMeshReaderFVM.hpp */,
 				E9E51ADB22FAB10D00773E0C /* CCGNSMeshReaderFVM.hpp */,
 				E9D6EE7A2317B8B000618E36 /* CDiscAdjMeshSolver.hpp */,
 				403426E6235F88ED005B5215 /* CDiscAdjMultizoneDriver.hpp */,
 				EB14FF9C22F790720045FB27 /* CDiscAdjSinglezoneDriver.hpp */,
-				E97429E92323596D006DA2D3 /* CDisplacementsInterface.hpp */,
-				E97429EA2323596D006DA2D3 /* CDisplacementsInterfaceLegacy.hpp */,
 				EB14FF9D22F790720045FB27 /* CDriver.hpp */,
 				E9D6EE5B23165FE400618E36 /* CDummyDriver.hpp */,
 				E9D6EE792317B8A100618E36 /* CFEAMeshElasticity.hpp */,
-				E984B696234576FE00AEDA72 /* CFEMDataSorter.hpp */,
-				E984B6A32345770000AEDA72 /* CFileWriter.hpp */,
-				E984B68C234576EA00AEDA72 /* CFlowCompFEMOutput.hpp */,
-				E984B688234576E900AEDA72 /* CFlowCompOutput.hpp */,
-				E984B68F234576EA00AEDA72 /* CFlowIncOutput.hpp */,
-				E984B692234576EA00AEDA72 /* CFlowOutput.hpp */,
-				E97429EB2323596D006DA2D3 /* CFlowTractionInterface.hpp */,
-				E984B69D234576FF00AEDA72 /* CFVMDataSorter.hpp */,
-				E984B689234576E900AEDA72 /* CHeatOutput.hpp */,
 				E9C2835A22A701B6007B4E59 /* CIncTGVSolution.hpp */,
-				E97429E223235937006DA2D3 /* CInterface.hpp */,
 				E9C2835722A701B5007B4E59 /* CInviscidVortexSolution.hpp */,
 				E9E51AD722FA314F00773E0C /* CLinearPartitioner.hpp */,
 				E9D6EE7C2317B8CC00618E36 /* CMeshElement.hpp */,
-				E984B690234576EA00AEDA72 /* CMeshOutput.hpp */,
 				E9E51ADA22FA604600773E0C /* CMeshReaderFVM.hpp */,
 				E9D6EE7B2317B8B000618E36 /* CMeshSolver.hpp */,
 				E9C2835222A701B5007B4E59 /* CMMSIncEulerSolution.hpp */,
@@ -755,30 +664,15 @@
 				E9C2835D22A701B6007B4E59 /* CMMSNSUnitQuadSolutionWallBC.hpp */,
 				E9E674352302A327009B6A25 /* CMultiGridQueue.hpp */,
 				EB14FF9F22F790720045FB27 /* CMultizoneDriver.hpp */,
-				E984B693234576EA00AEDA72 /* CMultizoneOutput.hpp */,
 				E9C2835622A701B5007B4E59 /* CNSUnitQuadSolution.hpp */,
 				05E6DAC517EB608000FA1F7E /* config_structure.hpp */,
-				E984B68D234576EA00AEDA72 /* COutput.hpp */,
-				E984B691234576EA00AEDA72 /* COutputLegacy.hpp */,
-				E984B699234576FF00AEDA72 /* CParallelDataSorter.hpp */,
-				E984B698234576FF00AEDA72 /* CParaviewBinaryFileWriter.hpp */,
-				E984B697234576FE00AEDA72 /* CParaviewFileWriter.hpp */,
 				E9E674382302A942009B6A25 /* CRectangularMeshReaderFVM.hpp */,
 				E9C2835822A701B5007B4E59 /* CRinglebSolution.hpp */,
 				EB14FF9E22F790720045FB27 /* CSinglezoneDriver.hpp */,
-				E97429E323235951006DA2D3 /* CSlidingInterface.hpp */,
 				E9D6EE5E2316655400618E36 /* CSU2ASCIIMeshReaderFVM.hpp */,
-				E984B69B234576FF00AEDA72 /* CSU2BinaryFileWriter.hpp */,
-				E984B69F234576FF00AEDA72 /* CSU2FileWriter.hpp */,
-				E984B69A234576FF00AEDA72 /* CSU2MeshFileWriter.hpp */,
-				E984B69C234576FF00AEDA72 /* CSurfaceFEMDataSorter.hpp */,
-				E984B6A22345770000AEDA72 /* CSurfaceFVMDataSorter.hpp */,
-				E984B69E234576FF00AEDA72 /* CTecplotBinaryFileWriter.hpp */,
-				E984B6A0234576FF00AEDA72 /* CTecplotFileWriter.hpp */,
 				E9C2835922A701B5007B4E59 /* CTGVSolution.hpp */,
 				E9C2835422A701B5007B4E59 /* CUserDefinedSolution.hpp */,
 				E9C2835522A701B5007B4E59 /* CVerificationSolution.hpp */,
-				E96008A6235557790002EADD /* CVertexMap.hpp */,
 				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
 				E941BB971B71D1AB005C6C06 /* datatypes */,
 				05E6DBB417EB627400FA1F7E /* definition_structure.hpp */,
@@ -806,7 +700,6 @@
 				05E6DACD17EB608000FA1F7E /* primal_grid_structure.hpp */,
 				400CEC2F21FA81B60019B790 /* printing_toolbox.hpp */,
 				355D2C9E2172BDE100C10535 /* sgs_model.hpp */,
-				E96008A7235557790002EADD /* signal_processing_toolbox.hpp */,
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
 				E90B501422DFE0CB000ED392 /* task_definition.hpp */,
@@ -884,7 +777,6 @@
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
-				403426B0235F8376005B5215 /* Recovered References */,
 			);
 			name = SU2_CFD;
 			sourceTree = "<group>";
@@ -913,7 +805,6 @@
 				052D51AB17A22E24003BE8B2 /* Output */,
 				400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */,
 				05F8F2662008A1AA000FEA01 /* Python */,
-				E96008A9235557A90002EADD /* signal_processing_toolbox.cpp */,
 				052D517F17A21FAC003BE8B2 /* Solver */,
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05F108A21978D2E500F2F288 /* TransportModel */,
@@ -929,16 +820,6 @@
 				0541ABEE1370F5A6002D668B /* SU2_CFD */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		403426B0235F8376005B5215 /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				E97429AE231F1576006DA2D3 /* CMeshSolver.cpp */,
-				E97429B8231F1613006DA2D3 /* CMeshElement.cpp */,
-				E97429AF231F1577006DA2D3 /* CDiscAdjMeshSolver.cpp */,
-			);
-			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 		403426D3235F857D005B5215 /* Output */ = {
@@ -1251,7 +1132,6 @@
 				E96FAF142189FECA0046BF5D /* graph_coloring_structure.cpp in Sources */,
 				4040B27F235FBFF200843C83 /* CTecplotBinaryFileWriter.cpp in Sources */,
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
-				E984B6672345765C00AEDA72 /* CElasticityOutput.cpp in Sources */,
 				E96FAF152189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */,
 				05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */,
 				4040B261235FBEFD00843C83 /* CDiscAdjFlowTractionInterface.cpp in Sources */,
@@ -1260,7 +1140,6 @@
 				4040B260235FBEFD00843C83 /* CFlowTractionInterface.cpp in Sources */,
 				E90B500522DFDFE4000ED392 /* CTransLMVariable.cpp in Sources */,
 				05E6DB9517EB61E600FA1F7E /* grid_adaptation_structure.cpp in Sources */,
-				E984B67E2345767900AEDA72 /* CTecplotBinaryFileWriter.cpp in Sources */,
 				E9E674342302A2E4009B6A25 /* CMultiGridQueue.cpp in Sources */,
 				E90B500322DFDFE4000ED392 /* CBaselineVariable.cpp in Sources */,
 				05AF9F221BE1E1830062E1F1 /* gauss_structure.cpp in Sources */,
@@ -1276,7 +1155,6 @@
 				05E6DB9917EB61E600FA1F7E /* primal_grid_structure.cpp in Sources */,
 				E90B4FDC22DFDF94000ED392 /* CIncTGVSolution.cpp in Sources */,
 				05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */,
-				E97429D723235911006DA2D3 /* CConjugateHeatInterface.cpp in Sources */,
 				E90B500622DFDFE4000ED392 /* CFEAVariable.cpp in Sources */,
 				05F8F2682008A1C8000FEA01 /* python_wrapper_structure.cpp in Sources */,
 				E90B4FE422DFDF94000ED392 /* CVerificationSolution.cpp in Sources */,
@@ -1292,39 +1170,29 @@
 				E9E674372302A92C009B6A25 /* CRectangularMeshReaderFVM.cpp in Sources */,
 				EB14FF9822F790500045FB27 /* CSinglezoneDriver.cpp in Sources */,
 				E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */,
-				E984B6692345765C00AEDA72 /* output_structure_legacy.cpp in Sources */,
-				E984B67B2345767900AEDA72 /* CParallelFileWriter.cpp in Sources */,
 				E90B4FE322DFDF94000ED392 /* CRinglebSolution.cpp in Sources */,
-				E984B6602345765C00AEDA72 /* CFlowCompOutput.cpp in Sources */,
 				05E6DC0417EB62A100FA1F7E /* integration_time.cpp in Sources */,
 				4040B25F235FBEFD00843C83 /* CDisplacementsInterface.cpp in Sources */,
 				E9D6EE572316522800618E36 /* (null) in Sources */,
 				05F1089B1978D2AE00F2F288 /* fluid_model_ppr.cpp in Sources */,
-				E97429B0231F1577006DA2D3 /* CMeshSolver.cpp in Sources */,
 				E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */,
-				E984B67A2345767900AEDA72 /* CSU2BinaryFileWriter.cpp in Sources */,
 				05E6DC0517EB62A100FA1F7E /* iteration_structure.cpp in Sources */,
 				403426CC235F83B2005B5215 /* CFlowCompFEMOutput.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
-				E984B6652345765C00AEDA72 /* CAdjFlowIncOutput.cpp in Sources */,
-				E984B6622345765C00AEDA72 /* COutput.cpp in Sources */,
 				05AF9F211BE1E1830062E1F1 /* element_structure.cpp in Sources */,
 				403426CB235F83B2005B5215 /* output_structure_legacy.cpp in Sources */,
 				E90B500022DFDFE4000ED392 /* CHeatFVMVariable.cpp in Sources */,
 				E90B500922DFDFE4000ED392 /* CTurbSAVariable.cpp in Sources */,
-				E984B65D2345765C00AEDA72 /* CFlowCompFEMOutput.cpp in Sources */,
 				05E6DC0B17EB62A100FA1F7E /* numerics_adjoint_turbulent.cpp in Sources */,
 				05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */,
-				E984B65F2345765C00AEDA72 /* CFlowOutput.cpp in Sources */,
 				E9D6EE682317B80600618E36 /* CDiscAdjMeshSolver.cpp in Sources */,
 				4040B282235FBFF200843C83 /* CParaviewFileWriter.cpp in Sources */,
+				E967669F237365CA009FBEE1 /* CMarkerProfileReaderFVM.cpp in Sources */,
 				E9FDF6EA1D2DD0560066E49C /* adt_structure.cpp in Sources */,
 				05E6DC0E17EB62A100FA1F7E /* numerics_direct_heat.cpp in Sources */,
 				E90B500422DFDFE4000ED392 /* CTurbVariable.cpp in Sources */,
-				E984B6822345767900AEDA72 /* CSurfaceFVMDataSorter.cpp in Sources */,
 				E90D35F7203F9C5800A3290D /* fluid_model_inc.cpp in Sources */,
 				05F1089A1978D2AE00F2F288 /* fluid_model_pig.cpp in Sources */,
-				E984B6802345767900AEDA72 /* CSU2FileWriter.cpp in Sources */,
 				05E6DC1017EB62A100FA1F7E /* numerics_direct_mean.cpp in Sources */,
 				4040B27A235FBFF200843C83 /* CParallelFileWriter.cpp in Sources */,
 				E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */,
@@ -1346,7 +1214,6 @@
 				4040B284235FBFF200843C83 /* CTecplotFileWriter.cpp in Sources */,
 				403426C9235F83B2005B5215 /* CElasticityOutput.cpp in Sources */,
 				E9C830812061E60E004417A9 /* fem_standard_element.cpp in Sources */,
-				E984B67F2345767900AEDA72 /* CTecplotFileWriter.cpp in Sources */,
 				05E6DC1317EB62A100FA1F7E /* numerics_direct_transition.cpp in Sources */,
 				05E6DC1417EB62A100FA1F7E /* numerics_direct_turbulent.cpp in Sources */,
 				403426ED235F8E29005B5215 /* CDiscAdjMultizoneDriver.cpp in Sources */,
@@ -1355,11 +1222,8 @@
 				E90B4FFC22DFDFE4000ED392 /* CDiscAdjVariable.cpp in Sources */,
 				05E6DC1817EB62A100FA1F7E /* numerics_structure.cpp in Sources */,
 				05E6DC1917EB62A100FA1F7E /* numerics_template.cpp in Sources */,
-				E984B6642345765C00AEDA72 /* CAdjFlowCompOutput.cpp in Sources */,
-				E97429DD23235921006DA2D3 /* CDisplacementsInterfaceLegacy.cpp in Sources */,
 				E9C830822061E60E004417A9 /* fem_wall_distance.cpp in Sources */,
 				E90B4FF922DFDFE4000ED392 /* CIncEulerVariable.cpp in Sources */,
-				E9BDB82023512EB900092CCF /* CMarkerProfileReaderFVM.cpp in Sources */,
 				E90B500122DFDFE4000ED392 /* CEulerVariable.cpp in Sources */,
 				E90B501022DFE043000ED392 /* CSysMatrix.cpp in Sources */,
 				E9C8307F2061E60E004417A9 /* fem_geometry_structure.cpp in Sources */,
@@ -1375,7 +1239,6 @@
 				05E6DC2217EB62A100FA1F7E /* solver_adjoint_turbulent.cpp in Sources */,
 				E90B4FDB22DFDF94000ED392 /* CTGVSolution.cpp in Sources */,
 				05E6DC2517EB62A100FA1F7E /* solver_direct_heat.cpp in Sources */,
-				E984B6862345767900AEDA72 /* CParaviewBinaryFileWriter.cpp in Sources */,
 				E90B500822DFDFE4000ED392 /* CFEABoundVariable.cpp in Sources */,
 				403426CD235F83B2005B5215 /* CAdjFlowCompOutput.cpp in Sources */,
 				403426D0235F83B2005B5215 /* CAdjHeatOutput.cpp in Sources */,
@@ -1389,11 +1252,8 @@
 				E90B4FDE22DFDF94000ED392 /* CMMSNSTwoHalfSpheresSolution.cpp in Sources */,
 				4040B266235FBEFD00843C83 /* CConservativeVarsInterface.cpp in Sources */,
 				E90B4FFD22DFDFE4000ED392 /* CDiscAdjFEAVariable.cpp in Sources */,
-				E97429DF23235921006DA2D3 /* CDisplacementsInterface.cpp in Sources */,
 				05E6DC2A17EB62A100FA1F7E /* solver_direct_transition.cpp in Sources */,
-				E97429D523235901006DA2D3 /* CConservativeVarsInterface.cpp in Sources */,
 				E90B4FF822DFDFE4000ED392 /* CVariable.cpp in Sources */,
-				E97429BF231F1614006DA2D3 /* CMeshElement.cpp in Sources */,
 				4040B262235FBEFD00843C83 /* CMixingPlaneInterface.cpp in Sources */,
 				E90B4FE122DFDF94000ED392 /* CMMSIncEulerSolution.cpp in Sources */,
 				E9F130CC1D513DA300EC8963 /* numerics_direct_mean_inc.cpp in Sources */,
@@ -1401,22 +1261,18 @@
 				E9D6EE672317B80600618E36 /* CMeshSolver.cpp in Sources */,
 				05E6DC2B17EB62A100FA1F7E /* solver_direct_turbulent.cpp in Sources */,
 				E90B500222DFDFE4000ED392 /* CTurbSSTVariable.cpp in Sources */,
-				E97429E123235921006DA2D3 /* CDiscAdjFlowTractionInterface.cpp in Sources */,
 				EB14FF9922F790500045FB27 /* CDiscAdjSinglezoneDriver.cpp in Sources */,
 				403426C4235F83B2005B5215 /* CFlowIncOutput.cpp in Sources */,
 				E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */,
 				403426C5235F83B2005B5215 /* CHeatOutput.cpp in Sources */,
 				05E6DC2F17EB62A100FA1F7E /* solver_structure.cpp in Sources */,
-				E97429CF232358E3006DA2D3 /* CInterface.cpp in Sources */,
 				E9D6EE5A23165FD300618E36 /* CDummyDriver.cpp in Sources */,
 				05E6DC3017EB62A100FA1F7E /* solver_template.cpp in Sources */,
 				EB14FF9B22F790500045FB27 /* CMultizoneDriver.cpp in Sources */,
-				E984B65B2345765C00AEDA72 /* output_physics.cpp in Sources */,
 				05E6DC3117EB62A100FA1F7E /* SU2_CFD.cpp in Sources */,
 				4040B279235FBFF200843C83 /* CSurfaceFVMDataSorter.cpp in Sources */,
 				400CEC2E21FA81A10019B790 /* printing_toolbox.cpp in Sources */,
 				E9C830932061E799004417A9 /* solver_direct_mean_fem.cpp in Sources */,
-				E984B67C2345767900AEDA72 /* CSU2MeshFileWriter.cpp in Sources */,
 				E90B501122DFE043000ED392 /* CSysSolve_b.cpp in Sources */,
 				E9D6EE772317B88F00618E36 /* CMeshBoundVariable.cpp in Sources */,
 				E9C830832061E60E004417A9 /* fem_work_estimate_metis.cpp in Sources */,
@@ -1425,7 +1281,6 @@
 				E90B4FFB22DFDFE4000ED392 /* CAdjNSVariable.cpp in Sources */,
 				403426C7235F83B2005B5215 /* CMeshOutput.cpp in Sources */,
 				E90B500F22DFE043000ED392 /* CSysVector.cpp in Sources */,
-				E97429B1231F1577006DA2D3 /* CDiscAdjMeshSolver.cpp in Sources */,
 				E90B4FDA22DFDF94000ED392 /* CNSUnitQuadSolution.cpp in Sources */,
 				E9C830802061E60E004417A9 /* fem_integration_rules.cpp in Sources */,
 				E90B501222DFE043000ED392 /* CSysSolve.cpp in Sources */,
@@ -1440,7 +1295,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -1455,7 +1310,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 6.2.0;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1497,7 +1351,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -1512,7 +1366,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CURRENT_PROJECT_VERSION = 6.2.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;

@@ -4383,23 +4383,13 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   if(config->GetnTimeInstances() > 1){
     filename = config->GetMultiInstance_HistoryFileName(filename, val_iInst);
   }
-  strcpy (cstr, filename.data());
   
   if (config->GetTime_Domain() && config->GetRestart()) {
-    long iExtIter = config->GetRestart_Iter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-    strcat(cstr, buffer);
+    filename = config->GetUnsteady_FileName(filename, config->GetRestart_Iter(), hist_ext);
   }
   
-  if ((config->GetTabular_FileFormat() == TECPLOT)) SPRINTF (buffer, ".dat");
-  else if ((config->GetTabular_FileFormat() == TAB_TECPLOT))  SPRINTF (buffer, ".plt");
-  else if ((config->GetTabular_FileFormat() == TAB_CSV))  SPRINTF (buffer, ".csv");
-  strcat(cstr, buffer);
-  
+  strcpy (cstr, filename.data());
+
   ConvHist_file->open(cstr, ios::out);
   ConvHist_file->precision(15);
   
@@ -4632,7 +4622,6 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     
     if (fea || fluid_structure) output_files = false;
-    if (config[val_iZone]->GetMultizone_Problem()) output_files = false;
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     

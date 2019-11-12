@@ -299,6 +299,7 @@ public:
 
   /*!
    * \brief Set the variable solution at time n.
+   * \param[in] iPoint - Point index.
    */
   inline void Set_Solution_time_n(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n(iPoint,iVar) = val_sol;
@@ -306,6 +307,7 @@ public:
 
   /*!
    * \brief Set the variable solution at time n-1.
+   * \param[in] iPoint - Point index.
    */
   inline void Set_Solution_time_n1(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n1(iPoint,iVar) = val_sol;
@@ -330,6 +332,7 @@ public:
 
   /*!
    * \brief Set to zero velocity components of the solution.
+   * \param[in] iPoint - Point index.
    */
   inline void SetVelSolutionOldZero(unsigned long iPoint) {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = 0.0;
@@ -418,8 +421,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_var - Number of the variable.
-   * \param[in] val_solution - Value that we want to add to the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Number of the variable.
    * \param[in] solution - Value that we want to add to the solution.
@@ -479,12 +480,14 @@ public:
 
   /*!
    * \brief Get the solution of the problem.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.
    */
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
+   * \param[in] iPoint - Point index.
    * \return Pointer to the old solution vector.
    */
   inline su2double *GetSolution_Old(unsigned long iPoint) { return Solution_Old[iPoint]; }
@@ -505,12 +508,14 @@ public:
 
   /*!
    * \brief Get the solution at time n.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
 
   /*!
    * \brief Get the solution at time n-1.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
@@ -572,24 +577,28 @@ public:
 
   /*!
    * \brief Set the value of the under-relaxation parameter for the current control volume (CV).
+   * \param[in] iPoint - Point index.
    * \param[in] val_under_relaxation - the input value of the under-relaxation parameter for this CV.
    */
   inline void SetUnderRelaxation(unsigned long iPoint, su2double val_under_relaxation) { UnderRelaxation(iPoint) = val_under_relaxation; }
   
   /*!
    * \brief Get the value of the under-relaxation parameter for the current control volume (CV).
+   * \param[in] iPoint - Point index.
    * \return Value of the under-relaxation parameter for this CV.
    */
   inline su2double GetUnderRelaxation(unsigned long iPoint) const { return UnderRelaxation(iPoint); }
   
   /*!
    * \brief Set the value of the local CFL number for the current control volume (CV).
+   * \param[in] iPoint - Point index.
    * \param[in] val_cfl - the input value of the local CFL number for this CV.
    */
   inline void SetLocalCFL(unsigned long iPoint, su2double val_cfl) { LocalCFL(iPoint) = val_cfl; }
   
   /*!
    * \brief Get the value of the local CFL number for the current control volume (CV).
+   * \param[in] iPoint - Point index.
    * \return Value of the local CFL number for this CV.
    */
   inline su2double GetLocalCFL(unsigned long iPoint) const { return LocalCFL(iPoint); }
@@ -904,6 +913,7 @@ public:
 
   /*!
    * \brief Get the value of the derivatives of the wind gust
+   * \param[in] iPoint - Point index.
    * \return Value of the derivatives of the wind gust
    */
   inline virtual su2double* GetWindGustDer(unsigned long iPoint) { return nullptr;}
