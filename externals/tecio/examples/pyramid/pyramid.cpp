@@ -8,7 +8,7 @@ int main()
 {
     /* Call TECINI142 */
     INTEGER4 FileType   = 0;   /* 0 for full file           */
-    INTEGER4 FileFormat = 0; // 0 == PLT, 1 == SZPLT; Only PLT is currently
+    INTEGER4 FileFormat = 0; // 0 == PLT, 1 == SZPLT; Only PLT is currently 
                              // supported for polyhedral zones
     INTEGER4 Debug      = 0;
     INTEGER4 VIsDouble  = 1;

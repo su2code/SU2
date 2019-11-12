@@ -26,9 +26,9 @@ int main(int argc, const char *argv[])
 
     INTEGER4 fileFormat; // 0 == PLT, 1 == SZPLT
     if (argc == 2 && strncmp(argv[1],"--szl",5) == 0)
-        fileFormat = 1;
+        fileFormat = 1; 
     else
-        fileFormat = 0;
+        fileFormat = 0; 
 
     INTEGER4 I          = 0;   /* Used to check the return value */
 

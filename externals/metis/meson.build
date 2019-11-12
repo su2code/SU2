@@ -62,11 +62,11 @@ metis_src = ['GKlib/pqueue.c',
            'libmetis/gklib.c']
 
 metis_include = include_directories(['include','GKlib','libmetis'])
-metis_lib     = static_library('metis',
+metis_lib     = static_library('metis', 
                                metis_src,
 			       include_directories : metis_include,
 			       cpp_args: metis_cpp_args)
 
-metis_dep = declare_dependency(link_with : metis_lib,
+metis_dep = declare_dependency(link_with : metis_lib, 
                                include_directories : metis_include)
 

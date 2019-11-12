@@ -37,13 +37,13 @@ int main(int argc, const char *argv[])
     INTEGER4 debug, i, j, k, dIsDouble, vIsDouble, zoneType, strandID, parentZn, isBlock;
     INTEGER4 iCellMax, jCellMax, kCellMax, nFConns, fNMode, shrConn, fileType;
     INTEGER4 nNodes, nCells, nFaces, connectivityCount, index;
-    int valueLocation[] = {1,1,1,1,0};
+    int valueLocation[] = {1,1,1,1,0}; 
 
     INTEGER4 fileFormat; // 0 == PLT, 1 == SZPLT
     if (argc == 2 && strncmp(argv[1],"--szl",5) == 0)
-        fileFormat = 1;
+        fileFormat = 1; 
     else
-        fileFormat = 0;
+        fileFormat = 0; 
 
     debug     = 1;
     vIsDouble = 0;

@@ -45,7 +45,7 @@ import pysu2			            # imports the SU2 wrapped module
 from math import *
 
 # -------------------------------------------------------------------
-#  Main
+#  Main 
 # -------------------------------------------------------------------
 
 def main():
@@ -92,7 +92,7 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
   else:
-    comm = 0
+    comm = 0 
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
@@ -185,4 +185,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()
+    main()  

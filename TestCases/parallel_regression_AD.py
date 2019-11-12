@@ -39,11 +39,11 @@
 from __future__ import print_function
 
 import sys
-from TestCase import TestCase
+from TestCase import TestCase    
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values.
-       This will be used to do checks when code is pushed to github
+    '''This program runs SU2 and ensures that the output matches specified values. 
+       This will be used to do checks when code is pushed to github 
        to make sure nothing is broken. '''
 
     test_list = []
@@ -62,7 +62,7 @@ def main():
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
     test_list.append(discadj_naca0012)
-
+   
     # Inviscid Cylinder 3D (multiple markers)
     discadj_cylinder3D           = TestCase('discadj_cylinder3D')
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
@@ -84,7 +84,7 @@ def main():
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
-
+    
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -170,11 +170,11 @@ def main():
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
-
+   
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder.cfg"
+    discadj_cylinder.cfg_file  = "cylinder.cfg" 
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.746900, -1.544893, -8.3447e-03, 1.3808e-05] #last 4 columns
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
@@ -218,32 +218,32 @@ def main():
     #######################################################
     ### Disc. adj. turbomachinery                       ###
     #######################################################
-
+    
     # Transonic Stator 2D
     discadj_trans_stator           = TestCase('transonic_stator')
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
-    discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
+    discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals = [79.000000,-1.923936, -2.119783] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
     test_list.append(discadj_trans_stator)
-
+    
     ###################################
     ### Structural Adjoint          ###
     ###################################
-
+   
     # Structural model
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
-    discadj_fea.cfg_file  = "configAD_fem.cfg"
+    discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708681] #last 4 columns
+    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
-    test_list.append(discadj_fea)
+    test_list.append(discadj_fea) 
 
     ###################################
     ### Disc. adj. heat             ###
@@ -263,13 +263,13 @@ def main():
     ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
-
+   
     # Structural model
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 3000
-    discadj_fsi.test_vals = [0.958848,-0.157601,0.726660,1.303625] #last 4 columns
+    discadj_fsi.test_vals = [0.958848,-0.157601,2.726147,1.798362] #last 4 columns
     discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
@@ -288,7 +288,7 @@ def main():
     discadj_cht.su2_exec  = "parallel_computation.py -f"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
-    test_list.append(discadj_cht)
+    test_list.append(discadj_cht)		
 
     ######################################
     ### RUN TESTS                      ###

@@ -24,8 +24,8 @@ const unsigned int codePage = CP_UTF8; std::string  UTF8str(utf8String); std::ws
 ENSURE_VALID_UTF8_STR(___3861.c_str());
  #endif
 return ___3861; }
- #endif
+ #endif 
  #if !defined NO_THIRD_PARTY_LIBS
 bool isUtf8(char const* stringToTest) { REQUIRE(VALID_REF(stringToTest)); QByteArray const byteArray(stringToTest); QTextCodec::ConverterState state; QTextCodec* const codec = QTextCodec::codecForName("UTF-8"); ___478(VALID_REF(codec)); codec->toUnicode(byteArray.constData(), byteArray.size(), &state); return state.invalidChars == 0; } bool isUtf8Checked(char const* stringToTest, std::string const& sourceFile  , int line  ) { REQUIRE(VALID_REF(stringToTest)); REQUIRE(!sourceFile.empty()); REQUIRE(line > 0); if (!isUtf8(stringToTest)) { std::string msg = boost::str(boost::format( "Internal error: Invalid UTF-8 string:\n\n" "___3813: \"%1%\"\n" "File: %2%\n" "Line: %3%\n") % stringToTest % sourceFile % line); qDebug() << msg.c_str(); ___478(false); } return true; } char* strToUtf8(std::string const& inputString) { REQUIRE(!inputString.empty()); QByteArray utf8String(QString(inputString.c_str()).toUtf8()); ___478(utf8String.constData()[utf8String.length()] == '\0'); char* ___3358 = new char[utf8String.length() + 1]; std::strncpy(___3358, utf8String.constData(),utf8String.length()); ___3358[utf8String.length()] = '\0'; ENSURE_VALID_UTF8_STR(___3358); return ___3358; }
- #endif
+ #endif 
 }
