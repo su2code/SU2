@@ -102,7 +102,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+
   Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
     Point_Max_Coord[iVar] = new su2double[nDim];
@@ -111,22 +113,20 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar];
+  Solution = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 1e-16;
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 1e-16;
 
   /*--- Sensitivity definition and coefficient in all the markers ---*/
 
   CSensitivity = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
-  }
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          CSensitivity[iMarker][iVertex] = 0.0;
-      }
+    unsigned long nVertex = geometry->nVertex[iMarker];
+    CSensitivity[iMarker] = new su2double [nVertex];
+  
+    for (iVertex = 0; iVertex < nVertex; iVertex++)
+      CSensitivity[iMarker][iVertex] = 0.0;
   }
 
   /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
