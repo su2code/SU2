@@ -1522,7 +1522,10 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (fem) {
-      if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+      if (time_domain) {
+        if (config->GetRestart()) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+        else val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      }
       solver[MESH_0][FEA_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (fem_euler || fem_ns) {

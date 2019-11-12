@@ -154,6 +154,10 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   if (nVar_FEM == 3)
     SetVolumeOutputValue("ADJOINT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
+  /*--- Load data for the discrete sensitivities. ---*/
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
+  if (nVar_FEM == 3) SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
 }
 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -174,8 +178,13 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("ADJOINT-Z", "Adjoint_z", "SOLUTION", "adjoint of displacement in the z direction");
   /// END_GROUP
 
-  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
-  /// DESCRIPTION: Sensitivity in normal direction.
-  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
-  /// END_GROUP
+  /*--- Full field of sensitivity in each coordinate direction. ---*/
+  AddVolumeOutput("SENSITIVITY-X",    "Sensitivity_x", "SENSITIVITY", "x-component of the coordinate sensitivity vector");
+  AddVolumeOutput("SENSITIVITY-Y",    "Sensitivity_y", "SENSITIVITY", "y-component of the coordinate sensitivity vector");
+  if (nVar_FEM == 3) AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_Z", "SENSITIVITY", "z-component of the coordinate sensitivity vector");
+
+  // /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
+  // /// DESCRIPTION: Sensitivity in normal direction.
+  // AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
+  // /// END_GROUP
 }
