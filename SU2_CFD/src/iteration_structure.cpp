@@ -2902,76 +2902,50 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
 
   unsigned short iVar;
   unsigned short iMPROP = config[iZone]->GetnElasticityMod();
-  
+
+  auto dir_solver = solver[iZone][iInst][MESH_0][FEA_SOL];
+  auto adj_solver = solver[iZone][iInst][MESH_0][ADJFEA_SOL];
+
+  auto structural_numerics = numerics[iZone][iInst][MESH_0][FEA_SOL];
+
   /*--- Some numerics are only instanciated under these conditions ---*/
-  bool element_based = (config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
-                        solver[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased(),
-       de_effects    = (config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
-                        config[iZone]->GetDE_Effects();
+  bool nonlinear = config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS;
+  bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
+  bool element_based = dir_solver->IsElementBased() && nonlinear;
 
   for (iVar = 0; iVar < iMPROP; iVar++){
 
-      /*--- Add dependencies for E and Nu ---*/
+    /*--- Add dependencies for E and Nu ---*/
 
-      numerics[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(iVar,
-                                                                                   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
-                                                                                   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+    structural_numerics[FEA_TERM]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
 
-      /*--- Add dependencies for Rho and Rho_DL ---*/
+    /*--- Add dependencies for Rho and Rho_DL ---*/
 
-      numerics[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(iVar,
-                                                                                solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
-                                                                                solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+    structural_numerics[FEA_TERM]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
 
-      /*--- Add dependencies for element-based simulations. ---*/
+    /*--- Add dependencies for element-based simulations. ---*/
 
-      if (element_based){
+    if (element_based){
 
-          /*--- Neo Hookean Compressible ---*/
-          numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
-                                                                                       solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
-                                                                                       solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
-          numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Density(iVar,
-                                                                                    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
-                                                                                    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+      /*--- Neo Hookean Compressible ---*/
+      structural_numerics[MAT_NHCOMP]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
+      structural_numerics[MAT_NHCOMP]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
 
-          /*--- Ideal DE ---*/
-          numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Properties(iVar,
-                                                                                       solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
-                                                                                       solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
-          numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Density(iVar,
-                                                                                    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
-                                                                                    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+      /*--- Ideal DE ---*/
+      structural_numerics[MAT_IDEALDE]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
+      structural_numerics[MAT_IDEALDE]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
 
-          /*--- Knowles ---*/
-          numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Properties(iVar,
-                                                                                       solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
-                                                                                       solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
-          numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Density(iVar,
-                                                                                    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
-                                                                                    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
-
-      }
-
-
-
+      /*--- Knowles ---*/
+      structural_numerics[MAT_KNOWLES]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
+      structural_numerics[MAT_KNOWLES]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
+    }
   }
 
   if (de_effects){
-
-      unsigned short nEField = solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetnEField();
-
-      for (unsigned short iEField = 0; iEField < nEField; iEField++){
-
-          numerics[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->Set_ElectricField(iEField,
-                                                                                 solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
-
-          numerics[iZone][iInst][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField,
-                                                                                 solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
-
-      }
-
-
+    for (unsigned short iEField = 0; iEField < adj_solver->GetnEField(); iEField++){
+      structural_numerics[FEA_TERM]->Set_ElectricField(iEField, adj_solver->GetVal_EField(iEField));
+      structural_numerics[DE_TERM]->Set_ElectricField(iEField, adj_solver->GetVal_EField(iEField));
+    }
   }
 
   /*--- Add dependencies for element-based simulations. ---*/
@@ -2983,36 +2957,27 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
     case DEAD_WEIGHT:
     case ELECTRIC_FIELD:
 
-      unsigned short nDV = solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+      unsigned short nDV = adj_solver->GetnDVFEA();
 
       for (unsigned short iDV = 0; iDV < nDV; iDV++){
-
-          numerics[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
-                                                                           solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
-
-          if (de_effects){
-            numerics[iZone][iInst][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
-                                                                            solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
-          }
-
+        structural_numerics[FEA_TERM]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
+        if (de_effects){
+          structural_numerics[DE_TERM]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
+        }
       }
 
       if (element_based){
-
         for (unsigned short iDV = 0; iDV < nDV; iDV++){
-            numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
-                                                                            solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
-            numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_IDEALDE]->Set_DV_Val(iDV,
-                                                                            solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
-            numerics[iZone][iInst][MESH_0][FEA_SOL][MAT_KNOWLES]->Set_DV_Val(iDV,
-                                                                            solver[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+          structural_numerics[MAT_NHCOMP]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
+          structural_numerics[MAT_IDEALDE]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
+          structural_numerics[MAT_KNOWLES]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
         }
-
       }
-
     break;
-
   }
+
+  dir_solver->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION_FEA);
+  dir_solver->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION_FEA);
 
 }
 
