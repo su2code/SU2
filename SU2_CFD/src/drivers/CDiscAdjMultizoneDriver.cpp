@@ -697,17 +697,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
           case TOTAL_AVG_TEMPERATURE:       FieldName = "AVG_TOTALTEMP";             break;
           case SURFACE_TOTAL_PRESSURE:      FieldName = "AVG_TOTALPRESS";            break;
 
-          default: ObjectiveNotCovered = true; break;
-        }
-
-        if(!FieldName.empty()) {
-          ObjFunc += direct_output[iZone]->GetHistoryFieldValue(FieldName)*Weight_ObjFunc;
-          break;
-        }
-
-        // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
-
-        switch (config->GetKind_ObjFunc()) {
+          // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
 
           case SURFACE_PRESSURE_DROP:
             ObjFunc += config->GetSurface_PressureDrop(0)*Weight_ObjFunc;
@@ -720,9 +710,13 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             break;
 
           default:
-            ObjectiveNotCovered &= true;
+            ObjectiveNotCovered = true;
             break;
         }
+
+        if(!FieldName.empty())
+          ObjFunc += direct_output[iZone]->GetHistoryFieldValue(FieldName)*Weight_ObjFunc;
+
         break;
       }
       case DISC_ADJ_HEAT:
