@@ -2532,6 +2532,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
 
+  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
+  addEnumListOption("CONSTRAINT_FUNCTION_TYPE", nConstrHelp, Kind_ConstrFuncType, Constraint_Type_Map);
+
   /*!\brief CONSTRAINT_MULTIPLIER_START  \n DESCRIPTION: Starting values for constraint Lagrange multiplier \ingroup Config*/
   addDoubleListOption("CONSTRAINT_MULTIPLIER_START", nConstrHelp, Multiplier_Start);
 
@@ -3245,6 +3248,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Allocate constraint arrays if running one-shot optimization ---*/
+  if(nConstr!=0 && Kind_ConstrFuncType == NULL){
+    Kind_ConstrFuncType = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      Kind_ConstrFuncType[iConstr] = EQ;
+    }
+  }
   if(nConstr!=0 && Multiplier_Start == NULL){
     Multiplier_Start = new su2double[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){

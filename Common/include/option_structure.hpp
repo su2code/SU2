@@ -1453,6 +1453,19 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE);
 
 /*!
+ * \brief types of constraint functions
+ */
+enum ENUM_CONSTRAINT_TYPE {
+  EQ_CONSTR = 1,  /*!< \brief Equality constraint. */
+  GEQ_CONSTR = 2, /*!< \brief Inequality constraint (greater than or equal to). */
+  LEQ_CONSTR = 3  /*!< \brief Inequality constraint (less than or equal to). */
+};
+static const map<string, ENUM_CONSTRAINT_TYPE> Constraint_Type_Map = CCreateMap<string, ENUM_CONSTRAINT_TYPE>
+("EQ", EQ_CONSTR)
+("GEQ", GEQ_CONSTR)
+("LEQ", LEQ_CONSTR);
+
+/*!
  * \brief types of residual criteria equations
  */
 

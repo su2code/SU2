@@ -1117,6 +1117,7 @@ private:
   unsigned short OS_Search_Iter; /*!< \brief Maximum line search counter */
   su2double OS_Search_Tol; /*!< \brief Value for step size lower bound */
   unsigned short *Kind_ConstrFunc;  /*!< \brief Kind of constraint functions. */
+  unsigned short *Kind_ConstrFuncType;  /*!< \brief Kind of constraint function types (EQ, GEQ, LEQ). */
   unsigned short nConstr, nConstrHelp;              /*! \brief Number of constraint functions. */
   su2double* Multiplier_Start; /*! \brief Start values for constraint multipliers. */
   su2double* Multiplier_Factor; /*! \brief Values for constant factor for multiplier update. */
@@ -9499,6 +9500,13 @@ public:
    * \return Kind of constraint function.
    */
   unsigned short GetKind_ConstrFunc(unsigned short val_cons);
+
+  /*!
+   * \brief Get the kind of constraint function type.
+   *        There are three options: EQ, GEQ, LEQ.
+   * \return Kind of constraint function.
+   */
+  unsigned short GetKind_ConstrFuncType(unsigned short val_cons);
 
   /*!
    * \brief Get the total number of constraints in list

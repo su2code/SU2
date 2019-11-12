@@ -2152,6 +2152,8 @@ inline su2double CConfig::GetOneShotSearchTol(void) { return OS_Search_Tol; }
 
 inline unsigned short CConfig::GetKind_ConstrFunc(unsigned short val_cons) { return Kind_ConstrFunc[val_cons]; }
 
+inline unsigned short CConfig::GetKind_ConstrFuncType(unsigned short val_cons) { return Kind_ConstrFuncType[val_cons]; }
+
 inline unsigned short CConfig::GetnConstr(void) { return nConstr;}
 
 inline su2double CConfig::GetMultiplierStart(unsigned short val_cons) { return Multiplier_Start[val_cons]; }
