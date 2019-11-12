@@ -1378,8 +1378,7 @@ void CFEAIteration::Iterate(COutput *output,
   bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
   bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Geometrically non-linear problems
 
-  bool disc_adj_fem = false;
-  if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
+  bool disc_adj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
 
   bool incremental_load = config[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
 
@@ -1401,9 +1400,9 @@ void CFEAIteration::Iterate(COutput *output,
 
     integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
         config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-    
-    Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-    
+
+    if (!disc_adj_fem)
+      Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
   }
   /*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
@@ -1425,16 +1424,17 @@ void CFEAIteration::Iterate(COutput *output,
       integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
           config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-      Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-      
+      if (!disc_adj_fem)
+        Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
       /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
       for (IntIter = 1; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
 
-        config[val_iZone]->SetInnerIter(IntIter);
-        
         /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
         if (disc_adj_fem) break;
+
+        config[val_iZone]->SetInnerIter(IntIter);
         
         integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
             config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
@@ -1593,9 +1593,7 @@ void CFEAIteration::Iterate(COutput *output,
 
     }
 
-
   }
-
 
   /*--- Finally, we need to compute the objective function, in case that we are running a discrete adjoint solver... ---*/
 

@@ -191,28 +191,23 @@ void CDiscAdjMultizoneDriver::Run() {
     Set_BGSSolution(iZone);
   }
 
-  /*--- Initialize External with the objective function gradient. ---*/
+  /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
   SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
   SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   RecordingState = NONE;
 
+  AD::ClearAdjoints();
+  SetAdj_ObjFunction();
+  AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
+
+  /*--- Initialize External with the objective function gradient. ---*/
+
   for (iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Evaluate the objective function gradient w.r.t. to solution contributions from iZone. ---*/
-
-    AD::ClearAdjoints();
-
-    SetAdj_ObjFunction();
-
-    AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
 
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
                                                 surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-    /*--- Add the objective function contribution to the external contributions for solvers in iZone. ---*/
-
     Add_Solution_To_External(iZone);
   }
 
@@ -437,14 +432,18 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     }
   }
 
-  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
+  if (rank == MASTER_NODE) {
+    cout << "\n-------------------------------------------------------------------------\n";
+    switch(kind_recording) {
+    case NONE:           cout << "Clearing the computational graph." << endl; break;
+    case MESH_COORDS:    cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
+    case FLOW_CONS_VARS: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    }
+  }
+
+  /*--- Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
   if(kind_recording != NONE) {
-
-    if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
-      cout << "\n-------------------------------------------------------------------------\n";
-      cout << "Storing computational graph." << endl;
-    }
 
     AD::StartRecording();
 
@@ -505,13 +504,10 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     }
   }
 
-  if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
-
-    if(config_container[record_zone]->GetWrt_AD_Statistics()) {
-
+  if (rank == MASTER_NODE) {
+    if(kind_recording != NONE && config_container[record_zone]->GetWrt_AD_Statistics()) {
       AD::PrintStatistics();
     }
-
     cout << "-------------------------------------------------------------------------\n" << endl;
   }
 
@@ -563,28 +559,28 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
-        cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
+        cout << " Zone " << iZone << " (flow) - log10[RMS Density]: "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-        cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
+        cout << " Zone " << iZone << " (flow) - log10[RMS Density]: "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
 
         if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
 
-          cout << " Zone " << iZone << " (turb) - log10[RMS k]         : "
+          cout << " Zone " << iZone << " (turb) - log10[RMS Var_0]  : "
                << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
         }
         break;
 
       case DISC_ADJ_HEAT:
-        cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: "
+        cout << " Zone " << iZone << " (heat) - log10[RMS Var_0]  : "
              << log10(solvers[HEAT_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       case DISC_ADJ_FEM:
-        cout << " Zone " << iZone << " (elasticity) - log10[RMS Solution_0]: "
+        cout << " Zone " << iZone << " (structure) - log10[RMS Ux]: "
              << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
         break;
 
@@ -779,9 +775,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
     if (kind_recording == FLOW_CONS_VARS) {
-      cout << " Objective function                   : " << ObjFunc;
+      cout << " Objective function                : " << ObjFunc;
       if (driver_config->GetWrt_AD_Statistics()){
-        cout << " (" << ObjFunc_Index << ")" << endl;
+        cout << " (" << ObjFunc_Index << ")\n";
       }
       cout << endl;
     }
