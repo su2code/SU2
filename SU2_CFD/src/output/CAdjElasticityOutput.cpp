@@ -153,6 +153,10 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   if (nVar_FEM == 3)
     SetVolumeOutputValue("ADJOINT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
 }
 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -174,7 +178,13 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
-  /// DESCRIPTION: Sensitivity in normal direction.
-  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
+  /// DESCRIPTION: Sensitivity x-component.
+  AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "geometric sensitivity in the x direction");
+  /// DESCRIPTION: Sensitivity y-component.
+  AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "geometric sensitivity  in the y direction");
+  if (nDim == 3)
+    /// DESCRIPTION: Sensitivity z-component.
+    AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "geometric sensitivity  in the z direction");
   /// END_GROUP
+
 }

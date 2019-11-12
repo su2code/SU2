@@ -2886,16 +2886,22 @@ void CDiscAdjFEAIteration::SetRecording(CSolver *****solver,
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
-  /*--- Register structural displacements as input ---*/
+  if(kind_recording != MESH_COORDS) {
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+    /*--- Register structural displacements as input ---*/
 
-  /*--- Register variables as input ---*/
+    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    /*--- Register variables as input ---*/
 
-  /*--- Both need to be registered regardless of kind_recording for structural shape derivatives to work properly.
-        Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
+    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+    /*--- Both need to be registered regardless of kind_recording for structural shape derivatives to work properly.
+          Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
+  }
+  else {
+    geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+  }
 }
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****geometry, CNumerics ******numerics, CConfig **config,
@@ -2903,7 +2909,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
 
   auto dir_solver = solver[iZone][iInst][MESH_0][FEA_SOL];
   auto adj_solver = solver[iZone][iInst][MESH_0][ADJFEA_SOL];
-
+  auto structural_geometry = geometry[iZone][iInst][MESH_0];
   auto structural_numerics = numerics[iZone][iInst][MESH_0][FEA_SOL];
 
   /*--- Some numerics are only instanciated under these conditions ---*/
@@ -2978,10 +2984,15 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
     break;
   }
 
-  /*--- MPI dependency. ---*/
+  /*--- MPI dependencies. ---*/
 
-  dir_solver->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION_FEA);
-  dir_solver->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION_FEA);
+  dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
+  dir_solver->CompleteComms(structural_geometry, config[iZone], SOLUTION_FEA);
+
+  if (kind_recording == MESH_COORDS) {
+    structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
+    structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  }
 
 }
 
