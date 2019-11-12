@@ -79,6 +79,9 @@ protected:
   unsigned short* direct_nInst;   /*!< \brief Total number of instances in the direct problem. */
   unsigned short* nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
 
+  su2vector<bool> Has_Deformation;/*!< \brief True if iZone has mesh deformation (used for
+                                              lazy evaluation of TRANSFER tape section). */
+
   /*!< \brief Individual cross-terms of the coupled problem, 5D array [iZone][jZone][iSol](iPoint,iVar).
               The column sum, i.e. along all iZones for each jZone, gives the External (total cross-term)
               for jZone, we need to store all terms to have BGS-type updates with relaxation. */

@@ -2898,10 +2898,8 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
         Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
 }
 
-void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****geometry, CNumerics ******numerics, CConfig **config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
-
-  unsigned short iVar;
-  unsigned short iMPROP = config[iZone]->GetnElasticityMod();
+void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****geometry, CNumerics ******numerics, CConfig **config,
+                                           unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
   auto dir_solver = solver[iZone][iInst][MESH_0][FEA_SOL];
   auto adj_solver = solver[iZone][iInst][MESH_0][ADJFEA_SOL];
@@ -2913,31 +2911,36 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   bool element_based = dir_solver->IsElementBased() && nonlinear;
 
-  for (iVar = 0; iVar < iMPROP; iVar++){
+  for (unsigned short iProp = 0; iProp < config[iZone]->GetnElasticityMod(); iProp++){
+      
+    su2double E = adj_solver->GetVal_Young(iProp);
+    su2double nu = adj_solver->GetVal_Poisson(iProp);
+    su2double rho = adj_solver->GetVal_Rho(iProp);
+    su2double rhoDL = adj_solver->GetVal_Rho_DL(iProp);
 
     /*--- Add dependencies for E and Nu ---*/
 
-    structural_numerics[FEA_TERM]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
+    structural_numerics[FEA_TERM]->SetMaterial_Properties(iProp, E, nu);
 
     /*--- Add dependencies for Rho and Rho_DL ---*/
 
-    structural_numerics[FEA_TERM]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
+    structural_numerics[FEA_TERM]->SetMaterial_Density(iProp, rho, rhoDL);
 
     /*--- Add dependencies for element-based simulations. ---*/
 
     if (element_based){
 
       /*--- Neo Hookean Compressible ---*/
-      structural_numerics[MAT_NHCOMP]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
-      structural_numerics[MAT_NHCOMP]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
+      structural_numerics[MAT_NHCOMP]->SetMaterial_Properties(iProp, E, nu);
+      structural_numerics[MAT_NHCOMP]->SetMaterial_Density(iProp, rho, rhoDL);
 
       /*--- Ideal DE ---*/
-      structural_numerics[MAT_IDEALDE]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
-      structural_numerics[MAT_IDEALDE]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
+      structural_numerics[MAT_IDEALDE]->SetMaterial_Properties(iProp, E, nu);
+      structural_numerics[MAT_IDEALDE]->SetMaterial_Density(iProp, rho, rhoDL);
 
       /*--- Knowles ---*/
-      structural_numerics[MAT_KNOWLES]->SetMaterial_Properties(iVar, adj_solver->GetVal_Young(iVar), adj_solver->GetVal_Poisson(iVar));
-      structural_numerics[MAT_KNOWLES]->SetMaterial_Density(iVar, adj_solver->GetVal_Rho(iVar), adj_solver->GetVal_Rho_DL(iVar));
+      structural_numerics[MAT_KNOWLES]->SetMaterial_Properties(iProp, E, nu);
+      structural_numerics[MAT_KNOWLES]->SetMaterial_Density(iProp, rho, rhoDL);
     }
   }
 
@@ -2957,24 +2960,25 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
     case DEAD_WEIGHT:
     case ELECTRIC_FIELD:
 
-      unsigned short nDV = adj_solver->GetnDVFEA();
+      for (unsigned short iDV = 0; iDV < adj_solver->GetnDVFEA(); iDV++) {
 
-      for (unsigned short iDV = 0; iDV < nDV; iDV++){
-        structural_numerics[FEA_TERM]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
-        if (de_effects){
-          structural_numerics[DE_TERM]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
-        }
-      }
+        su2double dvfea = adj_solver->GetVal_DVFEA(iDV);
 
-      if (element_based){
-        for (unsigned short iDV = 0; iDV < nDV; iDV++){
-          structural_numerics[MAT_NHCOMP]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
-          structural_numerics[MAT_IDEALDE]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
-          structural_numerics[MAT_KNOWLES]->Set_DV_Val(iDV, adj_solver->GetVal_DVFEA(iDV));
+        structural_numerics[FEA_TERM]->Set_DV_Val(iDV, dvfea);
+
+        if (de_effects)
+          structural_numerics[DE_TERM]->Set_DV_Val(iDV, dvfea);
+
+        if (element_based){
+          structural_numerics[MAT_NHCOMP]->Set_DV_Val(iDV, dvfea);
+          structural_numerics[MAT_IDEALDE]->Set_DV_Val(iDV, dvfea);
+          structural_numerics[MAT_KNOWLES]->Set_DV_Val(iDV, dvfea);
         }
       }
     break;
   }
+
+  /*--- MPI dependency. ---*/
 
   dir_solver->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION_FEA);
   dir_solver->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION_FEA);
@@ -2997,8 +3001,7 @@ void CDiscAdjFEAIteration::InitializeAdjoint(CSolver *****solver, CGeometry ****
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
-                                                                  config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
 
 }
 
@@ -3011,8 +3014,7 @@ void CDiscAdjFEAIteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CGeo
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
-                                                                  config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
 
 }
 
