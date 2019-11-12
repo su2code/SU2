@@ -282,7 +282,7 @@ public:
   
   /*!
    * \brief Set the final linear solver residual.
-   * \param[in] val_relinsolver - Value of final linear solver residual.
+   * \param[in] val_reslinsolver - Value of final linear solver residual.
    */
   void SetResLinSolver(su2double val_reslinsolver);
   
@@ -1421,6 +1421,11 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    */
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
+  
+  /*!
+   * \brief Reset the local CFL adaption variables
+   */
+  void ResetCFLAdapt();
   
   /*!
    * \brief A virtual member.

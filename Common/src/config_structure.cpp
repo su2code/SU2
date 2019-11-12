@@ -4628,6 +4628,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /* Simpler boolean to control allocation of least-squares memory. */
   
+  LeastSquaresRequired = false;
   if ((Kind_Gradient_Method_Recon == LEAST_SQUARES) ||
       (Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES) ||
       (Kind_Gradient_Method       == LEAST_SQUARES) ||

@@ -53,9 +53,9 @@ protected:
   MatrixType IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   MatrixType HB_Source;          /*!< \brief Harmonic balance source term. */
 
-  VectorOfMatrix& Gradient_Reconstruction = Gradient; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  VectorOfMatrix Gradient_Aux;                        /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-  
+  VectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  VectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -164,7 +164,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \param[in] iVar   - Index of the variable.
    * \param[in] iDim   - Index of the dimension.
-   * \param[in] iDim   - Index of the dimension.
+   * \param[in] value  - Value of the reconstruction gradient component.
    */
   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;

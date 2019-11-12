@@ -1634,20 +1634,21 @@ public:
   su2double GetGamma(void);
   
   /*!
-   * \brief Get the values of the CFL adapation.
-   * \return Value of CFL adapation
+   * \brief Get the values of the CFL adaption parameters.
+   * \return Value of CFL adaption parameter
    */
   su2double GetCFL_AdaptParam(unsigned short val_index);
   
   /*!
-   * \brief Get the values of the CFL adapation.
-   * \return Value of CFL adapation
+   * \brief Set the values of the CFL adaption parameters.
+   * \param[in] val_index     - Index of the particular CFL adaption parameter
+   * \param[in] val_cfl_param - Value of the CFL adaption parameter
    */
   inline void SetCFL_AdaptParam(unsigned short val_index, su2double val_cfl_param) { CFL_AdaptParam[val_index] = val_cfl_param; }
   
   /*!
-   * \brief Get the values of the CFL adapation.
-   * \return Value of CFL adapation
+   * \brief Get the value of the CFL adaption flag.
+   * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void);
   
