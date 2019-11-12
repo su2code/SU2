@@ -2008,6 +2008,19 @@ inline su2double CIncEulerSolver::GetInlet_Ptotal(unsigned short val_marker, uns
 
 inline su2double CIncEulerSolver::GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return Inlet_FlowDir[val_marker][val_vertex][val_dim]; }
 
+inline void CIncEulerSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir) {
+  /*--- Since this call can be accessed indirectly using python, do some error
+   * checking to prevent segmentation faults ---*/
+  if (val_marker >= nMarker)
+    SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+  else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_vertex >= nVertex[val_marker])
+    SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+  else
+    Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
+}
+
 inline su2double CIncEulerSolver::GetCD_Inv(unsigned short val_marker) { return CD_Inv[val_marker]; }
 
 inline su2double CIncEulerSolver::GetSurface_CL(unsigned short val_marker) { return Surface_CL[val_marker]; }

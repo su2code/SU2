@@ -1029,6 +1029,11 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   bool HeatSource;              /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;      /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
+  su2double Heat_Source_Rot_Z;    /*!< \brief Rotation of the volumetric heat source on the Z axis. */
+  su2double *Heat_Source_Center,  /*!< \brief Position of the center of the heat source. */
+            *default_hs_center,   /*!< \brief Default position of the center of the heat source. */
+            *Heat_Source_Radius,  /*!< \brief Radius (x, y, z) of the ellipsoid containing the heat source. */
+            *default_hs_radius;   /*!< \brief Default radius (x, y, z) of the ellipsoid containing the heat source. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -5966,18 +5971,51 @@ public:
    */
   su2double* GetBody_Force_Vector(void);
 
-
   /*!
    * \brief Get information about the volumetric heat source.
    * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
    */
-  bool GetHeatSource(void);
+  inline bool GetHeatSource(void)  { return HeatSource; }
 
   /*!
    * \brief Get information about the volumetric heat source.
-   * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
+   * \return Value of the volumetric heat source
    */
-  su2double GetValHeatSource(void);
+  inline su2double GetHeatSource_Val(void) {return ValHeatSource;}
+
+  /*!
+   * \brief Get the rotation angle of the volumetric heat source in axis Z.
+   * \return Rotation (Z) of the volumetric heat source
+   */
+  inline su2double GetHeatSource_Rot_Z(void) {return Heat_Source_Rot_Z;}
+
+  /*!
+   * \brief Set the rotation angle of the volumetric heat source in axis Z.
+   * \param[in] val_rot - Rotation (Z) of the volumetric heat source
+   */
+  inline void SetHeatSource_Rot_Z(su2double val_rot) {Heat_Source_Rot_Z = val_rot;}
+
+  /*!
+   * \brief Get the position of the center of the volumetric heat source.
+   * \return Pointer to the center of the ellipsoid that introduces a volumetric heat source.
+   */
+  inline const su2double* GetHeatSource_Center(void) const {return Heat_Source_Center;}
+
+  /*!
+   * \brief Set the position of the center of the volumetric heat source.
+   * \param[in] x_cent = X position of the center of the volumetric heat source.
+   * \param[in] y_cent = Y position of the center of the volumetric heat source.
+   * \param[in] z_cent = Z position of the center of the volumetric heat source.
+   */
+  inline void SetHeatSource_Center(su2double x_cent, su2double y_cent, su2double z_cent) {
+    Heat_Source_Center[0] = x_cent; Heat_Source_Center[1] = y_cent; Heat_Source_Center[2] = z_cent;
+  }
+
+  /*!
+   * \brief Get the radius of the ellipsoid that introduces a volumetric heat source.
+   * \return Pointer to the radii (x, y, z) of the ellipsoid that introduces a volumetric heat source.
+   */
+  inline const su2double* GetHeatSource_Radius(void) const {return Heat_Source_Radius;}
 
   /*!
    * \brief Get information about the rotational frame.

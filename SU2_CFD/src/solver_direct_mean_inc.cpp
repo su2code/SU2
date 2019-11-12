@@ -2251,7 +2251,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   if (radiation){
 
     /*--- loop over points ---*/
-
+    su2double Volume;
+    const su2double *Coord;
 
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2275,38 +2276,36 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-    }
+      if (vol_heat){
 
-  }
+        Coord = geometry->node[iPoint]->GetCoord();
 
-  if (vol_heat){
+        if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)){
 
-    su2double Volume;
+          /*--- Get control volume size. ---*/
+          Volume = geometry->node[iPoint]->GetVolume();
 
-    /*--- loop over points ---*/
+          /*--- Zero the continuity contribution ---*/
+          Residual[0] = 0.0;
 
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          /*--- Zero the momentum contribution. ---*/
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Residual[iDim+1] = 0.0;
 
-      /*--- Get control volume size. ---*/
-      Volume = geometry->node[iPoint]->GetVolume();
+          /*--- Set the energy contribution ---*/
+          Residual[nDim+1] = config->GetHeatSource_Val()*Volume;
 
-      /*--- Zero the continuity contribution ---*/
-      Residual[0] = 0.0;
+          /*--- Subtract Residual ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
 
-      /*--- Zero the momentum contribution. ---*/
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = 0.0;
+        }
 
-      /*--- Set the energy contribution ---*/
-      Residual[nDim+1] = config->GetValHeatSource()*Volume;
-
-      /*--- Subtract Residual ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
+      }
 
     }
 
   }
-  
+
   /*--- Check if a verification solution is to be computed. ---*/
   
   if (VerificationSolution) {

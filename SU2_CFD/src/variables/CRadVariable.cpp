@@ -55,6 +55,9 @@ CRadVariable::CRadVariable(unsigned long npoint, unsigned long ndim, unsigned lo
   Max_Lambda_Visc.resize(nPoint);
   Delta_Time.resize(nPoint);
 
+  /* Volumetric heat source boolean initialization. */
+  Vol_HeatSource.resize(nPoint) = false;
+
 }
 
 CRadVariable::~CRadVariable(void) { }

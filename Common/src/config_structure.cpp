@@ -719,6 +719,8 @@ void CConfig::SetPointersNull(void) {
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
   default_wrt_freq           = NULL;
+  default_hs_center          = NULL;
+  default_hs_radius          = NULL;
   
   default_cp_polycoeffs = NULL;
   default_mu_polycoeffs = NULL;
@@ -834,7 +836,9 @@ void CConfig::SetConfig_Options() {
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
-  default_wrt_freq             = new su2double[3];
+  default_wrt_freq           = new su2double[3];
+  default_hs_center          = new su2double[3];
+  default_hs_radius          = new su2double[3];
   
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -2286,10 +2290,18 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Scattering coefficient */
   addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.0);
 
-  /* DESCRIPTION: Apply a volumetric heat source as a source term (NO, YES) */
+  /* DESCRIPTION: Apply a volumetric heat source as a source term (NO, YES) in the form of an ellipsoid*/
   addBoolOption("HEAT_SOURCE", HeatSource, false);
   /* DESCRIPTION: Value of the volumetric heat source */
-  addDoubleOption("VAL_HEAT_SOURCE", ValHeatSource, 0.0);
+  addDoubleOption("HEAT_SOURCE_VAL", ValHeatSource, 0.0);
+  /* DESCRIPTION: Rotation of the volumetric heat source respect to Z axis */
+  addDoubleOption("HEAT_SOURCE_ROTATION_Z", Heat_Source_Rot_Z, 0.0);
+  /* DESCRIPTION: Position of heat source center (Heat_Source_Center_X, Heat_Source_Center_Y, Heat_Source_Center_Z) */
+  default_hs_center[0] = 0.0; default_hs_center[1] = 0.0; default_hs_center[2] = 0.0;
+  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, Heat_Source_Center, default_hs_center);
+  /* DESCRIPTION: Vector of heat source radii (Heat_Source_Radius_A, Heat_Source_Radius_B, Heat_Source_Radius_C) */
+  default_hs_radius[0] = 1.0; default_hs_radius[1] = 1.0; default_hs_radius[2] = 1.0;
+  addDoubleArrayOption("HEAT_SOURCE_RADIUS", 3, Heat_Source_Radius, default_hs_radius);
 
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
@@ -7567,6 +7579,8 @@ CConfig::~CConfig(void) {
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
   if (default_wrt_freq != NULL) delete [] default_wrt_freq;
+  if (default_hs_center     != NULL) delete [] default_hs_center;
+  if (default_hs_radius     != NULL) delete [] default_hs_radius;
   
   if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
   if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;

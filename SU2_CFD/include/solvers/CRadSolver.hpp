@@ -74,6 +74,13 @@ public:
   CRadSolver(CGeometry* geometry, CConfig *config);
 
   /*!
+   * \brief Set the volumetric heat source
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumetricHeatSource(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
