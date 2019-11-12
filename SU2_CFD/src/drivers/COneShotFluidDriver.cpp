@@ -321,8 +321,8 @@ void COneShotFluidDriver::RunOneShot(){
     // solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
-    // CheckMultiplier();
-    // CalculateLagrangian(true);
+    CheckMultiplier();
+    CalculateLagrangian(true);
   }
 
   /*--- Store Deltay and DeltaBary ---*/
@@ -1201,6 +1201,7 @@ void COneShotFluidDriver::CheckMultiplier(){
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++) {
         Multiplier[iConstr] += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
       }
+    }
   }
 }
 
