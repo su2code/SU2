@@ -154,9 +154,7 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
       if (iZone != jZone || interface_container[jZone][iZone] != NULL) {
 
         /*--- If jZone contributes to iZone in the primal problem, then
-         *    iZone contributes to jZone in the adjoint problem. On the
-         *    diagonal entry we will store the Solution without any
-         *    cross-term to restart inner iterations. ---*/
+         *    iZone contributes to jZone in the adjoint problem. ---*/
 
         Cross_Terms[iZone][jZone].resize(MAX_SOLS);
 
@@ -179,7 +177,6 @@ void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
-  unsigned short MZSolver = driver_config->GetKind_MZSolver();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -223,10 +220,10 @@ void CDiscAdjMultizoneDriver::Run() {
 
   for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
 
-    for (iZone = 0; iZone < nZone; iZone++) {
+    driver_config->SetOuterIter(iOuterIter);
+
+    for (iZone = 0; iZone < nZone; iZone++)
       config_container[iZone]->SetOuterIter(iOuterIter);
-      driver_config->SetOuterIter(iOuterIter);
-    }
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
      *    respect to the state (and possibly the mesh coordinate) variables.
@@ -243,9 +240,8 @@ void CDiscAdjMultizoneDriver::Run() {
      *    since it does not change the computational effort. ---*/
 
 
-    /*--- If we want to set up zone-specific tapes later on,
-     *    we just record the objective function section here.
-     *    If not, the whole tape of a coupled run will be created. ---*/
+    /*--- If we want to set up zone-specific tapes (retape), we do not need to record
+     *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
     if (!retape && (RecordingState != FLOW_CONS_VARS)) {
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
@@ -261,7 +257,7 @@ void CDiscAdjMultizoneDriver::Run() {
         SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
-      /*--- Start inner iterations from where we stopped. ---*/
+      /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
 
       Set_Solution_To_BGSSolution(iZone);
 
@@ -272,6 +268,10 @@ void CDiscAdjMultizoneDriver::Run() {
       for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
         config_container[iZone]->SetInnerIter(iInnerIter);
+
+        /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
+
+        Add_External_To_Solution(iZone);
 
         /*--- Evaluate the tape section belonging to solvers in iZone.
          *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
@@ -311,7 +311,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
-          Update_Cross_Term(iZone,jZone);
+          Update_Cross_Term(iZone, jZone);
         }
       }
 
@@ -327,8 +327,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Set the multizone output. ---*/
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
-                                              driver_config->GetTimeIter(), driver_config->GetOuterIter());
+    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, 0, iOuterIter);
 
     /*--- Check for convergence. ---*/
 
@@ -342,94 +341,97 @@ void CDiscAdjMultizoneDriver::Run() {
 
     bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
 
-    if (checkSensitivity) {
+    if (checkSensitivity)
+      EvaluateSensitivities(iOuterIter, StopCalc);
+  }
+}
 
-      /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-       *    as argument ensures that all information from a previous recording is removed. ---*/
+void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc) {
 
-      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+   *    as argument ensures that all information from a previous recording is removed. ---*/
 
-      /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
+  SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
 
-      SetRecording(MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
+  /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
 
-      /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-       *    of the current iteration. The values are passed to the AD tool. ---*/
+  SetRecording(MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
 
-      for (iZone = 0; iZone < nZone; iZone++) {
+  /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+   *    of the current iteration. The values are passed to the AD tool. ---*/
 
-        Set_Solution_To_BGSSolution(iZone);
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-        Add_External_To_Solution(iZone);
+    Set_Solution_To_BGSSolution(iZone);
 
-        iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
-                                                              config_container, iZone, INST_0);
-      }
+    Add_External_To_Solution(iZone);
 
-      /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+    iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
+                                                          config_container, iZone, INST_0);
+  }
 
-      SetAdj_ObjFunction();
+  /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-      /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+  SetAdj_ObjFunction();
 
-      AD::ComputeAdjoint();
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-      /*--- Extract the computed sensitivity values. ---*/
+  AD::ComputeAdjoint();
 
-      for (iZone = 0; iZone < nZone; iZone++) {
+  /*--- Extract the computed sensitivity values. ---*/
 
-        switch (config_container[iZone]->GetKind_Solver()) {
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-          case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-            solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
-                                                                                 NULL, config_container[iZone]);
-            break;
-          case DISC_ADJ_HEAT:
-            solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
-                                                                                 NULL, config_container[iZone]);
-            break;
-          case DISC_ADJ_FEM:
-            solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[iZone][INST_0][MESH_0],
-                                                                                NULL, config_container[iZone]);
-            break;
+    auto config = config_container[iZone];
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    auto geometry = geometry_container[iZone][INST_0][MESH_0];
 
-          default:
-            if (rank == MASTER_NODE)
-              cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
-            break;
-        }
-      }
+    switch (config_container[iZone]->GetKind_Solver()) {
 
-      /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
-      AD::ClearAdjoints();
+        solvers[ADJFLOW_SOL]->SetSensitivity(geometry, nullptr, config); break;
 
-      for (iZone = 0; iZone < nZone; iZone++) {
+      case DISC_ADJ_HEAT:
 
-        output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
-                                                 config_container[iZone],
-                                                 solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
-      }
+        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, nullptr, config); break;
+
+      case DISC_ADJ_FEM:
+
+        solvers[ADJFEA_SOL]->SetSensitivity(geometry, nullptr, config); break;
+
+      default:
+        if (rank == MASTER_NODE)
+          cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
+        break;
     }
+  }
+
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+  AD::ClearAdjoints();
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                             config_container[iZone],
+                                             solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
   }
 }
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
-
-  unsigned short iZone, iSol;
 
   AD::Reset();
 
   /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
 
   for(iZone = 0; iZone < nZone; iZone++) {
-
-    for (iSol=0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->SetRecording(geometry_container[iZone][INST_0][MESH_0],
-                                                                      config_container[iZone]);
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver != NULL) {
+        if (solver->GetAdjoint()) {
+          solver->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         }
       }
     }
@@ -520,7 +522,6 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
 void CDiscAdjMultizoneDriver::HandleDataTransfer() {
 
-  unsigned short iZone, jZone;
   unsigned long ExtIter = 0;
 
   for(iZone = 0; iZone < nZone; iZone++) {
@@ -529,7 +530,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
     bool DeformMesh = false;
 
     /*--- Transfer from all the remaining zones ---*/
-    for (jZone = 0; jZone < nZone; jZone++){
+    for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
         DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
@@ -543,46 +544,48 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
 void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned short kind_recording) {
 
   /*--- Do one iteration of the direct solver ---*/
-  direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container, solver_container,
-                                              numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
+                                              solver_container, numerics_container, config_container,
+                                              surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
   /*--- Iterate the zone as a block a single time ---*/
-  direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container,
-                                           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-  Corrector(iZone);
+  direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                           solver_container, numerics_container, config_container,
+                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
   /*--- Print residuals in the first iteration ---*/
 
   if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
 
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
         cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
-             << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
         cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: "
-             << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
 
         if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
 
           cout << " Zone " << iZone << " (turb) - log10[RMS k]         : "
-               << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+               << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
         }
         break;
 
       case DISC_ADJ_HEAT:
         cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: "
-             << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
+             << log10(solvers[HEAT_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       case DISC_ADJ_FEM:
         cout << " Zone " << iZone << " (elasticity) - log10[RMS Solution_0]: "
-             << log10(solver_container[iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(0)) << endl;
+             << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       default:
@@ -596,54 +599,55 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
   ObjFunc = 0.0;
   su2double Weight_ObjFunc;
 
-  unsigned short iZone, iMarker_Analyze, nMarker_Analyze;
-
+  unsigned short iMarker_Analyze, nMarker_Analyze;
 
   /*--- Call objective function calculations. ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-    switch (config_container[iZone]->GetKind_Solver()) {
+    auto config = config_container[iZone];
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    auto geometry = geometry_container[iZone][INST_0][MESH_0];
 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    switch (config->GetKind_Solver()) {
+
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[iZone][INST_0][MESH_0],
-                                                                           config_container[iZone]);
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[iZone][INST_0][MESH_0],
-                                                                           config_container[iZone]);
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[iZone][INST_0][MESH_0],
-                                                                           config_container[iZone]);
 
-        if(config_container[iZone]->GetWeakly_Coupled_Heat()) {
+        solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
+        solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
+        solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
-          solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0],
-                                                                         solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        if(config->GetWeakly_Coupled_Heat()) {
+          solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
+        solvers[FLOW_SOL]->Evaluate_ObjFunc(config);
         break;
       case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0],
-                                                                       solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         break;
     }
 
-    direct_output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],
-                                            solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
   }
 
   /*--- Extract objective function values. ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-    nMarker_Analyze = config_container[iZone]->GetnMarker_Analyze();
+    auto config = config_container[iZone];
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    auto geometry = geometry_container[iZone][INST_0][MESH_0];
+
+    nMarker_Analyze = config->GetnMarker_Analyze();
 
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
-      Weight_ObjFunc = config_container[iZone]->GetWeight_ObjFunc(iMarker_Analyze);
+      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Analyze);
 
-      switch (config_container[iZone]->GetKind_Solver()) {
+      switch (config->GetKind_Solver()) {
 
-        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           // per-surface output to be added soon
           break;
         case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
@@ -656,106 +660,82 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
     /*--- Not-per-surface objective functions (shall not be included above) ---*/
 
-    Weight_ObjFunc = config_container[iZone]->GetWeight_ObjFunc(0);
+    Weight_ObjFunc = config->GetWeight_ObjFunc(0);
 
     bool ObjectiveNotCovered = false;
 
-    switch (config_container[iZone]->GetKind_Solver()) {
+    switch (config->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      {
+        string FieldName;
 
-        switch(config_container[iZone]->GetKind_ObjFunc()) {
+        switch (config->GetKind_ObjFunc()) {
 
           // Aerodynamic coefficients
 
-          case DRAG_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("DRAG")*Weight_ObjFunc;
-            break;
-          case LIFT_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("LIFT")*Weight_ObjFunc;
-            break;
-          case SIDEFORCE_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("SIDEFORCE")*Weight_ObjFunc;
-            break;
-          case EFFICIENCY:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("EFFICIENCY")*Weight_ObjFunc;
-            break;
-          case MOMENT_X_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENT-X")*Weight_ObjFunc;
-            break;
-          case MOMENT_Y_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENT-Y")*Weight_ObjFunc;
-            break;
-          case MOMENT_Z_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENT-Z")*Weight_ObjFunc;
-            break;
-          case FORCE_X_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("FORCE-X")*Weight_ObjFunc;
-            break;
-          case FORCE_Y_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("FORCE-Y")*Weight_ObjFunc;
-            break;
-          case FORCE_Z_COEFFICIENT:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("FORCE-Z")*Weight_ObjFunc;
-            break;
+          case DRAG_COEFFICIENT:      FieldName = "DRAG";       break;
+          case LIFT_COEFFICIENT:      FieldName = "LIFT";       break;
+          case SIDEFORCE_COEFFICIENT: FieldName = "SIDEFORCE";  break;
+          case EFFICIENCY:            FieldName = "EFFICIENCY"; break;
+          case MOMENT_X_COEFFICIENT:  FieldName = "MOMENT-X";   break;
+          case MOMENT_Y_COEFFICIENT:  FieldName = "MOMENT-Y";   break;
+          case MOMENT_Z_COEFFICIENT:  FieldName = "MOMENT-Z";   break;
+          case FORCE_X_COEFFICIENT:   FieldName = "FORCE-X";    break;
+          case FORCE_Y_COEFFICIENT:   FieldName = "FORCE-Y";    break;
+          case FORCE_Z_COEFFICIENT:   FieldName = "FORCE-Z";    break;
 
           // Other surface-related output values
 
-          case SURFACE_MASSFLOW:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_MASSFLOW")*Weight_ObjFunc;
-            break;
-          case SURFACE_MACH:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_MACH")*Weight_ObjFunc;
-            break;
-          case SURFACE_UNIFORMITY:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("UNIFORMITY")*Weight_ObjFunc;
-            break;
-          case SURFACE_SECONDARY:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("SECONDARY_STRENGTH")*Weight_ObjFunc;
-            break;
-          case SURFACE_MOM_DISTORTION:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENTUM_DISTORTION")*Weight_ObjFunc;
-            break;
-          case SURFACE_SECOND_OVER_UNIFORM:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("SECONDARY_OVER_UNIFORMITY")*Weight_ObjFunc;
-            break;
-          case TOTAL_AVG_TEMPERATURE:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_TOTALTEMP")*Weight_ObjFunc;
-            break;
-          case SURFACE_TOTAL_PRESSURE:
-            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_TOTALPRESS")*Weight_ObjFunc;
-            break;
+          case SURFACE_MASSFLOW:            FieldName = "AVG_MASSFLOW";              break;
+          case SURFACE_MACH:                FieldName = "AVG_MACH";                  break;
+          case SURFACE_UNIFORMITY:          FieldName = "UNIFORMITY";                break;
+          case SURFACE_SECONDARY:           FieldName = "SECONDARY_STRENGTH";        break;
+          case SURFACE_MOM_DISTORTION:      FieldName = "MOMENTUM_DISTORTION";       break;
+          case SURFACE_SECOND_OVER_UNIFORM: FieldName = "SECONDARY_OVER_UNIFORMITY"; break;
+          case TOTAL_AVG_TEMPERATURE:       FieldName = "AVG_TOTALTEMP";             break;
+          case SURFACE_TOTAL_PRESSURE:      FieldName = "AVG_TOTALPRESS";            break;
 
-          // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
+          default: ObjectiveNotCovered = true; break;
+        }
+
+        if(!FieldName.empty()) {
+          ObjFunc += direct_output[iZone]->GetHistoryFieldValue(FieldName)*Weight_ObjFunc;
+          break;
+        }
+
+        // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
+
+        switch (config->GetKind_ObjFunc()) {
 
           case SURFACE_PRESSURE_DROP:
-            ObjFunc+=config_container[iZone]->GetSurface_PressureDrop(0)*Weight_ObjFunc;
+            ObjFunc += config->GetSurface_PressureDrop(0)*Weight_ObjFunc;
             break;
           case SURFACE_STATIC_PRESSURE:
-            ObjFunc+=config_container[iZone]->GetSurface_Pressure(0)*Weight_ObjFunc;
+            ObjFunc += config->GetSurface_Pressure(0)*Weight_ObjFunc;
             break;
           case TOTAL_HEATFLUX:
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
+            ObjFunc += solvers[FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
             break;
 
           default:
-            ObjectiveNotCovered = true;
+            ObjectiveNotCovered &= true;
             break;
         }
         break;
-
+      }
       case DISC_ADJ_HEAT:
-
-        switch(config_container[iZone]->GetKind_ObjFunc()) {
+      {
+        switch(config->GetKind_ObjFunc()) {
 
           // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
 
           case TOTAL_HEATFLUX:
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
+            ObjFunc += solvers[HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
             break;
           case TOTAL_AVG_TEMPERATURE:
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
+            ObjFunc += solvers[HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
             break;
 
           default:
@@ -763,41 +743,36 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             break;
         }
         break;
-
+      }
       case DISC_ADJ_FEM:
-        {
-          auto geometry = geometry_container[iZone][INST_0][MESH_0];
-          auto solver  = solver_container[iZone][INST_0][MESH_0];
-          auto config = config_container[iZone];
+      {
+        switch(config->GetKind_ObjFunc()) {
 
-          switch(config_container[iZone]->GetKind_ObjFunc()) {
+          case REFERENCE_NODE:
+            solvers[FEA_SOL]->Compute_OFRefNode(geometry, solvers, config);
+            ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefNode()*Weight_ObjFunc;
+            break;
+          case REFERENCE_GEOMETRY:
+            solvers[FEA_SOL]->Compute_OFRefGeom(geometry, solvers, config);
+            ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
+            break;
+          case TOPOL_COMPLIANCE:
+            static_cast<CFEASolver*>(solvers[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
+            solvers[FEA_SOL]->Compute_OFCompliance(geometry, solvers, config);
+            ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
+            break;
+          case VOLUME_FRACTION:
+          case TOPOL_DISCRETENESS:
+            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, solvers, config);
+            ObjFunc += solvers[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
+            break;
 
-            case REFERENCE_NODE:
-              solver[FEA_SOL]->Compute_OFRefNode(geometry, solver, config);
-              ObjFunc += solver[FEA_SOL]->GetTotal_OFRefNode()*Weight_ObjFunc;
-              break;
-            case REFERENCE_GEOMETRY:
-              solver[FEA_SOL]->Compute_OFRefGeom(geometry, solver, config);
-              ObjFunc += solver[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
-              break;
-            case TOPOL_COMPLIANCE:
-              static_cast<CFEASolver*>(solver[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
-              solver[FEA_SOL]->Compute_OFCompliance(geometry, solver, config);
-              ObjFunc += solver[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
-              break;
-            case VOLUME_FRACTION:
-            case TOPOL_DISCRETENESS:
-              solver[FEA_SOL]->Compute_OFVolFrac(geometry, solver, config);
-              ObjFunc += solver[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
-              break;
-
-            default:
-              ObjectiveNotCovered = true;
-              break;
-          }
+          default:
+            ObjectiveNotCovered = true;
+            break;
         }
         break;
-
+      }
       default:
         break;
     }
@@ -847,10 +822,6 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   AD::ClearAdjoints();
 
-  /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
-
-  Add_External_To_Solution(iZone);
-
   /*--- Initialize the adjoints in iZone ---*/
 
   iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
@@ -875,12 +846,11 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
 void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++){
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->Add_Solution_To_External();
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
+      if (solver->GetAdjoint()) {
+        solver->Add_Solution_To_External();
       }
     }
   }
@@ -888,12 +858,11 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
 void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
 
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++){
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->Add_External_To_Solution();
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
+      if (solver->GetAdjoint()) {
+        solver->Add_External_To_Solution();
       }
     }
   }
@@ -901,14 +870,11 @@ void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
 
 void CDiscAdjMultizoneDriver::Update_Cross_Term(unsigned short iZone, unsigned short jZone) {
 
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++) {
-    CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
-    if (solver != NULL) {
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
       if (solver->GetAdjoint()) {
-        solver->Update_Cross_Term(config_container[jZone],
-                                  Cross_Terms[iZone][jZone][iSol]);
+        solver->Update_Cross_Term(config_container[jZone], Cross_Terms[iZone][jZone][iSol]);
       }
     }
   }
@@ -916,13 +882,11 @@ void CDiscAdjMultizoneDriver::Update_Cross_Term(unsigned short iZone, unsigned s
 
 void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
 
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++){
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
-                                                                          config_container[iZone]);
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
+      if (solver->GetAdjoint()) {
+        solver->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       }
     }
   }
@@ -930,12 +894,11 @@ void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
 
 void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution(unsigned short iZone) {
 
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++) {
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->GetNodes()->Restore_BGSSolution_k();
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
+      if (solver->GetAdjoint()) {
+        solver->GetNodes()->Restore_BGSSolution_k();
       }
     }
   }
@@ -943,13 +906,12 @@ void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution(unsigned short iZone) 
 
 void CDiscAdjMultizoneDriver::SetResidual_BGS(unsigned short iZone) {
 
-  unsigned short iSol;
-
-  for (iSol=0; iSol < MAX_SOLS; iSol++){
-    if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
-      if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-        solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0],
-                                                                                 config_container[iZone]);
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
+      if (solver->GetAdjoint()) {
+        solver->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0],
+                                          config_container[iZone]);
       }
     }
   }

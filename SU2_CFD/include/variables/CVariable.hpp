@@ -90,7 +90,6 @@ protected:
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
-  MatrixType External_Old;   /*!< \brief Old external (outer) contribution in discrete adjoint multizone problems. */
 
   su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
 
@@ -133,7 +132,7 @@ protected:
   unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
-  
+
 public:
 
   /*--- Disable default construction copy and assignment. ---*/
@@ -422,15 +421,6 @@ public:
   }
 
   /*!
-   * \brief Add a valaue to the old External vector.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_solution - Value that we want to add to the solution.
-   */
-  inline void Add_ExternalOld(unsigned long iPoint, const su2double* val_sol) {
-    for(unsigned long iVar = 0; iVar < nVar; iVar++) External_Old(iPoint,iVar) += val_sol[iVar];
-  }
-
-  /*!
    * \brief Add a value to the solution, clipping the values.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -481,13 +471,6 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
-  
-  /*!
-   * \brief Get the old external contributions of the problem.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the External_Old row for iPoint.
-   */
-  inline const su2double *Get_ExternalOld(unsigned long iPoint) const { return External_Old[iPoint]; }
 
   /*!
    * \brief Get the solution at time n.

@@ -61,8 +61,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
 
-  External = Solution;
-  External_Old.resize(nPoint,nVar) = su2double(0.0);
+  External.resize(nPoint,nVar) = su2double(0.0);
 
   if (fsi) {
     Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);

@@ -113,8 +113,6 @@ void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }
 
 void CVariable::SetExternalZero() { External.setConstant(0.0); }
 
-void CVariable::Set_OldExternal() { External_Old = External; }
-
 void CVariable::RegisterSolution(bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {

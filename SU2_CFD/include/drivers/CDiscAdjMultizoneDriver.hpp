@@ -114,6 +114,13 @@ protected:
   void Run() override;
 
   /*!
+   * \brief Evaluate sensitivites for the current adjoint solution and output files.
+   * \param[in] iOuterIter - Current outer iteration.
+   * \param[in] StopCalc - Final iteration flag (converged or reached max number of iters).
+   */
+  void EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc);
+
+  /*!
    * \brief Setup the matrix of cross-terms.
    */
   void InitializeCrossTerms();
@@ -121,8 +128,8 @@ protected:
   /*!
    * \brief Record one iteration of the primal problem within each zone.
    * \param[in] kind_recording - Kind of variables with respect to which we are recording.
-   * \param[in] tape_type - indicator which part of a solution update will be recorded
-   * \param[in] record_zone - zone where solution update will be recorded
+   * \param[in] tape_type - indicator which part of a solution update will be recorded.
+   * \param[in] record_zone - zone where solution update will be recorded.
    */
   void SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone);
 
@@ -157,6 +164,12 @@ protected:
   void ComputeAdjoints(unsigned short iZone, bool eval_transfer = true);
 
   /*!
+   * \brief Puts BGSSolution back into Solution.
+   * \param[in] iZone - Zone where data between solvers is transferred.
+   */
+  void Set_Solution_To_BGSSolution(unsigned short iZone);
+
+  /*!
    * \brief Add Solution vector to External.
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
@@ -180,12 +193,6 @@ protected:
    * \param[in] iZone - Zone where data between solvers is transferred.
    */
   void Set_BGSSolution(unsigned short iZone);
-
-  /*!
-   * \brief Puts BGSSolution back into Solution.
-   * \param[in] iZone - Zone where data between solvers is transferred.
-   */
-  void Set_Solution_To_BGSSolution(unsigned short iZone);
 
   /*!
    * \brief Compute BGS residuals.

@@ -59,8 +59,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   }
 
   if (config->GetMultizone_Problem()) {
-    External = Solution;
-    External_Old.resize(nPoint,nVar) = su2double(0.0);
+    External.resize(nPoint,nVar) = su2double(0.0);
   }
 
   /*--- Nothing else to allocate ---*/
