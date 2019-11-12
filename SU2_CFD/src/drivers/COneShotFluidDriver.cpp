@@ -1138,7 +1138,7 @@ void COneShotFluidDriver::SetConstrFunction(){
 
     FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
 
-    ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(config->GetConstraintTarget(iConstr) - FunctionValue);
+    ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
 
     if (rank == MASTER_NODE){
       AD::RegisterOutput(ConstrFunc[iConstr]);
@@ -1167,7 +1167,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
        helper+= BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
     // Multiplier[iConstr] = Multiplier[iConstr] + config->GetOneShotGamma()*helper*stepsize*config->GetMultiplierScale(iConstr);
-    Multiplier[iConstr] = Multiplier[iConstr] - helper*stepsize*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] = Multiplier[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
   }
 }
 
