@@ -644,8 +644,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_RMS(iVar,0.0);
-      SetRes_Max(iVar,0.0,0);
+    SetRes_RMS(iVar,0.0);
+    SetRes_Max(iVar,0.0,0);
   }
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
@@ -991,6 +991,27 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
       Total_Sens_DV[iVar] += Global_Sens_DV[iVar];
   }
 
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    su2double *Coord = geometry->node[iPoint]->GetCoord();
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+      su2double Sensitivity;
+
+      if(config->GetMultizone_Problem()) {
+        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+      }
+      else {
+        Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+        /*--- Set the index manually to zero. ---*/
+        AD::ResetInput(Coord[iDim]);
+      }
+
+      nodes->SetSensitivity(iPoint, iDim, Sensitivity);
+    }
+  }
+  SetSurface_Sensitivity(geometry, config);
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
