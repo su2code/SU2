@@ -921,7 +921,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.399698, 0.351908, 0.405704] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.398126, 0.353070, 0.405696] #last 4 columns
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -934,7 +934,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.624073, 0.502950, 0.417050] #last 4 columns
+    channel_3D.test_vals = [2.000000, 0.000000, 0.620109, 0.505162, 0.415445] #last 4 columns
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -947,7 +947,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [0.117226, 0.491935, 0.676389, 0.974442, 1.024041] #last 4 columns
+    pipe.test_vals = [0.150025, 0.491954, 0.677756, 0.963980, 1.006936] #last 4 columns
     pipe.su2_exec  = "parallel_computation.py -f"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
@@ -960,7 +960,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.754346, 1.111512, 1.194307] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777044, 1.134689, 1.224326] #last 4 columns
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -973,7 +973,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.220915, 1.568306] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.244192, 1.644524] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -986,7 +986,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.719501, -1.608959] #last 4 columns
+    bars_SST_2D.test_vals = [13.000000, -0.590195, -1.955385] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1062,7 +1062,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.312222, -4.959311, 0.000000, 46.000000] #last 5 columns
+    stat_fsi.test_vals = [-3.313322, -4.963786, 0.000000, 46.000000] #last 5 columns
     stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi.multizone = True
     stat_fsi.timeout   = 1600
