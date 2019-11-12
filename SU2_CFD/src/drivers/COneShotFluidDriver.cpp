@@ -1138,7 +1138,7 @@ void COneShotFluidDriver::SetConstrFunction(){
 
     FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
 
-    ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
+    ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(config->GetConstraintTarget(iConstr) - Function_Value);
 
     if (rank == MASTER_NODE){
       AD::RegisterOutput(ConstrFunc[iConstr]);
