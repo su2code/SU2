@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os_bin: [macos64, linux64, win64]
-        include: 
+        include:
           - os_bin: win64
             flags: '-Dwith-mpi=disabled --cross-file=/hostfile_windows -Denable-tecio=false'
           - os_bin: macos64
@@ -29,15 +29,15 @@ jobs:
       - name: Create Archive
         run: |
           cd install
-          zip -r ../${{matrix.os_bin}}.zip bin/*  
+          zip -r ../${{matrix.os_bin}}.zip bin/*
         # Drafts your next Release notes as Pull Requests are merged into "master"
       - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-10
         name: Update Release
         id: update_release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload Release Asset
-        id: upload-release-asset 
+        id: upload-release-asset
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
