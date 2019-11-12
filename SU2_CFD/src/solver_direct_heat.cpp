@@ -52,7 +52,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   bool multizone = config->GetMultizone_Problem();
 
   int rank = MASTER_NODE;
-  
+
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 

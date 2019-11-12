@@ -31,7 +31,7 @@ void CSU2MeshFileWriter::Write_Data(){
   strcpy (cstr, out_file);
 
   if (rank == MASTER_NODE){
-    
+
     /*--- For multizone-cases this only works if the all zonal meshes are in one file.
           If the meshes are separate for each zone another solution has to be found. ---*/
     if (iZone==0) {
@@ -43,7 +43,7 @@ void CSU2MeshFileWriter::Write_Data(){
     if (iZone==0 && nZone>1) {
       output_file << "NZONE= " << nZone << endl;
     }
-    
+
     if (nZone > 1){
       output_file << "IZONE= " << iZone+1 << endl;
     }
