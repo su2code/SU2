@@ -5270,8 +5270,11 @@ void CDiscAdjFSIDriver::Run( ) {
 
   }
 
+  output_container[ZONE_FLOW]->SetResult_Files(geometry_container[ZONE_FLOW][INST_0][MESH_0],
+    config_container[ZONE_FLOW], solver_container[ZONE_FLOW][INST_0][MESH_0], 0, true);
 
-  Postprocess(ZONE_FLOW, ZONE_STRUCT);
+  output_container[ZONE_STRUCT]->SetResult_Files(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
+    config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][INST_0][MESH_0], 0, true);
 
 }
 
@@ -6358,7 +6361,6 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
                                                  unsigned short ZONE_FLOW,
                                                  unsigned short ZONE_STRUCT){
 
-  unsigned short iMarker;
   unsigned short nVar_Flow = solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar(),
                    nVar_Struct = solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
   unsigned short iRes;
@@ -6369,15 +6371,6 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
         struct_converged_relative = false;
 
   bool Convergence = false;
-
-  /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
-  for (iMarker = 0; iMarker < config_container[ZONE_STRUCT]->GetnMarker_All(); iMarker++)
-  switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
-    case CLAMPED_BOUNDARY:
-    solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
-    break;
-  }
 
   /*--- Compute the residual for the flow and structural zones ---*/
 
@@ -6562,23 +6555,6 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
                                                                        config_container[ZONE_STRUCT]);
 
   return Convergence;
-}
-
-void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
-                                             unsigned short ZONE_STRUCT) {
-
-  unsigned short iMarker;
-
-  /*--- Apply BC's to the structural adjoint after the solution has converged (to avoid unphysical values in clamped nodes) ---*/
-  for (iMarker = 0; iMarker < config_container[ZONE_STRUCT]->GetnMarker_All(); iMarker++)
-  switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
-    case CLAMPED_BOUNDARY:
-    solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
-    break;
-  }
-
-
 }
 
 void CDiscAdjFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {

@@ -1,5 +1,5 @@
 #include "../../../include/output/filewriter/CFVMDataSorter.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../../Common/include/geometry_structure.hpp"
 
 CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
 
