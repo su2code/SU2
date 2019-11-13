@@ -1136,7 +1136,7 @@ void COneShotFluidDriver::SetConstrFunction(){
 
     /*--- Flip sign on GEQ constraint (we want descent on (Target-FuncVal)) ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == GEQ_CONSTR) {
-      ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
+      ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(config->GetConstraintTarget(iConstr) - FunctionValue);
     }
     else {
       ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
