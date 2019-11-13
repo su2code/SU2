@@ -270,7 +270,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
-  WindowedAverage windowEvaluator = WindowedAverage();
+  WindowingTools windowEvaluator = WindowingTools();
 
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
