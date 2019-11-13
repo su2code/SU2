@@ -342,7 +342,7 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
   /*--- Perform the elasticity mesh movement ---*/
   if (config->GetDeform_Mesh()) {
 
-    if(kind_recording != MESH_DEFORM){
+    if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
       /*--- In a primal run, AD::TapeActive returns a false ---*/
       /*--- In any other recordings, the tape is passive during the deformation ---*/
       ActiveTape = AD::TapeActive();
@@ -357,7 +357,7 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
 
     solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
 
-    if(ActiveTape) {
+    if (ActiveTape) {
       /*--- Start recording if it was stopped ---*/
       AD::StartRecording();
     }
@@ -2913,6 +2913,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   auto structural_numerics = numerics[iZone][iInst][MESH_0][FEA_SOL];
 
   /*--- Some numerics are only instanciated under these conditions ---*/
+  bool fsi = config[iZone]->GetFSI_Simulation();
   bool nonlinear = config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS;
   bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   bool element_based = dir_solver->IsElementBased() && nonlinear;
@@ -2982,6 +2983,12 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
         }
       }
     break;
+  }
+
+  /*--- FSI specific dependencies. ---*/
+  if(fsi) {
+    /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
+    dir_solver->PredictStruct_Displacement(nullptr, config[iZone], solver[iZone][iInst]);
   }
 
   /*--- MPI dependencies. ---*/
