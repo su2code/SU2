@@ -3249,7 +3249,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Allocate constraint arrays if running one-shot optimization ---*/
   if(nConstr!=0 && Kind_ConstrFuncType == NULL){
-    Kind_ConstrFuncType = new su2double[nConstr];
+    Kind_ConstrFuncType = new unsigned short[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
       Kind_ConstrFuncType[iConstr] = EQ_CONSTR;
     }
