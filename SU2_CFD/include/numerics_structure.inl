@@ -79,6 +79,8 @@ inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned 
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
+
 inline void CNumerics::ReadDV(CConfig *config){ }
 
 inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
@@ -198,8 +200,6 @@ inline void CNumerics::ComputeVibRelaxation(su2double *val_residual, su2double *
 inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
-
-inline su2double CNumerics::GetPrecond_Beta() { return 0; }
 
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
   Und_Lapl_i = val_und_lapl_i; 
@@ -573,8 +573,6 @@ inline su2double CSourcePieceWise_TurbSA_Neg::GetProduction(void) { return Produ
 inline su2double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
-
-inline su2double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, CConfig *config) { }
 

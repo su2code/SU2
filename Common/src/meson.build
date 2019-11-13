@@ -22,7 +22,13 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'adt_structure.cpp',
            'interpolation_structure.cpp',
            'mpi_structure.cpp',
-           'fem_cgns_elements.cpp'])
+           'fem_cgns_elements.cpp',
+           'CMultiGridQueue.cpp',
+           'CMeshReaderFVM.cpp',
+           'CSU2ASCIIMeshReaderFVM.cpp',
+           'CBoxMeshReaderFVM.cpp',
+           'CCGNSMeshReaderFVM.cpp',
+           'CRectangularMeshReaderFVM.cpp'])
 
 subdir('linear_algebra')
 subdir('toolboxes')

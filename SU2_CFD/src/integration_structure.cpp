@@ -65,8 +65,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Compute inviscid residuals ---*/
   
@@ -113,7 +113,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
       case EULER_WALL:
-        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -162,20 +162,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case DISPLACEMENT_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
   }
@@ -192,9 +180,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
-        break;
-      case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -224,20 +209,18 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      CSolver **solver_container,
                                      CNumerics **numerics,
                                      CConfig *config,
-                                     unsigned short RunTime_EqSystem,
-                                     unsigned long Iteration) {
+                                     unsigned short RunTime_EqSystem) {
 
     unsigned short iMarker;
 
-    bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+    bool initial_calc = (config->GetTimeIter() == 0);                  // Checks if it is the first calculation.
     bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool first_iter = (config->GetIntIter() == 0);                  // Checks if it is the first iteration
-    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+    bool first_iter = (config->GetInnerIter() == 0);                  // Checks if it is the first iteration
     unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
     unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
     bool restart = config->GetRestart();                                  // Restart solution
-    bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
+    bool initial_calc_restart = (SU2_TYPE::Int(config->GetTimeIter()) ==  SU2_TYPE::Int(config->GetRestart_Iter()));  // Restart iteration
 
     /*--- Compute Mass Matrix ---*/
     /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
@@ -245,9 +228,9 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
     /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
     /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-    if ((linear_analysis && (initial_calc || dynamic)) ||
+    if ((linear_analysis && (initial_calc && first_iter)) ||
       (linear_analysis && restart && initial_calc_restart)) {
-      solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
+      solver_container[MainSolver]->Compute_StiffMatrix(geometry, numerics, config);
     }
     else if (!linear_analysis) {
       /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
@@ -255,7 +238,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       /*--- They are calculated together to avoid looping twice over the elements ---*/
       if (IterativeScheme == NEWTON_RAPHSON) {
         /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
-        solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+        solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
       }
 
       /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
@@ -263,11 +246,11 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
 
         if (first_iter) {
-          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
         }
 
         else {
-          solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
+          solver_container[MainSolver]->Compute_NodalStressRes(geometry, numerics, config);
         }
 
       }
@@ -282,10 +265,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         switch (config->GetMarker_All_KindBC(iMarker)) {
           case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
           case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
         }
       }
@@ -295,10 +278,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case LOAD_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DAMPER_BOUNDARY:
-          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
         break;
       }
     }
@@ -328,8 +311,9 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
       if (iMGLevel != config[iZone]->GetnMGLevels()) {
         SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
-        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
-                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+//        ToDo: The flow solvers do not use the conservative variable gradients
+//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+//                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
       }
       
     }
@@ -338,7 +322,7 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+                                    unsigned short RunTime_EqSystem) {
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short KindSolver = config->GetKind_Solver();
   
@@ -384,7 +368,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+                                    unsigned short RunTime_EqSystem) {
 
   unsigned short iMarker;
 
@@ -409,19 +393,19 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case CLAMPED_BOUNDARY:
-          solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DISP_DIR_BOUNDARY:
-          solver_container[MainSolver]->BC_DispDir(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DISPLACEMENT_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
           break;
       }
 
   /*--- Solver linearized system ---*/
 
-    solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
+    solver_container[MainSolver]->Solve_System(geometry, config);
 
   /*--- Update solution ---*/
 
@@ -442,10 +426,10 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+      solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
       break;
 //      case DISPLACEMENT_BOUNDARY:
-//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
 //      break;
     }
 
@@ -456,140 +440,15 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
-                                          su2double monitor, unsigned short iMesh) {
-  
-  unsigned short iCounter;
-
-  /*--- Initialize some variables for controlling the output frequency. ---*/
-  
-  bool DualTime_Iteration = false;
-  unsigned long iIntIter = config->GetIntIter();
-  unsigned long iExtIter = config->GetExtIter();
-  bool Unsteady = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                   (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
-  bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config->GetWrt_Con_Freq_DualTime() == 0));
-  bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
-  bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
-  bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
-  
-  if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
-    
-    bool Already_Converged = Convergence;
-    
-    /*--- Cauchy based convergence criteria ---*/
-    
-    if (config->GetConvCriteria() == CAUCHY) {
-      
-      /*--- Initialize at the fist iteration ---*/
-      
-      if (Iteration  == 0) {
-        Cauchy_Value = 0.0;
-        Cauchy_Counter = 0;
-        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-          Cauchy_Serie[iCounter] = 0.0;
-      }
-      
-      Old_Func = New_Func;
-      New_Func = monitor;
-      Cauchy_Func = fabs(New_Func - Old_Func);
-      
-      Cauchy_Serie[Cauchy_Counter] = Cauchy_Func;
-      Cauchy_Counter++;
-      
-      if (Cauchy_Counter == config->GetCauchy_Elems()) Cauchy_Counter = 0;
-      
-      Cauchy_Value = 1;
-      if (Iteration  >= config->GetCauchy_Elems()) {
-        Cauchy_Value = 0;
-        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-          Cauchy_Value += Cauchy_Serie[iCounter];
-      }
-      
-      if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
-      else { Convergence = true; Convergence_FullMG = true; }
-      
-    }
-    
-    /*--- Residual based convergence criteria ---*/
-    
-    if (config->GetConvCriteria() == RESIDUAL) {
-      
-      /*--- Compute the initial value ---*/
-      
-      if (Iteration == config->GetStartConv_Iter() ) InitResidual = monitor;
-      if (monitor > InitResidual) InitResidual = monitor;
-      
-      /*--- Check the convergence ---*/
-      
-      if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
-          (monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
-      else { Convergence = false; Convergence_FullMG = false; }
-      
-    }
-    
-    /*--- Do not apply any convergence criteria of the number
-     of iterations is less than a particular value ---*/
-    
-    if (Iteration < config->GetStartConv_Iter()) {
-      Convergence = false;
-      Convergence_FullMG = false;
-    }
-    
-    if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
-    
-    
-    /*--- Apply the same convergence criteria to all the processors ---*/
-    
-#ifdef HAVE_MPI
-    
-    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-    
-    /*--- Convergence criteria ---*/
-    
-    sbuf_conv[0] = Convergence;
-    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-    
-    /*-- Compute global convergence criteria in the master node --*/
-    
-    sbuf_conv[0] = 0;
-    if (rank == MASTER_NODE) {
-      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-      else sbuf_conv[0] = 0;
-    }
-    
-    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
-    else { Convergence = false; Convergence_FullMG = false; }
-    
-    delete [] sbuf_conv;
-    delete [] rbuf_conv;
-    
-#endif
-    
-    /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-    
-    if (monitor != monitor) {
-      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
-    }
-    
-    if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
-    
-  }
-  
-}
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+
   unsigned long iPoint;
-  
+
+  solver->GetNodes()->Set_Solution_time_n1();
+  solver->GetNodes()->Set_Solution_time_n();
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    solver->node[iPoint]->Set_Solution_time_n1();
-    solver->node[iPoint]->Set_Solution_time_n();
-    
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
     
@@ -672,36 +531,27 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 }
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver->node[iPoint]->SetSolution_time_n();
-    solver->node[iPoint]->SetSolution_Vel_time_n();
-    solver->node[iPoint]->SetSolution_Accel_time_n();
-    
-  }
-  
+
+  solver->GetNodes()->Set_Solution_time_n();
+  solver->GetNodes()->SetSolution_Vel_time_n();
+  solver->GetNodes()->SetSolution_Accel_time_n();
+
   bool fsi = config->GetFSI_Simulation();
-  
+
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-  
+
   if (fsi) {
-    
+
     su2double WAitk=0.0;
-    
+
     WAitk = solver->GetWAitken_Dyn();
     solver->SetWAitken_Dyn_tn1(WAitk);
-    
+
   }
-  
-  
 }
 
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
+
   bool fsi = config->GetFSI_Simulation();
   
   /*--- Update the solution according to the integration scheme used ---*/
@@ -718,302 +568,21 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
       break;
   }
-  
+
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
-    
-  }
-  
+
+  solver_container[FEA_SOL]->GetNodes()->Set_Solution_time_n();
+  solver_container[FEA_SOL]->GetNodes()->SetSolution_Vel_time_n();
+  solver_container[FEA_SOL]->GetNodes()->SetSolution_Accel_time_n();
+
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-  
+
   if (fsi) {
-    
+
     su2double WAitk=0.0;
-    
+
     WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
     solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
-    
-  }
-  
-}
-
-void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
-  
-  su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
-  su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-  
-  bool Already_Converged = Convergence;
-  
-  Reference_UTOL = config->GetResidual_FEM_UTOL();
-  Reference_RTOL = config->GetResidual_FEM_RTOL();
-  Reference_ETOL = config->GetResidual_FEM_ETOL();
-  
-  Residual_UTOL = log10(solver->GetRes_FEM(0));
-  Residual_RTOL = log10(solver->GetRes_FEM(1));
-  Residual_ETOL = log10(solver->GetRes_FEM(2));
-  
-  //  cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
-  //  cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
-  
-  if ((Residual_UTOL <= Reference_UTOL) &&
-      (Residual_ETOL <= Reference_ETOL) &&
-      (Residual_RTOL <= Reference_RTOL)) {
-    Convergence = true;
-  }
-  
-  if (Already_Converged) Convergence = true;
-  
-  
-  /*--- Apply the same convergence criteria to all the processors ---*/
-  
-#ifdef HAVE_MPI
-  
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-  
-  /*--- Convergence criteria ---*/
-  
-  sbuf_conv[0] = Convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  
-  /*-- Compute global convergence criteria in the master node --*/
-  
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-  
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-  
-  if (sbuf_conv[0] == 1) { Convergence = true; }
-  else { Convergence = false; }
-  
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-  
-#endif
-  
-}
-
-void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
-
-  su2double val_I, Max_Val_I;
-
-  bool Already_Converged = Convergence;
-
-  Max_Val_I = config->GetCriteria_FEM_ADJ();
-  val_I     = log10(solver->Get_val_I());
-
-  //  cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
-  //  cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
-
-  if (val_I <= Max_Val_I){
-    Convergence = true;
-  }
-
-  if (Already_Converged) Convergence = true;
-
-
-  /*--- Apply the same convergence criteria to all the processors ---*/
-
-#ifdef HAVE_MPI
-
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-
-  /*--- Convergence criteria ---*/
-
-  sbuf_conv[0] = Convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-  /*-- Compute global convergence criteria in the master node --*/
-
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-
-  if (sbuf_conv[0] == 1) { Convergence = true; }
-  else { Convergence = false; }
-
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-
-#endif
-
-}
-
-
-void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iOuterIter) {
-  
-  su2double FEA_check[2] = {0.0, 0.0};
-  su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;
-  su2double magResidualFSI_criteria, logResidualFSI_criteria;
-  
-  unsigned long iExtIter = fea_config->GetExtIter();
-  
-  unsigned long iPoint, iDim;
-  unsigned long nPointDomain, nDim;
-  su2double *dispPred, *dispPred_Old;
-  su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
-  
-  magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
-  logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
-  
-  deltaURes = 0.0;
-  
-  /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
-  /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
-  
-  if (iOuterIter == 0) {
-    /*--- Set the convergence values to 0.0 --*/
-    fea_solver->SetFSI_ConvValue(0,0.0);
-    fea_solver->SetFSI_ConvValue(1,0.0);
-    
-  }
-  else if (iOuterIter > 0) {
-    
-    // We loop only over the points that belong to the processor
-    nPointDomain = fea_geometry->GetnPointDomain();
-    nDim = fea_geometry->GetnDim();
-    
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-      
-      deltaURad = 0.0;
-      
-      dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
-      dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        
-        /*--- Compute the deltaU, and add deltaU2 to deltaURad ---*/
-        deltaU = dispPred[iDim] - dispPred_Old[iDim];
-        deltaURad += deltaU * deltaU;
-        
-      }
-      
-      /*--- The residual is the maximum of the values of sqrt(deltaURad) computed ---*/
-      deltaURad = sqrt(deltaURad);
-      deltaURes = max(deltaURes, deltaURad);
-      
-    }
-    
-    // We need to communicate the maximum residual throughout the different processors
-    
-#ifdef HAVE_MPI
-    /*--- We sum the squares of the norms across the different processors ---*/
-    SU2_MPI::Allreduce(&deltaURes, &deltaURes_recv, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-    deltaURes_recv         = deltaURes;
-#endif
-
-    /*--- Store the FSI residual ---*/
-    fea_solver->SetFSI_Residual(deltaURes_recv);
-
-    if (iOuterIter == 1) {
-      fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
-      logResidualFSI_initial = log10(deltaURes_recv);
-      
-      if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
-
-    }
-    else {
-      fea_solver->SetFSI_ConvValue(1,deltaURes_recv);
-      FEA_check[0] = fea_solver->GetFSI_ConvValue(0);
-      logResidualFSI_initial = log10(FEA_check[0]);
-      logResidualFSI = log10(deltaURes_recv);
-      
-      magResidualFSI=logResidualFSI-logResidualFSI_initial;
-      
-      if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
-    }
 
   }
-    
-  /*--- Apply the same convergence criteria to all the processors ---*/
-  
-#ifdef HAVE_MPI
-  
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-  
-  /*--- Convergence criteria ---*/
-  
-  sbuf_conv[0] = Convergence_FSI;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  
-  /*-- Compute global convergence criteria in the master node --*/
-  
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-  
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-  
-  if (sbuf_conv[0] == 1) { Convergence_FSI = true; }
-  else { Convergence_FSI = false; }
-  
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-  
-#endif
-  
-  if (rank == MASTER_NODE) {
-    
-    su2double WAitken;
-    unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
-    
-    if (RelaxMethod_FSI == NO_RELAXATION) {
-      WAitken = 1.0;
-    }
-    else if (RelaxMethod_FSI == FIXED_PARAMETER) {
-      WAitken = fea_config->GetAitkenStatRelax();
-    }
-    else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
-      WAitken = fea_solver->GetWAitken_Dyn();
-    }
-    else {
-      WAitken = 1.0;
-      cout << "No relaxation parameter used. " << endl;
-    }
-    
-    /*--- Store the Relaxation coefficient residual ---*/
-    fea_solver->SetRelaxCoeff(WAitken);
-
-    cout.precision(6);
-    if (iOuterIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
-    else if (iOuterIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
-    else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
-      
-    cout.width(8); cout << iOuterIter;
-    cout.width(15); cout << iExtIter;
-    cout.width(15); cout << WAitken;
-    cout.width(15);
-    if (iOuterIter == 0) cout << " ";
-    else if (iOuterIter == 1) cout << logResidualFSI_initial;
-    else cout << logResidualFSI;
-    cout.width(15);
-    if (iOuterIter < 2) cout << " ";
-    else cout << magResidualFSI;
-    cout.setf(ios::fixed, ios::floatfield);
-    cout << endl;
-    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
-    cout << endl;
-    cout << endl << "------------------------------------------------------------------------- ";
-    cout << endl;
-  }
-  
 }

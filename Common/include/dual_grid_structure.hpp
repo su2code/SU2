@@ -152,20 +152,20 @@ private:
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,                   /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   SolidBoundary,                      /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  PeriodicBoundary;                      /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
+  PeriodicBoundary;                   /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
   long *Vertex;                       /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
   su2double *Coord,                   /*!< \brief vector with the coordinates of the node. */
-  *Coord_Old,                         /*!< \brief Old coordinates vector for geometry smoothing. */
-  *Coord_Sum,                         /*!< \brief Sum of coordinates vector for geometry smoothing. */
-  *Coord_n,                           /*!< \brief Coordinates at time n for use with dynamic meshes. */
-  *Coord_n1,                          /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
-  *Coord_p1;                          /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
+            *Coord_Old,               /*!< \brief Old coordinates vector for primal solution reloading for Disc.Adj. with dynamic grid. */
+            *Coord_Sum,               /*!< \brief Sum of coordinates vector for geometry smoothing. */
+            *Coord_n,                 /*!< \brief Coordinates at time n for use with dynamic meshes. */
+            *Coord_n1,                /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
+            *Coord_p1;                /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
   su2double *GridVel;                 /*!< \brief Velocity of the grid for dynamic mesh cases. */
   su2double **GridVel_Grad;           /*!< \brief Gradient of the grid velocity for dynamic meshes. */
   unsigned long Parent_CV;            /*!< \brief Index of the parent control volume in the agglomeration process. */
   unsigned short nChildren_CV;        /*!< \brief Number of children in the agglomeration process. */
   vector<unsigned long> Children_CV;  /*!< \brief Index of the children control volumes in the agglomeration process. */
-  bool Agglomerate_Indirect,					/*!< \brief This flag indicates if the indirect points can be agglomerated. */
+  bool Agglomerate_Indirect,          /*!< \brief This flag indicates if the indirect points can be agglomerated. */
   Agglomerate;                        /*!< \brief This flag indicates if the element has been agglomerated. */
   bool Move;                          /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
   unsigned long color;                /*!< \brief Color of the point in the partitioning strategy. */
@@ -176,6 +176,8 @@ private:
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
   su2double MaxLength;                /*!< \brief The maximum cell-center to cell-center length. */
+  int *AD_InputIndex,                 /*!< \brief Indices of Coord variables in the adjoint vector. */
+  *AD_OutputIndex;                    /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
 public:
 	
@@ -289,7 +291,25 @@ public:
 	 * \param[in] val_dim - Position to store the coordinate.		 
 	 * \param[in] val_coord - Coordinate for val_dim.			 
 	 */
-	void SetCoord(unsigned short val_dim, su2double val_coord);
+  void SetCoord(unsigned short val_dim, su2double val_coord);
+
+  /*!
+   * \brief Set the adjoint vector indices of Coord vector.
+   * \param[in] input - Save them to the input or output indices vector.
+   */
+  void SetIndex(bool input);
+
+  /*!
+   * \brief Set the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  void SetAdjointSolution(const su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  su2double GetAdjointSolution(unsigned short iDim);
   
   /*!
 	 * \brief Get the coordinates of the control volume.
@@ -567,12 +587,12 @@ public:
 	su2double* GetCoord_p1(void);
   
 	/*! 
-	 * \brief Set the coordinates of the control volume at time n.
+	 * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
 	 */
 	void SetCoord_n(void);
 	
 	/*! 
-	 * \brief Set the coordinates of the control volume at time n-1.
+	 * \brief Set the coordinates of the control volume at time n-1 to the ones in <i>Coord_n</i>.
 	 */
 	void SetCoord_n1(void);
 
@@ -708,6 +728,11 @@ public:
 	 * \param[in] val_coord_old - Value of the coordinates.
 	 */	
 	void SetCoord_Old(su2double *val_coord_old);
+
+	/*!
+	 * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
+	 */
+	void SetCoord_Old(void);
 	
 	/*! 
 	 * \brief Set the value of the grid velocity at the point.
@@ -718,6 +743,7 @@ public:
 	
 	/*! 
 	 * \overload
+	 * \brief Set the value of the grid velocity at the point.
 	 * \param[in] val_gridvel - Value of the grid velocity.
 	 */	
 	void SetGridVel(su2double *val_gridvel);
@@ -785,10 +811,22 @@ public:
   void SetAdjointCoord(su2double *adj_coor);
 
   /*!
+   * \brief Set the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void SetAdjointCoord_LocalIndex(su2double *adj_coor);
+
+  /*!
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
   void GetAdjointCoord(su2double *adj_coor);
+
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void GetAdjointCoord_LocalIndex(su2double *adj_coor);
 
 };
 

@@ -37,69 +37,38 @@
 
 #include "../../include/variables/CScalarVariable.hpp"
 
-CScalarVariable::CScalarVariable(void) : CVariable() { }
-
-CScalarVariable::CScalarVariable(su2double *val_scalar,
-                                 unsigned short val_nDim,
-                                 unsigned short val_nvar,
-                                 CConfig *config) : CVariable(val_nDim,
-                                                              val_nvar,
-                                                              config) {
+CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
+    
+  /*--- Gradient related fields ---*/
   
-  unsigned short iVar, iMesh, nMGSmooth = 0;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  Gradient.resize(nPoint,nVar,nDim,0.0);
   
-  /*--- Initialization of variables ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar]     = val_scalar[iVar];
-    Solution_Old[iVar] = val_scalar[iVar];
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
   
-  /*--- Allocate and initialize solution for the dual time strategy. ---*/
+  /*--- Allocate residual structures ---*/
   
-  if (dual_time) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar]  = val_scalar[iVar];
-      Solution_time_n1[iVar] = val_scalar[iVar];
-    }
-  }
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
   
-  /*--- Always allocate the slope limiter and necessary aux. variables. ---*/
+  /*--- Always allocate the slope limiter, and the auxiliar
+   variables (check the logic - JST with 2nd order Turb model) ---*/
   
-  Limiter = new su2double[nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
   
-  Solution_Max = new su2double[nVar];
-  Solution_Min = new su2double[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution_Max[iVar] = 0.0;
-    Solution_Min[iVar] = 0.0;
-  }
-  
-  /*--- Allocate residual structures in case of multigrid. ---*/
-  
-  Res_TruncError = new su2double[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
-  
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
-  if (nMGSmooth > 0) {
-    Residual_Sum = new su2double[nVar];
-    Residual_Old = new su2double[nVar];
-  }
+  Delta_Time.resize(nPoint) = su2double(0.0);
   
   /*--- Allocate space for the mass diffusivity. ---*/
   
-  Diffusivity = new su2double[nVar];
+  Diffusivity.resize(nPoint,nVar) = su2double(0.0);
   
-}
+  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
+  
+  if (config->GetAxisymmetric() && config->GetViscous()) {
+    AuxVar.resize(nPoint);
+    Grad_AuxVar.resize(nPoint,nDim);
+  }
 
-CScalarVariable::~CScalarVariable(void) {
-  delete [] Diffusivity;
 }

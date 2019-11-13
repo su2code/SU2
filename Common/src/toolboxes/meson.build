@@ -1,3 +1,4 @@
-common_src += files(['printing_toolbox.cpp'])
+common_src += files(['CLinearPartitioner.cpp',
+                     'printing_toolbox.cpp'])
 
 subdir('MMS')

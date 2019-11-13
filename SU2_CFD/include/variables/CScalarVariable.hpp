@@ -47,39 +47,35 @@
  */
 class CScalarVariable : public CVariable {
 protected:
-  su2double *Diffusivity;  /*!< \brief Vector of mass diffusivities for scalar transport. */
+  MatrixType Diffusivity;  /*!< \brief Vector of mass diffusivities for scalar transport. */
   
 public:
   /*!
    * \brief Constructor of the class.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim   - Number of dimensions of the problem.
+   * \param[in] nvar   - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  CScalarVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_scalar - Pointer to the scalar solution values.
-   * \param[in] val_nDim   - Number of dimensions of the problem.
-   * \param[in] val_nvar   - Number of variables of the problem.
-   * \param[in] config     - Definition of the particular problem.
-   */
-  CScalarVariable(su2double      *val_scalar,
-                  unsigned short val_nDim,
-                  unsigned short val_nvar,
-                  CConfig        *config);
-  
+  CScalarVariable(unsigned long npoint,
+                  unsigned long ndim,
+                  unsigned long nvar,
+                  CConfig       *config);
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CScalarVariable(void);
+  virtual ~CScalarVariable() = default;
   
   /*!
    * \brief Set the value of the mass diffusivity
    * \param[in] val_diffusivity - the mass diffusivity.
    * \param[in] val_ivar        - eqn. index to the mass diffusivity.
    */
-  inline void SetDiffusivity(su2double      val_diffusivity,
+  inline void SetDiffusivity(unsigned long  iPoint,
+                             su2double      val_diffusivity,
                              unsigned short val_ivar) {
-    Diffusivity[val_ivar] = val_diffusivity;
+    Diffusivity(iPoint,val_ivar) = val_diffusivity;
   }
   
   /*!
@@ -87,16 +83,17 @@ public:
    * \param[in] val_ivar - eqn. index to the mass diffusivity.
    * \return Value of the mass diffusivity
    */
-  inline su2double GetDiffusivity(unsigned short val_ivar) {
-    return Diffusivity[val_ivar];
+  inline su2double GetDiffusivity(unsigned long  iPoint,
+                                  unsigned short val_ivar) {
+    return Diffusivity(iPoint,val_ivar);
   }
   
   /*!
    * \brief Get the value of the mass diffusivities
    * \return Pointer to the mass diffusivities
    */
-  inline su2double* GetDiffusivity(void) {
-    return Diffusivity;
+  inline su2double* GetDiffusivity(unsigned long iPoint) {
+    return Diffusivity[iPoint];
   }
 
 };

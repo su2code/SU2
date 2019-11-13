@@ -424,7 +424,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string::size_type position;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
-  bool time_spectral = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool time_spectral = config->GetTime_Marching() == HARMONIC_BALANCE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   nZone = val_nZone;
 
@@ -441,9 +441,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate memory for the linear partition of the elements of the mesh.
         These arrays are the size of the number of ranks. ---*/
 
-  starting_node = new unsigned long[size];
-  ending_node   = new unsigned long[size];
-  npoint_procs  = new unsigned long[size];
+  beg_node = new unsigned long[size];
+  end_node = new unsigned long[size];
+  nPointLinear  = new unsigned long[size];
 
   /*--- Open grid file ---*/
 
@@ -524,23 +524,23 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
             balancing for any remainder elements. ---*/
       unsigned long total_elem_accounted = 0;
       for(unsigned long i = 0; i < (unsigned long)size; i++) {
-        npoint_procs[i] = Global_nElem/size;
-        total_elem_accounted = total_elem_accounted + npoint_procs[i];
+        nPointLinear[i] = Global_nElem/size;
+        total_elem_accounted = total_elem_accounted + nPointLinear[i];
       }
 
       /*--- Get the number of remainder elements after the even division ---*/
       unsigned long rem_elem = Global_nElem - total_elem_accounted;
       for (unsigned long i = 0; i<rem_elem; i++) {
-        ++npoint_procs[i];
+        ++nPointLinear[i];
       }
 
       /*--- Store the local number of elements and the beginning/end index ---*/
-      nElem = npoint_procs[rank];
-      starting_node[0] = 0;
-      ending_node[0]   = starting_node[0] + npoint_procs[0];
+      nElem = nPointLinear[rank];
+      beg_node[0] = 0;
+      end_node[0] = beg_node[0] + nPointLinear[0];
       for (unsigned long i = 1; i < (unsigned long)size; i++) {
-        starting_node[i] = ending_node[i-1];
-        ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+        beg_node[i] = end_node[i-1];
+        end_node[i] = beg_node[i] + nPointLinear[i] ;
       }
 
       /*--- Allocate space for elements ---*/
@@ -582,7 +582,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         /*--- Allocate the memory for a new primary grid FEM element if
               this element must be stored on this rank.                 ---*/
-        if ((i >= starting_node[rank]) && (i < ending_node[rank])) {
+        if ((i >= beg_node[rank]) && (i < end_node[rank])) {
 
           elem[loc_element_count] = new CPrimalGridFEM(i, VTK_Type, nPolyGrid, nPolySol,
                                                        nDOFsGrid, nDOFsSol, nDOFs_tot,
@@ -698,7 +698,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + starting_node[rank];
+      thisFace.elemID0 = k + beg_node[rank];
 
       thisFace.CreateUniqueNumbering();
       localFaces.push_back(thisFace);
@@ -903,9 +903,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate memory for the linear partition of the elements of the mesh.
         These arrays are the size of the number of ranks. ---*/
-  starting_node = new unsigned long[size];
-  ending_node   = new unsigned long[size];
-  npoint_procs  = new unsigned long[size];
+  beg_node = new unsigned long[size];
+  end_node = new unsigned long[size];
+  nPointLinear  = new unsigned long[size];
 
   /* Open the CGNS file for reading and check if it went OK. */
   int fn;
@@ -1011,23 +1011,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         balancing for any remainder elements. ---*/
   unsigned long total_elem_accounted = 0;
   for(unsigned long i = 0; i < (unsigned long)size; i++) {
-    npoint_procs[i] = Global_nElem/size;
-    total_elem_accounted = total_elem_accounted + npoint_procs[i];
+    nPointLinear[i] = Global_nElem/size;
+    total_elem_accounted = total_elem_accounted + nPointLinear[i];
   }
 
   /*--- Get the number of remainder elements after the even division ---*/
   const unsigned long rem_elem = Global_nElem - total_elem_accounted;
   for (unsigned long i = 0; i<rem_elem; i++) {
-    ++npoint_procs[i];
+    ++nPointLinear[i];
   }
 
   /*--- Store the local number of elements and the beginning/end index ---*/
-  nElem = npoint_procs[rank];
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nElem = nPointLinear[rank];
+  beg_node[0] = 0;
+  end_node[0]   = beg_node[0] + nPointLinear[0];
   for(int i=1; i<size; i++) {
-    starting_node[i] = ending_node[i-1];
-    ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+    beg_node[i] = end_node[i-1];
+    end_node[i]   = beg_node[i] + nPointLinear[i] ;
   }
 
   /*--- Allocate space for elements ---*/
@@ -1047,8 +1047,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       elemCount += CGNSElemTypes[iConn].nElem;
 
       /* Check for overlap with the element range this rank is responsible for. */
-      const unsigned long indBegOverlap = max(elemCountOld, starting_node[rank]);
-      const unsigned long indEndOverlap = min(elemCount, ending_node[rank]);
+      const unsigned long indBegOverlap = max(elemCountOld, beg_node[rank]);
+      const unsigned long indEndOverlap = min(elemCount, end_node[rank]);
 
       if(indEndOverlap > indBegOverlap) {
 
@@ -1060,7 +1060,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
         /* Read the connectivity range determined above. */
         CGNSElemTypes[iConn].ReadConnectivityRange(fn, iBase, iZone, offsetRank,
-                                                   nElemRank, starting_node[rank],
+                                                   nElemRank, beg_node[rank],
                                                    elem, locElemCount, nDOFsLoc);
       }
     }
@@ -1393,7 +1393,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + starting_node[rank];
+      thisFace.elemID0 = k + beg_node[rank];
       thisFace.elemID1 = rank;
 
       thisFace.CreateUniqueNumbering();
@@ -2032,7 +2032,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0    = starting_node[rank] + k;
+      thisFace.elemID0    = beg_node[rank] + k;
       thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
       thisFace.elemType0  = elem[k]->GetVTK_Type();
@@ -2412,14 +2412,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       /* Determine the time level for both elements. Elem0 is always owned, while
          elem1 is either owned or external. The data for external elements is
          stored in mapExternalElemIDToTimeLevel. */
-      unsigned long  elemID0    = localFaces[i].elemID0 - starting_node[rank];
+      unsigned long  elemID0    = localFaces[i].elemID0 - beg_node[rank];
       unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
       unsigned short timeLevel1;
-      if(localFaces[i].elemID1 >= starting_node[rank] &&
-         localFaces[i].elemID1 <  starting_node[rank]+nElem) {
+      if(localFaces[i].elemID1 >= beg_node[rank] &&
+         localFaces[i].elemID1 <  beg_node[rank]+nElem) {
 
-        unsigned long elemID1 = localFaces[i].elemID1 - starting_node[rank];
+        unsigned long elemID1 = localFaces[i].elemID1 - beg_node[rank];
         timeLevel1 = elem[elemID1]->GetTimeLevel();
       }
       else {
@@ -2484,7 +2484,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0    = starting_node[rank] + k;
+      thisFace.elemID0    = beg_node[rank] + k;
       thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
@@ -2515,11 +2515,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         of the graph. First the faces. ---*/
   vector<vector<unsigned long> > adjacency(nElem, vector<unsigned long>(0));
   for(unsigned long i=0; i<nFacesLoc; ++i) {
-    long ii = localFaces[i].elemID0 - starting_node[rank];
+    long ii = localFaces[i].elemID0 - beg_node[rank];
     adjacency[ii].push_back(localFaces[i].elemID1);
 
     if(localFaces[i].periodicIndex == 0) {
-      ii = localFaces[i].elemID1 - starting_node[rank];
+      ii = localFaces[i].elemID1 - beg_node[rank];
       if(ii >= 0 && ii < (long) nElem)
         adjacency[ii].push_back(localFaces[i].elemID0);
     }
@@ -2539,7 +2539,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
      are present. ParMETIS is not able to deal with self entries, hence
      they must be removed as well. */
   for(unsigned long i=0; i<nElem; ++i) {
-    const unsigned long globalElemID = i + starting_node[rank];
+    const unsigned long globalElemID = i + beg_node[rank];
     unsigned long nEntriesNew = adjacency[i].size();
 
     for(unsigned long j=0; j<adjacency[i].size(); ++j) {
@@ -2563,7 +2563,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
       /* Get the global and local element ID adjacent to this boundary face. */
       const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
-      const unsigned long elemID       = globalElemID - starting_node[rank];
+      const unsigned long elemID       = globalElemID - beg_node[rank];
 
       /* Get the number of donor elements for the wall function treatment
          and the pointer to the array which stores this info. */
@@ -2584,12 +2584,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
             sort(adjacency[elemID].begin(), adjacency[elemID].end());
 
             /* Check if the donor element is stored locally. */
-            if(donors[i] >= starting_node[rank] &&
-               donors[i] <  starting_node[rank]+nElem) {
+            if(donors[i] >= beg_node[rank] &&
+               donors[i] <  beg_node[rank]+nElem) {
 
               /* Donor is stored locally. Add the entry to the graph
                  and sort it afterwards. */
-              const unsigned long localDonorID = donors[i] - starting_node[rank];
+              const unsigned long localDonorID = donors[i] - beg_node[rank];
               adjacency[localDonorID].push_back(globalElemID);
               sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
             }
@@ -2617,12 +2617,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     /* Determine the rank where this external is stored. */
     const unsigned long elemID = additionalExternalEntriesGraph[i];
     int rankElem;
-    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    if(elemID >= beg_node[size-1]) rankElem = size-1;
     else {
       const unsigned long *low;
-      low = lower_bound(starting_node, starting_node+size, elemID);
+      low = lower_bound(beg_node, beg_node+size, elemID);
 
-      rankElem = low - starting_node;
+      rankElem = low - beg_node;
       if(*low > elemID) --rankElem;
     }
 
@@ -2674,7 +2674,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     /* Loop over the contents of the receive buffer and update the
        graph accordingly. */
     for(int j=0; j<sizeMess; j+=2) {
-      const unsigned long elemID = recvBuf[j] - starting_node[rank];
+      const unsigned long elemID = recvBuf[j] - beg_node[rank];
       adjacency[elemID].push_back(recvBuf[j+1]);
       sort(adjacency[elemID].begin(), adjacency[elemID].end());
     }
@@ -2722,7 +2722,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     vector<idx_t> vtxdist(size+1);
     vtxdist[0] = 0;
     for(int i=0; i<size; ++i)
-      vtxdist[i+1] = (idx_t)ending_node[i];
+      vtxdist[i+1] = (idx_t)end_node[i];
 
     /* Create the array xadjPar, which contains the number of edges for each
        vertex of the graph in ParMETIS format. */
@@ -3586,7 +3586,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
                element and the polynomial degree for the solution and grid. */
             const unsigned short VTK_Type  = bound[iMarker][l]->GetVTK_Type();
             const unsigned long  elemID    = bound[iMarker][l]->GetDomainElement()
-                                           - starting_node[rank];
+                                           - beg_node[rank];
             const unsigned short nPolyGrid = bound[iMarker][l]->GetNPolyGrid();
             const unsigned short nPolySol  = elem[elemID]->GetNPolySol();
             const unsigned short VTK_Elem  = elem[elemID]->GetVTK_Type();
@@ -4058,8 +4058,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                                              FI!=localFaces.end(); ++FI) {
     if(FI->elemID1 < Global_nElem) {     // Safeguard against non-matching faces.
 
-      if(FI->elemID1 <  starting_node[rank] ||
-         FI->elemID1 >= starting_node[rank]+nElem) {
+      if(FI->elemID1 <  beg_node[rank] ||
+         FI->elemID1 >= beg_node[rank]+nElem) {
 
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
@@ -4092,8 +4092,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
          mapExternalElemIDToTimeLevel, if not already present. */
       for(unsigned short i=0; i<nDonors; ++i) {
 
-        if(donors[i] <  starting_node[rank] ||
-           donors[i] >= starting_node[rank]+nElem) {
+        if(donors[i] <  beg_node[rank] ||
+           donors[i] >= beg_node[rank]+nElem) {
 
           map<unsigned long,CUnsignedShort2T>::iterator MI;
           MI = mapExternalElemIDToTimeLevel.find(donors[i]);
@@ -4107,12 +4107,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
              ID of this element in the send buffers for the additional
              externals. */
           int rankDonor;
-          if(donors[i] >= starting_node[size-1]) rankDonor = size-1;
+          if(donors[i] >= beg_node[size-1]) rankDonor = size-1;
           else {
             const unsigned long *low;
-            low = lower_bound(starting_node, starting_node+size, donors[i]);
+            low = lower_bound(beg_node, beg_node+size, donors[i]);
 
-            rankDonor = (int)(low - starting_node);
+            rankDonor = (int)(low - beg_node);
             if(*low > donors[i]) --rankDonor;
           }
 
@@ -4292,12 +4292,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /* Determine the rank where this external is stored. */
     const unsigned long elemID = MI->first;
     int rankElem;
-    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    if(elemID >= beg_node[size-1]) rankElem = size-1;
     else {
       const unsigned long *low;
-      low = lower_bound(starting_node, starting_node+size, elemID);
+      low = lower_bound(beg_node, beg_node+size, elemID);
 
-      rankElem = low - starting_node;
+      rankElem = low - beg_node;
       if(*low > elemID) --rankElem;
     }
 
@@ -4328,12 +4328,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
     const unsigned long elemID = MI->first;
     int rankElem;
-    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    if(elemID >= beg_node[size-1]) rankElem = size-1;
     else {
       const unsigned long *low;
-      low = lower_bound(starting_node, starting_node+size, elemID);
+      low = lower_bound(beg_node, beg_node+size, elemID);
 
-      rankElem = low - starting_node;
+      rankElem = low - beg_node;
       if(*low > elemID) --rankElem;
     }
 
@@ -4378,7 +4378,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                   sendRank[i], rank, MPI_COMM_WORLD, &status);
 
     for(int j=0; j<sizeMess; ++j)
-      sendElem[i][j] -= starting_node[rank];
+      sendElem[i][j] -= beg_node[rank];
   }
 
   /* Complete the non-blocking sends. Synchronize the processors afterwards,
@@ -4475,7 +4475,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
           /* Determine the ID of the adjacent element. */
           const unsigned long elemID = bound[iMarker][l]->GetDomainElement()
-                                     - starting_node[rank];
+                                     - beg_node[rank];
 
           /* Get the number of donor elements for the wall function treatment
              and the pointer to the array which stores this info. */
@@ -4486,12 +4486,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
           for(unsigned short i=0; i<nDonors; ++i) {
 
             /* Determine the status of the donor element. */
-            if(donors[i] >= starting_node[rank] &&
-               donors[i] <  starting_node[rank]+nElem) {
+            if(donors[i] >= beg_node[rank] &&
+               donors[i] <  beg_node[rank]+nElem) {
 
               /* Donor is stored locally. Determine its local ID and
                  get the time levels of both elements. */
-              const unsigned long  donorID    = donors[i] - starting_node[rank];
+              const unsigned long  donorID    = donors[i] - beg_node[rank];
               const unsigned short timeLevelB = elem[elemID]->GetTimeLevel();
               const unsigned short timeLevelD = elem[donorID]->GetTimeLevel();
               const unsigned short timeLevel  = min(timeLevelB, timeLevelD);
@@ -4547,17 +4547,17 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
           /* Local element ID of the first element. Per definition this is
              always a locally stored element. Also store its time level. */
-          const unsigned long  elemID0    = FI->elemID0 - starting_node[rank];
+          const unsigned long  elemID0    = FI->elemID0 - beg_node[rank];
           const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
           /* Determine the status of the second element. */
-          if(FI->elemID1 >= starting_node[rank] &&
-             FI->elemID1 <  starting_node[rank]+nElem) {
+          if(FI->elemID1 >= beg_node[rank] &&
+             FI->elemID1 <  beg_node[rank]+nElem) {
 
             /* Both elements are stored locally. Determine the local
                element of the second element and determine the minimum
                time level. */
-            const unsigned long  elemID1    = FI->elemID1 - starting_node[rank];
+            const unsigned long  elemID1    = FI->elemID1 - beg_node[rank];
             const unsigned short timeLevel1 = elem[elemID1]->GetTimeLevel();
             const unsigned short timeLevel  = min(timeLevel0, timeLevel1);
 
@@ -4787,7 +4787,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
     /*------------------------------------------------------------------------*/
 
     /* Determine the global element ID of this element. */
-    unsigned long elemID = starting_node[rank] + i;
+    unsigned long elemID = beg_node[rank] + i;
 
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
     unsigned short nFaces;
@@ -4915,7 +4915,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
                not the Jacobian can be considered constant. */
             const unsigned short VTK_Type_Face = bound[iMarker][l]->GetVTK_Type();
             const unsigned long  elemID        = bound[iMarker][l]->GetDomainElement()
-                                               - starting_node[rank];
+                                               - beg_node[rank];
             const unsigned short nPolySol      = elem[elemID]->GetNPolySol();
             const unsigned short VTK_Type_Elem = elem[elemID]->GetVTK_Type();
             const bool JacIsConstant           = bound[iMarker][l]->GetJacobianConsideredConstant();
@@ -4998,12 +4998,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       unsigned short timeLevel1, nDOFs1;
 
       /* Check if the neighor is stored locally. */
-      if(adjacency[i][j] >= starting_node[rank] &&
-         adjacency[i][j] <  starting_node[rank]+nElem) {
+      if(adjacency[i][j] >= beg_node[rank] &&
+         adjacency[i][j] <  beg_node[rank]+nElem) {
 
         /* Locally stored element. Determine its local ID and set the
            time level and number of solution DOFs. */
-        unsigned long elemID1 = adjacency[i][j] - starting_node[rank];
+        unsigned long elemID1 = adjacency[i][j] - beg_node[rank];
         timeLevel1 = elem[elemID1]->GetTimeLevel();
         nDOFs1     = elem[elemID1]->GetNDOFsSol();
       }

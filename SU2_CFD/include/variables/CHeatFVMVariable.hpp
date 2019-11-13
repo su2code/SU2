@@ -45,30 +45,24 @@
  * \author O. Burghardt
  * \version 6.2.0 "Falcon"
  */
-class CHeatFVMVariable : public CVariable {
+class CHeatFVMVariable final : public CVariable {
 protected:
-  su2double* Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  su2double* Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
+  MatrixType Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CHeatFVMVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] heat - Values of the Heat solution (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CHeatFVMVariable(void);
+  ~CHeatFVMVariable() = default;
 
 };

@@ -48,7 +48,7 @@ from .. import io   as su2io
 from .. import eval as su2eval
 from .. import util as su2util
 from ..io import redirect_folder
-
+from ..io import historyOutFields
 from warnings import warn, simplefilter
 #simplefilter(Warning,'ignore')
 
@@ -133,6 +133,13 @@ class Project(object):
             config['OBJECTIVE_WEIGHT'] = ",".join(weights)
             config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
         
+        for this_obj in def_objs:
+            if this_obj in su2io.optnames_multi:
+                this_obj = this_obj.split('_')[1]
+            group = historyOutFields[this_obj]['GROUP']
+            if not group in config.HISTORY_OUTPUT:
+                config.HISTORY_OUTPUT.append(group)
+
         # setup state
         if state is None:
             state = su2io.State()
@@ -157,6 +164,7 @@ class Project(object):
         
         # initialize folder with files
         pull,link = state.pullnlink(config)
+
         with redirect_folder(folder,pull,link,force=True):
         
             # look for existing designs
@@ -354,9 +362,15 @@ class Project(object):
                 if key == 'MESH': continue 
                 # build file path
                 name = seed_files[key]
-                name = os.path.join(seed_folder,name)
-                # update pull files
-                ztate.FILES[key] = name
+                if isinstance(name,list):
+                    built_name = []
+                    for elem in name:
+                        built_name.append(os.path.join(seed_folder,elem))
+                    ztate.FILES[key] = built_name
+                else:
+                    name = os.path.join(seed_folder,name)
+                    # update pull files
+                    ztate.FILES[key] = name
             
         # name new folder
         folder = self._design_folder.replace('*',self._design_number)
@@ -368,8 +382,14 @@ class Project(object):
         # update local state filenames ( ??? why not in Design() )
         for key in design.files:
             name = design.files[key]
-            name = os.path.split(name)[-1]
-            design.files[key] = name
+            if isinstance(name,list):
+                built_name = []
+                for elem in name:
+                    built_name.append(os.path.split(elem)[-1])
+                design.files[key] = built_name
+            else:
+                name = os.path.split(name)[-1]
+                design.files[key] = name
         
         # add design to project 
         self.designs.append(design)        
@@ -479,7 +499,7 @@ class Project(object):
     def plot_results(self):
         """ writes a tecplot file for plotting design results
         """
-        output_format = self.config.OUTPUT_FORMAT
+        output_format = self.config.TABULAR_FORMAT
         functions     = self.results.FUNCTIONS
         history       = self.results.HISTORY
         
@@ -488,7 +508,7 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        if (output_format == 'PARAVIEW') or (output_format == 'PARAVIEW_BINARY'):
+        if (output_format == 'CSV'):
           su2util.write_plot('history_project.csv',output_format,results_plot)
         else:
           su2util.write_plot('history_project.dat',output_format,results_plot)

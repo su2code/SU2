@@ -310,6 +310,10 @@ then
   build_SOL=no
   build_GEO=no
   build_PY=no
+fi
+
+if test $build_DIRECTDIFF == "yes"
+then
   build_PY_WRAPPER=no
 fi
 

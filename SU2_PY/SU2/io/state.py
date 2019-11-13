@@ -41,7 +41,7 @@
 
 import os, sys, shutil, copy, time
 from ..io   import expand_part, expand_zones, expand_time, get_adjointSuffix, add_suffix, \
-                   get_specialCases, Config
+                   get_specialCases, Config, expand_multipoint, optnames_multi
 from ..util import bunch
 from ..util import ordered_bunch
 
@@ -92,6 +92,11 @@ def State_Factory(state=None,config=None):
             MESH: mesh.su2
             DIRECT: solution_flow.dat
             ADJOINT_DRAG: solution_adj_cd.dat
+            FLOW_META: flow.meta
+            MULTIPOINT_DIRECT: [solution_flow_point0.dat solution_flow_point1.dat, ...]
+            MULTIPOINT_ADJOINT_DRAG: [solution_adj_point0_cd.dat solution_adj_point1_cd.dat, ...]
+            MULTIPOINT_MESH_FILENAME: [mesh_0.su2, mesh_1.su2, ... ]
+            MULTIPOINT_FLOW_META: [flow_point0.meta, flow_point1.meta, ...]
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
@@ -176,10 +181,9 @@ class State(ordered_bunch):
         """
         
         pull = []; link = []
-        
+
         # choose files to pull and link
-        for key, value in self.FILES.items():
-            
+        for key, value in self.FILES.items():            
             # link big files
             if key == 'MESH':
                 # mesh (merged or partitioned)
@@ -190,11 +194,20 @@ class State(ordered_bunch):
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
-            elif 'ADJOINT_' in key:
+            elif 'ADJOINT_' in key and  (not 'MULTIPOINT' in key):
                 # adjoint solution
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
+            elif 'MULTIPOINT' in key:
+                # multipoint files
+                if key != 'MULTIPOINT_MESH_FILENAME':
+                    # DIRECT and ADJOINT files
+                    value = expand_zones(value,config)
+                    value = expand_time(value,config)
+                for elem in value:
+                    if elem:
+                        link.append(elem)
             #elif key == 'STABILITY':
                 #pass
             # copy all other files
@@ -229,8 +242,21 @@ class State(ordered_bunch):
         files = self.FILES
         
         mesh_name     = config.MESH_FILENAME
-        direct_name   = config.SOLUTION_FLOW_FILENAME
+        if config.get('READ_BINARY_RESTART', 'YES') == 'NO':
+            if not 'RESTART_ASCII' in config.get('OUTPUT_FILES',['RESTART']):
+                print ('RESTART_ASCII must be in OUTPUT_FILES if READ_BINARY_RESTART is set to NO')
+                sys.exit()
+  
+        direct_name   = config.SOLUTION_FILENAME
         adjoint_name  = config.SOLUTION_ADJ_FILENAME
+        
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART']):
+            direct_name = direct_name.split('.')[0] + '.csv'
+            adjoint_name = adjoint_name.split('.')[0] + '.csv'
+        else:
+            direct_name = direct_name.split('.')[0] + '.dat'
+            adjoint_name = adjoint_name.split('.')[0] + '.dat'
+
         targetea_name = 'TargetEA.dat'
         targetcp_name = 'TargetCp.dat'
         targetheatflux_name = 'TargetHeatFlux.dat'
@@ -238,48 +264,95 @@ class State(ordered_bunch):
         adj_map = get_adjointSuffix()
         restart = config.RESTART_SOL == 'YES'
         special_cases = get_specialCases(config)
+
+        if config.get('OPT_OBJECTIVE'):
+            def_objs = config['OPT_OBJECTIVE']
+            objectives = def_objs.keys()
+            multipoint = any(elem in optnames_multi for elem in objectives)
+        else:
+            multipoint = False
         
         def register_file(label,filename):
             if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
-                  names = expand_zones(filename, config)
-                  found = False
-                  for name in names:
-                    if os.path.exists(name):
-                      found = True
-                    else:
-                      found = False
-                      break
+                    names = expand_zones(filename, config)
+                    found = False
+                    for name in names:
+                        if os.path.exists(name):
+                            found = True
+                        else:
+                            found = False
+                            break
 
-                  if found:
-                    files[label] = filename
-                    print('Found: %s' % filename)
+                    if found:
+                        files[label] = filename
+                        print('Found: %s' % filename)
 
+                elif label.split('_')[0] in ['MULTIPOINT']:
+                    # if multipoint, list of files needs to be added
+                    file_list= [];
+                    for name in filename:
+                        if os.path.exists(name):
+                            file_list.append(name)
+                            print('Found: %s' % name)
+                        else:
+                            # if file doesn't exist, enter empty string as placeholder
+                            file_list.append('')
+		            # If even one of the multipoint files is found, add the list
+                    if any(file for file in file_list):
+                        files[label] = file_list
                 else:
-                  if os.path.exists(filename):
-                      files[label] = filename
-                      print('Found: %s' % filename)
+                    if os.path.exists(filename):
+                        files[label] = filename
+                        print('Found: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
                         assert os.path.exists(name), 'state expected file: %s' % filename
+                elif label.split('_')[0] in ['MULTIPOINT']:
+                    for name in expand_zones(files[label], config):
+                        if name:
+                            if not os.path.exists(name):
+                                raise AssertionError('state expected file: %s' % name)
                 else:
                     assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
 
         # mesh
+        if multipoint:
+            mesh_list = [elem.strip() for elem in config['MULTIPOINT_MESH_FILENAME'].replace("(", "").replace(")", "").split(',')]
+            if len(set(mesh_list)) > 1:
+                # Only register MULTIPOINT_MESH_FILENAME if multiple meshes are specified
+                register_file('MULTIPOINT_MESH_FILENAME', mesh_list)
+            mesh_name = mesh_list[0]
+
         register_file('MESH',mesh_name)
-        
-        # direct solution
+
+        # direct solutions
         if restart:
             register_file('DIRECT',direct_name)
+            if multipoint:
+                name_list = expand_multipoint(direct_name,config)
+                name_list = expand_zones(name_list,config)
+                register_file('MULTIPOINT_DIRECT',name_list)
         
+        # flow meta data file
+        if restart:
+            register_file('FLOW_META','flow.meta')
+            if multipoint:
+                name_list = expand_multipoint('flow.meta',config)
+                register_file('MULTIPOINT_FLOW_META',name_list)
+
         # adjoint solutions
         if restart:
             for obj, suff in adj_map.items():
                 ADJ_LABEL = 'ADJOINT_' + obj
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
+                if multipoint:
+                    name_list = expand_zones(add_suffix(expand_multipoint(adjoint_name,config), suff), config)
+                    multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
+                    register_file(multipoint_adj_name, name_list)
         
         # equivalent area
         if 'EQUIV_AREA' in special_cases:
@@ -287,12 +360,12 @@ class State(ordered_bunch):
         
         # pressure inverse design
         if 'INV_DESIGN_CP' in special_cases:
-          register_file('TARGET_CP',targetcp_name)
+            register_file('TARGET_CP',targetcp_name)
             
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
-          register_file('TARGET_HEATFLUX',targetheatflux_name)
-        
+            register_file('TARGET_HEATFLUX',targetheatflux_name)
+
         return
     
     def __setitem__(self,k,v):

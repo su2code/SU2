@@ -95,12 +95,22 @@ public:
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long ExtIter);
+  void Output(unsigned long TimeIter);
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
    */
-  void DynamicMeshUpdate(unsigned long ExtIter);
+  void DynamicMeshUpdate(unsigned long TimeIter);
 
+  /*!
+   * \brief Monitor
+   * \param ExtIter
+   */
+  virtual bool Monitor(unsigned long TimeIter);
+  
+  /*!
+   * \brief Runtime_Parsing
+   */
+  virtual void Runtime_Options();
 
 };

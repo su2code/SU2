@@ -45,67 +45,31 @@
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
  */
-class CAdjNSVariable : public CAdjEulerVariable {
-private:
-
+class CAdjNSVariable final : public CAdjEulerVariable {
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CAdjNSVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_psirho - Value of the adjoint density (initialization value).
-   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
-   * \param[in] val_psie - Value of the adjoint energy (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] psirho - Value of the adjoint density (initialization value).
+   * \param[in] phi - Value of the adjoint velocity (initialization value).
+   * \param[in] psie - Value of the adjoint energy (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CAdjNSVariable(su2double psirho, const su2double *phi, su2double psie,
+                 unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjNSVariable(void);
-
-  /*!
-   * \brief Set the value of the adjoint velocity.
-   * \param[in] val_phi - Value of the adjoint velocity.
-   */
-  inline void SetPhi_Old(su2double *val_phi) {for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = val_phi[iDim]; };
-
-  /*!
-   * \brief Set the value of the force projection vector.
-   * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
-   */
-  inline void SetForceProj_Vector(su2double *val_ForceProj_Vector) {for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
-
-  /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  inline su2double *GetForceProj_Vector(void) {return ForceProj_Vector; }
-
-  /*!
-   * \brief Set the value of the force projection vector on the solution vector.
-   */
-  inline void SetVelSolutionOldDVector(void) {for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = ForceProj_Vector[iDim]; };
+  ~CAdjNSVariable() = default;
 
   /*!
    * \brief Set the value of the force projection vector on the old solution vector.
    */
-  inline void SetVelSolutionDVector(void) {for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution[iDim+1] = ForceProj_Vector[iDim]; };
+  inline void SetVelSolutionDVector(unsigned long iPoint) override {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint,iDim+1) = ForceProj_Vector(iPoint,iDim);
+  }
 
 };

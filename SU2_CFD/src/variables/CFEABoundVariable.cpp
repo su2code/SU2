@@ -38,57 +38,48 @@
 #include "../../include/variables/CFEABoundVariable.hpp"
 
 
-CFEABoundVariable::CFEABoundVariable(void) : CFEAVariable() {
+CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+  : CFEAVariable(val_fea, npoint, ndim, nvar, config) {
 
-  FlowTraction          = NULL;    // Nodal traction due to the fluid (fsi)
-  Residual_Ext_Surf     = NULL;    // Residual component due to external surface forces
-
-  FlowTraction_n        = NULL;    // Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
-  Residual_Ext_Surf_n   = NULL;    // Residual component due to external surface forces at time n (for gen-alpha methods)
-
+  VertexMap.Reset(nPoint);
 }
 
-CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
-                                     CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config) {
+void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
-  unsigned short iVar;
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  unsigned long nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
+
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-  bool fsi_analysis = config->GetFSI_Simulation();
-
-  FlowTraction          = NULL;
-  Residual_Ext_Surf     = NULL;
-  FlowTraction_n        = NULL;
-  Residual_Ext_Surf_n   = NULL;
+  fsi_analysis   = config->GetFSI_Simulation();
 
   /*--- Surface residual ---*/
-  Residual_Ext_Surf = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  Residual_Ext_Surf.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Flow traction ---*/
-  if (fsi_analysis){
-    FlowTraction = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = 0.0;
-  }
+  if (fsi_analysis) FlowTraction.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
   if (gen_alpha) {
-    Residual_Ext_Surf_n = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n[iVar] = 0.0;
+    Residual_Ext_Surf_n.resize(nBoundPt,nVar) = su2double(0.0);
 
-    if (fsi_analysis) {
-      FlowTraction_n = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) FlowTraction_n[iVar] = 0.0;
-    }
+    if (fsi_analysis) FlowTraction_n.resize(nBoundPt,nVar) = su2double(0.0);
   }
-
 }
 
-CFEABoundVariable::~CFEABoundVariable(void) {
+void CFEABoundVariable::Set_FlowTraction_n() { FlowTraction_n = FlowTraction; }
 
-  if (FlowTraction          != NULL) delete [] FlowTraction;
-  if (Residual_Ext_Surf     != NULL) delete [] Residual_Ext_Surf;
+void CFEABoundVariable::Set_SurfaceLoad_Res_n() { Residual_Ext_Surf_n = Residual_Ext_Surf; }
 
-  if (FlowTraction_n         != NULL) delete [] FlowTraction_n;
-  if (Residual_Ext_Surf_n    != NULL) delete [] Residual_Ext_Surf_n;
+void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
 
+void CFEABoundVariable::RegisterFlowTraction() {
+  if (!fsi_analysis) return;
+  for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(FlowTraction(iVertex,iVar));
 }

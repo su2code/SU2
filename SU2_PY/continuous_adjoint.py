@@ -95,6 +95,12 @@ def continuous_adjoint( filename           ,
     # Force CSV output in order to compute gradients
     config.WRT_CSV_SOL = 'YES'
     
+    if not 'OUTPUT_FILES' in config:
+        config['OUTPUT_FILES'] = ['RESTART']
+
+    if not 'SURFACE_CSV' in config['OUTPUT_FILES']:
+        config['OUTPUT_FILES'].append('SURFACE_CSV')
+    
     # check for existing files
     if not compute:
         config.RESTART_SOL = 'YES'

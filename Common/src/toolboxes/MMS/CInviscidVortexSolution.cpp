@@ -71,9 +71,9 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
   gamOvGm1 = ovGm1*Gamma;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
-     (config->GetUnsteady_Simulation() != DT_STEPPING_1ST) &&
-     (config->GetUnsteady_Simulation() != DT_STEPPING_2ND))
+  if((config->GetTime_Marching() != TIME_STEPPING) &&
+     (config->GetTime_Marching() != DT_STEPPING_1ST) &&
+     (config->GetTime_Marching() != DT_STEPPING_2ND))
     SU2_MPI::Error("Unsteady mode must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 
