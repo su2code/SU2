@@ -1188,7 +1188,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
          ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
         my_Gradient = ConstrFunc[iConstr] + 1./(2.*gamma)*Multiplier[iConstr];
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
