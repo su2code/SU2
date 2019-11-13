@@ -11,7 +11,7 @@ private:
 su2double val;
 unsigned long count;
 const su2double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
-std::vector<su2double> values;
+//std::vector<su2double> values;
 
 
 public:
@@ -30,19 +30,19 @@ void Reset();
 /*! \brief Returns the value of a windowing function given by fctIdx at CurTimeIdx with given endTimeIdx (i.e. endTimeIdx=nTimeIter, if one starts  windowing at time t =0.) */
 su2double GetWndWeight(int fctIdx, unsigned long CurTimeIdx, unsigned long endTimeIdx);
 
-void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
+//void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
 
-su2double WindowedUpdate(int fctIdx); //Computes a windowed time average (integral)
+//su2double WindowedUpdate(int fctIdx); //Computes a windowed time average (integral)
 
 private:
 //Using Midpoint rule for consistentcy with adjoint solver
-su2double NoWindowing(); // == Square Window
+//su2double NoWindowing(); // == Square Window
 
-su2double HannWindowing();
+//su2double HannWindowing();
 
-su2double HannSquaredWindowing();
+//su2double HannSquaredWindowing();
 
-su2double BumpWindowing();
+//su2double BumpWindowing();
 
 su2double HannWindow(unsigned long i, unsigned long endTimeIdx);
 
