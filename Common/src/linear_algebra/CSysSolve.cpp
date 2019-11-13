@@ -44,6 +44,7 @@ CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false),
   mesh_deform = mesh_deform_mode;
   LinSysRes_ptr = NULL;
   LinSysSol_ptr = NULL;
+  Residual = 0.0;
 }
 
 template<class ScalarType>
@@ -241,7 +242,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     norm_r = r.norm();
     norm0  = b.norm();
-    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
@@ -390,7 +391,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType beta = W[0].norm();
 
-  if ( (beta < tol*norm0) || (beta < eps) ) {
+  if ((beta < tol*norm0) || (beta < eps)) {
 
     /*---  System is already solved ---*/
 
@@ -489,7 +490,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   }
 
-  (*residual) = beta;
+  (*residual) = beta/norm0;
   return (unsigned long) i;
 
 }
@@ -532,7 +533,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     norm_r = r.norm();
     norm0  = b.norm();
-    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
       return 0;
     }
@@ -646,7 +647,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   }
 
-  (*residual) = norm_r;
+  (*residual) = norm_r/norm0;
   return (unsigned long) i;
 }
 

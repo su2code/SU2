@@ -263,14 +263,23 @@ inline void CPoint::SetZeroValues(void) { }
 inline void CPoint::AddNormal(su2double *val_face_normal) { }
 
 inline void CPoint::SetAdjointCoord(su2double *adj_coor){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
+}
+
+inline void CPoint::SetAdjointCoord_LocalIndex(su2double *adj_coor){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    AD::SetDerivative(AD_OutputIndex[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
 }
 
 inline void CPoint::GetAdjointCoord(su2double *adj_coor){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++){
-      adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord[iDim]);
-    }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord[iDim]);
+}
+
+inline void CPoint::GetAdjointCoord_LocalIndex(su2double *adj_coor){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    adj_coor[iDim] = AD::GetDerivative(AD_InputIndex[iDim]);
 }
 
 inline unsigned short CEdge::GetnNodes() { return 2; }

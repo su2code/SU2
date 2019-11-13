@@ -48,7 +48,7 @@ from .. import io   as su2io
 from .. import eval as su2eval
 from .. import util as su2util
 from ..io import redirect_folder
-
+from ..io import historyOutFields
 from warnings import warn, simplefilter
 #simplefilter(Warning,'ignore')
 
@@ -133,6 +133,13 @@ class Project(object):
             config['OBJECTIVE_WEIGHT'] = ",".join(weights)
             config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
         
+        for this_obj in def_objs:
+            if this_obj in su2io.optnames_multi:
+                this_obj = this_obj.split('_')[1]
+            group = historyOutFields[this_obj]['GROUP']
+            if not group in config.HISTORY_OUTPUT:
+                config.HISTORY_OUTPUT.append(group)
+
         # setup state
         if state is None:
             state = su2io.State()
@@ -492,7 +499,7 @@ class Project(object):
     def plot_results(self):
         """ writes a tecplot file for plotting design results
         """
-        output_format = self.config.OUTPUT_FORMAT
+        output_format = self.config.TABULAR_FORMAT
         functions     = self.results.FUNCTIONS
         history       = self.results.HISTORY
         
@@ -501,7 +508,7 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        if (output_format == 'PARAVIEW') or (output_format == 'PARAVIEW_BINARY'):
+        if (output_format == 'CSV'):
           su2util.write_plot('history_project.csv',output_format,results_plot)
         else:
           su2util.write_plot('history_project.dat',output_format,results_plot)
