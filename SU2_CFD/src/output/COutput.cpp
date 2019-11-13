@@ -1555,10 +1555,11 @@ void COutput::Postprocess_HistoryData(CConfig *config){
         if (config->GetTime_Domain()){
           //runningAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
           //SetHistoryOutputValue("TAVG_" + fieldIdentifier,runningAverages[fieldIdentifier].WindowedUpdate(config->GetWindowIdx()));
-          SetHistoryOutputValue("TAVG_" + fieldIdentifier,windowedTimeAverages[fieldIdentifier].Update(currentField.value));
-
+            SetHistoryOutputValue("TAVG_" + fieldIdentifier,
+                                  windowedTimeAverages[fieldIdentifier].Update(currentField.value));
           if (config->GetDirectDiff() != NO_DERIVATIVE) {
-            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].Get()));
+            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier,
+                                  SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].Get()));
           }
         }
       }
