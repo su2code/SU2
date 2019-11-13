@@ -305,28 +305,26 @@ void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bche
   theta_old = theta;
 }
 
-su2double COneShotSolver::CalculateLagrangianPart(CConfig *config, bool augmented){
+su2double COneShotSolver::CalculateLagrangian(CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;
   su2double Lagrangian=0.0, myLagrangian=0.0;
   su2double helper=0.0;
 
   /* --- Calculate augmented Lagrangian terms (alpha and beta) --- */
-  if(augmented){
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        helper+=direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar);
-      }
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      helper+=direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar)*direct_solver->GetNodes()->GetSolution_Delta(iPoint,iVar);
     }
-    myLagrangian+=helper*(config->GetOneShotAlpha()/2);
-    helper=0.0;
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        helper+=nodes->GetSolution_Delta(iPoint,iVar)*nodes->GetSolution_Delta(iPoint,iVar);
-      }
-    }
-    myLagrangian+=helper*(config->GetOneShotBeta()/2);
   }
+  myLagrangian+=helper*(config->GetOneShotAlpha()/2);
+  helper=0.0;
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      helper+=nodes->GetSolution_Delta(iPoint,iVar)*nodes->GetSolution_Delta(iPoint,iVar);
+    }
+  }
+  myLagrangian+=helper*(config->GetOneShotBeta()/2);
 
   helper=0.0;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){

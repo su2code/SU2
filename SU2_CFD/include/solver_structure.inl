@@ -2528,7 +2528,7 @@ inline void CSolver::ResetSensitivityLagrangian(CGeometry *geometry){}
 
 inline void CSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor){}
 
-inline su2double CSolver::CalculateLagrangianPart(CConfig *config, bool augmented){return 0.0;}
+inline su2double CSolver::CalculateLagrangian(CConfig *config){return 0.0;}
 
 inline void CSolver::CalculateRhoTheta(CConfig *config){}
 

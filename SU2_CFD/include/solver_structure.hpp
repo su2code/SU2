@@ -4689,7 +4689,7 @@ public:
    * \param[in] config - config class object
    * \param[in] augmented - boolean for augmented part
    */
-  virtual su2double CalculateLagrangianPart(CConfig *config, bool augmented);
+  virtual su2double CalculateLagrangian(CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -15921,10 +15921,9 @@ public:
    * \brief Calculate either the solver part of the augmented or the shifted Lagrangian
    * (without objective and constraint functions)
    * \param[in] config - config class object
-   * \param[in] augmented - true if the augmented Lagrangian is considered
    * \result value of the Lagrangian part
    */
-  su2double CalculateLagrangianPart(CConfig* config, bool augmented);
+  su2double CalculateLagrangian(CConfig* config);
 
   /*!
    * \brief Store the current solution in Solution_Save.

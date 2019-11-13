@@ -832,7 +832,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     }
   }
 
-  Lagrangian += solver[ADJFLOW_SOL]->CalculateLagrangianPart(config, augmented);
+  Lagrangian += solver[ADJFLOW_SOL]->CalculateLagrangian(config);
 
 }
 
