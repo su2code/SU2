@@ -1,5 +1,42 @@
 #include "../../include/toolboxes/signal_processing_toolbox.hpp"
 
+//WindowingTools
+/*! \brief Returns the value of a windowing function given by fctIdx at CurTimeIdx with given endTimeIdx (i.e. endTimeIdx=nTimeIter, if one starts  windowing at time t =0.) */
+su2double WindowingTools::GetWndWeight(int fctIdx, unsigned long CurTimeIdx, unsigned long endTimeIdx){
+    switch (fctIdx){
+      case 1: return HannWindow(CurTimeIdx, endTimeIdx);
+      case 2: return HannSquaredWindow(CurTimeIdx, endTimeIdx);
+      case 3: return BumpWindow(CurTimeIdx, endTimeIdx);
+      default:return 1.0;
+    }
+}
+su2double WindowingTools::HannWindow(unsigned long i, unsigned long endTimeIdx){
+  if(i==0) return 0; //catch div by zero error
+  su2double currTime = static_cast<su2double>(i);
+  su2double endTime = static_cast<su2double>(endTimeIdx);
+  su2double tau = currTime/endTime;
+  return 1.0-cos(2*PI_NUMBER*tau);
+}
+
+su2double WindowingTools::HannSquaredWindow(unsigned long i, unsigned long endTimeIdx){
+  if(i==0) return 0; //catch div by zero error
+  su2double currTime = static_cast<su2double>(i);
+  su2double endTime = static_cast<su2double>(endTimeIdx);
+  su2double tau = currTime/endTime;
+  return 2.0/3.0*(1-cos(2*PI_NUMBER*tau))*(1-cos(2*PI_NUMBER*tau));
+}
+
+su2double WindowingTools::BumpWindow(unsigned long i, unsigned long endTimeIdx){
+  if(i==0) return 0;
+  if(i==endTimeIdx) return 0;
+  su2double currTime = static_cast<su2double>(i);
+  su2double endTime = static_cast<su2double>(endTimeIdx);
+  su2double tau = currTime/endTime;
+  return 1.0/0.00702986*(exp(-1/(tau-tau*tau)));
+}
+
+
+//WindowedAverage
 WindowedAverage::WindowedAverage(){
   this->Reset();
 }
@@ -20,18 +57,12 @@ unsigned long WindowedAverage::Count(){
 }
 
 void WindowedAverage::Reset(){
+
   val = 0.;
   count = 0;
 }
 
-su2double WindowedAverage::GetWndWeight(int fctIdx, unsigned long CurTimeIdx, unsigned long endTimeIdx){
-    switch (fctIdx){
-      case 1: return HannWindow(CurTimeIdx, endTimeIdx);
-      case 2: return HannSquaredWindow(CurTimeIdx, endTimeIdx);
-      case 3: return BumpWindow(CurTimeIdx, endTimeIdx);
-      default:return 1.0;
-    }
-}
+
 /*
 void WindowedAverage::addValue(su2double valIn, unsigned long currentIter,unsigned long startIter){
     if(currentIter >= startIter)values.push_back(valIn);
@@ -81,27 +112,4 @@ su2double WindowedAverage::BumpWindowing(){
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
 */
-su2double WindowedAverage::HannWindow(unsigned long i, unsigned long endTimeIdx){
-  if(i==0) return 0; //catch div by zero error
-  su2double currTime = static_cast<su2double>(i);
-  su2double endTime = static_cast<su2double>(endTimeIdx);
-  su2double tau = currTime/endTime;
-  return 1.0-cos(2*PI_NUMBER*tau);
-}
 
-su2double WindowedAverage::HannSquaredWindow(unsigned long i, unsigned long endTimeIdx){
-  if(i==0) return 0; //catch div by zero error
-  su2double currTime = static_cast<su2double>(i);
-  su2double endTime = static_cast<su2double>(endTimeIdx);
-  su2double tau = currTime/endTime;
-  return 2.0/3.0*(1-cos(2*PI_NUMBER*tau))*(1-cos(2*PI_NUMBER*tau));
-}
-
-su2double WindowedAverage::BumpWindow(unsigned long i, unsigned long endTimeIdx){
-  if(i==0) return 0;
-  if(i==endTimeIdx) return 0;
-  su2double currTime = static_cast<su2double>(i);
-  su2double endTime = static_cast<su2double>(endTimeIdx);
-  su2double tau = currTime/endTime;
-  return 1.0/0.00702986*(exp(-1/(tau-tau*tau)));
-}
