@@ -2,8 +2,7 @@
 
 # has to be called from code-root
 
-for folder in Common \
-              SU2_AD \
+for folder in SU2_AD \
               SU2_BASE \
               SU2_CFD \
               SU2_DEF \
@@ -11,7 +10,6 @@ for folder in Common \
               SU2_DOT \
               SU2_GEO \
               SU2_MSH \
-              SU2_PY \
               SU2_SOL
 do
   cd $folder
@@ -24,7 +22,8 @@ do
   #https://unix.stackexchange.com/questions/15308/how-to-use-find-command-to-search-for-multiple-extensions
 
   echo -n "Replace all tabs by 2 spaces..."
-  find . \( -name '*.cpp' -o -name '*.hpp' -o -name '*.inl' \) ! -type d -exec bash -c 'expand -t 2 "$0" > /tmp/e && mv /tmp/e "$0"' {} \;
+  find . \( -name 'C*.cpp' -o -name 'C*.hpp' -o -name 'C*.inl' \) ! -type d -exec bash -c 'expand -t 2 "$0" > /tmp/e && mv /tmp/e "$0"' {} \;
+  #find . \( -name 'C*.cpp' -o -name 'C*.hpp' -o -name 'C*.inl' \) 
   echo "done"
 
   # deletes trailing whitespaces in all cpp,hpp,inl,build,py files
@@ -33,7 +32,7 @@ do
   #https://unix.stackexchange.com/questions/15308/how-to-use-find-command-to-search-for-multiple-extensions
 
   echo -n "Trim all trailing whitespaces..."
-  find . -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.inl' -o -name '*.py' -o -name '*.build' \) -exec sed --in-place 's/[[:space:]]\+$//' {} \+
+  find . -type f \( -name 'C*.cpp' -o -name 'C*.hpp' -o -name 'C*.inl' \) -exec sed --in-place 's/[[:space:]]\+$//' {} \+
   echo "done"
 
   cd ..
