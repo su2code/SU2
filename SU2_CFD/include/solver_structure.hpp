@@ -202,7 +202,7 @@ public:
   CSysMatrix<su2double> Jacobian;
   CSysSolve<su2double>  System;
 #endif
-
+  
   std::vector<std::vector<double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
   std::vector<double> GenCoordsY;   /*!< \brief vector to store generalized coordinate solution. (rom) */
  
@@ -5569,6 +5569,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Update the solution for reduced order modelling.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief Update the solution using an implicit Euler scheme.

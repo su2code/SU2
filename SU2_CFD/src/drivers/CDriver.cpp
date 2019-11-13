@@ -1072,7 +1072,8 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
       template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
       fem_dg_flow, fem_dg_shock_persson,
-      e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+      e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+      rom;
   
   /*--- Count the number of DOFs per solution point. ---*/
   
@@ -1154,6 +1155,10 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
+  /*--- Assign ROM boolean ---*/
+  
+  rom = config->GetReduced_Model();
+  
   /*--- Definition of the Class for the solution: solver[DOMAIN][INSTANCE][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
   
@@ -1233,6 +1238,11 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
     if (fem) {
       solver[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FEA_SOL]->GetnVar();
+    }
+    
+    /*--- Allocate ROM variables ---*/
+    if (rom) {
+      //solver[iMGlevel][FLOW_SOL]->SetROM_Variables(nPoint, nPointDomain, nVar, geometry[iMGlevel], config);
     }
     
     /*--- Allocate solution for adjoint problem ---*/
