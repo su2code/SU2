@@ -31,14 +31,14 @@ from init import init_submodules
 
 def build_ninja():
 
-  ninjapath = sys.path[0] + '/externals/ninja'
+  ninjapath = sys.path[0] + os.path.sep + 'externals' + os.path.sep + 'ninja'
     
   try:
-    subprocess.run([sys.path[0] + '/ninja', '--version'], stdout=subprocess.PIPE)
+    subprocess.run([sys.path[0] + os.path.sep + 'ninja', '--version'], stdout=subprocess.PIPE)
   except OSError:   
     print("ninja executable not found. Building ...")
-    subprocess.run(['./configure.py', '--bootstrap'], cwd=ninjapath)
-    shutil.copy(ninjapath+'/ninja', '.')
+    subprocess.run(['python3', 'configure.py', '--bootstrap'], cwd=ninjapath)
+    shutil.copy(ninjapath+ os.path.sep + 'ninja', '.')
 
 if __name__ == '__main__':
   if sys.version_info[0] < 3:
@@ -51,9 +51,9 @@ if __name__ == '__main__':
   build_ninja()
 
   # Add paths for meson and ninja to environment
-  os.environ["NINJA"] = sys.path[0] + "/ninja"
-  if os.path.exists(sys.path[0] + '/externals/meson/mesonbuild'):
-    sys.path.insert(0, str(sys.path[0] + '/externals/meson'))
+  os.environ["NINJA"] = sys.path[0] + os.path.sep + "ninja"
+  if os.path.exists(sys.path[0] + os.path.sep + 'externals' + os.path.sep + 'meson' + os.path.sep + 'mesonbuild'):
+    sys.path.insert(0, str(sys.path[0] + os.path.sep + 'externals' +os.path.sep + 'meson'))
 
   from mesonbuild import mesonmain
 
