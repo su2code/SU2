@@ -150,6 +150,7 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
     delete [] Multiplier;
     delete [] Multiplier_Old;
     delete [] ConstrFunc_Store;
+    delete [] AugmentedLagrangianMultiplierGradient;
   }
 
 }
