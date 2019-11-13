@@ -48,10 +48,10 @@ class CVariable;
  */
 class CFlowCompOutput final: public CFlowOutput {
 private:
-
+  
   unsigned short turb_model; //!< Kind of turbulence model
   unsigned long lastInnerIter;
-
+   
 public:
 
   /*!
@@ -65,13 +65,13 @@ public:
    */
   ~CFlowCompOutput(void) override;
 
-
+  
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-
+  
   /*!
    * \brief Set the values of the volume output fields for a surface point.
    * \param[in] config - Definition of the particular problem.
@@ -81,15 +81,15 @@ public:
    * \param[in] iMarker - Index of the surface marker.
    * \param[in] iVertex - Index of the vertex on the marker.
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
-                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
-
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, 
+                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;  
+  
   /*!
    * \brief Set the available volume output fields
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields(CConfig *config) override;
-
+  
   /*!
    * \brief Set the values of the volume output fields for a point.
    * \param[in] config - Definition of the particular problem.
@@ -97,21 +97,21 @@ public:
    * \param[in] solver - The container holding all solution data.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
-
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override; 
+  
   /*!
    * \brief Set the available history output fields
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryOutputFields(CConfig *config) override;
-
+  
   /*!
    * \brief Check whether the base values for relative residuals should be initialized
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
   bool SetInit_Residuals(CConfig *config) override;
-
+  
   /*!
    * \brief Check whether the averaged values should be updated
    * \param[in] config - Definition of the particular problem.
@@ -130,7 +130,7 @@ public:
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetFixedCLScreenOutput(CConfig *config);
-
+  
   /*!
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.

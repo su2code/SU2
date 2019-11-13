@@ -43,7 +43,7 @@ class OptionError(Exception):
     pass
 
 class Option(object):
-
+    
     def __init__(self):
         self.val = ""
 
@@ -70,7 +70,7 @@ class MathProblem(Option):
 
 class DEFINITION_DV(ordered_bunch):
     """ SU2.io.config.DEFINITION_DV()
-
+    
         List of design variables (Design variables are separated by semicolons)
         2D Design variables
     	   -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
@@ -93,9 +93,9 @@ class DEFINITION_DV(ordered_bunch):
 	Global design variables
 	   -TRANSLATION  ( 1, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
  	   -ROTATION	 ( 2, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
-
+        
     """
-
+    
     def __init__(self,*args,**kwarg):
         ordered_bunch.__init__(self)
         self.KIND   = []
@@ -104,14 +104,14 @@ class DEFINITION_DV(ordered_bunch):
         self.FFDTAG = []
         self.PARAM  = []
         self.update(ordered_bunch(*args,**kwarg))
-
+    
     def append(self,new_dv):
         self.KIND.  append(new_dv['KIND'])
         self.SCALE. append(new_dv['SCALE'])
         self.MARKER.append(new_dv['MARKER'])
         self.FFDTAG.append(new_dv['FFDTAG'])
         self.PARAM. append(new_dv['PARAM'])
-
+    
     def extend(self,new_dvs):
         assert isinstance(new_dvs,DEFINITION_DV) , 'input must be of type DEFINITION_DV'
         self.KIND.  extend(new_dvs['KIND'])
@@ -124,7 +124,7 @@ class DEFINITION_DV(ordered_bunch):
 
 class DV_KIND(ordered_bunch):
   """ SU2.io.config.DV_KIND()
-
+    
         List of design variables (Design variables are separated by semicolons)
         2D Design variables
     	   -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
@@ -147,19 +147,19 @@ class DV_KIND(ordered_bunch):
 	Global design variables
 	   -TRANSLATION  ( 1, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
  	   -ROTATION	 ( 2, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
-
+        
     """
-
+  
   def __init__(self,*args,**kwarg):
     ordered_bunch.__init__(self)
     self.FFDTAG = []
     self.PARAM  = []
     self.update(ordered_bunch(*args,**kwarg))
-
+  
   def append(self,new_dv):
     self.FFDTAG.append(new_dv['FFDTAG'])
     self.PARAM. append(new_dv['PARAM'])
-
+  
   def extend(self,new_dvs):
     assert isinstance(new_dvs,DV_KIND) , 'input must be of type DV_KIND'
     self.FFDTAG.extend(new_dvs['FFDTAG'])

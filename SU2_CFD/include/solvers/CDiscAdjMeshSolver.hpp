@@ -1,6 +1,6 @@
 /*!
  * \file CMeshSolver.hpp
- * \brief Declaration and inlines of the class to compute the
+ * \brief Declaration and inlines of the class to compute the 
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"

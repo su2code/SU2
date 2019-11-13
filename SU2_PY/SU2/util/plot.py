@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 
 ## \file plot.py
 #  \brief python package for plotting
@@ -38,29 +38,29 @@
 
 def write_plot(filename,plot_format,data_plot,keys_plot=None):
     """ write_plot(filename,plot_format,data_plot,keys_plot=[])
-        writes a tecplot or paraview plot of dictionary data
+        writes a tecplot or paraview plot of dictionary data 
         data_plot is a dictionary of lists with equal length
         if data_plot is an ordered dictionary, will output in order
         otherwise use keys_plot to specify the order of output
     """
-
+    
     default_spacing = 16
     indent_spacing  = 0
-
+    
     if keys_plot is None: keys_plot = []
-
+    
     if not keys_plot:
         keys_plot = data_plot.keys()
-
+    
     keys_print  = [ '"'+key+'"' for key in keys_plot ]
     keys_space = [default_spacing] * len(keys_plot)
-
+    
     header = ''
     if (plot_format == 'TECPLOT'):
         header = 'VARIABLES='
         indent_spacing += 10
     indent_spacing = ' '*indent_spacing
-
+    
     n_lines = 0
     for i,key in enumerate(keys_plot):
         # check vector lengths
@@ -69,12 +69,12 @@ def write_plot(filename,plot_format,data_plot,keys_plot=None):
             n_lines = len(value)
         else:
             assert n_lines == len(value) , 'unequal plot vector lengths'
-
+            
         # check spacing
         if len(key) > keys_space[i]:
             keys_space[i] = len(key)
         keys_space[i] = "%-" + str(keys_space[i]) + "s"
-
+        
     plotfile = open(filename,'w')
     plotfile.write(header)
     for i,key in enumerate(keys_print):
@@ -89,14 +89,14 @@ def write_plot(filename,plot_format,data_plot,keys_plot=None):
             if j > 0: plotfile.write(", ")
             plotfile.write(keys_space[j] % value[i_line])
         plotfile.write('\n')
-
+    
     plotfile.close()
-
+    
     return
-
+    
 def tecplot(filename,data_plot,keys_plot=[]):
     write_plot(filename,'TECPLOT',data_plot,keys_plot)
 
 def paraview(filename,data_plot,keys_plot=[]):
     write_plot(filename,'CSV',data_plot,keys_plot)
-
+        

@@ -46,7 +46,7 @@ CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsi
     Solution_Old(iPoint,0) = Solution(iPoint,0) = intermittency;
     Solution_Old(iPoint,1) = Solution(iPoint,1) = REth;
   }
-
+  
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 

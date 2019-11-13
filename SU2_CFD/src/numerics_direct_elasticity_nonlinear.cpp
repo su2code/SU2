@@ -275,7 +275,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 //  cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
-
+  
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -518,7 +518,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
-
+  
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -532,7 +532,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
-
+  
   /*-----------------------------------------------------------*/
 
   su2double Weight, Jac_x;

@@ -44,7 +44,7 @@ class CFlowTractionInterface : public CInterface {
 
 protected:
   bool consistent_interpolation;
-
+  
   /*!
    * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag
    * \param[in] flow_config - Definition of the fluid (donor) problem.

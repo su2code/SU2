@@ -75,11 +75,11 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   su2double Weight, Jac_X;
 
   su2double AuxMatrix[3][6], *res_aux = new su2double[nVar];
-
+  
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
-
+  
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -89,7 +89,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
-
+  
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
@@ -199,14 +199,14 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
 
   }
-
+  
   // compute residual
   for(iNode = 0; iNode<nNode; ++iNode)
   {
     for(jNode = 0; jNode<nNode; ++jNode)
     {
       su2double *Kab = element->Get_Kab(iNode,jNode);
-
+      
       for (iVar = 0; iVar < nVar; iVar++) {
           res_aux[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++)
@@ -216,11 +216,11 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
       element->Add_Kt_a(res_aux,iNode);
     }
   }
-
+  
   /*--- Register the stress residual as preaccumulation output ---*/
   element->SetPreaccOut_Kt_a();
   AD::EndPreacc();
-
+  
   delete[] res_aux;
 }
 
@@ -270,7 +270,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Auxiliary vector ---*/
   su2double Strain[6], Stress[6];
-
+  
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);

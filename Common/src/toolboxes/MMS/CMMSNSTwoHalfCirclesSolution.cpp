@@ -44,7 +44,7 @@ CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(unsigned short val_nD
                                                            unsigned short val_iMesh,
                                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+  
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations between two half circles. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -177,7 +177,7 @@ void CMMSNSTwoHalfCirclesSolution::GetMMSSourceTerm(const su2double *val_coords,
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSTwoHalfCirclesSolution.mw in the directory
-        CreateMMSSourceTerms for the details how to do this. ---*/
+       	CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double t1 = rho_0 * u_0;
   const su2double t2 = x * x;
   const su2double t3 = y * y;
@@ -274,7 +274,7 @@ void CMMSNSTwoHalfCirclesSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t261 = t248 * t246 * t34 / 0.4e1 + 0.8e1 * (t25 * t252 + t25 * t254) * rho_0 + t246 * t34 / 0.4e1;
   const su2double t262 = v_0 * t261;
   const su2double t267 = -0.4e1 * t193 * t2 * TWall * t65 - 0.4e1 * t193 * TWall * t65 * t3 - 0.8e1 * t193 * t201
-                       + 0.64e2 / 0.3e1 * t8 * t12 * t22 * t76 - 0.4e1 * t9 * t213 + 0.4e1 * t13 * t213
+                       + 0.64e2 / 0.3e1 * t8 * t12 * t22 * t76 - 0.4e1 * t9 * t213 + 0.4e1 * t13 * t213 
                        - 0.4e1 * t17 * t218 + 0.4e1 * t19 * t218 + 0.128e3 / 0.3e1 * t8 * t11 * Viscosity * t6 * t161 * t138
                        + 0.64e2 / 0.3e1 * t231 * t230 * t173 * t172 - 0.32e2 / 0.3e1 * t237 * t236 * t82 * t76
                        - 0.4e1 * t8 * t236 * t113 - 0.4e1 * t19 * t262 + 0.4e1 * t17 * t262;
@@ -302,7 +302,7 @@ void CMMSNSTwoHalfCirclesSolution::GetMMSSourceTerm(const su2double *val_coords,
                         + t11 * a_T2 * x * t285 - Pi * t7 * t183 - 0.2e1 * a_T2 * t51 * x * t292 - t53 / 0.2e1) * t201
                         + 0.4e1 * t300 * t2 * t190 * t11 * TWall * t81 + 0.64e2 / 0.3e1 * t317 * u_0 * t70 * x * t66
                         - 0.32e2 / 0.3e1 * x * t11 * t311 * t310 + 0.4e1 * t317 * u_0 * (t248 * t62 * t34 / 0.4e1
-                        + 0.16e2 * (-t9 * t252 - t9 * t254 + t27 * t364 + t27 * t367) * rho_0 + t64)
+                        + 0.16e2 * (-t9 * t252 - t9 * t254 + t27 * t364 + t27 * t367) * rho_0 + t64) 
                         + 0.4e1 * t317 * v_0 * (t248 * t158 * t34 / 0.4e1
                         + 0.16e2 * (t141 * t364 + t141 * t367 - t17 * t252 - t17 * t254) * rho_0 + t160);
 
@@ -310,7 +310,7 @@ void CMMSNSTwoHalfCirclesSolution::GetMMSSourceTerm(const su2double *val_coords,
         Note the scaling for the correct non-dimensionalization. ---*/
   val_source[0]      = -0.4e1 * t13 * t1 + 0.4e1 * t9 * t1 + 0.4e1 * t17 * t15 - 0.4e1 * t19 * t15;
   val_source[1]      = 0.32e2 * t27 * t11 * t23 - 0.32e2 * t9 * t30 * t23 + t64 + 0.16e2 / 0.3e1 * t70 * x * t66
-                     + 0.16e2 / 0.3e1 * t6 * u_0 * t76 - 0.8e1 / 0.3e1 * x * t82 * t76 + 0.32e2 * t16 * t87 * t86
+                     + 0.16e2 / 0.3e1 * t6 * u_0 * t76 - 0.8e1 / 0.3e1 * x * t82 * t76 + 0.32e2 * t16 * t87 * t86 
                      - 0.32e2 * t16 * t92 * t91 - t113;
   val_source[2]      = 0.32e2 * t7 * t87 * t86 - 0.32e2 * t7 * t92 * t91 - t137 + 0.32e2 * t141 * t11 * t139
                      - 0.32e2 * t17 * t30 * t139 + t160 + 0.32e2 / 0.3e1 * Viscosity * t6 * t161 * v_0

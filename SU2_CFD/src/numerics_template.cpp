@@ -39,13 +39,13 @@
 #include <limits>
 
 CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-
+  
+  
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
+  
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-
+  
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -66,7 +66,7 @@ CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned sho
 
 CConvective_Template::~CConvective_Template(void) {
   unsigned short iVar;
-
+  
   delete [] Diff_U;
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -86,16 +86,16 @@ CConvective_Template::~CConvective_Template(void) {
 }
 
 void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-
+  
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
   /*!< \brief Normal: Normal vector, it norm is the area of the face. */
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);                    /*! Area of the face*/
-
+  
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
-
+  
   /*--- Point i, Needs to recompute SoundSpeed / Pressure / Enthalpy in case of 2nd order reconstruction ---*/
   Density_i = U_i[0];
   sq_vel = 0;
@@ -107,7 +107,7 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
   SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel));
   Pressure_i = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
   Enthalpy_i = (U_i[nDim+1] + Pressure_i) / Density_i;
-
+  
   /*--- Point j, Needs to recompute SoundSpeed / Pressure / Enthalpy in case of 2nd order reconstruction ---*/
   Density_j = U_j[0];
   sq_vel = 0;
@@ -119,7 +119,7 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
   SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel));
   Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
   Enthalpy_j = (U_j[nDim+1] + Pressure_j) / Density_j;
-
+  
   /*--- Mean Roe variables iPoint and jPoint ---*/
   R = sqrt(Density_j/Density_i);
   RoeDensity = R*Density_i;
@@ -130,23 +130,23 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
-
+  
   /*--- Compute ProjFlux_i ---*/
   GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
-
+  
   /*--- Compute ProjFlux_j ---*/
   GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
-
+  
   /*--- Compute P and Lambda (do it with the Normal) ---*/
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-
+  
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
-
+  
   /*--- Flow eigenvalues and Entropy correctors ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Lambda[iDim] = ProjVelocity;
@@ -156,15 +156,15 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
-
+  
   /*--- Entropy correction ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
       Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
     else
       Lambda[iVar] = fabs(Lambda[iVar]);
-
-
+  
+  
   if (!implicit) {
     /*--- Compute wave amplitudes (characteristics) ---*/
     proj_delta_vel = 0.0;
@@ -175,7 +175,7 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
     delta_p = Pressure_j - Pressure_i;
     delta_rho = Density_j - Density_i;
     proj_delta_vel = proj_delta_vel/Area;
-
+    
     if (nDim == 3) {
       delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
       delta_wave[1] = UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0];
@@ -189,7 +189,7 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
       delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
       delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     }
-
+    
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
@@ -198,18 +198,18 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
     }
   }
   else {
-
+    
     /*--- Compute inverse P ---*/
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-
+    
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
-
+    
     /*--- Diference variables iPoint and jPoint ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Diff_U[iVar] = U_j[iVar]-U_i[iVar];
-
+    
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
@@ -230,7 +230,7 @@ CSource_Template::CSource_Template(unsigned short val_nDim, unsigned short val_n
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {}
 
 CSource_Template::~CSource_Template(void) {
-
+  
 }
 
 void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {}

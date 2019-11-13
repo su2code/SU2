@@ -9,7 +9,7 @@ if mpi_dep[0].found() and mpi_dep[1].found()
     python_dir = run_command(python, '-c', 'from distutils.sysconfig import get_python_lib; print(get_python_lib())').stdout().strip()
     message ('Looking for mpi4py in ' + python_dir)
   endif
-  mpi4py_include = python_dir + '/mpi4py/include'
+  mpi4py_include = python_dir + '/mpi4py/include' 
 else
   mpi4py_include = ''
 endif
@@ -23,7 +23,7 @@ swig_gen = generator(
 )
 
 wrapper_deps = [
-    dependency('python3'),
+    dependency('python3'), 
 ]
 
 if get_option('enable-normal')

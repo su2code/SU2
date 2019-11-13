@@ -57,12 +57,12 @@ protected:
   su2double tGamOvGm1;    /*!< \brief 2 Gamma over Gamma minus 1 */
 
 public:
-
+  
   /*!
    * \brief Constructor of the class.
    */
   CRinglebSolution(void);
-
+  
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -74,7 +74,7 @@ public:
                    unsigned short val_nvar,
                    unsigned short val_iMesh,
                    CConfig*       config);
-
+  
   /*!
    * \brief Destructor of the class.
    */

@@ -44,7 +44,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
                                                unsigned short val_iMesh,
                                                CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+  
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -181,7 +181,7 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSUnitQuadSolution.mw in the directory
-        CreateMMSSourceTerms for the details how to do this. ---*/
+       	CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double Pi = PI_NUMBER;
   const su2double fourThird = 4.0/3.0;
   const su2double x = val_coords[0];

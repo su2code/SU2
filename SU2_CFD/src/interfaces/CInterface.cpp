@@ -446,8 +446,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
                                    CConfig *donor_config, CConfig *target_config,
                                    unsigned short iMarkerInt){
 
-  unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
-  unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
+  unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+  unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag = 0, Target_Flag = 0;
   int Marker_Donor = -1, Marker_Target = -1;
 
@@ -583,8 +583,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
 void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                                   CGeometry *donor_geometry, CGeometry *target_geometry,
                                   CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
-  unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
-  unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
+  unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+  unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   unsigned short iSpan, nSpanDonor, nSpanTarget;
   int Marker_Donor = -1, Marker_Target = -1;
   su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,

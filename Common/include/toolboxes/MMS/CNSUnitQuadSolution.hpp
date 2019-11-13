@@ -57,12 +57,12 @@ protected:
   su2double Viscosity;    /*!< \brief Viscosity, must be constant. */
 
 public:
-
+  
   /*!
    * \brief Constructor of the class.
    */
   CNSUnitQuadSolution(void);
-
+  
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -74,7 +74,7 @@ public:
                       unsigned short val_nvar,
                       unsigned short val_iMesh,
                       CConfig*       config);
-
+  
   /*!
    * \brief Destructor of the class.
    */
@@ -89,7 +89,7 @@ public:
   void GetSolution(const su2double *val_coords,
                    const su2double val_t,
                    su2double       *val_solution);
-
+  
   /*!
    * \brief Get the boundary conditions state for an exact solution.
    * \param[in] val_coords   - Cartesian coordinates of the current position.

@@ -52,7 +52,7 @@ import FSI	# imports FSI python tools
 import pysu2
 
 # -------------------------------------------------------------------
-#  Main
+#  Main 
 # -------------------------------------------------------------------
 
 def main():
@@ -85,7 +85,7 @@ def main():
       if os.getcwd() not in sys.path:
           sys.path.append(os.getcwd())
 	  print("Setting working directory : {}".format(os.getcwd()))
-      else:
+      else: 
 	  print("Working directory is set to {}".format(os.getcwd()))
 
   # starts timer
@@ -117,7 +117,7 @@ def main():
 
   if have_MPI == True:
     comm.barrier()
-
+  
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
   if myid == rootProcess:
     print('\n***************************** Initializing solid solver *****************************')
@@ -144,7 +144,7 @@ def main():
   if have_MPI == True:
     comm.barrier()
   FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, have_MPI)
-
+  
   if myid == rootProcess:
     print('\n***************************** Connect fluid and solid solvers *****************************')
   if have_MPI == True:
@@ -156,8 +156,8 @@ def main():
   if have_MPI == True:
     comm.barrier()
   FSIInterface.interfaceMapping(FluidSolver, SolidSolver, FSI_config)
-
-  if have_MPI == True:
+ 
+  if have_MPI == True: 
     comm.barrier()
 
   # --- Launch a steady or unsteady FSI computation --- #
@@ -186,7 +186,7 @@ def main():
     except KeyboardInterrupt as exception :
       if myid == rootProcess:
         print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
-
+  
   if have_MPI == True:
     comm.barrier()
 
@@ -201,7 +201,7 @@ def main():
   # stops timer
   stop = timer.time()
   elapsedTime = stop-start
-
+  
   if myid == rootProcess:
     print("\n Computation successfully performed in {} seconds.".format(elapsedTime))
 

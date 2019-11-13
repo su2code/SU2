@@ -610,20 +610,20 @@ public:
  * \version 6.2.0 "Falcon"
  */
 class CVremanModel : public CSGSModel {
-
+  
 public:
   su2double const_Vreman; /*!< \brief Vreman Constant c=2.5*Cs*Cs.  */
-
+  
   /*!
    * \brief Constructor of the class.
    */
   CVremanModel(void);
-
+  
   /*!
    * \brief Destructor of the class.
    */
   ~CVremanModel(void);
-
+  
   /*!
    * \brief Function to determine the eddy viscosity for
    the given function arguments for a 2D simulation.
@@ -643,7 +643,7 @@ public:
                                     const su2double dvdy,
                                     const su2double lenScale,
                                     const su2double distToWall);
-
+  
   /*!
    * \brief Function to determine the eddy viscosity for
    the given function arguments for a 3D simulation.
@@ -673,7 +673,7 @@ public:
                                     const su2double dwdz,
                                     const su2double lenScale,
                                     const su2double distToWall);
-
+  
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
    for the given function arguments for a 2D simulation.
@@ -712,7 +712,7 @@ public:
                                    const su2double distToWall,
                                    su2double &dMuTdx,
                                    su2double &dMuTdy);
-
+  
   /*!
    * \brief function to determine the gradients of the eddy viscosity
    for the given function arguments for a 3D simulation.

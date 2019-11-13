@@ -65,7 +65,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
-
+  
   /*!
    * \brief Destructor of the class.
    */

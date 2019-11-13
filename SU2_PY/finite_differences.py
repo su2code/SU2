@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
@@ -41,11 +41,11 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main
+#  Main 
 # -------------------------------------------------------------------
 
 def main():
-
+        
     parser = OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
@@ -69,11 +69,11 @@ def main():
 
 
 # -------------------------------------------------------------------
-#  Finite Differences Function
+#  Finite Differences Function 
 # -------------------------------------------------------------------
 
-def finite_differences( filename           ,
-                        partitions = 0     ,
+def finite_differences( filename           , 
+                        partitions = 0     , 
                         quiet      = False ,
                         nzones     = 1      ):
     # Config
@@ -81,16 +81,16 @@ def finite_differences( filename           ,
     config.NUMBER_PART = partitions
     config.NZONES      = int( nzones )
 
-    if quiet:
+    if quiet: 
         config.CONSOLE = 'CONCISE'
-
+    
     # State
     state = SU2.io.State()
     state.find_files(config)
-
+    
     # Finite Difference Gradients
     SU2.eval.gradients.findiff(config,state)
-
+    
     return state
 
 #: finite_differences()

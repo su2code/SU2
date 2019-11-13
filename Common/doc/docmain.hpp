@@ -32,16 +32,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*!
+/*! 
  * \mainpage SU2 version 6.2.0 "Falcon"
  * SU2 suite is an open-source collection of C++ based software tools
- * to perform PDE analysis and PDE constrained optimization problems.  The toolset is designed with
+ * to perform PDE analysis and PDE constrained optimization problems.  The toolset is designed with 
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to
  * include other families of governing equations such as potential flow, electrodynamics, chemically reacting
  * flows, and many others.  SU2 is released under an
  * open-source license.
- *
- * The following technical documentation describes the structure and details of the source code for developers.
+ * 
+ * The following technical documentation describes the structure and details of the source code for developers. 
  */
 
 /*!
@@ -51,48 +51,48 @@
 
 /*!
  * \defgroup ConvDiscr Discretization of the convective terms.
- * \brief Group of classes which define the numerical methods for
- *      discretizing the convective terms of a Partial Differential Equation.
- *      There are methods for solving the direct, adjoint and linearized
- *      systems of equations.
+ * \brief Group of classes which define the numerical methods for 
+ *		  discretizing the convective terms of a Partial Differential Equation. 
+ *		  There are methods for solving the direct, adjoint and linearized 
+ *		  systems of equations.
  */
 
 /*!
  * \defgroup ViscDiscr Discretization of the viscous terms.
- * \brief Group of classes which define the numerical methods for
- *      discretizing the viscous terms of a Partial Differential Equation.
- *      There are methods for solving the direct, adjoint and linearized
- *      systems of equations.
+ * \brief Group of classes which define the numerical methods for 
+ *		  discretizing the viscous terms of a Partial Differential Equation. 
+ *		  There are methods for solving the direct, adjoint and linearized 
+ *		  systems of equations.
  */
 
 /*!
  * \defgroup SourceDiscr Discretization of the source terms.
- * \brief Group of classes which define the numerical methods for
- *      discretizing the source terms of a Partial Differential Equation.
- *      There are methods for solving the direct, adjoint and linearized
- *      systems of equations.
+ * \brief Group of classes which define the numerical methods for 
+ *		  discretizing the source terms of a Partial Differential Equation. 
+ *		  There are methods for solving the direct, adjoint and linearized 
+ *		  systems of equations.
  */
 
 /*!
  * \defgroup Potential_Flow_Equation Solving the potential flow equation.
- * \brief Group of classes which define the system of Potential flow equation in
- *      three formulations: direct, adjoint, and linearized.
+ * \brief Group of classes which define the system of Potential flow equation in 
+ *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Euler_Equations Solving the Euler's equations.
- * \brief Group of classes which define the system of Euler equations in
- *      three formulations: direct, adjoint, and linearized.
+ * \brief Group of classes which define the system of Euler equations in 
+ *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes' equations.
- * \brief Group of classes which define the system of Navier-Stokes equations in
- *      three formulations: direct, adjoint, and linearized.
+ * \brief Group of classes which define the system of Navier-Stokes equations in 
+ *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Turbulence_Model Solving the turbulence models.
- * \brief Group of classes which define the turbulence model in
- *      three formulations: direct, adjoint, and linearized.
+ * \brief Group of classes which define the turbulence model in 
+ *		  three formulations: direct, adjoint, and linearized.
  */

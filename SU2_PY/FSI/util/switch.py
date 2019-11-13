@@ -1,14 +1,14 @@
 # -------------------------------------------------------------------
 #  Switch Class
-# -------------------------------------------------------------------
+# -------------------------------------------------------------------  
 # source: Brian Beck, PSF License, ActiveState Code
 #         http://code.activestate.com/recipes/410692/
 
 class switch(object):
     """ Readable switch construction
-
+    
         Example:
-
+        
         c = 'z'
         for case in switch(c):
             if case('a'): pass # only necessary if the rest of the suite is empty
@@ -25,11 +25,11 @@ class switch(object):
                 break
             if case(): # default
                 print("I dunno what c was!")
-
+        
         source: Brian Beck, PSF License, ActiveState Code
         http://code.activestate.com/recipes/410692/
     """
-
+    
     def __init__(self, value):
         self.value = value
         self.fall = False
@@ -38,15 +38,15 @@ class switch(object):
         """Return the match method once, then stop"""
         yield self.match
         raise StopIteration
-
+    
     def match(self, *args):
         """Indicate whether or not to enter a case suite"""
         if self.fall or not args:
             return True
-        elif self.value in args:
+        elif self.value in args: 
             self.fall = True
             return True
         else:
             return False
-
+        
 #: class switch()

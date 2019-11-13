@@ -44,7 +44,7 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
                                                            unsigned short val_iMesh,
                                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+  
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations between two half spheres. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -186,7 +186,7 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSTwoHalfSpheresSolution.mw in the directory
-        CreateMMSSourceTerms for the details how to do this. ---*/
+       	CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double t1 = rho_0 * u_0;
   const su2double t2 = x * x;
   const su2double t3 = y * y;
@@ -380,7 +380,7 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t616 = 0.4e1 * t18 * t528 - 0.4e1 * t20 * t528 + 0.4e1 * t24 * t533 - 0.4e1 * t26 * t533
                        + 0.12e2 * t541 * t12 * t7 * t410 + 0.320e3 / 0.3e1 * t545 * t155 * t112
                        + 0.320e3 / 0.3e1 * t545 * Viscosity * t111 * t231 + 0.64e2 * t545 * t29 * t112
-                       + 0.64e2 / 0.3e1 * t545 * t29 * t84 + 0.4e1 * t541 * t2 * t558 + 0.4e1 * t541 * t3 * t558
+                       + 0.64e2 / 0.3e1 * t545 * t29 * t84 + 0.4e1 * t541 * t2 * t558 + 0.4e1 * t541 * t3 * t558 
                        + 0.4e1 * t541 * t72 * t486 + 0.4e1 * t305 * u_0 * (t508 * t70 * t41
                        + 0.16e2 * (-t10 * t511 - t10 * t513 - t10 * t515 + t34 * t570 + t34 * t573 + t34 * t576) * rho_0 + t71)
                        + 0.4e1 * t305 * v_0 * (t508 * t176 * t41 + 0.16e2 * (t158 * t570 + t158 * t573 + t158 * t576

@@ -36,7 +36,7 @@
  */
 
 #include "../../../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
-
+  
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(void) : CVerificationSolution() { }
 
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nDim,
@@ -44,7 +44,7 @@ CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nD
                                                            unsigned short val_iMesh,
                                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+  
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad with no-slip
    wall boundary conditions. ---*/
@@ -176,7 +176,7 @@ void CMMSNSUnitQuadSolutionWallBC::GetMMSSourceTerm(const su2double *val_coords,
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSUnitQuadSolutionWallBC.mw in the directory
-        CreateMMSSourceTerms for the details how to do this. ---*/
+       	CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double t1 = (v_0 * rho_0);
   const su2double t2 = 1.0 - y;
   const su2double t6 = rho_0 * u_0;

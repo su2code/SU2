@@ -96,7 +96,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "-------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl << std::endl;    
   }
   Abort(currentComm, EXIT_FAILURE);
 }
@@ -112,7 +112,7 @@ inline int CBaseMPIWrapper::GetSize(){
 
 inline void CBaseMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
-  MPI_Comm_rank(currentComm, &Rank);
+  MPI_Comm_rank(currentComm, &Rank);  
   MPI_Comm_size(currentComm, &Size);
 
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
@@ -128,8 +128,8 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
-  MPI_Comm_rank(currentComm, &Rank);
-  MPI_Comm_size(currentComm, &Size);
+  MPI_Comm_rank(currentComm, &Rank);    
+  MPI_Comm_size(currentComm, &Size);  
 
   MinRankError = Size;
   MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
@@ -272,15 +272,15 @@ inline void CBaseMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {
   MPI_Waitany(nrequests, request, index, status);
 }
-
+  
 
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
   MediTool::init();
-  AMPI_Comm_rank(convertComm(currentComm), &Rank);
-  AMPI_Comm_size(convertComm(currentComm), &Size);
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);    
+  AMPI_Comm_size(convertComm(currentComm), &Size);  
 
   MinRankError = Size;
   MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
@@ -295,7 +295,7 @@ inline void CMediMPIWrapper::Init_AMPI(void) {
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
-  AMPI_Comm_rank(convertComm(currentComm), &Rank);
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);  
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
@@ -500,7 +500,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "-------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl << std::endl;    
   }
   Abort(currentComm, 0);
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
@@ -41,11 +41,11 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main
+#  Main 
 # -------------------------------------------------------------------
 
 def main():
-
+    
     # Command Line Options
     parser=OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
@@ -60,20 +60,20 @@ def main():
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
                       help="Number of Zones", metavar="ZONES")
-
+    
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
     options.nzones      = int( options.nzones )
-
+    
     discrete_adjoint( options.filename    ,
                       options.partitions  ,
                       options.compute     ,
                       options.step        ,
                       options.nzones       )
-
+        
 #: def main()
 
 
@@ -82,11 +82,11 @@ def main():
 # -------------------------------------------------------------------
 
 def discrete_adjoint( filename           ,
-                      partitions  = 0    ,
+                      partitions  = 0    , 
                       compute     = True ,
                       step        = 1e-4 ,
                       nzones      = 1     ):
-
+    
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -94,10 +94,10 @@ def discrete_adjoint( filename           ,
 
     # State
     state = SU2.io.State()
-
+    
     # Force CSV output in order to compute gradients
     config.WRT_CSV_SOL = 'YES'
-
+    
 
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
@@ -107,25 +107,25 @@ def discrete_adjoint( filename           ,
         state.find_files(config)
     else:
         state.FILES.MESH = config.MESH_FILENAME
-
+    
     # Direct Solution
     if compute:
-        info = SU2.run.direct(config)
+        info = SU2.run.direct(config) 
         state.update(info)
         SU2.io.restart2solution(config,state)
-
+    
     # Adjoint Solution
 
-    # Run all-at-once
+    # Run all-at-once 
     if compute:
         info = SU2.run.adjoint(config)
         state.update(info)
         SU2.io.restart2solution(config,state)
-
+    
     # Gradient Projection
     info = SU2.run.projection(config,step)
     state.update(info)
-
+    
     return state
 
 #: continuous_adjoint()
@@ -135,14 +135,14 @@ def discrete_adjoint( filename           ,
 # -------------------------------------------------------------------
 
 def discrete_design( filename           ,
-                       partitions  = 0    ,
+                       partitions  = 0    , 
                        compute     = True ,
                        step        = 1e-4 ,
                        validation  = False):
-
-    # TODO:
+    
+    # TODO: 
     # step
-
+    
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -150,7 +150,7 @@ def discrete_design( filename           ,
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
     ADJ_NAME = config.OBJECTIVE_FUNCTION
-
+    
     # State
     state = SU2.io.State()
 
@@ -165,7 +165,7 @@ def discrete_design( filename           ,
 #        grad_directdiff = SU2.eval.gradients.directdiff(konfig,state_directdiff)
 #        state['FILES']['DIRECT'] = 'DIRECTDIFF/' + state_directdiff['FILES']['DIRECT']
 #        state['FUNCTIONS'] = state_directdiff['FUNCTIONS']
-
+    
     # check for existing files
     if any([not compute, validation]) :
         state.find_files(config)
@@ -190,7 +190,7 @@ def discrete_design( filename           ,
 
 #            print(str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %')
 
-
+    
     return state
 
 

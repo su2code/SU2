@@ -46,9 +46,9 @@ inline su2double CNumerics::Determinant_3x3(su2double A00,
                                             su2double A20,
                                             su2double A21,
                                             su2double A22) {
-
+  
   return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
-
+  
 }
 
 inline void CNumerics::Compute_Mass_Matrix(CElement *element_container, CConfig *config) { }
@@ -74,7 +74,7 @@ inline void CFEAElasticity::Compute_Plane_Stress_Term(CElement *element_containe
 inline void CFEANonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
 inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
-  if (iVar == jVar) return 1.0; else return 0.0;
+	if (iVar == jVar) return 1.0; else return 0.0;
 }
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
@@ -103,7 +103,7 @@ inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EFie
 
 inline void CFEAElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
 
-inline void CFEANonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){
+inline void CFEANonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
   EField_Ref_Mod[i_DV] = val_EField; }
 
 inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
@@ -113,29 +113,29 @@ inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val
 inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
 
 inline void CFEAElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
-  E_i[0] = val_Young;
+  E_i[0] = val_Young; 
 }
 
-inline void CFEANonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
-  E_i[0] = val_Young;
+inline void CFEANonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+  E_i[0] = val_Young; 
 }
 
-inline void CFEAElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){
-  E_i[iVal] = val_E;
-  Nu_i[iVal] = val_Nu;
+inline void CFEAElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
 }
 
-inline void CFEANonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){
-  E_i[iVal] = val_E;
-  Nu_i[iVal] = val_Nu;
+inline void CFEANonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
 }
 
-inline void CFEAElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){
-  Rho_s_i[iVal] = val_Rho;
+inline void CFEAElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
   Rho_s_DL_i[iVal] = val_Rho_DL;}
 
-inline void CFEANonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){
-  Rho_s_i[iVal] = val_Rho;
+inline void CFEANonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
   Rho_s_DL_i[iVal] = val_Rho_DL;}
 
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
@@ -164,27 +164,27 @@ inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, 
                                    CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                    su2double **val_JacobianMeanFlow_i, su2double **val_JacobianMeanFlow_j, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i,
+inline void CNumerics::ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, 
                    su2double **val_Jacobian_j, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
-                   su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, 
+                   su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
                    su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual(su2double *val_resconv_i, su2double *val_resvisc_i, su2double *val_resconv_j,
-                   su2double *val_resvisc_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+              
+inline void CNumerics::ComputeResidual(su2double *val_resconv_i, su2double *val_resvisc_i, su2double *val_resconv_j, 
+                   su2double *val_resvisc_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
                    su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) { }
-
+              
 inline void CNumerics::ComputeResidual(su2double **val_stiffmatrix_elem, CConfig *config) { }
 
 inline void CNumerics::GetEq_Rxn_Coefficients(su2double **EqnRxnConstants, CConfig *config) { };
-
+                            
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {}
@@ -202,8 +202,8 @@ inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val
 inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
 
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
-  Und_Lapl_i = val_und_lapl_i;
-  Und_Lapl_j = val_und_lapl_j;
+  Und_Lapl_i = val_und_lapl_i; 
+  Und_Lapl_j = val_und_lapl_j; 
 }
 
 inline void CNumerics::SetSensor( su2double val_sensor_i, su2double val_sensor_j) {
@@ -379,19 +379,19 @@ inline void CNumerics::SetCoord(su2double *val_coord_i, su2double *val_coord_j) 
   Coord_j = val_coord_j;
 }
 
-inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1,
+inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1, 
                    su2double *val_coord_2) {
   Coord_0 = val_coord_0;
   Coord_1 = val_coord_1;
   Coord_2 = val_coord_2;
 }
 
-inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1,
+inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1, 
                    su2double *val_coord_2, su2double *val_coord_3) {
   Coord_0 = val_coord_0;
   Coord_1 = val_coord_1;
   Coord_2 = val_coord_2;
-  Coord_3 = val_coord_3;
+  Coord_3 = val_coord_3;  
 }
 
 inline void CNumerics::SetGridVel(su2double *val_gridvel_i, su2double *val_gridvel_j) {
@@ -477,20 +477,20 @@ inline su2double CNumerics::GetDissipation(){
   return Dissipation_ij;
 }
 
-inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) {
-  F1_i = val_F1_i;
+inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
+  F1_i = val_F1_i; 
   F1_j = val_F1_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetF2blending(su2double val_F2_i, su2double val_F2_j) {
-  F2_i = val_F2_i;
+inline void CSourcePieceWise_TurbSST::SetF2blending(su2double val_F2_i, su2double val_F2_j) { 
+  F2_i = val_F2_i; 
   F2_j = val_F2_j;
 }
 
 inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {
   CDkw_i = val_CDkw_i;
   CDkw_j = val_CDkw_j;
-}
+}      
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 
@@ -566,7 +566,7 @@ inline su2double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return 
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi,
+inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
 
 inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }

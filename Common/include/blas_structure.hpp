@@ -43,7 +43,7 @@
 
 /*!
  * \class CBlasStructure
- * \brief Class, which serves as an interface to the BLAS functionalities needed.
+ * \brief Class, which serves as an interface to the BLAS functionalities needed. 
  * \author: E. van der Weide
  * \version 6.2.0 "Falcon"
  */

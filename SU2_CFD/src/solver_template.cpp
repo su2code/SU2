@@ -71,10 +71,10 @@ void CTemplateSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_con
 void CTemplateSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                      unsigned short val_marker) { }
 
-void CTemplateSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CTemplateSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                                  unsigned short val_marker) { }
 
-void CTemplateSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CTemplateSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                                   unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Sym_Plane(CGeometry      *geometry,
@@ -86,7 +86,7 @@ void CTemplateSolver::BC_Sym_Plane(CGeometry      *geometry,
 
 void CTemplateSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
-void CTemplateSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+void CTemplateSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
                                              CConfig *config, unsigned short iRKStep) { }
 
 void CTemplateSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }

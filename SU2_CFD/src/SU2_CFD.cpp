@@ -48,24 +48,24 @@
 using namespace std;
 
 int main(int argc, char *argv[]) {
-
+  
   unsigned short nZone;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, turbo;
   bool dry_run = false;
   std::string filename = "default";
-
+  
   /*--- Command line parsing ---*/
-
+  
   CLI::App app{"SU2 v6.2.0 \"Falcon\", The Open-Source CFD Code"};
-  app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
+  app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n" 
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
-
+  
   CLI11_PARSE(app, argc, argv)
-
+  
   /*--- MPI initialization, and buffer setting ---*/
-
+  
 #ifdef HAVE_MPI
   int  buffsize;
   char *buffptr;
@@ -83,9 +83,9 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_LIBXSMM
   libxsmm_init();
 #endif
-
+  
   /*--- Create a pointer to the main SU2 Driver ---*/
-
+  
   CDriver *driver = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
-
+  
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   nZone    = config->GetnZone();
@@ -105,14 +105,14 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
-
+  
   if (!dry_run){
-
+    
     if ((!config->GetMultizone_Problem() && (config->GetTime_Marching() != HARMONIC_BALANCE) && !turbo)
         || (turbo && config->GetDiscrete_Adjoint())) {
-
+      
       /*--- Single zone problem: instantiate the single zone driver class. ---*/
-
+      
       if (nZone > 1 ) {
         SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
       }
@@ -122,10 +122,10 @@ int main(int argc, char *argv[]) {
       }
       else
         driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
-
+      
     }
     else if (config->GetMultizone_Problem() && !turbo && !fsi) {
-
+      
     /*--- Multizone Drivers. ---*/
 
     if (config->GetDiscrete_Adjoint()) {
@@ -134,22 +134,22 @@ int main(int argc, char *argv[]) {
 
     }
     else {
-
+      
       driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
 
     }
-
+      
     } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
-
+      
       /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
-
+      
       driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
-
+      
     } else if ((nZone == 2) && fsi) {
-
+      
       bool stat_fsi = ((!config->GetTime_Domain()));
       bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
-
+      
       /*--- If the problem is a discrete adjoint FSI problem ---*/
       if (disc_adj_fsi) {
         if (stat_fsi) {
@@ -159,43 +159,43 @@ int main(int argc, char *argv[]) {
           SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
         }
       }
-
+      
     } else {
-
+      
       /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
-
+      
       if (turbo) {
-
+        
         driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
-
+        
       } else {
-
+        
         /*--- Instantiate the class for external aerodynamics ---*/
-
+        
         driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
-
+        
       }
-
+      
     }
   } else {
     driver = new CDummyDriver(config_file_name, nZone, MPICommunicator);
   }
-
+  
   delete config;
   config = NULL;
-
+  
   /*--- Launch the main external loop of the solver ---*/
 
   driver->StartSolver();
 
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/
-
+  
   driver->Postprocessing();
 
   if (driver != NULL) delete driver;
   driver = NULL;
-
+  
   /*---Finalize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
   free(buffptr);
   SU2_MPI::Finalize();
 #endif
-
+  
   return EXIT_SUCCESS;
-
+  
 }

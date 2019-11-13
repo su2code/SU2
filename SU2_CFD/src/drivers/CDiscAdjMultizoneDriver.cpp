@@ -131,13 +131,13 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetTimeIter(0);
-
+    
   }
-
+  
   /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
 
   Run();
-
+  
   /*--- Output the solution in files. ---*/
 
   Output(TimeIter);
@@ -286,17 +286,17 @@ void CDiscAdjMultizoneDriver::Run() {
        *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
-
+        
       /*--- make sure that everything is loaded into the output container ---*/
-
+      
       output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
-
+      
     }
 
     /*--- Now all coupling terms are summed up, set External_Old to External for next outer iteration. ---*/
 
     Set_OldExternal();
-
+    
     /*--- Set the multizone output. ---*/
 
     driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,

@@ -78,7 +78,7 @@ protected:
   su2double P_0;      /*!< \brief Parameter for the pressure solution. */
   su2double P_x;      /*!< \brief Parameter for the pressure solution. */
   su2double P_xy;     /*!< \brief Parameter for the pressure solution. */
-  su2double P_y;      /*!< \brief Parameter for the pressure solution. */
+  su2double P_y;      /*!< \brief Parameter for the pressure solution. */ 
   su2double rho_0;    /*!< \brief Parameter for the density solution. */
   su2double rho_x;    /*!< \brief Parameter for the density solution. */
   su2double rho_xy;   /*!< \brief Parameter for the density solution. */
@@ -93,12 +93,12 @@ protected:
   su2double v_y;      /*!< \brief Parameter for the y-velocity solution. */
 
 public:
-
+  
   /*!
    * \brief Constructor of the class.
    */
   CMMSNSUnitQuadSolution(void);
-
+  
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -110,7 +110,7 @@ public:
                          unsigned short val_nvar,
                          unsigned short val_iMesh,
                          CConfig*       config);
-
+  
   /*!
    * \brief Destructor of the class.
    */

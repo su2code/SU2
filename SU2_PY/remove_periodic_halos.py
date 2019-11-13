@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 
 ## \file remove_periodic_halos.py
 #  \brief Python script to remove halo layers from SU2 native ascii
@@ -54,7 +54,7 @@ periodic_points = []
 
 fid = open(filename,"r"); lines = fid.readlines(); fid.close()
 for ii in range(len(lines[:])):
-
+  
   # The periodic nodes are in the receive BC and will have an even index
   if "SEND_RECEIVE" in lines[ii] and int(lines[ii+2].split("=")[1]) == -1:
     nElems = int(lines[ii+1].split("=")[1])

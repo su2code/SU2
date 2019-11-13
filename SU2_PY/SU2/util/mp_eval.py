@@ -8,40 +8,40 @@ if sys.version_info[0] > 2:
     xrange = range
 
 class mp_eval(object):
-
+    
     def __init__(self,function,num_procs=None):
-
+        
         self.__name__ = function.__name__
-
+        
         tasks    = mp.JoinableQueue()
         results  = mp.Queue()
         function = TaskMaster(function)
-
+        
         if num_procs is None:
             num_procs = mp.cpu_count()
-
-        procs = [ QueueMaster( tasks, results, function )
+            
+        procs = [ QueueMaster( tasks, results, function ) 
                   for i in xrange(num_procs) ]
-
+        
         self.tasks    = tasks
         self.results  = results
         self.function = function
         self.procs    = procs
-
+        
         return
-
+    
     def __call__(self,inputs):
-
+        
         tasks   = self.tasks
         results = self.results
-
+        
         if isinstance(inputs,np.ndarray):
             n_inputs = inputs.shape[0]
         elif isinstance(inputs,list):
             n_inputs = len(inputs)
         else:
             raise Exception('unsupported input')
-
+        
         for i_input,this_input in enumerate(inputs):
             this_job = { 'index'  : i_input    ,
                          'input'  : this_input ,
@@ -50,23 +50,23 @@ class mp_eval(object):
         #end
 
         # wait for tasks
-        tasks.join()
-
+        tasks.join() 
+        
         # pull results
         result_list = [ [] ]*n_inputs
         for i in xrange(n_inputs):
             result = results.get()
             i_result = result['index']
             result_list[i_result] = result['result']
-
+        
         return result_list
 
     def __del__(self):
-
+        
         for proc in self.procs:
             self.tasks.put(None)
-        self.tasks.join()
-
+        self.tasks.join()       
+        
         return
 
 class QueueMaster(mp.Process):
@@ -82,9 +82,9 @@ class QueueMaster(mp.Process):
     def run(self):
         proc_name = self.name
         parentPID = os.getppid()
-
+        
         while True:
-
+            
             if os.getppid() != parentPID:
                 break # parent died
 
@@ -93,25 +93,25 @@ class QueueMaster(mp.Process):
             if this_job is None:
                 self.task_queue.task_done()
                 break # kill signal
-
+            
             this_input = this_job['input']
             this_task  = self.task_class
 
             this_data = this_task(*this_input)
             this_job['result'] = this_data
             self.result_queue.put(this_job)
-
+            
             self.task_queue.task_done()
-
+            
         #: while alive
-
+        
         return
 
 class TaskMaster(object):
-
+    
     def __init__(self, func):
         self.func  = func
-    def __call__(self, *arg, **kwarg):
+    def __call__(self, *arg, **kwarg):  
         # makes object callable
         result = self.func(*arg, **kwarg)
         return result
@@ -126,4 +126,4 @@ class TaskMaster(object):
 
     #def __setstate__(self,data_dict):
         #self.__dict__ = pickle.loads(data_dict)
-        #return
+        #return    

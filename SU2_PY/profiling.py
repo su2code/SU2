@@ -77,7 +77,7 @@ for val in range(maxID):
 
   # Sort the pieces to make it pretty
   fracs[val], labels[val],calls[val] = (list(x) for x in zip(*sorted(zip(fracs[val], labels[val], calls[val]))))
-
+  
   # Call to make the pie chart
   pie_wedge_collection = ax.pie(fracs[val], explode=explode[val], labels=labels[val],labeldistance=1.05, autopct='%1.1f%%', shadow=False, startangle=0);
   for pie_wedge in pie_wedge_collection[0]:
@@ -97,7 +97,7 @@ for val in range(maxID):
   ax.set_ylabel('Calls')
   fig.autofmt_xdate()
   fig.subplots_adjust(wspace=0.5)
-
+  
   # Save a figure for this group
   filename = 'profile_group_' + str(val) + '.png'
   fig.savefig(filename,format='png')

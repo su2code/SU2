@@ -48,7 +48,7 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
   /*--- Write a message that the solution is initialized for the
    Navier-Stokes case on a unit quad. Note that heat conduction
    is neglected for this case. ---*/
-
+  
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;

@@ -67,7 +67,7 @@ CFluidModel::~CFluidModel(void) {
 }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
-
+  
   switch (config->GetKind_ViscosityModel()) {
     case CONSTANT_VISCOSITY:
       LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
@@ -82,11 +82,11 @@ void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
   }
-
+  
 }
 
 void CFluidModel::SetThermalConductivityModel (CConfig *config) {
-
+  
   switch (config->GetKind_ConductivityModel()) {
     case CONSTANT_CONDUCTIVITY:
       if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
@@ -113,6 +113,6 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       break;
   }
-
+  
 }
 

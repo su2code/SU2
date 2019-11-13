@@ -49,34 +49,34 @@ from ..util import ordered_bunch
 #  Direct Simulation
 # ----------------------------------------------------------------------
 
-def geometry ( config , step = 1e-3 ):
+def geometry ( config , step = 1e-3 ): 
     """ info = SU2.run.geometry(config)
-
+        
         Runs an geometry analysis with:
             SU2.run.decomp()
             SU2.run.GEO()
-
+            
         Assumptions:
             Performs both function and gradient analysis
-
+                        
         Inputs:
             config - an SU2 configuration
             step   - gradient finite difference step if config.GEO_MODE=GRADIENT
-
+        
         Outputs:
             info - SU2 State with keys:
                 FUNCTIONS
                 GRADIENTS
-
+                
         Updates:
-
+        
         Executes in:
             ./
     """
-
+    
     # local copy
     konfig = copy.deepcopy(config)
-
+    
     # unpack
     function_name = konfig['GEO_PARAM']
     tabular_format = konfig.get('TABULAR_FORMAT', 'CSV')
@@ -91,7 +91,7 @@ def geometry ( config , step = 1e-3 ):
         grad_filename = grad_filename.split('.')[0] + '.dat'
 
 
-    # choose dv values
+    # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
     n_DV          = len(Definition_DV['KIND'])
     if isinstance(step,list):
@@ -100,21 +100,21 @@ def geometry ( config , step = 1e-3 ):
         step = [step]*n_DV
     dv_old = [0.0]*n_DV # SU2_DOT input requirement, assumes linear superposition of design variables
     dv_new = step
-    konfig.unpack_dvs(dv_new,dv_old)
-
+    konfig.unpack_dvs(dv_new,dv_old)    
+    
     # Run Solution
     SU2_GEO(konfig)
-
+    
     # info out
-    info = su2io.State()
-
+    info = su2io.State()    
+    
     # get function values
     if konfig.GEO_MODE == 'FUNCTION':
         functions = su2io.tools.read_plot(func_filename)
         for key,value in functions.items():
             functions[key] = value[0]
         info.FUNCTIONS.update( functions )
-
+    
     # get gradient_values
     if konfig.GEO_MODE == 'GRADIENT':
         gradients = su2io.tools.read_plot(grad_filename)

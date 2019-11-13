@@ -62,7 +62,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CMeshBoundVariable() = default;
-
+  
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
    * \param[in] config - Definition of the particular problem.

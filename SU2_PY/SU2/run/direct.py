@@ -49,43 +49,43 @@ from .interface import CFD       as SU2_CFD
 #  Direct Simulation
 # ----------------------------------------------------------------------
 
-def direct ( config ):
+def direct ( config ): 
     """ info = SU2.run.direct(config)
-
+        
         Runs an adjoint analysis with:
             SU2.run.decomp()
             SU2.run.CFD()
             SU2.run.merge()
-
+            
         Assumptions:
             Does not rename restart filename to solution filename
             Adds 'direct' suffix to convergence filename
-
+                        
         Outputs:
             info - SU2 State with keys:
                 FUNCTIONS
                 HISTORY.DIRECT
                 FILES.DIRECT
-
+                
         Updates:
             config.MATH_PROBLEM
-
+            
         Executes in:
             ./
     """
-
+    
     # local copy
     konfig = copy.deepcopy(config)
 
     # setup direct problem
     konfig['MATH_PROBLEM']  = 'DIRECT'
-    konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'
-
+    konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
+    
     direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
 
     # Run Solution
     SU2_CFD(konfig)
-
+    
     # multizone cases
     multizone_cases = su2io.get_multizone(konfig)
 
@@ -94,23 +94,23 @@ def direct ( config ):
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     su2merge(konfig)
-
+    
     # filenames
     plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
     history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
-
+    
     # averaging final iterations
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
 
     # get history and objectives
     history      = su2io.read_history( history_filename , config.NZONES)
     aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
-
+    
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
-
+                    
     # info out
     info = su2io.State()
     info.FUNCTIONS.update( aerodynamics )
@@ -122,5 +122,5 @@ def direct ( config ):
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
     info.HISTORY.DIRECT = history
-
+    
     return info

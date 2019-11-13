@@ -64,10 +64,10 @@ class CMultizoneOutput final: public COutput {
 
 protected:
   unsigned short nZone; //!< Number of zones
-
+  
   string bgs_res_name; //!< Block-Gauss seidel residual name
   bool write_zone;     //!< Boolean indicating whether the individual zones write to screen
-
+  
 public:
 
   /*!
@@ -82,14 +82,14 @@ public:
 
   /*!
    * \brief Load the multizone history output field values
-   * \param[in] output - Container holding the output instances per zone.
+   * \param[in] output - Container holding the output instances per zone.   
    * \param[in] config - Definition of the particular problem.
    */
   void LoadMultizoneHistoryData(COutput **output, CConfig **config) override;
 
   /*!
    * \brief Set the available multizone history output fields
-   * \param[in] output - Container holding the output instances per zone.
+   * \param[in] output - Container holding the output instances per zone.   
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) override;
@@ -99,13 +99,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteHistoryFile_Output(CConfig *config) override;
-
+  
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteScreen_Header(CConfig *config) override;
-
+  
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
@@ -75,7 +75,7 @@ for line in f.readlines():
 f.close()
 print(filelist)
 
-# Prompt user before continuing
+# Prompt user before continuing 
 yorn = ''
 while(not yorn.lower()=='y'):
   yorn = raw_input('Replace %s with %s in the listed files? [Y/N]: '%(oldvers,newvers))

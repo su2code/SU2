@@ -60,8 +60,8 @@ using namespace std;
  */
 class CInterpolator {
 protected:
-  int rank,   /*!< \brief MPI Rank. */
-  size;         /*!< \brief MPI Size. */
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   unsigned int nZone;
   unsigned int donorZone, targetZone;
 
@@ -90,13 +90,13 @@ protected:
   *Buffer_Send_Normal,/*!\brief Buffer to send normal vector values */
   *Buffer_Receive_Coord,/*!\brief Buffer to receive coordinate values*/
   *Buffer_Receive_Normal;/*!\brief Buffer to receive normal vector values*/
-
+  
   unsigned long *Receive_GlobalPoint, /*!\brief Buffer to receive Global point indexes*/
   *Buffer_Receive_nLinkedNodes,       /*!\brief Buffer to receive the number of edges connected to each node*/
   *Buffer_Receive_LinkedNodes,        /*!\brief Buffer to receive the list of notes connected to the nodes through an edge*/
   *Buffer_Receive_StartLinkedNodes,   /*!\brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
   *Buffer_Receive_Proc;               /*!\brief Buffer to receive the thread that owns the node*/
-
+  
   unsigned long  nGlobalVertex_Target, /*!\brief Global number of vertex of the target boundary*/
   nLocalVertex_Target,                 /*!\brief Number of vertex of the target boundary owned by the thread*/
   nGlobalVertex_Donor,                 /*!\brief Global number of vertex of the donor boundary*/
@@ -139,16 +139,16 @@ public:
    * \brief Check whether the interface should be processed or not
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.
-   */
+   */  
   bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget);
-
+  
   /*!
    * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
    * \param[in] val_zone   - index of the zone
    * \param[in] val_marker - index of the marker
    */
   void ReconstructBoundary(unsigned long val_zone, int val_marker);
-
+  
   /*!
    * \brief compute distance between 2 points
    * \param[in] point_i
@@ -291,7 +291,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(CConfig **config);
-
+  
 };
 
 /*!
@@ -319,18 +319,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(CConfig **config);
-
+  
   /*!
    * \brief For 3-Dimensional grids, build the dual surface element
    * \param[in] map         - array containing the index of the boundary points connected to the node
-   * \param[in] startIndex  - for each vertex specifies the corresponding index in the global array containing the indexes of all its neighbouring vertexes
+   * \param[in] startIndex  - for each vertex specifies the corresponding index in the global array containing the indexes of all its neighbouring vertexes 
    * \param[in] nNeighbour  - for each vertex specifies the number of its neighbouring vertexes (on the boundary)
    * \param[in] coord       - array containing the coordinates of all the boundary vertexes
    * \param[in] centralNode - label of the vertex around which the dual surface element is built
    * \param[in] element  - double array where element node coordinates will be stored
-   */
+   */  
   int Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
-
+   
   /*!
    * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
    * \param[in] A1 - first  point of segment A
@@ -340,7 +340,7 @@ public:
    * \param[in] Direction - along which segments are projected
    */
   su2double ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
-
+  
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
    * \param[in] A1 - first  point of triangle A
@@ -352,7 +352,7 @@ public:
    * \param[in] Direction - vector normal to projection plane
    */
   su2double Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction);
-
+  
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
    * P1 from triangle P MUST be inside triangle Q, points order doesn't matter
@@ -364,7 +364,7 @@ public:
    * \param[in] Q3 - third  point of triangle B
    */
   su2double ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 );
-
+  
   /*!
    * \brief For 2-Dimensional grids, check whether, and compute, two lines are intersecting
    * \param[in] A1 - first  defining first line
@@ -374,7 +374,7 @@ public:
    * \param[in] IntersectionPoint - Container for intersection coordinates
    */
   void ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint );
-
+  
   /*!
    * \brief For N-Dimensional grids, check whether a point is inside a triangle specified by 3 T points
    * \param[in] Point - query point
@@ -423,7 +423,7 @@ public:
    * \param[in] dist - distance
    */
   static su2double Get_RadialBasisValue(const short unsigned int type, const su2double &radius, const su2double &dist);
-
+  
 private:
   /*!
    * \brief If the polynomial term is included in the interpolation, and the points lie on a plane, the matrix becomes rank deficient
@@ -450,24 +450,24 @@ private:
 class CSymmetricMatrix{
 
   private:
-
+    
     bool initialized, inversed;
     int sz, num_val;
     int *perm_vec;
     passivedouble *val_vec, *decompose_vec, *inv_val_vec;
 
     enum DecompositionType { none, cholesky, lu };
-
+    
     DecompositionType decomposed;
-
+    
     inline int CalcIdx(int i, int j);
     inline int CalcIdxFull(int i, int j);
     inline void CheckBounds(int i, int j);
-
+    
     passivedouble ReadL(int i, int j);
     passivedouble ReadU(int i, int j);
     passivedouble ReadInv(int i,int j);
-
+    
     // not optimized dense matrix factorization and inversion for portability
     void CholeskyDecompose(bool overwrite);
     void LUDecompose();
@@ -477,7 +477,7 @@ class CSymmetricMatrix{
     void CalcInv_potri() {}; // LLT not implemented yet
 
   public:
-
+	
     /*--- Methods ---*/
     CSymmetricMatrix();
     ~CSymmetricMatrix();

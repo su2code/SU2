@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 
 ## \file tools.py
 #  \brief mesh functions
@@ -47,11 +47,11 @@ if sys.version_info[0] > 2:
 import numpy as np
 from itertools import islice
 
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 #  Read SU2 Mesh File
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 def read(filename,scale=1.0):
-    ''' imports mesh and builds python dictionary structure
+    ''' imports mesh and builds python dictionary structure 
         input: filename
                scale: apply scaling factor (optional)
         output:
@@ -68,12 +68,12 @@ def read(filename,scale=1.0):
     '''
 
     # initialize variables
-    data  = {}
+    data  = {} 
     marks = {}
 
     # open meshfile
     meshfile = open(filename,'r')
-
+    
     # readline helper functin
     def mesh_readlines(n_lines=1):
         fileslice = islice(meshfile,n_lines)
@@ -87,10 +87,10 @@ def read(filename,scale=1.0):
         line = mesh_readlines()
 
         # stop if line is empty
-        if not line:
+        if not line: 
             keepon = False
             break
-
+        
         # fix white space
         line = line[0]
         line = line.replace('\t',' ')
@@ -108,47 +108,47 @@ def read(filename,scale=1.0):
 
         # elements
         elif "NELEM=" in line:
-
+            
             # number of elements
             nelem = long( line.split("=")[1].strip() )
             # save to SU2_MESH data
             data['NELEM'] = nelem
-
+            
             # only read nelem lines
             fileslice = islice(meshfile,nelem)
-
+            
             # the data pattern
             pattern = tuple( [int] + [long]*9 )
-
+            
             # scan next lines for element data
-            elem = [
-                [ t(s) for t,s in zip(pattern,line.split()) ]
-                for line in fileslice
+            elem = [ 
+                [ t(s) for t,s in zip(pattern,line.split()) ] 
+                for line in fileslice 
             ]
-
+            
             # save to SU2_MESH data
             data['ELEM'] = elem
         #: if NELEM
 
         # points
         elif "NPOIN=" in line:
-
+            
             # number of points
             npoin = long( line.split("=")[1].strip().split(' ')[0] )
             # save to SU2_MESH data
             data['NPOIN'] = npoin
-
+            
             # only read npoin lines
             fileslice = islice(meshfile,npoin)
-
+            
             # the data pattern
             pattern = tuple( [float]*3 ) # + [long] )
-
+            
             # scan next lines for element data
-            poin = [
-                [ t(s) for t,s in zip(pattern,line.split()) ]
-                for line in fileslice
-            ]
+            poin = [ 
+                [ t(s) for t,s in zip(pattern,line.split()) ] 
+                for line in fileslice 
+            ]            
 
             # save to SU2_MESH data
             data['POIN'] = poin
@@ -166,7 +166,7 @@ def read(filename,scale=1.0):
             # marker tag
             thistag = line.split("=")[1].strip()
             # start SU2_MARK dictionary
-            thismark = {}
+            thismark = {} 
             # save to SU2_MARK data
             thismark['TAG'] = thistag
 
@@ -174,28 +174,28 @@ def read(filename,scale=1.0):
             line = mesh_readlines()[0]
             if not "MARKER_ELEMS=" in line:
                 raise Exception("Marker Specification Error")
-
+            
             # convert string to long int
             thisnelem = long( line.split("=")[1].strip() )
-
+            
             # save to SU2_MARK data
             thismark['NELEM'] = thisnelem
-
+            
             # only read thisnelem lines
             fileslice = islice(meshfile,thisnelem)
-
+            
             # the data pattern
             pattern = tuple( [int] + [long]*9 )
-
+            
             # scan next lines for element data
-            markelem = [
-                [ t(s) for t,s in zip(pattern,line.split()) ]
-                for line in fileslice
+            markelem = [ 
+                [ t(s) for t,s in zip(pattern,line.split()) ] 
+                for line in fileslice 
             ]
-
+            
             # save to SU2_MARK data
             thismark['ELEM'] = markelem
-
+            
             # add to marker list
             marks[thismark['TAG']] = thismark
         #:if MARKER_TAG
@@ -204,17 +204,17 @@ def read(filename,scale=1.0):
 
     # save to SU2_MESH data
     data['MARKS'] = marks
-
+    
     return data
 #: def read
 
 
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 #  Write SU2 Mesh File
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 def write(filename,meshdata,scale=1.0):
     ''' writes meshdata to file
-        inputs: filename, meshdata
+        inputs: filename, meshdata 
     '''
 
     # open file for writing
@@ -243,7 +243,7 @@ def write(filename,meshdata,scale=1.0):
             outputfile.write("%#18.10e " % (poin[inum]*scale))
         outputfile.write( "%i\n" % (long(poin[inum+1])) )
 
-    # write markers
+    # write markers 
     outputfile.write("% \n% Boundary elements \n% \n")
     outputfile.write( "NMARK= %i\n" % meshdata['NMARK'] )
     for mark_tag in meshdata['MARKS'].keys():
@@ -262,11 +262,11 @@ def write(filename,meshdata,scale=1.0):
 #: def write
 
 
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 #  Get Marker Mesh Points
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 def get_markerPoints(meshdata,mark_tags):
-    ''' pulls all mesh nodes on markers
+    ''' pulls all mesh nodes on markers 
         checks for duplicates (from edges) '''
 
     # marker tags should be a list
@@ -276,7 +276,7 @@ def get_markerPoints(meshdata,mark_tags):
     # some numbers
     nmark = meshdata['NMARK']
     ndim  = meshdata['NDIME']
-
+    
     # list for marker node numbers
     markernodes  = []
 
@@ -306,13 +306,13 @@ def get_markerPoints(meshdata,mark_tags):
 #: def get_markerPoints()
 
 
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 #  Set Mesh Points
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 def set_meshPoints(meshdata,meshnodes,meshpoints):
     ''' stores array of meshpoints in the meshdata structure
         note: will operate on the input meshdata by pointer
-              if a new mesh is needed make a deep copy
+              if a new mesh is needed make a deep copy 
               before calling this function
     '''
 
@@ -329,59 +329,59 @@ def set_meshPoints(meshdata,meshnodes,meshpoints):
 
 #def: set_meshPoints
 
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 #  Sort Airfoil
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------- 
 def sort_airfoil(mesh_data,marker_name):
-    ''' sorts xy airfoil points in clockwise loop from trailing edge
+    ''' sorts xy airfoil points in clockwise loop from trailing edge 
         returns list of mesh point indeces
         assumes:
           - airfoil oriented nearly parallel with x-axis
           - oriented from leading to trailing edge in the +x-direction
-          - one airfoil element with name 'marker_name'
+          - one airfoil element with name 'marker_name' 
     '''
-
+    
     # find airfoil elements and points
     airfoil_elems  = mesh_data['MARKS'][marker_name]['ELEM']
-    airfoil_elems  = np.array(airfoil_elems)
+    airfoil_elems  = np.array(airfoil_elems)    
     airfoil_points = mesh_data['POIN']
     airfoil_points = np.array(airfoil_points)
     airfoil_points = airfoil_points[airfoil_elems[:,1],:]
     n_P,_ = airfoil_elems.shape
-
+    
     # build transfer arrays
     EP = airfoil_elems[:,1:3]    # edge to point
     PX = airfoil_points[:,0:2]   # point to coord
     IP = np.arange(0,n_P)        # loop index to point
-
+    
     # sorted airfoil point indeces tobe
     Psort = np.zeros(n_P,long)
     Isort = np.arange(0,n_P)
-
+    
     # find trailing edge
     iP0 = np.argmax(PX[:,0])
     P0  = EP[iP0,0]
     I0  = IP[iP0]
     Psort[0] = P0
-
+    
     # build loop
     for this_iP in range(1,n_P):
         P0 = EP[EP[:,0]==P0,1]
         I0 = IP[EP[:,0]==P0]
         Psort[this_iP] = P0
         Isort[this_iP] = I0
-
-
+    
+    
     # check for clockwise
     D1 = PX[Isort[1],1]  - PX[Isort[0],1]
     D2 = PX[Isort[-1],1] - PX[Isort[0],1]
-    if D1>D2:
+    if D1>D2:   
         Psort = Psort[-1::-1]
-
+    
     # done
     points_sorted = Psort
     loop_sorted   = Isort
-
+    
     return points_sorted,loop_sorted
 
 

@@ -6,26 +6,26 @@
 #include <cmath>
 #include "../datatype_structure.hpp"
 
-namespace PrintingToolbox {
+namespace PrintingToolbox { 
 
 /*!
  * \class CTablePrinter
- * \brief Class for writing output in a table.
- *
+ * \brief Class for writing output in a table. 
+ *  
  * For example the output
- *
+ * 
  * +-------------------------------------------+
  * |  MG Level| Presmooth|PostSmooth|CorrectSmo|
  * +-------------------------------------------+
  * |         0|         1|         0|         0|
- * |         1|         1|         0|         0|
+ * |         1|         1|         0|         0| 
  * |         2|         1|         0|         0|
  * |         3|         1|         0|         0|
  * +-------------------------------------------+
- *
- *
- * can be generated with the code
- *
+ * 
+ * 
+ * can be generated with the code 
+ * 
  * CTablePrinter MGTable(&std::cout);
  * MGTable.AddColumn("MG Level",      10);
  * MGTable.AddColumn("Presmooth",     10);
@@ -36,15 +36,15 @@ namespace PrintingToolbox {
  *   MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
  * }
  * MGTable.PrintFooter();
- *
- *
+ * 
+ * 
  * \author T. Albring
  */
 class CTablePrinter{
 public:
   CTablePrinter(std::ostream * output, const std::string & separator = "|");
   ~CTablePrinter();
-
+  
   enum alignment {
     CENTER,
     LEFT,
@@ -56,7 +56,7 @@ public:
    * \return Number of columns.
    */
   int GetNumColumns() const;
-
+  
   /*!
    * \brief Get total width of the table.
    * \return Total width of the table.
@@ -68,54 +68,54 @@ public:
    * \param[in] separator - The separation character.
    */
   void SetSeparator(const std::string & separator);
-
+  
   /*!
    * \brief Set the separator between columns (inner decoration)
    * \param[in] separator - The separation character.
    */
   void SetInnerSeparator(const std::string & inner_separator);
-
+  
   /*!
    * \brief Set the alignment of the table entries (CENTER only works for the header at the moment).
    * \param[in] align_ - The alignment (CENTER, LEFT, RIGHT).
    */
   void SetAlign(int align_);
-
+  
   /*!
    * \brief Set whether to print the line at the bottom of the table.
    * \param[in] print - If TRUE, the bottom line is printed.
    */
   void SetPrintHeaderBottomLine(bool print);
-
+  
   /*!
    * \brief Set whether to print the line at the top of the table.
    * \param[in] print - If TRUE, the top line is printed.
    */
   void SetPrintHeaderTopLine(bool print);
-
-
+  
+  
   /*!
    * \brief Add a column to the table by specifiying the header name and the width.
    * \param[in] header_name - The name printed in the header.
    * \param[in] column_width - The width of the column.
    */
   void AddColumn(const std::string & header_name, int column_width);
-
+  
   /*!
    * \brief Print the header.
    */
   void PrintHeader();
-
+  
   /*!
    * \brief Print the footer.
    */
   void PrintFooter();
-
+  
   /*!
    * \brief Set the floating point precision.
    */
   void SetPrecision(int precision);
-
+  
   template<typename T> CTablePrinter& operator<<(T input){
 
     int indent = 0;
@@ -128,13 +128,13 @@ public:
     if(align_ == LEFT)
       *out_stream_ << std::left;
     else if (align_ == RIGHT || align_ == CENTER)
-      *out_stream_ << std::right;
+      *out_stream_ << std::right; 
 
     /*--- Print the current column value to the stream --- */
     *out_stream_ << std::setw(column_widths_.at(j_) - indent)
                  << std::setprecision(precision_) << input;
 
-    /*--- Reset the column counter and if it is the last column,
+    /*--- Reset the column counter and if it is the last column, 
      * add also a line break ---*/
     if (j_ == GetNumColumns()-1){
       *out_stream_ << std::setw(indent+1+(int)separator_.size()) << separator_ + "\n";
@@ -149,7 +149,7 @@ public:
   }
 
 private:
-
+  
   /*!
    * \brief Print a horizontal line.
    */
@@ -161,8 +161,8 @@ private:
   std::string separator_;                   /*< \brief Column separator char. */
   std::string inner_separator_;             /*< \brief Inner column separator char. */
 
-  int precision_;                           /*< \brief Floating point precision */
-
+  int precision_;                           /*< \brief Floating point precision */  
+  
   int i_; /*< \brief Index of the current row. */
   int j_; /*< \brief Index of the current column. */
 
@@ -183,7 +183,7 @@ inline void PrintScreenFixed(std::ostream &stream, su2double val, unsigned short
 inline void PrintScreenScientific(std::ostream &stream, su2double val, unsigned short field_width) {
   stream.precision(4); stream.setf(std::ios::scientific, std::ios::floatfield); stream.width(field_width);
   stream << std::right << val;
-  stream.unsetf(std::ios::scientific);
+  stream.unsetf(std::ios::scientific);  
 }
 
 inline void PrintScreenInteger(std::ostream &stream, unsigned long val, unsigned short field_width){
@@ -219,13 +219,13 @@ inline su2double stod(const std::string s){
 }
 
 inline std::string to_string(const su2double number){
-
+  
   std::stringstream ss;
-
+  
   ss << number;
-
+  
   return ss.str();
-
+  
 }
 
 const static char* ws = " \t\n\r\f\v";
