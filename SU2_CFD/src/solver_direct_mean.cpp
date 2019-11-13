@@ -10930,10 +10930,12 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
 void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
-  su2double Pressure, Inflow_Pressure = 0.0, Velocity[3], Velocity2, Entropy, Target_Inflow_MassFlow = 0.0, Target_Inflow_Mach = 0.0, Density, Energy,
-  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old, Inflow_MassFlow_old, Mach_Exit;
+  su2double Pressure, Inflow_Pressure = 0.0, Velocity[3], Velocity2, Entropy, Target_Inflow_MassFlow = 0.0, 
+            Target_Inflow_Mach = 0.0, Density, Energy, Riemann, Area, UnitNormal[3], Vn, SoundSpeed, 
+            Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old, Inflow_MassFlow_old, 
+            Mach_Domain, Pressure_After_Shock;
   su2double *V_inflow, *V_domain;
   
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
@@ -11053,9 +11055,10 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       }
       Pressure   = V_domain[nDim+1];
       SoundSpeed = sqrt(Gamma*Pressure/Density);
-      Mach_Exit = sqrt(Velocity2)/SoundSpeed;
+      Mach_Domain = sqrt(Velocity2)/SoundSpeed;
+      Pressure_After_Shock = (2*Gamma*pow(Mach_Domain,2)/(Gamma+1) - Gamma_Minus_One/(Gamma+1)) * Pressure;
 
-      if (Mach_Exit>=1.0) {
+      if (Mach_Domain>=1.0 && Inflow_Pressure < Pressure_After_Shock) {
         /*--- Supersonic exit flow: there are no incoming characteristics,
            so no boundary condition is necessary. Set outlet state to current
            state so that upwinding handles the direction of propagation. ---*/
