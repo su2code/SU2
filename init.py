@@ -47,11 +47,11 @@ def init_submodules(method = 'auto'):
   codi_name = 'CoDiPack'
   meson_name = 'meson'
   ninja_name= 'ninja'
-
-  alt_name_medi =   cur_dir + '/externals/medi'
-  alt_name_codi =   cur_dir + '/externals/codi'
-  alt_name_meson =  cur_dir + '/externals/meson'
-  alt_name_ninja =  cur_dir + '/externals/ninja'
+  base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
+  alt_name_medi = base_path + 'medi'
+  alt_name_codi = base_path + 'codi'
+  alt_name_meson =  base_path + 'meson'
+  alt_name_ninja =  base_path + 'ninja'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -90,7 +90,7 @@ def is_git_directory(path = '.'):
 
 def submodule_status(path, sha_commit):
 
-  if not os.path.exists(path + '/' + sha_commit):
+  if not os.path.exists(path + os.path.sep + sha_commit):
 
     # Check the status of the submodule
     status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True, cwd = sys.path[0]).stdout.decode('utf-8')
@@ -137,7 +137,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
         os.chmod(targetpath, attr)
       return targetpath
 
-  if not os.path.exists(alt_name + '/' + commit_sha):
+  if not os.path.exists(alt_name + os.path.sep + commit_sha):
 
     if os.path.exists(alt_name) and os.listdir(alt_name): 
       print('Directory ' + alt_name + ' is not empty')
@@ -151,7 +151,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
       url = git_repo + '/archive/' + filename
 
-      if not os.path.exists(sys.path[0] + '/' + filename):
+      if not os.path.exists(sys.path[0] + os.path.sep + filename):
         try:
           urllib.request.urlretrieve (url, commit_sha + '.zip')
         except RuntimeError as e:
@@ -163,16 +163,16 @@ def download_module(name, alt_name, git_repo, commit_sha):
           sys.exit()
    
       # Unzip file 
-      zipf = MyZipFile(sys.path[0] + '/' + filename)
-      zipf.extractall(sys.path[0] + '/externals')
+      zipf = MyZipFile(sys.path[0] + os.path.sep + filename)
+      zipf.extractall(sys.path[0] + os.path.sep + 'externals')
 
-      shutil.move(sys.path[0] + '/externals/' + name + '-' + commit_sha, alt_name)
+      shutil.move(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
 
       # Delete zip file
-      os.remove(sys.path[0] + '/' + filename)
+      os.remove(sys.path[0] + os.path.sep + filename)
 
       # Create identifier
-      f = open(alt_name + '/' + commit_sha, 'w')
+      f = open(alt_name + os.path.sep + commit_sha, 'w')
       f.close()
 
 
