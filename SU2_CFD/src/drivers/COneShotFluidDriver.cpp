@@ -290,7 +290,7 @@ void COneShotFluidDriver::RunOneShot(){
     // if(ArmijoIter == 0) UpdateMultiplier(1.0);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    CalculateLagrangian(true);
+    CalculateLagrangian();
 
     ArmijoIter++;
 
@@ -321,8 +321,8 @@ void COneShotFluidDriver::RunOneShot(){
     // solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
-    CheckMultiplier();
-    CalculateLagrangian(true);
+    // CheckMultiplier();
+    // CalculateLagrangian();
   }
 
   /*--- Store Deltay and DeltaBary ---*/
@@ -681,7 +681,7 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
     solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
-    CalculateLagrangian(true);
+    CalculateLagrangian();
     if(config->GetBoolBFGSReset()){
       for (iDV = 0; iDV < nDV_Total; iDV++){
         for (jDV = 0; jDV < nDV_Total; jDV++){
@@ -813,22 +813,26 @@ void COneShotFluidDriver::UpdateDesignVariable(){
   }
 }
 
-void COneShotFluidDriver::CalculateLagrangian(bool augmented){
+void COneShotFluidDriver::CalculateLagrangian(){
     
   Lagrangian = 0.0;
   Lagrangian += ObjFunc_Store; //TODO use for BFGS either only objective function or normal Lagrangian
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    Lagrangian += ConstrFunc_Store[iConstr]*Multiplier[iConstr];
-    Lagrangian += config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
+    // Lagrangian += config->GetOneShotGamma()/2.*ConstrFunc_Store[iConstr]*ConstrFunc_Store[iConstr]
+    //             + ConstrFunc_Store[iConstr]*Multiplier[iConstr]
+    //             + config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
+    su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma();
+    /*--- Lagrangian += gamma/2 ||(h + mu/gamma)_+||^2 ---*/
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
+      Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
+    }
+    else {
+      Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
+    }
   }
 
-  if(augmented){
-    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-      Lagrangian += config->GetOneShotGamma()/2.*ConstrFunc_Store[iConstr]*ConstrFunc_Store[iConstr];
-    }
-    Lagrangian += solver[ADJFLOW_SOL]->CalculateLagrangianPart(config, augmented);
-  }
+  Lagrangian += solver[ADJFLOW_SOL]->CalculateLagrangianPart(config, augmented);
 
 }
 
@@ -1051,22 +1055,14 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
   su2double bcheck=0;
   for (iConstr = 0; iConstr  < nConstr; iConstr++){
-    BCheck[iConstr][iConstr] = config->GetBCheckEpsilon();
-    for (jConstr = 0; jConstr  < nConstr; jConstr++){
+    BCheck[iConstr][iConstr] = 1./(2.*config->GetOneShotGamma());
+    for (jConstr = 0; jConstr < nConstr; jConstr++){
       BCheck[iConstr][jConstr] += config->GetOneShotBeta()*solver[ADJFLOW_SOL]->MultiplyConstrDerivative(iConstr,jConstr);
     }
   }
   if (nConstr == 1){
-    if(BCheck[0][0]-config->GetBCheckEpsilon() > 0.) {
-      BCheck_Norm = BCheck[0][0] - config->GetBCheckEpsilon();
+      BCheck_Norm = BCheck[0][0] - 1./(2.*config->GetOneShotGamma());
       BCheck_Inv[0][0] = 1./BCheck[0][0];
-    }
-    else{
-      // if (rank == MASTER_NODE) cout << "BCheck not positive definite!!!" << endl;
-      BCheck_Norm = config->GetBCheckEpsilon();
-      BCheck_Inv[0][0] = 1./config->GetBCheckEpsilon();
-    }
-
   } else {
     bcheck=1./(BCheck[0][0]*BCheck[1][1]*BCheck[2][2]+BCheck[1][0]*BCheck[2][1]*BCheck[0][2]+BCheck[2][0]*BCheck[0][1]*BCheck[1][2]-BCheck[0][0]*BCheck[2][1]*BCheck[1][2]-BCheck[2][0]*BCheck[1][1]*BCheck[0][2]-BCheck[1][0]*BCheck[0][1]*BCheck[2][2]);
     BCheck_Inv[0][0]=bcheck*(BCheck[1][1]*BCheck[2][2]-BCheck[1][2]*BCheck[2][1]);
@@ -1138,7 +1134,13 @@ void COneShotFluidDriver::SetConstrFunction(){
 
     FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
 
-    ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
+    /*--- Flip sign on GEQ constraint (we want descent on (Target-FuncVal)) ---*/
+    if(config->GetKind_ConstrFuncType(iConstr) == GEQ_CONSTR) {
+      ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
+    }
+    else {
+      ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
+    }
 
     if (rank == MASTER_NODE){
       AD::RegisterOutput(ConstrFunc[iConstr]);
@@ -1168,6 +1170,14 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     }
     // Multiplier[iConstr] = Multiplier[iConstr] + config->GetOneShotGamma()*helper*stepsize*config->GetMultiplierScale(iConstr);
     Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
+      if(Multiplier[iConstr]*ConstrFunc_Store[jConstr] < 0.) {
+        Multiplier[iConstr] = 0.;
+      }
+    }
+    else {
+      Multiplier[iConstr] = max(Multiplier[iConstr], 0.);
+    }
   }
 }
 
@@ -1175,14 +1185,18 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
   if(nConstr > 0) {
     unsigned short iConstr, iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
     unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
-    su2double beta = config->GetOneShotBeta();
+    su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      su2double my_Gradient = ConstrFunc[iConstr] + config->GetBCheckEpsilon()*Multiplier[iConstr];
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          my_Gradient += beta
-              * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
-              * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
+      su2double my_Gradient = 0.;
+      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
+         ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
+        my_Gradient = ConstrFunc[iConstr] + 1./(2.*gamma)*Multiplier[iConstr];
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            my_Gradient += beta
+                * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
+                * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
+          }
         }
       }
 #ifdef HAVE_MPI
@@ -1196,11 +1210,16 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
 
 void COneShotFluidDriver::CheckMultiplier(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    if(Multiplier[iConstr]*ConstrFunc_Store[iConstr] < 0.) {
-      Multiplier[iConstr] = 0.;
-      for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++) {
-        Multiplier[iConstr] += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
+      if(Multiplier[iConstr]*ConstrFunc_Store[iConstr] < 0.) {
+        Multiplier[iConstr] = 0.;
+        for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++) {
+          Multiplier[iConstr] += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+        }
       }
+    }
+    else {
+      Multiplier[iConstr] = max(Multiplier[iConstr], 0.);
     }
   }
 }

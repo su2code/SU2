@@ -3251,7 +3251,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if(nConstr!=0 && Kind_ConstrFuncType == NULL){
     Kind_ConstrFuncType = new su2double[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      Kind_ConstrFuncType[iConstr] = EQ;
+      Kind_ConstrFuncType[iConstr] = EQ_CONSTR;
     }
   }
   if(nConstr!=0 && Multiplier_Start == NULL){

@@ -218,9 +218,8 @@ public:
 
   /*!
    * \brief Calculate value for normal or doubly augmented Lagrangian.
-   * \param[in] augmented - YES if the doubly augmented Lagrangian shall be calculated
    */
-  void CalculateLagrangian(bool augmented);
+  void CalculateLagrangian();
 
   /*!
    * \brief Store the gradient of the shifted Lagrangian.
