@@ -341,15 +341,18 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
       output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
+      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
+      unsigned short nSpanSections = config->GetnSpanWiseSections();
+
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
         break;
       default:
         break;
@@ -529,7 +532,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
     IDX_SOL = -1;
   }
 
-  if(IDX_SOL > 0)
+  if(IDX_SOL >= 0)
     solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/

@@ -3621,8 +3621,9 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
 
 void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
-                                                       CConfig *fea_config, CSolver ***fea_solution) {
-  
+                                            CConfig *fea_config,
+                                            CSolver ***fea_solution) {
+
   unsigned short predOrder = fea_config->GetPredictorOrder();
   su2double Delta_t = fea_config->GetDelta_DynTime();
   unsigned long iPoint, iDim;
@@ -3663,7 +3664,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config,
-                                                      CSolver ***fea_solution, unsigned long iOuterIter) {
+                                           CSolver ***fea_solution, unsigned long iOuterIter) {
   
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
@@ -3855,11 +3856,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double objective_function_averaged = 0.0;
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nPointDomain,  &nTotalPoint,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nTotalPoint        = nPointDomain;
-#endif
+  SU2_MPI::Allreduce(&nPointDomain, &nTotalPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   weight_OF = config->GetRefGeom_Penalty() / nTotalPoint;
 
@@ -3879,11 +3876,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    objective_function_reduce        = objective_function;
-#endif
+  SU2_MPI::Allreduce(&objective_function, &objective_function_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   Total_OFRefGeom = objective_function_reduce + PenaltyValue;
 
@@ -3977,7 +3970,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar;
   unsigned long iPoint;
 
-  bool dynamic = (config->GetTime_Domain());
+  bool dynamic = config->GetTime_Domain();
 
   unsigned long TimeIter = config->GetTimeIter();
 
@@ -4022,15 +4015,9 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&difX,  &difX_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&difY,  &difY_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    objective_function_reduce        = objective_function;
-    difX_reduce                      = difX;
-    difY_reduce                      = difY;
-#endif
+  SU2_MPI::Allreduce(&objective_function, &objective_function_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&difX, &difX_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&difY, &difY_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   Total_OFRefNode = objective_function_reduce + PenaltyValue;
 
@@ -4124,7 +4111,6 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-
 }
 
 void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config)
@@ -4144,18 +4130,14 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
       discreteness += volume*4.0*rho*(1.0-rho);
     }
   }
-  
-#ifdef HAVE_MPI
-  {
-    su2double tmp;
-    SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    total_volume = tmp;
-    SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    integral = tmp;
-    SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    discreteness = tmp;
-  }
-#endif
+
+  su2double tmp;
+  SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  total_volume = tmp;
+  SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  integral = tmp;
+  SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  discreteness = tmp;
 
   if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
     Total_OFVolFrac = discreteness/total_volume;
@@ -4220,11 +4202,9 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
       Total_OFCompliance += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
   }
 
-#ifdef HAVE_MPI
   su2double tmp;
   SU2_MPI::Allreduce(&Total_OFCompliance,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   Total_OFCompliance = tmp;
-#endif
 
   // TODO: Temporary output file for the objective function. Will be integrated in the output once refurbished.
   if (rank == MASTER_NODE) {
@@ -4298,21 +4278,14 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
   }
 
-// Reduce value across processors for parallelization
+  // Reduce value across processors for parallelization
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&weightedValue,  &weightedValue_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&totalVolume,  &totalVolume_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    weightedValue_reduce        = weightedValue;
-    totalVolume_reduce          = totalVolume;
-#endif
+  SU2_MPI::Allreduce(&weightedValue, &weightedValue_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&totalVolume, &totalVolume_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    ratio = 1.0 - weightedValue_reduce/totalVolume_reduce;
+  ratio = 1.0 - weightedValue_reduce/totalVolume_reduce;
 
-    PenaltyValue = config->GetTotalDV_Penalty() * ratio * ratio;
-
-
+  PenaltyValue = config->GetTotalDV_Penalty() * ratio * ratio;
 
 }
 

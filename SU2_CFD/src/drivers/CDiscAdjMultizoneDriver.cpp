@@ -359,15 +359,22 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
-        solvers[ADJFLOW_SOL]->SetSensitivity(geometry, nullptr, config); break;
+        if(Has_Deformation(iZone)) {
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
+        } else {
+          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, solvers, config);
+        }
+        break;
 
       case DISC_ADJ_HEAT:
 
-        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, nullptr, config); break;
+        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, solvers, config);
+        break;
 
       case DISC_ADJ_FEM:
 
-        solvers[ADJFEA_SOL]->SetSensitivity(geometry, nullptr, config); break;
+        solvers[ADJFEA_SOL]->SetSensitivity(geometry, solvers, config);
+        break;
 
       default:
         if (rank == MASTER_NODE)
@@ -424,8 +431,18 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
+      /*--- In multi-physics, MESH_COORDS is an umbrella term for "geometric sensitivities",
+       *    if a zone has mesh deformation its recording type needs to change to MESH_DEFORM
+       *    as those sensitivities are managed by the adjoint mesh solver instead. ---*/
+
+      unsigned short type_recording = kind_recording;
+
+      if (Has_Deformation(iZone) && (kind_recording == MESH_COORDS)) {
+        type_recording = MESH_DEFORM;
+      }
+
       iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,
-                                                        config_container, iZone, INST_0, kind_recording);
+                                                        config_container, iZone, INST_0, type_recording);
     }
   }
 
@@ -511,29 +528,32 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
-        cout << " Zone " << iZone << " (flow) - log10[RMS Density]: "
+        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-        cout << " Zone " << iZone << " (flow) - log10[RMS Density]: "
+        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
 
         if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
 
-          cout << " Zone " << iZone << " (turb) - log10[RMS Var_0]  : "
+          cout << " Zone " << iZone << " (turbulence) - log10[Turb(0)] : "
                << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
         }
         break;
 
       case DISC_ADJ_HEAT:
-        cout << " Zone " << iZone << " (heat) - log10[RMS Var_0]  : "
+        cout << " Zone " << iZone << " (heat)       - log10[Heat(0)] : "
              << log10(solvers[HEAT_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       case DISC_ADJ_FEM:
-        cout << " Zone " << iZone << " (structure) - log10[RMS Ux]: "
-             << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
+        cout << " Zone " << iZone << " (structure)  - ";
+        if(config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS)
+          cout << "log10[RTOL-A]  : " << log10(solvers[FEA_SOL]->GetRes_FEM(1)) << endl;
+        else
+          cout << "log10[RMS Ux]  : " << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
         break;
 
       default:
@@ -719,15 +739,15 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         break;
     }
 
-    if (ObjectiveNotCovered && rank == MASTER_NODE)
-      cout << "Objective function not covered in Zone " << iZone << endl;
+    if (ObjectiveNotCovered && (rank == MASTER_NODE) && (kind_recording == FLOW_CONS_VARS))
+      cout << " Objective function not covered in Zone " << iZone << endl;
   }
 
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
     if (kind_recording == FLOW_CONS_VARS) {
-      cout << " Objective function                : " << ObjFunc;
+      cout << " Objective function                   : " << ObjFunc;
       if (driver_config->GetWrt_AD_Statistics()){
         cout << " (" << ObjFunc_Index << ")\n";
       }
