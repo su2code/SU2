@@ -1172,7 +1172,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
       if(Multiplier[iConstr]*ConstrFunc_Store[iConstr] < 0.) {
-        Multiplier[iConstr] = 0.;
+        Multiplier[iConstr] = ConstrFunc_Store[iConstr];
       }
     }
     else {
