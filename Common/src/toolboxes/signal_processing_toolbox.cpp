@@ -63,7 +63,6 @@ void WindowedAverage::Reset(){
 }
 
 
-/*
 void WindowedAverage::addValue(su2double valIn, unsigned long currentIter,unsigned long startIter){
     if(currentIter >= startIter)values.push_back(valIn);
 }
@@ -111,5 +110,5 @@ su2double WindowedAverage::BumpWindowing(){
     }
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
-*/
+
 

@@ -42,11 +42,11 @@ protected:
     */
 };
 
-class WindowedAverage{
+class WindowedAverage:WindowingTools{
 private:
 su2double val;
 unsigned long count;
-//std::vector<su2double> values;
+std::vector<su2double> values;
 
 
 public:
@@ -62,19 +62,17 @@ unsigned long Count();
 
 void Reset();
 
-//void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
+void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
 
-//su2double WindowedUpdate(int fctIdx); //Computes a windowed time average (integral)
+su2double WindowedUpdate(int fctIdx); //Computes a windowed time average (integral)
 
 private:
 //Using Midpoint rule for consistentcy with adjoint solver
-//su2double NoWindowing(); // == Square Window
+su2double NoWindowing(); // == Square Window
 
-//su2double HannWindowing();
+su2double HannWindowing();
 
-//su2double HannSquaredWindowing();
+su2double HannSquaredWindowing();
 
-//su2double BumpWindowing();
-
-
+su2double BumpWindowing();
 };
