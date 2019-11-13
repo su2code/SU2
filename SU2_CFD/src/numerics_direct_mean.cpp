@@ -42,6 +42,9 @@ CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar,
                 CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
+  fix_factor = config->GetCent_Jac_Fix_Factor();
   rom = config->GetReduced_Model();
   
   Gamma = config->GetGamma();
