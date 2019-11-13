@@ -2391,6 +2391,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
   addBoolOption("UQ_PERMUTE", uq_permute, false);
+  
+  /* DESCRIPTION: Correct mass flow for LES channel flow cases */
+  addBoolOption("CORRECT_MASSFLOW", Using_MassFlowCorrection, false);
 
   /* END_CONFIG_OPTIONS */
 

@@ -1110,6 +1110,9 @@ private:
   su2double *default_stg_val;    /*!< \brief Default coordinates of the STG volume box for the COption class. */
   su2double *VolumeSTGBox_Values;/*!< \brief STG coordinates of the volume box array. */
   unsigned long NumberModes;     /*!< \brief Number of Fourier Modes. */
+  su2double MassFlowCorrection;
+  su2double MassFlowInit;
+  bool      Using_MassFlowCorrection;
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -9185,6 +9188,16 @@ public:
    */
   su2double *GetVolumeSTGBox_Values(void);
   
+  void SetMassFlowCorrection(su2double val_massflow_init);
+  
+  su2double GetMassFlowCorrection(void);
+
+  void SetInitialMassFlow(su2double val_massflow_init);
+  
+  su2double GetInitialMassFlow(void);
+  
+  bool GetUsing_MassFlowCorrection(void);
+
 };
 
 #include "config_structure.inl"

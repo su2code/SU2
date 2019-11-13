@@ -2080,3 +2080,13 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
 inline su2double *CConfig::GetVolumeSTGBox_Values(void) { return VolumeSTGBox_Values; }
+
+inline void CConfig::SetMassFlowCorrection(su2double val_massflow_correction) { MassFlowCorrection = val_massflow_correction; }
+
+inline su2double CConfig::GetMassFlowCorrection(void) { return MassFlowCorrection; }
+
+inline void CConfig::SetInitialMassFlow(su2double val_massflow_init) { MassFlowInit = val_massflow_init; }
+
+inline su2double CConfig::GetInitialMassFlow(void) { return MassFlowInit; }
+
+inline bool CConfig::GetUsing_MassFlowCorrection(void) { return Using_MassFlowCorrection; }

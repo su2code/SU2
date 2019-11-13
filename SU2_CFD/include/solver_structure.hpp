@@ -4028,6 +4028,8 @@ public:
   
   virtual void Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
   
+  virtual void CorrectMassFlow(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8854,6 +8856,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  void CorrectMassFlow(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
   
   /*!
    * \brief Computes the wall shear stress (Tau_Wall) and heat flux on the surface using a wall models.

@@ -16396,9 +16396,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
 
-  if (SGSModelUsed){
+  if (SGSModelUsed)
     Setmut_LES(geometry, solver_container, config);
-  }
+  
+  if (config->GetUsing_MassFlowCorrection())
+    CorrectMassFlow(geometry, solver_container, config);
   
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -19380,6 +19382,74 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
   
   InitiateComms(geometry, config, SGS_MODEL);
   CompleteComms(geometry, config, SGS_MODEL);
+  
+}
+
+void CNSSolver::CorrectMassFlow(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long iPoint;
+//  unsigned short iDim, iVertex;
+  
+  su2double Local_MassFlow  = 0.0;
+  su2double Global_MassFlow = 0.0;
+  
+  /* The Mass flow correction needs to be  */
+  if (config->GetExtIter() % 100 != 0) return;
+  if (config->GetIntIter() != 0) return;
+  
+//  /* Loop over the markers and select the periodic one. */
+//  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+//    switch (config->GetMarker_All_KindBC(iMarker)) {
+//      case PERIODIC_BOUNDARY:{
+//        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+//
+//        /* Select the inlet marker to calculate the mass flow. */
+//        if (Marker_Tag == "inlet"){
+//
+//          /* Loop over the vertices and calculate the mass flow.*/
+//          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+//            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//
+//            su2double *Normals = geometry->vertex[iMarker][iVertex]->GetNormal();
+//            su2double *Solution = node[iPoint]->GetSolution();
+//
+//            for (iDim = 0; iDim < nDim; iDim++)
+//              Local_MassFlow += Solution[iDim+1]*Normals[iDim];
+//
+//          }
+//        }
+//      }
+//        break;
+//      default:
+//        break;
+//    }
+//  }
+  
+  /*---  Loop over the Points and calculate the total mass flow ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    su2double *Solution = node[iPoint]->GetSolution();
+    Local_MassFlow += Solution[1];
+  }
+  
+  /*--- Reduction to find the min and max values globally. ---*/
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&Local_MassFlow, &Global_MassFlow, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_MassFlow = Local_MassFlow;
+#endif
+
+  
+  if((!config->GetRestart()) && (config->GetExtIter()==0)){
+    config->SetMassFlowCorrection(1.0);
+    config->SetInitialMassFlow(Global_MassFlow);
+    return;
+  }
+  
+  su2double InitMassFlow = config->GetInitialMassFlow();
+  config->SetMassFlowCorrection(InitMassFlow/Global_MassFlow);
+  
+  if (rank == MASTER_NODE)
+    cout << " Mass Flow Correction: " << config->GetMassFlowCorrection() << endl;
   
 }
 

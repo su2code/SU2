@@ -1062,6 +1062,8 @@ inline void CSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** sol
 
 inline void CSolver::Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
 
+inline void CSolver::CorrectMassFlow(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
+
 inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 
