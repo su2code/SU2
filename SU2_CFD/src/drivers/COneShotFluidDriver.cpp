@@ -914,7 +914,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
     SetAdj_ObjFunction_Zero();
     su2double* seeding = new su2double[nConstr];
-    for (iConstr = 0; iConstr < nConstr; iConstr++){
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
         seeding[iConstr] = ConstrFunc[iConstr];
       }
