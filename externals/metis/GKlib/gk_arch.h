@@ -51,7 +51,7 @@
 /*************************************************************************
 * Architecture-specific modifications
 **************************************************************************/
-#ifdef WIN32
+#if defined WIN32 || defined(_MSC_VER)
 typedef ptrdiff_t ssize_t;
 #endif
 
