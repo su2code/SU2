@@ -176,7 +176,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
       zipf = MyZipFile(sys.path[0] + os.path.sep + filename)
       zipf.extractall(sys.path[0] + os.path.sep + 'externals')
 
-      shutil.move(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
+      os.rename(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
 
       # Delete zip file
       remove_file(sys.path[0] + os.path.sep + filename)
