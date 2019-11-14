@@ -210,12 +210,10 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   StartTime = MPI_Wtime();
 #endif
 
-  bool force_write = StopCalc || !config_container[ZONE_0]->GetTime_Domain();
-
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0],
-                                                               TimeIter, force_write);
+                                                               TimeIter, StopCalc);
   if (wrote_files){
     
 #ifndef HAVE_MPI
