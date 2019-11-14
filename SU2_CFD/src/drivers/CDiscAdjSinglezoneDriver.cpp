@@ -551,7 +551,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ClearAdjoints();
 
   if(steady) {
-    iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
-                      config_container, config->GetInnerIter(), true, ZONE_0, INST_0);
+    output_container[ZONE_0]->SetResult_Files(geometry, config, solver,
+                                              config->GetInnerIter(), true);
   }
 }

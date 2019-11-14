@@ -457,7 +457,7 @@ void CIteration::Output(COutput *output,
   output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0],
                           config[val_iZone],
                           solver[val_iZone][INST_0][MESH_0],
-                          InnerIter, StopCalc);
+                          InnerIter);
 
 }
 void CIteration::Postprocess(COutput *output,
