@@ -1007,6 +1007,16 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
     SetAdj_ObjFunction();
+    su2double* seeding = new su2double[nConstr];
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+         ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+        seeding[iConstr] = ConstrFunc[iConstr];
+      }
+      else {
+        seeding[iConstr] = 0.;
+      }
+    }
     SetAdj_ConstrFunction(Multiplier);
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
@@ -1026,6 +1036,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     AD::ClearAdjoints();
 
     AD::Reset();
+
+    delete [] seeding;
 }
 
 void COneShotFluidDriver::ComputePreconditioner(){
