@@ -26,19 +26,42 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 
-import sys, os, subprocess, shutil
+import sys, os, subprocess, shutil, urllib.request, zipfile
 from init import init_submodules
+from init import remove_file
 
 def build_ninja():
 
-  ninjapath = sys.path[0] + os.path.sep + 'externals' + os.path.sep + 'ninja'
+  # If we are on windows, we don't need to compile ninja, we just download the executable
+  if os.name == 'nt':
+    ninja_exe_url = 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip'
     
-  try:
-    subprocess.run([sys.path[0] + os.path.sep + 'ninja', '--version'], stdout=subprocess.PIPE)
-  except OSError:   
-    print("ninja executable not found. Building ...")
-    subprocess.run(['python3', 'configure.py', '--bootstrap'], cwd=ninjapath)
-    shutil.copy(ninjapath+ os.path.sep + 'ninja', '.')
+    # Try to execute ninja, if it fails, download .exe from github
+    try:
+      subprocess.run([sys.path[0] + os.path.sep + 'ninja.exe', '--version'], stdout=subprocess.PIPE)
+    except OSError:
+      print ('Downloading ninja ... ')
+      try:
+        urllib.request.urlretrieve (ninja_exe_url,'ninja-win.zip')
+      except:
+        print(e)
+        print('Download of ninja executable failed.')
+        print('Get archive at ' + ninja_exe_url)
+        print('extract ninja.exe in the source code root folder.')
+        print('Run meson.py again.')
+        sys.exit(1)
+
+      zipf = zipfile.ZipFile(sys.path[0] + os.path.sep + 'ninja-win.zip')
+      zipf.extractall(sys.path[0])
+      remove_file(sys.path[0] + os.path.sep + 'ninja-win.zip')
+  else:
+    ninjapath = sys.path[0] + os.path.sep + 'externals' + os.path.sep + 'ninja'
+    try:
+      subprocess.run([sys.path[0] + os.path.sep + 'ninja', '--version'], stdout=subprocess.PIPE)
+    except OSError:
+      print("ninja executable not found. Building ...")
+      subprocess.run(['python3', 'configure.py', '--bootstrap'], cwd=ninjapath)
+      shutil.copy(ninjapath+ os.path.sep + 'ninja', '.')
 
 if __name__ == '__main__':
   if sys.version_info[0] < 3:
@@ -52,6 +75,8 @@ if __name__ == '__main__':
 
   # Add paths for meson and ninja to environment
   os.environ["NINJA"] = sys.path[0] + os.path.sep + "ninja"
+  if os.name == 'nt':
+    os.environ["NINJA"] = os.environ["NINJA"] + '.exe'
   if os.path.exists(sys.path[0] + os.path.sep + 'externals' + os.path.sep + 'meson' + os.path.sep + 'mesonbuild'):
     sys.path.insert(0, str(sys.path[0] + os.path.sep + 'externals' +os.path.sep + 'meson'))
 

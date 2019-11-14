@@ -26,7 +26,17 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess, shutil, urllib.request, zipfile
+import sys, os, subprocess, shutil, urllib.request, zipfile, time
+
+def remove_file(path, retries=3, sleep=0.1):
+  for i in range(retries):
+    try:
+      os.remove(path)
+    except OSError:
+      time.sleep(sleep)
+    else:
+      break
+
 
 def init_submodules(method = 'auto'):
 
@@ -169,7 +179,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
       shutil.move(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
 
       # Delete zip file
-      os.remove(sys.path[0] + os.path.sep + filename)
+      remove_file(sys.path[0] + os.path.sep + filename)
 
       # Create identifier
       f = open(alt_name + os.path.sep + commit_sha, 'w')
