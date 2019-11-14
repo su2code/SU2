@@ -701,8 +701,10 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       for (iDim = 0; iDim < nDim; iDim++){
         /*--- Update the coordinates of the mesh ---*/
         curr_coord = Restart_Data[index+iDim];
-        /// TODO: "Double" deformation if this is set here?
-//        geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+        /// TODO: "Double deformation" in multizone adjoint if this is set here?
+        ///       In any case it should not be needed as deformation is called before other solvers
+        ///geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
         displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
