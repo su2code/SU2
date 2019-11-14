@@ -4585,7 +4585,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_ZoneInterface;
   
@@ -5039,6 +5039,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_Load[iMarker_Fluid_Load];
+    iMarker_CfgFile++;
+  }
 
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FlowLoad[iMarker_FlowLoad];
