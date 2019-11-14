@@ -4130,15 +4130,6 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );
     }
-    /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
-    /*--- Works if DEFORM_MESH = YES ---*/
-    else if (config_container[iZone]->GetDeform_Mesh()) {
-      iteration_container[iZone][INST_0]->SetMesh_Deformation(geometry_container[iZone][INST_0],
-                                                                  solver_container[iZone][INST_0][MESH_0],
-                                                                  numerics_container[iZone][INST_0][MESH_0],
-                                                                  config_container[iZone],
-                                                                  NONE);
-    }
   }
 }
 bool CFluidDriver::Monitor(unsigned long ExtIter) {
@@ -5856,20 +5847,9 @@ void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsign
   /*---- as the flag Grid_Movement is set to false in this case -----*/
   /*-----------------------------------------------------------------*/
 
-  if (!config_container[ZONE_FLOW]->GetDeform_Mesh()) {
   direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
                                                                surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
                                                                solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
-  }
-  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
-  /*--- Works if DEFORM_MESH = YES ---*/
-  else {
-    iteration_container[ZONE_FLOW][INST_0]->SetMesh_Deformation(geometry_container[ZONE_FLOW][INST_0],
-                                                                  solver_container[ZONE_FLOW][INST_0][MESH_0],
-                                                                  numerics_container[ZONE_FLOW][INST_0][MESH_0],
-                                                                  config_container[ZONE_FLOW],
-                                                                  NONE);
-  }
   
   geometry_container[ZONE_FLOW][INST_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);
 
