@@ -913,6 +913,15 @@ void COneShotFluidDriver::ComputeGammaTerm(){
     /*--- Initialize the adjoint of the objective function with 0.0. ---*/
 
     SetAdj_ObjFunction_Zero();
+    su2double* seeding = new su2double[nConstr];
+    for (iConstr = 0; iConstr < nConstr; iConstr++){
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
+        seeding[iConstr] = ConstrFunc[iConstr];
+      }
+      else {
+        seeding[iConstr] = 0.;
+      }
+    }
     SetAdj_ConstrFunction(ConstrFunc);
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
@@ -930,6 +939,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
+
+    delete [] seeding;
 }
 
 void COneShotFluidDriver::ComputeAlphaTerm(){
