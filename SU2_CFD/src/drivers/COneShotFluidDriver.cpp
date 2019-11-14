@@ -400,6 +400,16 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
+  su2double* seeding = new su2double[nConstr];
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+       ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+      seeding[iConstr] = ConstrFunc[iConstr];
+    }
+    else {
+      seeding[iConstr] = 0.;
+    }
+  }
   SetAdj_ConstrFunction(Multiplier);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
@@ -417,6 +427,8 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
   AD::ClearAdjoints();
+
+  delete [] seeding;
 }
 
 void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
