@@ -107,9 +107,9 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck_Inv[iConstr][jConstr] = 0.0;
     }
-    BCheck_Inv[iConstr][iConstr] = 1./config->GetBCheckEpsilon();
+    BCheck_Inv[iConstr][iConstr] = config->GetOneShotGamma();
   }
-  BCheck_Norm = sqrt(su2double(nConstr))*config->GetBCheckEpsilon();
+  BCheck_Norm = pow(config->GetBCheckEpsilon(), su2double(nConstr));
 
   /*----- calculate values for bound projection algorithm -------*/
   lb=-config->GetBound()*config->GetDesignScale();
@@ -1056,13 +1056,13 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
   su2double bcheck=0;
   for (iConstr = 0; iConstr  < nConstr; iConstr++){
-    BCheck[iConstr][iConstr] = 1./(2.*config->GetOneShotGamma());
+    BCheck[iConstr][iConstr] = 1./config->GetOneShotGamma();
     for (jConstr = 0; jConstr < nConstr; jConstr++){
       BCheck[iConstr][jConstr] += config->GetOneShotBeta()*solver[ADJFLOW_SOL]->MultiplyConstrDerivative(iConstr,jConstr);
     }
   }
   if (nConstr == 1){
-      BCheck_Norm = BCheck[0][0] - 1./(2.*config->GetOneShotGamma());
+      BCheck_Norm = BCheck[0][0] - 1./config->GetOneShotGamma();
       BCheck_Inv[0][0] = 1./BCheck[0][0];
   } else {
     bcheck=1./(BCheck[0][0]*BCheck[1][1]*BCheck[2][2]+BCheck[1][0]*BCheck[2][1]*BCheck[0][2]+BCheck[2][0]*BCheck[0][1]*BCheck[1][2]-BCheck[0][0]*BCheck[2][1]*BCheck[1][2]-BCheck[2][0]*BCheck[1][1]*BCheck[0][2]-BCheck[1][0]*BCheck[0][1]*BCheck[2][2]);
