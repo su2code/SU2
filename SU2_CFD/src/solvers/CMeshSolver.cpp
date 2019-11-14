@@ -103,7 +103,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     /*--- Initialize the element structure ---*/
     element = new CMeshElement[nElement];
     for (iElem = 0; iElem < nElement; iElem++)
-        element[iElem] = CMeshElement();
+      element[iElem] = CMeshElement();
 
     Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
     Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
@@ -262,14 +262,12 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
   }
 
-#ifdef HAVE_MPI
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
   su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
   su2double MinVolume_Local = MinVolume; MinVolume = 0.0;
   SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-#endif
 
   /*--- Volume from  0 to 1 ---*/
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -316,9 +314,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   nVertex_SolidWall = 0;
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -334,9 +332,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   ii = 0; jj = 0;
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
+         (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -387,13 +385,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
     MinDistance_Local = MinDistance; MinDistance = 0.0;
 
-#ifdef HAVE_MPI
     SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-#else
-    MaxDistance = MaxDistance_Local;
-    MinDistance = MinDistance_Local;
-#endif
 
   }
 
@@ -715,7 +708,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       for (iDim = 0; iDim < nDim; iDim++){
         /*--- Update the coordinates of the mesh ---*/
         curr_coord = Restart_Data[index+iDim];
-        geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+        /// TODO: "Double" deformation if this is set here?
+//        geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
         displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);

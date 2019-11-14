@@ -145,18 +145,17 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution        = new su2double[nVar];
+  Solution = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]          = 1e-16;
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 1e-16;
 
-  SolRest    = NULL;
   if (dynamic) SolRest = new su2double[3 * nVar];
   else SolRest = new su2double[nVar];
 
   Solution_Vel    = NULL;
   Solution_Accel  = NULL;
 
-  if (dynamic){
+  if (dynamic) {
 
     Solution_Vel    = new su2double[nVar];
     Solution_Accel  = new su2double[nVar];
@@ -171,19 +170,19 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   CSensitivity = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
+    CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]];
   }
 
   Sens_E  = new su2double[nMarker];
   Sens_Nu = new su2double[nMarker];
-  Sens_nL  = new su2double[nMarker];
+  Sens_nL = new su2double[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_E[iMarker]  = 0.0;
     Sens_Nu[iMarker] = 0.0;
     Sens_nL[iMarker]  = 0.0;
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
-        CSensitivity[iMarker][iVertex] = 0.0;
+      CSensitivity[iMarker][iVertex] = 0.0;
     }
   }
 
@@ -219,14 +218,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
     }
   }
 
-  /*--- Initialize the values of the total sensitivities ---*/
-
-//  Total_Sens_E        = 0.0;
-//  Total_Sens_Nu       = 0.0;
-//  Total_Sens_Rho      = 0.0;
-//  Total_Sens_Rho_DL   = 0.0;
-
-
   /*--- Initialize vector structures for multiple material definition ---*/
 
   nMPROP = config->GetnElasticityMod();
@@ -244,47 +235,56 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   Local_Sens_E  = new su2double[nMPROP];
   Global_Sens_E = new su2double[nMPROP];
   Total_Sens_E  = new su2double[nMPROP];
+  AD_Idx_E_i    = new int[nMPROP];
 
   Nu_i           = new su2double[nMPROP];
   Local_Sens_Nu  = new su2double[nMPROP];
   Global_Sens_Nu = new su2double[nMPROP];
-  Total_Sens_Nu = new su2double[nMPROP];
+  Total_Sens_Nu  = new su2double[nMPROP];
+  AD_Idx_Nu_i    = new int[nMPROP];
 
-  Rho_i         = new su2double[nMPROP];     // For inertial effects
+  Rho_i           = new su2double[nMPROP]; // For inertial effects
   Local_Sens_Rho  = new su2double[nMPROP];
   Global_Sens_Rho = new su2double[nMPROP];
   Total_Sens_Rho  = new su2double[nMPROP];
+  AD_Idx_Rho_i    = new int[nMPROP];
 
-  Rho_DL_i         = new su2double[nMPROP];     // For dead loads
+  Rho_DL_i           = new su2double[nMPROP]; // For dead loads
   Local_Sens_Rho_DL  = new su2double[nMPROP];
   Global_Sens_Rho_DL = new su2double[nMPROP];
   Total_Sens_Rho_DL  = new su2double[nMPROP];
+  AD_Idx_Rho_DL_i    = new int[nMPROP];
 
-  for (iVar = 0; iVar < nMPROP; iVar++){
-      Total_Sens_E[iVar]      = 0.0;
-      Total_Sens_Nu[iVar]     = 0.0;
-      Total_Sens_Rho[iVar]    = 0.0;
-      Total_Sens_Rho_DL[iVar] = 0.0;
+  /*--- Initialize the values of the total sensitivities ---*/
+
+  for (iVar = 0; iVar < nMPROP; iVar++) {
+    Total_Sens_E[iVar]      = 0.0;
+    Total_Sens_Nu[iVar]     = 0.0;
+    Total_Sens_Rho[iVar]    = 0.0;
+    Total_Sens_Rho_DL[iVar] = 0.0;
   }
 
   /*--- Initialize vector structures for multiple electric regions ---*/
 
   de_effects = config->GetDE_Effects();
 
-  EField = NULL;
+  EField             = NULL;
   Local_Sens_EField  = NULL;
   Global_Sens_EField = NULL;
   Total_Sens_EField  = NULL;
-  if(de_effects){
-
+  AD_Idx_EField      = NULL;
+  
+  if (de_effects) {
     nEField = config->GetnElectric_Field();
 
     EField             = new su2double[nEField];
     Local_Sens_EField  = new su2double[nEField];
     Global_Sens_EField = new su2double[nEField];
     Total_Sens_EField  = new su2double[nEField];
-    for (iVar = 0; iVar < nEField; iVar++){
-        Total_Sens_EField[iVar] = 0.0;
+    AD_Idx_EField      = new int[nEField];
+
+    for (iVar = 0; iVar < nEField; iVar++) {
+      Total_Sens_EField[iVar] = 0.0;
     }
   }
 
@@ -292,7 +292,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   nDV = 0;
   DV_Val = NULL;
-  fea_dv = false;
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
     case POISSON_RATIO:
@@ -306,19 +305,23 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
       break;
   }
 
-  Local_Sens_DV = NULL;
-  Global_Sens_DV= NULL;
-  Total_Sens_DV = NULL;
-  if (fea_dv){
-      ReadDV(config);
-      Local_Sens_DV  = new su2double[nDV];
-      Global_Sens_DV = new su2double[nDV];
-      Total_Sens_DV  = new su2double[nDV];
-      for (iVar = 0; iVar < nDV; iVar++){
-          Local_Sens_DV[iVar] = 0.0;
-          Global_Sens_DV[iVar] = 0.0;
-          Total_Sens_DV[iVar] = 0.0;
-      }
+  Local_Sens_DV  = NULL;
+  Global_Sens_DV = NULL;
+  Total_Sens_DV  = NULL;
+  AD_Idx_DV_Val  = NULL;
+
+  if (fea_dv) {
+    ReadDV(config);
+    Local_Sens_DV  = new su2double[nDV];
+    Global_Sens_DV = new su2double[nDV];
+    Total_Sens_DV  = new su2double[nDV];
+    AD_Idx_DV_Val  = new int[nDV];
+
+    for (iVar = 0; iVar < nDV; iVar++) {
+      Local_Sens_DV[iVar]  = 0.0;
+      Global_Sens_DV[iVar] = 0.0;
+      Total_Sens_DV[iVar]  = 0.0;
+    }
   }
 
 }
@@ -334,40 +337,48 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
     delete [] CSensitivity;
   }
 
-  if (E_i           != NULL) delete [] E_i;
-  if (Nu_i          != NULL) delete [] Nu_i;
+  if (E_i         != NULL) delete [] E_i;
+  if (Nu_i        != NULL) delete [] Nu_i;
   if (Rho_i       != NULL) delete [] Rho_i;
   if (Rho_DL_i    != NULL) delete [] Rho_DL_i;
 
-  if (Local_Sens_E         != NULL) delete [] Local_Sens_E;
-  if (Local_Sens_Nu        != NULL) delete [] Local_Sens_Nu;
-  if (Local_Sens_Rho       != NULL) delete [] Local_Sens_Rho;
-  if (Local_Sens_Rho_DL    != NULL) delete [] Local_Sens_Rho_DL;
+  if (AD_Idx_E_i       != NULL) delete [] AD_Idx_E_i;
+  if (AD_Idx_Nu_i      != NULL) delete [] AD_Idx_Nu_i;
+  if (AD_Idx_Rho_i     != NULL) delete [] AD_Idx_Rho_i;
+  if (AD_Idx_Rho_DL_i  != NULL) delete [] AD_Idx_Rho_DL_i;
 
-  if (Global_Sens_E         != NULL) delete [] Global_Sens_E;
-  if (Global_Sens_Nu        != NULL) delete [] Global_Sens_Nu;
-  if (Global_Sens_Rho       != NULL) delete [] Global_Sens_Rho;
-  if (Global_Sens_Rho_DL    != NULL) delete [] Global_Sens_Rho_DL;
+  if (Local_Sens_E        != NULL) delete [] Local_Sens_E;
+  if (Local_Sens_Nu       != NULL) delete [] Local_Sens_Nu;
+  if (Local_Sens_Rho      != NULL) delete [] Local_Sens_Rho;
+  if (Local_Sens_Rho_DL   != NULL) delete [] Local_Sens_Rho_DL;
 
-  if (Total_Sens_E         != NULL) delete [] Total_Sens_E;
-  if (Total_Sens_Nu        != NULL) delete [] Total_Sens_Nu;
-  if (Total_Sens_Rho       != NULL) delete [] Total_Sens_Rho;
-  if (Total_Sens_Rho_DL    != NULL) delete [] Total_Sens_Rho_DL;
+  if (Global_Sens_E       != NULL) delete [] Global_Sens_E;
+  if (Global_Sens_Nu      != NULL) delete [] Global_Sens_Nu;
+  if (Global_Sens_Rho     != NULL) delete [] Global_Sens_Rho;
+  if (Global_Sens_Rho_DL  != NULL) delete [] Global_Sens_Rho_DL;
 
-  if (normalLoads   != NULL) delete [] normalLoads;
-  if (Sens_E        != NULL) delete [] Sens_E;
-  if (Sens_Nu       != NULL) delete [] Sens_Nu;
-  if (Sens_nL       != NULL) delete [] Sens_nL;
+  if (Total_Sens_E        != NULL) delete [] Total_Sens_E;
+  if (Total_Sens_Nu       != NULL) delete [] Total_Sens_Nu;
+  if (Total_Sens_Rho      != NULL) delete [] Total_Sens_Rho;
+  if (Total_Sens_Rho_DL   != NULL) delete [] Total_Sens_Rho_DL;
 
-  if (EField        != NULL) delete [] EField;
-  if (Local_Sens_EField        != NULL) delete [] Local_Sens_EField;
-  if (Global_Sens_EField       != NULL) delete [] Global_Sens_EField;
-  if (Total_Sens_EField        != NULL) delete [] Total_Sens_EField;
+  if (normalLoads         != NULL) delete [] normalLoads;
+  if (Sens_E              != NULL) delete [] Sens_E;
+  if (Sens_Nu             != NULL) delete [] Sens_Nu;
+  if (Sens_nL             != NULL) delete [] Sens_nL;
 
-  if (DV_Val               != NULL) delete [] DV_Val;
-  if (Local_Sens_DV        != NULL) delete [] Local_Sens_DV;
-  if (Global_Sens_DV       != NULL) delete [] Global_Sens_DV;
-  if (Total_Sens_DV        != NULL) delete [] Total_Sens_DV;
+  if (EField              != NULL) delete [] EField;
+  if (Local_Sens_EField   != NULL) delete [] Local_Sens_EField;
+  if (Global_Sens_EField  != NULL) delete [] Global_Sens_EField;
+  if (Total_Sens_EField   != NULL) delete [] Total_Sens_EField;
+  if (AD_Idx_EField       != NULL) delete [] AD_Idx_EField;
+
+  if (DV_Val              != NULL) delete [] DV_Val;
+  if (Local_Sens_DV       != NULL) delete [] Local_Sens_DV;
+  if (Global_Sens_DV      != NULL) delete [] Global_Sens_DV;
+  if (Total_Sens_DV       != NULL) delete [] Total_Sens_DV;
+  if (AD_Idx_DV_Val       != NULL) delete [] AD_Idx_DV_Val;
+
   if (Solution_Vel   != NULL) delete [] Solution_Vel;
   if (Solution_Accel != NULL) delete [] Solution_Accel;
   if (SolRest        != NULL) delete [] SolRest;
@@ -433,12 +444,13 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
-  bool dynamic = config->GetTime_Domain();
   bool input = true;
+  bool dynamic = config->GetTime_Domain();
+  bool push_index = !config->GetMultizone_Problem();
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  direct_solver->GetNodes()->RegisterSolution(input);
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (dynamic) {
 
@@ -467,49 +479,74 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
     bool pseudo_static = config->GetPseudoStatic();
 
-    for (iVar = 0; iVar < nMPROP; iVar++){
-        E_i[iVar]         = config->GetElasticyMod(iVar);
-        Nu_i[iVar]        = config->GetPoissonRatio(iVar);
-        Rho_DL_i[iVar]  = config->GetMaterialDensity(iVar);
-        if (pseudo_static) Rho_i[iVar] = 0.0;
-        else               Rho_i[iVar] = config->GetMaterialDensity(iVar);
+    for (iVar = 0; iVar < nMPROP; iVar++) {
+      E_i[iVar]      = config->GetElasticyMod(iVar);
+      Nu_i[iVar]     = config->GetPoissonRatio(iVar);
+      Rho_i[iVar]    = pseudo_static? 0.0 : config->GetMaterialDensity(iVar);
+      Rho_DL_i[iVar] = config->GetMaterialDensity(iVar);
     }
 
     /*--- Read the values of the electric field ---*/
-    if(de_effects){
-        for (iVar = 0; iVar < nEField; iVar++) EField[iVar] = config->Get_Electric_Field_Mod(iVar);
+    if (de_effects) {
+      for (iVar = 0; iVar < nEField; iVar++)
+        EField[iVar] = config->Get_Electric_Field_Mod(iVar);
     }
 
-//    if(fea_dv){
-//        for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
+//    if (fea_dv) {
+//      for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
 //    }
 
     if (!reset) {
-      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(E_i[iVar]);
-      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Nu_i[iVar]);
-      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_i[iVar]);
-      for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_DL_i[iVar]);
+      bool local_index = config->GetMultizone_Problem();
+      bool push_index = !local_index;
+
+      for (iVar = 0; iVar < nMPROP; iVar++) {
+        AD::RegisterInput(E_i[iVar], push_index);
+        AD::RegisterInput(Nu_i[iVar], push_index);
+        AD::RegisterInput(Rho_i[iVar], push_index);
+        AD::RegisterInput(Rho_DL_i[iVar], push_index);
+      }
 
       if(de_effects){
-        for (iVar = 0; iVar < nEField; iVar++) AD::RegisterInput(EField[iVar]);
+        for (iVar = 0; iVar < nEField; iVar++)
+          AD::RegisterInput(EField[iVar], push_index);
       }
 
       if(fea_dv){
-        for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
+        for (iVar = 0; iVar < nDV; iVar++)
+          AD::RegisterInput(DV_Val[iVar], push_index);
       }
-      
-      geometry->RegisterCoordinates(config);
-      
+
+      /*--- Explicitly store the tape indices for when we extract the derivatives ---*/
+      if (local_index) {
+        for (iVar = 0; iVar < nMPROP; iVar++) {
+          AD::SetIndex(AD_Idx_E_i[iVar], E_i[iVar]);
+          AD::SetIndex(AD_Idx_Nu_i[iVar], Nu_i[iVar]);
+          AD::SetIndex(AD_Idx_Rho_i[iVar], Rho_i[iVar]);
+          AD::SetIndex(AD_Idx_Rho_DL_i[iVar], Rho_DL_i[iVar]);
+        }
+
+        if (de_effects) {
+          for (iVar = 0; iVar < nEField; iVar++)
+            AD::SetIndex(AD_Idx_EField[iVar], EField[iVar]);
+        }
+
+        if (fea_dv) {
+          for (iVar = 0; iVar < nDV; iVar++)
+            AD::SetIndex(AD_Idx_DV_Val[iVar], DV_Val[iVar]);
+        }
+      }
+
+      /*--- Register topology optimization densities ---*/
       if (config->GetTopology_Optimization())
         direct_solver->RegisterVariables(geometry,config);
 
-      /*--- Register the flow traction sensitivities ---*/
+      /*--- Register the flow tractions ---*/
       if (config->GetnMarker_Fluid_Load() > 0)
         direct_solver->GetNodes()->RegisterFlowTraction();
     }
 
   }
-
 
     /*--- Here it is possible to register other variables as input that influence the flow solution
      * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
@@ -518,13 +555,13 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
 void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
+  bool input = false;
   bool dynamic = config->GetTime_Domain();
+  bool push_index = !config->GetMultizone_Problem();
 
   /*--- Register variables as output of the solver iteration ---*/
 
-  bool input = false;
-
-  direct_solver->GetNodes()->RegisterSolution(input);
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (dynamic) {
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
@@ -597,7 +634,8 @@ void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool dynamic = (config->GetTime_Domain());
+  bool dynamic = config->GetTime_Domain();
+  bool multizone = config->GetMultizone_Problem();
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -606,19 +644,26 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_RMS(iVar,0.0);
-      SetRes_Max(iVar,0.0,0);
+    SetRes_RMS(iVar,0.0);
+    SetRes_Max(iVar,0.0,0);
   }
 
-  /*--- Set the old solution ---*/
+  /*--- Set the old solution, for multi-zone problems this is done after computing the
+   *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
+   *    contains contributions from other zones but on extraction it does not. ---*/
 
-  nodes->Set_OldSolution();
+  if(!multizone) nodes->Set_OldSolution();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    if(config->GetMultizone_Problem()) {
+      direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
+    }
+    else {
+      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    }
 
     /*--- Store the adjoint solution ---*/
 
@@ -709,27 +754,29 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   /*--- Set the residuals ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
+
+      AddRes_RMS(iVar,residual*residual);
+      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
+    if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
+        residual = nodes->GetSolution_Accel(iPoint, iVar) - nodes->GetSolution_Old_Accel(iPoint, iVar);
 
-          AddRes_RMS(iVar,residual*residual);
-          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        AddRes_RMS(iVar,residual*residual);
+        AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
-      if (dynamic){
-        for (iVar = 0; iVar < nVar; iVar++){
-            residual = nodes->GetSolution_Accel(iPoint, iVar) - nodes->GetSolution_Old_Accel(iPoint, iVar);
+      for (iVar = 0; iVar < nVar; iVar++){
+        residual = nodes->GetSolution_Vel(iPoint, iVar) - nodes->GetSolution_Old_Vel(iPoint, iVar);
 
-            AddRes_RMS(iVar,residual*residual);
-            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-        }
-        for (iVar = 0; iVar < nVar; iVar++){
-            residual = nodes->GetSolution_Vel(iPoint, iVar) - nodes->GetSolution_Old_Vel(iPoint, iVar);
-
-            AddRes_RMS(iVar,residual*residual);
-            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-        }
+        AddRes_RMS(iVar,residual*residual);
+        AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
+    }
   }
+
+  if(multizone) nodes->Set_OldSolution();
 
   SetResidual_RMS(geometry, config);
 
@@ -737,88 +784,59 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  unsigned short iVar, iDim;
-  unsigned long iPoint;
+  unsigned short iVar;
+  bool local_index = config->GetMultizone_Problem();
 
   /*--- Extract the adjoint values of the material properties ---*/
-
   if (KindDirect_Solver == RUNTIME_FEA_SYS){
 
-    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_E[iVar]  = SU2_TYPE::GetDerivative(E_i[iVar]);
-    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_Nu[iVar] = SU2_TYPE::GetDerivative(Nu_i[iVar]);
-    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_Rho[iVar] = SU2_TYPE::GetDerivative(Rho_i[iVar]);
-    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_Rho_DL[iVar] = SU2_TYPE::GetDerivative(Rho_DL_i[iVar]);
+    if (local_index) {
+      for (iVar = 0; iVar < nMPROP; iVar++) {
+        Local_Sens_E[iVar] = AD::GetDerivative(AD_Idx_E_i[iVar]);
+        Local_Sens_Nu[iVar] = AD::GetDerivative(AD_Idx_Nu_i[iVar]);
+        Local_Sens_Rho[iVar] = AD::GetDerivative(AD_Idx_Rho_i[iVar]);
+        Local_Sens_Rho_DL[iVar] = AD::GetDerivative(AD_Idx_Rho_DL_i[iVar]);
+      }
+    }
+    else {
+      for (iVar = 0; iVar < nMPROP; iVar++) {
+        Local_Sens_E[iVar] = SU2_TYPE::GetDerivative(E_i[iVar]);
+        Local_Sens_Nu[iVar] = SU2_TYPE::GetDerivative(Nu_i[iVar]);
+        Local_Sens_Rho[iVar] = SU2_TYPE::GetDerivative(Rho_i[iVar]);
+        Local_Sens_Rho_DL[iVar] = SU2_TYPE::GetDerivative(Rho_DL_i[iVar]);
+      }
+    }
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(Local_Sens_E,  Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_E[iVar]        = Local_Sens_E[iVar];
-    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_Nu[iVar]       = Local_Sens_Nu[iVar];
-    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_Rho[iVar]      = Local_Sens_Rho[iVar];
-    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_Rho_DL[iVar]   = Local_Sens_Rho_DL[iVar];
-#endif
 
-    /*--- Extract here the adjoint values of the electric field in the case that it is a parameter of the problem. ---*/
+    /*--- Extract the adjoint values of the electric field in the case that it is a parameter of the problem. ---*/
 
-    if(de_effects){
-
-      for (iVar = 0; iVar < nEField; iVar++) Local_Sens_EField[iVar] = SU2_TYPE::GetDerivative(EField[iVar]);
-
-  #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(Local_Sens_EField,  Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  #else
-      for (iVar = 0; iVar < nEField; iVar++) Global_Sens_EField[iVar] = Local_Sens_EField[iVar];
-  #endif
-
-    }
-
-    if(fea_dv){
-
-      for (iVar = 0; iVar < nDV; iVar++) Local_Sens_DV[iVar] = SU2_TYPE::GetDerivative(DV_Val[iVar]);
-
-  #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(Local_Sens_DV,  Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  #else
-      for (iVar = 0; iVar < nDV; iVar++) Global_Sens_DV[iVar] = Local_Sens_DV[iVar];
-  #endif
-
-    }
-
-  su2double *Coord, Sensitivity;
-
-  // bool time_stepping = (config->GetTime_Marching() != STEADY);
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    Coord = geometry->node[iPoint]->GetCoord();
-
-    for (iDim = 0; iDim < nDim; iDim++) {
-
-      if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+    if (de_effects) {
+      for (iVar = 0; iVar < nEField; iVar++) {
+        if (local_index) Local_Sens_EField[iVar] = AD::GetDerivative(AD_Idx_EField[iVar]);
+        else             Local_Sens_EField[iVar] = SU2_TYPE::GetDerivative(EField[iVar]);
       }
-      else {
-        Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
-      }
-
-      /*--- Set the index manually to zero. ---*/
-
-      AD::ResetInput(Coord[iDim]);
-
-      // if (!time_stepping) {
-        nodes->SetSensitivity(iPoint,iDim, Sensitivity);
-      // } else {
-      //   nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim) + Sensitivity);
-      // }
+      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     }
-  }
+
+    if (fea_dv) {
+      for (iVar = 0; iVar < nDV; iVar++) {
+        if (local_index) Local_Sens_DV[iVar] = AD::GetDerivative(AD_Idx_DV_Val[iVar]);
+        else             Local_Sens_DV[iVar] = SU2_TYPE::GetDerivative(DV_Val[iVar]);
+      }
+      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    }
+
+    /*--- Extract the topology optimization density sensitivities ---*/
 
     if (config->GetTopology_Optimization())
       direct_solver->ExtractAdjoint_Variables(geometry,config);
 
     /*--- Extract the flow traction sensitivities ---*/
+
     if (config->GetnMarker_Fluid_Load() > 0){
       su2double val_sens;
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
@@ -830,7 +848,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
     }
 
   }
-
 
 }
 
@@ -896,18 +913,18 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
 
   if (dynamic){
-      for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
-          for (iVar=0; iVar < nVar; iVar++){
-              nodes->SetDynamic_Derivative_n(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
-          }
-          for (iVar=0; iVar < nVar; iVar++){
-              nodes->SetDynamic_Derivative_Accel_n(iPoint, iVar, nodes->GetSolution_Accel_time_n(iPoint, iVar));
-          }
-          for (iVar=0; iVar < nVar; iVar++){
-              nodes->SetDynamic_Derivative_Vel_n(iPoint, iVar, nodes->GetSolution_Vel_time_n(iPoint, iVar));
-          }
-        }
+    for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
+      for (iVar=0; iVar < nVar; iVar++){
+        nodes->SetDynamic_Derivative_n(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
+      }
+      for (iVar=0; iVar < nVar; iVar++){
+        nodes->SetDynamic_Derivative_Accel_n(iPoint, iVar, nodes->GetSolution_Accel_time_n(iPoint, iVar));
+      }
+      for (iVar=0; iVar < nVar; iVar++){
+        nodes->SetDynamic_Derivative_Vel_n(iPoint, iVar, nodes->GetSolution_Vel_time_n(iPoint, iVar));
+      }
     }
+  }
 
 }
 
@@ -920,7 +937,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
 
     for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
 
@@ -939,7 +956,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     
     /*--- Relax and set the solution ---*/
     
@@ -964,16 +981,36 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
   }
 
   if (de_effects){
-      for (iVar = 0; iVar < nEField; iVar++)
-        Total_Sens_EField[iVar]+= Global_Sens_EField[iVar];
+    for (iVar = 0; iVar < nEField; iVar++)
+      Total_Sens_EField[iVar]+= Global_Sens_EField[iVar];
   }
 
   if (fea_dv){
-      for (iVar = 0; iVar < nDV; iVar++){
-          Total_Sens_DV[iVar] += Global_Sens_DV[iVar];
-      }
+    for (iVar = 0; iVar < nDV; iVar++)
+      Total_Sens_DV[iVar] += Global_Sens_DV[iVar];
   }
 
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    su2double *Coord = geometry->node[iPoint]->GetCoord();
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+      su2double Sensitivity;
+
+      if(config->GetMultizone_Problem()) {
+        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+      }
+      else {
+        Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+        /*--- Set the index manually to zero. ---*/
+        AD::ResetInput(Coord[iDim]);
+      }
+
+      nodes->SetSensitivity(iPoint, iDim, Sensitivity);
+    }
+  }
+  SetSurface_Sensitivity(geometry, config);
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
@@ -989,8 +1026,8 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
+    SetRes_BGS(iVar,0.0);
+    SetRes_Max_BGS(iVar,0.0,0);
   }
 
   /*--- Compute the BGS solution (adding the cross term) ---*/
@@ -1003,11 +1040,11 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
 
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-          residual = nodes->Get_BGSSolution(iPoint, iVar) - nodes->Get_BGSSolution_k(iPoint, iVar);
-          AddRes_BGS(iVar,residual*residual);
-          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-      }
+    for (iVar = 0; iVar < nVar; iVar++){
+      residual = nodes->Get_BGSSolution(iPoint, iVar) - nodes->Get_BGSSolution_k(iPoint, iVar);
+      AddRes_BGS(iVar,residual*residual);
+      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
   }
 
   SetResidual_BGS(geometry, config);
@@ -1023,7 +1060,7 @@ void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config)
   /*--- As there are geometrical crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++)
-        nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
+      nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
   }
 
 }
@@ -1200,11 +1237,9 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   /*--- Detect a wrong solution file ---*/
 
   if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
+
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);

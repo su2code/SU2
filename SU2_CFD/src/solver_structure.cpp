@@ -2982,21 +2982,34 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::Add_ExternalOld_To_Solution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    base_nodes->AddSolution(iPoint, base_nodes->Get_ExternalOld(iPoint));
+void CSolver::Add_External_To_Solution() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
 }
 
-void CSolver::Add_Solution_To_External(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+void CSolver::Add_Solution_To_External() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
 }
 
-void CSolver::Add_Solution_To_ExternalOld(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    base_nodes->Add_ExternalOld(iPoint, base_nodes->GetSolution(iPoint));
+void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
+
+  passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      passivedouble
+      new_val = SU2_TYPE::GetValue(base_nodes->GetSolution(iPoint,iVar)),
+      old_val = cross_term(iPoint,iVar),
+      relax_val = alpha*new_val + (1.0-alpha)*old_val;
+      /*--- Set new value of cross term. ---*/
+      cross_term(iPoint,iVar) = relax_val;
+      /*--- How much we need to update the sum of cross-terms. ---*/
+      Solution[iVar] = relax_val-old_val;
+    }
+    base_nodes->Add_External(iPoint, Solution);
   }
 }
 

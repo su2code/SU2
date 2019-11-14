@@ -564,24 +564,23 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
-  
+
   /*!
-   * \brief Add External_Old to Solution vector.
-   * \param[in] geometry - The geometrical definition of the problem.
+   * \brief Add External to Solution vector.
    */
-  void Add_ExternalOld_To_Solution(CGeometry *geometry);
+  void Add_External_To_Solution();
 
   /*!
    * \brief Add the current Solution vector to External.
-   * \param[in] geometry - The geometrical definition of the problem.
    */
-  void Add_Solution_To_External(CGeometry *geometry);
+  void Add_Solution_To_External();
 
   /*!
-   * \brief Add the current Solution vector to External_Old.
-   * \param[in] geometry - The geometrical definition of the problem.
+   * \brief Update a given cross-term with relaxation and the running total (External).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in,out] cross_term - The cross-term being updated.
    */
-  void Add_Solution_To_ExternalOld(CGeometry *geometry);
+  void Update_Cross_Term(CConfig *config, su2passivematrix &cross_term);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
@@ -12742,27 +12741,40 @@ private:
   su2double *E_i,               /*!< \brief Values of the Young's Modulus. */
             *Nu_i,              /*!< \brief Values of the Poisson's ratio. */
             *Rho_i,             /*!< \brief Values of the density (for inertial effects). */
-            *Rho_DL_i;          /*!< \brief Values of the density (for volume loading) */
-  su2double *Local_Sens_E, *Global_Sens_E,            /*!< \brief Local and global sensitivity of the Young's modulus. */
-            *Local_Sens_Nu, *Global_Sens_Nu,          /*!< \brief Local and global sensitivity of the Poisson ratio. */
-            *Local_Sens_Rho, *Global_Sens_Rho,        /*!< \brief Local and global sensitivity of the density. */
-            *Local_Sens_Rho_DL, *Global_Sens_Rho_DL;  /*!< \brief Local and global sensitivity of the volume load. */
-  su2double *Total_Sens_E,       /*!< \brief Total sensitivity of the Young's modulus (time domain). */
-            *Total_Sens_Nu,      /*!< \brief Local and global sensitivity of the Poisson ratio. */
-            *Total_Sens_Rho,     /*!< \brief Local and global sensitivity of the density. */
-            *Total_Sens_Rho_DL;  /*!< \brief Local and global sensitivity of the volume load. */
+            *Rho_DL_i;          /*!< \brief Values of the density (for volume loading). */
+  int       *AD_Idx_E_i,        /*!< \brief Derivative index of the Young's Modulus. */
+            *AD_Idx_Nu_i,       /*!< \brief Derivative index of the Poisson's ratio. */
+            *AD_Idx_Rho_i,      /*!< \brief Derivative index of the density (for inertial effects). */
+            *AD_Idx_Rho_DL_i;   /*!< \brief Derivative index of the density (for volume loading). */
 
-  bool de_effects;              /*!< \brief Determines if DE effects are considered. */
-  unsigned short nEField;       /*!< \brief Number of electric field areas in the problem. */
-  su2double *EField;            /*!< \brief Array that stores the electric field as design variables. */
-  su2double *Local_Sens_EField, *Global_Sens_EField; /*!< \brief Local and global sensitivity of the Electric Field. */
-  su2double *Total_Sens_EField;
+  su2double *Local_Sens_E,        /*!< \brief Local sensitivity of the Young's modulus. */
+            *Global_Sens_E,       /*!< \brief Global sensitivity of the Young's modulus. */
+            *Total_Sens_E;        /*!< \brief Total sensitivity of the Young's modulus (time domain). */
+  su2double *Local_Sens_Nu,       /*!< \brief Local sensitivity of the Poisson ratio. */
+            *Global_Sens_Nu,      /*!< \brief Global sensitivity of the Poisson ratio. */
+            *Total_Sens_Nu;       /*!< \brief Total sensitivity of the Poisson ratio (time domain). */
+  su2double *Local_Sens_Rho,      /*!< \brief Local sensitivity of the density. */
+            *Global_Sens_Rho,     /*!< \brief Global sensitivity of the density. */
+            *Total_Sens_Rho;      /*!< \brief Total sensitivity of the density (time domain). */
+  su2double *Local_Sens_Rho_DL,   /*!< \brief Local sensitivity of the volume load. */
+            *Global_Sens_Rho_DL,  /*!< \brief Global sensitivity of the volume load. */
+            *Total_Sens_Rho_DL;   /*!< \brief Total sensitivity of the volume load (time domain). */        
 
-  bool fea_dv;                  /*!< \brief Determines if the design variable we study is a FEA parameter. */
-  unsigned short nDV;           /*!< \brief Number of design variables in the problem. */
-  su2double *DV_Val;            /*!< \brief Value of the design variables. */
-  su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
-  su2double *Total_Sens_DV;
+  bool de_effects;                /*!< \brief Determines if DE effects are considered. */
+  unsigned short nEField;         /*!< \brief Number of electric field areas in the problem. */
+  su2double *EField;              /*!< \brief Array that stores the electric field as design variables. */
+  int       *AD_Idx_EField;       /*!< \brief Derivative index of the electric field as design variables. */
+  su2double *Local_Sens_EField,   /*!< \brief Local sensitivity of the Electric Field. */
+            *Global_Sens_EField,  /*!< \brief Global sensitivity of the Electric Field. */
+            *Total_Sens_EField;   /*!< \brief Total sensitivity of the Electric Field (time domain). */
+
+  bool fea_dv;                /*!< \brief Determines if the design variable we study is a FEA parameter. */
+  unsigned short nDV;         /*!< \brief Number of design variables in the problem. */
+  su2double *DV_Val;          /*!< \brief Values of the design variables. */
+  int       *AD_Idx_DV_Val;   /*!< \brief Derivative index of the design variables. */
+  su2double *Local_Sens_DV,   /*!< \brief Local sensitivity of the design variables. */
+            *Global_Sens_DV,  /*!< \brief Global sensitivity of the design variables. */
+            *Total_Sens_DV;   /*!< \brief Total sensitivity of the design variables (time domain). */
 
   CDiscAdjFEABoundVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 

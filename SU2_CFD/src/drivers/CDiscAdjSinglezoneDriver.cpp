@@ -102,7 +102,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_iteration = new CFEAIteration(config);
     direct_output = new CElasticityOutput(config, nDim);
     MainVariables = FEA_DISP_VARS;
-    SecondaryVariables = NONE;
+    SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_HEAT:
@@ -204,11 +204,12 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
     case DISC_ADJ_FEM :
 
-      /*--- Apply the boundary condition to clamped nodes ---*/
-      iteration->Postprocess(output_container[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,
-                             config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+      /*--- Compute the geometrical sensitivities ---*/
+      SecondaryRecording();
 
-      RecordingState = NONE;
+      iteration->Postprocess(output_container[ZONE_0], integration_container, geometry_container,
+                             solver_container, numerics_container, config_container,
+                             surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
       break;
   }//switch
 
@@ -340,15 +341,18 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
       output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
+      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
+      unsigned short nSpanSections = config->GetnSpanWiseSections();
+
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
         break;
       default:
         break;
@@ -367,12 +371,12 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     case REFERENCE_NODE:
       ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
       break;
+    case TOPOL_COMPLIANCE:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
+      break;
     case VOLUME_FRACTION:
     case TOPOL_DISCRETENESS:
       ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-      break;
-    case TOPOL_COMPLIANCE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
       break;
     default:
       ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
@@ -515,14 +519,21 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ComputeAdjoint();
 
   /*--- Extract the computed sensitivity values. ---*/
-  switch(SecondaryVariables){
-  case MESH_COORDS:
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
-    break;
-  case MESH_DEFORM:
-    solver[ADJMESH_SOL]->SetSensitivity(geometry, solver, config);
-    break;
+
+  int IDX_SOL;
+
+  if (config->GetKind_Solver() == DISC_ADJ_FEM) {
+    IDX_SOL = ADJFEA_SOL;
+  } else if(SecondaryVariables == MESH_COORDS) {
+    IDX_SOL = ADJFLOW_SOL;
+  } else if(SecondaryVariables == MESH_DEFORM) {
+    IDX_SOL = ADJMESH_SOL;
+  } else {
+    IDX_SOL = -1;
   }
+
+  if(IDX_SOL >= 0)
+    solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
