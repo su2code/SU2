@@ -404,13 +404,13 @@ void COneShotFluidDriver::PrimalDualStep(){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
        ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-      seeding[iConstr] = ConstrFunc[iConstr];
+      seeding[iConstr] = Multiplier[iConstr];
     }
     else {
       seeding[iConstr] = 0.;
     }
   }
-  SetAdj_ConstrFunction(Multiplier);
+  SetAdj_ConstrFunction(seeding);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -935,7 +935,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
         seeding[iConstr] = 0.;
       }
     }
-    SetAdj_ConstrFunction(ConstrFunc);
+    SetAdj_ConstrFunction(seeding);
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -1011,13 +1011,13 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
          ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-        seeding[iConstr] = ConstrFunc[iConstr];
+        seeding[iConstr] = Multiplier[iConstr];
       }
       else {
         seeding[iConstr] = 0.;
       }
     }
-    SetAdj_ConstrFunction(Multiplier);
+    SetAdj_ConstrFunction(seeding);
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
