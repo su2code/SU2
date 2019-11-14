@@ -92,7 +92,7 @@ protected:
    * members for e.g. number of rows and cols (static size optimization).
    * \note Aligned dynamic allocation is disabled for compilation on MAC and Windows.
    */
-#if !defined __APPLE__ && !defined _WIN64
+#if !defined __APPLE__ && !defined _WIN64 && !defined _MSC_VER
 #define REAL_ALLOCATOR(EXTRA)                                             \
   static_assert(AlignSize % alignof(Scalar_t)==0,                         \
     "AlignSize is not a multiple of the type's alignment spec.");         \
