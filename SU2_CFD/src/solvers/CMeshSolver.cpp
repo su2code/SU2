@@ -457,6 +457,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
   /*--- Initialize vectors and clean residual ---*/
+  LinSysSol.SetValZero();
   LinSysRes.SetValZero();
 
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
@@ -705,9 +706,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
          minus the coordinates of the reference mesh file ---*/
         displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
-
-        /*--- Initialize also the solution of the linear system. ---*/
-        LinSysSol.GetBlock(iPoint_Local)[iDim] = displ;
       }
       iPoint_Global_Local++;
 
