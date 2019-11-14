@@ -756,13 +756,13 @@ void CFluidIteration::Solve(COutput *output,
                                  unsigned short val_iInst) {
 
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
-  bool steady   = !config[val_iZone]->GetTime_Domain();
+  bool steady = !config[val_iZone]->GetTime_Domain();
 
   unsigned long Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
 
-  /*--- Synchronization point before a single solver iteration. Compute the
-   wall clock time required. ---*/
+  /*--- Synchronization point before a single solver iteration.
+        Compute the wall clock time required. ---*/
 
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -771,47 +771,43 @@ void CFluidIteration::Solve(COutput *output,
 #endif
 
   /*--- Preprocess the solver ---*/
-  Preprocess(output, integration, geometry,
-      solver, numerics, config,
-      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+  Preprocess(output, integration, geometry, solver, numerics, config,
+            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-    /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
-    /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
+  /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+  /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 
-    for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
+  for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
 
-      config[val_iZone]->SetInnerIter(Inner_Iter);
+    config[val_iZone]->SetInnerIter(Inner_Iter);
 
-      /*--- Run a single iteration of the solver ---*/
-      Iterate(output, integration, geometry,
-          solver, numerics, config,
-          surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+    /*--- Run a single iteration of the solver ---*/
+    Iterate(output, integration, geometry, solver, numerics, config,
+            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-      /*--- Monitor the pseudo-time ---*/
-      StopCalc = Monitor(output, integration, geometry,
-                         solver, numerics, config,
-                         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+    /*--- Monitor the pseudo-time ---*/
+    StopCalc = Monitor(output, integration, geometry, solver, numerics, config,
+                       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-      /*--- Output files at intermediate iterations if the problem is single zone ---*/
+    /*--- Output files at intermediate iterations if the problem is single zone ---*/
 
-      if (singlezone && steady) Output(output, geometry, solver, config,
-                                          config[val_iZone]->GetInnerIter(), StopCalc, val_iZone, val_iInst);
-      
-
-      /*--- If the iteration has converged, break the loop ---*/
-      if (StopCalc) break;
-
+    if (singlezone && steady) {
+      Output(output, geometry, solver, config, Inner_Iter, StopCalc, val_iZone, val_iInst);
     }
 
-    if (multizone && steady){
-      
-      Output(output, geometry, solver, config,
-             config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
-      
-      /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
-      
-      integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
-    }
+    /*--- If the iteration has converged, break the loop ---*/
+    if (StopCalc) break;
+  }
+
+  if (multizone && steady) {
+    Output(output, geometry, solver, config,
+           config[val_iZone]->GetOuterIter(),
+           StopCalc, val_iZone, val_iInst);
+
+    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+
+    integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+  }
 }
 
 void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, CSolver ***solver) {

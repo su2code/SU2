@@ -3518,7 +3518,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
         }
         /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
-        /// TODO: LEGACY CLEANUP
+        /// TODO: LEGACY CLEANUP remove the "else" part and every class and enum referenced there,
+        ///       add a check above to make sure MESH_SOL has been instantiated.
         else {
           nVarTransfer = 0;
           if(!discrete_adjoint) {
