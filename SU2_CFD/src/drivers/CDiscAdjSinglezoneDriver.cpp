@@ -150,6 +150,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
+  bool steady = !config->GetTime_Domain();
   unsigned long Adjoint_Iter;
 
   for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
@@ -177,6 +178,7 @@ void CDiscAdjSinglezoneDriver::Run() {
                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
+
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -184,7 +186,14 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-    
+
+    /*--- Output files for steady state simulations. ---*/
+
+    if (steady) {
+      iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
+                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
+    }
+
     if (StopCalc) break;
 
   }
@@ -496,6 +505,8 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
+  bool steady = !config->GetTime_Domain();
+
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    * as argument ensures that all information from a previous recording is removed. ---*/
 
@@ -539,4 +550,8 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+  if(steady) {
+    iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
+                      config_container, config->GetInnerIter(), true, ZONE_0, INST_0);
+  }
 }
