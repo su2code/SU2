@@ -212,8 +212,6 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   su2double MaxVolume, MinVolume;
   int EL_KIND = 0;
 
-  bool RightVol = true;
-
   su2double ElemVolume;
 
   MaxVolume = -1E22; MinVolume = 1E22;
@@ -253,15 +251,13 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     if (nDim == 2)  ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
     else            ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
 
-    RightVol = true;
-    if (ElemVolume < 0.0) RightVol = false;
-
     MaxVolume = max(MaxVolume, ElemVolume);
     MinVolume = min(MinVolume, ElemVolume);
     if (updated) element[iElem].SetCurr_Volume(ElemVolume);
     else element[iElem].SetRef_Volume(ElemVolume);
 
-    if (!RightVol) ElemCounter++;
+    /*--- Count distorted elements. ---*/
+    if (ElemVolume <= 0.0) ElemCounter++;
 
   }
 
