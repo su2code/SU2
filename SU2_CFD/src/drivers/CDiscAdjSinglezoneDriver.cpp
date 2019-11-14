@@ -508,7 +508,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   bool steady = !config->GetTime_Domain();
 
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   * as argument ensures that all information from a previous recording is removed. ---*/
+   *    as argument ensures that all information from a previous recording is removed. ---*/
 
   SetRecording(NONE);
 
