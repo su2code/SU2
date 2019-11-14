@@ -37,8 +37,12 @@
 
 #include "../../include/variables/CScalarVariable.hpp"
 
-CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
-    
+CScalarVariable::CScalarVariable(unsigned long npoint,
+                                 unsigned long ndim,
+                                 unsigned long nvar,
+                                 CConfig       *config)
+: CVariable(npoint, ndim, nvar, config) {
+  
   /*--- Gradient related fields ---*/
   
   Gradient.resize(nPoint,nVar,nDim,0.0);
@@ -60,15 +64,4 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   
   Delta_Time.resize(nPoint) = su2double(0.0);
   
-  /*--- Allocate space for the mass diffusivity. ---*/
-  
-  Diffusivity.resize(nPoint,nVar) = su2double(0.0);
-  
-  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-  
-  if (config->GetAxisymmetric() && config->GetViscous()) {
-    AuxVar.resize(nPoint);
-    Grad_AuxVar.resize(nPoint,nDim);
-  }
-
 }

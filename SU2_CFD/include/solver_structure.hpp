@@ -9480,14 +9480,14 @@ protected:
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
 
-  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CScalarVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
-  CTurbVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CScalarVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.

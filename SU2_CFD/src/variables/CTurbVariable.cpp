@@ -63,4 +63,5 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
   Delta_Time.resize(nPoint) = su2double(0.0);
+    
 }

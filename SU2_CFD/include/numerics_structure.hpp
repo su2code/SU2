@@ -3567,8 +3567,8 @@ public:
 };
 
 /*!
- * \class CAvgGrad_Turb
- * \brief Template class for computing viscous residual of turbulent scalar values
+ * \class CAvgGradScalar
+ * \brief Template class for computing viscous residual of scalar values
  * \details This class serves as a template for the scalar viscous residual
  *   classes.  The general structure of a viscous residual calculation is the
  *   same for many different  models, which leads to a lot of repeated code.
@@ -3578,16 +3578,16 @@ public:
  *   calculation for a viscous residual, extend this class and implement
  *   the pure virtual functions with model-specific behavior.
  * \ingroup ViscDiscr
- * \author C. Pederson, A. Bueno, and F. Palacios
+ * \author C. Pederson, A. Bueno, F. Palacios, T. Economon
  */
-class CAvgGrad_Turb : public CNumerics {
- private:
-
+class CAvgGradScalar : public CNumerics {
+private:
+  
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD
    */
   virtual void ExtraADPreaccIn() = 0;
-
+  
   /*!
    * \brief Model-specific steps in the ComputeResidual method
    * \param[out] val_residual - Pointer to the total residual.
@@ -3599,34 +3599,34 @@ class CAvgGrad_Turb : public CNumerics {
                                   su2double **Jacobian_i,
                                   su2double **Jacobian_j,
                                   CConfig *config) = 0;
-
- protected:
+  
+protected:
   bool implicit, incompressible;
   bool correct_gradient;
   unsigned short iVar, iDim;
-  su2double **Mean_GradTurbVar;               /*!< \brief Average of gradients at cell face */
-  su2double *Edge_Vector,                     /*!< \brief Vector from node i to node j. */
-            *Proj_Mean_GradTurbVar_Normal,    /*!< \brief Mean_gradTurbVar DOT normal */
-            *Proj_Mean_GradTurbVar_Edge,      /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
-            *Proj_Mean_GradTurbVar;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
-  su2double  dist_ij_2,                       /*!< \brief |Edge_Vector|^2 */
-             proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-
- public:
+  su2double **Mean_GradScalarVar;   /*!< \brief Average of scalar var gradients at cell face */
+  su2double *Edge_Vector,           /*!< \brief Vector from node i to node j. */
+  *Proj_Mean_GradScalarVar_Normal,  /*!< \brief Mean_GradScalarVar DOT normal */
+  *Proj_Mean_GradScalarVar_Edge,    /*!< \brief Mean_GradScalarVar DOT Edge_Vector */
+  *Proj_Mean_GradScalarVar;         /*!< \brief Mean_GradScalarVar DOT normal, corrected if required */
+  su2double dist_ij_2,              /*!< \brief |Edge_Vector|^2 */
+  proj_vector_ij;                   /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Turb(unsigned short val_nDim, unsigned short val_nVar,
-                    bool correct_gradient, CConfig *config);
-
+  CAvgGradScalar(unsigned short val_nDim, unsigned short val_nVar,
+                 bool correct_gradient, CConfig *config);
+  
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Turb(void);
-
+  ~CAvgGradScalar(void);
+  
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
    * \param[out] val_residual - Pointer to the total residual.
@@ -3644,7 +3644,7 @@ class CAvgGrad_Turb : public CNumerics {
  * \ingroup ViscDiscr
  * \author A. Bueno.
  */
-class CAvgGrad_TurbSA : public CAvgGrad_Turb {
+class CAvgGrad_TurbSA : public CAvgGradScalar {
 private:
 
   const su2double sigma;
@@ -3688,7 +3688,7 @@ public:
  * \ingroup ViscDiscr
  * \author F. Palacios
  */
-class CAvgGrad_TurbSA_Neg : public CAvgGrad_Turb {
+class CAvgGrad_TurbSA_Neg : public CAvgGradScalar {
 private:
 
   const su2double sigma;
@@ -3768,70 +3768,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CAvgGradScalar
- * \brief Template class for computing viscous residual of scalar values
- * \ingroup ViscDiscr
- * \author C. Pederson, T. Economon
- */
-class CAvgGradScalar : public CNumerics {
-private:
-  
-  /*!
-   * \brief A pure virtual function; Adds any extra variables to AD
-   */
-  virtual void ExtraADPreaccIn() = 0;
-  
-  /*!
-   * \brief Model-specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void FinishResidualCalc(su2double *val_residual,
-                                  su2double **Jacobian_i,
-                                  su2double **Jacobian_j,
-                                  CConfig *config) = 0;
-  
-protected:
-  bool implicit, incompressible;
-  bool correct_gradient;
-  unsigned short iVar, iDim;
-  su2double **Mean_GradScalarVar;   /*!< \brief Average of scalar var gradients at cell face */
-  su2double *Edge_Vector,           /*!< \brief Vector from node i to node j. */
-  *Proj_Mean_GradScalarVar_Normal,  /*!< \brief Mean_GradScalarVar DOT normal */
-  *Proj_Mean_GradScalarVar_Edge,    /*!< \brief Mean_GradScalarVar DOT Edge_Vector */
-  *Proj_Mean_GradScalarVar;         /*!< \brief Mean_GradScalarVar DOT normal, corrected if required */
-  su2double dist_ij_2,              /*!< \brief |Edge_Vector|^2 */
-  proj_vector_ij;                   /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradScalar(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_gradient, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradScalar(void);
-  
-  /*!
-   * \brief Compute the viscous residual using an average of gradients without correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
-                       su2double **Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -3964,7 +3900,7 @@ public:
  * \ingroup ViscDiscr
  * \author A. Bueno.
  */
-class CAvgGrad_TurbSST : public CAvgGrad_Turb {
+class CAvgGrad_TurbSST : public CAvgGradScalar {
 private:
   su2double sigma_k1, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
   sigma_k2,

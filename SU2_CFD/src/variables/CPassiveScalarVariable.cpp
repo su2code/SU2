@@ -37,9 +37,13 @@
 
 #include "../../include/variables/CPassiveScalarVariable.hpp"
 
-CPassiveScalarVariable::CPassiveScalarVariable(su2double *val_scalar_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                                               CConfig *config) : CScalarVariable(npoint, ndim, nvar, config) {
-
+CPassiveScalarVariable::CPassiveScalarVariable(su2double     *val_scalar_inf,
+                                               unsigned long npoint,
+                                               unsigned long ndim,
+                                               unsigned long nvar,
+                                               CConfig       *config)
+: CScalarVariable(npoint, ndim, nvar, config) {
+  
   for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       Solution(iPoint,iVar) = val_scalar_inf[iVar];
@@ -51,10 +55,21 @@ CPassiveScalarVariable::CPassiveScalarVariable(su2double *val_scalar_inf, unsign
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
-
+  
   if (dual_time) {
     Solution_time_n  = Solution;
     Solution_time_n1 = Solution;
   }
-
+  
+  /*--- Allocate space for the mass diffusivity. ---*/
+  
+  Diffusivity.resize(nPoint,nVar) = su2double(0.0);
+  
+  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
+  
+  if (config->GetAxisymmetric() && config->GetViscous()) {
+    AuxVar.resize(nPoint);
+    Grad_AuxVar.resize(nPoint,nDim);
+  }
+  
 }

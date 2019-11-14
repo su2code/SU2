@@ -37,26 +37,38 @@
 
 #include "../../include/variables/CTurbSSTVariable.hpp"
 
-
-CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
-  : CTurbVariable(npoint, ndim, nvar, config) {
-
-  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
-  {
+CTurbSSTVariable::CTurbSSTVariable(su2double       kine,
+                                   su2double       omega,
+                                   su2double       mut,
+                                   unsigned long   npoint,
+                                   unsigned long   ndim,
+                                   unsigned long   nvar,
+                                   const su2double *constants,
+                                   CConfig         *config)
+: CScalarVariable(npoint, ndim, nvar, config) {
+  
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     Solution(iPoint,0) = kine;
     Solution(iPoint,1) = omega;
   }
   
   Solution_Old = Solution;
-
+  
   sigma_om2 = constants[3];
   beta_star = constants[6];
-
+  
   F1.resize(nPoint) = su2double(1.0);
   F2.resize(nPoint) = su2double(0.0);
   CDkw.resize(nPoint) = su2double(0.0);
-
+  
   muT.resize(nPoint) = mut;
+  
+  /*--- Allocate space for the harmonic balance source terms ---*/
+  
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
+  }
+  
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
@@ -66,8 +78,8 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::StartPreacc();
   AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
-  AD::SetPreaccIn(Solution[iPoint], nVar);
-  AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
+  AD::SetPreaccIn(Solution[iPoint], (int)nVar);
+  AD::SetPreaccIn(Gradient[iPoint], (int)nVar, nDim);
 
   /*--- Cross diffusion ---*/
 

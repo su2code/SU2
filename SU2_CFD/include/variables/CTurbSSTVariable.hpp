@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "CTurbVariable.hpp"
+#include "CScalarVariable.hpp"
 
 /*!
  * \class CTurbSSTVariable
@@ -46,8 +46,10 @@
  * \author A. Bueno.
  */
 
-class CTurbSSTVariable final : public CTurbVariable {
+class CTurbSSTVariable final : public CScalarVariable {
 protected:
+  VectorType muT;              /*!< \brief Eddy viscosity. */
+  MatrixType HB_Source;        /*!< \brief Harmonic Balance source term. */
   su2double sigma_om2;
   su2double beta_star;
   VectorType F1;
@@ -74,6 +76,20 @@ public:
    */
   ~CTurbSSTVariable() = default;
 
+  /*!
+   * \brief Get the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
+   * \return the value of the eddy viscosity.
+   */
+  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
+  
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_muT - Value of the eddy viscosity.
+   */
+  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+  
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.

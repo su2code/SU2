@@ -56,7 +56,7 @@ CScalarSolver::CScalarSolver(void) : CSolver() {
 }
 
 CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
-
+  
   FlowPrimVar_i    = NULL;
   FlowPrimVar_j    = NULL;
   lowerlimit       = NULL;
@@ -98,7 +98,7 @@ CScalarSolver::~CScalarSolver(void) {
   if (upperlimit != NULL)    delete [] upperlimit;
   if (nVertex != NULL)       delete [] nVertex;
   if (Scalar_Inf != NULL)    delete [] Scalar_Inf;
-
+  
 }
 
 void CScalarSolver::Upwind_Residual(CGeometry *geometry,
@@ -227,7 +227,7 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry,
 void CScalarSolver::Viscous_Residual(CGeometry *geometry,
                                      CSolver **solver_container,
                                      CNumerics *numerics,
-                                   CConfig *config,
+                                     CConfig *config,
                                      unsigned short iMesh,
                                      unsigned short iRKStep) {
   
@@ -257,7 +257,7 @@ void CScalarSolver::Viscous_Residual(CGeometry *geometry,
                            nodes->GetSolution(jPoint));
     
     /*--- Scalar variable gradients. ---*/
-
+    
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                    nodes->GetGradient(jPoint));
     
@@ -302,7 +302,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
   if (incompressible) SetPreconditioner(geometry, solver_container, config);
-
+  
   /*--- Set maximum residual to zero ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -315,9 +315,9 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Read the residual ---*/
-
+    
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
+    
     /*--- Read the volume ---*/
     
     Vol = (geometry->node[iPoint]->GetVolume() +
@@ -364,7 +364,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry,
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (scalar_clipping) {
         nodes->AddClippedSolution(iPoint, 0, config->GetRelaxation_Factor_Scalar()*LinSysSol[iPoint],
-                                         scalar_clipping_min, scalar_clipping_max);
+                                  scalar_clipping_min, scalar_clipping_max);
       }
       else {
         nodes->AddSolution(iPoint, 0, config->GetRelaxation_Factor_Scalar()*LinSysSol[iPoint]);
@@ -404,7 +404,7 @@ void CScalarSolver::BC_Sym_Plane(CGeometry *geometry,
 
 void CScalarSolver::BC_Euler_Wall(CGeometry *geometry,
                                   CSolver **solver_container,
-                                CNumerics *numerics,
+                                  CNumerics *numerics,
                                   CConfig *config,
                                   unsigned short val_marker) {
   
@@ -413,33 +413,33 @@ void CScalarSolver::BC_Euler_Wall(CGeometry *geometry,
 }
 
 void CScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics *conv_numerics,
-                                            CNumerics *visc_numerics,
-                                            CConfig *config,
-                                            unsigned short val_marker) {
+                                     CSolver **solver_container,
+                                     CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics,
+                                     CConfig *config,
+                                     unsigned short val_marker) {
   
   /*--- Convective fluxes across viscous walls are equal to zero. ---*/
   
 }
 
 void CScalarSolver::BC_Isothermal_Wall(CGeometry *geometry,
-                                              CSolver **solver_container,
-                                              CNumerics *conv_numerics,
-                                              CNumerics *visc_numerics,
-                                              CConfig *config,
-                                              unsigned short val_marker) {
+                                       CSolver **solver_container,
+                                       CNumerics *conv_numerics,
+                                       CNumerics *visc_numerics,
+                                       CConfig *config,
+                                       unsigned short val_marker) {
   
   /*--- Convective fluxes across viscous walls are equal to zero. ---*/
   
 }
 
 void CScalarSolver::BC_Far_Field(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CNumerics *conv_numerics,
-                                        CNumerics *visc_numerics,
-                                        CConfig *config,
-                                        unsigned short val_marker) {
+                                 CSolver **solver_container,
+                                 CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics,
+                                 CConfig *config,
+                                 unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
@@ -505,11 +505,11 @@ void CScalarSolver::BC_Far_Field(CGeometry *geometry,
 }
 
 void CScalarSolver::BC_Inlet(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics,
-                                    CConfig *config,
-                                    unsigned short val_marker) {
+                             CSolver **solver_container,
+                             CNumerics *conv_numerics,
+                             CNumerics *visc_numerics,
+                             CConfig *config,
+                             unsigned short val_marker) {
   
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
@@ -573,7 +573,7 @@ void CScalarSolver::BC_Inlet(CGeometry *geometry,
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
-
+      
       unsigned long Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
       visc_numerics->SetNormal(Normal);
@@ -611,11 +611,11 @@ void CScalarSolver::BC_Inlet(CGeometry *geometry,
 }
 
 void CScalarSolver::BC_Outlet(CGeometry *geometry,
-                                     CSolver **solver_container,
-                                     CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics,
-                                     CConfig *config,
-                                     unsigned short val_marker) {
+                              CSolver **solver_container,
+                              CNumerics *conv_numerics,
+                              CNumerics *visc_numerics,
+                              CConfig *config,
+                              unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
@@ -683,28 +683,28 @@ void CScalarSolver::BC_Outlet(CGeometry *geometry,
       unsigned long Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
       visc_numerics->SetNormal(Normal);
-
+      
       /*--- Conservative variables w/o reconstruction ---*/
-
+      
       visc_numerics->SetPrimitive(V_domain, V_outlet);
-
+      
       /*--- Scalar variables w/o reconstruction, and its gradients ---*/
-
+      
       visc_numerics->SetScalarVar(Solution_i, Solution_j);
       visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                           nodes->GetGradient(iPoint));
-
+      
       /*--- Mass diffusivity coefficients. ---*/
       
       visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
                                        nodes->GetDiffusivity(iPoint));
       
       /*--- Compute residual, and Jacobians ---*/
-
+      
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
+      
       /*--- Subtract residual, and update Jacobians ---*/
-
+      
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
@@ -734,8 +734,8 @@ void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CScalarSolver::SetInletAtVertex(su2double *val_inlet,
-                                            unsigned short iMarker,
-                                            unsigned long iVertex) {
+                                     unsigned short iMarker,
+                                     unsigned long iVertex) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -818,7 +818,7 @@ void CScalarSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 void CScalarSolver::SetResidual_DualTime(CGeometry *geometry,
                                          CSolver **solver_container,
                                          CConfig *config,
-                                       unsigned short iRKStep,
+                                         unsigned short iRKStep,
                                          unsigned short iMesh,
                                          unsigned short RunTime_EqSystem) {
   
@@ -865,30 +865,30 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry,
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
       
-       /*--- Get the density to compute the conservative variables. ---*/
+      /*--- Get the density to compute the conservative variables. ---*/
       
-        if (incompressible){
-          /*--- This is temporary and only valid for constant-density problems:
-           density could also be temperature dependent, but as it is not a part
-           of the solution vector it's neither stored for previous time steps
-           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        }
-        else{
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint)[0];
-        }
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
-                              +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
-        }
+      if (incompressible){
+        /*--- This is temporary and only valid for constant-density problems:
+         density could also be temperature dependent, but as it is not a part
+         of the solution vector it's neither stored for previous time steps
+         nor updated with the solution at the end of each iteration. */
+        Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      }
+      else{
+        Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
+        Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
+        Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint)[0];
+      }
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+          Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
+        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
+                            +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+      }
       
       
       /*--- Store the residual and compute the Jacobian contribution due
@@ -943,11 +943,11 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry,
       
       /*--- Multiply by density at node i  ---*/
       
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
+      if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+      else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+      
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Compute the GCL component of the source term for node j ---*/
@@ -956,11 +956,11 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry,
       
       /*--- Multiply by density at node j ---*/
       
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
+      if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
+      else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+      
       LinSysRes.SubtractBlock(jPoint, Residual);
       
     }
@@ -993,11 +993,11 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry,
           
           /*--- Multiply by density at node i  ---*/
           
-            if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-            else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-            for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
+          if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+          else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+          
           LinSysRes.AddBlock(iPoint, Residual);
         }
     }
@@ -1021,29 +1021,29 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry,
       
       Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
       Volume_nP1 = geometry->node[iPoint]->GetVolume();
-
-        if (incompressible){
-          /*--- This is temporary and only valid for constant-density problems:
-           density could also be temperature dependent, but as it is not a part
-           of the solution vector it's neither stored for previous time steps
-           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        }
-        else{
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint)[0];
-        }
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-            + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
-        }
+      
+      if (incompressible){
+        /*--- This is temporary and only valid for constant-density problems:
+         density could also be temperature dependent, but as it is not a part
+         of the solution vector it's neither stored for previous time steps
+         nor updated with the solution at the end of each iteration. */
+        Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      }
+      else{
+        Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
+        Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
+        Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint)[0];
+      }
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+      }
       
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
@@ -1083,15 +1083,15 @@ void CScalarSolver::LoadRestart(CGeometry **geometry,
   
   string UnstExt, text_line;
   ifstream restart_file;
-
+  
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
-
+  
   bool turbulent = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
   
   unsigned short turbSkip = 0;
   if (turbulent) turbSkip = solver[MESH_0][TURB_SOL]->GetnVar();
-
+  
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
   
   if (config->GetRead_Binary_Restart()) {
@@ -1113,7 +1113,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry,
   if (nDim == 3) skipVars += 8;
   
   /*--- Skip turbulent variables if necessary variables ---*/
-
+  
   if (turbulent) skipVars += turbSkip;
   
   /*--- Load data from the restart into correct containers. ---*/
@@ -1158,7 +1158,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry,
   }
   
   /*--- MPI solution ---*/
-
+  
   solver[MESH_0][SCALAR_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][SCALAR_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   

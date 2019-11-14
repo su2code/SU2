@@ -47,7 +47,7 @@
  */
 class CPassiveScalarSolver: public CScalarSolver {
 private:
-  CFluidModel *FluidModel;  /*!< \brief Fluid model for the calar transport problem. */
+  CFluidModel *FluidModel;  /*!< \brief Fluid model for the scalar transport problem. */
   
 public:
   /*!

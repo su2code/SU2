@@ -37,9 +37,13 @@
 
 #include "../../include/variables/CTransLMVariable.hpp"
 
-
-CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim,
-                                   unsigned long nvar, CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
+CTransLMVariable::CTransLMVariable(su2double     intermittency,
+                                   su2double     REth,
+                                   unsigned long npoint,
+                                   unsigned long ndim,
+                                   unsigned long nvar,
+                                   CConfig       *config)
+: CScalarVariable(npoint, ndim, nvar, config) {
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
@@ -51,4 +55,5 @@ CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsi
     Set_BGSSolution_k();
 
   gamma_sep.resize(nPoint);
+  
 }

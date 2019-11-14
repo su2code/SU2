@@ -54,9 +54,9 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   su2double Density_Inf, Viscosity_Inf;
   
   bool turbulent = ((config->GetKind_Solver() == RANS) ||
-  (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
-  bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
+                    (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turb_SST  = ((turbulent) && ((config->GetKind_Turb_Model() == SST) ||
+                                    (config->GetKind_Turb_Model() == SST_SUST)));
   
   /*--- Dimension of the problem --> passive scalar will only ever
    have a single equation. Other child classes of CScalarSolver
@@ -160,7 +160,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   Density_Inf   = config->GetDensity_FreeStreamND();
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
-
+  
   /*--- Set up fluid model for the diffusivity ---*/
   
   su2double Diffusivity_Ref = 1.0;
@@ -182,7 +182,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   nodes = new CPassiveScalarVariable(Scalar_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
-
+  
   /*--- MPI solution ---*/
   
   InitiateComms(geometry, config, SOLUTION);
@@ -222,8 +222,8 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   Inlet_Position = nDim*2+2;
   if (turbulent) {
-    if (turb_SA) Inlet_Position += 1;
-    else if (turb_SST) Inlet_Position += 2;
+    if (turb_SST) Inlet_Position += 2;
+    else Inlet_Position += 1;
   }
   
   Inlet_ScalarVars = new su2double**[nMarker];
@@ -267,7 +267,7 @@ CPassiveScalarSolver::~CPassiveScalarSolver(void) {
   }
   
   if (FluidModel != NULL) delete FluidModel;
-
+  
 }
 
 void CPassiveScalarSolver::Preprocessing(CGeometry *geometry,
@@ -321,7 +321,7 @@ unsigned long CPassiveScalarSolver::SetPrimitive_Variables(CSolver **solver_cont
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     /*--- Retrieve the density, temperature, Cp, and laminar viscosity. ---*/
-
+    
     Density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
     Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
@@ -334,7 +334,7 @@ unsigned long CPassiveScalarSolver::SetPrimitive_Variables(CSolver **solver_cont
     }
     
     /*--- Compute and store the mass diffusivity. ---*/
-
+    
     FluidModel->SetDiffusivityState(Temperature, Density, lam_visc, eddy_visc, Cp);
     
     for (iVar = 0; iVar < nVar; iVar++)
@@ -445,7 +445,7 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry,
                                            CSolver **solver_container,
                                            CNumerics *numerics,
                                            CNumerics *second_numerics,
-                                    CConfig *config,
+                                           CConfig *config,
                                            unsigned short iMesh) {
   
   unsigned short iVar;
@@ -513,7 +513,7 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry,
       /*--- Mass diffusivity coefficients. ---*/
       
       second_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
-                                  NULL);
+                                         NULL);
       
       /*--- Set control volume ---*/
       
@@ -522,7 +522,7 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry,
       /*--- Set y coordinate ---*/
       
       second_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                         NULL);
+                                NULL);
       
       /*--- If viscous, we need gradients for extra terms. ---*/
       

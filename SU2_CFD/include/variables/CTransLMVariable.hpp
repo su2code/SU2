@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "CTurbVariable.hpp"
+#include "CScalarVariable.hpp"
 
 /*!
  * \class CTransLMVariable
@@ -45,8 +45,7 @@
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-
-class CTransLMVariable final : public CTurbVariable {
+class CTransLMVariable final : public CScalarVariable {
 protected:
   VectorType gamma_sep;
 

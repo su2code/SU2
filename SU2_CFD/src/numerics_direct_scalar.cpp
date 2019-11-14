@@ -180,8 +180,6 @@ void CAvgGradScalar::ComputeResidual(su2double *val_residual,
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
-  AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
-  AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
   if (correct_gradient) {
     AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j, nVar);
   }
@@ -254,7 +252,10 @@ CAvgGradScalar_General::~CAvgGradScalar_General(void) {
   
 }
 
-void CAvgGradScalar_General::ExtraADPreaccIn() { }
+void CAvgGradScalar_General::ExtraADPreaccIn() {
+  AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+  AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
+}
 
 void CAvgGradScalar_General::FinishResidualCalc(su2double *val_residual,
                                                 su2double **Jacobian_i,

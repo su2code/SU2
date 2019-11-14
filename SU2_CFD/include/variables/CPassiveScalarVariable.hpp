@@ -45,9 +45,9 @@
  * \author T. Economon
  */
 class CPassiveScalarVariable final : public CScalarVariable {
-
+  
 private:
-
+  
 public:
   /*!
    * \brief Constructor of the class.
@@ -68,5 +68,5 @@ public:
    * \brief Destructor of the class.
    */
   ~CPassiveScalarVariable() = default;
-
+  
 };

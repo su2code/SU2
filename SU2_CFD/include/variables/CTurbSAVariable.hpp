@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "CTurbVariable.hpp"
+#include "CScalarVariable.hpp"
 
 /*!
  * \class CTurbSAVariable
@@ -46,9 +46,11 @@
  * \author A. Bueno.
  */
 
-class CTurbSAVariable final : public CTurbVariable {
+class CTurbSAVariable final : public CScalarVariable {
 
 private:
+  VectorType muT;              /*!< \brief Eddy viscosity. */
+  MatrixType HB_Source;        /*!< \brief Harmonic Balance source term. */
   VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
   VectorType DES_LengthScale;
   VectorType Vortex_Tilting;
@@ -71,6 +73,20 @@ public:
    */
   ~CTurbSAVariable() = default;
 
+  /*!
+   * \brief Get the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
+   * \return the value of the eddy viscosity.
+   */
+  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
+  
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_muT - Value of the eddy viscosity.
+   */
+  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+  
   /*!
    * \brief Set the harmonic balance source term.
    * \param[in] iPoint - Point index.
