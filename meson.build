@@ -41,7 +41,7 @@ if get_option('buildtype')!='debug'
 endif
 
 # check if MPI dependencies are found and add them
-if mpi_dep[0].found() and mpi_dep[1].found() 
+if mpi_dep[0].found() or mpi_dep[1].found()
 
   # add MPI dependency 
   su2_deps += mpi_dep
@@ -73,7 +73,7 @@ endif
 
 # PaStiX
 if get_option('enable-pastix')
-  assert(mpi_dep[0].found() and mpi_dep[1].found(),
+  assert(mpi_dep[0].found() or mpi_dep[1].found(),
          'PaStiX support requires MPI')
   assert(get_option('enable-mkl') or get_option('enable-openblas'),
          'PaStiX support requires either mkl or openblas')

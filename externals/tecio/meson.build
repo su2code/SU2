@@ -6,7 +6,7 @@ else
   message('Boost sources found.')
 endif
 
-if mpi_dep[0].found() and mpi_dep[1].found()
+if mpi_dep[0].found() or mpi_dep[1].found()
   subdir('teciompisrc')
   su2_deps += teciompi_dep
   su2_cpp_args += ['-DHAVE_TECIO', '-DTECIOMPI']

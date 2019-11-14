@@ -1,4 +1,4 @@
-metis_cpp_args = ['-D_FILE_OFFSET_BITS=64', '-DNDEBUG', '-DNDEBUG2', '-DHAVE_EXECINFO_H', '-DHAVE_GETLINE']
+metis_cpp_args = ['-D_FILE_OFFSET_BITS=64', '-DNDEBUG', '-DNDEBUG2', '-DHAVE_EXECINFO_H', '-DHAVE_GETLINE', '-DUSE_GKREGEX']
 metis_src = ['GKlib/pqueue.c',
            'GKlib/blas.c',
            'GKlib/fkvkselect.c',
