@@ -46,73 +46,7 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
     
-  /*--- Store specific parameters here. ---*/
-    
-  ReynoldsFriction = 550.0; // Friction Reynolds Number.
-
-  /*--- Turbulent flow. Use the relation of Malaspinas and Sagaut,JCP 275 2014,
-  to compute the Reynolds number. ---*/
-    
-  ReynoldsMeanVelocity = pow((8./ 0.073),(4./7.))
-                        * pow(ReynoldsFriction,(8./7.));
-    
-  /*--- Useful coefficients  ---*/
-  RGas            = config->GetGas_ConstantND();
-  su2double Gamma = config->GetGamma();
-  su2double Cv    = RGas/(Gamma - 1.0);
-  su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  su2double muLam = config->GetViscosity_FreeStreamND();
-  su2double rhoDim = config->GetDensity_FreeStreamND();
-    
-  pRef  = config->GetPressure_FreeStreamND();
-  ovGm1 = 1.0/(Gamma - 1.0);
-
-  // Friction velocity
-  su2double uTau = (2.0*ReynoldsFriction*muLam)/(rhoDim*config->GetLength_Reynolds());
-    
-  // Friction Length
-  su2double lTau = (muLam/rhoDim) / uTau;
-
-  // Compute the wall shear stress and the body force.
-  su2double tauWall = rhoDim*uTau*uTau;
-
-  su2double fBodyX = 2.0*tauWall/config->GetLength_Reynolds();
-
-  // The velocity profile is approximated with the following fit
-  // u = a0*(1-|2*y/h|^alpha), where a0 = uMean*(alpha+1)/alpha.
-  // The coefficient alpha can be computed from the friction and mean
-  // velocity Reynolds numbers and uMean from the Mach number.
-  // Compute these coefficients below.
-  su2double uMean = config->GetModVel_FreeStreamND();
-  alpha = 2.0*ReynoldsFriction*ReynoldsFriction/ReynoldsMeanVelocity - 1.0;
-  a0    = uMean*(alpha+1.0)/alpha;
-
-  // From a simple analysis of the fully developed equations it follows
-  // that the reduced temperature distribution is theta = 1-|2*y/h|^(alpha+2).
-  // When the removed heat equals the work of the body force vector, the
-  // temperature in the middle of the channel can be estimated. This is
-  // done below.
-  halfChan = 0.5*config->GetLength_Reynolds();
-  su2double kCondLam = muLam*Gamma*Cv/Prandtl_Lam;
-  TWall    = 273.15; // Need to fix this
-  TMiddle  = TWall + halfChan*halfChan*uMean*fBodyX/(kCondLam*(alpha+2.0));
-    
-  /*--- Write a message that the solution is initialized for the
-   Turbulent Channel test case. ---*/
   
-  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
-    cout << endl;
-    cout << "Warning: Fluid properties and solution are being " << endl;
-    cout << "         initialized for the Turbulent Channel case!!!" << endl;
-    cout << setprecision(9) << "Friction Reynolds Number: " << ReynoldsFriction << endl;
-    cout << setprecision(9) << "Mean Flow Reynolds Number: " << ReynoldsMeanVelocity << endl;
-    cout << setprecision(9) << "Body Force: " << fBodyX << endl;
-    cout << setprecision(6) << "YPlus~1.: " << lTau << endl;
-    cout << setprecision(4) << "dt+: " << config->GetDelta_UnstTime() * uTau/lTau << endl;
-    cout << setprecision(4) << "Total CTUs: " << config->GetTotal_UnstTime() * uMean/ (2.0* PI_NUMBER) << endl;
-    cout << endl << flush;
-  }
-
   /*--- Perform some sanity and error checks for this solution here. ---*/
 
   if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
@@ -135,14 +69,91 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
     SU2_MPI::Error("Standard air or ideal gas must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
 
-//  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
-//    SU2_MPI::Error("Constant viscosity must be selected for the Taylor Green Vortex",
-//                   CURRENT_FUNCTION);
+  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+    SU2_MPI::Error("Constant viscosity must be selected for the Turbulent Channel",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetRef_NonDim() != FREESTREAM_PRESS_EQ_ONE)
+    SU2_MPI::Error("FREESTREAM_PRESS_EQ_ONE must be selected for the Turbulent Channel",
+                   CURRENT_FUNCTION);
 
   if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the Turbulent Channel",
                    CURRENT_FUNCTION);
+
+    
+  /*--- Store specific parameters here. ---*/
+    
+  ReynoldsFriction = 550.0;  // Friction Reynolds Number.
+  TWall            = 273.15; // Need to fix this
+
+  /*--- Turbulent flow. Use the relation of Malaspinas and Sagaut,JCP 275 2014,
+  to compute the Reynolds number. ---*/
+    
+  ReynoldsMeanVelocity = pow((8./ 0.073),(4./7.))
+                        * pow(ReynoldsFriction,(8./7.));
+    
+  /*--- Useful coefficients  ---*/
+  RGas            = config->GetGas_Constant();
+  su2double Gamma = config->GetGamma();
+  su2double Cv    = RGas/(Gamma - 1.0);
+  su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  su2double muLam = config->GetViscosity_FreeStream();
+  su2double rhoDim = config->GetDensity_FreeStream();
+    
+  rhoRef  = config->GetDensity_Ref();
+  uRef    = config->GetVelocity_Ref();
   
+  ovGm1 = 1.0/(Gamma - 1.0);
+
+  // Friction velocity
+  uTau = (2.0*ReynoldsFriction*muLam)/(rhoDim*config->GetLength_Reynolds());
+    
+  // Friction Length
+  lTau = (muLam/rhoDim) / uTau;
+
+  // Compute the wall shear stress and the body force.
+  tauWall = rhoDim*uTau*uTau;
+
+  fBodyX = 2.0*tauWall/config->GetLength_Reynolds();
+
+  // The velocity profile is approximated with the following fit
+  // u = a0*(1-|2*y/h|^alpha), where a0 = uMean*(alpha+1)/alpha.
+  // The coefficient alpha can be computed from the friction and mean
+  // velocity Reynolds numbers and uMean from the Mach number.
+  // Compute these coefficients below.
+  su2double uMean = config->GetModVel_FreeStream();
+  alpha = 2.0*ReynoldsFriction*ReynoldsFriction/ReynoldsMeanVelocity - 1.0;
+  a0    = uMean*(alpha+1.0)/alpha;
+
+  // From a simple analysis of the fully developed equations it follows
+  // that the reduced temperature distribution is theta = 1-|2*y/h|^(alpha+2).
+  // When the removed heat equals the work of the body force vector, the
+  // temperature in the middle of the channel can be estimated. This is
+  // done below.
+  halfChan = 0.5*config->GetLength_Reynolds();
+  su2double kCondLam = muLam*Gamma*Cv/Prandtl_Lam;
+  TMiddle  = TWall + halfChan*halfChan*uMean*fBodyX/(kCondLam*(alpha+2.0));
+
+  // Compute the fully developed RANS solution, if needed.
+  ComputeFullyDevelopedRANS(config, yRANS, rhoRANS,
+                              uRANS, kRANS, omegaRANS);
+  
+  /*--- Write a message that the solution is initialized for the
+   Turbulent Channel test case. ---*/
+  
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
+    cout << endl;
+    cout << "Warning: Fluid properties and solution are being " << endl;
+    cout << "         initialized for the Turbulent Channel case!!!" << endl;
+    cout << setprecision(9) << "Friction Reynolds Number: " << ReynoldsFriction << endl;
+    cout << setprecision(9) << "Mean Flow Reynolds Number: " << ReynoldsMeanVelocity << endl;
+    cout << setprecision(9) << "Body Force: " << fBodyX << endl;
+    cout << setprecision(6) << "YPlus~1.: " << lTau << endl;
+    cout << setprecision(4) << "dt+: " << config->GetDelta_UnstTime() * uTau/lTau << endl;
+    cout << setprecision(4) << "Total CTUs: " << config->GetTotal_UnstTime() * uMean/ (2.0* PI_NUMBER) << endl;
+    cout << endl << flush;
+  }
 }
 
 CTurbChannelSolution::~CTurbChannelSolution(void) { }
@@ -156,20 +167,24 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
   su2double val_coordsZ      = 0.0;
   if (nDim == 3) val_coordsZ = val_coords[2];
 
-  /* Compute the primitive variables. */
+  // Determine the y-coordinate:- Remember that the channel grid is from 0 -> 2*delta
+  //                            - RANS equations are only solved for the upper half of the domain;
+  
+  su2double y = fabs(val_coords[1]/halfChan - halfChan);
+  
+  // Search for the y-coordinate in yRANS.
+  unsigned int i;
+  for(i=1; i<yRANS.size(); ++i)
+    if((y >= yRANS[i-1]) && (y <= yRANS[i])) break;
 
-  // Determine the non-dimensional y-coordinate and compute the velocity.
-  su2double y, u, t;
-  if (val_coords[1] < halfChan){
-    y = fabs(val_coords[1]/halfChan - halfChan);
-  }
-  else{
-    y = val_coords[1]/halfChan - halfChan;
-  }
+  // Determine the interpolation weights.
+  const su2double wi   = (y - yRANS[i-1])/(yRANS[i] - yRANS[i-1]);
+  const su2double wim1 = 1.0 - wi;
   
-  u = a0*(1.0 - pow(y,alpha));
-  t = TWall + (TMiddle-TWall)*(1.0 - pow(y,(alpha+2.0)));
-  
+  /* Compute the primitive variables. */
+  su2double rho = (wim1*rhoRANS[i-1] + wi*rhoRANS[i])/rhoRef;
+  su2double u   = (wim1*uRANS[i-1]   + wi*uRANS[i])/uRef;
+    
   // Determine the seed of the random generator based on the coordinates.
   // This means that the random generator will always produce the same
   // number for the same coordinates.
@@ -177,9 +192,6 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
   std::default_random_engine rand_gen(seed);
   std::uniform_real_distribution<su2double> u01(-0.1,0.1);
   
-  // Compute the dimensional temperature and the density.
-  su2double rho = pRef/(RGas*t);
-
   /* Compute the conservative variables. Note that both 2D and 3D
    cases are treated correctly. */
 
@@ -187,8 +199,725 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
   val_solution[1]      = rho*(u + u*u01(rand_gen));
   val_solution[2]      = rho*(u*u01(rand_gen));
   val_solution[3]      = rho*(u*u01(rand_gen));
-  val_solution[nVar-1] = pRef*ovGm1 + 0.5*rho*(u*u);
+  val_solution[nVar-1] = ovGm1 + 0.5*rho*(u*u);
 }
 
 bool CTurbChannelSolution::ExactSolutionKnown(void) {return false;}
+
+// Function, which computes the point distribution of a 1D grid using the
+// TANH stretching algorithm of Vinokur.
+void CTurbChannelSolution::PointDistributionVinokur(const su2double len,
+                              const su2double        spacingEnds,
+                               vector<su2double> &yPoints)
+{
+  //----------------------------------------------------------------------------------
+  // The TANH distribution of Vinokur is used, see Vinokur, Marcel, On One-Dimensional
+  // Stretching Functions for Finite-Difference Calculations, JCP, 50, 215, 1983.
+  // See also http://www.cfd-online.com/Wiki/Structured_mesh_generation.
+  //----------------------------------------------------------------------------------
+
+  // Easier storage of the number of points and the inverse of the number
+  // of elements.
+  const int nPoints        = (int) yPoints.size();
+  const su2double nElemInv = 1.0/(nPoints-1);
+
+  // Determine the scaled spacing at the beginning and end of the line. For this
+  // particular case this spacing is the same, but the algorithm is capable of
+  // handling different values of the begin and end spacing.
+  const su2double sBeg = spacingEnds/len;
+  const su2double sEnd = sBeg;
+
+  // Compute the parameters A and B. The former is used in the actual distribution
+  // function, the latter is used to control the stretching factor.
+  const su2double A = sqrt(sEnd/sBeg);
+  const su2double B = nElemInv/sqrt(sBeg*sEnd);
+  su2double delta;
+
+  // Solve the transcendental equation sinh(delta)/delta = B to obtain
+  // the stretching factor delta. Several regions for the value of B must
+  // be distinguished.
+  if(B < ((su2double) 0.9999999))
+  {
+    // The solution of the transcendental equation is purely imaginary.
+    // Substitution of delta = I*delta transforms the transcendental equation
+    // into sin(delta)/delta = B. The Newton algorithm converges quickly.
+    delta = 1.0;
+    for(;;)
+    {
+      const su2double tmp = sin(delta)/delta;
+      const su2double f   = tmp - B;
+      const su2double df  = (cos(delta) - tmp)/delta;
+
+      const su2double ddelta = -f/df;
+      delta += ddelta;
+      if(fabs(ddelta) < convergenceThreshold) break;
+    }
+
+    // Compute the scaled point distribution.
+    const su2double f = 1.0/tan(0.5*delta);
+
+    for(int i=0; i<nPoints; ++i)
+    {
+      const su2double xi = i*nElemInv - 0.5;
+      const su2double u  = 0.5*(1.0 + f*tan(delta*xi));
+      yPoints[i] = u/(A + (1.0-A)*u);
+    }
+  }
+  else if(B > ((su2double) 1.0000001))
+  {
+    // The solution of the transcendental equation is real.
+    // The Newton algorithm converges quickly.
+    delta = 5.0;
+    for(;;)
+    {
+      const su2double tmp = sinh(delta)/delta;
+      const su2double f   = tmp - B;
+      const su2double df  = (cosh(delta) - tmp)/delta;
+
+      const su2double ddelta = -f/df;
+      delta += ddelta;
+      if(fabs(ddelta) < convergenceThreshold) break;
+    }
+
+    // Compute the scaled point distribution.
+    const su2double f = 1.0/tanh(0.5*delta);
+
+    for(int i=0; i<nPoints; ++i)
+    {
+      const su2double xi = i*nElemInv - 0.5;
+      const su2double u  = 0.5*(1.0 + f*tanh(delta*xi));
+      yPoints[i] = u/(A + (1.0-A)*u);
+    }
+  }
+  else
+  {
+    // Special situation. B == 1 and the solution of the transcendental
+    // equation is delta = 1. This is a limit situation in which the
+    // parameter u is equal to xi.
+    for(int i=0; i<nPoints; ++i)
+    {
+      const su2double xi = i*nElemInv;
+      yPoints[i] = xi/(A + (1.0-A)*xi);
+    }
+  }
+
+  // Scale yPoints, such that the range corresponds to -1 to 1.
+  for(int i=0; i<nPoints; ++i)
+    yPoints[i] = 2.0*yPoints[i] - 1.0;
+
+  // Make sure that the point distribution is exactly symmetric.
+  int ii = nPoints-1;
+  for(int i=0; i<=ii; ++i, --ii)
+  {
+    const su2double val = 0.5*(yPoints[ii] - yPoints[i]);
+    yPoints[i]  = -val;
+    yPoints[ii] =  val;
+  }
+
+  // Make sure that the first point is -1 and the last is 1.0.
+  yPoints[0]         = -1.0;
+  yPoints[nPoints-1] =  1.0;
+
+  // Multiply the point distribution by 0.5*len to obtain the
+  // correct dimensional values.
+  for(int i=0; i<nPoints; ++i)
+    yPoints[i] *= 0.5*len;
+}
+
+// Function, which computes the numerical solution of the fully developed RANS
+// equations for a channel flow.
+void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
+                                vector<su2double> &yRANS,
+                                vector<su2double> &rhoRANS,
+                                vector<su2double> &uRANS,
+                                vector<su2double> &kRANS,
+                                vector<su2double> &omegaRANS)
+{
+  
+  
+  su2double muLam = config->GetViscosity_FreeStream();
+  su2double mu    = config->GetViscosity_FreeStreamND();
+  su2double pDim  = config->GetPressure_FreeStream();
+  su2double fBody = fBodyX;
+  
+  su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  su2double Prandtl_Turb = config->GetPrandtl_Turb();
+  su2double Gamma = config->GetGamma();
+  su2double Cv    = RGas/(Gamma - 1.0);
+  su2double kCondLam = muLam*Gamma*Cv/Prandtl_Lam;
+  
+  // Allocate the memory for the vectors.
+  yRANS.resize(nGridPoints);
+  rhoRANS.resize(nGridPoints);
+  uRANS.resize(nGridPoints);
+  kRANS.resize(nGridPoints);
+  omegaRANS.resize(nGridPoints);
+
+  // Only the master rank computes the numerical solution.
+  if(rank == MASTER_NODE)
+  {
+    // Allocate the memory for TRANS.
+     vector<su2double> TRANS(nGridPoints);
+
+    // Determine the required spacing at the wall.
+    su2double dyWall = yPlusWall*lTau;
+
+    // Determine the distribution of the grid points. Use the existing function
+    // to compute the point distribution over the full channel.
+    vector<su2double> yFullChannel(2*nGridPoints-1);
+    PointDistributionVinokur(config->GetLength_Reynolds(), dyWall, yFullChannel);
+
+    // Copy the relevant part of the point distribution in yRANS.
+    for(int i=0; i<nGridPoints; ++i)
+      yRANS[i] = yFullChannel[i+nGridPoints-1];
+
+    // Compute the true wall spacing.
+    dyWall = yRANS[nGridPoints-1] - yRANS[nGridPoints-2];
+
+    // Set the wall boundary conditions for the last point.
+    rhoRANS[nGridPoints-1]   = pDim/(RGas*TWall);
+    uRANS[nGridPoints-1]     = 0.0;
+    TRANS[nGridPoints-1]     = TWall;
+    kRANS[nGridPoints-1]     = 0.0;
+    omegaRANS[nGridPoints-1] = 60.0*mu/(rhoRANS[nGridPoints-1]*beta1*dyWall*dyWall);
+
+    // Initial guess of the density, velocity and turbulent kinetic energy.
+    for(int i=0; i<(nGridPoints-1); ++i)
+    {
+      // Determine the non-dimensional y-coordinate.
+      const su2double y = yRANS[i]/halfChan;
+
+      // Compute the velocity.
+      uRANS[i] = a0*(1.0 - pow(y,alpha));
+
+      // Compute the dimensional temperature and the density.
+      TRANS[i]   = TWall + (TMiddle-TWall)*(1.0 - pow(y,(alpha+2.0)));
+      rhoRANS[i] = pDim/(RGas*TRANS[i]);
+
+      // Compute the y+ of this point.
+      const su2double dist  = yRANS[nGridPoints-1] - yRANS[i];
+      const su2double yPlus = dist/lTau;
+
+      // Crude estimate for the turbulent kinetic energy.
+      su2double kPlus = 1.0;
+      if(yPlus < ((su2double) 25.0))
+        kPlus = ((su2double) 0.16)*yPlus;
+      else if(yPlus < ((su2double) 125.0))
+        kPlus = 4.0 - ((su2double) 0.03)*(yPlus - ((su2double) 25.0));
+
+      kRANS[i] = kPlus*uTau*uTau;
+    }
+
+    // Initial guess of omega.
+    for(int i=0; i<(nGridPoints-1); ++i)
+    {
+      // Compute dudy for this grid point.
+      su2double dudy = 0.0;
+      if( i ) dudy = (uRANS[i+1] - uRANS[i-1])/(yRANS[i+1] - yRANS[i-1]);
+
+      // Estimate omega from the Wray Agarwal model.
+      su2double omega = 0.5*dudy*dudy/sqrt((su2double) 0.09);
+      omega =  max(omega, (su2double) 1.e-10);
+
+      // Compute the eddy viscosity. Make sure it is not more than
+      // 1000 times the laminar viscosity.
+      su2double muT = rhoRANS[i]*kRANS[i]/omega;
+      muT =  min(muT, 1000*muLam);
+
+      // Compute the final value of omega.
+      omegaRANS[i] = rhoRANS[i]*kRANS[i]/muT;
+    }
+
+    // Define the values for the minimum and maximum value of omega.
+    const su2double omegaMax = omegaRANS[nGridPoints-1];
+    const su2double omegaMin = omegaRANS[0]/100;
+
+    // Define the vectors to store the right hand side and the Jacobian matrix.
+     vector<su2double> RHS(2*(nGridPoints-1));
+     vector<su2double> aJac(4*(nGridPoints-1)), bJac(4*(nGridPoints-1)),
+                           cJac(4*(nGridPoints-1));
+
+    // Start of the iterative loop to compute the numerical solution.
+    su2double duMaxOld = 100, ratioMuTurbMuLamMax;
+    for(int iter=0;; ++iter)
+    {
+      //------------------------------------------------------------------------
+      // Part 1: Iteration on the turbulence equations.
+      //------------------------------------------------------------------------
+
+      // Loop over the grid points to compute the source terms and the
+      // contribution of the source terms to the central Jacobian.
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        // Set the pointers for residual and central Jacobian.
+        su2double *res = RHS.data()  + 2*i;
+        su2double *b   = bJac.data() + 4*i;
+
+        // Compute the derivatives the u, k and ln(omega) in this grid point.
+        // Note that for the first grid point the symmetry BC is applied.
+        su2double dyCell = yRANS[i+1] - yRANS[ max(i-1,0)];
+        if( i ) dyCell *= 0.5;
+
+        const su2double dyInv = 1.0/(yRANS[i+1] - yRANS[ max(i-1,0)]);
+
+        const su2double dudy       = i ? dyInv*(uRANS[i+1] - uRANS[i-1]) : 0.0;
+        const su2double dkdy       = i ? dyInv*(kRANS[i+1] - kRANS[i-1]) : 0.0;
+        const su2double dlnomegady = i ? dyInv*(log(omegaRANS[i+1]) - log(omegaRANS[i-1])) : 0.0;
+
+        // Determine the distance to the wall.
+        const su2double dist = yRANS[nGridPoints-1] - yRANS[i];
+
+        // Compute the value of the cross diffusion term.
+        const su2double CDOmega = 2.0*rhoRANS[i]*sigmaOm2*dkdy*dlnomegady;
+        su2double CD =  max(CDOmega, ((su2double) 1.e-20));
+
+        // Determine the three expressions, which determine the arguments
+        // for the blending functions.
+        const su2double tt1 = sqrt(kRANS[i])/(betaStar*omegaRANS[i]*dist);
+        const su2double tt2 = 500*muLam/(rhoRANS[i]*omegaRANS[i]*dist*dist);
+        const su2double tt3 = 4.0*rhoRANS[i]*sigmaOm2*kRANS[i]/(CD*dist*dist);
+
+        // Compute the arguments for the blending functions.
+        const su2double arg1 =  min( max(tt1,tt2),tt3);
+        const su2double arg2 =  max(2.0*tt1,tt2);
+
+        // Compute the blending functions F1 and F2.
+        const su2double F1 = tanh(arg1*arg1*arg1*arg1);
+        const su2double F2 = tanh(arg2*arg2);
+
+        // Compute the blended values of beta and gam.
+        const su2double beta = F1*beta1 + (1.0-F1)*beta2;
+        const su2double gam  = F1*gam1  + (1.0-F1)*gam2;
+
+        // Compute the eddy viscosity.
+        const su2double vortMag = fabs(dudy);
+        const su2double muTurb  = a1*rhoRANS[i]*kRANS[i]/ max(a1*omegaRANS[i],vortMag*F2);
+
+        // Compute the destruction and production term of the k-equation.
+        // The latter should be limited.
+        const su2double destrK = betaStar*rhoRANS[i]*omegaRANS[i]*kRANS[i];
+        const su2double prodK  =  min(muTurb*dudy*dudy, 20*destrK);
+
+        // Compute the destruction and production term of the omega equation.
+        const su2double destrOmega = beta*rhoRANS[i]*omegaRANS[i]*omegaRANS[i];
+        const su2double prodOmega  = gam*rhoRANS[i]*dudy*dudy;
+
+        // Compute the source terms.
+        res[0] = dyCell*(prodK - destrK);
+        res[1] = dyCell*((1.0-F1)*CDOmega + prodOmega - destrOmega);
+
+        // Compute the central Jacobian. Note that only the destruction
+        // terms are linearized to improve stability.
+        b[0] = -dyCell*betaStar*rhoRANS[i]*omegaRANS[i];
+        b[1] =  0.0;
+        b[2] = -dyCell*betaStar*rhoRANS[i]*kRANS[i];
+        b[3] = -dyCell*2.0*beta*rhoRANS[i]*omegaRANS[i];
+      }
+
+      // Loop over the faces to compute the diffusive fluxes.
+      // These are scattered to the adjacent points to compute the residual.
+      // The corresponding Jacobians are updated accordingly.
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        // This is the face between points i and i+1. Compute the average
+        // quantities and the gradients, which are needed to compute the
+        // diffusive flux of the flow equations.
+        const su2double T   = 0.5*(TRANS[i] + TRANS[i+1]);
+        const su2double rho = pDim/(RGas*T);
+
+        const su2double k     = 0.5*(kRANS[i]     + kRANS[i+1]);
+        const su2double omega = 0.5*(omegaRANS[i] + omegaRANS[i+1]);
+
+        const su2double dyInv      = 1.0/(yRANS[i+1] - yRANS[i]);
+        const su2double dudy       = dyInv*(uRANS[i+1] - uRANS[i]);
+        const su2double dkdy       = dyInv*(kRANS[i+1] - kRANS[i]);
+        const su2double domegady   = dyInv*(omegaRANS[i+1] - omegaRANS[i]);
+        const su2double dlnomegady = dyInv*(log(omegaRANS[i+1]) - log(omegaRANS[i]));
+
+        // Determine the distance to the wall.
+        const su2double dist = yRANS[nGridPoints-1] - 0.5*(yRANS[i]+yRANS[i+1]);
+
+        // Compute the value of the cross diffusion term.
+        const su2double CDOmega = 2.0*rho*sigmaOm2*dkdy*dlnomegady;
+        su2double CD =  max(CDOmega, ((su2double) 1.e-20));
+
+        // Determine the three expressions, which determine the arguments
+        // for the blending functions.
+        const su2double tt1 = sqrt(k)/(betaStar*omega*dist);
+        const su2double tt2 = 500*muLam/(rho*omega*dist*dist);
+        const su2double tt3 = 4.0*rho*sigmaOm2*k/(CD*dist*dist);
+
+        // Compute the arguments for the blending functions.
+        const su2double arg1 =  min( max(tt1,tt2),tt3);
+        const su2double arg2 =  max(2.0*tt1,tt2);
+
+        // Compute the blending functions F1 and F2.
+        const su2double F1 = tanh(arg1*arg1*arg1*arg1);
+        const su2double F2 = tanh(arg2*arg2);
+
+        // Compute the blended values of sigmaK and sigmaOm
+        const su2double sigmaK  = F1*sigmaK1  + (1.0-F1)*sigmaK2;
+        const su2double sigmaOm = F1*sigmaOm1 + (1.0-F1)*sigmaOm2;
+
+        // Compute the eddy viscosity.
+        const su2double vortMag = fabs(dudy);
+        const su2double muTurb  = a1*rho*k/ max(a1*omega,vortMag*F2);
+
+        // Compute the effective viscosities for the k- and omega-equation.
+        const su2double muK  = muLam + sigmaK*muTurb;
+        const su2double muOm = muLam + sigmaOm*muTurb;
+
+        // Compute the fluxes at the face.
+        const su2double fK  = muK*dkdy;
+        const su2double fOm = muOm*domegady;
+
+        // Compute the derivatives of fK and fOm w.r.t. the nodal values
+        // of k and omega. The value of muTurb is frozen.
+        const su2double dfKdkip1 =  dyInv*muK;
+        const su2double dfKdki   = -dyInv*muK;
+
+        const su2double dfOmdomip1 =  dyInv*muOm;
+        const su2double dfOmdomi   = -dyInv*muOm;
+
+        // Set the pointers for the residual and Jacobian matrices of point i.
+        su2double *res = RHS.data()  + 2*i;
+        su2double *b   = bJac.data() + 4*i;
+        su2double *c   = cJac.data() + 4*i;
+
+        // Update the residuals and Jacobians of point i.
+        res[0] += fK;
+        res[1] += fOm;
+
+        b[0] += dfKdki;
+        b[3] += dfOmdomi;
+
+        c[0] = dfKdkip1;
+        c[1] = 0.0;
+        c[2] = 0.0;
+        c[3] = dfOmdomip1;
+
+        // Check for the first face.
+        if(i == 0)
+        {
+          // The flux through the mirror face must be computed as well. When the
+          // symmetry boundary condition is applied, the value of a quantity is
+          // the same, while the y-derivative is the opposite. Hence the fluxes
+          // are the opposite. As these fluxes are substracted the net effect
+          // is adding the current fluxes once more.
+          res[0] += fK;
+          res[1] += fOm;
+
+          b[0] += dfKdki;
+          b[3] += dfOmdomi;
+
+          c[0] += dfKdkip1;
+          c[3] += dfOmdomip1;
+        }
+
+        // Check if this is not the last face.
+        if(i < (nGridPoints-2))
+        {
+          // Set the pointers for the residual and Jacobian matrices of point i+1.
+          res = RHS.data()  + 2*(i+1);
+          b   = bJac.data() + 4*(i+1);
+          su2double *a = aJac.data() + 4*(i+1);
+
+          res[0] -= fK;
+          res[1] -= fOm;
+
+          a[0] = -dfKdki;
+          a[1] =  0.0;
+          a[2] =  0.0;
+          a[3] = -dfOmdomi;
+
+          b[0] -= dfKdkip1;
+          b[3] -= dfOmdomip1;
+        }
+      }
+
+      // Underrelaxation of the central Jacobian. The multiplication with 1.01
+      // corresponds to a CFL of 100.
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        su2double *bb = bJac.data() + 4*i;
+        bb[0] *= (su2double) 1.01;
+        bb[3] *= (su2double) 1.01;
+      }
+
+      // Solve the block-tri-diagonal system to compute the updates of k and omega.
+      BlockThomas(nGridPoints-1, aJac, bJac, cJac, RHS);
+
+      // Update k and omega.
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        kRANS[i]     -= RHS[2*i];
+        omegaRANS[i] -= RHS[2*i+1];
+
+        kRANS[i]     =  max(kRANS[i],0.0);
+        omegaRANS[i] =  min( max(omegaRANS[i],omegaMin),omegaMax);
+      }
+
+      //------------------------------------------------------------------------
+      // Part 2: Iteration on the flow equations.
+      //------------------------------------------------------------------------
+
+      // Loop over the grid points to compute the source terms and the
+      // contribution of the source terms to the central Jacobian.
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        // Set the pointers for residual and central Jacobian.
+        su2double *res = RHS.data()  + 2*i;
+        su2double *b   = bJac.data() + 4*i;
+
+        // Compute the source terms.
+        su2double dyCell = yRANS[i+1] - yRANS[ max(i-1,0)];
+        if( i ) dyCell *= 0.5;
+
+        res[0] = dyCell*fBody;
+        res[1] = dyCell*fBody*uRANS[i];
+
+        // Compute the contributions to the central Jacobian.
+        b[0] = 0.0;
+        b[1] = dyCell*fBody;
+        b[2] = 0.0;
+        b[3] = 0.0;
+      }
+
+      // Loop over the faces to compute the diffusive fluxes.
+      // These are scattered to the adjacent points to compute the residual.
+      // The corresponding Jacobians are updated accordingly.
+      ratioMuTurbMuLamMax = 0.0;
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        // This is the face between points i and i+1. Compute the average
+        // quantities and the gradients, which are needed to compute the
+        // diffusive flux of the flow equations.
+        const su2double u   = 0.5*(uRANS[i] + uRANS[i+1]);
+        const su2double T   = 0.5*(TRANS[i] + TRANS[i+1]);
+        const su2double rho = pDim/(RGas*T);
+
+        const su2double k     = 0.5*(kRANS[i]     + kRANS[i+1]);
+        const su2double omega = 0.5*(omegaRANS[i] + omegaRANS[i+1]);
+
+        const su2double dyInv = 1.0/(yRANS[i+1] - yRANS[i]);
+        const su2double dudy  = dyInv*(uRANS[i+1] - uRANS[i]);
+        const su2double dTdy  = dyInv*(TRANS[i+1] - TRANS[i]);
+
+        // Compute the arguments for the blending function F2.
+        const su2double dist = yRANS[nGridPoints-1] - 0.5*(yRANS[i]+yRANS[i+1]);
+        const su2double tt1  = sqrt(k)/(betaStar*omega*dist);
+        const su2double tt2  = 500*muLam/(rho*omega*dist*dist);
+
+        // Compute the eddy viscosity.
+        const su2double arg2    =  max(2.0*tt1,tt2);
+        const su2double F2      = tanh(arg2*arg2);
+        const su2double vortMag = fabs(dudy);
+        const su2double muTurb  = a1*rho*k/ max(a1*omega,vortMag*F2);
+
+        // Update the ratio ratioMuTurbMuLamMax.
+        const su2double ratioMuTurbMuLam = muTurb/muLam;
+        ratioMuTurbMuLamMax =  max(ratioMuTurbMuLamMax, ratioMuTurbMuLam);
+
+        // Compute the total viscosity and thermal conductivity.
+        const su2double mu    = muLam + muTurb;
+        const su2double kCond = kCondLam + muTurb*Gamma*Cv/Prandtl_Turb;
+
+        // Compute the fluxes at the face.
+        const su2double fMomX = mu*dudy;
+        const su2double fEner = mu*u*dudy + kCond*dTdy;
+
+        // Compute the derivatives of fMomX and fEner w.r.t. the nodal values
+        // of u and T. The values of muTurb and kCondTurb are frozen.
+        const su2double dfMomXduip1 =  dyInv*mu;
+        const su2double dfMomXdui   = -dyInv*mu;
+
+        const su2double dfEnerduip1 = 0.5*mu*dudy + u*dyInv*mu;
+        su2double dfEnerdui   = 0.5*mu*dudy - u*dyInv*mu;
+
+        const su2double dfEnerdTip1 =  dyInv*kCond;
+        const su2double dfEnerdTi   = -dyInv*kCond;
+
+        // Set the pointers for the residual and Jacobian matrices of point i.
+        su2double *res = RHS.data()  + 2*i;
+        su2double *b   = bJac.data() + 4*i;
+        su2double *c   = cJac.data() + 4*i;
+
+        // Update the residuals and Jacobians of point i.
+        res[0] += fMomX;
+        res[1] += fEner;
+
+        b[0] += dfMomXdui;
+        b[1] += dfEnerdui;
+        b[3] += dfEnerdTi;
+
+        c[0] = dfMomXduip1;
+        c[1] = dfEnerduip1;
+        c[2] = 0.0;
+        c[3] = dfEnerdTip1;
+
+        // Check for the first face.
+        if(i == 0)
+        {
+          // The flux through the mirror face must be computed as well. When the
+          // symmetry boundary condition is applied, the value of a quantity is
+          // the same, while the y-derivative is the opposite. Hence the fluxes
+          // are the opposite. As these fluxes are substracted the net effect
+          // is adding the current fluxes once more.
+          res[0] += fMomX;
+          res[1] += fEner;
+
+          b[0] += dfMomXdui;
+          b[1] += dfEnerdui;
+          b[3] += dfEnerdTi;
+
+          c[0] += dfMomXduip1;
+          c[1] += dfEnerduip1;
+          c[3] += dfEnerdTip1;
+        }
+
+        // Check if this is not the last face.
+        if(i < (nGridPoints-2))
+        {
+          // Set the pointers for the residual and Jacobian matrices of point i+1.
+          res = RHS.data()  + 2*(i+1);
+          b   = bJac.data() + 4*(i+1);
+          su2double *a = aJac.data() + 4*(i+1);
+
+          res[0] -= fMomX;
+          res[1] -= fEner;
+
+          a[0] = -dfMomXdui;
+          a[1] = -dfEnerdui;
+          a[2] =  0.0;
+          a[3] = -dfEnerdTi;
+
+          b[0] -= dfMomXduip1;
+          b[1] -= dfEnerduip1;
+          b[3] -= dfEnerdTip1;
+        }
+      }
+
+      // Solve the block-tri-diagonal system to compute the updates of
+      // the velocities and temperature.
+      BlockThomas(nGridPoints-1, aJac, bJac, cJac, RHS);
+
+      // Update the velocities and temperature and compute the new values of
+      // the density. Also compute the maximum update of the velocity.
+      su2double duMax = 0.0;
+      for(int i=0; i<(nGridPoints-1); ++i)
+      {
+        uRANS[i]  -= RHS[2*i];
+        TRANS[i]  -= RHS[2*i+1];
+        rhoRANS[i] = pDim/(RGas*TRANS[i]);
+
+        duMax =  max(duMax, fabs(RHS[2*i]));
+      }
+
+      // Exit criterion.
+      if((duMax < 1.e-3) && ((duMax > duMaxOld) || (duMax < 1.e-6))) break;
+      duMaxOld = duMax;
+    }
+
+     cout << "#" <<  endl
+              << "# Fully developed RANS solution computed." <<  endl
+              << "# Maximum value of muTurb/muLam: " << ratioMuTurbMuLamMax <<  endl
+              << "#" <<  endl;
+  }
+
+  // In MPI mode the RANS solution must be broadcast to the other ranks.
+#ifdef HAVE_MPI
+  SU2_MPI::Bcast(yRANS.data(),     yRANS.size(),     MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(rhoRANS.data(),   rhoRANS.size(),   MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(uRANS.data(),     uRANS.size(),     MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(kRANS.data(),     kRANS.size(),     MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(omegaRANS.data(), omegaRANS.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+#endif
+}
+
+// Function, which solves a block tri-diagonal matrix using the blocked
+// version of the Thomas algorithm. The blocks are (2X2) matrices.
+void CTurbChannelSolution::BlockThomas(const int              n,
+                                       vector<su2double> &a,
+                                       vector<su2double> &b,
+                                       vector<su2double> &c,
+                                       vector<su2double> &d)
+{
+  //----------------------------------------------------------------------------
+  // Forward sweep. Create the upper diagonal block form.
+  //----------------------------------------------------------------------------
+
+  // Loop over the number of block rows.
+  for(int i=1; i<n; ++i)
+  {
+    // Set the required pointers.
+    su2double *ai   = a.data() + 4*i;
+    su2double *bi   = b.data() + 4*i;
+    su2double *bim1 = b.data() + 4*(i-1);
+    su2double *cim1 = c.data() + 4*(i-1);
+    su2double *di   = d.data() + 2*i;
+    su2double *dim1 = d.data() + 2*(i-1);
+
+    // Determine the inverse of bim1.
+    const su2double detInv =  1.0/(bim1[0]*bim1[3] - bim1[1]*bim1[2]);
+    const su2double b00Inv =  detInv*bim1[3];
+    const su2double b10Inv = -detInv*bim1[1];
+    const su2double b01Inv = -detInv*bim1[2];
+    const su2double b11Inv =  detInv*bim1[0];
+
+    // Store the inverse of bim1 for the backward sweep.
+    bim1[0] = b00Inv; bim1[1] = b10Inv; bim1[2] = b01Inv; bim1[3] = b11Inv;
+
+    // Determine the weight matrix, which is the multiplication matrix
+    // of row (i-1), which is subtracted from the current row.
+    const su2double w00 = ai[0]*b00Inv + ai[2]*b10Inv;
+    const su2double w10 = ai[1]*b00Inv + ai[3]*b10Inv;
+    const su2double w01 = ai[0]*b01Inv + ai[2]*b11Inv;
+    const su2double w11 = ai[1]*b01Inv + ai[3]*b11Inv;
+
+    // Update the diagonal matrix of the current row.
+    bi[0] -= w00*cim1[0] + w01*cim1[1];
+    bi[1] -= w10*cim1[0] + w11*cim1[1];
+    bi[2] -= w00*cim1[2] + w01*cim1[3];
+    bi[3] -= w10*cim1[2] + w11*cim1[3];
+
+    // Update the rhigh hand side of the current row.
+    di[0] -= w00*dim1[0] + w01*dim1[1];
+    di[1] -= w10*dim1[0] + w11*dim1[1];
+  }
+
+  //----------------------------------------------------------------------------
+  // Backward sweep. Compute the actual solution.
+  //----------------------------------------------------------------------------
+
+  // Compute the solution of the last row.
+  su2double *bb = b.data() + 4*(n-1);
+  su2double *dd = d.data() + 2*(n-1);
+
+  su2double detInv = 1.0/(bb[0]*bb[3] - bb[1]*bb[2]);
+  su2double dd0 = dd[0], dd1 = dd[1];
+  dd[0] = detInv*(dd0*bb[3] - dd1*bb[2]);
+  dd[1] = detInv*(dd1*bb[0] - dd0*bb[1]);
+
+  // Backward loop over the block rows.
+  for(int i=(n-2); i>=0; --i)
+  {
+    // Set the required pointers to the current and next row.
+    su2double *bi   = b.data() + 4*i;
+    su2double *ci   = c.data() + 4*i;
+    su2double *di   = d.data() + 2*i;
+    su2double *dip1 = d.data() + 2*(i+1);
+
+    // Subtract the solution of the next row.
+    di[0] -= ci[0]*dip1[0] + ci[2]*dip1[1];
+    di[1] -= ci[1]*dip1[0] + ci[3]*dip1[1];
+
+    // Determine the solution of the current row. Note that inverse of
+    // bi is stored.
+    dd0 = di[0]; dd1 = di[1];
+
+    di[0] = bi[0]*dd0 + bi[2]*dd1;
+    di[1] = bi[1]*dd0 + bi[3]*dd1;
+  }
+}
+
 
