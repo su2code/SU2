@@ -254,7 +254,7 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   unsigned long iPoint;
   su2double normDelta=0.0,    myNormDelta=0.0;
   su2double normDeltaNew=0.0, myNormDeltaNew=0.0;
-  su2double helper=0.0,       myHelper=0.0;
+  // su2double helper=0.0,       myHelper=0.0;
 
   /* --- Estimate rho and theta values --- */
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
@@ -263,8 +263,8 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
                       * direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar);
       myNormDeltaNew += (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar))
                       * (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
-      myHelper       += direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
-                      - nodes->GetSolution_DeltaStore(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
+      // myHelper       += direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
+      //                 - nodes->GetSolution_DeltaStore(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
     }
   }
 
@@ -275,22 +275,22 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 #else
   normDelta    = myNormDelta;
   normDeltaNew = myNormDeltaNew;
-  helper       = myHelper;
+  // helper       = myHelper;
 #endif
 
   rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1E-6); // Saturate contractivity
-  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old);
+  // theta = max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old);
 }
 
 void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){
 
   /* --- Estimate alpha, beta, and gamma values --- */
-  // su2double alpha = 2./((1.-rho)*(1.-rho));
-  // su2double beta  = 2.;
-  // su2double gamma = 2./(beta*val_bcheck_norm);
-  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  su2double beta  = 2./theta;
+  su2double alpha = 2./((1.-rho)*(1.-rho));
+  su2double beta  = 2.;
   su2double gamma = 2./(beta*val_bcheck_norm);
+  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  // su2double beta  = 2./theta;
+  // su2double gamma = 2./(beta*val_bcheck_norm);
 
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
@@ -298,7 +298,7 @@ void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bche
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
-  theta_old = theta;
+  // theta_old = theta;
 }
 
 su2double COneShotSolver::CalculateLagrangian(CConfig *config){
