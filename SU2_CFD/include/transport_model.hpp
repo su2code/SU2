@@ -61,7 +61,7 @@ using namespace std;
  * \brief Main class for defining the Transport-Physical Model
  * a child class for each particular Model (Power law, Sutherland, Chung, etc.)
  * \author S.Vitale, M.Pini
- * \version 1.0
+ * \version 6.2.0
  */
 class CViscosityModel {
 protected:

@@ -58,66 +58,65 @@ using namespace std;
 class CGaussVariable {
 protected:
 
-    su2double **GradNi_Xj,	     /*!< \brief Gradient of the shape functions N[i] respect to the reference configuration. */
-    **GradNi_xj;			     /*!< \brief Gradient of the shape functions N[i] respect to the current configuration. */
-    su2double *Ni;				 /*!< \brief Shape functions N[i] at the gaussian point. */
-    su2double J_X,			     /*!< \brief Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration. */
-    J_x;					     /*!< \brief Jacobian of the element evaluated at the current Gauss Point respect to the current configuration. */
-    unsigned short iGaussPoint;	 /*!< \brief Identifier of the Gauss point considered. */
+  su2double **GradNi_Xj,       /*!< \brief Gradient of the shape functions N[i] respect to the reference configuration. */
+  **GradNi_xj;                 /*!< \brief Gradient of the shape functions N[i] respect to the current configuration. */
+  su2double *Ni;               /*!< \brief Shape functions N[i] at the gaussian point. */
+  su2double J_X,               /*!< \brief Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration. */
+  J_x;                         /*!< \brief Jacobian of the element evaluated at the current Gauss Point respect to the current configuration. */
+  unsigned short iGaussPoint;  /*!< \brief Identifier of the Gauss point considered. */
 
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CGaussVariable(void);
+  /*!
+   * \brief Constructor of the class.
+   */
+  CGaussVariable(void);
 
   /*!
-	 * \overload
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	//CGaussVariable(unsigned short val_nvar, CConfig *config);
+   * \overload
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  //CGaussVariable(unsigned short val_nvar, CConfig *config);
 
-   /*!
-	  * \overload
-	  * \param[in] val_iGauss - ID of the Gaussian Point
-	  * \param[in] val_nDim - Number of dimensions of the problem.
-	  * \param[in] config - Definition of the particular problem.
-	*/
-	CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes);
+  /*!
+   * \overload
+   * \param[in] val_iGauss - ID of the Gaussian Point
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CGaussVariable(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CGaussVariable(void);
 
-	void SetGradNi_Xj(su2double val_GradNi_Xj, unsigned short val_iDim, unsigned short val_Ni);
+  void SetGradNi_Xj(su2double val_GradNi_Xj, unsigned short val_iDim, unsigned short val_Ni);
 
-	void SetGradNi_xj(su2double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni);
+  void SetGradNi_xj(su2double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni);
 
-	void SetNi(su2double val_ShapeNi, unsigned short val_Ni);
+  void SetNi(su2double val_ShapeNi, unsigned short val_Ni);
 
-	void SetJ_X(su2double valJ_X);
+  void SetJ_X(su2double valJ_X);
 
-	void SetJ_x(su2double valJ_x);
+  void SetJ_x(su2double valJ_x);
 
-	su2double **GetGradNi_Xj(void);
+  su2double **GetGradNi_Xj(void);
 
-	su2double GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim);
+  su2double GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim);
 
-	su2double GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim);
+  su2double GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim);
 
-	su2double GetNi(unsigned short val_Ni);
+  su2double GetNi(unsigned short val_Ni);
 
-	su2double GetJ_X(void);
+  su2double GetJ_X(void);
 
-	su2double GetJ_x(void);
+  su2double GetJ_x(void);
 
-	unsigned short Get_iGauss(void);
+  unsigned short Get_iGauss(void);
 
 };
-
 
 /*!
  * \class CElementProperty
@@ -137,14 +136,14 @@ public:
    */
   CProperty(void);
 
-   /*!
-    * \brief Constructor of the class.
-    * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
-    * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
-    * \param[in] valElectric_Prop - Index of the electric properties.
-    * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
-    * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
-  */
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
+   * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
+   * \param[in] valElectric_Prop - Index of the electric properties.
+   * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
+   * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
+   */
   CProperty(unsigned long valMat_Prop);
 
   /*!
@@ -225,14 +224,14 @@ public:
    */
   CElementProperty(void);
 
-   /*!
-    * \brief Constructor of the class.
-    * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
-    * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
-    * \param[in] valElectric_Prop - Index of the electric properties.
-    * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
-    * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
-  */
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
+   * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
+   * \param[in] valElectric_Prop - Index of the electric properties.
+   * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
+   * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
+   */
   CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity = 1.0);
 
   /*!
