@@ -2474,6 +2474,21 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
   addPythonOption("MULTIPOINT_MESH_FILENAME");
 
+  /* DESCRIPTION: Multiple sets of markers for multiple geometry definitions */
+  addPythonOption("MULTI_GEO_MARKER");
+
+  /* DESCRIPTION: Multiple geometry definitions */
+  addPythonOption("MULTI_GEO_DESCRIPTION");
+
+  /* DESCRIPTION: Multiple station locations for multiple geometry definitions */
+  addPythonOption("MULTI_GEO_LOCATION_STATIONS");
+
+  /* DESCRIPTION: Multiple geometry bounds for multiple geometry definitions */
+  addPythonOption("MULTI_GEO_BOUNDS");
+
+  /* DESCRIPTION: Multiple definitions for numbers of stations for multiple geometry definitions */
+  addPythonOption("MULTI_GEO_NUMBER_STATIONS");
+
   /*--- options that are used for the output ---*/
   /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
 

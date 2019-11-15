@@ -960,34 +960,60 @@ def geometry( func_name, config, state=None ):
         name = files['MESH']
         name = su2io.expand_part(name,config)
         link.extend(name)
+        grads = su2util.ordered_bunch()
 
-        # update function name
-        ## TODO
+        if 'MULTI_GEO_DESCRIPTION' in config:
+            for i, geo_type in enumerate(config['MULTI_GEO_DESCRIPTION']):
+                # output redirection
+                with redirect_folder( 'GEOMETRY_' + str(i), pull, link ) as push:
+                    with redirect_output(log_geom):
+                        # print(config.MULTI_GEO_DESCRIPTION)
+                        # print(config.MULTI_GEO_DESCRIPTION[1])
+                        config["GEO_MARKER"] = config["MULTI_GEO_MARKER"][i]
+                        config["GEO_DESCRIPTION"] = config["MULTI_GEO_DESCRIPTION"][i]
+                        config["GEO_LOCATION_STATIONS"] = config["MULTI_GEO_LOCATION_STATIONS"][i]
+                        config["GEO_BOUNDS"] = config["MULTI_GEO_BOUNDS"][i]
+                        config["GEO_NUMBER_STATIONS"] = config["MULTI_GEO_NUMBER_STATIONS"][i]
 
-        # output redirection
-        with redirect_folder( 'GEOMETRY', pull, link ) as push:
-            with redirect_output(log_geom):     
+                        # setup config
+                        config.GEO_PARAM = func_name
+                        config.GEO_MODE  = 'GRADIENT'
+                        
+                        # # RUN GEOMETRY SOLUTION # #
+                        info = su2run.geometry(config)
+                        state.update(info)
 
-                # setup config
-                config.GEO_PARAM = func_name
-                config.GEO_MODE  = 'GRADIENT'
+                        for key in su2io.optnames_geo:
+                            if key in state['GRADIENTS']:
+                                grads[key] = state['GRADIENTS'][key]
+        else:   
+            # output redirection
+            with redirect_folder( 'GEOMETRY', pull, link ) as push:
+                with redirect_output(log_geom):     
+                    
+                    # setup config
+                    config.GEO_PARAM = func_name
+                    config.GEO_MODE  = 'GRADIENT'
+                    
+                    # # RUN GEOMETRY SOLUTION # #
+                    info = su2run.geometry(config)
+                    state.update(info)
 
-                # # RUN GEOMETRY SOLUTION # #
-                info = su2run.geometry(config)
-                state.update(info)
-
-                # no files to push
-
-        #: with output redirection
-
+                    for key in su2io.optnames_geo:
+                        if key in state['GRADIENTS']:
+                            grads[key] = state['GRADIENTS'][key]
+                    
+                    # no files to push
+                    
+            #: with output redirection
+        
     #: if not redundant 
-
-
+    
     # return output 
-    grads = su2util.ordered_bunch()
-    for key in su2io.optnames_geo:
-        if key in state['GRADIENTS']:
-            grads[key] = state['GRADIENTS'][key]
+    # funcs = su2util.ordered_bunch()
+    # for key in su2io.optnames_geo:
+    #     if key in state['FUNCTIONS']:
+    #         funcs[key] = state['FUNCTIONS'][key]
     return grads    
 
 #: def geometry()

@@ -581,6 +581,17 @@ def read_config(filename):
                 # save to output dictionary
                 data_dict[this_param] = this_sort
                 break
+
+            if case("MULTI_GEO_MARKER")             or\
+               case("MULTI_GEO_DESCRIPTION")        or\
+               case("MULTI_GEO_LOCATION_STATIONS")  or\
+               case("MULTI_GEO_BOUNDS")             or\
+               case("MULTI_GEO_NUMBER_STATIONS"):
+
+               data_dict[this_param] = [i.strip() for i in this_value.split(';')]
+               break
+               # print(this_param)
+               # print(data_dict[this_param])
             
             # otherwise
             # string parameters
