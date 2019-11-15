@@ -427,6 +427,7 @@ private:
   bool SepDim; /*!< \brief Flag for enabling separated calculation for every dimension. */
   bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
   bool Project2Surface; /*!< \brief Flag for calculating the projection onto the surface mesh from the SetVolume_Deformation routines stiffness matrix. */
+  bool SmoothOnSurface; /*!< \brief Flag for assembling the system only on the surface. */
   bool DebugMode; /*!< \brief temporary flag for some debuging stuff
 
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -2823,10 +2824,16 @@ public:
   bool GetSepDim(void);
 
   /*!
-   * \brief Check if the gradient smoothing is active
-   * \return true means that smoothing is applied to the sensitivities
+   * \brief Check if we project the sensitivities to the surfac
+   * \return true means that the sensitivities are projected analog to grid_movement.cpp
    */
   bool GetProject2Surface(void);
+
+  /*!
+   * \brief Check if we assemble the operator on the surface
+   * \return true means that smoothing is done on the surface level
+   */
+  bool GetSmoothOnSurface(void);
 
   /*!
    * \brief Check if we want some simplified debugging stuff
@@ -3556,9 +3563,9 @@ public:
   /*!
    * \brief Set if a marker how <i>val_marker</i> is going to be treated.
    * \param[in] val_marker - Index of the marker in which we are interested.
-   * \param[in] val_moving - depending on the boundary condition applied
+   * \param[in] val_sobolev - depending on the boundary condition applied
    */
-  void SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_moving);
+  void SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev);
 
   /*!
    * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.

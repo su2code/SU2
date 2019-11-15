@@ -87,6 +87,8 @@ inline su2double CElement::ComputeArea(const FrameType mode) { return 0.0;}
 
 inline su2double CElement::ComputeVolume(const FrameType mode) { return 0.0;}
 
+inline su2double CElement::ComputeLength(const FrameType mode) { return 0.0;}
+
 inline su2double CElement::ComputeCurrentArea(void) { return ComputeArea(CURRENT);}
 
 inline su2double CElement::ComputeCurrentVolume(void) { return ComputeVolume(CURRENT);}

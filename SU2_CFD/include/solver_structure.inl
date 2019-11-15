@@ -1158,6 +1158,10 @@ inline void CSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver
 
 inline void CSolver::MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose) {}
 
+inline void CSolver::ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) { }
+
+inline void CSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker) { }
+
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
 inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }

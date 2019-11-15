@@ -2715,7 +2715,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- If we want to apply the gradient smoothing we must initialize the numerics here ---*/
   if(config->GetSmoothGradient()) {
-    numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim, config);
+    if (config->GetSmoothOnSurface()) {
+      numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim-1, config);
+    } else {
+      numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim, config);
+    }
   }
 
 }

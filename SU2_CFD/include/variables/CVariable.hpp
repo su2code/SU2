@@ -2744,4 +2744,14 @@ public:
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
+  /*!
+   * \brief Mark a point as boundary of a boundary
+   */
+  virtual void MarkAsBoundaryPoint(unsigned long iPoint) {}
+
+  /*!
+   * \brief return wether a point is a boundary of a boundary
+   */
+  virtual bool IsBoundaryPoint(unsigned long iPoint) { return false;}
+
 };

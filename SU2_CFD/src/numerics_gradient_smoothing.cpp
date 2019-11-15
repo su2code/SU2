@@ -103,9 +103,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   su2double epsilon = config->GetSmoothingParam();
   su2double zeta = config->GetSmoothingParamSecond();
 
-  /*--- Set element properties  if they need to be set ---*/
-  SetElement_Properties(element, config);
-
   element->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
@@ -178,11 +175,5 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   }
 
   delete [] val_DHiHj;
-
-}
-
-void CGradSmoothing::SetElement_Properties(CElement *element, CConfig *config) {
-
- // no special element properties needed so far ???
 
 }

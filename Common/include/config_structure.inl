@@ -340,6 +340,8 @@ inline bool CConfig::GetSepDim(void) { return SepDim; }
 
 inline bool CConfig::GetProject2Surface(void) { return Project2Surface; }
 
+inline bool CConfig::GetSmoothOnSurface(void) { return SmoothOnSurface; }
+
 inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }
@@ -1399,7 +1401,7 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
-inline void CConfig::SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_moving) { Marker_All_SobolevBC[val_marker] = val_moving; }
+inline void CConfig::SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev) { Marker_All_SobolevBC[val_marker] = val_sobolev; }
 
 inline void CConfig::SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface) { Marker_All_Deform_Mesh[val_marker] = val_interface; }
 

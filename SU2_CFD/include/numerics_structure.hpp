@@ -4375,8 +4375,6 @@ public:
    */
   ~CGradSmoothing(void);
 
-  void SetElement_Properties(CElement *element_container, CConfig *config);
-
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
 };

@@ -442,6 +442,13 @@ public:
   unsigned long Get_iProp(void);
 
   /*!
+   * \brief Compute the value of the length of the element
+   * \param[in] mode - Type of coordinates to consider in the computation
+   * \param[out] val_Length - length of the element
+   */
+  virtual su2double ComputeLength(const FrameType mode = REFERENCE);
+
+  /*!
    * \brief Compute the value of the area of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Area - Area of the element
@@ -844,6 +851,45 @@ public:
    * \param[out] val_Volume - Volume of the element
    */
   su2double ComputeVolume(const FrameType mode = REFERENCE);
+
+};
+
+/*!
+ * \class CLINE
+ * \brief Pyramid element with 6 Gauss Points
+ * \author T. Dick
+ */
+
+class CLINE : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CLINE(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CLINE(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CLINE(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[in] mode - Type of coordinates to consider in the computation
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeLength(const FrameType mode = REFERENCE);
 
 };
 

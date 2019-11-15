@@ -1068,3 +1068,51 @@ su2double CPRISM6::ComputeVolume(const FrameType mode){
 CPRISM6::~CPRISM6(void) {
 
 }
+
+CLINE::CLINE(void) : CElement() {
+
+}
+
+CLINE::CLINE(unsigned short val_nDim, CConfig *config)
+: CElement(val_nDim, config) {
+
+  /*--- Allocate internal structures ---*/
+
+  nNodes = 2;
+  nGaussPoints = 2;
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
+
+  /*--- Gauss coordinates and weights ---*/
+
+  GaussCoord[0][0] = 0.2113248654;  GaussWeight[0] = 0.5;
+  GaussCoord[1][0] = 0.7886751346;  GaussWeight[1] = 0.5;
+
+  /*--- Store the values of the shape functions and their derivatives ---*/
+
+  unsigned short iGauss;
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    GaussPoint[iGauss]->SetNi(GaussCoord[iGauss][0], 0);
+    GaussPoint[iGauss]->SetNi(1-GaussCoord[iGauss][0], 1);
+
+    /*--- dN/d xi ---*/
+
+    dNiXj[iGauss][0][0] = 1.0;
+    dNiXj[iGauss][1][0] = -1.0;
+
+  }
+
+}
+
+su2double CLINE::ComputeLength(const FrameType mode){
+
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
+  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+  return fabs(Coord[1][0] - Coord[0][0]);
+
+}
+
+CLINE::~CLINE(void) {
+
+}

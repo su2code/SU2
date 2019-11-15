@@ -522,7 +522,18 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- If necessary smooth the calculated geometry sensitivities ---*/
 
-  if ( config->GetSmoothGradient() && config->GetProject2Surface() ) {
+  if ( config->GetSmoothGradient() && config->GetSmoothOnSurface() ) {
+
+    // project to the surfaces
+    grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
+    // smooth on the marked boundaries
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {
+            solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingOnSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, iMarker);
+      }
+    }
+
+  } else if ( config->GetSmoothGradient() && config->GetProject2Surface() ) {
     std::cout << "Smoothing the gradient in the volume." <<std::endl;
     solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
     std::cout << "Calculating projection of the gradient onto the surface." <<std::endl;
