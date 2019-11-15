@@ -726,7 +726,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+         ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
         admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
       }
     }
@@ -748,7 +748,7 @@ void COneShotFluidDriver::StoreGradDotDir(){
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+         ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
         GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
       }
     }
