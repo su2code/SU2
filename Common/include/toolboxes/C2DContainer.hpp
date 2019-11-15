@@ -404,9 +404,9 @@ private:
      no need to check for 0 size as the allocators handle that ---*/
     if(m_data!=nullptr)
     {
-        if(rows==this->rows() && cols==this->cols())
-            return reqSize;
-        free(m_data);
+      if(rows==this->rows() && cols==this->cols())
+        return reqSize;
+      free(m_data);
     }
 
     /*--- round up size to a multiple of the alignment specification if necessary ---*/
@@ -429,16 +429,18 @@ public:
    * \brief Sizing ctor (no initialization of data).
    * For matrices size1 is rows and size2 columns, for vectors size1 is lenght and size2 is ignored.
    */
-  C2DContainer(const Index_t size1, const Index_t size2 = 1) noexcept :
-      Base() {m_resize(size1,size2);}
+  C2DContainer(const Index_t size1, const Index_t size2 = 1) noexcept : Base()
+  {
+    m_resize(size1,size2);
+  }
 
   /*!
    * \brief Copy ctor.
    */
   C2DContainer(const C2DContainer& other) noexcept : Base()
   {
-      size_t sz = m_resize(other.rows(),other.cols());
-      for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
+    size_t sz = m_resize(other.rows(),other.cols());
+    for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
   }
 
   /*!
@@ -446,9 +448,9 @@ public:
    */
   C2DContainer& operator= (const C2DContainer& other) noexcept
   {
-      size_t sz = m_resize(other.rows(),other.cols());
-      for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
-      return *this;
+    size_t sz = m_resize(other.rows(),other.cols());
+    for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
+    return *this;
   }
 
   /*!
@@ -466,8 +468,8 @@ public:
    */
   C2DContainer& operator= (const Scalar_t& value) noexcept
   {
-      setConstant(value);
-      return *this;
+    setConstant(value);
+    return *this;
   }
 
   /*!
@@ -478,8 +480,8 @@ public:
    */
   C2DContainer& resize(const Index_t size1, const Index_t size2 = 1) noexcept
   {
-      m_resize(size1,size2);
-      return *this;
+    m_resize(size1,size2);
+    return *this;
   }
 
   /*!
@@ -487,7 +489,7 @@ public:
    */
   void setConstant(const Scalar_t& value) noexcept
   {
-      for(size_t i=0; i<size(); ++i) m_data[i] = value;
+    for(size_t i=0; i<size(); ++i) m_data[i] = value;
   }
 };
 
