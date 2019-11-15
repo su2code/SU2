@@ -52,7 +52,7 @@ namespace MemoryAllocation
 
 inline constexpr bool is_power_of_two(std::size_t x)
 {
-  return x && (x & (x-1));
+  return x && !(x & (x-1));
 }
 
 /*!
@@ -78,7 +78,7 @@ inline T* aligned_alloc(std::size_t alignment, std::size_t size) noexcept
 #elif defined(_WIN32)
   ptr = _aligned_malloc(size, alignment);
 #else
-  ptr = aligned_alloc(alignment, size);
+  ptr = ::aligned_alloc(alignment, size);
 #endif
   return static_cast<T*>(ptr);
 }
