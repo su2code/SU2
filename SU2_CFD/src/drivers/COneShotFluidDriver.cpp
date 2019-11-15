@@ -216,23 +216,6 @@ void COneShotFluidDriver::RunOneShot(){
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){      
 
-      // if(ArmijoIter > 1) {
-      //   /*--- Cubic backtracking ---*/
-      //   stepsize_tmp = UpdateStepSizeCubic(stepsize, stepsize_p);
-      //   Lagrangian_p = Lagrangian;
-      //   stepsize_p   = stepsize;
-      //   stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-      //   if(stepsize < tol) {
-      //     stepsize = tol;
-      //     bool_tol = true;
-      //   }
-
-      //   /*---Load the old design for line search---*/
-      //   solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-      //   LoadMultiplier();
-      //   UpdateMultiplier(stepsize);
-      // }
-      // else if(ArmijoIter > 0){
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         stepsize_tmp = UpdateStepSizeQuadratic();
@@ -773,24 +756,6 @@ void COneShotFluidDriver::StoreGradDotDir(){
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
   return -GradDotDir/(2.*(Lagrangian - Lagrangian_Old - GradDotDir));
-}
-
-su2double COneShotFluidDriver::UpdateStepSizeCubic(su2double stepsize, su2double stepsize_p){
-  const su2double tmp = 1./(pow(stepsize,2.)*pow(stepsize_p,2.)*(stepsize-stepsize_p));
-
-  const su2double vec1 = Lagrangian   - Lagrangian_Old - stepsize*GradDotDir,
-                  vec2 = Lagrangian_p - Lagrangian_Old - stepsize_p*GradDotDir;
-
-  const su2double a = tmp*(pow(stepsize_p,2.)*vec1  - pow(stepsize,2.)*vec2),
-                  b = tmp*(-pow(stepsize_p,3.)*vec1 + pow(stepsize,3.)*vec2);
-
-  if(fabs(a) < 1.0E-16) {
-    return -GradDotDir/(2.*b); // Function is quadratic
-  }
-  else {
-    const su2double d = pow(b,2.) - 3.*a*GradDotDir; // Discriminant
-    return (-b + sqrt(d))/(3.*a); // Function is cubic
-  }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeBound(su2double stepsize, su2double a, su2double b){

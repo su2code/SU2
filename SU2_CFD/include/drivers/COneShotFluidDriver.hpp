@@ -200,11 +200,6 @@ public:
   su2double UpdateStepSizeQuadratic(void);
 
   /*!
-   * \brief Perform cubic backtracking.
-   */
-  su2double UpdateStepSizeCubic(su2double stepsize, su2double stepsize_p);
-
-  /*!
    * \brief Bound step size.
    */
   su2double UpdateStepSizeBound(su2double stepsize, su2double a, su2double b);
