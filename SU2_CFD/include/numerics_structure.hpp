@@ -2219,8 +2219,6 @@ private:
   bool implicit, slau_low_dissipation;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
