@@ -59,6 +59,9 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   ShiftedLagrangianGradient_Old = new su2double[nDV_Total];
 
   AugmentedLagrangianGradient = new su2double[nDV_Total];
+  AugmentedLagrangianGradientAlpha = new su2double[nDV_Total];
+  AugmentedLagrangianGradientBeta = new su2double[nDV_Total];
+  AugmentedLagrangianGradientGamma = new su2double[nDV_Total];
   AugmentedLagrangianGradient_Old = new su2double[nDV_Total];
 
   DesignVarUpdate = new su2double[nDV_Total];
@@ -85,6 +88,9 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     ShiftedLagrangianGradient[iDV] = 0.0;
     ShiftedLagrangianGradient_Old[iDV] = 0.0;
     AugmentedLagrangianGradient[iDV] = 0.0;
+    AugmentedLagrangianGradientAlpha[iDV] = 0.0;
+    AugmentedLagrangianGradientBeta[iDV] = 0.0;
+    AugmentedLagrangianGradientGamma[iDV] = 0.0;
     AugmentedLagrangianGradient_Old[iDV] = 0.0;
     DesignVarUpdate[iDV] = 0.0;
     DesignVariable[iDV] = 0.0;
@@ -138,6 +144,9 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   delete [] ShiftedLagrangianGradient_Old;
 
   delete [] AugmentedLagrangianGradient;
+  delete [] AugmentedLagrangianGradientAlpha;
+  delete [] AugmentedLagrangianGradientBeta;
+  delete [] AugmentedLagrangianGradientGamma;
   delete [] AugmentedLagrangianGradient_Old;
 
   delete [] DesignVarUpdate;
@@ -196,6 +205,7 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned long InnerIter = config->GetInnerIter();
   bool bool_tol = false;
+  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL = 4;
 
   /*--- Store the old solution and the old design for line search ---*/
   solver[ADJFLOW_SOL]->SetStoreSolution();
@@ -345,20 +355,32 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Gamma*h^T*h_u ---*/
     if(nConstr > 0) {
       ComputeGammaTerm();
-      solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotGamma());
+      solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
+      solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
+      solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
+      ProjectMeshSensitivities();
+      SetAugmentedLagrangianGradient(GAMMA_TERM);
     }
     solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
-    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotAlpha());
+    solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
+    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
+    solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
+    ProjectMeshSensitivities();
+    SetAugmentedLagrangianGradient(ALPHA_TERM);
     solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
     solver[ADJFLOW_SOL]->UpdateStateVariable(config);
     ComputeBetaTerm();
     solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
-    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, config->GetOneShotBeta());
+    solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
+    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
+    solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
+    ProjectMeshSensitivities();
+    SetAugmentedLagrangianGradient(GAMMA_TERM);
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Projection of the gradient N_u---*/
@@ -367,9 +389,7 @@ void COneShotFluidDriver::RunOneShot(){
     SetShiftedLagrangianGradient();
 
     /*--- Projection of the gradient L_u---*/
-    solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
-    ProjectMeshSensitivities();
-    SetAugmentedLagrangianGradient();
+    SetAugmentedLagrangianGradient(TOTAL);
 
     /*--- Use N_u to compute the active set (bound constraints) ---*/
     ComputeActiveSet(stepsize);
@@ -695,6 +715,7 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
     solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     CalculateLagrangian();
+    SetAugmentedLagrangianGradient(TOTAL);
     if(config->GetBoolBFGSReset()){
       for (iDV = 0; iDV < nDV_Total; iDV++){
         for (jDV = 0; jDV < nDV_Total; jDV++){
@@ -912,10 +933,25 @@ void COneShotFluidDriver::SetShiftedLagrangianGradient(){
   solver[ADJFLOW_SOL]->SetShiftedLagGradNorm(sqrt(norm));
 }
 
-void COneShotFluidDriver::SetAugmentedLagrangianGradient(){
+void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
   unsigned short iDV;
+  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL = 4;
   for (iDV = 0; iDV < nDV_Total; iDV++){
-    AugmentedLagrangianGradient[iDV] = Gradient[iDV];
+    if(kind == ALPHA_TERM) {
+      AugmentedLagrangianGradientAlpha[iDV] = Gradient[iDV];
+    }
+    else if(kind == BETA_TERM) {
+      AugmentedLagrangianGradientBeta[iDV] = Gradient[iDV];
+    }
+    else if(kind == GAMMA_TERM) {
+      AugmentedLagrangianGradientGamma[iDV] = Gradient[iDV];
+    }
+    else if(kind == TOTAL) {
+      AugmentedLagrangianGradient[iDV] = ShiftedLagrangianGradient[iDV]
+                                       + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
+                                       + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta()
+                                       + AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma();
+    }   
   }
 }
 
