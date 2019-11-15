@@ -1,9 +1,9 @@
-check_dir = run_command('python3', 
+check_dir = run_command(python, 
                         script_path / 'check_dir.py',
                         'boost')
 if check_dir.returncode() != 0
   message('Extracting boost ...')
-  extract_boost = run_command('python3', 
+  extract_boost = run_command(python, 
                               script_path / 'extract_file.py',
                               'boost.tar.gz', 
                               meson.current_source_dir(), check: true)

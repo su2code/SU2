@@ -25,9 +25,8 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-
 import sys, os, subprocess, shutil, urllib.request, zipfile
-sys.path.append('meson_scripts')
+sys.path.append(sys.path[0] + os.path.sep + 'meson_scripts')
 from init import init_submodules
 from init import remove_file
 
