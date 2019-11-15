@@ -1540,8 +1540,8 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -1632,8 +1632,8 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -1722,8 +1722,8 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -1818,8 +1818,8 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -1981,9 +1981,8 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 //
 //        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//        visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//
-//        visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//        visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//        visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //        /*--- Compute residual, and Jacobians ---*/
 //
@@ -2091,8 +2090,8 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
@@ -2208,8 +2207,8 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
@@ -2485,8 +2484,8 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           /*--- Turbulent variables and its gradients  ---*/
 
-          visc_numerics->SetTurbVar(Solution_i, Solution_j);
-          visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+          visc_numerics->SetScalarVar(Solution_i, Solution_j);
+          visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
           /*--- Compute and update residual ---*/
 
@@ -3842,8 +3841,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       //
       //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       //
-      //     visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      //      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      //     visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      //      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       //
       //      /*--- Menter's first blending function ---*/
       //
@@ -3940,8 +3939,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Menter's first blending function ---*/
 //
@@ -4046,8 +4045,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
@@ -4172,8 +4171,8 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
@@ -4290,8 +4289,8 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           /*--- Turbulent variables and its gradients  ---*/
 
-          visc_numerics->SetTurbVar(Solution_i, Solution_j);
-          visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+          visc_numerics->SetScalarVar(Solution_i, Solution_j);
+          visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
           /*--- Compute and update residual ---*/
 
