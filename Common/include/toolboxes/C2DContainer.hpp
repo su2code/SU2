@@ -37,9 +37,8 @@
 
 #pragma once
 
-#include <stdlib.h>
+#include "allocation_toolbox.hpp"
 #include <utility>
-#include <cassert>
 
 /*!
  * \enum StorageType
@@ -90,27 +89,15 @@ protected:
    * runtime internal value that depend on the number of rows/columns.
    * What values need setting depends on the specialization as not all have
    * members for e.g. number of rows and cols (static size optimization).
-   * \note Aligned dynamic allocation is disabled for compilation on MAC and Windows.
    */
-#if !defined __APPLE__ && !defined _WIN64 && !defined _MSC_VER
-#define REAL_ALLOCATOR(EXTRA)                                             \
-  static_assert(AlignSize % alignof(Scalar_t)==0,                         \
-    "AlignSize is not a multiple of the type's alignment spec.");         \
-                                                                          \
-  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
-    EXTRA;                                                                \
-    if(AlignSize==0)                                                      \
-      m_data = static_cast<Scalar_t*>(malloc(sz));                        \
-    else                                                                  \
-      m_data = static_cast<Scalar_t*>(aligned_alloc(AlignSize,sz));       \
+#define REAL_ALLOCATOR(EXTRA)                                           \
+  static_assert(MemoryAllocation::is_power_of_two(AlignSize),           \
+                "AlignSize is not a power of two.");                    \
+                                                                        \
+  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {     \
+    EXTRA;                                                              \
+    m_data = MemoryAllocation::aligned_alloc<Scalar_t>(AlignSize,sz);   \
   }
-#else
-#define REAL_ALLOCATOR(EXTRA)                                             \
-  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
-    EXTRA;                                                                \
-    m_data = static_cast<Scalar_t*>(malloc(sz));                          \
-  }
-#endif
 
   DUMMY_ALLOCATOR
 
@@ -138,7 +125,11 @@ public:
     return *this;                                                       \
   }                                                                     \
                                                                         \
-  ~AccessorImpl() {if(m_data!=nullptr) free(m_data);}
+  ~AccessorImpl()                                                       \
+  {                                                                     \
+    if(m_data!=nullptr)                                                 \
+      MemoryAllocation::aligned_free<Scalar_t>(m_data);                 \
+  }
   /*!
    * Shorthand for when specialization has only one more member than m_data.
    */
