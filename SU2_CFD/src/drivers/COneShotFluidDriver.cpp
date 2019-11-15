@@ -1039,7 +1039,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
     AD::Reset();
 
-    delete [] seeding;
+    // delete [] seeding;
 }
 
 void COneShotFluidDriver::ComputePreconditioner(){
