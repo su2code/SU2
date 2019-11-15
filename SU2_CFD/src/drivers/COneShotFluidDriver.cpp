@@ -402,18 +402,18 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  su2double* seeding = new su2double[nConstr];
-  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-       ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-      seeding[iConstr] = Multiplier[iConstr];
-    }
-    else {
-      seeding[iConstr] = 0.;
-    }
-  }
-  SetAdj_ConstrFunction(seeding);
-  // SetAdj_ConstrFunction(Multiplier);
+  // su2double* seeding = new su2double[nConstr];
+  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+  //   if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+  //      ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+  //     seeding[iConstr] = Multiplier[iConstr];
+  //   }
+  //   else {
+  //     seeding[iConstr] = 0.;
+  //   }
+  // }
+  // SetAdj_ConstrFunction(seeding);
+  SetAdj_ConstrFunction(Multiplier);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -431,7 +431,7 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   AD::ClearAdjoints();
 
-  delete [] seeding;
+  // delete [] seeding;
 }
 
 void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
@@ -725,10 +725,10 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
   if (nConstr > 0) {
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
+      // if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+      //    ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
         admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-      }
+      // }
     }
   }
   admissible_step *= cwolfeone;
@@ -747,10 +747,10 @@ void COneShotFluidDriver::StoreGradDotDir(){
   if (nConstr > 0) {
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
+      // if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+      //    ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
         GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-      }
+      // }
     }
   }
 }
@@ -1236,8 +1236,8 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
+      // if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+      //    ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
         my_Gradient = ConstrFunc[iConstr] + 1./gamma*Multiplier[iConstr];
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -1246,7 +1246,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
                 * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
           }
         }
-      }
+      // }
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&my_Gradient, &AugmentedLagrangianMultiplierGradient[iConstr], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
