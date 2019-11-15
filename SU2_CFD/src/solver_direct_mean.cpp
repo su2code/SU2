@@ -4177,7 +4177,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   RefTemp     = Temperature_Inf;
   RefDensity  = Density_Inf;
   RefPressure = Pressure_Inf;
-  if (dynamic_grid) {
+  if (dynamic_grid && !config->GetFSI_Simulation()) {
     Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
     Mach_Motion = config->GetMach_Motion();
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
