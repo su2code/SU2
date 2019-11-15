@@ -1210,7 +1210,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
   su2double helper;
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-       ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma > 0.) {
+       ConstrFunc_Store[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
       /*--- BCheck^(-1)*h ---*/
       helper = 0.0;
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
