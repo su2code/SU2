@@ -363,7 +363,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
     solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
     ProjectMeshSensitivities();
-    SetAugmentedLagrangianGradient(GAMMA_TERM);
+    SetAugmentedLagrangianGradient(BETA_TERM);
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Projection of the gradient N_u---*/
