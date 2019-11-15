@@ -205,7 +205,7 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned long InnerIter = config->GetInnerIter();
   bool bool_tol = false;
-  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL = 4;
+  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3;
 
   /*--- Store the old solution and the old design for line search ---*/
   solver[ADJFLOW_SOL]->SetStoreSolution();
@@ -372,7 +372,7 @@ void COneShotFluidDriver::RunOneShot(){
     SetShiftedLagrangianGradient();
 
     /*--- Projection of the gradient L_u---*/
-    SetAugmentedLagrangianGradient(TOTAL);
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
 
     /*--- Use N_u to compute the active set (bound constraints) ---*/
     ComputeActiveSet(stepsize);
@@ -696,9 +696,10 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
 
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
+    unsigned short TOTAL_AUGMENTED = 3;
     solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
     CalculateLagrangian();
-    SetAugmentedLagrangianGradient(TOTAL);
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
       for (iDV = 0; iDV < nDV_Total; iDV++){
         for (jDV = 0; jDV < nDV_Total; jDV++){
@@ -900,7 +901,7 @@ void COneShotFluidDriver::SetShiftedLagrangianGradient(){
 
 void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
   unsigned short iDV;
-  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL = 4;
+  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3;
   for (iDV = 0; iDV < nDV_Total; iDV++){
     if(kind == ALPHA_TERM) {
       AugmentedLagrangianGradientAlpha[iDV] = Gradient[iDV];
