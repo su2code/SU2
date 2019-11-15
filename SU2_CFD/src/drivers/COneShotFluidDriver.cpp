@@ -912,7 +912,7 @@ void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
     else if(kind == GAMMA_TERM) {
       AugmentedLagrangianGradientGamma[iDV] = Gradient[iDV];
     }
-    else if(kind == TOTAL) {
+    else if(kind == TOTAL_AUGMENTED) {
       AugmentedLagrangianGradient[iDV] = ShiftedLagrangianGradient[iDV]
                                        + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
                                        + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta()
