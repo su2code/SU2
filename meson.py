@@ -27,6 +27,7 @@
 
 
 import sys, os, subprocess, shutil, urllib.request, zipfile
+sys.path.append('meson_scripts')
 from init import init_submodules
 from init import remove_file
 
