@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file gauss_structure.hpp
  * \brief Headers of the Finite Element structure (gaussian points)
  *        The subroutines and functions are in the <i>gauss_structure.cpp</i> file.
@@ -58,12 +58,12 @@ using namespace std;
 class CGaussVariable {
 protected:
 
-	su2double **GradNi_Xj,		// Gradient of the shape functions N[i] respect to the reference configuration
-	**GradNi_xj;			// Gradient of the shape functions N[i] respect to the current configuration
-	su2double *Ni;				// Shape functions N[i] at the gaussian point
-	su2double J_X,				// Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	J_x;					// Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
-	unsigned short iGaussPoint;	// Identifier of the Gauss point considered
+    su2double **GradNi_Xj,	     /*!< \brief Gradient of the shape functions N[i] respect to the reference configuration. */
+    **GradNi_xj;			     /*!< \brief Gradient of the shape functions N[i] respect to the current configuration. */
+    su2double *Ni;				 /*!< \brief Shape functions N[i] at the gaussian point. */
+    su2double J_X,			     /*!< \brief Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration. */
+    J_x;					     /*!< \brief Jacobian of the element evaluated at the current Gauss Point respect to the current configuration. */
+    unsigned short iGaussPoint;	 /*!< \brief Identifier of the Gauss point considered. */
 
 public:
 
@@ -128,7 +128,7 @@ public:
 class CProperty {
 protected:
 
-  unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
+  unsigned long iMat_Prop;  /*!< \brief Index of the properties (E, Nu) for the structural model used. */
 
 public:
 

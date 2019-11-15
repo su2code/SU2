@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file grid_adaptation_structure.hpp
  * \brief Headers of the main subroutines for doing the numerical grid
  *        adaptation.
@@ -60,23 +60,23 @@ class CGridAdaptation {
 protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
-	unsigned long nPoint_new,	/*!< \brief Number of new points. */
-	nElem_new;					/*!< \brief Number of new elements. */
-	unsigned short nDim,	/*!< \brief Number of dimensions of the problem. */
-	nVar;					/*!< \brief Number of variables in the problem. */
-	su2double **ConsVar_Sol,	/*!< \brief Conservative variables (original solution). */
-	**ConsVar_Res,			/*!< \brief Conservative variables (residual). */
-	**ConsVar_Adapt;		/*!< \brief Conservative variables (adapted solution). */
+    unsigned long nPoint_new, /*!< \brief Number of new points. */
+    nElem_new;				  /*!< \brief Number of new elements. */
+    unsigned short nDim,	  /*!< \brief Number of dimensions of the problem. */
+    nVar;					  /*!< \brief Number of variables in the problem. */
+    su2double **ConsVar_Sol,  /*!< \brief Conservative variables (original solution). */
+    **ConsVar_Res,			  /*!< \brief Conservative variables (residual). */
+    **ConsVar_Adapt;		  /*!< \brief Conservative variables (adapted solution). */
 	su2double **AdjVar_Sol,	/*!< \brief Adjoint variables (original solution). */
 	**AdjVar_Res,			/*!< \brief Adjoint variables (residual). */
 	**AdjVar_Adapt;			/*!< \brief Adjoint variables (adapted solution). */
 	su2double **LinVar_Sol,	/*!< \brief Linear variables (original solution). */
 	**LinVar_Res,			/*!< \brief Linear variables (residual). */
 	**LinVar_Adapt;			/*!< \brief Linear variables (adapted solution). */
-	su2double **Gradient,		/*!< \brief Gradient value. */
+    su2double **Gradient,	/*!< \brief Gradient value. */
 	**Gradient_Flow,		/*!< \brief Gradient of the flow variables. */
 	**Gradient_Adj;			/*!< \brief Fradient of the adjoint variables. */
-	su2double *Index;			/*!< \brief Adaptation index (indicates the value of the adaptation). */
+    su2double *Index;		/*!< \brief Adaptation index (indicates the value of the adaptation). */
 	
 public:
 

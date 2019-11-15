@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_structure.hpp
  * \brief Headers of the main subroutines for space and time integration. 
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
@@ -59,17 +59,19 @@ using namespace std;
  */
 class CIntegration {
 protected:
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
-  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
+  int rank, 	 /*!< \brief MPI Rank. */
+  size;       	 /*!< \brief MPI Size. */
+  su2double
+  Cauchy_Value,              /*!< \brief Summed value of the convergence indicator. */
+  Cauchy_Func;               /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
-  bool Convergence,    /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
+  su2double *Cauchy_Serie;        /*!< \brief Complete Cauchy serial. */
+  su2double
+  Old_Func,           /*!< \brief Old value of the objective function (the function which is monitored). */
+  New_Func;           /*!< \brief Current value of the objective function (the function which is monitored). */
+  bool Convergence,   /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
   Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG;    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
+  Convergence_FullMG;      /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
   su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
 
 public:

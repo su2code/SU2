@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file element_structure.hpp
  * \brief Headers of the Finite Element structure (elements)
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
@@ -76,7 +76,7 @@ protected:
 	su2double **FDL_a;              /*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;          /*!< \brief Pressure in the element. */
 	su2double ***dNiXj;             /*!< \brief Shape function derivatives. */
-  unsigned short iDe;             /*!< \brief ID of the dielectric elastomer. */
+    unsigned short iDe;             /*!< \brief ID of the dielectric elastomer. */
 	unsigned long iDV;              /*!< \brief ID of the Design Variable (if it is element based). */
 	unsigned long iProp;            /*!< \brief ID of the Element Property. */
 public:
