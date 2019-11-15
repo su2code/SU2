@@ -80,7 +80,7 @@ void CAvgGrad_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **Ja
   
   nu_i = Laminar_Viscosity_i/Density_i;
   nu_j = Laminar_Viscosity_j/Density_j;
-  nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
+  nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
   
   val_residual[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
   
@@ -118,7 +118,7 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(su2double *val_residual,
   nu_j = Laminar_Viscosity_j/Density_j;
   
   nu_ij = 0.5*(nu_i+nu_j);
-  nu_tilde_ij = 0.5*(TurbVar_i[0]+TurbVar_j[0]);
+  nu_tilde_ij = 0.5*(ScalarVar_i[0]+ScalarVar_j[0]);
 
   Xi = nu_tilde_ij/nu_ij;
   
