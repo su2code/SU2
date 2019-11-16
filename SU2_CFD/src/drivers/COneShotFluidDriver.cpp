@@ -734,10 +734,10 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
   if (nConstr > 0) {
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
+      // if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+      //    ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
         admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-      }
+      // }
     }
   }
   admissible_step *= cwolfeone;
@@ -756,10 +756,10 @@ void COneShotFluidDriver::StoreGradDotDir(){
   if (nConstr > 0) {
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
+      // if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+      //    ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/config->GetOneShotGamma() > 0.) {
         GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-      }
+      // }
     }
   }
 }
