@@ -971,6 +971,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){
 
+  bool time_domain = config->GetTime_Domain();
   unsigned short iVar;
 
   for (iVar = 0; iVar < nMPROP; iVar++){
@@ -979,7 +980,6 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
     Total_Sens_Rho[iVar]      += Global_Sens_Rho[iVar];
     Total_Sens_Rho_DL[iVar]   += Global_Sens_Rho_DL[iVar];
   }
-
   if (de_effects){
     for (iVar = 0; iVar < nEField; iVar++)
       Total_Sens_EField[iVar]+= Global_Sens_EField[iVar];
@@ -1006,8 +1006,11 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
         /*--- Set the index manually to zero. ---*/
         AD::ResetInput(Coord[iDim]);
       }
-
-      nodes->SetSensitivity(iPoint, iDim, Sensitivity);
+      if (!time_domain) {
+        nodes->SetSensitivity(iPoint, iDim, Sensitivity);
+      } else {
+        nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint, iDim) + Sensitivity);
+      }
     }
   }
   SetSurface_Sensitivity(geometry, config);
