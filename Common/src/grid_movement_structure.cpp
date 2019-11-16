@@ -9627,7 +9627,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
   su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double *Kab = NULL;
+  const su2double *Kab = NULL;
   unsigned short NelNodes, jNode;
 
   su2double ElemVolume;

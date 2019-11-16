@@ -122,13 +122,13 @@ public:
    * \brief Retrieve the number of nodes of the element.
    * \param[out] nNodes - Number of nodes of the element.
    */
-  unsigned short GetnNodes(void);
+  inline unsigned short GetnNodes(void) const {return nNodes;}
 
   /*!
    * \brief Retrieve the number of nodes of the element.
    * \param[out] nGaussPoints - Number of Gaussian Points of the element.
    */
-  unsigned short GetnGaussPoints(void);
+  inline unsigned short GetnGaussPoints(void) const {return nGaussPoints;}
 
   /*!
    * \brief Set the value of the coordinate of the nodes in the reference configuration.
@@ -136,7 +136,9 @@ public:
    * \param[in] iNode - Number of node.
    * \param[in] iDim - Dimension
    */
-  void SetRef_Coord(su2double val_CoordRef, unsigned short iNode, unsigned short iDim);
+  inline void SetRef_Coord(su2double val_CoordRef, unsigned short iNode, unsigned short iDim) {
+    RefCoord[iNode][iDim] = val_CoordRef;
+  }
 
   /*!
    * \brief Set the value of the coordinate of the nodes in the current configuration.
@@ -144,7 +146,9 @@ public:
    * \param[in] iNode - Number of node.
    * \param[in] iDim - Dimension
    */
-  void SetCurr_Coord(su2double val_CoordCurr, unsigned short iNode, unsigned short iDim);
+  inline void SetCurr_Coord(su2double val_CoordCurr, unsigned short iNode, unsigned short iDim) {
+    CurrentCoord[iNode][iDim] = val_CoordCurr;
+  }
 
   /*!
    * \brief Set the value of the coordinate of the nodes in the reference configuration.
@@ -153,7 +157,9 @@ public:
    * \param[in] iDim - Dimension
    * \param[out] Coordinate
    */
-  su2double GetRef_Coord(unsigned short iNode, unsigned short iDim);
+  inline su2double GetRef_Coord(unsigned short iNode, unsigned short iDim) const {
+    return RefCoord[iNode][iDim];
+  }
 
   /*!
    * \brief Get the value of the coordinate of the nodes in the current configuration.
@@ -162,34 +168,44 @@ public:
    * \param[in] iDim - Dimension
    * \param[out] Coordinate
    */
-  su2double GetCurr_Coord(unsigned short iNode, unsigned short iDim);
+  inline su2double GetCurr_Coord(unsigned short iNode, unsigned short iDim) const {
+    return CurrentCoord[iNode][iDim];
+  }
 
   /*!
    * \brief Get the weight of the corresponding Gaussian Point.
    * \param[in] iGauss - index of the Gaussian point.
    * \param[out] Weight.
    */
-  su2double GetWeight(unsigned short iGauss);
+  inline su2double GetWeight(unsigned short iGauss) const {
+    return GaussWeight[iGauss];
+  }
 
   /*!
    * \brief Get the jacobian respect to the reference configuration for the Gaussian Point iGauss.
    * \param[in] iGauss - index of the Gaussian point.
    * \param[out] Weight.
    */
-  su2double GetJ_X(unsigned short iGauss);
+  inline su2double GetJ_X(unsigned short iGauss) const {
+    return GaussPoint[iGauss]->GetJ_X();
+  }
 
   /*!
    * \brief Get the jacobian respect to the current configuration for the Gaussian Point iGauss.
    * \param[in] iGauss - index of the Gaussian point.
    * \param[out] Weight.
    */
-  su2double GetJ_x(unsigned short iGauss);
+  inline su2double GetJ_x(unsigned short iGauss) const {
+    return GaussPoint[iGauss]->GetJ_x();
+  }
 
   /*!
    * \brief Retrieve the value of the pressure in the element for incompressible materials.
    * \param[out] Value of the pressure.
    */
-  su2double GetElement_Pressure(void);
+  inline su2double GetElement_Pressure(void) const {
+    return el_Pressure;
+  }
 
   /*!
    * \brief Add the value of the diagonal term for the mass matrix.
@@ -197,7 +213,9 @@ public:
    * \param[in] nodeB - index of Node b.
    * \param[in] val_Ks_ab - value of the term that will constitute the diagonal of the stress contribution.
    */
-  void Add_Mab(su2double val_Mab, unsigned short nodeA, unsigned short nodeB);
+  inline void Add_Mab(su2double val_Mab, unsigned short nodeA, unsigned short nodeB) {
+    Mab[nodeA][nodeB] += val_Mab;
+  }
 
   /*!
    * \brief Add the value of a submatrix K relating nodes a and b, for the constitutive term.
@@ -221,7 +239,9 @@ public:
    * \param[in] nodeB - index of Node b.
    * \param[in] val_Ks_ab - value of the term that will constitute the diagonal of the stress contribution.
    */
-  void Add_Ks_ab(su2double val_Ks_ab, unsigned short nodeA, unsigned short nodeB);
+  inline void Add_Ks_ab(su2double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) {
+    Ks_ab[nodeA][nodeB] += val_Ks_ab;
+  }
 
   /*!
    * \brief Add the value of the nodal stress term for the computation of the residual.
@@ -253,7 +273,9 @@ public:
    * \param[in] nodeB - index of Node b.
    * \param[out] val_Mab - value of the diagonal term of Mab.
    */
-  su2double Get_Mab(unsigned short nodeA, unsigned short nodeB);
+  inline su2double Get_Mab(unsigned short nodeA, unsigned short nodeB) const {
+    return Mab[nodeA][nodeB];
+  }
 
   /*!
    * \brief Return the value of the submatrix K relating nodes a and b.
@@ -261,7 +283,9 @@ public:
    * \param[in] nodeB - index of Node b.
    * \param[out] val_Kab - value of the matrix K.
    */
-  su2double *Get_Kab(unsigned short nodeA, unsigned short nodeB);
+  inline const su2double *Get_Kab(unsigned short nodeA, unsigned short nodeB) const {
+    return Kab[nodeA][nodeB];
+  }
 
   /*!
    * \brief Return the value of the diagonal term for the stress contribution, relating nodes a and b.
@@ -269,29 +293,27 @@ public:
    * \param[in] nodeB - index of Node b.
    * \param[out] val_Kab - value of the matrix K.
    */
-  su2double Get_Ks_ab(unsigned short nodeA, unsigned short nodeB);
-
-  /*!
-   * \brief Return the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[in] val_Kab - value of the matrix K.
-   */
-  su2double *Get_Kk_ab(unsigned short nodeA, unsigned short nodeB);
+  inline su2double Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) const {
+    return Ks_ab[nodeA][nodeB];
+  }
 
   /*!
    * \brief Return the value of the nodal stress component of the residual for node a.
    * \param[in] nodeA - index of Node a.
    * \param[out] val_Kt_a - value of the stress term.
    */
-  su2double *Get_Kt_a(unsigned short nodeA);
+  inline const su2double *Get_Kt_a(unsigned short nodeA) const {
+    return Kt_a[nodeA];
+  }
 
   /*!
    * \brief Return the value of the dead load component of the residual for node a.
    * \param[in] nodeA - index of Node a.
    * \param[out] val_Kt_a - value of the stress term.
    */
-  su2double *Get_FDL_a(unsigned short nodeA);
+  inline const su2double *Get_FDL_a(unsigned short nodeA) const {
+    return FDL_a[nodeA];
+  }
 
   /*!
    * \brief Retrieve the value of the shape functions.
@@ -299,7 +321,9 @@ public:
    * \param[in] iNode - Index of the Gaussian Point.
    * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
    */
-  su2double GetNi(unsigned short iNode, unsigned short iGauss);
+  inline su2double GetNi(unsigned short iNode, unsigned short iGauss) const {
+    return GaussPoint[iGauss]->GetNi(iNode);
+  }
 
   /*!
    * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
@@ -307,7 +331,9 @@ public:
    * \param[in] iNode - Index of the Gaussian Point.
    * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
    */
-  su2double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
+  inline su2double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) const {
+    return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);
+  }
 
   /*!
    * \brief Retrieve the value of the gradient of the shape functions respect to the current configuration.
@@ -315,7 +341,9 @@ public:
    * \param[in] iNode - Index of the Gaussian Point.
    * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
    */
-  su2double GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
+  inline su2double GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) const {
+    return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);
+  }
 
   /*!
    * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
@@ -323,7 +351,9 @@ public:
    * \param[in] iGauss - Index of the Gaussian Point.
    * \param[out] val_Ni_Ext - Value of the shape function at the nodes for extrapolation purposes
    */
-  su2double GetNi_Extrap(unsigned short iNode, unsigned short iGauss);
+  inline su2double GetNi_Extrap(unsigned short iNode, unsigned short iGauss) const {
+    return NodalExtrap[iNode][iGauss];
+  }
 
   /*!
    * \brief Add a value to the nodal stress for an element.
@@ -331,7 +361,9 @@ public:
    * \param[in] iGauss - Index of the variable.
    * \param[in] val_Stress - Value of the stress added.
    */
-  void Add_NodalStress(su2double val_Stress, unsigned short iNode, unsigned short iVar);
+  inline void Add_NodalStress(su2double val_Stress, unsigned short iNode, unsigned short iVar) {
+    NodalStress[iNode][iVar] += val_Stress;
+  }
 
   /*!
    * \brief Retrieve the value of the nodal stress for an element.
@@ -339,63 +371,65 @@ public:
    * \param[in] iGauss - Index of the variable.
    * \param[in] val_Stress - Value of the stress added.
    */
-  su2double Get_NodalStress(unsigned short iNode, unsigned short iVar);
+  inline su2double Get_NodalStress(unsigned short iNode, unsigned short iVar) const {
+    return NodalStress[iNode][iVar];
+  }
 
   /*!
    * \brief Store the value of the identifier for the Dielectric Elastomers.
    * \param[in] val_iDe - identifier of the DE property.
    */
-  void Set_ElProperties(CProperty *element_property);
+  void Set_ElProperties(const CProperty *element_property);
 
   /*!
    * \brief Store the value of the identifier for the Dielectric Elastomers.
    * \param[in] val_iDe - identifier of the DE property.
    */
-  void Set_iDe(unsigned short val_iDe);
+  inline void Set_iDe(unsigned short val_iDe) {iDe = val_iDe;}
 
   /*!
    * \brief Return the value of the identifier for the Dielectric Elastomers.
    * \param[out] val_iDe - identifier of the DE property.
    */
-  unsigned short Get_iDe(void);
+  inline unsigned short Get_iDe(void) const {return iDe;}
 
   /*!
    * \brief Return the value of the identifier for the Design Variable.
    * \param[out] val_iDV - identifier of the DV.
    */
-  unsigned long Get_iDV(void);
+  inline unsigned long Get_iDV(void) const {return iDV;}
 
   /*!
    * \brief Return the value of the identifier for the Element Property.
    * \param[out] val_iProp - identifier of the property.
    */
-  unsigned long Get_iProp(void);
+  inline unsigned long Get_iProp(void) const {return iProp;}
 
   /*!
    * \brief Compute the value of the area of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Area - Area of the element
    */
-  virtual su2double ComputeArea(const FrameType mode = REFERENCE);
+  inline virtual su2double ComputeArea(const FrameType mode = REFERENCE) const {return 0.0;}
 
   /*!
    * \brief Compute the value of the volume of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Volume - Volume of the element
    */
-  virtual su2double ComputeVolume(const FrameType mode = REFERENCE);
+  inline virtual su2double ComputeVolume(const FrameType mode = REFERENCE) const {return 0.0;}
 
   /*!
    * \brief Compute the value of the area of the element in current coordinates (wrapper to ComputeArea(CURRENT)).
    * \param[out] val_Area - Area of the element
    */
-  su2double ComputeCurrentArea(void);
+  inline su2double ComputeCurrentArea(void) const {return ComputeArea(CURRENT);}
 
   /*!
    * \brief Compute the value of the volume of the element in current coordinates (wrapper to ComputeVolume(CURRENT)).
    * \param[out] val_Volume - Volume of the element
    */
-  su2double ComputeCurrentVolume(void);
+  inline su2double ComputeCurrentVolume(void) const {return ComputeVolume(CURRENT);}
 
   /*!
    * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -416,13 +450,18 @@ public:
    * the latter are needed for compatibility with shape derivatives, there is no problem registering
    * because inactive variables are ignored.
    */
-  void SetPreaccIn_Coords(void);
+  inline void SetPreaccIn_Coords(void) {
+    AD::SetPreaccIn(RefCoord,nNodes,nDim);
+    AD::SetPreaccIn(CurrentCoord,nNodes,nDim);
+  }
 
   /*!
    * \brief Register the stress residual as a pre-accumulation output. When computing the element
    * stiffness matrix this is the only term that sees its way into the RHS of the system.
    */
-  void SetPreaccOut_Kt_a(void);
+  inline void SetPreaccOut_Kt_a(void) {
+    AD::SetPreaccOut(Kt_a,nNodes,nDim);
+  }
 
 };
 
@@ -431,7 +470,7 @@ public:
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
  */
-class CTRIA1 : public CElement {
+class CTRIA1 final : public CElement {
 
 public:
 
@@ -458,7 +497,7 @@ public:
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Area - Area of the element
    */
-  su2double ComputeArea(const FrameType mode = REFERENCE);
+  su2double ComputeArea(const FrameType mode = REFERENCE) const override;
 
 };
 
@@ -468,7 +507,7 @@ public:
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
  */
-class CQUAD4 : public CElement {
+class CQUAD4 final : public CElement {
 
 public:
 
@@ -488,14 +527,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CQUAD4(void);
+  ~CQUAD4(void);
 
   /*!
    * \brief Compute the value of the area of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Area - Area of the element
    */
-  su2double ComputeArea(const FrameType mode = REFERENCE);
+  su2double ComputeArea(const FrameType mode = REFERENCE) const override;
 
 };
 
@@ -504,7 +543,7 @@ public:
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
  */
-class CTETRA1 : public CElement {
+class CTETRA1 final : public CElement {
 
 public:
 
@@ -530,7 +569,7 @@ public:
    * \brief Compute the value of the volume of the element
    * \param[out] val_Volume - Volume of the element
    */
-  su2double ComputeVolume(const FrameType mode = REFERENCE);
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
 
 };
 
@@ -539,7 +578,7 @@ public:
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
  */
-class CHEXA8 : public CElement {
+class CHEXA8 final : public CElement {
 
 public:
 
@@ -559,14 +598,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CHEXA8(void);
+  ~CHEXA8(void);
 
   /*!
    * \brief Compute the value of the volume of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Volume - Volume of the element
    */
-  su2double ComputeVolume(const FrameType mode = REFERENCE);
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
 
 };
 
@@ -575,7 +614,7 @@ public:
  * \brief Pyramid element with 5 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
  */
-class CPYRAM5 : public CElement {
+class CPYRAM5 final : public CElement {
 
 public:
 
@@ -595,14 +634,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPYRAM5(void);
+  ~CPYRAM5(void);
 
   /*!
    * \brief Compute the value of the volume of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Volume - Volume of the element
    */
-  su2double ComputeVolume(const FrameType mode = REFERENCE);
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
 
 };
 
@@ -612,7 +651,7 @@ public:
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
  * \version 6.2.0 "Falcon"
  */
-class CPRISM6 : public CElement {
+class CPRISM6 final : public CElement {
 
 public:
 
@@ -632,15 +671,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPRISM6(void);
+  ~CPRISM6(void);
 
   /*!
    * \brief Compute the value of the volume of the element
    * \param[in] mode - Type of coordinates to consider in the computation
    * \param[out] val_Volume - Volume of the element
    */
-  su2double ComputeVolume(const FrameType mode = REFERENCE);
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
 
 };
-
-#include "element_structure.inl"

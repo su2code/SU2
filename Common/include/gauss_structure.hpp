@@ -190,7 +190,7 @@ public:
  * \version 6.2.0 "Falcon"
  */
 class CElementProperty final : public CProperty {
-protected:
+private:
 
   unsigned long iMat_Mod = 0;        /*!< \brief Index of the material model used. */
   unsigned long iElectric_Prop = 0;  /*!< \brief Index of the electric properties (Em) for the structural model used. */
@@ -213,11 +213,6 @@ public:
                    su2double valDensity = 1.0) : CProperty(valMat_Prop),
     iMat_Mod(valMat_Model), iElectric_Prop(valElectric_Prop),
     iDV(valDV), design_rho(valDensity), physical_rho(valDensity) {}
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CElementProperty(void) = default;
 
   /*!
    * \brief Get the material model to use for the element.

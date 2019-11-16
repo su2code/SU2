@@ -1131,7 +1131,8 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
   su2double val_Coord, val_Sol;
   int EL_KIND = 0;
   
-  su2double *Kab = NULL, *Ta  = NULL;
+  const su2double *Kab = NULL;
+  const su2double *Ta  = NULL;
   unsigned short NelNodes, jNode;
   
   bool topology_mode = config->GetTopology_Optimization();
@@ -1142,12 +1143,14 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1220,10 +1223,10 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
   bool prestretch_fem = config->GetPrestretch();
   
   su2double Ks_ab;
-  su2double *Kab = NULL;
-  su2double *Ta = NULL;
+  const su2double *Kab = NULL;
+  const su2double *Ta = NULL;
   
-  su2double *Ta_DE = NULL;
+  const su2double *Ta_DE = NULL;
   su2double Ks_ab_DE = 0.0;
   
   unsigned short NelNodes, jNode;
@@ -1238,12 +1241,14 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1363,12 +1368,14 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1436,12 +1443,14 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
 
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
 
@@ -1499,7 +1508,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
   
   bool prestretch_fem = config->GetPrestretch();
   
-  su2double *Ta = NULL;
+  const su2double *Ta = NULL;
   unsigned short NelNodes;
   
   bool topology_mode = config->GetTopology_Optimization();
@@ -1510,12 +1519,14 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1583,10 +1594,9 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   bool topology_mode = config->GetTopology_Optimization();
   su2double simp_exponent = config->GetSIMP_Exponent();
   
-  if (nDim == 2) nStress = 3;
-  else nStress = 6;
+  nStress = (nDim == 2) ? 3 : 6;
   
-  su2double *Ta = NULL;
+  const su2double *Ta = NULL;
   
   unsigned short NelNodes;
   
@@ -1602,12 +1612,14 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1851,11 +1863,9 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       }
       
     }
-    
-    
-    
+
     myfile.close();
-    
+
   }
   
 }
@@ -1868,19 +1878,21 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
   su2double val_Coord;
   int EL_KIND = 0;
   
-  su2double *Dead_Load = NULL;
+  const su2double *Dead_Load = NULL;
   unsigned short NelNodes;
   
   /*--- Loops over all the elements ---*/
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -3663,107 +3675,95 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config,
-                                                      CSolver ***fea_solution, unsigned long iOuterIter) {
-  
+                                           CSolver ***fea_solution, unsigned long iOuterIter) {
+
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
   su2double rbuf_denAitk = 0, sbuf_denAitk = 0;
-  
-  su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
+
+  const su2double *dispPred = nullptr;
+  const su2double *dispCalc = nullptr;
+  const su2double *dispPred_Old = nullptr;
+  const su2double *dispCalc_Old = nullptr;
   su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
   su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
-  
+
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
-  
-  
+
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
-  
-    
-    if (RelaxMethod_FSI == NO_RELAXATION) {
-      
-      if (rank == MASTER_NODE) {
-        
-        SetWAitken_Dyn(1.0);
-        
-      }
-      
-    }
-    else if (RelaxMethod_FSI == FIXED_PARAMETER) {
-      
-      if (rank == MASTER_NODE) {
-        
-        SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
-        
-      }
-      
-    }
-    else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
-      
-      if (iOuterIter == 0) {
-        
-        WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
-        WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
-        WAitkDyn_Min = fea_config->GetAitkenDynMinInit();
-        
-        WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
-        WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
-        
-        SetWAitken_Dyn(WAitkDyn);
-        
-      }
-      else {
-        // To nPointDomain; we need to communicate the values
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          
-          dispPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
-          dispPred_Old = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred_Old(iPoint);
-          dispCalc = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
-          dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Old(iPoint);
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            
-            /*--- Compute the deltaU and deltaU_n+1 ---*/
-            deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
-            deltaU_p1[iDim] = dispCalc[iDim] - dispPred[iDim];
-            
-            /*--- Compute the difference ---*/
-            delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
-            
-            /*--- Add numerator and denominator ---*/
-            sbuf_numAitk += deltaU[iDim] * delta_deltaU[iDim];
-            sbuf_denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
-            
-          }
-          
-        }
-        
-#ifdef HAVE_MPI
-        SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-        rbuf_numAitk = sbuf_numAitk;
-        rbuf_denAitk = sbuf_denAitk;
-#endif
-        
-        WAitkDyn = GetWAitken_Dyn();
-        
-        if (rbuf_denAitk > 1E-15) {
-          WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
-        }
-        
-        WAitkDyn = max(WAitkDyn, 0.1);
-        WAitkDyn = min(WAitkDyn, 1.0);
-        
-        SetWAitken_Dyn(WAitkDyn);
-        
-      }
-      
+
+  if (RelaxMethod_FSI == NO_RELAXATION) {
+
+    SetWAitken_Dyn(1.0);
+
+  }
+  else if (RelaxMethod_FSI == FIXED_PARAMETER) {
+
+    SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
+
+  }
+  else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
+
+    if (iOuterIter == 0) {
+
+      WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
+      WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
+      WAitkDyn_Min = fea_config->GetAitkenDynMinInit();
+
+      WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
+      WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
+
+      SetWAitken_Dyn(WAitkDyn);
+
     }
     else {
-      if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
+      // To nPointDomain; we need to communicate the values
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        dispPred     = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
+        dispPred_Old = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred_Old(iPoint);
+        dispCalc     = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
+        dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Old(iPoint);
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+
+          /*--- Compute the deltaU and deltaU_n+1 ---*/
+          deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
+          deltaU_p1[iDim] = dispCalc[iDim] - dispPred[iDim];
+          
+          /*--- Compute the difference ---*/
+          delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
+
+          /*--- Add numerator and denominator ---*/
+          sbuf_numAitk += deltaU[iDim] * delta_deltaU[iDim];
+          sbuf_denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
+
+        }
+
+      }
+
+      SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+      WAitkDyn = GetWAitken_Dyn();
+
+      if (rbuf_denAitk > EPS) {
+        WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
+      }
+
+      WAitkDyn = max(WAitkDyn, 0.1);
+      WAitkDyn = min(WAitkDyn, 1.0);
+
+      SetWAitken_Dyn(WAitkDyn);
+
     }
-    
+
+  }
+  else {
+    if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
+  }
+
 }
 
 void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
@@ -4257,12 +4257,14 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    switch(geometry->elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+    }
 
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     for (iNode = 0; iNode < nNodes; iNode++) {

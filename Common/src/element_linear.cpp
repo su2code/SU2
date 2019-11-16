@@ -38,7 +38,7 @@
 #include "../include/element_structure.hpp"
 
 CTRIA1::CTRIA1(void) : CElement() {
-  
+
 }
 
 CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
@@ -85,25 +85,25 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 
 }
 
-su2double CTRIA1::ComputeArea(const FrameType mode){
-  
+su2double CTRIA1::ComputeArea(const FrameType mode) const {
+
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
   su2double Area = 0.0;
-  
+
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     a[iDim] = Coord[0][iDim]-Coord[2][iDim];
     b[iDim] = Coord[1][iDim]-Coord[2][iDim];
   }
-  
+
   Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
+
   return Area;
-  
+
 }
 
 CTRIA1::~CTRIA1(void) {
@@ -179,32 +179,32 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 
 }
 
-su2double CQUAD4::ComputeArea(const FrameType mode){
-  
+su2double CQUAD4::ComputeArea(const FrameType mode) const {
+
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
   su2double Area = 0.0;
-  
+
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     a[iDim] = Coord[0][iDim]-Coord[2][iDim];
     b[iDim] = Coord[1][iDim]-Coord[2][iDim];
   }
-  
+
   Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     a[iDim] = Coord[0][iDim]-Coord[3][iDim];
     b[iDim] = Coord[2][iDim]-Coord[3][iDim];
   }
-  
+
   Area += 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
+
   return Area;
-  
+
 }
 
 CQUAD4::~CQUAD4(void) {
@@ -263,12 +263,12 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 
 }
 
-su2double CTETRA1::ComputeVolume(const FrameType mode){
+su2double CTETRA1::ComputeVolume(const FrameType mode) const {
 
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
-  
+
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
@@ -404,12 +404,12 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 
 }
 
-su2double CHEXA8::ComputeVolume(const FrameType mode){
+su2double CHEXA8::ComputeVolume(const FrameType mode) const {
 
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
-  
+
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
@@ -572,12 +572,12 @@ CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
 
 }
 
-su2double CPYRAM5::ComputeVolume(const FrameType mode){
+su2double CPYRAM5::ComputeVolume(const FrameType mode) const {
 
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
-  
+
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
@@ -715,7 +715,7 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
 
 }
 
-su2double CPRISM6::ComputeVolume(const FrameType mode){
+su2double CPRISM6::ComputeVolume(const FrameType mode) const {
 
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};

@@ -87,7 +87,6 @@ lib_sources = \
   ../include/fem_gauss_jacobi_quadrature.inl \
   ../include/gauss_structure.hpp \
   ../include/element_structure.hpp \
-  ../include/element_structure.inl \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
   ../include/wall_model.hpp \
