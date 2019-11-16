@@ -39,27 +39,27 @@
 #include "CFileWriter.hpp"
 
 class CCSVFileWriter final: public CFileWriter{
-  
+
 public:
-  
+
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
-   */  
+   */
   CCSVFileWriter(vector<string> fields, unsigned short nDim, string fileName, CParallelDataSorter* data_sorter);
-  
+
   /*!
    * \brief Destructor
    */
   ~CCSVFileWriter() override;
-  
+
   /*!
    * \brief Write sorted data to file in CSV file format
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
   void Write_Data() override;
-  
+
 };
 
