@@ -161,6 +161,7 @@ void CDiscAdjMultizoneDriver::Run() {
     }
     for (iZone = 0; iZone < nZone; iZone++) {
 
+      /*** Note that for unsteady cases, if OUTPUT_WRT_FREQ is not defined, default is 1 ---*/
       wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
       iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
