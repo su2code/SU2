@@ -40,13 +40,13 @@
 #include "CFEMDataSorter.hpp"
 
 class CSurfaceFEMDataSorter final: public CParallelDataSorter{
-  
+
   CFEMDataSorter* volume_sorter;                  //!< Pointer to the volume sorter instance
    //! Structure to map the local sorted point ID to the global point ID
   std::vector<unsigned long> globalSurfaceDOFIDs;
-    
+
 public:
-  
+
   /*!
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
@@ -55,19 +55,19 @@ public:
    * \param[in] volume_sorter - Pointer to the corresponding volume sorter instance
    */
   CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter);
-  
+
   /*!
    * \brief Destructor
    */
   ~CSurfaceFEMDataSorter() override;
-  
+
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData() override;
-  
+
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
@@ -75,7 +75,7 @@ public:
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry,  bool val_sort) override;
-  
+
   /*!
    * \brief Get the global index of a point.
    * \input iPoint - the point ID.
@@ -84,9 +84,9 @@ public:
   unsigned long GetGlobalIndex(unsigned long iPoint) override {
     return globalSurfaceDOFIDs[iPoint];
   }
-  
+
 private:
-  
+
   /*!
    * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors (DG-FEM solver).
    * \param[in] config - Definition of the particular problem.
