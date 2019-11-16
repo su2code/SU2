@@ -238,7 +238,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadMultiplier();
+        // LoadMultiplier();
       }
       else{
         /*--- Store and update constraint multiplier ---*/
