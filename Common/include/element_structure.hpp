@@ -431,29 +431,26 @@ public:
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
  */
-
 class CTRIA1 : public CElement {
-
-protected:
 
 public:
 
   /*!
-     * \brief Constructor of the class.
-     */
+   * \brief Constructor of the class.
+   */
   CTRIA1(void);
 
   /*!
-     * \overload
-     * \param[in] val_fea - Values of the fea solution (initialization value).
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   CTRIA1(unsigned short val_nDim, CConfig *config);
 
   /*!
-     * \brief Destructor of the class.
-     */
+   * \brief Destructor of the class.
+   */
   ~CTRIA1(void);
 
   /*!
@@ -471,29 +468,26 @@ public:
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
  */
-
 class CQUAD4 : public CElement {
-
-protected:
 
 public:
 
   /*!
-     * \brief Constructor of the class.
-     */
+   * \brief Constructor of the class.
+   */
   CQUAD4(void);
 
   /*!
-     * \overload
-     * \param[in] val_fea - Values of the fea solution (initialization value).
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   CQUAD4(unsigned short val_nDim, CConfig *config);
 
   /*!
-     * \brief Destructor of the class.
-     */
+   * \brief Destructor of the class.
+   */
   virtual ~CQUAD4(void);
 
   /*!
@@ -510,29 +504,26 @@ public:
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
  */
-
 class CTETRA1 : public CElement {
-
-protected:
 
 public:
 
   /*!
-     * \brief Constructor of the class.
-     */
+   * \brief Constructor of the class.
+   */
   CTETRA1(void);
 
   /*!
-     * \overload
-     * \param[in] val_fea - Values of the fea solution (initialization value).
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   CTETRA1(unsigned short val_nDim, CConfig *config);
 
   /*!
-     * \brief Destructor of the class.
-     */
+   * \brief Destructor of the class.
+   */
   ~CTETRA1(void);
 
   /*!
@@ -548,29 +539,26 @@ public:
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
  */
-
 class CHEXA8 : public CElement {
-
-protected:
 
 public:
 
   /*!
-     * \brief Constructor of the class.
-     */
+   * \brief Constructor of the class.
+   */
   CHEXA8(void);
 
   /*!
-     * \overload
-     * \param[in] val_fea - Values of the fea solution (initialization value).
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   CHEXA8(unsigned short val_nDim, CConfig *config);
 
   /*!
-     * \brief Destructor of the class.
-     */
+   * \brief Destructor of the class.
+   */
   virtual ~CHEXA8(void);
 
   /*!
@@ -587,10 +575,7 @@ public:
  * \brief Pyramid element with 5 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
  */
-
 class CPYRAM5 : public CElement {
-
-protected:
 
 public:
 
@@ -628,8 +613,6 @@ public:
  * \version 6.2.0 "Falcon"
  */
 class CPRISM6 : public CElement {
-
-protected:
 
 public:
 

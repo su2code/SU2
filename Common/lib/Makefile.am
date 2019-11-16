@@ -86,7 +86,6 @@ lib_sources = \
   ../include/fem_gauss_jacobi_quadrature.hpp \
   ../include/fem_gauss_jacobi_quadrature.inl \
   ../include/gauss_structure.hpp \
-  ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
   ../include/element_structure.inl \
   ../include/adt_structure.hpp \
@@ -140,7 +139,6 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
-  ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
