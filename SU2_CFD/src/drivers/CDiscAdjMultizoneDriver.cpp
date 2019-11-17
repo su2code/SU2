@@ -259,7 +259,6 @@ void CDiscAdjMultizoneDriver::Run() {
           ComputeAdjoints(iZone, eval_transfer);
 
           /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-          cout << "CVC: Debug: iteration_container["<< iZone << "][" << INST_0 << "]->Iterate" << endl;
           iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                       solver_container, numerics_container, config_container,
                                                       surface_movement, grid_movement, FFDBox, iZone, INST_0);

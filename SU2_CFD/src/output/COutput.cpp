@@ -674,6 +674,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container, 
                               unsigned long iter, bool force_writing){
   
+  if (curTimeIter != iter) curTimeIter = iter;
   bool writeFiles = WriteVolume_Output(config, iter, force_writing);
   
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */ 
