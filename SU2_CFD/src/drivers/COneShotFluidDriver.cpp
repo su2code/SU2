@@ -1223,7 +1223,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
         Multiplier[iConstr] = ConstrFunc_Store[iConstr];
       }
     }
-    else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma > 0.){
+    else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma <= 0.){
       Multiplier[iConstr] = 0.;
     }
   }
