@@ -138,6 +138,13 @@ public:
   inline void Set_ElectricField(unsigned short i_DV, su2double val_EField) override { }
 
   /*!
+   * \brief Set the element-based local Young's modulus in mesh problems
+   * \param[in] iElem - Element index.
+   * \param[in] val_E - Value of elasticity modulus.
+   */
+  inline void SetMeshElasticProperties(unsigned long iElem, su2double val_E) override { }
+
+  /*!
    * \brief Set the value of a design variable.
    * \param[in] i_DV - Index of the variable.
    * \param[in] val_DV - Value of the variable.

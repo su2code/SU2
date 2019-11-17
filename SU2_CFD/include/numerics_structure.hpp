@@ -1351,8 +1351,9 @@ public:
   virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
   /*!
-   * \brief A virtual member to set the element-based local properties in mesh problems
-   * \param[in] element_container - Element structure for the particular element integrated.
+   * \brief Set the element-based local Young's modulus in mesh problems
+   * \param[in] iElem - Element index.
+   * \param[in] val_E - Value of elasticity modulus.
    */
   virtual void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
 
