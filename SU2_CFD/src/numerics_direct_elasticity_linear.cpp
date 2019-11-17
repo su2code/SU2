@@ -348,8 +348,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     }
 
     for (iNode = 0; iNode < nNode; iNode++) {
-      /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz, while in the ---*/
-      /*--- output it is the 4th component for practical reasons ---*/
+
       su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
 
       if (nDim == 2) {
@@ -357,8 +356,14 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
           element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
       }
       else {
-        for(iVar = 0; iVar < 6; ++iVar)
-          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
+        /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
+         *    while in the output it is the 4th component for practical reasons. ---*/
+        element->Add_NodalStress(iNode, 0, Stress[0] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 1, Stress[1] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 2, Stress[3] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 3, Stress[2] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 4, Stress[4] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 5, Stress[5] * Ni_Extrap);
       }
     }
 

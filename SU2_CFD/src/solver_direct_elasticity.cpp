@@ -1717,7 +1717,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       Sxz = Stress[4];
       Syz = Stress[5];
 
-      VonMises_Stress = sqrt(0.5*(   pow(Sxx - Syy, 2.0)
+      VonMises_Stress = sqrt(0.5*(  pow(Sxx - Syy, 2.0)
                                   + pow(Syy - Szz, 2.0)
                                   + pow(Szz - Sxx, 2.0)
                                   + 6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)
