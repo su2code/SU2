@@ -38,18 +38,18 @@
 #include "CFileWriter.hpp"
 
 class CSU2MeshFileWriter final: public CFileWriter{
-  
+
 private:
   unsigned short iZone, //!< Index of the current zone
   nZone;                //!< Number of zones
 
 public:
-  
+
   /*!
    * \brief File extension
    */
   const static string fileExt;
-  
+
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
@@ -58,22 +58,22 @@ public:
    * \param[in] data_sorter - The parallel sorted data to write
    * \param[in] iZone - Index of the current zone
    * \param[in] nZone - Number of zones
-   */  
-  CSU2MeshFileWriter(vector<string> fields, unsigned short nDim, 
+   */
+  CSU2MeshFileWriter(vector<string> fields, unsigned short nDim,
                      string fileName, CParallelDataSorter* data_sorter,
                      unsigned short iZone, unsigned short nZone);
-  
+
   /*!
    * \brief Destructor
    */
   ~CSU2MeshFileWriter() override;
-  
+
   /*!
    * \brief Write sorted data to file in SU2 mesh file format
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
   void Write_Data() override;
-  
+
 };
 
