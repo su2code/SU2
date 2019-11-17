@@ -39,7 +39,7 @@
 #include "../include/adt_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/geometry/primitives/CElement.hpp"
+#include "../include/geometry/elements/CElement.hpp"
 #include "../include/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
 #include "../include/CRectangularMeshReaderFVM.hpp"

@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/geometry/primitives/CElement.hpp"
+#include "../../../include/geometry/elements/CElement.hpp"
 
 
 CPYRAM5::CPYRAM5() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {

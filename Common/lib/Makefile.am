@@ -136,13 +136,13 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
-  ../src/geometry/primitives/CElement.cpp \
-  ../src/geometry/primitives/CTRIA1.cpp \
-  ../src/geometry/primitives/CQUAD4.cpp \
-  ../src/geometry/primitives/CTETRA1.cpp \
-  ../src/geometry/primitives/CPYRAM5.cpp \
-  ../src/geometry/primitives/CPRISM6.cpp \
-  ../src/geometry/primitives/CHEXA8.cpp \
+  ../src/geometry/elements/CElement.cpp \
+  ../src/geometry/elements/CTRIA1.cpp \
+  ../src/geometry/elements/CQUAD4.cpp \
+  ../src/geometry/elements/CTETRA1.cpp \
+  ../src/geometry/elements/CPYRAM5.cpp \
+  ../src/geometry/elements/CPRISM6.cpp \
+  ../src/geometry/elements/CHEXA8.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \

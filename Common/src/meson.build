@@ -29,7 +29,7 @@ common_src =files(['geometry_structure_fem_part.cpp',
 
 subdir('linear_algebra')
 subdir('toolboxes')
-subdir('geometry/primitives')
+subdir('geometry/elements')
 
 if get_option('enable-normal')
   common = static_library('SU2Common', 
