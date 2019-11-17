@@ -14,6 +14,7 @@ su2_cfd_src = files(['solver_direct_transition.cpp',
                      'solver_adjoint_mean.cpp',
                      'solver_adjoint_elasticity.cpp',
                      'solver_structure.cpp',
+                     'numerics_direct_turbulent.cpp'
                      'numerics_direct_transition.cpp',
                      'solver_template.cpp',
                      'solver_direct_elasticity.cpp',
