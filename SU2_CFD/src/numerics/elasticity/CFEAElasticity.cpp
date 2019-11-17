@@ -79,7 +79,7 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Compute_Lame_Parameters();
 
   // Auxiliary vector for body forces (dead load)
-  FAux_Dead_Load = NULL;
+  FAux_Dead_Load = nullptr;
   if (body_forces) FAux_Dead_Load = new su2double [nDim];
 
   plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
@@ -89,43 +89,26 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
     KAux_ab[iVar] = new su2double[nDim];
   }
 
+  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
+  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
 
-  if (nDim == 2) {
-    Ba_Mat = new su2double* [3];
-    Bb_Mat = new su2double* [3];
-    D_Mat  = new su2double* [3];
-    Ni_Vec  = new su2double [4];      /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    GradNi_Ref_Mat = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    GradNi_Curr_Mat = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    for (iVar = 0; iVar < 3; iVar++) {
-      Ba_Mat[iVar]      = new su2double[nDim];
-      Bb_Mat[iVar]      = new su2double[nDim];
-      D_Mat[iVar]       = new su2double[3];
-    }
-    for (iVar = 0; iVar < 4; iVar++) {
-      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
-      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
-    }
+  Ba_Mat = new su2double* [nStrain];
+  Bb_Mat = new su2double* [nStrain];
+  D_Mat  = new su2double* [nStrain];
+  Ni_Vec = new su2double [nNodes];
+  GradNi_Ref_Mat = new su2double* [nNodes];
+  GradNi_Curr_Mat = new su2double* [nNodes];
+  for (iVar = 0; iVar < nStrain; iVar++) {
+    Ba_Mat[iVar] = new su2double[nDim];
+    Bb_Mat[iVar] = new su2double[nDim];
+    D_Mat[iVar] = new su2double[nStrain];
   }
-  else {
-    Ba_Mat = new su2double* [6];
-    Bb_Mat = new su2double* [6];
-    D_Mat  = new su2double* [6];
-    Ni_Vec = new su2double  [8];      /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    GradNi_Ref_Mat = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    GradNi_Curr_Mat = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    for (iVar = 0; iVar < 6; iVar++) {
-      Ba_Mat[iVar]      = new su2double[nDim];
-      Bb_Mat[iVar]      = new su2double[nDim];
-      D_Mat[iVar]       = new su2double[6];
-    }
-    for (iVar = 0; iVar < 8; iVar++) {
-      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
-      GradNi_Curr_Mat[iVar]  = new su2double[nDim];
-    }
+  for (iVar = 0; iVar < nNodes; iVar++) {
+    GradNi_Ref_Mat[iVar] = new su2double[nDim];
+    GradNi_Curr_Mat[iVar] = new su2double[nDim];
   }
 
-  DV_Val      = NULL;
+  DV_Val      = nullptr;
   n_DV        = 0;
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
@@ -166,32 +149,21 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
 CFEAElasticity::~CFEAElasticity(void) {
 
   unsigned short iVar;
+  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
+  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
 
   for (iVar = 0; iVar < nDim; iVar++) {
     delete [] KAux_ab[iVar];
   }
 
-  if (nDim == 2) {
-    for (iVar = 0; iVar < 3; iVar++) {
-      delete [] Ba_Mat[iVar];
-      delete [] Bb_Mat[iVar];
-      delete [] D_Mat[iVar];
-    }
-    for (iVar = 0; iVar < 4; iVar++) {
-      delete [] GradNi_Ref_Mat[iVar];
-      delete [] GradNi_Curr_Mat[iVar];
-    }
+  for (iVar = 0; iVar < nStrain; iVar++) {
+    delete [] Ba_Mat[iVar];
+    delete [] Bb_Mat[iVar];
+    delete [] D_Mat[iVar];
   }
-  else {
-    for (iVar = 0; iVar < 6; iVar++) {
-      delete [] Ba_Mat[iVar];
-      delete [] Bb_Mat[iVar];
-      delete [] D_Mat[iVar];
-    }
-    for (iVar = 0; iVar < 8; iVar++) {
-      delete [] GradNi_Ref_Mat[iVar];
-      delete [] GradNi_Curr_Mat[iVar];
-    }
+  for (iVar = 0; iVar < nNodes; iVar++) {
+    delete [] GradNi_Ref_Mat[iVar];
+    delete [] GradNi_Curr_Mat[iVar];
   }
 
   delete [] KAux_ab;
@@ -201,15 +173,15 @@ CFEAElasticity::~CFEAElasticity(void) {
   delete [] GradNi_Ref_Mat;
   delete [] GradNi_Curr_Mat;
 
-  if (DV_Val != NULL) delete[] DV_Val;
+  if (DV_Val != nullptr) delete[] DV_Val;
 
-  if (FAux_Dead_Load != NULL) delete [] FAux_Dead_Load;
+  if (FAux_Dead_Load != nullptr) delete [] FAux_Dead_Load;
 
-  if (E_i != NULL) delete [] E_i;
-  if (Nu_i != NULL) delete [] Nu_i;
-  if (Rho_s_i != NULL) delete [] Rho_s_i;
-  if (Rho_s_DL_i != NULL) delete [] Rho_s_DL_i;
-  if (Ni_Vec != NULL) delete [] Ni_Vec;
+  if (E_i != nullptr) delete [] E_i;
+  if (Nu_i != nullptr) delete [] Nu_i;
+  if (Rho_s_i != nullptr) delete [] Rho_s_i;
+  if (Rho_s_DL_i != nullptr) delete [] Rho_s_DL_i;
+  if (Ni_Vec != nullptr) delete [] Ni_Vec;
 }
 
 

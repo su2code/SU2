@@ -54,6 +54,12 @@ class CFEAElasticity : public CNumerics {
 
 protected:
 
+  enum : unsigned short {DIM_STRAIN_2D = 3,   /*!< \brief Exx, Eyy, Gxy. */
+                         DIM_STRAIN_3D = 6};  /*!< \brief Exx, Eyy, Ezz, Gxy, Gxz, Gyz. */
+
+  enum : unsigned short {NNODES_2D = 4,   /*!< \brief Maximum number of nodes for 2D problems. */
+                         NNODES_3D = 8};  /*!< \brief Maximum number of nodes for 3D problems. */
+
   su2double E         = 1.0;              /*!< \brief Aux. variable, Young's modulus of elasticity. */
   su2double Nu        = 0.0;              /*!< \brief Aux. variable, Poisson's ratio. */
   su2double Rho_s     = 0.0;              /*!< \brief Aux. variable, Structural density. */
@@ -109,8 +115,8 @@ public:
    * \param[in] val_Nu - Value of the Poisson ratio.
    */
   inline void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu) final {
-    E_i[iVal] = val_E; 
-    Nu_i[iVal] = val_Nu; 
+    E_i[iVal] = val_E;
+    Nu_i[iVal] = val_Nu;
   }
 
   /*!
@@ -120,10 +126,10 @@ public:
    * \param[in] val_Rho_DL - Density for gravity (dead) loads.
    */
   inline void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL) final {
-    Rho_s_i[iVal] = val_Rho; 
+    Rho_s_i[iVal] = val_Rho;
     Rho_s_DL_i[iVal] = val_Rho_DL;
   }
-  
+
   /*!
    * \brief Set element electric field.
    * \param[in] i_DV - Index of the variable.
@@ -142,7 +148,7 @@ public:
    * \brief Get the value of a design variable.
    * \param[in] i_DV - Index of the variable.
    * \return Value of the variable.
-   */   
+   */
   inline su2double Get_DV_Val(unsigned short i_DV) const final { return DV_Val[i_DV]; }
 
   /*!
@@ -191,7 +197,7 @@ protected:
   /*!
    * \brief Read design variables from file.
    * \param[in] config - Definition of the problem.
-   */  
+   */
   void ReadDV(CConfig *config);
 
   /*!

@@ -75,7 +75,7 @@ protected:
   su2double C10, D1;             /*!< \brief C10 = Mu/2. D1 = Kappa/2. */
   su2double J_F_Iso;             /*!< \brief J_F_Iso: det(F)^-1/3. */
 
-  su2double ****cijkl;           /*!< \brief Constitutive tensor i,j,k,l (defined only for incompressibility - near inc.). */
+  su2double cijkl[3][3][3][3];   /*!< \brief Constitutive tensor i,j,k,l (defined only for incompressibility - near inc.). */
 
   bool maxwell_stress;           /*!< \brief Consider the effects of the dielectric loads */
 

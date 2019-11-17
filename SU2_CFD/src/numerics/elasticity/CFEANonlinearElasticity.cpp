@@ -64,14 +64,11 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
     KAux_P_ab[iVar] = new su2double[nDim];
   }
 
-  if (nDim == 2) {
-    currentCoord = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    for (iVar = 0; iVar < 4; iVar++) currentCoord[iVar] = new su2double[nDim];
-  }
-  else if (nDim == 3) {
-    currentCoord = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    for (iVar = 0; iVar < 8; iVar++) currentCoord[iVar] = new su2double[nDim];
-  }
+  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
+
+  currentCoord = new su2double* [nNodes];
+  for (iVar = 0; iVar < nNodes; iVar++)
+    currentCoord[iVar] = new su2double[nDim];
 
   J_F = 1.0; J_F_Iso = 1.0;
   f33 = 1.0;
@@ -81,25 +78,12 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
 
   F_Mat_Iso = NULL;
   b_Mat_Iso = NULL;
-  cijkl     = NULL;
 
   F_Mat_Iso = new su2double *[3];
   b_Mat_Iso = new su2double *[3];
   for (iVar = 0; iVar < 3; iVar++){
     F_Mat_Iso[iVar] = new su2double [3];
     b_Mat_Iso[iVar] = new su2double [3];
-  }
-
-  unsigned short jVar, kVar;
-  cijkl = new su2double ***[3];
-  for (iVar = 0; iVar < 3; iVar++){
-    cijkl[iVar] = new su2double **[3];
-    for (jVar = 0; jVar < 3; jVar++){
-      cijkl[iVar][jVar] = new su2double *[3];
-      for (kVar = 0; kVar < 3; kVar++){
-        cijkl[iVar][jVar][kVar] = new su2double [3];
-      }
-    }
   }
 
   maxwell_stress = config->GetDE_Effects();
@@ -184,7 +168,7 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
           default:
             break;
         }
-
+        break;
     }
 
   }
@@ -193,7 +177,7 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
 
 CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
 
-  unsigned short iVar, jVar, kVar;
+  unsigned short iVar;
 
   for (iVar = 0; iVar < 3; iVar++) {
     delete [] F_Mat[iVar];
@@ -206,15 +190,10 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
     delete [] KAux_P_ab[iVar];
   }
 
-  if (nDim == 2) {
-    for (iVar = 0; iVar < 4; iVar++) {
-      delete [] currentCoord[iVar];
-    }
-  }
-  else if (nDim == 3) {
-    for (iVar = 0; iVar < 8; iVar++) {
-      delete [] currentCoord[iVar];
-    }
+  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
+
+  for (iVar = 0; iVar < nNodes; iVar++) {
+    delete [] currentCoord[iVar];
   }
 
   delete [] F_Mat;
@@ -236,19 +215,6 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
       if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
     }
     delete [] b_Mat_Iso;
-  }
-
-  if (cijkl != NULL){
-    for (iVar = 0; iVar < 3; iVar++){
-      for (jVar = 0; jVar < 3; jVar++){
-        for (kVar = 0; kVar < 3;kVar++){
-          delete [] cijkl[iVar][jVar][kVar];
-        }
-        delete [] cijkl[iVar][jVar];
-      }
-      delete [] cijkl[iVar];
-    }
-    delete [] cijkl;
   }
 
   if (EField_Ref_Unit  != NULL)   delete [] EField_Ref_Unit;
