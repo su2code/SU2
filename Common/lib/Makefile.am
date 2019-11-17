@@ -85,8 +85,6 @@ lib_sources = \
   ../include/interpolation_structure.hpp \
   ../include/fem_gauss_jacobi_quadrature.hpp \
   ../include/fem_gauss_jacobi_quadrature.inl \
-  ../include/gauss_structure.hpp \
-  ../include/element_structure.hpp \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
   ../include/wall_model.hpp \
@@ -138,8 +136,13 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
-  ../src/element_structure.cpp \
-  ../src/element_linear.cpp \
+  ../src/geometry/primitives/CElement.cpp \
+  ../src/geometry/primitives/CTRIA1.cpp \
+  ../src/geometry/primitives/CQUAD4.cpp \
+  ../src/geometry/primitives/CTETRA1.cpp \
+  ../src/geometry/primitives/CPYRAM5.cpp \
+  ../src/geometry/primitives/CPRISM6.cpp \
+  ../src/geometry/primitives/CHEXA8.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \

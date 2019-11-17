@@ -48,8 +48,7 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/gauss_structure.hpp"
-#include "../../Common/include/element_structure.hpp"
+#include "../../Common/include/geometry/primitives/CElement.hpp"
 #include "fluid_model.hpp"
 
 using namespace std;

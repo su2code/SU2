@@ -53,7 +53,7 @@
 #include "linear_algebra/CSysMatrix.hpp"
 #include "linear_algebra/CSysVector.hpp"
 #include "linear_algebra/CSysSolve.hpp"
-#include "element_structure.hpp"
+#include "geometry/primitives/CElement.hpp"
 
 using namespace std;
 

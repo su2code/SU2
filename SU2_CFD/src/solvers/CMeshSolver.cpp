@@ -201,7 +201,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 CMeshSolver::~CMeshSolver(void) {
 
   if (Coordinate != NULL) delete [] Coordinate;
-  if (element  !=NULL ) delete [] element;
+  if (element    !=NULL ) delete [] element;
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {

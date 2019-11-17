@@ -1,5 +1,5 @@
 /*!
- * \file element_structure.cpp
+ * \file CElement.cpp
  * \brief Definition of the Finite Element structure (elements)
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/element_structure.hpp"
+#include "../../../include/geometry/primitives/CElement.hpp"
 
 
 CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short ndim) {
@@ -79,3 +79,4 @@ void CElement::ClearElement(void) {
   for(auto& kab_i : Kab)
     kab_i.setConstant(0.0);
 }
+

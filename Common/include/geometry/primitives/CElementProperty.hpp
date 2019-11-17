@@ -1,7 +1,6 @@
 ﻿/*!
- * \file gauss_structure.hpp
- * \brief Headers of the Finite Element structure (gaussian points)
- *        The subroutines and functions are in the <i>gauss_structure.cpp</i> file.
+ * \file CElementProperty.hpp
+ * \brief Light classes to define finite element properties.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -38,85 +37,9 @@
 
 #pragma once
 
-#include "toolboxes/C2DContainer.hpp"
-
 /*!
- * \class CGaussVariable
- * \brief Main class for defining the gaussian points.
- * \author R. Sanchez
- */
-class CGaussVariable {
-protected:
-
-  su2activematrix GradNi_Xj;      /*!< \brief Gradient of the shape functions N[i] wrt the reference configuration. */
-  su2activematrix GradNi_xj;      /*!< \brief Gradient of the shape functions N[i] wrt the current configuration. */
-  su2activevector Ni;             /*!< \brief Shape functions N[i] at the gaussian point. */
-  su2double J_X = 0.0;            /*!< \brief Element Jacobian evaluated at this Gauss Point wrt the reference configuration. */
-  su2double J_x = 0.0;            /*!< \brief Element Jacobian evaluated at this Gauss Point wrt the current configuration. */
-  unsigned short iGaussPoint = 0; /*!< \brief Identifier of the Gauss point considered. */
-
-public:
-  /*!
-   * \brief Deleted default constructor as this class does not allow resizing once created.
-   */
-  CGaussVariable() = delete;
-
-  /*!
-   * \brief Class constructor
-   * \param[in] val_iGauss - ID of the Gaussian Point
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes)
-    : J_X(0.0), J_x(0.0), iGaussPoint(val_iGauss)
-  {
-    GradNi_Xj.resize(val_nNodes,val_nDim) = su2double(0.0);
-    GradNi_xj = GradNi_Xj;
-
-    Ni.resize(val_nNodes) = su2double(0.0);
-  }
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CGaussVariable(void) = default;
-
-  inline void SetGradNi_Xj(su2double val_GradNi_Xj, unsigned short val_iDim, unsigned short val_Ni) {
-    GradNi_Xj(val_Ni, val_iDim) = val_GradNi_Xj;
-  }
-
-  inline void SetGradNi_xj(su2double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni) {
-    GradNi_xj(val_Ni, val_iDim) = val_GradNi_xj;
-  }
-
-  inline void SetNi(su2double val_ShapeNi, unsigned short val_Ni) { Ni(val_Ni) = val_ShapeNi; }
-
-  inline void SetJ_X(su2double valJ_X) { J_X = valJ_X; }
-
-  inline void SetJ_x(su2double valJ_x) { J_x = valJ_x; }
-
-
-  inline su2double GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim) const {
-    return GradNi_Xj(val_Ni, val_iDim);
-  }
-
-  inline su2double GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim) const {
-    return GradNi_xj(val_Ni, val_iDim);
-  }
-
-  inline su2double GetNi(unsigned short val_Ni) const { return Ni(val_Ni); }
-
-  inline su2double GetJ_X(void) const { return J_X; }
-
-  inline su2double GetJ_x(void) const { return J_x; }
-
-  inline unsigned short Get_iGauss(void) const { return iGaussPoint; }
-
-};
-
-/*!
- * \class CElementProperty
- * \brief Main class for defining the element properties.
+ * \class CProperty
+ * \brief Base class for defining element properties.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  */
@@ -188,9 +111,10 @@ public:
   inline virtual void RegisterDensity(void) {}
 };
 
+
 /*!
  * \class CElementProperty
- * \brief Main class for defining the element properties.
+ * \brief Class for defining element properties for the structural solver.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  */

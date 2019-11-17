@@ -1,8 +1,7 @@
 ﻿/*!
- * \file element_structure.hpp
- * \brief Headers of the Finite Element structure (elements)
- *        The subroutines and functions are in the <i>element_structure.cpp</i>
- *        and <i>element_linear.cpp</i> files.
+ * \file CElement.hpp
+ * \brief Main header of the Finite Element structure declaring the abstract
+ *        interface and the available finite element types.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -39,7 +38,8 @@
 
 #pragma once
 
-#include "gauss_structure.hpp"
+#include "CGaussVariable.hpp"
+#include "CElementProperty.hpp"
 #include <vector>
 
 /*!
@@ -748,3 +748,4 @@ public:
   su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
 
 };
+
