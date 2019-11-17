@@ -40,7 +40,10 @@
 
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                               CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+                               CConfig *config) : CNumerics() {
+
+  nDim = val_nDim;
+  nVar = val_nVar;
 
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool pseudo_static = config->GetPseudoStatic();
