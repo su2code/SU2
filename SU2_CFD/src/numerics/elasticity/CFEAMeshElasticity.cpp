@@ -35,11 +35,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/numerics/CFEAMeshElasticity.hpp"
-#include <limits>
+#include "../../../include/numerics/elasticity/CFEAMeshElasticity.hpp"
 
-CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config) : CFEALinearElasticity() {
 
+CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
+                                       unsigned long val_nElem, CConfig *config) :
+                                       CFEALinearElasticity() {
   DV_Val         = NULL;
   FAux_Dead_Load = NULL;
   Rho_s_i        = NULL;
@@ -121,8 +122,3 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   }
 
 }
-
-CFEAMeshElasticity::~CFEAMeshElasticity(void) {
-
-}
-

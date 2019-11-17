@@ -1,6 +1,7 @@
 /*!
- * \file numerics_direct_elasticity.cpp
- * \brief This file contains the routines for setting the tangent matrix and residual of a FEM linear elastic structural problem.
+ * \file CFEAElasticity.cpp
+ * \brief This file contains the routines for setting the tangent matrix and
+ *        residual of a FEM linear elastic structural problem.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -35,71 +36,39 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/numerics_structure.hpp"
-#include <limits>
+#include "../../../include/numerics/elasticity/CFEAElasticity.hpp"
 
-CFEAElasticity::CFEAElasticity(void) : CNumerics () {
-
-  E        = 1.0;          /*!< \brief Aux. variable, Young's modulus of elasticity. */
-  Nu       = 0.0;          /*!< \brief Aux. variable, Poisson's ratio. */
-  Rho_s    = 0.0;          /*!< \brief Aux. variable, Structural density. */
-  Rho_s_DL = 0.0;          /*!< \brief Aux. variable, Structural density (for dead loads). */
-  Mu       = 0.0;          /*!< \brief Aux. variable, Lame's coeficient. */
-  Lambda   = 0.0;          /*!< \brief Aux. variable, Lame's coeficient. */
-  Kappa    = 0.0;          /*!< \brief Aux. variable, Compressibility constant. */
-
-  E_i        = NULL;       /*!< \brief Young's modulus of elasticity (list). */
-  Nu_i       = NULL;       /*!< \brief Poisson's ratio (list). */
-  Rho_s_i    = NULL;       /*!< \brief Structural density (list). */
-  Rho_s_DL_i = NULL;       /*!< \brief Structural density (for dead loads) (list). */
-
-  plane_stress = false;    /*!< \brief Checks if we are solving a plane stress case */
-
-  Ba_Mat          = NULL;  /*!< \brief Matrix B for node a - Auxiliary. */
-  Bb_Mat          = NULL;  /*!< \brief Matrix B for node b - Auxiliary. */
-  Ni_Vec          = NULL;  /*!< \brief Vector of shape functions - Auxiliary. */
-  D_Mat           = NULL;  /*!< \brief Constitutive matrix - Auxiliary. */
-  KAux_ab         = NULL;  /*!< \brief Node ab stiffness matrix - Auxiliary. */
-  GradNi_Ref_Mat  = NULL;  /*!< \brief Gradients of Ni - Auxiliary. */
-  GradNi_Curr_Mat = NULL;  /*!< \brief Gradients of Ni - Auxiliary. */
-
-  FAux_Dead_Load  = NULL;  /*!< \brief Auxiliar vector for the dead loads */
-
-  DV_Val = NULL;           /*!< \brief For optimization cases, value of the design variables. */
-  n_DV = 0.0;              /*!< \brief For optimization cases, number of design variables. */
-
-}
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+                               CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool pseudo_static = config->GetPseudoStatic();
 
-  unsigned short iVar;  // TODO: This needs to be changed; however, the config option is only limited to short...
-
-  // Initialize values
-  E = 0.0;  Nu = 0.0;     Rho_s = 0.0; Rho_s_DL = 0.0;
-  Mu = 0.0; Lambda = 0.0; Kappa = 0.0;
+  unsigned short iVar, nProp;
 
   /*--- Initialize vector structures for multiple material definition ---*/
-  E_i         = new su2double[config->GetnElasticityMod()];
-  for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
-    E_i[iVar]        = config->GetElasticyMod(iVar);
+  nProp = config->GetnElasticityMod();
 
-  Nu_i        = new su2double[config->GetnPoissonRatio()];
-  for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
-    Nu_i[iVar]        = config->GetPoissonRatio(iVar);
+  E_i = new su2double[nProp];
+  for (iVar = 0; iVar < nProp; iVar++)
+    E_i[iVar] = config->GetElasticyMod(iVar);
 
-  Rho_s_i     = new su2double[config->GetnMaterialDensity()];     // For inertial effects
-  Rho_s_DL_i  = new su2double[config->GetnMaterialDensity()];     // For dead loads
-  for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++){
-    Rho_s_DL_i[iVar]        = config->GetMaterialDensity(iVar);
-    if (pseudo_static) Rho_s_i[iVar] = 0.0;
-    else               Rho_s_i[iVar] = config->GetMaterialDensity(iVar);
+  nProp = config->GetnPoissonRatio();
+
+  Nu_i = new su2double[nProp];
+  for (iVar = 0; iVar < nProp; iVar++)
+    Nu_i[iVar] = config->GetPoissonRatio(iVar);
+
+  nProp = config->GetnMaterialDensity();
+
+  Rho_s_i = new su2double[nProp];     // For inertial effects
+  Rho_s_DL_i = new su2double[nProp];  // For dead loads
+
+  for (iVar = 0; iVar < nProp; iVar++) {
+    Rho_s_DL_i[iVar] = config->GetMaterialDensity(iVar);
+    Rho_s_i[iVar] = pseudo_static ? 0.0 : config->GetMaterialDensity(iVar);
   }
-
-  if (pseudo_static) Rho_s_i[0] = 0.0;             // Pseudo-static: no inertial effects considered
 
   // Initialization
   E   = E_i[0];
@@ -110,7 +79,8 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Compute_Lame_Parameters();
 
   // Auxiliary vector for body forces (dead load)
-  if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
+  FAux_Dead_Load = NULL;
+  if (body_forces) FAux_Dead_Load = new su2double [nDim];
 
   plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
 
@@ -137,21 +107,21 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
       GradNi_Curr_Mat[iVar]   = new su2double[nDim];
     }
   }
-  else if (nDim == 3) {
+  else {
     Ba_Mat = new su2double* [6];
     Bb_Mat = new su2double* [6];
     D_Mat  = new su2double* [6];
-    Ni_Vec  = new su2double [8];      /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+    Ni_Vec = new su2double  [8];      /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
     GradNi_Ref_Mat = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
     GradNi_Curr_Mat = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
     for (iVar = 0; iVar < 6; iVar++) {
       Ba_Mat[iVar]      = new su2double[nDim];
       Bb_Mat[iVar]      = new su2double[nDim];
-      D_Mat[iVar]        = new su2double[6];
+      D_Mat[iVar]       = new su2double[6];
     }
     for (iVar = 0; iVar < 8; iVar++) {
       GradNi_Ref_Mat[iVar]   = new su2double[nDim];
-      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
+      GradNi_Curr_Mat[iVar]  = new su2double[nDim];
     }
   }
 
@@ -212,7 +182,7 @@ CFEAElasticity::~CFEAElasticity(void) {
       delete [] GradNi_Curr_Mat[iVar];
     }
   }
-  else if (nDim == 3) {
+  else {
     for (iVar = 0; iVar < 6; iVar++) {
       delete [] Ba_Mat[iVar];
       delete [] Bb_Mat[iVar];
@@ -233,7 +203,7 @@ CFEAElasticity::~CFEAElasticity(void) {
 
   if (DV_Val != NULL) delete[] DV_Val;
 
-  if (FAux_Dead_Load     != NULL) delete [] FAux_Dead_Load;
+  if (FAux_Dead_Load != NULL) delete [] FAux_Dead_Load;
 
   if (E_i != NULL) delete [] E_i;
   if (Nu_i != NULL) delete [] Nu_i;
@@ -241,6 +211,7 @@ CFEAElasticity::~CFEAElasticity(void) {
   if (Rho_s_DL_i != NULL) delete [] Rho_s_DL_i;
   if (Ni_Vec != NULL) delete [] Ni_Vec;
 }
+
 
 void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
@@ -256,7 +227,7 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
   su2double val_Mab;
 
   element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
-  element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/
+  element->ComputeGrad_Linear(); /*--- Need to compute the gradients to obtain the Jacobian ---*/
 
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -292,6 +263,7 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
   }
 
 }
+
 
 void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
@@ -344,7 +316,8 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
 }
 
-void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
+
+void CFEAElasticity::SetElement_Properties(const CElement *element, CConfig *config) {
 
   /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
   Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
@@ -371,6 +344,7 @@ void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
   Compute_Lame_Parameters();
 
 }
+
 
 void CFEAElasticity::ReadDV(CConfig *config) {
 
