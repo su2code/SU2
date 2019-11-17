@@ -146,6 +146,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  bool time_domain = driver_config->GetTime_Domain();
 
   while ( TimeIter < driver_config->GetnTime_Iter()) {
 
@@ -161,8 +162,8 @@ void CDiscAdjMultizoneDriver::Run() {
     }
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      /*** Note that for unsteady cases, if OUTPUT_WRT_FREQ is not defined, default is 1 ---*/
-      wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+      if (!time_domain)
+        wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
       iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                                     solver_container, numerics_container, config_container, surface_movement,
@@ -258,7 +259,7 @@ void CDiscAdjMultizoneDriver::Run() {
           ComputeAdjoints(iZone, eval_transfer);
 
           /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-
+          cout << "CVC: Debug: iteration_container["<< iZone << "][" << INST_0 << "]->Iterate" << endl;
           iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                       solver_container, numerics_container, config_container,
                                                       surface_movement, grid_movement, FFDBox, iZone, INST_0);
@@ -304,7 +305,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Set the multizone output. ---*/
 
-      driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, 0, iOuterIter);
+      driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
 
       /*--- Check for convergence. ---*/
 
