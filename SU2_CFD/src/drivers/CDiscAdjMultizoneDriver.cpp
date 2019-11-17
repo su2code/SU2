@@ -403,6 +403,12 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
 
   AD::ClearAdjoints();
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                             config_container[iZone],
+                                             solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
+  }
 }
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
