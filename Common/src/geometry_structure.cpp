@@ -3681,13 +3681,13 @@ void CGeometry::SetElemVolume(CConfig *config)
 
   /*--- Create a bank of elements to avoid instantiating inside loop ---*/
   if (nDim==2) {
-    elements[0] = new CTRIA1(nDim,config);
-    elements[1] = new CQUAD4(nDim,config);
+    elements[0] = new CTRIA1();
+    elements[1] = new CQUAD4();
   } else {
-    elements[0] = new CTETRA1(nDim,config);
-    elements[1] = new CPYRAM5(nDim,config);
-    elements[2] = new CPRISM6(nDim,config);
-    elements[3] = new CHEXA8(nDim,config);
+    elements[0] = new CTETRA1();
+    elements[1] = new CPYRAM5();
+    elements[2] = new CPRISM6();
+    elements[3] = new CHEXA8();
   }
 
   /*--- Compute and store the volume of each "elem" ---*/
@@ -3709,7 +3709,7 @@ void CGeometry::SetElemVolume(CConfig *config)
       unsigned long node_idx = elem[iElem]->GetNode(iNode);
       for (unsigned short iDim=0; iDim<nDim; ++iDim) {
         su2double coord = node[node_idx]->GetCoord(iDim);
-        element->SetRef_Coord(coord, iNode, iDim);
+        element->SetRef_Coord(iNode, iDim, coord);
       }
     }
     /*--- Compute ---*/

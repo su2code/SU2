@@ -110,7 +110,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
   }
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -188,10 +188,10 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
           }
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode) {
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
         }
 
       }
@@ -213,7 +213,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
             res_aux[iVar] += Kab[iVar*nVar+jVar]*
               (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
       }
-      element->Add_Kt_a(res_aux,iNode);
+      element->Add_Kt_a(iNode, res_aux);
     }
   }
 
@@ -287,7 +287,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     }
   }
 
-  element->clearStress(); /*--- Clears the stress in the element to avoid adding over previous results. --*/
+  element->ClearStress(); /*--- Clears the stress in the element to avoid adding over previous results. --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -350,18 +350,15 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     for (iNode = 0; iNode < nNode; iNode++) {
       /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz, while in the ---*/
       /*--- output it is the 4th component for practical reasons ---*/
+      su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
+
       if (nDim == 2) {
-        element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-        element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-        element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+        for(iVar = 0; iVar < 3; ++iVar)
+          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
       }
-      else if (nDim == 3) {
-        element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-        element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-        element->Add_NodalStress(Stress[3] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
-        element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
-        element->Add_NodalStress(Stress[4] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
-        element->Add_NodalStress(Stress[5] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
+      else {
+        for(iVar = 0; iVar < 6; ++iVar)
+          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
       }
     }
 

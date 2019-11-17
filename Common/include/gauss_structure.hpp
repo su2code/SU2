@@ -57,6 +57,11 @@ protected:
 
 public:
   /*!
+   * \brief Deleted default constructor as this class does not allow resizing once created.
+   */
+  CGaussVariable() = delete;
+
+  /*!
    * \brief Class constructor
    * \param[in] val_iGauss - ID of the Gaussian Point
    * \param[in] val_nDim - Number of dimensions of the problem.

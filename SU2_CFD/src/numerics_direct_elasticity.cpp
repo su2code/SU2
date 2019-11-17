@@ -255,7 +255,7 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
   su2double val_Mab;
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/
 
   nNode = element->GetnNodes();
@@ -279,10 +279,10 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
         val_Mab = Weight * Ni_Vec[iNode] * Ni_Vec[jNode] * Jac_X * Rho_s;
 
-        element->Add_Mab(val_Mab,iNode, jNode);
+        element->Add_Mab(iNode, jNode, val_Mab);
         /*--- Symmetric terms --*/
         if (iNode != jNode) {
-          element->Add_Mab(val_Mab, jNode, iNode);
+          element->Add_Mab(jNode, iNode, val_Mab);
         }
 
       }
@@ -313,8 +313,8 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
   if (nDim == 2) g_force[1] = -1*STANDARD_GRAVITY;
   else if (nDim == 3) g_force[2] = -1*STANDARD_GRAVITY;
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
-  element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/
+  element->ClearElement();       /*--- Restart the element to avoid adding over previous results. --*/
+  element->ComputeGrad_Linear(); /*--- Need to compute the gradients to obtain the Jacobian. ---*/
 
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -336,7 +336,7 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
         FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s_DL * g_force[iDim];
       }
 
-      element->Add_FDL_a(FAux_Dead_Load,iNode);
+      element->Add_FDL_a(iNode, FAux_Dead_Load);
 
     }
 
@@ -375,7 +375,7 @@ void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
 void CFEAElasticity::ReadDV(CConfig *config) {
 
   int rank = SU2_MPI::GetRank();
-  
+
   unsigned long index;
 
   string filename;
