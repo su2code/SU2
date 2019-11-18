@@ -106,13 +106,13 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   /*--- Initialize the node structure ---*/
   nodes = new CDiscAdjMeshBoundVariable(nPoint,nDim,config);
   SetBaseClassPointerToNodes();
-  
+
   /*--- Set which points are vertices and allocate boundary data. ---*/
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    
+
     nodes->SetSolution(iPoint,Solution);
-    
+
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex >= 0) {
