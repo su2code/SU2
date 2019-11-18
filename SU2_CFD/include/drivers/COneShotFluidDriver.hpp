@@ -79,6 +79,7 @@ protected:
   su2double* ConstrFunc;       /*!< \brief Constraint function values.*/
   su2double* Multiplier;       /*!< \brief Lagrange multipliers for constraint functions.*/
   su2double* Multiplier_Old;   /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* Multiplier_Store; /*!< \brief Stored Lagrange multipliers for update.*/
   su2double* ConstrFunc_Store; /*!< \brief Old constraint function (stored when overwritten).*/
   su2double** BCheck_Inv;      /*!< \brief Inverse matrix for multiplier update.*/
   su2double  BCheck_Norm;      /*!< \brief Norm of the matrix for multiplier update.*/
@@ -279,7 +280,7 @@ public:
   /*!
    * \brief Store the old constraint multiplier.
    */
-  void StoreMultiplier();
+  void StoreOldMultiplier();
 
     /*!
    * \brief Load the old constraint multiplier.

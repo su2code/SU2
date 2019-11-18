@@ -76,6 +76,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     ConstrFunc_Store = new su2double[nConstr];
     Multiplier = new su2double[nConstr];
     Multiplier_Old = new su2double[nConstr];
+    Multiplier_Store = new su2double[nConstr];
     AugmentedLagrangianMultiplierGradient = new su2double[nConstr];
     BCheck_Inv = new su2double*[nConstr];
   }
@@ -108,6 +109,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     ConstrFunc_Store[iConstr] = 0.0;
     Multiplier[iConstr] = 0.0;
     Multiplier_Old[iConstr] = 0.0;
+    Multiplier_Store[iConstr] = 0.0;
     AugmentedLagrangianMultiplierGradient[iConstr] = 0.0;
     BCheck_Inv[iConstr] = new su2double[nConstr];
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
@@ -158,6 +160,7 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
     delete [] ConstrFunc;
     delete [] Multiplier;
     delete [] Multiplier_Old;
+    delete [] Multiplier_Store;
     delete [] ConstrFunc_Store;
     delete [] AugmentedLagrangianMultiplierGradient;
   }
@@ -242,7 +245,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else{
         /*--- Store and update constraint multiplier ---*/
-        StoreMultiplier();
+        StoreOldMultiplier();
         StoreMultiplierGrad();
         // UpdateMultiplier(1.0);
       }
@@ -1183,7 +1186,7 @@ void COneShotFluidDriver::SetConstrFunction(){
   }
 }
 
-void COneShotFluidDriver::StoreMultiplier(){
+void COneShotFluidDriver::StoreOldMultiplier(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Multiplier_Old[iConstr] = Multiplier[iConstr];
   }
@@ -1203,7 +1206,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
-    Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier_Store[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // /*--- gamma*h ---*/
@@ -1215,6 +1218,9 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     }
     else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma <= 0.){
       Multiplier[iConstr] = 0.;
+    }
+    else {
+      Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
   }
 }
