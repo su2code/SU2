@@ -537,10 +537,6 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
         }
       }
 
-      /*--- Register topology optimization densities ---*/
-      if (config->GetTopology_Optimization())
-        direct_solver->RegisterVariables(geometry,config);
-
       /*--- Register the flow tractions ---*/
       if (config->GetnMarker_Fluid_Load() > 0)
         direct_solver->GetNodes()->RegisterFlowTraction();
@@ -831,11 +827,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     }
 
-    /*--- Extract the topology optimization density sensitivities ---*/
-
-    if (config->GetTopology_Optimization())
-      direct_solver->ExtractAdjoint_Variables(geometry,config);
-
     /*--- Extract the flow traction sensitivities ---*/
 
     if (config->GetnMarker_Fluid_Load() > 0){
@@ -990,6 +981,12 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
     for (iVar = 0; iVar < nDV; iVar++)
       Total_Sens_DV[iVar] += Global_Sens_DV[iVar];
   }
+
+  /*--- Extract the topology optimization density sensitivities ---*/
+
+  direct_solver->ExtractAdjoint_Variables(geometry, config);
+
+  /*--- Extract the geometric sensitivities ---*/
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 

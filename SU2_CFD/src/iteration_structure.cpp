@@ -2898,6 +2898,12 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
           Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
   }
   else {
+    /*--- Register topology optimization densities (note direct solver) ---*/
+
+    solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+    /*--- Register mesh coordinates for geometric sensitivities ---*/
+
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
   }
 }
@@ -2984,7 +2990,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   }
 
   /*--- FSI specific dependencies. ---*/
-  if(fsi) {
+  if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
     dir_solver->PredictStruct_Displacement(nullptr, config[iZone], solver[iZone][iInst]);
   }
@@ -2997,6 +3003,17 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   if (kind_recording == MESH_COORDS) {
     structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
     structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  }
+
+  /*--- Topology optimization dependencies. ---*/
+
+  /*--- We only differentiate wrt to this variable in the adjoint secondary recording. ---*/
+  if (config[iZone]->GetTopology_Optimization() && (kind_recording == MESH_COORDS)) {
+    /*--- The filter may require the volumes of the elements. ---*/
+    structural_geometry->SetElemVolume(config[iZone]);
+    /// TODO: Ideally there would be a way to capture this dependency without the `static_cast`, but
+    ///       making it a virtual method of CSolver does not feel "right" as its purpose could be confused.
+    static_cast<CFEASolver*>(dir_solver)->FilterElementDensities(structural_geometry, config[iZone]);
   }
 
 }
