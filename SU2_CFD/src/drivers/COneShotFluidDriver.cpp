@@ -77,6 +77,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     Multiplier = new su2double[nConstr];
     Multiplier_Old = new su2double[nConstr];
     Multiplier_Store = new su2double[nConstr];
+    Multiplier_Store_Old = new su2double[nConstr];
     AugmentedLagrangianMultiplierGradient = new su2double[nConstr];
     BCheck_Inv = new su2double*[nConstr];
   }
@@ -110,6 +111,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     Multiplier[iConstr] = 0.0;
     Multiplier_Old[iConstr] = 0.0;
     Multiplier_Store[iConstr] = 0.0;
+    Multiplier_Store_Old[iConstr] = 0.0;
     AugmentedLagrangianMultiplierGradient[iConstr] = 0.0;
     BCheck_Inv[iConstr] = new su2double[nConstr];
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
@@ -161,6 +163,7 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
     delete [] Multiplier;
     delete [] Multiplier_Old;
     delete [] Multiplier_Store;
+    delete [] Multiplier_Store_Old;
     delete [] ConstrFunc_Store;
     delete [] AugmentedLagrangianMultiplierGradient;
   }
@@ -241,7 +244,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadMultiplier();
+        LoadOldMultiplier();
       }
       else{
         /*--- Store and update constraint multiplier ---*/
@@ -281,7 +284,7 @@ void COneShotFluidDriver::RunOneShot(){
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        LoadMultiplier();
+        LoadOldMultiplier();
         ComputeDesignVarUpdate(0.0);
       }
 
@@ -1189,12 +1192,14 @@ void COneShotFluidDriver::SetConstrFunction(){
 void COneShotFluidDriver::StoreOldMultiplier(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Multiplier_Old[iConstr] = Multiplier[iConstr];
+    Multiplier_Store_Old[iConstr] = Multiplier_Store[iConstr];
   }
 }
 
-void COneShotFluidDriver::LoadMultiplier(){
+void COneShotFluidDriver::LoadOldMultiplier(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Multiplier[iConstr] = Multiplier_Old[iConstr];
+    Multiplier_Store[iConstr] = Multiplier_Store_Old[iConstr];
   }
 }
 
