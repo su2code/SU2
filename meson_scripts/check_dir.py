@@ -12,4 +12,3 @@ if __name__ == "__main__":
   p.add_argument("path", help="path to check")
   P = p.parse_args()
   sys.exit(not check_dir(P.path))
-
