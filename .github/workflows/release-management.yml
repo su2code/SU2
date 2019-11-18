@@ -30,19 +30,26 @@ jobs:
         run: |
           cd install
           zip -r ../${{matrix.os_bin}}.zip bin/*
-        # Drafts your next Release notes as Pull Requests are merged into "master"
+        # Uploads binaries as artifacts (just as a backup)
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{matrix.os_bin}}
+          path: install/bin
+        # Update the release notes of latest draft release
       - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-10
         name: Update Release
         id: update_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Upload binaries as assets to draft release
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.update_release.outputs.uploadurl }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.update_release.outputs.uploadurl }}
           asset_path: ${{matrix.os_bin}}.zip
           asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
           asset_content_type: application/zip
