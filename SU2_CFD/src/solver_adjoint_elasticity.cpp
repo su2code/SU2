@@ -980,6 +980,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
     Total_Sens_Rho[iVar]      += Global_Sens_Rho[iVar];
     Total_Sens_Rho_DL[iVar]   += Global_Sens_Rho_DL[iVar];
   }
+
   if (de_effects){
     for (iVar = 0; iVar < nEField; iVar++)
       Total_Sens_EField[iVar]+= Global_Sens_EField[iVar];

@@ -1154,11 +1154,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
     for (iNode = 0; iNode < nNodes; iNode++) {
       
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      // CVC: Debug: reference nodes and displaced nodes
+
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-        //cout << "CVC: Debug: iNode = " << iNode << ", iDim = " << iDim << ", val_Sol = " << val_Sol << endl;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
@@ -1253,10 +1252,8 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-        //if (iDim == 0) cout << "CVC: Debug: coord = " << val_Coord << ", disp = " << node[indexNode[iNode]]->GetSolution(iDim) << endl;
 
         /*--- Set current coordinate ---*/
-        //if (iDim == 0) cout << "CVC: Debug: iNode = " << iNode << ", iDim = " << iDim << ", val_Sol Curr_Coord = " << val_Sol << endl;
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (de_effects) element_container[DE_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 

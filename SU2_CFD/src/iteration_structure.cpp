@@ -253,9 +253,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       nIterMesh = grid_movement->Get_nIterMesh();
       stat_mesh = (nIterMesh == 0);
 
-      //CVC: Debug: 
       //if (!adjoint && !stat_mesh) {
-      //CVC: Debug: Are the grid velocities from the direct solution stored and handled correctly?
       if (!discrete_adjoint && !stat_mesh) {
         if (rank == MASTER_NODE && Screen_Output)
           cout << "Computing grid velocities by finite differencing." << endl;
@@ -2429,7 +2427,7 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver,
                                           unsigned short val_iZone,
                                           unsigned short val_iInst,
                                           unsigned short kind_recording) {
-  
+
   unsigned short iMesh;
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
@@ -2857,7 +2855,6 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
   /*--- Register structural variables and objective function as output ---*/
 
   RegisterOutput(solver, geometry, config, val_iZone, val_iInst);
-  //RegisterOutput(solver, geometry, config, output, val_iZone, val_iInst);
 
   /*--- Stop the recording ---*/
 
@@ -2883,7 +2880,7 @@ void CDiscAdjFEAIteration::SetRecording(CSolver *****solver,
 
   /*--- Set correct time iteration for recording if dynamic simulation ---*/
 
-  if (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC) {
+  if (config[val_iZone]->GetTime_Domain()) {
     unsigned long TimeIter = config[val_iZone]->GetTimeIter();
     config[val_iZone]->SetTimeIter(TimeIter);
   }
@@ -3014,7 +3011,6 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
 }
 
 void CDiscAdjFEAIteration::RegisterOutput(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst){
-//void CDiscAdjFEAIteration::RegisterOutput(CSolver *****solver, CGeometry ****geometry, CConfig **config, COutput* output, unsigned short iZone, unsigned short iInst){
 
   /*--- Register conservative variables as output of the iteration ---*/
 

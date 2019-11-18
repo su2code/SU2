@@ -4128,6 +4128,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );
     }
   }
+
 }
 bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
@@ -5113,27 +5114,27 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
     ofstream myfile_res;
     myfile_res.open ("history_adjoint_FSI.csv");
 
-    myfile_res << "BGS_Iter";
+    myfile_res << "BGS_Iter\t";
 
     for (iVar = 0; iVar < nVar_Flow; iVar++){
-      myfile_res << ", " << "ResFlow[" << iVar << "]";
+      myfile_res << "ResFlow[" << iVar << "]\t";
     }
 
     for (iVar = 0; iVar < nVar_Struct; iVar++){
-      myfile_res << ", " << "ResFEA[" << iVar << "]";
+      myfile_res << "ResFEA[" << iVar << "]\t";
     }
 
 
     bool de_effects = config_container[ZONE_0]->GetDE_Effects();
     for (iVar = 0; iVar < config_container[ZONE_0]->GetnElasticityMod(); iVar++)
-        myfile_res << ", " << "Sens_E_" << iVar;
+        myfile_res << "Sens_E_" << iVar << "\t";
 
     for (iVar = 0; iVar < config_container[ZONE_0]->GetnPoissonRatio(); iVar++)
-      myfile_res << ", " << "Sens_Nu_" << iVar;
+      myfile_res << "Sens_Nu_" << iVar << "\t";
 
     if (de_effects){
         for (iVar = 0; iVar < config_container[ZONE_0]->GetnElectric_Field(); iVar++)
-          myfile_res << ", " << "Sens_EField_" << iVar;
+          myfile_res << "Sens_EField_" << iVar << "\t";
     }
 
     myfile_res << endl;
@@ -5185,8 +5186,6 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   output_legacy = new COutputLegacy(config_container[ZONE_0]);
 
   /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-//  if (config_container[ZONE_0]->GetUnsteady_Simulation() == NONE) config_container[ZONE_0]->SetnExtIter(1);
-//  if (config_container[ZONE_1]->GetDynamic_Analysis() != DYNAMIC) config_container[ZONE_1]->SetnExtIter(1);
 //  config_container[ZONE_0]->SetnExtIter(1);
 //  config_container[ZONE_1]->SetnExtIter(1);
   ConvHist_file = NULL;
@@ -5389,14 +5388,6 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
       iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, INST_0, Direct_Iter_Flow - 2);
 
-      //CVC: Debug
-      /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
-      //if (dual_time_1st){
-      //  iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, INST_0, Direct_Iter_Flow - 1);
-      //} else {
-      //  iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, INST_0, Direct_Iter_Flow - 2);
-      //}
-
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
@@ -5420,9 +5411,6 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
       /*--- Set Solution at timestep n-1 to the previously loaded solution ---*/
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
           for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-//            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_Old());
-//            if (turbulent) {
-//              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_Old());
             solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
             if (turbulent) {
               solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
@@ -5865,11 +5853,6 @@ void CDiscAdjFSIDriver::SetRecording(unsigned short ZONE_FLOW,
 
   string kind_DirectIteration = " ";
   string kind_AdjointIteration = " ";
-
-  /*if (unsteady || dynamic){
-    SU2_MPI::Error("DYNAMIC ADJOINT SOLVER NOT IMPLEMENTED FOR FSI APPLICATIONS", CURRENT_FUNCTION);
-  }*/
-
 
   if (rank == MASTER_NODE){
     cout << endl;
@@ -6480,25 +6463,25 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
       myfile_res.open ("history_adjoint_FSI.csv", ios::app);
 
-      myfile_res << IntIter;
+      myfile_res << IntIter << "\t";
 
       myfile_res.precision(15);
 
       for (iVar = 0; iVar < nVar_Flow; iVar++){
-        myfile_res << fixed << ", " << residual_flow[iVar];
+        myfile_res << fixed << residual_flow[iVar] << "\t";
       }
 
       for (iVar = 0; iVar < nVar_Struct; iVar++){
-        myfile_res << fixed << ", " << residual_struct[iVar];
+        myfile_res << fixed << residual_struct[iVar] << "\t";
       }
 
       for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElasticityMod(); iVar++)
-      myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar);
+         myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar) << "\t";
       for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnPoissonRatio(); iVar++)
-         myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar);
+         myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar) << "\t";
       if (de_effects){
         for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElectric_Field(); iVar++)
-          myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0);
+          myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0) << "\t";
       }
 
       myfile_res << endl;

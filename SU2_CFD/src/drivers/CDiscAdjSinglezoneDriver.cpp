@@ -139,7 +139,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- For the adjoint iteration we need the derivatives of the iteration function with
    *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
    *--- we only have to record if the current recording is different from the main variables. ---*/
-  
+
   if ((RecordingState != MainVariables) || (config->GetTime_Domain())){
 
     MainRecording();
@@ -393,7 +393,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     }
     break;
   }
-  
+
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
   }

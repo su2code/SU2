@@ -119,9 +119,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
-    // if (driver_config->GetTime_Domain())
-    //   SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
-    //                  CURRENT_FUNCTION);
+    if (driver_config->GetTime_Domain())
+      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -318,8 +317,10 @@ void CDiscAdjMultizoneDriver::Run() {
 
       bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
 
-      if (checkSensitivity)
-        EvaluateSensitivities(iOuterIter, StopCalc);
+      if (checkSensitivity) {
+        if (!time_domain) EvaluateSensitivities(iOuterIter, StopCalc);
+        else EvaluateSensitivities(TimeIter, StopCalc);
+      }
     }
 
     /*--- Output the solution in files for each time iteration. ---*/

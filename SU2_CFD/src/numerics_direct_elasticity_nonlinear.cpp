@@ -345,7 +345,6 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
         GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
         currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
-        //cout << "CVC: Debug: currentCoord[" << iNode << "][" << iDim << "] = " << currentCoord[iNode][iDim] << endl;
       }
 
       /*--- Compute the deformation gradient ---*/
