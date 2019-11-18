@@ -9062,7 +9062,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     }
     else cout << "." << endl;
     
-    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX;
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;

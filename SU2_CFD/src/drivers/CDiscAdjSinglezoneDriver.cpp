@@ -46,7 +46,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
-  
+
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -61,7 +61,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
-  
+
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
@@ -109,13 +109,13 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
-    direct_output = new CHeatOutput(config, nDim);    
+    direct_output = new CHeatOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
   }
-  
+
  direct_output->PreprocessHistoryOutput(config, false);
 
 }
@@ -125,7 +125,7 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-  
+
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
@@ -150,6 +150,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
+  bool steady = !config->GetTime_Domain();
   unsigned long Adjoint_Iter;
 
   for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
@@ -177,6 +178,7 @@ void CDiscAdjSinglezoneDriver::Run() {
                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
+
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -184,7 +186,14 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-    
+
+    /*--- Output files for steady state simulations. ---*/
+
+    if (steady) {
+      iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
+                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
+    }
+
     if (StopCalc) break;
 
   }
@@ -294,7 +303,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
-  
+
   direct_output->SetHistory_Output(geometry, solver, config,
                                    config->GetTimeIter(),
                                    config->GetOuterIter(),
@@ -303,7 +312,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
@@ -496,8 +505,10 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
+  bool steady = !config->GetTime_Domain();
+
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   * as argument ensures that all information from a previous recording is removed. ---*/
+   *    as argument ensures that all information from a previous recording is removed. ---*/
 
   SetRecording(NONE);
 
@@ -539,4 +550,8 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+  if(steady) {
+    output_container[ZONE_0]->SetResult_Files(geometry, config, solver,
+                                              config->GetInnerIter(), true);
+  }
 }

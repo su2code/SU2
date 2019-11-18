@@ -1814,7 +1814,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
          (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
          (config->GetMarker_All_KindBC(iMarker) == CLAMPED_BOUNDARY ) ||
-         (config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY )) {
+         (config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY ) ||
+         (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {

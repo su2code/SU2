@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     } else {
       
       /*--- Multi-zone problem: instantiate the multi-zone driver class by default
-    or a specialized driver class for a particular multi-physics problem. ---*/
+            or a specialized driver class for a particular multi-physics problem. ---*/
       
       if (turbo) {
         

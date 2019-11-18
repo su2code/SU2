@@ -74,7 +74,7 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
 
   E_i  = NULL;
   if (element_based){
-    E_i         = new su2double[val_nElem];
+    E_i = new su2double[val_nElem];
     for (iVar = 0; iVar < val_nElem; iVar++){
       E_i[iVar] = E;
     }
