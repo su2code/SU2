@@ -88,7 +88,7 @@ void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry
 
 
   Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
-  Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
+  Donor_Variable[1] = donor_solution->GetAveragePressure(Marker_Donor, iSpan);
   Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
   Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
 

@@ -72,6 +72,6 @@ public:
    * \param[in] solver - The container holding all solution data.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override; 
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
 
 };

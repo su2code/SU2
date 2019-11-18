@@ -137,7 +137,7 @@ protected:
   unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
-  
+
 public:
 
   /*--- Disable default construction copy and assignment. ---*/
@@ -498,7 +498,7 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
-  
+
   /*!
    * \brief Get the old external contributions of the problem.
    * \param[in] iPoint - Point index.
@@ -2178,7 +2178,7 @@ public:
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
   virtual void Set_BGSSolution_k();
-  
+
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
