@@ -2284,6 +2284,9 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ****geometry,
       }
     }
   }
+  if (config[val_iZone]->GetDeform_Mesh()) {
+    solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], val_DirectIter, true);
+  }
 }
 
 
