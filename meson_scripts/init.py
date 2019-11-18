@@ -46,7 +46,7 @@ def init_submodules(method = 'auto'):
   # The sha tag must be maintained manually to point to the correct commit
   sha_version_codi = '501dcf0305df147481630f20ce37c2e624fb351f'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
+  sha_version_medi = 'edde14f9ac4026b72b1e130f61c0a78e8652afa5'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
   sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
@@ -126,7 +126,6 @@ def submodule_status(path, sha_commit):
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
       print('SHA-1 tag stored in index does not match SHA tag stored in this script.')
-      sys.exit(1)
   
   
 
