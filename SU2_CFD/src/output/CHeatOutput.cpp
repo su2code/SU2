@@ -137,6 +137,9 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
   // Residuals  
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+
+  // MPI-Rank
+  AddVolumeOutput("RANK", "rank", "SOLUTION", "rank of the MPI-partition");
   
 }
 
@@ -157,6 +160,9 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   
   // Residuals    
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
+
+  // MPI-Rank
+  SetVolumeOutputValue("RANK", iPoint, rank);
   
 }
 
