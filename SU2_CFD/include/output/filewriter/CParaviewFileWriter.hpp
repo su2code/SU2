@@ -39,33 +39,33 @@
 #include "CFileWriter.hpp"
 
 class CParaviewFileWriter final: public CFileWriter{
-  
+
 public:
-  
+
   /*!
    * \brief File extension
    */
   const static string fileExt;
-  
+
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
-   */  
-  CParaviewFileWriter(vector<string> fields, unsigned short nDim, 
+   */
+  CParaviewFileWriter(vector<string> fields, unsigned short nDim,
                       string fileName, CParallelDataSorter* data_sorter);
-  
+
   /*!
    * \brief Destructor
    */
   ~CParaviewFileWriter() override;
-  
+
   /*!
    * \brief Write sorted data to file in paraview file format
    */
   void Write_Data() override;
-  
+
 };
 
