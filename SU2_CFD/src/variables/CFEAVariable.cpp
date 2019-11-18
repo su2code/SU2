@@ -63,7 +63,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (dynamic_analysis) {
     Solution_Vel.resize(nPoint,nVar);
     Solution_Accel.resize(nPoint,nVar);
-    
+
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
       for (unsigned long iVar = 0; iVar < nVar; iVar++) {
         Solution_Vel(iPoint,iVar) = val_fea[iVar+nVar];
@@ -93,7 +93,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (refgeom) Reference_Geometry.resize(nPoint,nVar);
 
   if (prestretch_fem) Prestretch.resize(nPoint,nVar);
-  
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 }

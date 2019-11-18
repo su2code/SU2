@@ -44,14 +44,14 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
   multiZone = config->GetMultizone_Problem();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
-  
+
   if (nRequestedHistoryFields == 0){
     requestedHistoryFields.emplace_back("ITER");
     requestedHistoryFields.emplace_back("RMS_RES");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    requestedScreenFields.emplace_back("OUTER_ITER");    
+    requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("RMS_TEMPERATURE");
     nRequestedScreenFields = requestedScreenFields.size();
@@ -61,21 +61,21 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
     requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
-  
+
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Solid Heat)";
   multiZoneHeaderString = ss.str();
-  
+
   /*--- Set the volume filename --- */
-  
+
   volumeFilename = config->GetVolume_FileName();
-  
+
   /*--- Set the surface filename --- */
-  
+
   surfaceFilename = config->GetSurfCoeff_FileName();
-  
+
   /*--- Set the restart filename --- */
-  
+
   restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
@@ -88,8 +88,8 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
 CHeatOutput::~CHeatOutput(void) {}
 
 void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
-  
-  CSolver* heat_solver = solver[HEAT_SOL];  
+
+  CSolver* heat_solver = solver[HEAT_SOL];
 
   SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
@@ -98,72 +98,72 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
   SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
   if (multiZone)
     SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
-  
+
   SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
-    
+
 }
-  
+
 
 void CHeatOutput::SetHistoryOutputFields(CConfig *config){
-  
+
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL_ITER", "Linear solver iterations");
-  
+
   AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", HistoryFieldType::RESIDUAL);
   AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
   AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", HistoryFieldType::RESIDUAL);
-  
+
   AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("HEATFLUX_MAX", "MaxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
-  
+
 }
 
 
 void CHeatOutput::SetVolumeOutputFields(CConfig *config){
-  
+
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES","z-component of the coordinate vector");
-  
+
   // SOLUTION
   AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
 
   // Primitives
   AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heatflux");
 
-  // Residuals  
+  // Residuals
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
-  
+
 }
 
 
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
-  
+
   CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
-  
+
   // Grid coordinates
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
- 
+
   // SOLUTION
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
-  
-  // Residuals    
+
+  // Residuals
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
-  
+
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
-  
+
   /* Heat flux value at each surface grid node. */
   SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[HEAT_SOL]->GetHeatFlux(iMarker, iVertex));
-  
+
 }
 

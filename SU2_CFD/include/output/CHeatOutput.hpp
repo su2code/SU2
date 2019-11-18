@@ -58,7 +58,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CHeatOutput(void) override;
-  
+
   /*!
    * \brief Set the available history output fields
    * \param[in] config - Definition of the particular problem.
@@ -70,13 +70,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-  
+
   /*!
    * \brief Set the available volume output fields
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields(CConfig *config) override;
-  
+
   /*!
    * \brief Set the values of the volume output fields for a point.
    * \param[in] config - Definition of the particular problem.
@@ -84,7 +84,7 @@ public:
    * \param[in] solver - The container holding all solution data.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;   
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
 
   /*!
    * \brief LoadSurfaceData

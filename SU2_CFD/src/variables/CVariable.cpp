@@ -74,9 +74,9 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
-	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
-	  Solution_Adj_Old.resize(nPoint,nVar);
-	}
+  if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
+    Solution_Adj_Old.resize(nPoint,nVar);
+  }
 
   Non_Physical.resize(nPoint) = false;
 
