@@ -461,14 +461,13 @@ class Project(object):
                 results.GRADIENTS[key].append(new_grad)
             for TYPE in results.HISTORY.keys():
                 for key in results.HISTORY[TYPE].keys():
-                    # if key in results.FUNCTIONS.keys():
-                    #     new_func = results.FUNCTIONS[key][-1]
-                    # elif ( TYPE in design.state.HISTORY.keys() and
-                    #         key in design.state.HISTORY[TYPE].keys() ):
-                    #     new_func = design.state.HISTORY[TYPE][key][-1]
-                    # else:
-                    #    new_func = default
-                    new_func = default
+                    if key in results.FUNCTIONS.keys():
+                        new_func = results.FUNCTIONS[key][-1]
+                    elif ( TYPE in design.state.HISTORY.keys() and
+                            key in design.state.HISTORY[TYPE].keys() ):
+                        new_func = design.state.HISTORY[TYPE][key][-1]
+                    else:
+                        new_func = default
                     results.HISTORY[TYPE][key].append(new_func)
         #: for each design
         

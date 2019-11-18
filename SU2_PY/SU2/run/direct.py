@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import shutil, copy
+import copy
 
 from .. import io  as su2io
 from .merge     import merge     as su2merge
@@ -98,12 +98,7 @@ def direct ( config ):
     # filenames
     plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
-    # CVC: Adjustment needed as FSI history filenames are different
-    if konfig['SOLVER'] == 'FLUID_STRUCTURE_INTERACTION':
-        shutil.copy(konfig['CONV_FILENAME_FSI'] + '.vtk',konfig['CONV_FILENAME_FSI'] + '.csv')
-        history_filename = konfig['CONV_FILENAME_FSI'] + '.csv'
-    else:
-        history_filename = konfig['CONV_FILENAME'] + plot_extension
+    history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
     
     # averaging final iterations

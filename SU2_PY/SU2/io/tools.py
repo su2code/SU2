@@ -127,12 +127,7 @@ def read_plot( filename ):
         # store to dictionary
         for i_Var in range(n_Vars):
             this_variable = Variables[i_Var] 
-            # CVC: Temporary fix till full dataset is populated for FSI
-            # CVC: VM Stress and Time have header but no data in history file for FSI
-            try:
-                plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
-            except (IndexError):
-                plot_data[this_variable] = '0.0'
+            plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
     
     #: for each line
 
@@ -467,7 +462,6 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_IN"                : "mfi"       ,
                  "TOTAL_EFFICIENCY"            : "teff"      ,
                  "TOTAL_STATIC_EFFICIENCY"     : "tseff"     ,
-                 "REFERENCE_NODE"              : "refnode"   ,
                  "COMBO"                       : "combo"}
     
     # if none or false, return map
@@ -523,29 +517,40 @@ def add_suffix(base_name,suffix):
 def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
-    dv_map = { 1   : "HICKS_HENNE"           ,
-               2   : "SURFACE_BUMP"          ,
-               4   : "NACA_4DIGITS"          ,
-               5   : "TRANSLATION"           ,
-               6   : "ROTATION"              ,
-               7   : "FFD_CONTROL_POINT"     ,
-               8   : "FFD_DIHEDRAL_ANGLE"    ,
-               9   : "FFD_TWIST_ANGLE"       ,
-               10  : "FFD_ROTATION"          ,
-               11  : "FFD_CAMBER"            ,
-               12  : "FFD_THICKNESS"         ,
-               19  : "FFD_TWIST"             ,
-               22  : "FFD_NACELLE"           ,
-               23  : "FFD_GULL"              ,
-               25  : "FFD_ROTATION"          ,
-               15  : "FFD_CONTROL_POINT_2D"  ,
-               16  : "FFD_CAMBER_2D"         ,
-               17  : "FFD_THICKNESS_2D"      ,
-               20  : "FFD_TWIST_2D"          ,
-               50  : "CUSTOM"                ,
-               51  : "CST"                   ,
-               101 : "ANGLE_OF_ATTACK"       ,
-               102 : "FFD_ANGLE_OF_ATTACK"                    }
+    dv_map = { 0   : "NO_DEFORMATION"        ,
+               1   : "TRANSLATION"           ,
+               2   : "ROTATION"              ,
+               3   : "SCALE"                 ,
+               10  : "FFD_SETTING"           ,
+               11  : "FFD_CONTROL_POINT"     ,
+               12  : "FFD_NACELLE"           ,
+               13  : "FFD_GULL"              ,
+               14  : "FFD_CAMBER"            ,
+               15  : "FFD_TWIST"             ,
+               16  : "FFD_THICKNESS"         ,
+               18  : "FFD_ROTATION"          ,
+               19  : "FFD_CONTROL_POINT_2D"  ,
+               20  : "FFD_CAMBER_2D"         ,
+               21  : "FFD_THICKNESS_2D"      ,
+               22  : "FFD_TWIST_2D"          ,
+               23  : "FFD_CONTROL_SURFACE"   ,
+               24  : "FFD_ANGLE_OF_ATTACK"   ,
+               30  : "HICKS_HENNE"           ,
+               31  : "PARABOLIC"             ,
+               32  : "NACA_4DIGITS"          ,
+               33  : "AIRFOIL"               ,
+               34  : "CST"                   ,
+               35  : "SURFACE_BUMP"          ,
+               36  : "SURFACE_FILE"          ,
+               40  : "DV_EFIELD"             ,
+               41  : "DV_YOUNG"              ,
+               42  : "DV_POISSON"            ,
+               43  : "DV_RHO"                ,
+               44  : "DV_RHO_DL"             ,
+               50  : "TRANSLATE_GRID"        ,
+               51  : "ROTATE_GRID"           ,
+               52  : "SCALE_GRID"            ,
+               101 : "ANGLE_OF_ATTACK"       }
     
     return dv_map
 
@@ -623,9 +628,6 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 write_format.append(", %.10f")
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
-                write_format.append(", %.10f")
-            if key == "REF_NODE"     :
-                header.append(r',"Grad_RefNode"')
                 write_format.append(", %.10f")
 
     # otherwise...
@@ -748,9 +750,6 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
-        if key == "REF_NODE"     :
-            header_list.extend(["REF_NODE"])
-            write_format.append(r', %.10f')
 
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -803,8 +802,7 @@ def get_specialCases(config):
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
-                          'INV_DESIGN_HEATFLUX'              ,
-                          'REF_NODE']#CVC: Debug:
+                          'INV_DESIGN_HEATFLUX'              ]
     
     special_cases = []
     for key in all_special_cases:
@@ -828,10 +826,6 @@ def get_specialCases(config):
     # Special case for rotating frame
     if 'GRID_MOVEMENT_KIND' in config and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
-
-    #CVC: Debug:
-    if config['OBJECTIVE_FUNCTION'] == 'RERFERENCE_NODE':
-        special_cases.append('REF_NODE')    
         
     return special_cases
 
@@ -1062,10 +1056,7 @@ def restart2solution(config,state={}):
             solution += '.dat'
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
-        if config['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':
-            suffix       = "refnode"
-        else:
-            suffix    = get_adjointSuffix(func_name)
+        suffix    = get_adjointSuffix(func_name)
         restart   = add_suffix(restart,suffix)
         solution  = add_suffix(solution,suffix)
         # expand zones
