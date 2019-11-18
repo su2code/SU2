@@ -948,9 +948,9 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
 
 
-void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
-  
-  
+void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
+                               unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
+
   unsigned long iPoint;
   bool initial_calc = (config->GetTimeIter() == 0) && (config->GetInnerIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetInnerIter() == 0);                          // Checks if it is the first iteration
@@ -1007,7 +1007,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * so we ask "geometry" to compute them.
    * This only needs to be done for the undeformed (initial) shape.
    */
-  if (topology_mode && (!topol_filter_applied || disc_adj_fem)) {
+  if (topology_mode && !topol_filter_applied) {
     geometry->SetElemVolume(config);
     FilterElementDensities(geometry,config);
     topol_filter_applied = true;
@@ -4527,4 +4527,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 
   delete [] design_rho;
   delete [] physical_rho;
+
+  /*--- For when this method is called directly, e.g. by the adjoint solver. ---*/
+  topol_filter_applied = true;
 }

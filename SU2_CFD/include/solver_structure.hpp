@@ -4054,6 +4054,7 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reset - If true reset variables to their initial values.
    */
   virtual void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
   
@@ -12180,16 +12181,17 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reset - Not used by this class ATM.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
-  
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) override;
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
-  
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
+
   /*!
    * \brief Filter the density field for topology optimization applications
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12663,16 +12665,17 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reset - If true reset variables to their initial values.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
-  
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
-  
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
+
   /*!
    * \brief Update the dual-time derivatives.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -13021,21 +13024,22 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   void SetRecording(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reset - If true reset variables to their initial values.
+   */
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
-  
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
+
   /*!
    * \brief Update the dual-time derivatives.
    * \param[in] geometry - Geometrical definition of the problem.
