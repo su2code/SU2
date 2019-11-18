@@ -4666,8 +4666,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   if (config->GetDiscard_InFiles() == false) {
     if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-      config->SetInitial_BCThrust(BCThrust_);
-    }
+    config->SetInitial_BCThrust(BCThrust_);
+  }
   else {
     if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
