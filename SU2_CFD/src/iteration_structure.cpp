@@ -1407,10 +1407,12 @@ void CFEAIteration::Iterate(COutput *output,
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
     if (!incremental_load) {
-      
-      IntIter = 0;
-      config[val_iZone]->SetInnerIter(IntIter);
-      
+
+      if (!disc_adj_fem) {
+        IntIter = 0;
+        config[val_iZone]->SetInnerIter(IntIter);
+      }
+
       /*--- FEA equations ---*/
 
       config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
@@ -1451,6 +1453,7 @@ void CFEAIteration::Iterate(COutput *output,
       solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
 
       /*--- The load increment is 1.0 ---*/
+
       loadIncrement = 1.0;
       solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
       solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetForceCoeff(loadIncrement);
@@ -1468,7 +1471,6 @@ void CFEAIteration::Iterate(COutput *output,
 
       integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
           config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
       
@@ -1498,8 +1500,8 @@ void CFEAIteration::Iterate(COutput *output,
       Residual_ETOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(2));
 
       meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-          ( Residual_RTOL <  Criteria_RTOL ) &&
-          ( Residual_ETOL <  Criteria_ETOL ) );
+                       ( Residual_RTOL <  Criteria_RTOL ) &&
+                       ( Residual_ETOL <  Criteria_ETOL ) );
 
       /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
       if (meetCriteria) {
