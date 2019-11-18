@@ -46,7 +46,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
-  
+
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -61,7 +61,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
-  
+
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
@@ -109,13 +109,13 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
-    direct_output = new CHeatOutput(config, nDim);    
+    direct_output = new CHeatOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
   }
-  
+
  direct_output->PreprocessHistoryOutput(config, false);
 
 }
@@ -125,7 +125,7 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-  
+
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
@@ -303,7 +303,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
-  
+
   direct_output->SetHistory_Output(geometry, solver, config,
                                    config->GetTimeIter(),
                                    config->GetOuterIter(),
@@ -312,7 +312,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
