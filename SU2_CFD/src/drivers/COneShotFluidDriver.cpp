@@ -923,130 +923,119 @@ void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
 
 void COneShotFluidDriver::ComputeGammaTerm(){
 
-    /*--- Note: Not applicable for unsteady code ---*/
+  /*--- Note: Not applicable for unsteady code ---*/
 
-    /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
-     *    of the previous iteration. The values are passed to the AD tool. ---*/
+  /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
+   *    of the previous iteration. The values are passed to the AD tool. ---*/
 
-    iteration->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  iteration->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
-    /*--- Initialize the adjoint of the objective function with 0.0. ---*/
+  /*--- Initialize the adjoint of the objective function with 0.0. ---*/
 
-    SetAdj_ObjFunction_Zero();
-    su2double* seeding = new su2double[nConstr];
-    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-        seeding[iConstr] = ConstrFunc[iConstr];
-      }
-      else {
-        seeding[iConstr] = 0.;
-      }
-    }
-    SetAdj_ConstrFunction(seeding);
+  SetAdj_ObjFunction_Zero();
+  // su2double* seeding = new su2double[nConstr];
+  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+  //   if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+  //      ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+  //     seeding[iConstr] = ConstrFunc[iConstr];
+  //   }
+  //   else {
+  //     seeding[iConstr] = 0.;
+  //   }
+  // }
+  // SetAdj_ConstrFunction(seeding);
+  SetAdj_ConstrFunction(ConstrFunc);
 
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-    AD::ComputeAdjoint();
+  AD::ComputeAdjoint();
 
-    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-    iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
-                                   solver_container, numerics_container, config_container,
-                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+  iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-    /*--- Extract the computed sensitivity values. ---*/
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
+  /*--- Extract the computed sensitivity values. ---*/
+  solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
 
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
-    AD::ClearAdjoints();
+  AD::ClearAdjoints();
 
-    delete [] seeding;
+  // delete [] seeding;
 }
 
 void COneShotFluidDriver::ComputeAlphaTerm(){
 
-    /*--- Note: Not applicable for unsteady code ---*/
+  /*--- Note: Not applicable for unsteady code ---*/
 
-    /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
-     *    of the previous iteration. The values are passed to the AD tool. ---*/
+  /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
+   *    of the previous iteration. The values are passed to the AD tool. ---*/
 
-    iteration->InitializeAdjoint_Update(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  iteration->InitializeAdjoint_Update(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
-    /*--- Initialize the adjoint of the objective function with 0.0. ---*/
+  /*--- Initialize the adjoint of the objective function with 0.0. ---*/
 
-    SetAdj_ObjFunction_Zero();
-    SetAdj_ConstrFunction_Zero();
+  SetAdj_ObjFunction_Zero();
+  SetAdj_ConstrFunction_Zero();
 
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-    AD::ComputeAdjoint();
+  AD::ComputeAdjoint();
 
-    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-    iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
-                                   solver_container, numerics_container, config_container,
-                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+  iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-    /*--- Extract the computed sensitivity values. ---*/
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
+  /*--- Extract the computed sensitivity values. ---*/
+  solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
 
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
-    AD::ClearAdjoints();
+  AD::ClearAdjoints();
 
-    AD::Reset();
+  AD::Reset();
 }
 
 void COneShotFluidDriver::ComputeBetaTerm(){
 
-    /*--- Note: Not applicable for unsteady code ---*/
+  /*--- Note: Not applicable for unsteady code ---*/
 
-    /*--- For the one shot iteration we have to record for every steady state iteration. ---*/
+  /*--- For the one shot iteration we have to record for every steady state iteration. ---*/
 
-    /*--- Store the computational graph of one direct iteration with the conservative variables and the mesh coordinates as input. ---*/
+  /*--- Store the computational graph of one direct iteration with the conservative variables and the mesh coordinates as input. ---*/
 
-    SetRecording(COMBINED);
+  SetRecording(COMBINED);
 
-    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-     *    of the previous iteration. The values are passed to the AD tool. ---*/
+  /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+   *    of the previous iteration. The values are passed to the AD tool. ---*/
 
-    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
-    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+  /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    SetAdj_ObjFunction();
-    su2double* seeding = new su2double[nConstr];
-    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-        seeding[iConstr] = Multiplier[iConstr];
-      }
-      else {
-        seeding[iConstr] = 0.;
-      }
-    }
-    SetAdj_ConstrFunction(seeding);
-    // SetAdj_ConstrFunction(Multiplier);
+  SetAdj_ObjFunction();
+  SetAdj_ConstrFunction(Multiplier);
 
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-    AD::ComputeAdjoint();
+  AD::ComputeAdjoint();
 
-    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-    iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
-                                   solver_container, numerics_container, config_container,
-                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+  iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-    /*--- Extract the computed sensitivity values. ---*/
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
+  /*--- Extract the computed sensitivity values. ---*/
+  solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
 
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
-    AD::ClearAdjoints();
+  AD::ClearAdjoints();
 
-    AD::Reset();
+  AD::Reset();
 
-    // delete [] seeding;
 }
 
 void COneShotFluidDriver::ComputePreconditioner(){
@@ -1207,14 +1196,15 @@ void COneShotFluidDriver::LoadMultiplier(){
 }
 
 void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
-  su2double helper;
+  su2double helper, gamma = config->GetOneShotGamma();
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     /*--- BCheck^(-1)*h ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
-    Multiplier[iConstr] += helper*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
+    // Multiplier[iConstr] += helper*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // /*--- gamma*h ---*/
     // Multiplier[iConstr] += config->GetOneShotGamma()*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
@@ -1223,7 +1213,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
         Multiplier[iConstr] = ConstrFunc_Store[iConstr];
       }
     }
-    else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() <= 0.){
+    else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma <= 0.){
       Multiplier[iConstr] = 0.;
     }
   }
