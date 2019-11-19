@@ -38,9 +38,9 @@
 #pragma once
 
 #include "allocation_toolbox.hpp"
-#include <utility>
-
 #include "../datatype_structure.hpp"
+
+#include <utility>
 
 /*!
  * \enum StorageType
