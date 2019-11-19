@@ -40,6 +40,8 @@
 #include "allocation_toolbox.hpp"
 #include <utility>
 
+#include "../datatype_structure.hpp"
+
 /*!
  * \enum StorageType
  * \brief Supported ways to flatten a matrix into an array.
