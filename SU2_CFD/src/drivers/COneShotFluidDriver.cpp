@@ -414,18 +414,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  su2double* seeding = new su2double[nConstr];
-  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-       ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-      seeding[iConstr] = Multiplier[iConstr];
-    }
-    else {
-      seeding[iConstr] = 0.;
-    }
-  }
-  SetAdj_ConstrFunction(seeding);
-  // SetAdj_ConstrFunction(Multiplier);
+  SetAdj_ConstrFunction(Multiplier);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -443,7 +432,7 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   AD::ClearAdjoints();
 
-  // delete [] seeding;
+  delete [] seeding;
 }
 
 void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
@@ -939,17 +928,17 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   /*--- Initialize the adjoint of the objective function with 0.0. ---*/
 
   SetAdj_ObjFunction_Zero();
-  // su2double* seeding = new su2double[nConstr];
-  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-  //   if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-  //      ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
-  //     seeding[iConstr] = ConstrFunc[iConstr];
-  //   }
-  //   else {
-  //     seeding[iConstr] = 0.;
-  //   }
-  // }
-  // SetAdj_ConstrFunction(seeding);
+  su2double* seeding = new su2double[nConstr];
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
+       ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+      seeding[iConstr] = ConstrFunc[iConstr];
+    }
+    else {
+      seeding[iConstr] = 0.;
+    }
+  }
+  SetAdj_ConstrFunction(seeding);
   SetAdj_ConstrFunction(ConstrFunc);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
@@ -968,7 +957,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
   AD::ClearAdjoints();
 
-  // delete [] seeding;
+  delete [] seeding;
 }
 
 void COneShotFluidDriver::ComputeAlphaTerm(){
