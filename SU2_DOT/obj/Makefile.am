@@ -53,8 +53,8 @@ endif
 su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
-su2_dot_ldadd =
-su2_dot_cxx_flags =
+su2_dot_ldadd = 
+su2_dot_cxx_flags = -std=c++11
 
 if BUILD_NORMAL
 su2_dot_ldadd += \

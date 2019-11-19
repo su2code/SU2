@@ -95,11 +95,11 @@ def parallel_computation( filename           ,
     state.update(info)
 
     # Solution merging
-    if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
-        config.SOLUTION_STRUCTURE_FILENAME = config.RESTART_STRUCTURE_FILENAME 
-    elif config.PHYSICAL_PROBLEM == 'FLUID_STRUCTURE_INTERACTION':
-        config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
-        config.SOLUTION_STRUCTURE_FILENAME = config.RESTART_STRUCTURE_FILENAME  
+    if config.SOLVER == 'FEM_ELASTICITY':
+        config.SOLUTION_FILENAME = config.RESTART_FILENAME 
+    elif config.SOLVER == 'FLUID_STRUCTURE_INTERACTION':
+        config.SOLUTION_FILENAME = config.RESTART_FILENAME
+        config.SOLUTION_FILENAME = config.RESTART_FILENAME  
 
     info = SU2.run.merge(config)
     state.update(info)

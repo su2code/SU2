@@ -38,121 +38,169 @@
 #pragma once
 
 #include "CFEAVariable.hpp"
+#include "../../../Common/include/toolboxes/CVertexMap.hpp"
 
 /*!
  * \class CFEABoundVariable
- * \brief Class for defining the variables on the FEA boundaries for FSI applications.
+ * \brief Class that adds storage of boundary variables (tractions) to CFEAVariable.
+ * \note Member variables are allocated only for points marked as "vertex" i.e. on a boundary.
+ * A map is constructed so that variables can be referenced by iPoint instead of iVertex.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
-class CFEABoundVariable : public CFEAVariable {
+class CFEABoundVariable final : public CFEAVariable {
 protected:
 
-  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+  MatrixType FlowTraction;         /*!< \brief Traction from the fluid field. */
+  MatrixType FlowTraction_n;       /*!< \brief Traction from the fluid field at time n. */
 
-  su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
+  MatrixType Residual_Ext_Surf;    /*!< \brief Term of the residual due to external forces. */
+  MatrixType Residual_Ext_Surf_n;  /*!< \brief Term of the residual due to external forces at time n. */
+
+  CVertexMap<unsigned> VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
+
+  bool fsi_analysis = false;       /*!< \brief If flow tractions are available. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CFEABoundVariable(void);
-
-  /*!
-   * \overload
    * \param[in] val_fea - Values of the fea solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEABoundVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEABoundVariable(void);
+  ~CFEABoundVariable() = default;
+
+  /*!
+   * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AllocateBoundaryVariables(CConfig *config);
 
   /*!
    * \brief Add surface load to the residual term
    */
-  inline void Add_SurfaceLoad_Res(su2double *val_surfForce) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] += val_surfForce[iVar];
+  inline void Add_SurfaceLoad_Res(unsigned long iPoint, const su2double *val_surfForce) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) += val_surfForce[iVar];
   }
 
   /*!
    * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
-  inline void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) {Residual_Ext_Surf[iVar] = val_surfForce;}
+  inline void Set_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar, su2double val_surfForce) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Residual_Ext_Surf(iPoint,iVar) = val_surfForce;
+  }
 
   /*!
    * \brief Get the residual term due to surface load
    */
-  inline su2double Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
+  inline su2double Get_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Residual_Ext_Surf(iPoint,iVar);
+  }
 
   /*!
    * \brief Clear the surface load residual
    */
-  inline void Clear_SurfaceLoad_Res(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  inline void Clear_SurfaceLoad_Res(unsigned long iPoint) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
   }
 
   /*!
    * \brief Store the surface load as the load for the previous time step.
    */
-  inline void Set_SurfaceLoad_Res_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
-  }
+  void Set_SurfaceLoad_Res_n() override;
 
   /*!
    * \brief Get the surface load from the previous time step.
    */
-  inline su2double Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar]; }
+  inline su2double Get_SurfaceLoad_Res_n(unsigned long iPoint, unsigned long iVar) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Residual_Ext_Surf_n(iPoint,iVar);
+  }
 
   /*!
    * \brief Set the flow traction at a node on the structural side
    */
-  inline void Set_FlowTraction(su2double *val_flowTraction) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = val_flowTraction[iVar];
+  inline void Set_FlowTraction(unsigned long iPoint, const su2double *val_flowTraction) override {
+    if (!fsi_analysis) return;
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = val_flowTraction[iVar];
   }
 
   /*!
    * \brief Add a value to the flow traction at a node on the structural side
    */
-  inline void Add_FlowTraction(su2double *val_flowTraction) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] += val_flowTraction[iVar];
+  inline void Add_FlowTraction(unsigned long iPoint, const su2double *val_flowTraction) override {
+    if (!fsi_analysis) return;
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) += val_flowTraction[iVar];
   }
 
   /*!
    * \brief Get the residual term due to the flow traction
    */
-  inline su2double Get_FlowTraction(unsigned short iVar) {return FlowTraction[iVar]; }
+  inline su2double Get_FlowTraction(unsigned long iPoint, unsigned long iVar) const override {
+    if (!fsi_analysis) return 0.0;
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return FlowTraction(iPoint,iVar);
+  }
 
   /*!
    * \brief Set the value of the flow traction at the previous time step.
    */
-  void Set_FlowTraction_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction_n[iVar] = FlowTraction[iVar];
-  }
+  void Set_FlowTraction_n() override;
 
   /*!
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
-  inline su2double Get_FlowTraction_n(unsigned short iVar) {return FlowTraction_n[iVar]; }
+  inline su2double Get_FlowTraction_n(unsigned long iPoint, unsigned long iVar) const override {
+    if (!fsi_analysis) return 0.0;
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return FlowTraction_n(iPoint,iVar);
+  }
 
   /*!
    * \brief Clear the flow traction residual
    */
-  inline void Clear_FlowTraction(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = 0.0;
+  void Clear_FlowTraction() override;
+
+  /*!
+   * \brief Register the flow tractions as input variable.
+   */
+  void RegisterFlowTraction() override;
+
+  /*!
+   * \brief Extract the flow traction derivatives.
+   */
+  inline su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const override {
+    if (!fsi_analysis) return 0.0;
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return SU2_TYPE::GetDerivative(FlowTraction(iPoint,iDim));
   }
 
   /*!
-   * \brief Get whether this node is on the boundary
+   * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(void) {return true; }
+  inline bool Get_isVertex(unsigned long iPoint) const override {
+    return VertexMap.GetIsVertex(iPoint);
+  }
+
+  /*!
+   * \brief Set whether a node is on the boundary
+   */
+  inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
+    VertexMap.SetIsVertex(iPoint,isVertex);
+  }
 
 };

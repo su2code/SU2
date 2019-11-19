@@ -78,3 +78,6 @@ TestData
 
 Mercurial
 .hg*
+
+# Ignore build folder
+./build/

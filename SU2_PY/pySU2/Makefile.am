@@ -42,9 +42,17 @@ CURRENT_DIR = ${abs_top_builddir}/SU2_PY/pySU2
 
 SO_EXT=so
 
-SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
-SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
-SWIG_SO_REAL = _pysu2.${SO_EXT}
+if BUILD_NORMAL
+  SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
+  SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
+  SWIG_SO_REAL = _pysu2.${SO_EXT}
+endif
+
+if BUILD_REVERSE
+  SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2ad.i
+  SWIG_WRAP_REAL = SU2_APIPYTHON_wrap_AD
+  SWIG_SO_REAL = _pysu2ad.${SO_EXT}
+endif
 
 PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages()[0])")
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
@@ -54,8 +62,8 @@ MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
 
 SWIG = swig
 
-pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
-	-I${abs_top_srcdir}/SU2_CFD/include
+pySU2_INCLUDE = -I${abs_top_builddir}/Common/include \
+	-I${abs_top_builddir}/SU2_CFD/include
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
@@ -75,11 +83,30 @@ all:
 # List the dependencies
 real: ${SWIG_SO_REAL}
 
-EXTRA_CC_FLAGS = -fPIC -O3
+if BUILD_NORMAL
+  EXTRA_CC_FLAGS = -fPIC -O3 -std=c++11
+endif
 
-#SU2Core lib
-SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
-		${abs_top_builddir}/Common/lib/libSU2.a
+if BUILD_REVERSE
+  EXTRA_CC_FLAGS = -fPIC -O3 -std=c++11 -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
+#  EXTRA_CC_FLAGS = -fPIC -g3 -std=c++11 -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
+endif
+
+#SU2_BASE lib
+if BUILD_NORMAL
+  SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
+    ${abs_top_builddir}/Common/lib/libSU2.a
+  PYLIB = pysu2.py
+  SOLIB = _pysu2.so
+endif
+
+#SU2_AD lib
+if BUILD_REVERSE
+  SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core_AD.a \
+    ${abs_top_builddir}/Common/lib/libSU2_AD.a
+  PYLIB = pysu2ad.py
+  SOLIB = _pysu2ad.so
+endif
 
 # Set the linking flags to use
 pySU2_LD_FLAGS = ${SU2SOLVER_LIB} @su2_externals_LIBS@ ${PY_LIB}
@@ -113,6 +140,6 @@ clean:
 	rm -f ${CURRENT_DIR}/*.py
 
 install: all
-	${INSTALL} pysu2.py ${bindir}
-	${INSTALL} _pysu2.so ${bindir}
+	${INSTALL} ${PYLIB} ${bindir}
+	${INSTALL} ${SOLIB} ${bindir}
 

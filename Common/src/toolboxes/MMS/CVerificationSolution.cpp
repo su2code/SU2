@@ -50,6 +50,9 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
                                              unsigned short val_nVar,
                                              unsigned short val_iMesh,
                                              CConfig*       config) {
+  /*--- Store the kind of solver ---*/
+  
+  Kind_Solver = config->GetKind_Solver();
   
   /*--- Store the rank and size for the calculation. ---*/
   

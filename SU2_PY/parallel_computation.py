@@ -96,7 +96,7 @@ def parallel_computation( filename           ,
 
     # Solution merging
     if config.MATH_PROBLEM == 'DIRECT':
-        config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
+        config.SOLUTION_FILENAME = config.RESTART_FILENAME
     elif config.MATH_PROBLEM in ['CONTINUOUS_ADJOINT', 'DISCRETE_ADJOINT']:
         config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
     info = SU2.run.merge(config)
