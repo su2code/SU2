@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CDiscAdjFEABoundVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver at the boundary.
  * \author Ruben Sanchez
@@ -54,7 +54,7 @@ private:
   MatrixType SourceTerm_DispAdjoint;   /*!< \brief Source term applied into the displacement
                                                    adjoint coming from external solvers. */
 
-  CVertexMap<unsigned> VertexMap;  /*!< \brief Object that controls accesses to the variables of this class. */
+  CVertexMap<unsigned> VertexMap;      /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
   /*!

@@ -275,7 +275,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 //  cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
-  
+
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -314,7 +314,8 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
     AuxMatrixKs[iVar] = 0.0;
   }
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();  /*--- Restarts the element to avoid adding over previous results. --*/
+  element->ComputeGrad_Linear();
   element->ComputeGrad_NonLinear();
 
   nNode = element->GetnNodes();
@@ -408,7 +409,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
         }
       }
 
-      element->Add_Kt_a(KAux_t_a, iNode);
+      element->Add_Kt_a(iNode, KAux_t_a);
 
       /*--------------------------------------------------------------------------------*/
       /*----------------------- CONSTITUTIVE AND STRESS TERM ---------------------------*/
@@ -488,12 +489,12 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
           Ks_Aux_ab += Weight * AuxMatrixKs[iVar] * GradNi_Curr_Mat[jNode][iVar] * Jac_x;
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
-        element->Add_Ks_ab(Ks_Aux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
+        element->Add_Ks_ab(iNode, jNode, Ks_Aux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode) {
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
-          element->Add_Ks_ab(Ks_Aux_ab,jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
+          element->Add_Ks_ab(jNode, iNode, Ks_Aux_ab);
         }
 
       }
@@ -518,7 +519,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
-  
+
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -532,13 +533,14 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
-  
+
   /*-----------------------------------------------------------*/
 
   su2double Weight, Jac_x;
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
-  element->ComputeGrad_NonLinear();  /*--- Check if we can take this out... so we don't have to do it twice ---*/
+  element->ClearElement();       /*--- Restarts the element to avoid adding over previous results. --*/
+  element->ComputeGrad_Linear(); /*--- TODO: Check if we can take this out so we don't have to do it twice. ---*/
+  element->ComputeGrad_NonLinear();
 
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -626,7 +628,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
         }
       }
 
-      element->Add_Kt_a(KAux_t_a, iNode);
+      element->Add_Kt_a(iNode, KAux_t_a);
 
     }
 
@@ -798,8 +800,9 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
 
   su2double Weight, Jac_x;
 
-  element->clearStress();
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearStress();
+  element->ClearElement(); /*--- Restarts the element to avoid adding over previous results. ---*/
+  element->ComputeGrad_Linear();
   element->ComputeGrad_NonLinear();
 
   nNode = element->GetnNodes();
@@ -827,9 +830,9 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
     for (iNode = 0; iNode < nNode; iNode++) {
 
       for (iDim = 0; iDim < nDim; iDim++) {
+        currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode,iDim);
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
         GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
-        currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
       }
 
       /*--- Compute the deformation gradient ---*/
@@ -854,12 +857,12 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
 
     /*--- Determinant of F --> Jacobian of the transformation ---*/
 
-    J_F =   F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
-        F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
-        F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
-        F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
-        F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
-        F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+    J_F = F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
+          F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
+          F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
+          F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
+          F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
+          F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
 
     /*--- Compute the left Cauchy deformation tensor ---*/
 
@@ -878,9 +881,8 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
-
-        /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
-        /*--- and add it to the element structure to be retrieved from the solver      ---*/
+      /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
+      /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
       for (iVar = 0; iVar < nDim; iVar++) {
         KAux_t_a[iVar] = 0.0;
@@ -889,17 +891,19 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
         }
       }
 
-      element->Add_Kt_a(KAux_t_a, iNode);
+      element->Add_Kt_a(iNode, KAux_t_a);
 
-        /*--- Compute the average nodal stresses for each node ---*/
+      /*--- Compute the average nodal stresses for each node ---*/
 
-      element->Add_NodalStress(Stress_Tensor[0][0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-      element->Add_NodalStress(Stress_Tensor[1][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-      element->Add_NodalStress(Stress_Tensor[0][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+      su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
+
+      element->Add_NodalStress(iNode, 0, Stress_Tensor[0][0] * Ni_Extrap);
+      element->Add_NodalStress(iNode, 1, Stress_Tensor[1][1] * Ni_Extrap);
+      element->Add_NodalStress(iNode, 2, Stress_Tensor[0][1] * Ni_Extrap);
       if (nDim == 3) {
-        element->Add_NodalStress(Stress_Tensor[2][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
-        element->Add_NodalStress(Stress_Tensor[0][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
-        element->Add_NodalStress(Stress_Tensor[1][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
+        element->Add_NodalStress(iNode, 3, Stress_Tensor[2][2] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 4, Stress_Tensor[0][2] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 5, Stress_Tensor[1][2] * Ni_Extrap);
       }
 
     }
@@ -1094,9 +1098,8 @@ void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, CConfig *con
 
   for (iVar = 0; iVar < 3; iVar++){
     for (jVar = 0; jVar < 3; jVar++){
-      Stress_Tensor[iVar][jVar] = term1 * (b_Mat_Iso[iVar][jVar] -
-                        (deltaij(iVar,jVar) * trbbar))
-                    + deltaij(iVar,jVar) * Pr;
+      Stress_Tensor[iVar][jVar] = term1 * (b_Mat_Iso[iVar][jVar] - deltaij(iVar,jVar)*trbbar) +
+                                  deltaij(iVar,jVar) * Pr;
     }
   }
 
