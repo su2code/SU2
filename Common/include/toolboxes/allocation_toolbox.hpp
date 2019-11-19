@@ -45,12 +45,13 @@
 #else
 #include <stdlib.h> 
 #endif
+
 #include <cassert>
 
 namespace MemoryAllocation
 {
 
-inline constexpr bool is_power_of_two(std::size_t x)
+inline constexpr bool is_power_of_two(size_t x)
 {
   return x && !(x & (x-1));
 }
@@ -62,7 +63,7 @@ inline constexpr bool is_power_of_two(std::size_t x)
  * \return Pointer to memory, always use su2::aligned_free to deallocate.
  */
 template<class T>
-inline T* aligned_alloc(std::size_t alignment, std::size_t size) noexcept
+inline T* aligned_alloc(size_t alignment, size_t size) noexcept
 {
   assert(is_power_of_two(alignment));
 
