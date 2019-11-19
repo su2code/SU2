@@ -195,9 +195,9 @@ void COneShotFluidDriver::Run(){
     RunOneShot();
 
     /*--- Screen output ---*/
-    bool StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                  solver_container, numerics_container, config_container,
+                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     if(StopCalc) {
       for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
