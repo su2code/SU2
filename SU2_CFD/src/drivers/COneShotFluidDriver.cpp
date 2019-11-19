@@ -244,20 +244,20 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // LoadOldMultiplier();
+        LoadOldMultiplier();
       }
       else{
         /*--- Store and update constraint multiplier ---*/
         StoreOldMultiplier();
         StoreMultiplierGrad();
-        UpdateMultiplier(1.0);
+        // UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      // UpdateMultiplier(stepsize);
+      UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -284,7 +284,7 @@ void COneShotFluidDriver::RunOneShot(){
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        // LoadOldMultiplier();
+        LoadOldMultiplier();
         ComputeDesignVarUpdate(0.0);
       }
 
@@ -734,12 +734,12 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
+  }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -753,12 +753,12 @@ void COneShotFluidDriver::StoreGradDotDir(){
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
+  }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
@@ -1209,13 +1209,13 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     /*--- BCheck^(-1)*h ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-       helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
-      // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
+       // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
+      helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
     }
     // Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier_Store[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
-    Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
+    // Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // /*--- gamma*h ---*/
