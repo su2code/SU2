@@ -1,13 +1,16 @@
 tecio_cpp_flags = ['-fpermissive', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS']
 
-if (build_machine.system() == 'darwin')
-  tecio_cpp_flags += ['-DDARWIN', '-DMAC64']
+if (host_machine.system() == 'darwin')
+  tec_cxx_flags += ['-DDARWIN', '-DMAC64']
 endif
 
-if (build_machine.system() == 'linux')
-  tecio_cpp_flags += ['-DLINUX', '-DLINUX64']
+if (host_machine.system() == 'linux')
+  tec_cxx_flags += ['-DLINUX', '-DLINUX64']
 endif
 
+if (host_machine.system() == 'windows')
+  tec_cxx_flags += ['-DMSWIN']
+endif
 
 tecio_include = include_directories('../', './')
 tecio = static_library('tecio',
