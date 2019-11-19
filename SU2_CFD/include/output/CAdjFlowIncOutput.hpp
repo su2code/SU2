@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CAdjFlowIncOutput.hpp
  * \brief Headers of the adjoint incompressible flow output.
  * \author T. Albring
@@ -47,9 +47,9 @@
 class CAdjFlowIncOutput final: public COutput {
 private:
 
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
-  bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/
-  weakly_coupled_heat; /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
+  unsigned short turb_model; /*!< \brief The kind of turbulence model*/ 
+  bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/ 
+  bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
 
 public:
 
