@@ -50,8 +50,8 @@
  */
 class CFEM_Knowles_NearInc final : public CFEANonlinearElasticity {
 
-	su2double trbbar, term1, term2, Ek, Pr;	/*!< \brief Variables of the model calculation. */
-	su2double Bk, Nk;						            /*!< \brief Parameters b and n of the model. */
+  su2double trbbar, term1, term2, Ek, Pr; /*!< \brief Variables of the model calculation. */
+  su2double Bk, Nk;                       /*!< \brief Parameters b and n of the model. */
 
 public:
   /*!
@@ -87,6 +87,6 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-	void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
 
 };

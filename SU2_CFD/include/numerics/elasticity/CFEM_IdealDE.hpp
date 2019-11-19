@@ -48,7 +48,7 @@
  */
 class CFEM_IdealDE final : public CFEANonlinearElasticity {
 
-	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Variables of the model calculation. */
+  su2double trbbar, Eg, Eg23, Ek, Pr; /*!< \brief Variables of the model calculation. */
 
 public:
   /*!

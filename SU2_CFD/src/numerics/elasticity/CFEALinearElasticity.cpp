@@ -40,13 +40,10 @@
 
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                            CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
-
-  /*--- Currently, 4/8 is the maximum number of nodes for 2D/3D problems respectively. ---*/
-
   if (nDim == 2)
-    nodalDisplacement.resize(4,nDim);
+    nodalDisplacement.resize(NNODES_2D,nDim);
   else
-    nodalDisplacement.resize(8,nDim);
+    nodalDisplacement.resize(NNODES_3D,nDim);
 }
 
 void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
@@ -79,7 +76,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
 
   /*--- Initialize auxiliary matrices ---*/
 
-  bDim = (nDim == 2) ? 3 : 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
@@ -263,7 +260,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Initialize auxiliary matrices ---*/
 
-  bDim = (nDim == 2) ? 3 : 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {

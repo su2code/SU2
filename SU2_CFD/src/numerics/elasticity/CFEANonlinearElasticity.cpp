@@ -261,8 +261,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 
   /*--- Initialize auxiliary matrices ---*/
 
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
