@@ -432,7 +432,6 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   AD::ClearAdjoints();
 
-  delete [] seeding;
 }
 
 void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
