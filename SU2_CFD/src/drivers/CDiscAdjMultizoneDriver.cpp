@@ -112,6 +112,8 @@ CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
 
 void CDiscAdjMultizoneDriver::StartSolver() {
 
+  bool time_domain = driver_config->GetTime_Domain();
+
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE) {
@@ -119,26 +121,37 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
-    if (driver_config->GetTime_Domain())
+    if (time_domain)
       cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-    /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-    config_container[iZone]->SetTimeIter(0);
+    /*--- Set current time iteration ---*/
+    config_container[iZone]->SetTimeIter(TimeIter);
 
+    if (time_domain)
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
   }
 
-  /*--- Size and initialize the matrix of cross-terms. ---*/
+  while ( TimeIter < driver_config->GetnTime_Iter()) {
 
-  InitializeCrossTerms();
+    /*--- Size and initialize the matrix of cross-terms. ---*/
 
-  /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
+    InitializeCrossTerms();
 
-  Run();
+    /*--- We directly start the discrete adjoint computation. ---*/
 
+    Run();
+
+    /*--- Output the solution in files for each time iteration. ---*/
+
+    Output(TimeIter);
+
+    TimeIter++;
+  }
 }
 
 void CDiscAdjMultizoneDriver::Run() {
@@ -147,187 +160,166 @@ void CDiscAdjMultizoneDriver::Run() {
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   bool time_domain = driver_config->GetTime_Domain();
 
-  while ( TimeIter < driver_config->GetnTime_Iter()) {
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-    for (iZone = 0; iZone < nZone; iZone++) {
+    if (!time_domain)
+      wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
-      /*--- Set current time iteration ---*/
-      config_container[iZone]->SetTimeIter(TimeIter);
+    iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
+                                                   solver_container, numerics_container, config_container, surface_movement,
+                                                   grid_movement, FFDBox, iZone, INST_0);
 
-      if (config_container[iZone]->GetTime_Domain())
-        config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
-      else
-        config_container[iZone]->SetPhysicalTime(0.0);
+    /*--- Set BGS_Solution_k to Solution. ---*/
+
+    Set_BGSSolution(iZone);
+  }
+
+  /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
+
+  SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  RecordingState = NONE;
+
+  AD::ClearAdjoints();
+  SetAdj_ObjFunction();
+  AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
+
+  /*--- Initialize External with the objective function gradient. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                                solver_container, numerics_container, config_container,
+                                                surface_movement, grid_movement, FFDBox, iZone, INST_0);
+    Add_Solution_To_External(iZone);
+  }
+
+  /*--- Loop over the number of outer iterations. ---*/
+
+  for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
+
+    driver_config->SetOuterIter(iOuterIter);
+
+    for (iZone = 0; iZone < nZone; iZone++)
+      config_container[iZone]->SetOuterIter(iOuterIter);
+
+    /*--- For the adjoint iteration we need the derivatives of the iteration function with
+     *    respect to the state (and possibly the mesh coordinate) variables.
+     *    Since these derivatives do not change in the steady state case we only have to record
+     *    if the current recording is different from them.
+     *
+     *    To set the tape appropriately, the following recording methods are provided:
+     *    (1) NONE: All information from a previous recording is removed.
+     *    (2) FLOW_CONS_VARS: State variables of all solvers in a zone as input.
+     *    (3) MESH_COORDS: Mesh coordinates as input.
+     *    (4) COMBINED: Mesh coordinates and state variables as input.
+     *
+     *    By default, all (state and mesh coordinate variables) will be declared as output,
+     *    since it does not change the computational effort. ---*/
+
+
+    /*--- If we want to set up zone-specific tapes (retape), we do not need to record
+     *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
+
+    if (!retape && (RecordingState != FLOW_CONS_VARS)) {
+      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
     }
+
+    /*-- Start loop over zones. ---*/
+
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      if (!time_domain)
-        wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+      if (retape) {
+        SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+        SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
+      }
 
-      iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
-                                                    solver_container, numerics_container, config_container, surface_movement,
-                                                    grid_movement, FFDBox, iZone, INST_0);
+      /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
 
-      /*--- Set BGS_Solution_k to Solution. ---*/
+      Set_Solution_To_BGSSolution(iZone);
+
+      /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
+
+      bool eval_transfer = false;
+
+      for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
+
+        config_container[iZone]->SetInnerIter(iInnerIter);
+
+        /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
+
+        Add_External_To_Solution(iZone);
+
+        /*--- Evaluate the tape section belonging to solvers in iZone.
+         *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
+
+        eval_transfer = eval_transfer || (iInnerIter == nInnerIter[iZone]-1);
+
+        ComputeAdjoints(iZone, eval_transfer);
+
+        /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
+        iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                                    solver_container, numerics_container, config_container,
+                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+        /*--- Print out the convergence data to screen and history file ---*/
+
+        bool converged = iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container,
+                                                    geometry_container, solver_container, numerics_container,
+                                                    config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+        if (eval_transfer) break;
+        eval_transfer = converged;
+
+      }
+
+      /*--- Off-diagonal (coupling term) BGS update. ---*/
+
+      for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+
+        if (jZone != iZone && interface_container[jZone][iZone] != NULL) {
+
+          /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
+           *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
+
+          iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
+                                                      solver_container, numerics_container, config_container,
+                                                      surface_movement, grid_movement, FFDBox, jZone, INST_0);
+
+          /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
+
+          Update_Cross_Term(iZone, jZone);
+        }
+      }
+
+      /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
+
+      SetResidual_BGS(iZone);
+
+      /*--- Save Solution to Solution_BGS_k for a next outer iteration.
+       *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
 
       Set_BGSSolution(iZone);
     }
 
-    /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
+    /*--- Set the multizone output. ---*/
 
-    SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-    SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-    RecordingState = NONE;
+    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
+
+    /*--- Check for convergence. ---*/
+
+    StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1);
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-    SetAdj_ObjFunction();
-    AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
 
-    /*--- Initialize External with the objective function gradient. ---*/
+    /*--- Compute the geometrical sensitivities and write them to file. ---*/
 
-    for (iZone = 0; iZone < nZone; iZone++) {
+    bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
 
-      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                                  solver_container, numerics_container, config_container,
-                                                  surface_movement, grid_movement, FFDBox, iZone, INST_0);
-      Add_Solution_To_External(iZone);
-    }
-
-    /*--- Loop over the number of outer iterations. ---*/
-
-    for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
-
-      driver_config->SetOuterIter(iOuterIter);
-
-      for (iZone = 0; iZone < nZone; iZone++)
-        config_container[iZone]->SetOuterIter(iOuterIter);
-
-      /*--- For the adjoint iteration we need the derivatives of the iteration function with
-      *    respect to the state (and possibly the mesh coordinate) variables.
-      *    Since these derivatives do not change in the steady state case we only have to record
-      *    if the current recording is different from them.
-      *
-      *    To set the tape appropriately, the following recording methods are provided:
-      *    (1) NONE: All information from a previous recording is removed.
-      *    (2) FLOW_CONS_VARS: State variables of all solvers in a zone as input.
-      *    (3) MESH_COORDS: Mesh coordinates as input.
-      *    (4) COMBINED: Mesh coordinates and state variables as input.
-      *
-      *    By default, all (state and mesh coordinate variables) will be declared as output,
-      *    since it does not change the computational effort. ---*/
-
-
-      /*--- If we want to set up zone-specific tapes (retape), we do not need to record
-      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
-
-      if (!retape && (RecordingState != FLOW_CONS_VARS)) {
-        SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-        SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
-      }
-
-      /*-- Start loop over zones. ---*/
-
-      for (iZone = 0; iZone < nZone; iZone++) {
-
-        if (retape) {
-          SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-          SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
-        }
-
-        /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
-
-        Set_Solution_To_BGSSolution(iZone);
-
-        /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
-
-        bool eval_transfer = false;
-
-        for (unsigned short iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
-
-          config_container[iZone]->SetInnerIter(iInnerIter);
-
-          /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
-
-          Add_External_To_Solution(iZone);
-
-          /*--- Evaluate the tape section belonging to solvers in iZone.
-          *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
-
-          eval_transfer = eval_transfer || (iInnerIter == nInnerIter[iZone]-1);
-
-          ComputeAdjoints(iZone, eval_transfer);
-
-          /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-          iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                                      solver_container, numerics_container, config_container,
-                                                      surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-          /*--- Print out the convergence data to screen and history file ---*/
-
-          bool converged = iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container,
-                                                      geometry_container, solver_container, numerics_container,
-                                                      config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-          if (eval_transfer) break;
-          eval_transfer = converged;
-
-        }
-
-        /*--- Off-diagonal (coupling term) BGS update. ---*/
-
-        for (unsigned short jZone = 0; jZone < nZone; jZone++) {
-
-          if (jZone != iZone && interface_container[jZone][iZone] != NULL) {
-
-            /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
-            *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
-
-            iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
-                                                        solver_container, numerics_container, config_container,
-                                                        surface_movement, grid_movement, FFDBox, jZone, INST_0);
-
-            /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
-
-            Update_Cross_Term(iZone, jZone);
-          }
-        }
-
-        /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
-
-        SetResidual_BGS(iZone);
-
-        /*--- Save Solution to Solution_BGS_k for a next outer iteration.
-        *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
-
-        Set_BGSSolution(iZone);
-      }
-
-      /*--- Set the multizone output. ---*/
-
-      driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
-
-      /*--- Check for convergence. ---*/
-
-      StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1);
-
-      /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
-      AD::ClearAdjoints();
-
-      /*--- Compute the geometrical sensitivities and write them to file. ---*/
-
-      bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
-
-      if (checkSensitivity) {
-        if (!time_domain) EvaluateSensitivities(iOuterIter, StopCalc);
-        else EvaluateSensitivities(TimeIter, StopCalc);
-      }
-    }
-
-    /*--- Output the solution in files for each time iteration. ---*/
-
-    Output(TimeIter);
-
-    TimeIter++;
+    if (checkSensitivity)
+      EvaluateSensitivities(iOuterIter, StopCalc);//Pass TimeIter instead?
   }
 }
 
@@ -404,11 +396,13 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
 
   AD::ClearAdjoints();
 
-  for (iZone = 0; iZone < nZone; iZone++) {
+  if (!driver_config->GetTime_Domain()) {//Output files for each time iteration are handled in Output(TimeIter)
+    for (iZone = 0; iZone < nZone; iZone++) {
 
-    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
-                                             config_container[iZone],
-                                             solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
+      output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                              config_container[iZone],
+                                              solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
+    }
   }
 }
 

@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
         driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
       
     }
-    else if (config->GetMultizone_Problem() && !turbo){// && !fsi) {
+    else if (config->GetMultizone_Problem() && !turbo && !fsi) {
       
     /*--- Multizone Drivers. ---*/
 
