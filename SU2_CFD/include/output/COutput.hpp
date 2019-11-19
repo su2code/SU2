@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
@@ -83,16 +83,13 @@ protected:
   unsigned short fieldWidth;      /*!< \brief Width of each column for the screen output (hardcoded for now) */
   bool noWriting;                 /*!< \brief Boolean indicating whether a screen/history output should be written */
   unsigned long curTimeIter,      /*!< \brief Current value of the time iteration index */
-  curAbsTimeIter,      /*!< \brief Current value of the time iteration index */
+  curAbsTimeIter,                 /*!< \brief Current value of the time iteration index */
   curOuterIter,                   /*!< \brief Current value of the outer iteration index */
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
-  string historyFilename;       /*!< \brief The history filename*/
-
-  /*! \brief Temporary variable to store the history filename */
-  char char_histfile[200];
-  /*! \brief Output file stream for the history */
-  ofstream histFile;
+  string historyFilename;   /*!< \brief The history filename*/
+  char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
+  ofstream histFile;        /*! \brief Output file stream for the history */
 
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {
@@ -227,20 +224,20 @@ protected:
   su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
   cauchyFunc;                    /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter; /*!< \brief Number of elements of the Cauchy serial. */
-  vector<vector<su2double>> cauchySerie;        /*!< \brief Complete Cauchy serial. */
-  unsigned long nCauchy_Elems;  /*!< \brief Total number of cauchy elems to monitor */
+  vector<vector<su2double> > cauchySerie;        /*!< \brief Complete Cauchy serial. */
+  unsigned long nCauchy_Elems;   /*!< \brief Total number of cauchy elems to monitor */
   su2double cauchyEps;           /*!< \brief Defines the threshold when to stop the solver. */
-  su2double minLogResidual;     /*!< \brief Minimum value of the residual to reach */
-  vector<su2double> oldFunc,             /*!< \brief Old value of the coefficient. */
+  su2double minLogResidual;      /*!< \brief Minimum value of the residual to reach */
+  vector<su2double> oldFunc,     /*!< \brief Old value of the coefficient. */
   newFunc;                       /*!< \brief Current value of the coefficient. */
   bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
-  vector<string> convFields;      /*!< \brief Name of the field to be monitored for convergence */
+  vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
 
-  /*----------------------------- Adaptive CFL ----------------------------*/
+  /*----------------------------- Adaptive CFL ----------------------------*/     
 
-  su2double rhoResNew,    /*!< New value of the residual for adaptive CFL routine */
-  rhoResOld;              /*!< Old value of the residual for adaptive CFL routine */
+  su2double rhoResNew,    /*!< New value of the residual for adaptive CFL routine. */
+  rhoResOld;              /*!< Old value of the residual for adaptive CFL routine. */
 
 public:
 
