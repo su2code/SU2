@@ -1197,8 +1197,8 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     /*--- BCheck^(-1)*h ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-       helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
-      // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
+       // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
+      helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
     }
     // Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier_Store[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
