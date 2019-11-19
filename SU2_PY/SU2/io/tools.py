@@ -317,7 +317,7 @@ def update_persurface(config, state):
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
 
-def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_avg=0 ):
+def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_avg=0, wnd_fct = 'SQUARE' ):
     """ values = read_aerodynamics(historyname, special_cases=[])
         read aerodynamic function values from history file
         
@@ -338,28 +338,38 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
                 Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'TIME_MARCHING' in special_cases and not final_avg:
-        for key,value in Func_Values.items():
-            Func_Values[key] = sum(value)/len(value)
-         
-    # average the final iterations   
-    elif final_avg:
-        for key,value in Func_Values.iteritems():
-            # only the last few iterations
-            i_fin = min([final_avg,len(value)])
-            value = value[-i_fin:]
-            Func_Values[key] = sum(value)/len(value)
-    
-    # otherwise, keep only last value
+    # Currently only supported for AERO_COEFF
+    for key, value in Func_Values.items():
+        if historyOutFields[key]['GROUP'] == 'AERO_COEFF' or historyOutFields[key]['GROUP'] == 'D_AERO_COEFF':
+            if not history_data.get('WND_'+ key):
+                raise KeyError('Key' + historyOutFields['WND_'+ key] + 'was not found in history output. Check your configuration file if the history output groups TAVG_AERO_COEFF and D_TAVG_AERO_COEFF is set')
+            Func_Values[key] = history_data['WND_'+ key][-1]
+    '''
     else:
-        for key,value in Func_Values.iteritems():
-            Func_Values[key] = value[-1]
-                    
+        if 'TIME_MARCHING' in special_cases and not final_avg:
+            for key,value in Func_Values.items():
+                    test = value
+                    Func_Values[key] = sum(value)/len(value)
+
+        # average the final iterations.
+        elif final_avg:
+            for key,value in Func_Values.iteritems():
+                # only the last few iterations
+                if key.startswith('WND'):
+                    Func_Values[key] = value[-1]
+                else:
+                    i_fin = min([final_avg,len(value)])
+                    value = value[-i_fin:]
+                    Func_Values[key] = sum(value) / len(value)
+
+        # otherwise, keep only last value
+        else:
+            for key,value in Func_Values.iteritems():
+                Func_Values[key] = value[-1]
+    '''
     return Func_Values
-    
+
 #: def read_aerodynamics()
-
-
 
 # -------------------------------------------------------------------
 #  Get Objective Function Sign
@@ -1032,6 +1042,7 @@ def restart2solution(config,state={}):
         # expand unsteady time
         restarts  = expand_time(restarts,config)
         solutions = expand_time(solutions,config)
+
         # move
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
@@ -1062,6 +1073,7 @@ def restart2solution(config,state={}):
         # expand unsteady time
         restarts  = expand_time(restarts,config)
         solutions = expand_time(solutions,config)
+
         # move
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )

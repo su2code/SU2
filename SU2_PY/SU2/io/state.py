@@ -98,6 +98,10 @@ def State_Factory(state=None,config=None):
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
+        WND_CAUCHY_DATA:
+            TIME_ITER
+            UNST_ADJOINT_ITER
+            ITER_AVERAGE_OBJ
 
     """   
     
@@ -111,12 +115,16 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA']:
         NewClass[key] = ordered_bunch()
             
     if config:
         NewClass.find_files(config)
-            
+        # WND_Convergence Data
+        NewClass['WND_CAUCHY_DATA'] = {'TIME_ITER': config['TIME_ITER'],
+                                       'UNST_ADJOINT_ITER': config['UNST_ADJOINT_ITER'],
+                                       'ITER_AVERAGE_OBJ': config['ITER_AVERAGE_OBJ']}
+
     return NewClass
 
 
