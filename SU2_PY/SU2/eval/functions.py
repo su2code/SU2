@@ -256,19 +256,28 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config,info)
+
+            # Tranfer Convergence Data, if necessary
+            konfig = copy.deepcopy(config)
+            if konfig.get('WND_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':
+                konfig['TIME_ITER']         = info.WND_CAUCHY_DATA['TIME_ITER']
+                konfig['ITER_AVERAGE_OBJ']  = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
+                konfig['UNST_ADJOINT_ITER'] = info.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']
+
+            su2io.restart2solution(konfig,info)
             state.update(info)
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_zones(name,config)
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_zones(name,konfig)
+            name = su2io.expand_time(name,konfig)
             push.extend(name)
             
             # equivarea files to push
@@ -287,7 +296,7 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['FLOW_META'])
                 
     #: with output redirection
-    su2io.update_persurface(config,state)
+    su2io.update_persurface(konfig,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.historyOutFields:

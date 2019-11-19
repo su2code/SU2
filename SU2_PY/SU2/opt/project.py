@@ -155,11 +155,11 @@ class Project(object):
         self.designs = designs     # design list
         self.folder  = folder      # project folder
         self.results = su2util.ordered_bunch() # project design results
-        
+
         # output filenames
-        self.filename = 'project.pkl' 
-        self.results_filename = 'results.pkl' 
-        
+        self.filename = 'project.pkl'
+        self.results_filename = 'results.pkl'
+
         # initialize folder with files
         pull,link = state.pullnlink(config)
 
@@ -188,18 +188,17 @@ class Project(object):
         config = self.config           # project config
         state  = self.state            # project state
         folder = self.folder           # project folder
-        
         filename = self.filename
         
         # check folder
-        assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
-        
+        assert os.path.exists(folder) , 'cannot find project folder %s' % folder
+
         # list project files to pull and link
         pull,link = state.pullnlink(config)
-        
+
         # project folder redirection, don't overwrite files
-        with redirect_folder(folder,pull,link,force=False) as push:        
-        
+        with redirect_folder(folder,pull,link,force=False) as push:
+
             # start design
             design = self.new_design(konfig)
             
@@ -209,10 +208,10 @@ class Project(object):
             
             # run design+
             vals = design._eval(func,*args)
-            
+
             # check for update
             if design.state.toc(timestamp):
-                
+
                 # recompile design results
                 self.compile_results()
                 
@@ -245,7 +244,7 @@ class Project(object):
         func = su2eval.obj_df
         konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
-    
+
     def con_ceq(self,dvs):
         func = su2eval.con_ceq
         konfig,dvs = self.unpack_dvs(dvs)
