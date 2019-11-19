@@ -1,15 +1,15 @@
 tecio_cpp_flags = ['-fpermissive', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS']
 
 if (host_machine.system() == 'darwin')
-  tec_cpp_flags += ['-DDARWIN', '-DMAC64']
+  tecio_cpp_flags += ['-DDARWIN', '-DMAC64']
 endif
 
 if (host_machine.system() == 'linux')
-  tec_cpp_flags += ['-DLINUX', '-DLINUX64']
+  tecio_cpp_flags += ['-DLINUX', '-DLINUX64']
 endif
 
 if (host_machine.system() == 'windows')
-  tec_cpp_flags += ['-DMSWIN']
+  tecio_cpp_flags += ['-DMSWIN']
 endif
 
 tecio_include = include_directories('../', './')

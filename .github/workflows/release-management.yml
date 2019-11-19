@@ -12,10 +12,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_bin: [macos64, linux64, win64]
+        os_bin: [macos64, linux64, win64, win64-mpi]
         include:
           - os_bin: win64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfile_windows -Denable-tecio=false'
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfile_windows'
+          - os_bin: win64-mpi
+            flags: '-Dcustom-mpi=true --cross-file=/hostfile_windows_mpi'
           - os_bin: macos64
             flags: '-Dwith-mpi=disabled --cross-file=/hostfile_darwin'
           - os_bin: linux64
