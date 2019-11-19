@@ -128,14 +128,14 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     /*--- Element container structure ---*/
 
     if (nDim == 2) {
-        element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-        element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+      element_container[FEA_TERM][EL_TRIA] = new CTRIA1();
+      element_container[FEA_TERM][EL_QUAD] = new CQUAD4();
     }
-    else if (nDim == 3) {
-        element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-        element_container[FEA_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
-        element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
-        element_container[FEA_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    else {
+      element_container[FEA_TERM][EL_TETRA] = new CTETRA1();
+      element_container[FEA_TERM][EL_HEXA]  = new CHEXA8();
+      element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5();
+      element_container[FEA_TERM][EL_PRISM] = new CPRISM6();
     }
 
     /*--- Matrices to impose boundary conditions ---*/
@@ -201,7 +201,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 CMeshSolver::~CMeshSolver(void) {
 
   if (Coordinate != NULL) delete [] Coordinate;
-  if (element  !=NULL ) delete [] element;
+  if (element    !=NULL ) delete [] element;
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
@@ -241,7 +241,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
         if (updated) val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim)
                                + nodes->GetSolution(indexNode[iNode],iDim);
         else val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim);
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
     }
 

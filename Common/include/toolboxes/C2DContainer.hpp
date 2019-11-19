@@ -41,6 +41,8 @@
 #include <utility>
 #include <cassert>
 
+#include "../datatype_structure.hpp"
+
 /*!
  * \enum StorageType
  * \brief Supported ways to flatten a matrix into an array.

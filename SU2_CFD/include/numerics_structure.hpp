@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_structure.hpp
  * \brief Headers of the main subroutines for the dumerical definition of the problem.
  *        The subroutines and functions are in the <i>numerics_structure.cpp</i>,
@@ -48,8 +48,7 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/gauss_structure.hpp"
-#include "../../Common/include/element_structure.hpp"
+#include "../../Common/include/geometry/elements/CElement.hpp"
 #include "fluid_model.hpp"
 
 using namespace std;
@@ -62,150 +61,194 @@ using namespace std;
 class CNumerics {
 protected:
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
-  su2double Gamma;        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  su2double Gamma_Minus_One;    /*!< \brief Fluids's Gamma - 1.0  . */
-  su2double Minf;    /*!< \brief Free stream Mach number . */
-  su2double Gas_Constant;         /*!< \brief Gas constant. */
-  su2double *Vector; /*!< \brief Auxiliary vector. */
-  su2double *Enthalpy_formation;
-  su2double Prandtl_Lam;        /*!< \brief Laminar Prandtl's number. */
-  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl's number. */
+  su2double Gamma;            /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
+  su2double Minf;             /*!< \brief Free stream Mach number . */
+  su2double Gas_Constant;     /*!< \brief Gas constant. */
+  su2double *Vector;          /*!< \brief Auxiliary vector. */
+  su2double *Enthalpy_formation; /*!< \brief Enthalpy of formation. */
+  su2double Prandtl_Lam;         /*!< \brief Laminar Prandtl's number. */
+  su2double Prandtl_Turb;        /*!< \brief Turbulent Prandtl's number. */
   
 public:
   
   su2double
-  **Flux_Tensor,  /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
-  *Proj_Flux_Tensor;    /*!< \brief Flux tensor projected in a direction. */
+  **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
+  *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   
   su2double
-  **tau,    /*!< \brief Viscous stress tensor. */
-  **delta,      /*!< \brief Identity matrix. */
+  **tau,      /*!< \brief Viscous stress tensor. */
+  **delta,    /*!< \brief Identity matrix. */
   **delta3;   /*!< \brief 3 row Identity matrix. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
-  su2double Laminar_Viscosity_i,  /*!< \brief Laminar viscosity at point i. */
-  Laminar_Viscosity_j,    /*!< \brief Laminar viscosity at point j. */
+  su2double
+  Laminar_Viscosity_i,   /*!< \brief Laminar viscosity at point i. */
+  Laminar_Viscosity_j,   /*!< \brief Laminar viscosity at point j. */
   Laminar_Viscosity_id,  /*!< \brief Variation of laminar viscosity at point i. */
-  Laminar_Viscosity_jd;    /*!< \brief Variation of laminar viscosity at point j. */
-  su2double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
-  Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
+  Laminar_Viscosity_jd;  /*!< \brief Variation of laminar viscosity at point j. */
+  su2double
+  Thermal_Conductivity_i,    /*!< \brief Thermal conductivity at point i. */
+  Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
-  Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
-  Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
-  su2double Cp_i, /*!< \brief Cp at point i. */
-  Cp_j;         /*!< \brief Cp at point j. */
+  Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
+  Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
+  su2double
+  Cp_i,               /*!< \brief Cp at point i. */
+  Cp_j;               /*!< \brief Cp at point j. */
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
-  su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
-  Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
-  su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
-  turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
-  su2double Pressure_i,  /*!< \brief Pressure at point i. */
-  Pressure_j;      /*!< \brief Pressure at point j. */
-  su2double GravityForce_i,  /*!< \brief Gravity force at point i. */
-  GravityForce_j;      /*!< \brief Gravity force at point j. */
-  su2double Density_i,  /*!< \brief Density at point i. */
-  Density_j;      /*!< \brief Density at point j. */
-  su2double DensityInc_i,  /*!< \brief Incompressible density at point i. */
-  DensityInc_j;      /*!< \brief Incompressible density at point j. */
-  su2double BetaInc2_i,  /*!< \brief Beta incompressible at point i. */
-  BetaInc2_j;      /*!< \brief Beta incompressible at point j. */
-  su2double Lambda_i,  /*!< \brief Spectral radius at point i. */
-  Lambda_j;      /*!< \brief Spectral radius at point j. */
-  su2double LambdaComb_i,  /*!< \brief Spectral radius at point i. */
-  LambdaComb_j;      /*!< \brief Spectral radius at point j. */
-  su2double SoundSpeed_i,  /*!< \brief Sound speed at point i. */
-  SoundSpeed_j;      /*!< \brief Sound speed at point j. */
-  su2double Enthalpy_i,  /*!< \brief Enthalpy at point i. */
-  Enthalpy_j;      /*!< \brief Enthalpy at point j. */
-  su2double dist_i,  /*!< \brief Distance of point i to the nearest wall. */
-  dist_j;      /*!< \brief Distance of point j to the nearest wall. */
-  su2double Temp_i,  /*!< \brief Temperature at point i. */
-  Temp_j;      /*!< \brief Temperature at point j. */
-  su2double *Temp_tr_i, /*!< \brief Temperature transl-rot at point i. */
-  *Temp_tr_j;/*!< \brief Temperature transl-rot at point j. */
-  su2double *Temp_vib_i, /*!< \brief Temperature vibrational at point i. */
-  *Temp_vib_j;/*!< \brief Temperature vibrational at point j. */
-  su2double *Und_Lapl_i, /*!< \brief Undivided laplacians at point i. */
-  *Und_Lapl_j;    /*!< \brief Undivided laplacians at point j. */
-  su2double Sensor_i,  /*!< \brief Pressure sensor at point i. */
-  Sensor_j;      /*!< \brief Pressure sensor at point j. */
-  su2double *GridVel_i,  /*!< \brief Grid velocity at point i. */
-  *GridVel_j;      /*!< \brief Grid velocity at point j. */
-  su2double *U_i,    /*!< \brief Vector of conservative variables at point i. */
-  *U_id,    /*!< \brief Vector of derivative of conservative variables at point i. */
+  su2double
+  Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
+  Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
+  su2double
+  turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
+  turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
+  su2double
+  Pressure_i,  /*!< \brief Pressure at point i. */
+  Pressure_j;  /*!< \brief Pressure at point j. */
+  su2double
+  GravityForce_i,  /*!< \brief Gravity force at point i. */
+  GravityForce_j;  /*!< \brief Gravity force at point j. */
+  su2double
+  Density_i,  /*!< \brief Density at point i. */
+  Density_j;  /*!< \brief Density at point j. */
+  su2double
+  DensityInc_i,  /*!< \brief Incompressible density at point i. */
+  DensityInc_j;  /*!< \brief Incompressible density at point j. */
+  su2double
+  BetaInc2_i,  /*!< \brief Beta incompressible at point i. */
+  BetaInc2_j;  /*!< \brief Beta incompressible at point j. */
+  su2double
+  Lambda_i,  /*!< \brief Spectral radius at point i. */
+  Lambda_j;  /*!< \brief Spectral radius at point j. */
+  su2double
+  LambdaComb_i,  /*!< \brief Spectral radius at point i. */
+  LambdaComb_j;  /*!< \brief Spectral radius at point j. */
+  su2double
+  SoundSpeed_i,  /*!< \brief Sound speed at point i. */
+  SoundSpeed_j;  /*!< \brief Sound speed at point j. */
+  su2double
+  Enthalpy_i,  /*!< \brief Enthalpy at point i. */
+  Enthalpy_j;  /*!< \brief Enthalpy at point j. */
+  su2double
+  dist_i,  /*!< \brief Distance of point i to the nearest wall. */
+  dist_j;  /*!< \brief Distance of point j to the nearest wall. */
+  su2double
+  Temp_i,  /*!< \brief Temperature at point i. */
+  Temp_j;  /*!< \brief Temperature at point j. */
+  su2double
+  *Temp_tr_i,  /*!< \brief Temperature transl-rot at point i. */
+  *Temp_tr_j;  /*!< \brief Temperature transl-rot at point j. */
+  su2double
+  *Temp_vib_i, /*!< \brief Temperature vibrational at point i. */
+  *Temp_vib_j; /*!< \brief Temperature vibrational at point j. */
+  su2double
+  *Und_Lapl_i,  /*!< \brief Undivided laplacians at point i. */
+  *Und_Lapl_j;  /*!< \brief Undivided laplacians at point j. */
+  su2double
+  Sensor_i,  /*!< \brief Pressure sensor at point i. */
+  Sensor_j;  /*!< \brief Pressure sensor at point j. */
+  su2double
+  *GridVel_i,  /*!< \brief Grid velocity at point i. */
+  *GridVel_j;  /*!< \brief Grid velocity at point j. */
+  su2double
+  *U_i,           /*!< \brief Vector of conservative variables at point i. */
+  *U_id,          /*!< \brief Vector of derivative of conservative variables at point i. */
   *UZeroOrder_i,  /*!< \brief Vector of conservative variables at point i without reconstruction. */
-  *U_j,        /*!< \brief Vector of conservative variables at point j. */
+  *U_j,           /*!< \brief Vector of conservative variables at point j. */
   *UZeroOrder_j,  /*!< \brief Vector of conservative variables at point j without reconstruction. */
-  *U_jd,        /*!< \brief Vector of derivative of conservative variables at point j. */
-  *U_0,        /*!< \brief Vector of conservative variables at node 0. */
-  *U_1,        /*!< \brief Vector of conservative variables at node 1. */
-  *U_2,        /*!< \brief Vector of conservative variables at node 2. */
-  *U_3;        /*!< \brief Vector of conservative variables at node 3. */
-  su2double *V_i,    /*!< \brief Vector of primitive variables at point i. */
-  *V_j;        /*!< \brief Vector of primitive variables at point j. */
-  su2double *S_i,    /*!< \brief Vector of secondary variables at point i. */
-  *S_j;        /*!< \brief Vector of secondary variables at point j. */
-  su2double *Psi_i,    /*!< \brief Vector of adjoint variables at point i. */
-  *Psi_j;        /*!< \brief Vector of adjoint variables at point j. */
-  su2double *DeltaU_i,  /*!< \brief Vector of linearized variables at point i. */
-  *DeltaU_j;      /*!< \brief Vector of linearized variables at point j. */
-  su2double *TurbVar_i,  /*!< \brief Vector of turbulent variables at point i. */
+  *U_jd,          /*!< \brief Vector of derivative of conservative variables at point j. */
+  *U_0,           /*!< \brief Vector of conservative variables at node 0. */
+  *U_1,           /*!< \brief Vector of conservative variables at node 1. */
+  *U_2,           /*!< \brief Vector of conservative variables at node 2. */
+  *U_3;           /*!< \brief Vector of conservative variables at node 3. */
+  su2double
+  *V_i,     /*!< \brief Vector of primitive variables at point i. */
+  *V_j;     /*!< \brief Vector of primitive variables at point j. */
+  su2double
+  *S_i,     /*!< \brief Vector of secondary variables at point i. */
+  *S_j;     /*!< \brief Vector of secondary variables at point j. */
+  su2double
+  *Psi_i,    /*!< \brief Vector of adjoint variables at point i. */
+  *Psi_j;    /*!< \brief Vector of adjoint variables at point j. */
+  su2double
+  *DeltaU_i,  /*!< \brief Vector of linearized variables at point i. */
+  *DeltaU_j;  /*!< \brief Vector of linearized variables at point j. */
+  su2double
+  *TurbVar_i,   /*!< \brief Vector of turbulent variables at point i. */
   *TurbVar_id,  /*!< \brief Vector of derivative of turbulent variables at point i. */
-  *TurbVar_j,      /*!< \brief Vector of turbulent variables at point j. */
+  *TurbVar_j,   /*!< \brief Vector of turbulent variables at point j. */
   *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
-  su2double *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
-  *TransVar_j;      /*!< \brief Vector of turbulent variables at point j. */
-  su2double *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
-  *TurbPsi_j;      /*!< \brief Vector of adjoint turbulent variables at point j. */
-  su2double **ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
-  **ConsVar_Grad_j,      /*!< \brief Gradient of conservative variables at point j. */
-  **ConsVar_Grad_0,      /*!< \brief Gradient of conservative variables at point 0. */
-  **ConsVar_Grad_1,      /*!< \brief Gradient of conservative variables at point 1. */
-  **ConsVar_Grad_2,      /*!< \brief Gradient of conservative variables at point 2. */
-  **ConsVar_Grad_3,      /*!< \brief Gradient of conservative variables at point 3. */
-  **ConsVar_Grad;        /*!< \brief Gradient of conservative variables which is a scalar. */
-  su2double **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
-  **PrimVar_Grad_j;      /*!< \brief Gradient of primitive variables at point j. */
-  su2double **PsiVar_Grad_i,    /*!< \brief Gradient of adjoint variables at point i. */
-  **PsiVar_Grad_j;      /*!< \brief Gradient of adjoint variables at point j. */
-  su2double **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **TurbVar_Grad_j;      /*!< \brief Gradient of turbulent variables at point j. */
-  su2double **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **TransVar_Grad_j;      /*!< \brief Gradient of turbulent variables at point j. */
-  su2double **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
-  **TurbPsi_Grad_j;      /*!< \brief Gradient of adjoint turbulent variables at point j. */
-  su2double *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
-  *AuxVar_Grad_j;        /*!< \brief Gradient of an auxiliary variable at point i. */
-  su2double *Coord_i,  /*!< \brief Cartesians coordinates of point i. */
+  su2double
+  *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
+  *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
+  su2double
+  *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
+  *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
+  su2double
+  **ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
+  **ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
+  **ConsVar_Grad_0,  /*!< \brief Gradient of conservative variables at point 0. */
+  **ConsVar_Grad_1,  /*!< \brief Gradient of conservative variables at point 1. */
+  **ConsVar_Grad_2,  /*!< \brief Gradient of conservative variables at point 2. */
+  **ConsVar_Grad_3,  /*!< \brief Gradient of conservative variables at point 3. */
+  **ConsVar_Grad;    /*!< \brief Gradient of conservative variables which is a scalar. */
+  su2double
+  **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
+  **PrimVar_Grad_j;  /*!< \brief Gradient of primitive variables at point j. */
+  su2double
+  **PsiVar_Grad_i,  /*!< \brief Gradient of adjoint variables at point i. */
+  **PsiVar_Grad_j;  /*!< \brief Gradient of adjoint variables at point j. */
+  su2double
+  **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
+  **TurbVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
+  su2double
+  **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
+  **TransVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
+  su2double
+  **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
+  **TurbPsi_Grad_j;  /*!< \brief Gradient of adjoint turbulent variables at point j. */
+  su2double
+  *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
+  *AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  su2double
+  *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
   *Coord_j,      /*!< \brief Cartesians coordinates of point j. */
   *Coord_0,      /*!< \brief Cartesians coordinates of point 0 (Galerkin method, triangle). */
   *Coord_1,      /*!< \brief Cartesians coordinates of point 1 (Galerkin method, tetrahedra). */
   *Coord_2,      /*!< \brief Cartesians coordinates of point 2 (Galerkin method, triangle). */
   *Coord_3;      /*!< \brief Cartesians coordinates of point 3 (Galerkin method, tetrahedra). */
-  unsigned short Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
-  Neighbor_j;          /*!< \brief Number of neighbors of the point j. */
-  su2double *Normal,  /*!< \brief Normal vector, it norm is the area of the face. */
-  *UnitNormal,    /*!< \brief Unitary normal vector. */
-  *UnitNormald;    /*!< \brief derivatve of unitary normal vector. */
-  su2double TimeStep,    /*!< \brief Time step useful in dual time method. */
+  unsigned short
+  Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
+  Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
+  su2double
+  *Normal,       /*!< \brief Normal vector, it norm is the area of the face. */
+  *UnitNormal,   /*!< \brief Unitary normal vector. */
+  *UnitNormald;  /*!< \brief derivatve of unitary normal vector. */
+  su2double
+  TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
-  Volume;        /*!< \brief Volume of the control volume around point i. */
-  su2double Volume_n,  /*!< \brief Volume of the control volume at time n. */
+  Volume;      /*!< \brief Volume of the control volume around point i. */
+  su2double
+  Volume_n,      /*!< \brief Volume of the control volume at time n. */
   Volume_nM1,    /*!< \brief Volume of the control volume at time n-1. */
   Volume_nP1;    /*!< \brief Volume of the control volume at time n+1. */
-  su2double *U_n,  /*!< \brief Vector of conservative variables at time n. */
+  su2double
+  *U_n,      /*!< \brief Vector of conservative variables at time n. */
   *U_nM1,    /*!< \brief Vector of conservative variables at time n-1. */
   *U_nP1;    /*!< \brief Vector of conservative variables at time n+1. */
-  su2double vel2_inf; /*!< \brief value of the square of freestream speed. */
-  su2double *WindGust_i,  /*!< \brief Wind gust at point i. */
-  *WindGust_j;      /*!< \brief Wind gust at point j. */
-  su2double *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
-  *WindGustDer_j;      /*!< \brief Wind gust derivatives at point j. */
-  su2double *Vorticity_i, *Vorticity_j;  /*!< \brief Vorticity. */
-  su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
-  su2double Dissipation_i, Dissipation_j;
+  su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
+  su2double
+  *WindGust_i,  /*!< \brief Wind gust at point i. */
+  *WindGust_j;  /*!< \brief Wind gust at point j. */
+  su2double
+  *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
+  *WindGustDer_j;  /*!< \brief Wind gust derivatives at point j. */
+  su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
+  su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
+  su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
     
   su2double *l, *m;
@@ -216,8 +259,8 @@ public:
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
-  su2double uq_urlx;                 /*!< \brief Under-relaxation factor for numerical stability */
-  bool uq_permute;                   /*!< \brief Flag for eigenvector permutation */
+  su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
+  bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
@@ -978,28 +1021,28 @@ public:
    */
   void InvMatrix4D(su2double **matrix, su2double **invMatrix);
 
-	/*!
-	 * \brief Computation of the matrix R.
-	 * \param[in] val_soundspeed - value of the sound speed.
-	 * \param[in] val_density - value of the density.
-	 * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
-	 * \param[out]char_jump - pointer to the vector containing the characteristic variable jump.
-	 */
-	void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
+  /*!
+   * \brief Computation of the matrix R.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
+   * \param[out]char_jump - pointer to the vector containing the characteristic variable jump.
+   */
+  void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
 
-	/*!
-	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
-	 *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
-	 * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
-	 * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
-	 * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
-	 * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
-	 * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
-	 * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
-	 */
-	void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
+  /*!
+   * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
+   *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
+   * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
+   * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
+   * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
+   * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
+   * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
+   * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
+   */
+  void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
 
   
   /*!
@@ -1840,10 +1883,10 @@ public:
  */
 class CUpwFDSInc_Flow : public CNumerics {
 private:
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid, /*!< \brief Modification for grid movement. */
-  variable_density, /*!< \brief Variable density incompressible flows. */
-  energy; /*!< \brief computation with the energy equation. */
+  bool implicit,     /*!< \brief Implicit calculation. */
+  dynamic_grid,      /*!< \brief Modification for grid movement. */
+  variable_density,  /*!< \brief Variable density incompressible flows. */
+  energy;            /*!< \brief computation with the energy equation. */
   su2double *Diff_V;
   su2double *Velocity_i, *Velocity_j, *MeanVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -2632,7 +2675,7 @@ class CCentBase_Flow : public CNumerics {
 
 protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  bool dynamic_grid;              /*!< \brief Consider grid movement. */
+  bool dynamic_grid;               /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
   su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
@@ -2837,24 +2880,30 @@ public:
 class CCentJSTInc_Flow : public CNumerics {
   
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_V, *Diff_Lapl, /*!< \brief Diference of primitive variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
+  unsigned short iDim, iVar, jVar;   /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_V, *Diff_Lapl,     /*!< \brief Diference of primitive variables and undivided laplacians. */
+  *Velocity_i, *Velocity_j,          /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity_i,
+  ProjVelocity_j,                 /*!< \brief Mean and projected velocities. */
+  sq_vel_i, sq_vel_j,             /*!< \brief Modulus of the velocity and the normal vector. */
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature, /*!< \brief Mean values of primitive variables. */
-  MeandRhodT, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
-  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, Epsilon_4; /*!< \brief Artificial dissipation values. */
+  MeanDensity, MeanPressure,
+  MeanBetaInc2, MeanEnthalpy,
+  MeanCp, MeanTemperature,        /*!< \brief Mean values of primitive variables. */
+  MeandRhodT,                     /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  Param_p, Param_Kappa_2,
+  Param_Kappa_4,                  /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j,
+  MeanLambda,                     /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc2, sc4,
+  StretchingFactor,               /*!< \brief Streching parameters. */
+  *ProjFlux,                      /*!< \brief Projected inviscid flux tensor. */
+  Epsilon_2, Epsilon_4;           /*!< \brief Artificial dissipation values. */
   su2double **Precon;
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid, /*!< \brief Modification for grid movement. */
-  variable_density, /*!< \brief Variable density incompressible flows. */
-  energy; /*!< \brief computation with the energy equation. */
+  bool implicit,         /*!< \brief Implicit calculation. */
+  dynamic_grid,          /*!< \brief Modification for grid movement. */
+  variable_density,      /*!< \brief Variable density incompressible flows. */
+  energy;                /*!< \brief computation with the energy equation. */
 
 public:
   
@@ -2940,14 +2989,16 @@ public:
 class CCentSca_Heat : public CNumerics {
 
 private:
-  unsigned short iDim; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  cte_0, cte_1; /*!< \brief Artificial dissipation values. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid; /*!< \brief Modification for grid movement. */
+  unsigned short iDim;             /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_Lapl,            /*!< \brief Diference of conservative variables and undivided laplacians. */
+  *MeanVelocity, ProjVelocity,
+  ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  Param_Kappa_4,                   /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j,
+  MeanLambda,                      /*!< \brief Local eingenvalues. */
+  cte_0, cte_1;                    /*!< \brief Artificial dissipation values. */
+  bool implicit,                   /*!< \brief Implicit calculation. */
+  dynamic_grid;                    /*!< \brief Modification for grid movement. */
 
 
 public:
@@ -2986,23 +3037,28 @@ public:
 class CCentLaxInc_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_V, /*!< \brief Difference of primitive variables. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature, /*!< \brief Mean values of primitive variables. */
-  MeandRhodT, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
-  Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
-  Epsilon_0; /*!< \brief Artificial dissipation values. */
+  su2double *Diff_V,               /*!< \brief Difference of primitive variables. */
+  *Velocity_i, *Velocity_j,        /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity_i,
+  ProjVelocity_j,                  /*!< \brief Mean and projected velocities. */
+  *ProjFlux,                       /*!< \brief Projected inviscid flux tensor. */
+  sq_vel_i, sq_vel_j,              /*!< \brief Modulus of the velocity and the normal vector. */
+  Temperature_i, Temperature_j,    /*!< \brief Temperature at node 0 and 1. */
+  MeanDensity, MeanPressure,
+  MeanBetaInc2, MeanEnthalpy,
+  MeanCp, MeanTemperature,         /*!< \brief Mean values of primitive variables. */
+  MeandRhodT,                      /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  Param_p, Param_Kappa_0,          /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j,
+  MeanLambda,                      /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc0,
+  StretchingFactor,                /*!< \brief Streching parameters. */
+  Epsilon_0;                       /*!< \brief Artificial dissipation values. */
   su2double **Precon;
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid, /*!< \brief Modification for grid movement. */
-  variable_density, /*!< \brief Variable density incompressible flows. */
-  energy; /*!< \brief computation with the energy equation. */
+  bool implicit,                   /*!< \brief Implicit calculation. */
+  dynamic_grid,                    /*!< \brief Modification for grid movement. */
+  variable_density,                /*!< \brief Variable density incompressible flows. */
+  energy;                          /*!< \brief computation with the energy equation. */
   
 public:
   
@@ -3445,7 +3501,7 @@ public:
 class CAvgGradInc_Flow : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity; /*!< \brief Mean value of the effective thermal conductivity. */
-  bool energy;    /*!< \brief computation with the energy equation. */
+  bool energy;                         /*!< \brief computation with the energy equation. */
 
   /*
    * \brief Compute the projection of the viscous fluxes into a direction
@@ -3719,8 +3775,8 @@ private:
   su2double *Mean_Velocity;
   su2double *Mean_GradPsiE;  /*!< \brief Counter for dimensions of the problem. */
   su2double **Mean_GradPhi;  /*!< \brief Counter for dimensions of the problem. */
-  su2double *Edge_Vector;  /*!< \brief Vector going from node i to node j. */
-  bool implicit;      /*!< \brief Implicit calculus. */
+  su2double *Edge_Vector;    /*!< \brief Vector going from node i to node j. */
+  bool implicit;             /*!< \brief Implicit calculus. */
   
 public:
   
@@ -3855,12 +3911,12 @@ private:
   su2double *Velocity_i;  /*!< \brief Auxiliary vector for storing the velocity of point i. */
   su2double *Velocity_j;  /*!< \brief Auxiliary vector for storing the velocity of point j. */
   su2double *Mean_Velocity;
-  su2double **Mean_GradPsiVar;  /*!< \brief Counter for dimensions of the problem. */
-  su2double *Edge_Vector;  /*!< \brief Vector going from node i to node j. */
+  su2double **Mean_GradPsiVar;           /*!< \brief Counter for dimensions of the problem. */
+  su2double *Edge_Vector;                /*!< \brief Vector going from node i to node j. */
   su2double *Proj_Mean_GradPsiVar_Edge;  /*!< \brief Projection of Mean_GradPsiVar onto Edge_Vector. */
-  su2double *Mean_GradPsiE;  /*!< \brief Counter for dimensions of the problem. */
-  su2double **Mean_GradPhi;  /*!< \brief Counter for dimensions of the problem. */
-  bool implicit;          /*!< \brief Boolean controlling Jacobian calculations. */
+  su2double *Mean_GradPsiE;              /*!< \brief Counter for dimensions of the problem. */
+  su2double **Mean_GradPhi;              /*!< \brief Counter for dimensions of the problem. */
+  bool implicit;                         /*!< \brief Boolean controlling Jacobian calculations. */
   
 public:
   
@@ -4142,7 +4198,7 @@ protected:
 
   su2double *FAux_Dead_Load;    /*!< \brief Auxiliar vector for the dead loads */
 
-  su2double *DV_Val;          /*!< \brief For optimization cases, value of the design variables. */
+  su2double *DV_Val;            /*!< \brief For optimization cases, value of the design variables. */
   unsigned short n_DV;          /*!< \brief For optimization cases, number of design variables. */
 
 public:
