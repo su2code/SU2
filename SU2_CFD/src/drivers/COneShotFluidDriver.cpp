@@ -329,7 +329,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
     // CheckMultiplier();
-    // CalculateLagrangian();
+    CalculateLagrangian();
   }
 
   /*--- Store Deltay and DeltaBary ---*/
