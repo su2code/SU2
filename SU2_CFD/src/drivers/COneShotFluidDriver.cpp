@@ -1203,7 +1203,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     }
     // Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier_Store[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
-    Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] += helper*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
@@ -1220,7 +1220,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
         helper += BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
       }
-      Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+      Multiplier[iConstr] = Multiplier_Old[iConstr] - helper*stepsize*config->GetMultiplierScale(iConstr);
     }
     else {
       Multiplier_Store[iConstr] = Multiplier[iConstr];
