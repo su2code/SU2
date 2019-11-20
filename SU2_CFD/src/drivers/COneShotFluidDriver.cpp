@@ -325,6 +325,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
     // solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
     // CheckMultiplier();
@@ -698,7 +699,8 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
     unsigned short TOTAL_AUGMENTED = 3;
-    solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
     CalculateLagrangian();
     SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
@@ -1178,30 +1180,28 @@ void COneShotFluidDriver::LoadOldMultiplier(){
 void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
   su2double helper, gamma = config->GetOneShotGamma();
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
-    // helper = 0.0;
-    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-    //   if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
-    //     ConstrFunc_Store[iConstr] <= 0.) {
-    //     helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
-    //   }
-    //   else {
-    //     helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
-    //   }
-    // }
-    // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-    // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
+    /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
+    helper = 0.0;
+    for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
+        helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
+      }
+      else {
+        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+      }
+    }
+    Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
 
-    /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
-    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
-      Multiplier[iConstr] = 0.;
-      // Multiplier_Store[iConstr] += stepsize*gamma*ConstrFunc_Store[iConstr];
-    }
-    else {
-      Multiplier[iConstr] = Multiplier_Old[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
-      // Multiplier_Store[iConstr] = Multiplier[iConstr];
-    }
-    Multiplier_Store[iConstr] += stepsize*gamma*ConstrFunc_Store[iConstr];
+    // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
+    // if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
+    //   Multiplier[iConstr] = 0.;
+    //   // Multiplier_Store[iConstr] += stepsize*gamma*ConstrFunc_Store[iConstr];
+    // }
+    // else {
+    //   Multiplier[iConstr] = Multiplier_Old[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
+    //   // Multiplier_Store[iConstr] = Multiplier[iConstr];
+    // }
+    // Multiplier_Store[iConstr] += stepsize*gamma*ConstrFunc_Store[iConstr];
 
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
       if(Multiplier[iConstr]*ConstrFunc_Store[iConstr] < 0.) {

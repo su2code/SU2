@@ -280,25 +280,32 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 
   rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1E-6); // Saturate contractivity
   theta = max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old);
-}
-
-void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){
-
-  /* --- Estimate alpha, beta, and gamma values --- */
-  su2double alpha = 2./((1.-rho)*(1.-rho));
-  su2double beta  = 2.;
-  su2double gamma = 2./(beta*val_bcheck_norm);
-  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  // su2double beta  = 2./theta;
-  // su2double gamma = 2./(beta*val_bcheck_norm);
-
-  config->SetOneShotAlpha(alpha);
-  config->SetOneShotBeta(beta);
-  config->SetOneShotGamma(gamma);
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
   theta_old = theta;
+}
+
+void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config){
+
+  /* --- Estimate alpha and beta --- */
+  su2double alpha = 2./((1.-rho)*(1.-rho));
+  su2double beta  = 2.;
+  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  // su2double beta  = 2./theta;
+
+  config->SetOneShotAlpha(alpha);
+  config->SetOneShotBeta(beta);
+}
+
+void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm){
+
+  /* --- Estimate gamma value --- */
+  su2double gamma = 2./(beta*val_bcheck_norm);
+  // su2double gamma = 2./(beta*val_bcheck_norm);
+
+  config->SetOneShotGamma(gamma);
+
 }
 
 su2double COneShotSolver::CalculateLagrangian(CConfig *config){

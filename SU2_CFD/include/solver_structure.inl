@@ -2532,7 +2532,9 @@ inline su2double CSolver::CalculateLagrangian(CConfig *config){return 0.0;}
 
 inline void CSolver::CalculateRhoTheta(CConfig *config){}
 
-inline void CSolver::CalculateAlphaBetaGamma(CConfig *config, su2double val_bcheck_norm){}
+inline void CSolver::CalculateAlphaBeta(CConfig *config){}
+
+inline void CSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm){}
 
 inline void CSolver::SetStoreSolution(){}
 
