@@ -1221,6 +1221,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     // }
     else {
       Multiplier[iConstr] = max(Multiplier[iConstr], 0.);
+      Multiplier_Store[iConstr] = max(Multiplier_Store[iConstr], 0.);
     }
   }
 }
