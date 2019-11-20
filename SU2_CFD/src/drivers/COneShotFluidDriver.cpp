@@ -811,7 +811,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     }
     else {
       // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
-      if(ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma  > 0.) {
+      if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma  > 0.) {
         Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
       }
     }
@@ -1197,7 +1197,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       Multiplier[iConstr] = 0.;
     }
     else {
-      Multiplier[iConstr] = Multiplier_Store[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
+      Multiplier[iConstr] = Multiplier_Old[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
       Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
 
