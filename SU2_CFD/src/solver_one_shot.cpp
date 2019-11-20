@@ -289,10 +289,10 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   /* --- Estimate alpha and beta --- */
-  su2double alpha = 2./((1.-rho)*(1.-rho));
-  su2double beta  = 2.;
-  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  // su2double beta  = 2./theta;
+  // su2double alpha = 2./((1.-rho)*(1.-rho));
+  // su2double beta  = 2.;
+  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  su2double beta  = 2./theta;
 
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
@@ -302,7 +302,6 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm){
 
   /* --- Estimate gamma value --- */
   su2double gamma = 2./(config->GetOneShotBeta()*val_bcheck_norm);
-  // su2double gamma = 2./(beta*val_bcheck_norm);
 
   config->SetOneShotGamma(gamma);
 
