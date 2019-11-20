@@ -779,26 +779,6 @@ void COneShotFluidDriver::ComputeSearchDirection(){
   }
 }
 
-void COneShotFluidDriver::ComputeNegativeSearchDirection(){
-  unsigned short iDV, jDV;
-  for (iDV=0;iDV<nDV_Total;iDV++){
-    SearchDirection[iDV]=0.0;
-    for (jDV=0;jDV<nDV_Total;jDV++){
-      SearchDirection[iDV]+=BFGS_Inv[iDV][jDV]*ProjectionSet(jDV,ShiftedLagrangianGradient[jDV],false);
-    }
-    SearchDirection[iDV]=ProjectionSet(iDV, ShiftedLagrangianGradient[iDV],true)+ProjectionSet(iDV, SearchDirection[iDV], false);
-  }
-}
-
-bool COneShotFluidDriver::CheckDescent(){
-  unsigned short iDV;
-  su2double product = 0.0;
-  for (iDV=0;iDV<nDV_Total;iDV++){
-    product+=SearchDirection[iDV]*ProjectionSet(iDV, AugmentedLagrangianGradient_Old[iDV], false);
-  }
-  return (product<=0.0);
-}
-
 void COneShotFluidDriver::StoreLagrangianInformation(){
   unsigned short iDV;
   for (iDV=0; iDV<nDV_Total; iDV++){
@@ -823,14 +803,15 @@ void COneShotFluidDriver::CalculateLagrangian(){
     // Lagrangian += config->GetOneShotGamma()/2.*ConstrFunc_Store[iConstr]*ConstrFunc_Store[iConstr]
     //             + ConstrFunc_Store[iConstr]*Multiplier[iConstr]
     //             + config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
-    su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma();
+    const su2double gamma = config->GetOneShotGamma();
+    su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
       Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
     }
     else {
       // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
-      if(ConstrFunc_Store[iConstr]  > 0.) {
+      if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma  > 0.) {
         Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
       }
     }
@@ -933,7 +914,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   SetAdj_ObjFunction_Zero();
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
+    const su2double gamma = config->GetOneShotGamma();
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
@@ -1211,7 +1193,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
 
     /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
-    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] <= 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr]+Multiplier_Old[iConstr]/gamma <= 0.) {
       Multiplier[iConstr] = 0.;
     }
     else {
@@ -1245,10 +1227,10 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
   if(nConstr > 0) {
     unsigned short iConstr, iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
     unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
-    su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
+    const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
         my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
       // }
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {

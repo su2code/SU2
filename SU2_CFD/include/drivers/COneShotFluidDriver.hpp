@@ -173,18 +173,12 @@ public:
    * \brief Compute the search direction using the approximated inverse, the gradient N_u and an active set projection.
    */
   void ComputeSearchDirection();
-  void ComputeNegativeSearchDirection(); //TODO
 
   /*!
    * \brief Compute the updated design variable with the search direction and the given step size.
    * \param[in] stepsize - factor for the line search.
    */  
   void ComputeDesignVarUpdate(su2double stepsize);
-
-  /*!
-   * \brief Check if the search direction is a descent direction.
-   */
-  bool CheckDescent();
 
   /*!
    * \brief Check if the first Wolfe descent condition is fulfilled (line search condition).
