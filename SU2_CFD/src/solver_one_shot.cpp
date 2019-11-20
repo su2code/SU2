@@ -286,7 +286,7 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   theta_old = theta;
 }
 
-void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config){
+void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   /* --- Estimate alpha and beta --- */
   su2double alpha = 2./((1.-rho)*(1.-rho));
