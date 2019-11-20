@@ -12,16 +12,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_bin: [macos64, linux64, win64, win64-mpi]
+        os_bin: [macos64, macos64-mpi, linux64, linux64-mpi, win64, win64-mpi]
         include:
           - os_bin: win64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfile_windows'
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
           - os_bin: win64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfile_windows_mpi'
+            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_windows_mpi'
           - os_bin: macos64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfile_darwin'
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
+          - os_bin: macos64-mpi
+            flags: '-Dcustom-mpi --cross-file=/hostfiles/hostfile_darwin_mpi'
           - os_bin: linux64
-            flags: '-Dwith-mpi=disabled'
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_linux'
+          - os_bin: linux64-mpi
+            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
     runs-on: ubuntu-latest
     steps:
       - name: Build
