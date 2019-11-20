@@ -75,11 +75,11 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   su2double Weight, Jac_X;
 
   su2double AuxMatrix[3][6], *res_aux = new su2double[nVar];
-  
+
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
-  
+
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -89,7 +89,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
-  
+
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
@@ -110,7 +110,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
   }
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -148,7 +148,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
         Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
       }
 
-        /*--- Compute the BT.D Matrix ---*/
+      /*--- Compute the BT.D Matrix ---*/
 
       for (iVar = 0; iVar < nDim; iVar++) {
         for (jVar = 0; jVar < bDim; jVar++) {
@@ -188,10 +188,10 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
           }
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode) {
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
         }
 
       }
@@ -199,28 +199,28 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
 
   }
-  
-  // compute residual
+
+  /*--- Compute residual ---*/
   for(iNode = 0; iNode<nNode; ++iNode)
   {
     for(jNode = 0; jNode<nNode; ++jNode)
     {
-      su2double *Kab = element->Get_Kab(iNode,jNode);
-      
+      const su2double *Kab = element->Get_Kab(iNode,jNode);
+
       for (iVar = 0; iVar < nVar; iVar++) {
           res_aux[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++)
             res_aux[iVar] += Kab[iVar*nVar+jVar]*
               (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
       }
-      element->Add_Kt_a(res_aux,iNode);
+      element->Add_Kt_a(iNode, res_aux);
     }
   }
-  
+
   /*--- Register the stress residual as preaccumulation output ---*/
   element->SetPreaccOut_Kt_a();
   AD::EndPreacc();
-  
+
   delete[] res_aux;
 }
 
@@ -270,7 +270,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Auxiliary vector ---*/
   su2double Strain[6], Stress[6];
-  
+
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
@@ -287,7 +287,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     }
   }
 
-  element->clearStress();       /*--- Clears the stress in the element: avoids adding over previous results in other elements --*/
+  element->ClearStress(); /*--- Clears the stress in the element to avoid adding over previous results. --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -328,7 +328,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
         Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
       }
 
-        /*--- Compute the Strain Vector as B*u ---*/
+      /*--- Compute the Strain Vector as B*u ---*/
 
       for (iVar = 0; iVar < bDim; iVar++) {
         for (jVar = 0; jVar < nDim; jVar++) {
@@ -338,7 +338,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
     }
 
-      /*--- Compute the Stress Vector as D*epsilon ---*/
+    /*--- Compute the Stress Vector as D*epsilon ---*/
 
     for (iVar = 0; iVar < bDim; iVar++) {
       Stress[iVar] = 0.0;
@@ -348,26 +348,25 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     }
 
     for (iNode = 0; iNode < nNode; iNode++) {
-      /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz, while in the ---*/
-      /*--- output it is the 4th component for practical reasons ---*/
+
+      su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
+
       if (nDim == 2) {
-        element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-        element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-        element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+        for(iVar = 0; iVar < 3; ++iVar)
+          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
       }
-      else if (nDim == 3) {
-        element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-        element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-        element->Add_NodalStress(Stress[3] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
-        element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
-        element->Add_NodalStress(Stress[4] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
-        element->Add_NodalStress(Stress[5] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
+      else {
+        /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
+         *    while in the output it is the 4th component for practical reasons. ---*/
+        element->Add_NodalStress(iNode, 0, Stress[0] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 1, Stress[1] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 2, Stress[3] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 3, Stress[2] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 4, Stress[4] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 5, Stress[5] * Ni_Extrap);
       }
     }
 
-
-
   }
-
 
 }

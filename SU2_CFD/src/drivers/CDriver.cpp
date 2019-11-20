@@ -387,8 +387,8 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-  for (iInst = 0; iInst < nInst[iZone]; iInst++)
-    delete iteration_container[iZone][iInst];
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      delete iteration_container[iZone][iInst];
     delete [] iteration_container[iZone];
   }
   delete [] iteration_container;
