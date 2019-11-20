@@ -811,7 +811,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     }
     else {
       // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
-      if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma  > 0.) {
+      if(ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma  > 0.) {
         Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
       }
     }
