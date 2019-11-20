@@ -823,12 +823,15 @@ void COneShotFluidDriver::CalculateLagrangian(){
     //             + ConstrFunc_Store[iConstr]*Multiplier[iConstr]
     //             + config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
     su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma();
-    /*--- Lagrangian += gamma/2 ||(h + mu/gamma)_+||^2 ---*/
+    /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
       Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
     }
     else {
-      Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
+      // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
+      if(ConstrFunc_Store[iConstr]  > 0.) {
+        Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
+      }
     }
   }
 
@@ -929,8 +932,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   SetAdj_ObjFunction_Zero();
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-       ConstrFunc[iConstr] + Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
@@ -1244,8 +1246,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || 
-         ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
         my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
       // }
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
