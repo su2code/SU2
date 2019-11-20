@@ -1231,11 +1231,11 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
-        my_Gradient += ConstrFunc[iConstr] - Multiplier[iConstr]/gamma;
+        my_Gradient -= ConstrFunc[iConstr] - Multiplier[iConstr]/gamma;
       // }
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            my_Gradient += beta
+            my_Gradient -= beta
                 * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
                 * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
           }
