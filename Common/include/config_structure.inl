@@ -2089,4 +2089,9 @@ inline void CConfig::SetInitialMassFlow(su2double val_massflow_init) { MassFlowI
 
 inline su2double CConfig::GetInitialMassFlow(void) { return MassFlowInit; }
 
+inline void CConfig::SetMassFlowDerivative(su2double val_massflow_derivative) { MassFlowDerivative = val_massflow_derivative; }
+
+inline su2double CConfig::GetMassFlowDerivative(void) { return MassFlowDerivative; }
+
 inline bool CConfig::GetUsing_MassFlowCorrection(void) { return Using_MassFlowCorrection; }
+

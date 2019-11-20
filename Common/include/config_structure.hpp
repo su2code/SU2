@@ -1113,7 +1113,8 @@ private:
   su2double MassFlowCorrection;
   su2double MassFlowInit;
   bool      Using_MassFlowCorrection;
-
+  su2double MassFlowDerivative;
+  
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -9188,7 +9189,7 @@ public:
    */
   su2double *GetVolumeSTGBox_Values(void);
   
-  void SetMassFlowCorrection(su2double val_massflow_init);
+  void SetMassFlowCorrection(su2double val_massflow_correction);
   
   su2double GetMassFlowCorrection(void);
 
@@ -9197,6 +9198,10 @@ public:
   su2double GetInitialMassFlow(void);
   
   bool GetUsing_MassFlowCorrection(void);
+
+  void SetMassFlowDerivative(su2double val_massflow_derivative);
+  
+  su2double GetMassFlowDerivative(void);
 
 };
 

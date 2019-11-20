@@ -6023,21 +6023,42 @@ void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config)
   unsigned short iDim;
   su2double Force_Ref = config->GetForce_Ref();
   
-  /*--- Zero the continuity contribution ---*/
-  
-  val_residual[0] = 0.0;
-  
-  /*--- Momentum contribution ---*/
-  
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
-  
-  /*--- Energy contribution ---*/
-  
-  val_residual[nDim+1] = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
-  
+  if (config->GetUsing_MassFlowCorrection()){
+    
+    su2double MassFlowCorrection = config->GetMassFlowCorrection();
+    
+    /*--- Zero the continuity contribution ---*/
+    
+    val_residual[0] = 0.0;
+    
+    /*--- Momentum contribution ---*/
+    
+    val_residual[1] = -Volume * MassFlowCorrection / Force_Ref;
+    
+    /*--- Energy contribution ---*/
+    
+    val_residual[nDim+1] = -Volume * (U_i[1]/U_i[0]) * MassFlowCorrection / Force_Ref;
+
+    
+  }
+  else{
+    
+    /*--- Zero the continuity contribution ---*/
+    
+    val_residual[0] = 0.0;
+    
+    /*--- Momentum contribution ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+    
+    /*--- Energy contribution ---*/
+    
+    val_residual[nDim+1] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+
+  }
 }
 
 CSourceVolumeSTG::CSourceVolumeSTG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {}

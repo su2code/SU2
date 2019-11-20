@@ -19387,52 +19387,82 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
 
 void CNSSolver::CorrectMassFlow(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-  unsigned long iPoint;
+  unsigned long iPoint, Iter_dMach_dBodyForce = 1;
   unsigned short iVar;
   
   su2double Local_MassFlow  = 0.0;
+  su2double Local_VolSum    = 0.0;
   su2double Global_MassFlow = 0.0;
+  su2double Global_VolSum   = 0.0;
   
   /* The Mass flow correction needs to be  */
-  if (config->GetExtIter() % 100 != 0) return;
+  if (config->GetExtIter() % Iter_dMach_dBodyForce != 0) return;
   if (config->GetIntIter() != 0) return;
   
   /*---  Loop over the Points and calculate the total mass flow ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     su2double *Solution = node[iPoint]->GetSolution();
-    Local_MassFlow += Solution[0];
+    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
+    su2double VelocityMag = pow((Solution[1]/Solution[0]),2.0);
+    
+    Local_MassFlow += sqrt(VelocityMag)*Vol;
+    Local_VolSum += Vol;
   }
+  
   
   /*--- Reduction to find the min and max values globally. ---*/
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&Local_MassFlow, &Global_MassFlow, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_MassFlow = Local_MassFlow;
-#endif
-
+  SU2_MPI::Allreduce(&Local_VolSum, &Global_VolSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
-  if((!config->GetRestart()) && (config->GetExtIter()==0)){
-    config->SetMassFlowCorrection(1.0);
+  Global_MassFlow /= Global_VolSum;
+#else
+  Global_MassFlow = Local_MassFlow / Local_VolSum;
+#endif
+  
+  su2double *body_force = config->GetBody_Force_Vector();
+  
+  if((config->GetExtIter()==0)){
     config->SetInitialMassFlow(Global_MassFlow);
+    config->SetMassFlowCorrection(body_force[0]);
     return;
   }
-  
-  su2double InitMassFlow = config->GetInitialMassFlow();
-  su2double Correction = InitMassFlow / Global_MassFlow;
-  config->SetMassFlowCorrection(Correction);
-  
-  /*---  Loop over the Points and update density ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    su2double *Solution = node[iPoint]->GetSolution();
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] *= Correction;
-    
-    node[iPoint]->SetSolution(Solution);
+
+  if((config->GetRestart()) && ((long)config->GetExtIter() == config->GetUnst_RestartIter())){
+    config->SetInitialMassFlow(Global_MassFlow);
+    config->SetMassFlowCorrection(body_force[0]);
+    return;
   }
 
+//  if((!config->GetRestart()) && (config->GetExtIter()==Iter_dMach_dBodyForce)){
+    // Initial guess
+//    su2double dMach_dBodyForce = (Global_MassFlow - config->GetInitialMassFlow()) /(0.01*BodyForce[0]);
+//    config->SetMassFlowDerivative(dMach_dBodyForce);
+//  }
+  
+  //su2double dMach_dBodyForce = config->GetMassFlowDerivative();
+  su2double dMach_dBodyForce = 10.0;
+  
+  /*--- Retrieve the specified target bulk Mach number. ---*/
+
+  su2double Target_Mach  = config->GetInitialMassFlow();
+
+  /*--- Retrieve the old Body Force. ---*/
+
+  su2double BodyForce_old = config->GetMassFlowCorrection();
+  
+  /*--- Estimate the increment in Body Force based on dMach_dBodyForce ---*/
+  
+  su2double BodyForce_inc = (1.0/dMach_dBodyForce) * (Target_Mach - Global_MassFlow);
+  
+  /*--- Compute a new value for Body Force ---*/
+  
+  su2double BodyForce_new = BodyForce_old + BodyForce_inc;
+  
+  config->SetMassFlowCorrection(BodyForce_new);
+  
   if (rank == MASTER_NODE)
-    cout << "*** --- Total Mass Correction: " << config->GetMassFlowCorrection() << " --- ***" << endl;
+    cout << "*** --- Initial Bulk Velocity: " << Target_Mach << " Actual Bulk Velocity: " << Global_MassFlow << " Actual Body Force: " << BodyForce_old << " New Body Force: " << BodyForce_new << " dMach_dBodyForce: " << dMach_dBodyForce << " 	--- ***" << endl;
   
 }
 
