@@ -84,9 +84,13 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
     
   /*--- Store specific parameters here. ---*/
     
-  ReynoldsFriction = 550.0;  // Friction Reynolds Number.
-  TWall            = 273.15; // Need to fix this
-
+  ReynoldsFriction = 395.0;  // Friction Reynolds Number.
+  TWall            = 273.15; // Wall Temperature
+  dx               = 0.2;    // Mesh spacing in the x-direction
+  dz               = 0.1;    // Mesh spacing in the z-direction
+  Constant_Turb    = 50.;    // Constant to multiply the velocity fluctuation.
+  CurrentTime      = config->GetDelta_UnstTime();
+    
   /*--- Turbulent flow. Use the relation of Malaspinas and Sagaut,JCP 275 2014,
   to compute the Reynolds number. ---*/
     
@@ -98,7 +102,7 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
   su2double Gamma = config->GetGamma();
   su2double Cv    = RGas/(Gamma - 1.0);
   su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  su2double muLam = config->GetViscosity_FreeStream();
+  muLam = config->GetViscosity_FreeStream();
   su2double rhoDim = config->GetDensity_FreeStream();
     
   rhoRef  = config->GetDensity_Ref();
@@ -137,7 +141,12 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
 
   // Compute the fully developed RANS solution, if needed.
   ComputeFullyDevelopedRANS(config, yRANS, rhoRANS,
-                              uRANS, kRANS, omegaRANS);
+                              uRANS, kRANS, omegaRANS,mutRANS);
+  
+  // Compute the random numbers for the synthetic turbulence.
+  STG_Preprocessing(PhaseMode, RandUnitVec, RandUnitNormal);
+  
+  
   
   /*--- Write a message that the solution is initialized for the
    Turbulent Channel test case. ---*/
@@ -148,7 +157,7 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
     cout << "         initialized for the Turbulent Channel case!!!" << endl;
     cout << setprecision(9) << "Friction Reynolds Number: " << ReynoldsFriction << endl;
     cout << setprecision(9) << "Mean Flow Reynolds Number: " << ReynoldsMeanVelocity << endl;
-    cout << setprecision(9) << "Body Force: " << fBodyX << endl;
+    cout << setprecision(9) << "Body Force: " << fBodyX  << endl;
     cout << setprecision(6) << "YPlus~1.: " << lTau << endl;
     cout << setprecision(4) << "dt+: " << config->GetDelta_UnstTime() * uTau/lTau << endl;
     cout << setprecision(4) << "Total CTUs: " << config->GetTotal_UnstTime() * uMean/ (2.0* PI_NUMBER) << endl;
@@ -161,7 +170,7 @@ CTurbChannelSolution::~CTurbChannelSolution(void) { }
 void CTurbChannelSolution::GetSolution(const su2double *val_coords,
                                const su2double val_t,
                                su2double       *val_solution) {
-  
+
   /* The initial conditions are set for the turbulent channel flow test case.*/
 
   su2double val_coordsZ      = 0.0;
@@ -169,9 +178,9 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
 
   // Determine the y-coordinate:- Remember that the channel grid is from 0 -> 2*delta
   //                            - RANS equations are only solved for the upper half of the domain;
-  
+
   su2double y = fabs(val_coords[1]/halfChan - halfChan);
-  
+
   // Search for the y-coordinate in yRANS.
   unsigned int i;
   for(i=1; i<yRANS.size(); ++i)
@@ -180,27 +189,201 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
   // Determine the interpolation weights.
   const su2double wi   = (y - yRANS[i-1])/(yRANS[i] - yRANS[i-1]);
   const su2double wim1 = 1.0 - wi;
+
+  /* Compute the primitive variables and turbulent variables. */
+  su2double rho     = (wim1*rhoRANS[i-1] + wi*rhoRANS[i]);
+  su2double u       = (wim1*uRANS[i-1]   + wi*uRANS[i]);
+  su2double v       = 0.0;
+  su2double w       = 0.0;
+  su2double turb_ke = (wim1*kRANS[i-1]     + wi*kRANS[i]);
+  su2double omega   = (wim1*omegaRANS[i-1] + wi*omegaRANS[i]);
+  su2double mut     = (wim1*mutRANS[i-1] + wi*mutRANS[i]);
+  su2double dist    = (wim1*distRANS[i-1] + wi*distRANS[i]);
+  su2double dudy    = (wim1*dudyRANS[i-1] + wi*dudyRANS[i]);
   
-  /* Compute the primitive variables. */
-  su2double rho = (wim1*rhoRANS[i-1] + wi*rhoRANS[i])/rhoRef;
-  su2double u   = (wim1*uRANS[i-1]   + wi*uRANS[i])/uRef;
+  //Determine the turbulent length scale for the SST model.
+  const su2double lengthTurb = sqrt(turb_ke) / (0.09 * omega);
+
+  // Determine the Strain Magnitude
+  su2double StrainMag = 0.0;
+  StrainMag += 2.0*pow(0.5*dudy, 2.0);
+  StrainMag = sqrt(2.0*StrainMag);
+  
+  // Kolmogorov length scale and wave number
+  su2double epsilon = 2.0 * (muLam/rho) * pow(StrainMag,2.0); // TODO: Check the energy dissipation rate eq.
+  su2double k_neta = 2.0 * PI_NUMBER / pow( pow((muLam/rho),3.0) / epsilon , 0.25);
+  
+  // Calculate the rate of strain tensor
+  su2double S_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  S_ij[0][1] = dudy;
+  S_ij[1][0] = S_ij[0][1];
+  
+  // Divergence of the velocity component. It should be zero 1D.
+  su2double divVel = 0.0;
+  
+  // Using rate of strain matrix, calculate Reynolds stress tensor
+  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double R_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  for (unsigned short iDim = 0; iDim < 3; iDim++){
+    for (unsigned short jDim = 0; jDim < 3; jDim++){
+      R_ij[iDim][jDim] = TWO3 * rho * turb_ke * delta[iDim][jDim]
+      - mut * (2. * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
+    }
+  }
+  
+  // Cholesky decomposition of the Reynolds Stress tensor
+  su2double a_ij[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  a_ij[0][0] = sqrt(R_ij[0][0]);
+  a_ij[1][0] = R_ij[1][0] / a_ij[0][0];
+  a_ij[1][1] = sqrt(R_ij[1][1] - pow(a_ij[1][0],2.0));
+  a_ij[2][0] = R_ij[2][0] / a_ij[0][0];
+  a_ij[2][1] = (R_ij[2][1] - a_ij[1][0] * a_ij[2][0]) / a_ij[1][1];
+  a_ij[2][2] = sqrt(R_ij[2][2] - pow(a_ij[2][0],2.0) - pow(a_ij[2][1],2.0));
+ 
+  // Wave number that corresponds to the wavelength of the most energy containing mode.
+  su2double l_e = min(2.0 * dist, 3.0 * lengthTurb);
+  su2double k_e = 2.0 * PI_NUMBER / l_e;
+  
+  // Number of wave numbers
+  int nWave = (int)WaveNumbers.size();
+   
+  // Calculate the local Nyquist wave number
+  su2double k_cut = 2.0 * PI_NUMBER / min_lengthNyquist;
+
+  // Initialize vector and auxiliary vector of velocity fluctuations.
+  su2double VelTurb[3]    = {0.0, 0.0, 0.0};
+  su2double VelAuxTurb[3] = {0.0, 0.0, 0.0};
+
+  // Loop over the wave numbers and calculate the spectrum of the kinetic energy.
+  su2double E_k_sum = 0.0;
+  vector<su2double> E_k, f_neta_, f_cut_, NormalizedAmplitude_n_;
+  for(int j=0; j < nWave; j++) {
+
+    // Function that ensures damping of the spectrum near the Kolmogorov scale: Eq.9
+    su2double f_neta = exp(- pow(12.0 * WaveNumbers[j] / k_neta,2.0));
+    f_neta_.push_back(f_neta);
     
-  // Determine the seed of the random generator based on the coordinates.
-  // This means that the random generator will always produce the same
-  // number for the same coordinates.
-  const int seed = (int) (36*val_coords[0] + 821*val_coords[1] + 18955*val_coords[2]);
-  std::default_random_engine rand_gen(seed);
-  std::uniform_real_distribution<su2double> u01(-0.1,0.1);
+    // (kcut) and function (fcut) that will dump the spectrum at wave
+    // numbers larger than kcut: Eq.10 ---*/
+    su2double f_cut = exp( - pow( 4.0 * max(WaveNumbers[j] - 0.9 * k_cut, 0.0) / k_cut, 3.0) );
+    f_cut_.push_back(f_cut);
+    
+    // E_k is a prescribed spatial spectrum of the kinetic energy of turbulence represented
+    // by a modified von Karman spectrum Eq.7
+    su2double E_k_aux = (pow(WaveNumbers[j] / k_e, 4.0) / pow(1.0+2.4 * pow(WaveNumbers[j] / k_e,2.0),17.0/6.0)) * f_cut * f_neta;
+    E_k.push_back(E_k_aux);
+    E_k_sum += E_k_aux * DeltaWave[j];
+    
+  }
+  
+  // Loop again over the wave number and calculate the velocity fluctuations with the
+  // contributions of all normalized amplitudes.
+  su2double NormalizedAmplitude_sum = 0.0;
+  for(int j=0; j < nWave; j++) {
+  
+    su2double ConvectiveTerm[3] = {0.0, 0.0, 0.0};
+    
+    // Convective term
+    ConvectiveTerm[0] = (2.0 * PI_NUMBER * (val_coords[0] - max_velocity * CurrentTime)) / (WaveNumbers[j] * max_lengthEnergetic);
+    ConvectiveTerm[1] = val_coords[1];
+    ConvectiveTerm[2] = val_coords[2];
+    
+    // Dot product between the random vector and convective term.
+    su2double dot_prod = 0.0;
+    for (unsigned short iDim=0; iDim<nDim; iDim++) dot_prod += RandUnitVec[j*nDim+iDim]*ConvectiveTerm[iDim];
+    dot_prod = WaveNumbers[j] * dot_prod;
+    
+    //  Normalized Amplitude of mode n
+    su2double NormalizedAmplitude_n = (E_k[j] * DeltaWave[j]) / max(E_k_sum, 1e-10);
+    NormalizedAmplitude_n_.push_back(NormalizedAmplitude_n);
+    NormalizedAmplitude_sum += NormalizedAmplitude_n;
+        
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      VelAuxTurb[iDim] += sqrt(NormalizedAmplitude_n) * RandUnitNormal[j*nDim+iDim] * cos(dot_prod + PhaseMode[j]);
+  }
+  
+  
+  // Calculate the auxiliary vector of velocity fluctuations.
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    VelAuxTurb[iDim] =  2.0 * sqrt(1.5) * VelAuxTurb[iDim];
+  
+  // Now multiply it by the Cholesky decomposition.
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short jDim = 0; jDim < nDim; jDim++)
+      VelTurb[iDim] += a_ij[iDim][jDim] * VelAuxTurb[jDim];
+  
+  if (y >= 0.98){
+     cout << val_coords[1] << " "<<  y << " " <<  u << " " << turb_ke << " " << omega << " " << VelTurb[0] << " " << E_k_sum << endl;
+  }
+  
+  // TODO: Check why VelTurb is nan at the wall
+  if (std::isnan(VelTurb[0]) || std::isnan(VelTurb[1]) || std::isnan(VelTurb[2])){
+    VelTurb[0] = 0.0; VelTurb[1] = 0.0; VelTurb[2] = 0.0;
+  }
+  
+  E_k.clear();
+  f_cut_.clear();
+  f_neta_.clear();
+  NormalizedAmplitude_n_.clear();
   
   /* Compute the conservative variables. Note that both 2D and 3D
    cases are treated correctly. */
-
+  rho /= rhoRef;
+  u = (u + Constant_Turb*VelTurb[0])/uRef;
+  v = (v + Constant_Turb*VelTurb[1])/uRef;
+  w = (w + Constant_Turb*VelTurb[2])/uRef;
+  
   val_solution[0]      = rho;
-  val_solution[1]      = rho*(u + u*u01(rand_gen));
-  val_solution[2]      = rho*(u*u01(rand_gen));
-  val_solution[3]      = rho*(u*u01(rand_gen));
-  val_solution[nVar-1] = ovGm1 + 0.5*rho*(u*u);
+  val_solution[1]      = rho * u;
+  val_solution[2]      = rho * v;
+  val_solution[3]      = rho * w;
+  val_solution[nVar-1] = ovGm1 + 0.5*rho*(u*u + v*v + w*w);
 }
+
+
+//void CTurbChannelSolution::GetSolution(const su2double *val_coords,
+//                               const su2double val_t,
+//                               su2double       *val_solution) {
+//
+//  /* The initial conditions are set for the turbulent channel flow test case.*/
+//
+//  su2double val_coordsZ      = 0.0;
+//  if (nDim == 3) val_coordsZ = val_coords[2];
+//
+//  // Determine the y-coordinate:- Remember that the channel grid is from 0 -> 2*delta
+//  //                            - RANS equations are only solved for the upper half of the domain;
+//
+//  su2double y = fabs(val_coords[1]/halfChan - halfChan);
+//
+//  // Search for the y-coordinate in yRANS.
+//  unsigned int i;
+//  for(i=1; i<yRANS.size(); ++i)
+//    if((y >= yRANS[i-1]) && (y <= yRANS[i])) break;
+//
+//  // Determine the interpolation weights.
+//  const su2double wi   = (y - yRANS[i-1])/(yRANS[i] - yRANS[i-1]);
+//  const su2double wim1 = 1.0 - wi;
+//
+//  /* Compute the primitive variables. */
+//  su2double rho = (wim1*rhoRANS[i-1] + wi*rhoRANS[i])/rhoRef;
+//  su2double u   = (wim1*uRANS[i-1]   + wi*uRANS[i])/uRef;
+//
+//  // Determine the seed of the random generator based on the coordinates.
+//  // This means that the random generator will always produce the same
+//  // number for the same coordinates.
+//  const int seed = (int) (36*val_coords[0] + 821*val_coords[1] + 18955*val_coords[2]);
+//  std::default_random_engine rand_gen(seed);
+//  std::uniform_real_distribution<su2double> u01(-0.1,0.1);
+//
+//  /* Compute the conservative variables. Note that both 2D and 3D
+//   cases are treated correctly. */
+//
+//  val_solution[0]      = rho;
+//  val_solution[1]      = rho*(u + u*u01(rand_gen));
+//  val_solution[2]      = rho*(u*u01(rand_gen));
+//  val_solution[3]      = rho*(u*u01(rand_gen));
+//  val_solution[nVar-1] = ovGm1 + 0.5*rho*(u*u);
+//}
 
 bool CTurbChannelSolution::ExactSolutionKnown(void) {return false;}
 
@@ -326,12 +509,13 @@ void CTurbChannelSolution::PointDistributionVinokur(const su2double len,
 
 // Function, which computes the numerical solution of the fully developed RANS
 // equations for a channel flow.
-void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
+void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*  config,
                                 vector<su2double> &yRANS,
                                 vector<su2double> &rhoRANS,
                                 vector<su2double> &uRANS,
                                 vector<su2double> &kRANS,
-                                vector<su2double> &omegaRANS)
+                                vector<su2double> &omegaRANS,
+                                vector<su2double> &mutRANS)
 {
   
   
@@ -352,6 +536,9 @@ void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
   uRANS.resize(nGridPoints);
   kRANS.resize(nGridPoints);
   omegaRANS.resize(nGridPoints);
+  mutRANS.resize(nGridPoints);
+  dudyRANS.resize(nGridPoints);
+  distRANS.resize(nGridPoints);
 
   // Only the master rank computes the numerical solution.
   if(rank == MASTER_NODE)
@@ -379,6 +566,7 @@ void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
     uRANS[nGridPoints-1]     = 0.0;
     TRANS[nGridPoints-1]     = TWall;
     kRANS[nGridPoints-1]     = 0.0;
+    mutRANS[nGridPoints-1]   = 0.0;
     omegaRANS[nGridPoints-1] = 60.0*mu/(rhoRANS[nGridPoints-1]*beta1*dyWall*dyWall);
 
     // Initial guess of the density, velocity and turbulent kinetic energy.
@@ -536,6 +724,9 @@ void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
 
         // Determine the distance to the wall.
         const su2double dist = yRANS[nGridPoints-1] - 0.5*(yRANS[i]+yRANS[i+1]);
+        
+        distRANS[i] = dist;
+        dudyRANS[i] = dudy;
 
         // Compute the value of the cross diffusion term.
         const su2double CDOmega = 2.0*rho*sigmaOm2*dkdy*dlnomegady;
@@ -713,6 +904,7 @@ void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
         const su2double F2      = tanh(arg2*arg2);
         const su2double vortMag = fabs(dudy);
         const su2double muTurb  = a1*rho*k/ max(a1*omega,vortMag*F2);
+        mutRANS[i] = muTurb;
 
         // Update the ratio ratioMuTurbMuLamMax.
         const su2double ratioMuTurbMuLam = muTurb/muLam;
@@ -831,6 +1023,9 @@ void CTurbChannelSolution::ComputeFullyDevelopedRANS(CConfig*   config,
   SU2_MPI::Bcast(uRANS.data(),     uRANS.size(),     MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Bcast(kRANS.data(),     kRANS.size(),     MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Bcast(omegaRANS.data(), omegaRANS.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(mutRANS.data(),   mutRANS.size(),     MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(distRANS.data(),  distRANS.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(dudyRANS.data(),  dudyRANS.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
 #endif
 }
 
@@ -920,4 +1115,146 @@ void CTurbChannelSolution::BlockThomas(const int              n,
   }
 }
 
+void CTurbChannelSolution::STG_Preprocessing(vector<su2double> &PhaseMode,
+                                        vector<su2double> &RandUnitVec,
+                                        vector<su2double> &RandUnitNormal)
+{
+  
+   // Generate random numbers
+    if (rank == MASTER_NODE){
+      std::default_random_engine rand_gen;
+      
+      // a somewhat random seed
+      rand_gen.seed((int)time(0));
+      uniform_real_distribution<su2double> u02pi(0.,2.0*PI_NUMBER);
+      uniform_real_distribution<su2double> u01(0.,1.0);
+      
+      su2double theta, phi, x, y, z;
+      su2double thetan, phin, xn, yn, zn;
+      for (unsigned long i = 0; i < NModes; ++i){
+        PhaseMode.push_back(u02pi(rand_gen));
+        
+        // Generate random number over a sphere with radius 1.
+        theta = 2. * PI_NUMBER * u01(rand_gen);
+        phi   = acos(1. - 2. * u01(rand_gen));
+        x = sin(phi) * cos(theta);
+        y = sin(phi) * sin(theta);
+        z = cos(phi);
 
+        thetan = 2. * PI_NUMBER * u01(rand_gen);
+        phin   = acos(1. - 2. * u01(rand_gen));
+        xn = sin(phin) * cos(thetan);
+        yn = sin(phin) * sin(thetan);
+        zn = cos(phin);
+        
+        // Create a normal vector
+        su2double norm = x * xn + y * yn + z * zn;
+        xn = x - xn*norm;
+        yn = y - yn*norm;
+        zn = z - zn*norm;
+        
+        RandUnitVec.push_back(x);
+        RandUnitVec.push_back(y);
+        RandUnitVec.push_back(z);
+        RandUnitNormal.push_back(xn);
+        RandUnitNormal.push_back(yn);
+        RandUnitNormal.push_back(zn);
+        
+      }
+    }
+    
+    // Resize memory for vectors in other ranks
+    if (rank != MASTER_NODE){
+      PhaseMode.resize(NModes);
+      RandUnitVec.resize(NModes*nDim);
+      RandUnitNormal.resize(NModes*nDim);
+    }
+
+  #ifdef HAVE_MPI
+    SU2_MPI::Bcast(PhaseMode.data(), PhaseMode.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(RandUnitVec.data(), RandUnitVec.size() , MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(RandUnitNormal.data(), RandUnitVec.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  #endif
+  
+  // Number of waves (modes)
+  int nWave;
+  
+  // Calculate the most energetic scale, Nyquist wave length and maximum velocity.
+  max_lengthEnergetic = 0.0; max_velocity = 0.0; min_lengthNyquist = 1e10;
+  
+  if (rank == MASTER_NODE){
+
+    for(int i=0; i<(nGridPoints-1); ++i){
+      
+      // Determine the distance to the wall.
+      const su2double dist = yRANS[nGridPoints-1] - yRANS[i];
+      
+      // Determine the maximum length
+      const su2double maxLength = max(max(dx,dz), yRANS[i+1]-yRANS[i]);
+      
+      // Determine K, Omega and Density
+      const su2double turb_ke  = kRANS[i];
+      const su2double omega    = omegaRANS[i];
+      const su2double density  = rhoRANS[i];
+      const su2double velocity = uRANS[i];
+      
+      //Determine the turbulent length scale for the SST model.
+      const su2double lengthTurb = sqrt(turb_ke) / (0.09 * omega);
+      su2double maxdelta = max(yRANS[i+1]-yRANS[i], dz);
+      max_velocity = max(max_velocity, sqrt(pow(velocity,2.0)));
+      max_lengthEnergetic = max(max_lengthEnergetic, min( 2.0 * dist, 3.0 * lengthTurb ));
+      min_lengthNyquist   = min(2.0 * min( max(maxdelta, 0.3*maxLength) + 0.1 * dist, maxLength ), min_lengthNyquist);
+      
+    }
+    
+    // Determine the Wave Numbers;
+    vector<su2double> WaveNumbersFace; // Aux Vector.
+    
+    // Calculate the local most energetic wave number
+    su2double k_min = 2.0 * PI_NUMBER / max_lengthEnergetic;
+    
+    // Calculate the local Nyquist wave number
+    su2double k_cut = 2.0 * PI_NUMBER / min_lengthNyquist;
+    
+    cout << "# Most Energetic wave number: " << k_min << endl;
+    cout << "# Nyquist wave number: " << k_cut << endl;
+    cout << "# Maximum Velocity at the interface: " <<  max_velocity << endl;
+    
+    /*--- Wave numbers at faces---*/
+    su2double alpha = 0.01;
+    unsigned short iMode = -1;
+    while (k_min < 1.5*k_cut){
+      iMode += 1;
+      k_min = k_min * pow(alpha + 1.0, iMode);
+      WaveNumbersFace.push_back(k_min);
+    }
+    
+    // Wave numbers at the center---*/
+    for(int j = 0; j < ((int)WaveNumbersFace.size() - 1); j++){
+      WaveNumbers.push_back(0.5 * (WaveNumbersFace[j] + WaveNumbersFace[j+1]));
+      DeltaWave.push_back(WaveNumbersFace[j+1] - WaveNumbersFace[j]);
+    }
+    
+    nWave = (int)WaveNumbers.size();
+    cout << "# Number of modes: " << nWave << endl;
+    cout << "#" << endl;
+        
+  }
+
+#ifdef HAVE_MPI
+  
+  SU2_MPI::Bcast(&max_lengthEnergetic, 1, MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&max_velocity, 1, MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&min_lengthNyquist, 1, MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&nWave, 1, MPI_INT,  MASTER_NODE, MPI_COMM_WORLD);
+
+  if (rank!=MASTER_NODE){
+    WaveNumbers.resize(nWave);
+    DeltaWave.resize(nWave);
+  }
+
+  SU2_MPI::Bcast(WaveNumbers.data(), WaveNumbers.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(DeltaWave.data(), DeltaWave.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+#endif
+  
+}

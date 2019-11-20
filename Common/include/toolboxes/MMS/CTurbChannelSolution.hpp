@@ -55,7 +55,9 @@ protected:
   
   su2double ReynoldsFriction;    /*!< \brief Friction Reynolds Number. */
   su2double ReynoldsMeanVelocity; /*!< \brief Reynolds Number. */
-  su2double ovGm1, RGas;
+  su2double dx, dz;
+  su2double Constant_Turb;
+  su2double ovGm1, RGas, muLam;
   su2double halfChan;
   su2double alpha, a0;
   su2double rhoRef, uRef;
@@ -66,6 +68,8 @@ protected:
   const su2double convergenceThreshold = 1.e-12;
   const int nGridPoints     = 101;
   const su2double yPlusWall = (su2double) 0.5;
+  
+  su2double CurrentTime;
 
   // Constants of the SST turbulence model.
   const su2double sigmaK1  = (su2double) 0.85;
@@ -82,7 +86,15 @@ protected:
   const su2double gam2 = beta2/betaStar - sigmaOm2*kappa*kappa/sqrt(betaStar);
   
   // Define the vectors to store the fully developed RANS solution.
-  vector<su2double> yRANS, rhoRANS, uRANS, kRANS, omegaRANS;
+  vector<su2double> yRANS, rhoRANS, uRANS, kRANS, omegaRANS, mutRANS, distRANS, dudyRANS;
+  
+  // Define vectors to store the synthetic turbulence generator
+  vector<su2double> PhaseMode, RandUnitVec, RandUnitNormal;
+  const unsigned short NModes = 100;
+  
+  // Define the wave numbers
+  vector<su2double> WaveNumbers, DeltaWave;
+  su2double max_lengthEnergetic, max_velocity, min_lengthNyquist;
   
 public:
   
@@ -129,7 +141,8 @@ public:
                                  vector<su2double> &rhoRANS,
                                  vector<su2double> &uRANS,
                                  vector<su2double> &kRANS,
-                                 vector<su2double> &omegaRANS);
+                                 vector<su2double> &omegaRANS,
+                                 vector<su2double> &mutRANS);
   
   void PointDistributionVinokur(const su2double len,
                                 const su2double spacingEnds,
@@ -140,4 +153,7 @@ public:
                    vector<su2double> &c,
                    vector<su2double> &d);
 
+  void STG_Preprocessing(vector<su2double> &PhaseMode,
+                         vector<su2double> &RandUnitVec,
+                         vector<su2double> &RandUnitNormal);
 };
