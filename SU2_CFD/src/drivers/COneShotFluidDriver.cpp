@@ -1197,7 +1197,13 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     /*--- BCheck^(-1)*h ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
+        ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
+        helper += BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr];
+      }
+      else {
+        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+      }
        // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
       // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
     }
@@ -1214,16 +1220,19 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
         Multiplier[iConstr] = ConstrFunc_Store[iConstr];
       }
     }
-    else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma <= 0.){
-      // Multiplier[iConstr] = 0.;
-      helper = 0.0;
-      for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-        helper += BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
-      }
-      Multiplier[iConstr] = max(Multiplier_Old[iConstr] - helper*stepsize*config->GetMultiplierScale(iConstr), 0.0);
-    }
+    // else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma <= 0.){
+    //   // Multiplier[iConstr] = 0.;
+    //   helper = 0.0;
+    //   for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+    //     helper += BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
+    //   }
+    //   Multiplier[iConstr] = max(Multiplier_Old[iConstr] - helper*stepsize*config->GetMultiplierScale(iConstr), 0.0);
+    // }
+    // else {
+    //   Multiplier_Store[iConstr] = Multiplier[iConstr];
+    // }
     else {
-      Multiplier_Store[iConstr] = Multiplier[iConstr];
+      Multiplier[iConstr] = max(Multiplier[iConstr], 0.);
     }
   }
 }
