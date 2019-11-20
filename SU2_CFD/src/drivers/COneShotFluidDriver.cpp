@@ -941,7 +941,6 @@ void COneShotFluidDriver::ComputeGammaTerm(){
     }
   }
   SetAdj_ConstrFunction(seeding);
-  SetAdj_ConstrFunction(ConstrFunc);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
