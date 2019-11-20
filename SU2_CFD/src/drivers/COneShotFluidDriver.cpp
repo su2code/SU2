@@ -804,14 +804,14 @@ void COneShotFluidDriver::CalculateLagrangian(){
     //             + ConstrFunc_Store[iConstr]*Multiplier[iConstr]
     //             + config->GetBCheckEpsilon()*Multiplier[iConstr]*Multiplier[iConstr];
     const su2double gamma = config->GetOneShotGamma();
-    su2double helper = ConstrFunc_Store[iConstr] - Multiplier[iConstr]/gamma;
+    su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
       Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
     }
     else {
       // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
-      if(ConstrFunc_Store[iConstr] - Multiplier[iConstr]/gamma  > 0.) {
+      if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma  > 0.) {
         Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
       }
     }
@@ -915,7 +915,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma();
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
@@ -1193,11 +1193,11 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
 
     /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
-    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma <= 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
       Multiplier[iConstr] = 0.;
     }
     else {
-      Multiplier[iConstr] = Multiplier_Old[iConstr] - stepsize*gamma*ConstrFunc_Store[iConstr];
+      Multiplier[iConstr] = Multiplier_Old[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
       Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
 
@@ -1206,7 +1206,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
         Multiplier[iConstr] = ConstrFunc_Store[iConstr];
       }
     }
-    // else if(ConstrFunc_Store[iConstr] - Multiplier[iConstr]/gamma <= 0.){
+    // else if(ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma <= 0.){
     //   // Multiplier[iConstr] = 0.;
     //   helper = 0.0;
     //   for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1218,7 +1218,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     //   Multiplier_Store[iConstr] = Multiplier[iConstr];
     // }
     else {
-      Multiplier[iConstr] = min(Multiplier[iConstr], 0.);
+      Multiplier[iConstr] = max(Multiplier[iConstr], 0.);
     }
   }
 }
@@ -1230,12 +1230,12 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
-        my_Gradient -= ConstrFunc[iConstr] - Multiplier[iConstr]/gamma;
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
+        my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
       // }
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            my_Gradient -= beta
+            my_Gradient += beta
                 * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
                 * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
           }
