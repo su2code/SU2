@@ -301,7 +301,7 @@ void COneShotSolver::CalculateAlphaBetaGamma(CConfig *config){
 void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm){
 
   /* --- Estimate gamma value --- */
-  su2double gamma = 2./(beta*val_bcheck_norm);
+  su2double gamma = 2./(config->GetOneShotBeta()*val_bcheck_norm);
   // su2double gamma = 2./(beta*val_bcheck_norm);
 
   config->SetOneShotGamma(gamma);
