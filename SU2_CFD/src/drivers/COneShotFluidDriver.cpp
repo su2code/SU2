@@ -1197,26 +1197,30 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
   su2double helper, gamma = config->GetOneShotGamma();
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     /*--- BCheck^(-1)*h ---*/
-    helper = 0.0;
-    for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
-        ConstrFunc_Store[iConstr] <= 0.) {
-        helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
-      }
-      else {
-        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
-      }
-       // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
-      // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
-    }
-    // Multiplier[iConstr] += helper*stepsize*(ConstrFunc_Store[iConstr]+Multiplier_Store[iConstr]/gamma)*config->GetMultiplierScale(iConstr);
+    // helper = 0.0;
+    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+    //   if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
+    //     ConstrFunc_Store[iConstr] <= 0.) {
+    //     helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
+    //   }
+    //   else {
+    //     helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+    //   }
+    //    // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
+    //   // helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Store[jConstr]/gamma);
+    // }
+    // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
     // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
-    Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-    // Multiplier[iConstr] = Multiplier_Store[iConstr]+helper*stepsize*config->GetMultiplierScale(iConstr);
-    // Multiplier[iConstr] += helper*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
-    // Multiplier[iConstr] += helper*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
-    // /*--- gamma*h ---*/
+    // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
     // Multiplier[iConstr] += config->GetOneShotGamma()*stepsize*ConstrFunc_Store[iConstr]*config->GetMultiplierScale(iConstr);
+    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && 
+      ConstrFunc_Store[iConstr] <= 0.) {
+      Multiplier[iConstr] = 0.;
+    }
+    else {
+      Multiplier[iConstr] += stepsize*gamma*ConstrFunc_Store[jConstr];
+    }
+
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) {
       if(Multiplier[iConstr]*ConstrFunc_Store[iConstr] < 0.) {
         Multiplier[iConstr] = ConstrFunc_Store[iConstr];
