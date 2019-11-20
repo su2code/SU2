@@ -21,7 +21,7 @@ jobs:
           - os_bin: macos64
             flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
           - os_bin: macos64-mpi
-            flags: '-Dcustom-mpi --cross-file=/hostfiles/hostfile_darwin_mpi'
+            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
           - os_bin: linux64
             flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
