@@ -220,7 +220,7 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned long InnerIter = config->GetInnerIter();
   bool bool_tol = false;
-  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3;
+  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
 
   /*--- Store the old solution and the old design for line search ---*/
   solver[ADJFLOW_SOL]->SetStoreSolution();
@@ -324,12 +324,13 @@ void COneShotFluidDriver::RunOneShot(){
      InnerIter > 1) {
     /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-    // solver[ADJFLOW_SOL]->CalculateAlphaBetaGamma(config, BCheck_Norm);
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config, BCheck_Norm);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
     // CheckMultiplier();
     CalculateLagrangian();
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
   }
 
   /*--- Store Deltay and DeltaBary ---*/
@@ -698,11 +699,11 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
 
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
-    unsigned short TOTAL_AUGMENTED = 3;
-    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
-    CalculateLagrangian();
-    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
+    // unsigned short TOTAL_AUGMENTED = 3;
+    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    // CalculateLagrangian();
+    // SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
       for (iDV = 0; iDV < nDV_Total; iDV++){
         for (jDV = 0; jDV < nDV_Total; jDV++){
@@ -882,7 +883,7 @@ void COneShotFluidDriver::SetShiftedLagrangianGradient(){
 
 void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
   unsigned short iDV;
-  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3;
+  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
   for (iDV = 0; iDV < nDV_Total; iDV++){
     if(kind == ALPHA_TERM) {
       AugmentedLagrangianGradientAlpha[iDV] = Gradient[iDV];
@@ -898,6 +899,12 @@ void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
                                        + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
                                        + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta()
                                        + AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma();
+    }   
+    else if(kind == TOTAL_AUGMENTED_OLD) {
+      AugmentedLagrangianGradient_Old[iDV] = ShiftedLagrangianGradient[iDV]
+                                           + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
+                                           + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta()
+                                           + AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma();
     }   
   }
 }
