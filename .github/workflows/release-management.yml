@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: ${{matrix.os_bin}}
-          path: install/bin
+          path: ${{matrix.os_bin}}.zip
         # Update the release notes of latest draft release
       - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-10
         name: Update Release
