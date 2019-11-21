@@ -1162,13 +1162,9 @@ void CDiscAdjFEASolver::ReadDV(CConfig *config) {
 
 void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine, counter;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
+  unsigned short iVar;
+  unsigned long index, counter;
   string restart_filename, filename;
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   /*--- Restart the solution from file information ---*/
 
@@ -1194,17 +1190,8 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
-  /*--- Skip flow adjoint variables ---*/
-  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
-    if (compressible) {
-      skipVars += nDim + 2;
-    }
-    if (incompressible) {
-      skipVars += nDim + 1;
-    }
-  }
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -1242,25 +1229,6 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
-
-  /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. ---*/
-
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-    }
-    }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
