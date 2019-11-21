@@ -311,11 +311,7 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     for (unsigned short jDim = 0; jDim < nDim; jDim++)
       VelTurb[iDim] += a_ij[iDim][jDim] * VelAuxTurb[jDim];
-  
-  if (y >= 0.98){
-     cout << val_coords[1] << " "<<  y << " " <<  u << " " << turb_ke << " " << omega << " " << VelTurb[0] << " " << E_k_sum << endl;
-  }
-  
+    
   // TODO: Check why VelTurb is nan at the wall
   if (std::isnan(VelTurb[0]) || std::isnan(VelTurb[1]) || std::isnan(VelTurb[2])){
     VelTurb[0] = 0.0; VelTurb[1] = 0.0; VelTurb[2] = 0.0;
