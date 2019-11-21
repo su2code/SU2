@@ -1408,10 +1408,11 @@ void CFEAIteration::Iterate(COutput *output,
 
     if (!incremental_load) {
 
-      if (!disc_adj_fem) {
-        IntIter = 0;
-        config[val_iZone]->SetInnerIter(IntIter);
-      }
+      /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases as file output depends on it ---*/
+      unsigned long CurIter = config[val_iZone]->GetInnerIter();
+
+      IntIter = 0;
+      config[val_iZone]->SetInnerIter(IntIter);
 
       /*--- FEA equations ---*/
 
@@ -1429,8 +1430,11 @@ void CFEAIteration::Iterate(COutput *output,
 
       for (IntIter = 1; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
 
-        /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
-        if (disc_adj_fem) break;
+        /*--- Limit to only one iteration for the discrete adjoint recording, restore inner iter (see above) ---*/
+        if (disc_adj_fem) {
+          config[val_iZone]->SetInnerIter(CurIter);
+          break;
+        }
 
         config[val_iZone]->SetInnerIter(IntIter);
         
