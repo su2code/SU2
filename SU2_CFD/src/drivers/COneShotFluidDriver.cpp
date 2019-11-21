@@ -1190,7 +1190,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr] <= 0.) {
+      if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma <= 0.) {
         helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
       }
       else {
