@@ -249,15 +249,15 @@ void COneShotFluidDriver::RunOneShot(){
       else{
         /*--- Store and update constraint multiplier ---*/
         StoreOldMultiplier();
-        // StoreMultiplierGrad();
-        UpdateMultiplier(1.0);
+        StoreMultiplierGrad();
+        // UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      // UpdateMultiplier(stepsize);
+      UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -285,7 +285,7 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         // LoadOldMultiplier();
-        // UpdateMultiplier(0.0);
+        UpdateMultiplier(0.0);
         ComputeDesignVarUpdate(0.0);
       }
 
