@@ -28,6 +28,12 @@ jobs:
             flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
     runs-on: ubuntu-latest
     steps:
+      - name: Cache Object Files
+        uses: actions/cache@v1
+        with:
+          path: ccache
+          key: ${{ matrix.os_bin }}-${{ github.sha }}
+          restore-keys: ${{ matrix.os_bin }}
       - name: Build
         uses: docker://su2code/build-su2-cross:latest
         with:
