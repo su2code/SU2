@@ -1,7 +1,6 @@
 /*!
- * \file CFEAMeshNumerics.hpp
- * \brief Declaration and inlines of the class to compute
- *        the stiffness matrix of a linear, pseudo-elastic mesh problem.
+ * \file CFEM_IdealDE.hpp
+ * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
  * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -38,38 +37,53 @@
 
 #pragma once
 
-#include "../numerics_structure.hpp"
+#include "CFEANonlinearElasticity.hpp"
 
-class CFEAMeshElasticity : public CFEALinearElasticity {
+/*!
+ * \class CFEM_IdealDE
+ * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 6.2.0 "Falcon"
+ */
+class CFEM_IdealDE final : public CFEANonlinearElasticity {
 
-  bool element_based;
-  bool stiffness_set;
+  su2double trbbar, Eg, Eg23, Ek, Pr; /*!< \brief Variables of the model calculation. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config);
+  CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEAMeshElasticity(void);
+  ~CFEM_IdealDE(void) = default;
 
-  inline void SetElement_Properties(CElement *element, CConfig *config){
-    if(element_based){E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();}
-  }
+private:
+  /*!
+   * \brief Compute the plane stress term.
+   * \param[in,out] element_container - The finite element.
+   * \param[in] config - Definition of the problem.
+   */
+  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) override;
 
   /*!
-   * \brief Set the element-based local properties in mesh problems
-   * \param[in] element_container - Element structure for the particular element integrated.
+   * \brief Compute the constitutive matrix.
+   * \param[in,out] element_container - The finite element.
+   * \param[in] config - Definition of the problem.
    */
-  inline void SetMeshElasticProperties(unsigned long iElem, su2double val_E){
-    if (element_based){ E_i[iElem]  = val_E;}
-  }
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) override;
+
+  /*!
+   * \brief Compute the stress tensor.
+   * \param[in,out] element_container - The finite element.
+   * \param[in] config - Definition of the problem.
+   */
+  void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
 
 };
