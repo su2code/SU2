@@ -49,7 +49,7 @@ jobs:
           name: ${{matrix.os_bin}}
           path: ${{matrix.os_bin}}.zip
         # Update the release notes of latest draft release
-      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-10
+      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-11
         name: Update Release
         id: update_release
         env:
