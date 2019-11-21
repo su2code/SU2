@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CProperty(void) = default;
+  virtual ~CProperty(void) noexcept = default;
 
   /*!
    * \brief Get the material model to use for the element.
@@ -142,11 +142,6 @@ public:
                    su2double valDensity = 1.0) : CProperty(valMat_Prop),
     iMat_Mod(valMat_Model), iElectric_Prop(valElectric_Prop),
     iDV(valDV), design_rho(valDensity), physical_rho(valDensity) {}
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CElementProperty(void) = default;
 
   /*!
    * \brief Get the material model to use for the element.
