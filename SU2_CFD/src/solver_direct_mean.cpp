@@ -3294,7 +3294,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     unsigned long iMarker, iVertex;
     unsigned short iVar;
     
-    if (config->GetKind_Solver() == RANS){
+    if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
       
       /*--- Copy from COutput::LoadLocalData_Flow for computing mean skin friction values
        *
@@ -3341,7 +3341,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar-1, Solution_Avg_Aux[nVar-1]/Solution_Avg_Aux[0]);
       solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
       
-      if (config->GetKind_Solver() == RANS){
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
         solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+1, Aux_Frict_x[iPoint]);
         solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+2, Aux_Frict_y[iPoint]);
         if (nDim == 3){
@@ -3376,7 +3376,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
     
-    if ( calculate_average && config->GetKind_Solver() == RANS) {
+    if ( calculate_average && ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES))) {
       delete [] Aux_Frict_x;
       delete [] Aux_Frict_y;
       delete [] Aux_Frict_z;

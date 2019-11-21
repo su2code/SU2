@@ -611,7 +611,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
    *
    * Auxiliary vectors for variables defined on surfaces only. ---*/
   
-  if ( calculate_average && config->GetKind_Solver() == RANS) {
+  if ( calculate_average && ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES))) {
     Aux_Frict_x = new su2double[geometry->GetnPoint()];
     Aux_Frict_y = new su2double[geometry->GetnPoint()];
     Aux_Frict_z = new su2double[geometry->GetnPoint()];
@@ -656,7 +656,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()-1, Solution_Avg_Aux[solver->GetnVar()-1]/Solution_Avg_Aux[0]);
       solver->node[iPoint]->AddSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
       
-      if (config->GetKind_Solver() == RANS){
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
         solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+1, Aux_Frict_x[iPoint]);
         solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+2, Aux_Frict_y[iPoint]);
         if (geometry->GetnDim() == 3){

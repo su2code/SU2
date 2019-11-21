@@ -12912,7 +12912,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par +=1;
       Variable_Names.push_back("PMean");
       
-      if (config->GetKind_Solver() == RANS){
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
         nVar_Par +=1;
         Variable_Names.push_back("CfxMean");
         nVar_Par +=1;
@@ -13252,7 +13252,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
           iVar++;
           
-          if (config->GetKind_Solver() == RANS){
+          if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+1) / Avg_Iter;
             iVar++;
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+2) / Avg_Iter;
