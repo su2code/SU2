@@ -285,7 +285,7 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         LoadOldMultiplier();
-        UpdateMultiplier(0.0);
+        UpdateMultiplier(1.0);
         ComputeDesignVarUpdate(0.0);
       }
 
