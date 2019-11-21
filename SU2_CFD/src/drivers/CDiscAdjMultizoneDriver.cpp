@@ -427,7 +427,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
     AD::StartRecording();
 
-    AD::Push_TapePosition();
+    AD::Push_TapePosition(); /// START
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -446,7 +446,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     }
   }
 
-  AD::Push_TapePosition();
+  AD::Push_TapePosition(); /// REGISTERED
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -454,7 +454,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
                                                         config_container, iZone, INST_0, kind_recording);
   }
 
-  AD::Push_TapePosition();
+  AD::Push_TapePosition(); /// DEPENDENCIES
 
   /*--- Extract the objective function and store it.
    *    It is necessary to include data transfer and mesh updates in this section as some functions
@@ -464,7 +464,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   SetObjFunction(kind_recording);
 
-  AD::Push_TapePosition();
+  AD::Push_TapePosition(); /// OBJECTIVE_FUNCTION
 
   if (tape_type != Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
 
@@ -472,11 +472,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
     HandleDataTransfer();
 
-    AD::Push_TapePosition();
+    AD::Push_TapePosition(); /// TRANSFER
 
     for(iZone = 0; iZone < nZone; iZone++) {
 
-      AD::Push_TapePosition();
+      AD::Push_TapePosition(); /// enter_zone
 
       if (tape_type == Kind_Tape::ZONE_SPECIFIC_TAPE) {
         if (iZone == record_zone) {
@@ -490,7 +490,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
       iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
                                                          config_container, output_container[iZone], iZone, INST_0);
 
-      AD::Push_TapePosition();
+      AD::Push_TapePosition(); /// leave_zone
     }
   }
 
