@@ -264,7 +264,7 @@ def main():
     ### Coupled FSI Adjoint         ###
     ###################################
    
-    # Structural model
+    # Legacy driver
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
@@ -274,6 +274,17 @@ def main():
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
     test_list.append(discadj_fsi)
+
+    # Multi physics framework
+    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
+    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
+    discadj_fsi2.cfg_file  = "config.cfg"
+    discadj_fsi2.test_iter = 8
+    discadj_fsi2.test_vals = [-5.196862, -2.6088e-13] #last 2 columns
+    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    discadj_fsi2.timeout   = 1600
+    discadj_fsi2.tol       = 1e-16
+    test_list.append(discadj_fsi2)
 
     ###################################
     ### Coupled CHT Adjoint         ###
@@ -312,20 +323,6 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
-    ###################################
-    ### Coupled FSI Adjoint         ###
-    ###################################
-
-    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
-    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
-    discadj_fsi2.cfg_file  = "config.cfg"
-    discadj_fsi2.test_iter = 0
-    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
-    discadj_fsi2.timeout   = 1600
-    discadj_fsi2.reference_file = "grad_young.opt.ref"
-    discadj_fsi2.test_file = "grad_young.opt"
-    pass_list.append(discadj_fsi2.run_filediff())
-    test_list.append(discadj_fsi2)
 
     # Tests summary
     print('==================================================================')

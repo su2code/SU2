@@ -2996,19 +2996,25 @@ void CSolver::Add_Solution_To_External() {
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 
+  /*--- This method is for discrete adjoint solvers and it is used in multi-physics
+   *    contexts, "cross_term" is the old value, the new one is in "Solution".
+   *    We update "cross_term" and the sum of all cross terms (in "External")
+   *    with a fraction of the difference between new and old.
+   *    When "alpha" is 1, i.e. no relaxation, we effectively subtract the old
+   *    value and add the new one to the total ("External"). ---*/
+
   passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       passivedouble
       new_val = SU2_TYPE::GetValue(base_nodes->GetSolution(iPoint,iVar)),
-      old_val = cross_term(iPoint,iVar),
-      relax_val = alpha*new_val + (1.0-alpha)*old_val;
-      /*--- Set new value of cross term. ---*/
-      cross_term(iPoint,iVar) = relax_val;
-      /*--- How much we need to update the sum of cross-terms. ---*/
-      Solution[iVar] = relax_val-old_val;
+      delta = alpha * (new_val - cross_term(iPoint,iVar));
+      /*--- Update cross term. ---*/
+      cross_term(iPoint,iVar) += delta;
+      Solution[iVar] = delta;
     }
+    /*--- Update the sum of all cross-terms. ---*/
     base_nodes->Add_External(iPoint, Solution);
   }
 }
