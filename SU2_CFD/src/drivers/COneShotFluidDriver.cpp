@@ -257,7 +257,7 @@ void COneShotFluidDriver::RunOneShot(){
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
