@@ -920,15 +920,15 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   unsigned long iPoint;
   unsigned short iVar;
   if (dual_time) {
-      for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
-          solution_n = nodes->GetSolution_time_n(iPoint);
-          solution_n1 = nodes->GetSolution_time_n1(iPoint);
-          for (iVar=0; iVar < nVar; iVar++) {
-              nodes->SetDual_Time_Derivative(iPoint, iVar, solution_n[iVar]+nodes->GetDual_Time_Derivative_n(iPoint, iVar));
-              nodes->SetDual_Time_Derivative_n(iPoint,iVar, solution_n1[iVar]);
-            }
-        }
+    for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
+      solution_n = nodes->GetSolution_time_n(iPoint);
+      solution_n1 = nodes->GetSolution_time_n1(iPoint);
+      for (iVar=0; iVar < nVar; iVar++) {
+        nodes->SetDual_Time_Derivative(iPoint, iVar, solution_n[iVar]+nodes->GetDual_Time_Derivative_n(iPoint, iVar));
+        nodes->SetDual_Time_Derivative_n(iPoint,iVar, solution_n1[iVar]);
+      }
     }
+  }
 }
 
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {

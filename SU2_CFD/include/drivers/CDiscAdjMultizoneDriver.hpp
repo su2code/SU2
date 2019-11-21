@@ -74,13 +74,13 @@ protected:
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
   int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
 
-  CIteration*** direct_iteration; /*!< \brief Array of pointers to the direct iterations. */
-  COutput** direct_output;        /*!< \brief Array of pointers to the direct outputs. */
-  unsigned short* direct_nInst;   /*!< \brief Total number of instances in the direct problem. */
-  unsigned short* nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
+  CIteration*** direct_iteration;       /*!< \brief Array of pointers to the direct iterations. */
+  COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
+  vector<unsigned short> direct_nInst;  /*!< \brief Total number of instances in the direct problem. */
+  vector<unsigned long> nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
 
-  su2vector<bool> Has_Deformation;/*!< \brief True if iZone has mesh deformation (used for
-                                              lazy evaluation of TRANSFER tape section). */
+  su2vector<bool> Has_Deformation;  /*!< \brief True if iZone has mesh deformation (used for
+                                                lazy evaluation of TRANSFER tape section). */
 
   /*!< \brief Individual cross-terms of the coupled problem, 5D array [iZone][jZone][iSol](iPoint,iVar).
               The column sum, i.e. along all iZones for each jZone, gives the External (total cross-term)
@@ -167,20 +167,26 @@ protected:
   void ComputeAdjoints(unsigned short iZone, bool eval_transfer = true);
 
   /*!
-   * \brief Puts BGSSolution back into Solution.
-   * \param[in] iZone - Zone where data between solvers is transferred.
+   * \brief Puts BGSSolution_k back into Solution.
+   * \param[in] iZone - Zone index.
    */
-  void Set_Solution_To_BGSSolution(unsigned short iZone);
+  void Set_Solution_To_BGSSolution_k(unsigned short iZone);
+
+  /*!
+   * \brief Puts Solution into BGSSolution_k.
+   * \param[in] iZone - Zone index.
+   */
+  void Set_BGSSolution_k_To_Solution(unsigned short iZone);
 
   /*!
    * \brief Add Solution vector to External.
-   * \param[in] iZone - Zone where data between solvers is transferred.
+   * \param[in] iZone - Zone index.
    */
   void Add_Solution_To_External(unsigned short iZone);
 
   /*!
    * \brief Add External_Old vector to Solution.
-   * \param[in] iZone - Zone where data between solvers is transferred.
+   * \param[in] iZone - Zone index.
    */
   void Add_External_To_Solution(unsigned short iZone);
 
@@ -193,7 +199,7 @@ protected:
 
   /*!
    * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
-   * \param[in] iZone - Zone where data between solvers is transferred.
+   * \param[in] iZone - Zone index.
    */
   void Set_BGSSolution(unsigned short iZone);
 
