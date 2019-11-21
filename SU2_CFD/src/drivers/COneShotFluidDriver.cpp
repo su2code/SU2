@@ -1205,7 +1205,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       // Multiplier_Store[iConstr] += stepsize*gamma*ConstrFunc_Store[iConstr];
     }
     else {
-      Multiplier[iConstr] = Multiplier_Old[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
+      Multiplier[iConstr] = Multiplier_Store[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
       // Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
     Multiplier_Store[iConstr] += stepsize*gamma*ConstrFunc_Store[iConstr];
