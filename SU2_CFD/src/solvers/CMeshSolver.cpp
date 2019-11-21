@@ -242,7 +242,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
         if (updated)
           val_Coord += nodes->GetSolution(indexNode,iDim);
 
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
     }
 
