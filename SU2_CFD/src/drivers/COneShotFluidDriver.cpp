@@ -244,7 +244,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // LoadOldMultiplier();
+        LoadOldMultiplier();
       }
       else{
         /*--- Store and update constraint multiplier ---*/
@@ -284,7 +284,7 @@ void COneShotFluidDriver::RunOneShot(){
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        // LoadOldMultiplier();
+        LoadOldMultiplier();
         UpdateMultiplier(0.0);
         ComputeDesignVarUpdate(0.0);
       }
