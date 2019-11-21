@@ -482,6 +482,7 @@ public:
 template<unsigned short NGAUSS, unsigned short NNODE, unsigned short NDIM>
 class CElementWithKnownSizes : public CElement {
 protected:
+  static_assert(NDIM==2 || NDIM==3, "ComputeGrad_impl expects 2D or 3D");
 
   su2double GaussCoord[NGAUSS][NDIM];   /*!< \brief Coordinates of the integration points. */
   su2double dNiXj[NGAUSS][NNODE][NDIM]; /*!< \brief Shape function derivatives evaluated at the Gauss points. */

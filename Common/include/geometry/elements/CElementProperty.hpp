@@ -144,6 +144,11 @@ public:
     iDV(valDV), design_rho(valDensity), physical_rho(valDensity) {}
 
   /*!
+   * \brief Destructor of the class.
+   */
+  ~CElementProperty(void) = default;
+
+  /*!
    * \brief Get the material model to use for the element.
    */
   inline unsigned long GetMat_Mod(void) const override { return iMat_Mod; }
