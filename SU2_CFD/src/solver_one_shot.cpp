@@ -254,7 +254,7 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   unsigned long iPoint;
   su2double normDelta=0.0,    myNormDelta=0.0;
   su2double normDeltaNew=0.0, myNormDeltaNew=0.0;
-  su2double helper=0.0,       myHelper=0.0;
+  // su2double helper=0.0,       myHelper=0.0;
 
   /* --- Estimate rho and theta values --- */
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
@@ -263,36 +263,36 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
                       * direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar);
       myNormDeltaNew += (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar))
                       * (direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
-      myHelper       += direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
-                      - nodes->GetSolution_DeltaStore(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
+      // myHelper       += direct_solver->GetNodes()->GetSolution_DeltaStore(iPoint,iVar)*(nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Store(iPoint,iVar))
+      //                 - nodes->GetSolution_DeltaStore(iPoint,iVar)*(direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar));
     }
   }
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&myNormDelta, &normDelta, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&myNormDeltaNew, &normDeltaNew, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&myHelper, &helper, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  // SU2_MPI::Allreduce(&myHelper, &helper, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   normDelta    = myNormDelta;
   normDeltaNew = myNormDeltaNew;
-  helper       = myHelper;
+  // helper       = myHelper;
 #endif
 
   rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1E-6); // Saturate contractivity
-  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old);
+  // theta = max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old);
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
-  theta_old = theta;
+  // theta_old = theta;
 }
 
 void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   /* --- Estimate alpha and beta --- */
-  // su2double alpha = 2./((1.-rho)*(1.-rho));
-  // su2double beta  = 2.;
-  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  su2double beta  = 2./theta;
+  su2double alpha = 2./((1.-rho)*(1.-rho));
+  su2double beta  = 2.;
+  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  // su2double beta  = 2./theta;
 
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
