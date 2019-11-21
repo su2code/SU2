@@ -1,5 +1,5 @@
 /*!
- * \file numerics_direct_elasticity_linear.cpp
+ * \file CFEALinearElasticity.cpp
  * \brief This file contains the routines for setting the FEM elastic structural problem.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
@@ -35,33 +35,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/numerics_structure.hpp"
-#include <limits>
+#include "../../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 
-CFEALinearElasticity::CFEALinearElasticity(void) : CFEAElasticity () {
-
-  nodalDisplacement = NULL;
-
-}
 
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
-
-  unsigned short iVar;
-
-  if (nDim == 2) {
-    nodalDisplacement = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    for (iVar = 0; iVar < 4; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
-  }
-  else if (nDim == 3) {
-    nodalDisplacement = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
-  }
-
-}
-
-CFEALinearElasticity::~CFEALinearElasticity(void) {
-
+                                           CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
+  if (nDim == 2)
+    nodalDisplacement.resize(NNODES_2D,nDim);
+  else
+    nodalDisplacement.resize(NNODES_3D,nDim);
 }
 
 void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
@@ -94,8 +76,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
 
   /*--- Initialize auxiliary matrices ---*/
 
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
@@ -136,7 +117,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
         Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
       }
-      else if (nDim == 3) {
+      else {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
@@ -167,7 +148,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
           Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
           Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
         }
-        else if (nDim ==3) {
+        else {
           Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
           Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
           Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
@@ -227,39 +208,40 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
 
 void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) {
 
-     /*--- Compute the D Matrix (for plane stress and 2-D)---*/
+  /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
 
   if (nDim == 2) {
     if (plane_stress) {
-
       /*--- We enable plane stress cases ---*/
 
-      D_Mat[0][0] = E/(1-Nu*Nu);        D_Mat[0][1] = (E*Nu)/(1-Nu*Nu);  D_Mat[0][2] = 0.0;
-      D_Mat[1][0] = (E*Nu)/(1-Nu*Nu);      D_Mat[1][1] = E/(1-Nu*Nu);      D_Mat[1][2] = 0.0;
-      D_Mat[2][0] = 0.0;                 D_Mat[2][1] = 0.0;               D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
+      D_Mat[0][0] = E/(1-Nu*Nu);      D_Mat[0][1] = (E*Nu)/(1-Nu*Nu); D_Mat[0][2] = 0.0;
+      D_Mat[1][0] = (E*Nu)/(1-Nu*Nu); D_Mat[1][1] = E/(1-Nu*Nu);      D_Mat[1][2] = 0.0;
+      D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;              D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
     }
     else {
       /*--- Assuming plane strain as a general case ---*/
 
-      D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
-      D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
-      D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
+      D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = 0.0;
+      D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = 0.0;
+      D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;              D_Mat[2][2] = Mu;
     }
 
   }
-  else if (nDim == 3) {
+  else {
+    su2double Lbd_2Mu = Lambda + 2.0*Mu;
 
-    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;      D_Mat[0][2] = Lambda;      D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
-    D_Mat[1][0] = Lambda;      D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = Lambda;      D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
-    D_Mat[2][0] = Lambda;      D_Mat[2][1] = Lambda;      D_Mat[2][2] = Lambda + 2.0*Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
-    D_Mat[3][0] = 0.0;        D_Mat[3][1] = 0.0;        D_Mat[3][2] = 0.0;        D_Mat[3][3] = Mu;  D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
-    D_Mat[4][0] = 0.0;        D_Mat[4][1] = 0.0;        D_Mat[4][2] = 0.0;        D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;  D_Mat[4][5] = 0.0;
-    D_Mat[5][0] = 0.0;        D_Mat[5][1] = 0.0;        D_Mat[5][2] = 0.0;        D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
+    D_Mat[0][0] = Lbd_2Mu;  D_Mat[0][1] = Lambda;   D_Mat[0][2] = Lambda;   D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
+    D_Mat[1][0] = Lambda;   D_Mat[1][1] = Lbd_2Mu;  D_Mat[1][2] = Lambda;   D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
+    D_Mat[2][0] = Lambda;   D_Mat[2][1] = Lambda;   D_Mat[2][2] = Lbd_2Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
+    D_Mat[3][0] = 0.0;      D_Mat[3][1] = 0.0;      D_Mat[3][2] = 0.0;      D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
+    D_Mat[4][0] = 0.0;      D_Mat[4][1] = 0.0;      D_Mat[4][2] = 0.0;      D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
+    D_Mat[5][0] = 0.0;      D_Mat[5][1] = 0.0;      D_Mat[5][2] = 0.0;      D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
 
   }
 
 }
+
 
 void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
 
@@ -278,8 +260,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Initialize auxiliary matrices ---*/
 
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
@@ -316,7 +297,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
         Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
       }
-      else if (nDim ==3) {
+      else {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
