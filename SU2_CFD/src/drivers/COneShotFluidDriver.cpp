@@ -249,7 +249,7 @@ void COneShotFluidDriver::RunOneShot(){
       else{
         /*--- Store and update constraint multiplier ---*/
         StoreOldMultiplier();
-        // StoreMultiplierGrad();
+        StoreMultiplierGrad();
         UpdateMultiplier(1.0);
       }
 
@@ -725,12 +725,12 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
+  }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -743,12 +743,12 @@ void COneShotFluidDriver::StoreGradDotDir(){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
+  }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
