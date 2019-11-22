@@ -37,6 +37,14 @@
 
 #include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
+
+#include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
+#include "../../include/numerics/elasticity/CFEAMeshElasticity.hpp"
+#include "../../include/numerics/elasticity/CFEM_NeoHookean_Comp.hpp"
+#include "../../include/numerics/elasticity/CFEM_Knowles_NearInc.hpp"
+#include "../../include/numerics/elasticity/CFEM_IdealDE.hpp"
+#include "../../include/numerics/elasticity/CFEM_DielectricElastomer.hpp"
+
 #include <cassert>
 
 #ifdef VTUNEPROF

@@ -49,6 +49,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
 
 /*--- Epsilon definition ---*/
 

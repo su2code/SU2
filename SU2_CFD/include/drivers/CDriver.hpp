@@ -55,7 +55,6 @@
 #include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 #include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
 #include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../numerics/CFEAMeshElasticity.hpp"
 #include "../solvers/CDiscAdjMeshSolver.hpp"
 #include "../solvers/CMeshSolver.hpp"
 #include "../../../Common/include/geometry_structure.hpp"
