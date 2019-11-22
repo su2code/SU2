@@ -324,13 +324,13 @@ void COneShotFluidDriver::RunOneShot(){
      InnerIter > 1) {
     /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
     // CheckMultiplier();
-    CalculateLagrangian();
-    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
+    // CalculateLagrangian();
+    // SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
   }
 
   /*--- Store Deltay and DeltaBary ---*/
@@ -699,11 +699,11 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
 
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
-    // unsigned short TOTAL_AUGMENTED = 3;
-    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
-    // CalculateLagrangian();
-    // SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
+    unsigned short TOTAL_AUGMENTED = 3;
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    CalculateLagrangian();
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
       for (iDV = 0; iDV < nDV_Total; iDV++){
         for (jDV = 0; jDV < nDV_Total; jDV++){
