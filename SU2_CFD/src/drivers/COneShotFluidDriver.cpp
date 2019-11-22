@@ -244,20 +244,20 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadOldMultiplier();
+        // LoadOldMultiplier();
       }
       else{
         /*--- Store and update constraint multiplier ---*/
         StoreOldMultiplier();
-        StoreMultiplierGrad();
-        // UpdateMultiplier(1.0);
+        // StoreMultiplierGrad();
+        UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -284,8 +284,8 @@ void COneShotFluidDriver::RunOneShot(){
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        LoadOldMultiplier();
-        UpdateMultiplier(0.0);
+        // LoadOldMultiplier();
+        // UpdateMultiplier(0.0);
         ComputeDesignVarUpdate(0.0);
       }
 
@@ -724,14 +724,13 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
   for (iDV = 0; iDV < nDV_Total; iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
-    // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
-    unsigned short iConstr;
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-    }
-  }
+  // if (nConstr > 0) {
+  //   unsigned short iConstr;
+  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+  //   }
+  // }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -743,14 +742,13 @@ void COneShotFluidDriver::StoreGradDotDir(){
   for (iDV = 0; iDV < nDV_Total; iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
-    // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
-    unsigned short iConstr;
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-    }
-  }
+  // if (nConstr > 0) {
+  //   unsigned short iConstr;
+  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+  //   }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
@@ -814,7 +812,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     }
     else {
       // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
-      if(ConstrFunc_Store[iConstr]  > 0.) {
+      if(ConstrFunc_Store[iConstr] - Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
         Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
       }
     }
@@ -924,7 +922,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma();
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
@@ -1252,7 +1250,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
         my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
