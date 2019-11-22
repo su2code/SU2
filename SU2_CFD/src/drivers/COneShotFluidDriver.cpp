@@ -325,12 +325,12 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
     // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
     /*--- Store the constraint function, and set the multiplier to 0 if the sign is opposite ---*/
     StoreConstrFunction();
     // CheckMultiplier();
-    // CalculateLagrangian();
-    // SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
+    CalculateLagrangian();
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
   }
 
   /*--- Store Deltay and DeltaBary ---*/
