@@ -4,7 +4,7 @@ on:
   push:
     # branches to consider in the event; optional, defaults to all
     branches:
-      - feature_release_drafter
+      - develop
 
 jobs:
   build_and_upload:
