@@ -244,20 +244,20 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        LoadOldMultiplier();
+        // LoadOldMultiplier();
       }
       else{
         /*--- Store and update constraint multiplier ---*/
         StoreOldMultiplier();
-        StoreMultiplierGrad();
-        // UpdateMultiplier(1.0);
+        // StoreMultiplierGrad();
+        UpdateMultiplier(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir();
 
       /*--- Update multiplier ---*/
-      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -284,8 +284,8 @@ void COneShotFluidDriver::RunOneShot(){
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        LoadOldMultiplier();
-        UpdateMultiplier(0.0);
+        // LoadOldMultiplier();
+        // UpdateMultiplier(0.0);
         ComputeDesignVarUpdate(0.0);
       }
 
@@ -726,12 +726,12 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
-    unsigned short iConstr;
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-    }
-  }
+  // if (nConstr > 0) {
+  //   unsigned short iConstr;
+  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+  //   }
+  // }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -743,13 +743,14 @@ void COneShotFluidDriver::StoreGradDotDir(){
   for (iDV = 0; iDV < nDV_Total; iDV++){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
-    unsigned short iConstr;
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-    }
-  }
+  // if (nConstr > 0) {
+  //   unsigned short iConstr;
+  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+  //   }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
