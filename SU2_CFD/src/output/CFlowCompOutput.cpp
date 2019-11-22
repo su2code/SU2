@@ -44,7 +44,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   turb_model = config->GetKind_Turb_Model();
   lastInnerIter = curInnerIter;
-  grid_movement = (config->GetGrid_Movement() || config->GetDynamic_Grid());
+  gridMovement = (config->GetGrid_Movement() || config->GetDynamic_Grid());
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -66,7 +66,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   if (nRequestedVolumeFields == 0){
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
-    if (grid_movement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
+    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     requestedVolumeFields.emplace_back("PRIMITIVE");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
@@ -316,7 +316,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Grid velocity
-  if (grid_movement) {
+  if (gridMovement) {
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -458,7 +458,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  if (grid_movement) {
+  if (gridMovement) {
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel()[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel()[1]);
     if (nDim == 3)
