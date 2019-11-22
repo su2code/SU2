@@ -32,18 +32,18 @@
 CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
-  
+
   requestedVolumeFields.emplace_back("COORDINATES");
   nRequestedVolumeFields = requestedVolumeFields.size();
-    
+
   /*--- Set the volume filename --- */
-  
+
   volumeFilename = config->GetMesh_Out_FileName();
-  
+
   /*--- Set the surface filename ---*/
-  
+
   surfaceFilename = "surface_mesh";
-  
+
 }
 
 CMeshOutput::~CMeshOutput(void) {}
@@ -56,16 +56,16 @@ void CMeshOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  
+
 }
 
 void CMeshOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CPoint*    Node_Geo  = geometry->node[iPoint];
- 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
-  
+
 }

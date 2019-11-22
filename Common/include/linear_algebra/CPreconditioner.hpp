@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CPreconditioner.hpp
  * \brief Headers for the classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
@@ -61,8 +61,8 @@ template<class ScalarType>
 class CJacobiPreconditioner : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
-  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
 
   /*!
    * \brief Default constructor of the class
@@ -109,8 +109,8 @@ template<class ScalarType>
 class CILUPreconditioner : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
-  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
 
   /*!
    * \brief Default constructor of the class
@@ -157,8 +157,8 @@ template<class ScalarType>
 class CLU_SGSPreconditioner : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
-  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
 
   /*!
    * \brief Default constructor of the class
@@ -205,8 +205,8 @@ template<class ScalarType>
 class CLineletPreconditioner : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
-  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
 
   /*!
    * \brief Default constructor of the class
@@ -253,8 +253,8 @@ template<class ScalarType>
 class CPastixPreconditioner : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief Pointer to the matrix. */
-  CGeometry* geometry; /*!< \brief Geometry associated with the problem. */
-  CConfig* config; /*!< \brief Configuration of the problem. */
+  CGeometry* geometry;                   /*!< \brief Geometry associated with the problem. */
+  CConfig* config;                       /*!< \brief Configuration of the problem. */
 
 public:
 

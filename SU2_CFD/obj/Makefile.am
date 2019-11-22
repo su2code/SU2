@@ -80,10 +80,14 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
-  ../src/numerics_direct_elasticity_nonlinear.cpp \
-  ../src/numerics_direct_elasticity_linear.cpp \
-  ../src/numerics_direct_elasticity.cpp \
-  ../src/numerics/CFEAMeshElasticity.cpp \
+  ../numerics/elasticity/CFEAElasticity.cpp \
+  ../numerics/elasticity/CFEALinearElasticity.cpp \
+  ../numerics/elasticity/CFEAMeshElasticity.cpp \
+  ../numerics/elasticity/CFEANonlinearElasticity.cpp \
+  ../numerics/elasticity/CFEM_NeoHookean_Comp.cpp \
+  ../numerics/elasticity/CFEM_Knowles_NearInc.cpp \
+  ../numerics/elasticity/CFEM_IdealDE.cpp \
+  ../numerics/elasticity/CFEM_DielectricElastomer.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
@@ -143,10 +147,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDisplacementsInterfaceLegacy.cpp \
   ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
-  ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
-  ../src/variables/CDiscAdjMeshVariable.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
   ../src/variables/CMeshVariable.cpp \

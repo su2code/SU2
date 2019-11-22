@@ -58,7 +58,7 @@ public:
    */
   CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint,
                    unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config);
-                   
+
   /*!
    * \brief Destructor of the class.
    */

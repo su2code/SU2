@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CMatrixVectorProduct.hpp
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
@@ -70,8 +70,8 @@ template<class ScalarType>
 class CSysMatrixVectorProduct : public CMatrixVectorProduct<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
-  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
 
   /*!
    * \brief Default constructor of the class
@@ -118,8 +118,8 @@ template<class ScalarType>
 class CSysMatrixVectorProductTransposed : public CMatrixVectorProduct<ScalarType> {
 private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
-  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
 
   /*!
    * \brief Default constructor of the class

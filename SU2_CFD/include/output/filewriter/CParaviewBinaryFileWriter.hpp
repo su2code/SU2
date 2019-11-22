@@ -30,14 +30,14 @@
 #include "CFileWriter.hpp"
 
 class CParaviewBinaryFileWriter final: public CFileWriter{
-  
+
 public:
-  
+
   /*!
    * \brief File extension
    */
   const static string fileExt;
-  
+
   /*!
    * \brief Construct a file writer using field names, dimension.
    * \param[in] fields - A list of field names
@@ -47,19 +47,19 @@ public:
    */
   CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim,
                             string fileName, CParallelDataSorter* data_sorter);
-  
+
   /*!
    * \brief Destructor
    */
   ~CParaviewBinaryFileWriter() override;
-  
+
   /*!
    * \brief Write sorted data to file in paraview binary file format
    */
   void Write_Data() override;
-  
+
 private:
-  
+
   /*!
    * \brief Change storage of buffer from big endian to little endian
    * \param buffer - Pointer to the beginning of the buffer
@@ -67,6 +67,6 @@ private:
    * \param nVar - The number of entries
    */
   void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar);
-  
+
 };
 

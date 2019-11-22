@@ -38,9 +38,9 @@ def init_submodules(method = 'auto'):
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_meson = 'c904d3eefe2a01ca60027e2a5192e1f1c7ca5d9d'
+  sha_version_meson = 'e9bd7d49bdc8c630cca3bf4cc02c437841b6aaf6'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
-  sha_version_ninja = 'e0bc2e5fd9036a31d507881e1383adde3672aaef'
+  sha_version_ninja = '20b30dac6698d119e7797b34d6ed2c4ed8f48417'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
 
   medi_name = 'MeDiPack'
@@ -112,11 +112,11 @@ def submodule_status(path, sha_commit):
       print('Initialize submodule ' + path + ' using git ... ')
       subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
 
-      # Check that the SHA tag stored in this file matches the one stored in the git index
-      cur_sha_commit = status[1:].split(' ')[0]
-      if (cur_sha_commit != sha_commit):
-        print('SHA-1 tag stored in index does not match SHA tag stored in this script.')
-        sys.exit(1)
+    # Check that the SHA tag stored in this file matches the one stored in the git index
+    cur_sha_commit = status[1:].split(' ')[0]
+    if (cur_sha_commit != sha_commit):
+      print('SHA-1 tag stored in index does not match SHA tag stored in this script.')
+      sys.exit(1)
   
   
 

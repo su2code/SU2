@@ -2875,13 +2875,13 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
 void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                       CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long InnerIter     = config->GetInnerIter();
+  unsigned long Iter_Fixed_CL = config->GetUpdate_AoA_Iter_Limit();
+  unsigned long InnerIter       = config->GetInnerIter();
   bool Update_AoA             = false;
   su2double dCL_dAlpha        = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
-  unsigned long Update_Alpha  = config->GetUpdate_Alpha();
+  //unsigned long Update_Alpha  = config->GetUpdate_Alpha();
   
-  if (InnerIter == 0) AoA_Counter = 0;
+  //if (ExtIter == 0) AoA_Counter = 0;
   
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
@@ -2895,8 +2895,8 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
      at a fix number of iterations ---*/
     
     if ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0)) {
-      AoA_Counter++;
-      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
+      //AoA_Counter++;
+      //if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
       Update_AoA = true;
     }
     

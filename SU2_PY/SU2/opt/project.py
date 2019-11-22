@@ -134,6 +134,8 @@ class Project(object):
             config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
         
         for this_obj in def_objs:
+            if this_obj in su2io.optnames_multi:
+                this_obj = this_obj.split('_')[1]
             group = historyOutFields[this_obj]['GROUP']
             if not group in config.HISTORY_OUTPUT:
                 config.HISTORY_OUTPUT.append(group)

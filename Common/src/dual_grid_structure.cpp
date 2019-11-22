@@ -46,7 +46,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
   Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
   GridVel           = NULL;           GridVel_Grad        = NULL;
-  Input_AdjIndices  = NULL;           Output_AdjIndices   = NULL;
+  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -64,8 +64,8 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Coord = new su2double[nDim];
 
   if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
-    Input_AdjIndices = new int[nDim];
-    Output_AdjIndices = new int[nDim];
+    AD_InputIndex   = new int[nDim];
+    AD_OutputIndex  = new int[nDim];
   }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
@@ -161,7 +161,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
   Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
   GridVel           = NULL;           GridVel_Grad        = NULL;
-  Input_AdjIndices  = NULL;           Output_AdjIndices   = NULL;
+  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -181,8 +181,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Coord[1] = val_coord_1;
 
   if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
-    Input_AdjIndices = new int[nDim];
-    Output_AdjIndices = new int[nDim];
+    AD_InputIndex   = new int[nDim];
+    AD_OutputIndex  = new int[nDim];
   }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
@@ -277,7 +277,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
   Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
   GridVel           = NULL;           GridVel_Grad        = NULL;
-  Input_AdjIndices  = NULL;           Output_AdjIndices   = NULL;
+  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
   if ( config->GetTime_Marching() == NO ) { 
@@ -297,8 +297,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Coord[2] = val_coord_2;
 
   if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
-    Input_AdjIndices = new int[nDim];
-    Output_AdjIndices = new int[nDim];
+    AD_InputIndex   = new int[nDim];
+    AD_OutputIndex  = new int[nDim];
   }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
@@ -397,8 +397,8 @@ CPoint::~CPoint() {
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  if (Input_AdjIndices  != NULL) delete[] Input_AdjIndices;
-  if (Output_AdjIndices != NULL) delete[] Output_AdjIndices;
+  if (AD_InputIndex  != NULL) delete[] AD_InputIndex;
+  if (AD_OutputIndex != NULL) delete[] AD_OutputIndex;
  }
 
 void CPoint::SetPoint(unsigned long val_point) {
@@ -439,25 +439,25 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 
 }
 
-void CPoint::SetAdjIndices(bool input) {
+void CPoint::SetIndex(bool input) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     if(input) {
-      AD::SetAdjIndex(Input_AdjIndices[iDim], Coord[iDim]);
+      AD::SetIndex(AD_InputIndex[iDim], Coord[iDim]);
     }
     else {
-      AD::SetAdjIndex(Output_AdjIndices[iDim], Coord[iDim]);
+      AD::SetIndex(AD_OutputIndex[iDim], Coord[iDim]);
     }
   }
 }
 
 void CPoint::SetAdjointSolution(const su2double *adj_sol) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    AD::SetDerivative(Output_AdjIndices[iDim], SU2_TYPE::GetValue(adj_sol[iDim]));
+    AD::SetDerivative(AD_OutputIndex[iDim], SU2_TYPE::GetValue(adj_sol[iDim]));
   }
 }
 
 su2double CPoint::GetAdjointSolution(unsigned short iDim) {
-  return AD::GetDerivative(Input_AdjIndices[iDim]);
+  return AD::GetDerivative(AD_InputIndex[iDim]);
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
