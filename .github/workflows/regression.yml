@@ -1,0 +1,91 @@
+name: Regression Testing
+
+on:
+  push:
+    branches:
+      - 'develop'
+      - 'master'
+  pull_request:
+    branches: 
+      - 'develop'
+      - 'master'
+
+jobs:
+  build:
+    name: Build SU2
+    strategy:
+      fail-fast: false
+      matrix: 
+        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI]
+        include:
+          - config_set: BaseMPI
+            flags: '-Denable-pywrapper=true'
+          - config_set: ReverseMPI
+            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true'
+          - config_set: ForwardMPI
+            flags: '-Denable-directdiff=true -Denable-normal=false'          
+          - config_set: BaseNoMPI
+            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled'
+          - config_set: ReverseNoMPI
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true'
+          - config_set: ForwardNoMPI
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled'  
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache Object Files
+        uses: actions/cache@v1
+        with:
+          path: ccache
+          key: ${{ matrix.config_set }}-${{ github.sha }}
+          restore-keys: ${{ matrix.config_set }}
+      - name: Build 
+        uses: docker://su2code/build-su2:20191105
+        with:
+          args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Upload Binaries 
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.config_set }}
+          path: install/bin
+  tests:
+    runs-on: ubuntu-latest
+    name: Regression Tests
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix: 
+        testscript: ['parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py']
+        include:
+          - testscript: 'parallel_regression.py'
+            tag: MPI
+          - testscript: 'parallel_regression_AD.py'
+            tag: MPI
+          - testscript: 'serial_regression.py'
+            tag: NoMPI
+          - testscript: 'serial_regression_AD.py'
+            tag: NoMPI
+    steps:
+      - name: Download Base
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Base{0}', matrix.tag)}}
+      - name: Download Reverse
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Reverse{0}', matrix.tag)}}
+      - name: Download Forward
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Forward{0}', matrix.tag)}}
+      - name: Move Binaries
+        run: |
+          mkdir -p install/bin
+          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
+          chmod a+x install/bin/*               
+      - name: Run Tests in Container
+        uses: docker://su2code/test-su2:20191031
+        with:
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+  

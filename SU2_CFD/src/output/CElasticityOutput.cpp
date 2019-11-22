@@ -36,7 +36,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   dynamic = (config->GetTime_Domain());  // Dynamic analysis.
-  
+
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
   if (nonlinear_analysis) nVar_FEM = 3;
@@ -47,7 +47,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedHistoryFields.emplace_back("RMS_RES");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
-  
+
   /*--- Default fields for screen output ---*/
   if (nRequestedScreenFields == 0){
     if (dynamic) requestedScreenFields.emplace_back("TIME_ITER");
@@ -66,29 +66,29 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedScreenFields.emplace_back("VMS");
     nRequestedScreenFields = requestedScreenFields.size();
   }
-  
+
   /*--- Default fields for volume output ---*/
   if (nRequestedVolumeFields == 0){
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
-    requestedVolumeFields.emplace_back("STRESS");    
+    requestedVolumeFields.emplace_back("STRESS");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Structure)";
   multiZoneHeaderString = ss.str();
-  
+
   /*--- Set the volume filename --- */
-  
+
   volumeFilename = config->GetVolume_FileName();
-  
+
   /*--- Set the surface filename --- */
-  
+
   surfaceFilename = config->GetSurfCoeff_FileName();
-  
+
   /*--- Set the restart filename --- */
-  
+
   restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
@@ -107,7 +107,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
   /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
 
-  
+
   if (linear_analysis){
     SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_RMS(1)));
@@ -118,29 +118,29 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
     SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
     SetHistoryOutputValue("RMS_ETOL", log10(dotProd(fea_solver->LinSysSol, fea_solver->LinSysRes)));
-    
+
   }
-  
+
   if (multiZone){
     SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
     if (nDim == 3) SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));
   }
-  
+
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
   SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
-  
+
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetLinSol_Residual()));
-  
-} 
+
+}
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
-  
+
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL",  "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL",  "Residual of the linear solver.");
-  
+
   // Residuals
 
   AddHistoryOutput("RMS_UTOL",   "rms[U]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
@@ -158,33 +158,33 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
   AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  ScreenOutputFormat::FIXED, "", "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
-  
+
 }
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
- 
-  CVariable* Node_Struc = solver[FEA_SOL]->GetNodes(); 
+
+  CVariable* Node_Struc = solver[FEA_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
-          
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
-  
+
   SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
   SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
   if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
-  
+
   if(dynamic){
     SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(iPoint, 0));
     SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(iPoint, 1));
     if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(iPoint, 2));
-  
+
     SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(iPoint, 0));
     SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(iPoint, 1));
     if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(iPoint, 2));
   }
-  
+
   SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM(iPoint)[0]);
   SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM(iPoint)[1]);
   SetVolumeOutputValue("STRESS-XY", iPoint, Node_Struc->GetStress_FEM(iPoint)[2]);
@@ -194,11 +194,11 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     SetVolumeOutputValue("STRESS-YZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[5]);
   }
   SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress(iPoint));
-  
+
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
-  
+
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
@@ -208,34 +208,34 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION", "x-component of the displacement vector");
   AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
   if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
-  
+
   if(dynamic){
     AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY", "x-component of the velocity vector");
     AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY", "y-component of the velocity vector");
     if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY", "z-component of the velocity vector");
-    
+
     AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION", "x-component of the acceleration vector");
     AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION", "y-component of the acceleration vector");
     if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION", "z-component of the acceleration vector");
   }
-  
+
   AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS", "x-component of the normal stress vector");
   AddVolumeOutput("STRESS-YY",    "Syy", "STRESS", "y-component of the normal stress vector");
   AddVolumeOutput("STRESS-XY",    "Sxy", "STRESS", "xy shear stress component");
-  
+
   if (nDim == 3) {
     AddVolumeOutput("STRESS-ZZ",    "Szz", "STRESS", "z-component of the normal stress vector");
     AddVolumeOutput("STRESS-XZ",    "Sxz", "STRESS", "xz shear stress component");
     AddVolumeOutput("STRESS-YZ",    "Syz", "STRESS", "yz shear stress component");
   }
-    
+
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
-  
+
 }
 bool CElasticityOutput::SetInit_Residuals(CConfig *config){
-  
+
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
-  
+
 }
 
 

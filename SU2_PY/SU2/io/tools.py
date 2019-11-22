@@ -1036,7 +1036,10 @@ def restart2solution(config,state={}):
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
         # update state
-        if state: state.FILES.DIRECT = solution
+        if state: 
+            state.FILES.DIRECT = solution
+            if os.path.exists('flow.meta'):
+                state.FILES.FLOW_META = 'flow.meta'
         
     # adjoint solution
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):

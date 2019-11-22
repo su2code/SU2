@@ -89,7 +89,7 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
   ModAmpl = struct_solution->Compute_LoadCoefficient(CurrentTime, Ramp_Time, struct_config);
 
   Physical_Constants[1] = ModAmpl;
-  
+
   /*--- For static FSI, we cannot apply the ramp like this ---*/
   if ((!flow_config->GetTime_Domain())){
     Physical_Constants[1] = 1.0;
@@ -144,7 +144,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
   Point_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNode();
   // Get the normal at the vertex: this normal goes inside the fluid domain.
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
-  
+
   if (consistent_interpolation)
     for (iVar = 0; iVar < nVar; ++iVar) area += Normal_Flow[iVar]*Normal_Flow[iVar];
   else

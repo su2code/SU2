@@ -41,7 +41,7 @@ protected:
   bool linear_analysis,    //!< Boolean indicating a linear analysis
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
        dynamic;            //!< Boolean indicating a dynamic analysis
- 
+
 public:
 
   /*!
@@ -72,7 +72,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields(CConfig *config) override;
-  
+
   /*!
    * \brief Set the values of the volume output fields for a point.
    * \param[in] config - Definition of the particular problem.
@@ -81,7 +81,7 @@ public:
    * \param[in] iPoint - Index of the point.
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
-  
+
   /*!
    * \brief Check whether the base values for relative residuals should be initialized
    * \param[in] config - Definition of the particular problem.

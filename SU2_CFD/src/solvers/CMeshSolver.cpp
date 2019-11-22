@@ -72,7 +72,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     Coordinate = new su2double[nDim];
     nodes = new CMeshBoundVariable(nPoint, nDim, config);
     SetBaseClassPointerToNodes();
-    
+
     /*--- Set which points are vertices and allocate boundary data. ---*/
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -119,14 +119,14 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     /*--- Element container structure ---*/
 
     if (nDim == 2) {
-        element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-        element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+      element_container[FEA_TERM][EL_TRIA] = new CTRIA1();
+      element_container[FEA_TERM][EL_QUAD] = new CQUAD4();
     }
-    else if (nDim == 3) {
-        element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-        element_container[FEA_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
-        element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
-        element_container[FEA_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    else {
+      element_container[FEA_TERM][EL_TETRA] = new CTETRA1();
+      element_container[FEA_TERM][EL_HEXA]  = new CHEXA8();
+      element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5();
+      element_container[FEA_TERM][EL_PRISM] = new CPRISM6();
     }
 
     /*--- Matrices to impose boundary conditions ---*/
@@ -190,9 +190,9 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 }
 
 CMeshSolver::~CMeshSolver(void) {
-  
+
   if (Coordinate != NULL) delete [] Coordinate;
-  if (element  !=NULL ) delete [] element;
+  if (element    !=NULL ) delete [] element;
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
@@ -229,10 +229,10 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
       /*--- Compute the volume with the reference or with the current coordinates ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        if (updated) val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim) 
+        if (updated) val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim)
                                + nodes->GetSolution(indexNode[iNode],iDim);
         else val_Coord = nodes->GetMesh_Coord(indexNode[iNode],iDim);
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
     }
 
@@ -679,7 +679,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
-  
+
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {

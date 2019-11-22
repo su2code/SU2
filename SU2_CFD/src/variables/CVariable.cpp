@@ -65,15 +65,15 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
-	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
-	  Solution_Adj_Old.resize(nPoint,nVar);
-	}
+  if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
+    Solution_Adj_Old.resize(nPoint,nVar);
+  }
 
   Non_Physical.resize(nPoint) = false;
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-    Input_AdjIndices.resize(nPoint,nVar) = -1;
-    Output_AdjIndices.resize(nPoint,nVar) = -1;
+    AD_InputIndex.resize(nPoint,nVar) = -1;
+    AD_OutputIndex.resize(nPoint,nVar) = -1;
   }
 
   if (config->GetMultizone_Problem())
@@ -104,16 +104,24 @@ void CVariable::SetExternalZero() { External.setConstant(0.0); }
 
 void CVariable::Set_OldExternal() { External_Old = External; }
 
-void CVariable::RegisterSolution(bool input) {
-  if (input) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
-        AD::RegisterInput(Solution(iPoint,iVar));
-  }
-  else {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
+void CVariable::RegisterSolution(bool input, bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      if(input) {
+        if(push_index) {
+          AD::RegisterInput(Solution(iPoint,iVar));
+        }
+        else {
+          AD::RegisterInput(Solution(iPoint,iVar), false);
+          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
+        }
+      }
+      else {
         AD::RegisterOutput(Solution(iPoint,iVar));
+        if(!push_index)
+          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
+      }
+    }
   }
 }
 
@@ -127,25 +135,4 @@ void CVariable::RegisterSolution_time_n1() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n1(iPoint,iVar));
-}
-
-void CVariable::RegisterSolution_intIndexBased(bool input) {
-  if (input) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
-        AD::RegisterInput_intIndexBased(Solution(iPoint,iVar));
-  }
-  else {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
-        AD::RegisterOutput(Solution(iPoint,iVar));
-  }
-}
-
-void CVariable::SetAdjIndices(bool input) {
-  su2matrix<int>& indices = input? Input_AdjIndices : Output_AdjIndices;
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar < nVar; ++iVar)
-      AD::SetAdjIndex(indices(iPoint,iVar), Solution(iPoint,iVar));
 }

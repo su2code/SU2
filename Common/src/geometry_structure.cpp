@@ -29,7 +29,7 @@
 #include "../include/adt_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/element_structure.hpp"
+#include "../include/geometry/elements/CElement.hpp"
 #include "../include/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
 #include "../include/CRectangularMeshReaderFVM.hpp"
@@ -2672,19 +2672,18 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
+  bool input              = true;
+  bool push_index         = true;
 
-  bool input    = true;
-  
+  if(config->GetMultizone_Problem()) push_index = false;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if(config->GetMultizone_Problem()) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
-        node[iPoint]->SetAdjIndices(input);
-      }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      AD::RegisterInput(node[iPoint]->GetCoord()[iDim], push_index);
     }
-    else {
+    if(!push_index) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+        node[iPoint]->SetIndex(input);
       }
     }
   }
@@ -3672,13 +3671,13 @@ void CGeometry::SetElemVolume(CConfig *config)
 
   /*--- Create a bank of elements to avoid instantiating inside loop ---*/
   if (nDim==2) {
-    elements[0] = new CTRIA1(nDim,config);
-    elements[1] = new CQUAD4(nDim,config);
+    elements[0] = new CTRIA1();
+    elements[1] = new CQUAD4();
   } else {
-    elements[0] = new CTETRA1(nDim,config);
-    elements[1] = new CPYRAM5(nDim,config);
-    elements[2] = new CPRISM6(nDim,config);
-    elements[3] = new CHEXA8(nDim,config);
+    elements[0] = new CTETRA1();
+    elements[1] = new CPYRAM5();
+    elements[2] = new CPRISM6();
+    elements[3] = new CHEXA8();
   }
 
   /*--- Compute and store the volume of each "elem" ---*/
@@ -3700,7 +3699,7 @@ void CGeometry::SetElemVolume(CConfig *config)
       unsigned long node_idx = elem[iElem]->GetNode(iNode);
       for (unsigned short iDim=0; iDim<nDim; ++iDim) {
         su2double coord = node[node_idx]->GetCoord(iDim);
-        element->SetRef_Coord(coord, iNode, iDim);
+        element->SetRef_Coord(iNode, iDim, coord);
       }
     }
     /*--- Compute ---*/

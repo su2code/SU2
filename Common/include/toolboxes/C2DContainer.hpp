@@ -2,24 +2,14 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +30,8 @@
 #include <stdlib.h>
 #include <utility>
 #include <cassert>
+
+#include "../datatype_structure.hpp"
 
 /*!
  * \enum StorageType
@@ -81,7 +73,7 @@ protected:
   alignas(AlignSize) Scalar_t m_data[StaticRows*StaticCols];
 
   /*!
-   * Static size specializations use this do-nothing macro.
+   * Static size specializations use this do-nothing allocation macro.
    */
 #define DUMMY_ALLOCATOR \
   void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {}
@@ -90,18 +82,27 @@ protected:
    * runtime internal value that depend on the number of rows/columns.
    * What values need setting depends on the specialization as not all have
    * members for e.g. number of rows and cols (static size optimization).
+   * \note Aligned dynamic allocation is disabled for compilation on MAC.
    */
-#define REAL_ALLOCATOR(EXTRA)                                           \
+#ifndef __APPLE__
+#define REAL_ALLOCATOR(EXTRA)                                             \
   static_assert(AlignSize % alignof(Scalar_t)==0,                         \
-      "AlignSize is not a multiple of the type's alignment spec.");       \
+    "AlignSize is not a multiple of the type's alignment spec.");         \
                                                                           \
   void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
-      EXTRA;                                                              \
-      if(AlignSize==0)                                                    \
-          m_data = static_cast<Scalar_t*>(malloc(sz));                    \
-      else                                                                \
-          m_data = static_cast<Scalar_t*>(aligned_alloc(AlignSize,sz));   \
+    EXTRA;                                                                \
+    if(AlignSize==0)                                                      \
+      m_data = static_cast<Scalar_t*>(malloc(sz));                        \
+    else                                                                  \
+      m_data = static_cast<Scalar_t*>(aligned_alloc(AlignSize,sz));       \
   }
+#else
+#define REAL_ALLOCATOR(EXTRA)                                             \
+  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
+    EXTRA;                                                                \
+    m_data = static_cast<Scalar_t*>(malloc(sz));                          \
+  }
+#endif
 
   DUMMY_ALLOCATOR
 

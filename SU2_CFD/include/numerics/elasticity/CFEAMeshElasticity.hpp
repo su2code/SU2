@@ -28,14 +28,19 @@
 
 #pragma once
 
-#include "../numerics_structure.hpp"
+#include "CFEALinearElasticity.hpp"
 
-class CFEAMeshElasticity : public CFEALinearElasticity {
+
+class CFEAMeshElasticity final : public CFEALinearElasticity {
 
   bool element_based;
   bool stiffness_set;
 
 public:
+  /*!
+   * \brief Default constructor deleted as instantiation with no argument would not allocate fields.
+   */
+  CFEAMeshElasticity() = delete;
 
   /*!
    * \brief Constructor of the class.
@@ -48,18 +53,28 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEAMeshElasticity(void);
-
-  inline void SetElement_Properties(CElement *element, CConfig *config){
-    if(element_based){E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();}
-  }
+  ~CFEAMeshElasticity(void) = default;
 
   /*!
-   * \brief Set the element-based local properties in mesh problems
-   * \param[in] element_container - Element structure for the particular element integrated.
+   * \brief Set the element-based local Young's modulus in mesh problems
+   * \param[in] iElem - Element index.
+   * \param[in] val_E - Value of elasticity modulus.
    */
-  inline void SetMeshElasticProperties(unsigned long iElem, su2double val_E){
-    if (element_based){ E_i[iElem]  = val_E;}
+  inline void SetMeshElasticProperties(unsigned long iElem, su2double val_E) override {
+    if (element_based) E_i[iElem] = val_E;
+  }
+
+private:
+  /*!
+   * \brief Set element material properties.
+   * \param[in] element_container - Element defining the properties.
+   * \param[in] config - Definition of the problem.
+   */
+  inline void SetElement_Properties(const CElement *element, CConfig *config) override {
+    if (element_based) {
+      E = E_i[element->Get_iProp()];
+      Compute_Lame_Parameters();
+    }
   }
 
 };

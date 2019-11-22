@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file iteration_structure.hpp
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
@@ -54,10 +54,10 @@ protected:
   unsigned short nZone;  /*!< \brief Total number of zones in the problem. */
   unsigned short nInst;  /*!< \brief Total number of instances in the problem. */
   
-  bool multizone,
-       singlezone;
+  bool multizone,  /*!< \brief Flag for multizone problems. */
+       singlezone; /*!< \brief Flag for singlezone problems. */
 
-  su2double StartTime,
+  su2double StartTime,  /*!< \brief Tracking wall time. */
             StopTime,
             UsedTime;
 
@@ -374,7 +374,7 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-virtual void Preprocess(COutput *output,
+  virtual void Preprocess(COutput *output,
                   CIntegration ****integration,
                   CGeometry ****geometry,
                   CSolver *****solver,
@@ -398,7 +398,7 @@ virtual void Preprocess(COutput *output,
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-virtual void Iterate(COutput *output,
+  virtual void Iterate(COutput *output,
                CIntegration ****integration,
                CGeometry ****geometry,
                CSolver *****solver,
@@ -422,7 +422,7 @@ virtual void Iterate(COutput *output,
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
- virtual void Solve(COutput *output,
+   virtual void Solve(COutput *output,
                CIntegration ****integration,
                CGeometry ****geometry,
                CSolver *****solver,
@@ -438,7 +438,7 @@ virtual void Iterate(COutput *output,
    * \brief Updates the containers for the fluid system.
    * \param[in] ??? - Description here.
    */
-virtual void Update(COutput *output,
+  virtual void Update(COutput *output,
               CIntegration ****integration,
               CGeometry ****geometry,
               CSolver *****solver,
@@ -454,7 +454,7 @@ virtual void Update(COutput *output,
    * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
    */
-virtual bool Monitor(COutput *output,
+  virtual bool Monitor(COutput *output,
       CIntegration ****integration,
       CGeometry ****geometry,
       CSolver *****solver,
@@ -472,7 +472,7 @@ virtual bool Monitor(COutput *output,
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
- virtual void Postprocess(COutput *output,
+   virtual void Postprocess(COutput *output,
                    CIntegration ****integration,
                    CGeometry ****geometry,
                    CSolver *****solver,
@@ -504,6 +504,17 @@ virtual bool Monitor(COutput *output,
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
+
+  /*!
+   * \brief Fixed CL monitoring function
+   * \author J. Mukhopadhaya
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Pointer to the flow solver
+   * \param[in] config - Definition of the particular problem.
+   * \return Boolean indicating weather calculation should be stopped  
+   */
+  bool MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config);
 };
 
 

@@ -66,10 +66,12 @@ namespace AD{
 
   extern codi::PreaccumulationHelper<su2double> PreaccHelper;  
 
-  inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
-                                             inputValues.push_back(data.getGradientData());}
-
-  inline void RegisterInput_intIndexBased(su2double &data) {AD::globalTape.registerInput(data);}
+  inline void RegisterInput(su2double &data, bool push_index) {
+    AD::globalTape.registerInput(data);
+    if (push_index) {
+      inputValues.push_back(data.getGradientData());
+    }
+  }
 
   inline void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}
 
@@ -106,7 +108,7 @@ namespace AD{
     }    
   }
 
-  inline void SetAdjIndex(int &index, const su2double &data) {
+  inline void SetIndex(int &index, const su2double &data) {
     index = data.getGradientData();
   }
 
@@ -259,9 +261,7 @@ namespace AD{
 
   /*--- Default implementation if reverse mode is disabled ---*/
 
-  inline void RegisterInput(su2double &data) {}
-
-  inline void RegisterInput_intIndexBased(su2double &data) {}
+  inline void RegisterInput(su2double &data, bool push_index) {}
 
   inline void RegisterOutput(su2double& data) {}
 
@@ -279,7 +279,7 @@ namespace AD{
 
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
 
-  inline void SetAdjIndex(int &index, const su2double &data) {}
+  inline void SetIndex(int &index, const su2double &data) {}
 
   inline void SetDerivative(int index, const double val) {}
 
