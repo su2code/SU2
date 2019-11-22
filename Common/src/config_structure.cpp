@@ -2745,7 +2745,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                        |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2759,22 +2759,12 @@ void CConfig::SetHeader(unsigned short val_software){
     cout << "|                                                                       |" << endl;
     //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The current SU2 release has been coordinated by the                   |" << endl;
-    cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
-    cout << "| with selected contributions from the open-source community.           |" << endl;
+    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
+    cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The main research teams contributing to the current release are:      |" << endl;
-    cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
-    cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
-    cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
-    cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
-    cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-    cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
-    cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
-    cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
-    cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
+    cout << "| Copyright 2012-2019, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
