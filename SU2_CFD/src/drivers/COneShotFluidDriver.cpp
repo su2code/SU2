@@ -812,7 +812,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     }
     else {
       // Lagrangian += config->GetOneShotGamma()/2.*max(helper,0.)*max(helper,0.);
-      if(ConstrFunc_Store[iConstr] - Multiplier[iConstr]/config->GetOneShotGamma() > 0.) {
+      if(ConstrFunc_Store[iConstr] > 0.) {
         Lagrangian += config->GetOneShotGamma()/2.*helper*helper;
       }
     }
@@ -922,7 +922,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma();
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
@@ -1198,8 +1198,8 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
-    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma <= 0.) {
-      Multiplier[iConstr] = gamma*ConstrFunc_Store[iConstr];
+    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] <= 0.) {
+      Multiplier[iConstr] = Multiplier_Old[iConstr] + gamma*ConstrFunc_Store[iConstr];
     }
     else {
       helper = 0.0;
@@ -1250,7 +1250,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier[iConstr]/gamma > 0.) {
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] > 0.) {
         my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
