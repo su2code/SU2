@@ -725,12 +725,12 @@ bool COneShotFluidDriver::CheckFirstWolfe(){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
-    unsigned short iConstr;
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-    }
-  }
+  // if (nConstr > 0) {
+  //   unsigned short iConstr;
+  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+  //   }
+  // }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -743,12 +743,12 @@ void COneShotFluidDriver::StoreGradDotDir(){
     /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
     GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
   }
-  if (nConstr > 0) {
-    unsigned short iConstr;
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-    }
-  }
+  // if (nConstr > 0) {
+  //   unsigned short iConstr;
+  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+  //   }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
@@ -805,7 +805,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma > 0.) {
-      Lagrangian += gamma*helper*helper;
+      Lagrangian += gamma*helper*helper - 1./(2.*gamma)*Multiplier[iConstr]*Multiplier[iConstr];
     }
   }
 
@@ -1242,7 +1242,8 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier[iConstr]/gamma > 0.) {
-        my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
+        // my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
+        my_Gradient += ConstrFunc[iConstr];
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
