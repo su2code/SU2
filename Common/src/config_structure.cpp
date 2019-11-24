@@ -2500,10 +2500,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("ONE_SHOT_STOP_ITER", One_Shot_Stop, 999999);
 
   /*!\brief ONE_SHOT_ALPHA \n DESCRIPTION: Factor for first additional term in augmented Lagrangian \ingroup Config*/
-  addDoubleOption("ONE_SHOT_ALPHA", One_Shot_Alpha, 2000.0);
+  addDoubleOption("ONE_SHOT_ALPHA", One_Shot_Alpha, 10.0);
 
   /*!\brief ONE_SHOT_BETA \n DESCRIPTION: Factor for second additional term in augmented Lagrangian \ingroup Config*/
-  addDoubleOption("ONE_SHOT_BETA", One_Shot_Beta, 2.0);
+  addDoubleOption("ONE_SHOT_BETA", One_Shot_Beta, 1.0);
 
   /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Factor for third additional term in augmented Lagrangian \ingroup Config*/
   addDoubleOption("ONE_SHOT_GAMMA", One_Shot_Gamma, 1.0);
