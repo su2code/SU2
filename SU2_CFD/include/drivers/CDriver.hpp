@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
@@ -55,7 +55,6 @@
 #include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 #include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
 #include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../numerics/CFEAMeshElasticity.hpp"
 #include "../solvers/CDiscAdjMeshSolver.hpp"
 #include "../solvers/CMeshSolver.hpp"
 #include "../../../Common/include/geometry_structure.hpp"
@@ -100,12 +99,12 @@ protected:
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
-  su2double Mpoints;                              /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
-  su2double MpointsDomain;                        /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
+  su2double Mpoints;                            /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
+  su2double MpointsDomain;                      /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-  unsigned long TimeIter;                        /*!< \brief External iteration.*/
-  ofstream **ConvHist_file;                       /*!< \brief Convergence history file.*/
+  unsigned long TimeIter;                       /*!< \brief External iteration.*/
+  ofstream **ConvHist_file;                     /*!< \brief Convergence history file.*/
   ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
@@ -113,22 +112,22 @@ protected:
                 nDim,                           /*!< \brief Number of dimensions.*/
                 iInst,                          /*!< \brief Iterator on instance levels.*/
                 *nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
-                **interface_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
+                **interface_types;              /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi,                                     /*!< \brief FSI simulation flag.*/
        fem_solver;                              /*!< \brief FEM fluid solver simulation flag. */
-  CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
-  COutput **output_container;                              /*!< \brief Pointer to the COutput class. */
-  CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
-  CGeometry ****geometry_container;              /*!< \brief Geometrical definition of the problem. */
-  CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
-  CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
+  CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
+  COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
+  CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
+  CGeometry ****geometry_container;             /*!< \brief Geometrical definition of the problem. */
+  CSolver *****solver_container;                /*!< \brief Container vector with all the solutions. */
+  CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
-  COutput *driver_output;                 /*!< \brief Definition of the driver output. */
+  COutput *driver_output;                       /*!< \brief Definition of the driver output. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
+  CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
