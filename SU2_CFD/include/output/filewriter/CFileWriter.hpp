@@ -43,6 +43,7 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <time.h>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 

@@ -26,7 +26,17 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess, shutil, urllib.request, zipfile
+import sys, os, subprocess, shutil, urllib.request, zipfile, time
+
+def remove_file(path, retries=3, sleep=0.1):
+  for i in range(retries):
+    try:
+      os.remove(path)
+    except OSError:
+      time.sleep(sleep)
+    else:
+      break
+
 
 def init_submodules(method = 'auto'):
 
@@ -36,22 +46,22 @@ def init_submodules(method = 'auto'):
   # The sha tag must be maintained manually to point to the correct commit
   sha_version_codi = '501dcf0305df147481630f20ce37c2e624fb351f'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
+  sha_version_medi = 'edde14f9ac4026b72b1e130f61c0a78e8652afa5'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_meson = 'e9bd7d49bdc8c630cca3bf4cc02c437841b6aaf6'
+  sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
-  sha_version_ninja = '20b30dac6698d119e7797b34d6ed2c4ed8f48417'
+  sha_version_ninja = '2d15b04e411229cb902332957281622119025e77'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'
   meson_name = 'meson'
   ninja_name= 'ninja'
-
-  alt_name_medi =   cur_dir + '/externals/medi'
-  alt_name_codi =   cur_dir + '/externals/codi'
-  alt_name_meson =  cur_dir + '/externals/meson'
-  alt_name_ninja =  cur_dir + '/externals/ninja'
+  base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
+  alt_name_medi = base_path + 'medi'
+  alt_name_codi = base_path + 'codi'
+  alt_name_meson =  base_path + 'meson'
+  alt_name_ninja =  base_path + 'ninja'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -90,7 +100,7 @@ def is_git_directory(path = '.'):
 
 def submodule_status(path, sha_commit):
 
-  if not os.path.exists(path + '/' + sha_commit):
+  if not os.path.exists(path + os.path.sep + sha_commit):
 
     # Check the status of the submodule
     status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True, cwd = sys.path[0]).stdout.decode('utf-8')
@@ -116,7 +126,6 @@ def submodule_status(path, sha_commit):
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
       print('SHA-1 tag stored in index does not match SHA tag stored in this script.')
-      sys.exit(1)
   
   
 
@@ -137,7 +146,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
         os.chmod(targetpath, attr)
       return targetpath
 
-  if not os.path.exists(alt_name + '/' + commit_sha):
+  if not os.path.exists(alt_name + os.path.sep + commit_sha):
 
     if os.path.exists(alt_name) and os.listdir(alt_name): 
       print('Directory ' + alt_name + ' is not empty')
@@ -151,7 +160,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
       url = git_repo + '/archive/' + filename
 
-      if not os.path.exists(sys.path[0] + '/' + filename):
+      if not os.path.exists(sys.path[0] + os.path.sep + filename):
         try:
           urllib.request.urlretrieve (url, commit_sha + '.zip')
         except RuntimeError as e:
@@ -163,16 +172,16 @@ def download_module(name, alt_name, git_repo, commit_sha):
           sys.exit()
    
       # Unzip file 
-      zipf = MyZipFile(sys.path[0] + '/' + filename)
-      zipf.extractall(sys.path[0] + '/externals')
+      zipf = MyZipFile(sys.path[0] + os.path.sep + filename)
+      zipf.extractall(sys.path[0] + os.path.sep + 'externals')
 
-      shutil.move(sys.path[0] + '/externals/' + name + '-' + commit_sha, alt_name)
+      os.rename(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
 
       # Delete zip file
-      os.remove(sys.path[0] + '/' + filename)
+      remove_file(sys.path[0] + os.path.sep + filename)
 
       # Create identifier
-      f = open(alt_name + '/' + commit_sha, 'w')
+      f = open(alt_name + os.path.sep + commit_sha, 'w')
       f.close()
 
 

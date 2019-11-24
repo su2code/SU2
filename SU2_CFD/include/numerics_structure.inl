@@ -57,104 +57,21 @@ inline void CNumerics::Compute_Dead_Load(CElement *element_container, CConfig *c
 
 inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEAElasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
-
 inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
-
-inline void CFEAElasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
-inline void CFEAElasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
-
-inline void CNumerics::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
-
-inline void CFEAElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
-
-inline void CFEANonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
-
-inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
-	if (iVar == jVar) return 1.0; else return 0.0;
-}
-
-inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
-
 inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
-
-inline void CNumerics::ReadDV(CConfig *config){ }
 
 inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
 
-inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
+inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) const { return 0.0; }
 
-inline void CFEAElasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
+inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField) { }
 
-inline su2double CFEAElasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu) { }
 
-inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
-
-inline void CFEAElasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
-
-inline void CNumerics::SetElectric_Properties(CElement *element_container, CConfig *config) { }
-
-inline void CFEAElasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
-
-inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
-
-inline void CFEAElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
-
-inline void CFEANonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
-  EField_Ref_Mod[i_DV] = val_EField; }
-
-inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
-
-inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ }
-
-inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
-
-inline void CFEAElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
-  E_i[0] = val_Young; 
-}
-
-inline void CFEANonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
-  E_i[0] = val_Young; 
-}
-
-inline void CFEAElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
-  E_i[iVal] = val_E; 
-  Nu_i[iVal] = val_Nu; 
-}
-
-inline void CFEANonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
-  E_i[iVal] = val_E; 
-  Nu_i[iVal] = val_Nu; 
-}
-
-inline void CFEAElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
-  Rho_s_i[iVal] = val_Rho; 
-  Rho_s_DL_i[iVal] = val_Rho_DL;}
-
-inline void CFEANonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
-  Rho_s_i[iVal] = val_Rho; 
-  Rho_s_DL_i[iVal] = val_Rho_DL;}
-
-inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
-
-inline void CFEAElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
-
-inline void CFEANonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
-
-inline void CNumerics::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
-
-inline void CFEAElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
-
-inline void CFEANonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
-
-inline void CFEAElasticity::Compute_Lame_Parameters(void) {
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-  Kappa  = Lambda + (2/3)*Mu;
-}
+inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
