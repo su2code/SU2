@@ -125,18 +125,18 @@ void CDiscAdjMultizoneDriver::StartSolver() {
       cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Set current time iteration ---*/
-    config_container[iZone]->SetTimeIter(TimeIter);
-
-    if (time_domain)
-      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
-    else
-      config_container[iZone]->SetPhysicalTime(0.0);
-  }
-
   while ( TimeIter < driver_config->GetnTime_Iter()) {
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      /*--- Set current time iteration ---*/
+      config_container[iZone]->SetTimeIter(TimeIter);
+
+      if (time_domain)
+        config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+      else
+        config_container[iZone]->SetPhysicalTime(0.0);
+    }
 
     /*--- Size and initialize the matrix of cross-terms. ---*/
 

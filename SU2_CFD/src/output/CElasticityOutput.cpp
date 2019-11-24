@@ -81,6 +81,10 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
+    if (dynamic) {
+      requestedVolumeFields.emplace_back("VELOCITY");
+      requestedVolumeFields.emplace_back("ACCELERATION");
+    }
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 

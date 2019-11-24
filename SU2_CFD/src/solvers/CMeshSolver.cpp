@@ -816,8 +816,8 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Modify file name for an unsteady restart ---*/
     int Unst_RestartIter;
-    if (config->GetRestart()) int Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-iStep;
-    else int Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-iStep;
+    if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
+    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
     string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
