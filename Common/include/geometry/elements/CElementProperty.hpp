@@ -48,12 +48,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CProperty(void) = default;
+  virtual ~CProperty(void) {}
 
   /*!
    * \brief Get the material model to use for the element.
    */
-  inline virtual unsigned long GetMat_Mod(void) const { return 0; } 
+  inline virtual unsigned long GetMat_Mod(void) const { return 0; }
 
   /*!
    * \brief Get index of the physical properties.
@@ -134,6 +134,11 @@ public:
     iDV(valDV), design_rho(valDensity), physical_rho(valDensity) {}
 
   /*!
+   * \brief Destructor of the class.
+   */
+  ~CElementProperty(void) {}
+
+  /*!
    * \brief Get the material model to use for the element.
    */
   inline unsigned long GetMat_Mod(void) const override { return iMat_Mod; }
@@ -147,32 +152,32 @@ public:
    * \brief Get index of the design variable.
    */
   inline unsigned long GetDV(void) const override { return iDV; }
-  
+
   /*!
    * \brief Set the Design density (topology optimization variable).
    */
   inline void SetDesignDensity(su2double valDensity) override { design_rho = valDensity; }
-  
+
   /*!
    * \brief Get the value of the Design density.
    */
   inline su2double GetDesignDensity(void) const override { return design_rho; }
-  
+
   /*!
    * \brief Set the Physical density (used to penalize element stiffness by the FEM solver).
    */
   inline void SetPhysicalDensity(su2double valDensity) override { physical_rho = valDensity; }
-  
+
   /*!
    * \brief Get the value of the Physical density.
    */
   inline su2double GetPhysicalDensity(void) const override { return physical_rho; }
-  
+
   /*!
    * \brief Extract the derivative of the Design density.
    */
   inline su2double GetAdjointDensity(void) const override { return SU2_TYPE::GetDerivative(design_rho); }
-  
+
   /*!
    * \brief Register the Design density as an AD input variable.
    */

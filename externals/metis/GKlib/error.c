@@ -186,7 +186,7 @@ void gk_NonLocalExit_Handler(int signum)
 /**************************************************************************/
 char *gk_strerror(int errnum)
 {
-#if defined(WIN32) || defined(__MINGW32__)
+#if defined(WIN32) || defined(__MINGW32__) || defined (_MSC_VER)
   return strerror(errnum);
 #else
 #ifndef SUNOS

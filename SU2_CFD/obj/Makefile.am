@@ -70,14 +70,14 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
-  ../numerics/elasticity/CFEAElasticity.cpp \
-  ../numerics/elasticity/CFEALinearElasticity.cpp \
-  ../numerics/elasticity/CFEAMeshElasticity.cpp \
-  ../numerics/elasticity/CFEANonlinearElasticity.cpp \
-  ../numerics/elasticity/CFEM_NeoHookean_Comp.cpp \
-  ../numerics/elasticity/CFEM_Knowles_NearInc.cpp \
-  ../numerics/elasticity/CFEM_IdealDE.cpp \
-  ../numerics/elasticity/CFEM_DielectricElastomer.cpp \
+  ../src/numerics/elasticity/CFEAElasticity.cpp \
+  ../src/numerics/elasticity/CFEALinearElasticity.cpp \
+  ../src/numerics/elasticity/CFEAMeshElasticity.cpp \
+  ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
+  ../src/numerics/elasticity/CFEM_NeoHookean_Comp.cpp \
+  ../src/numerics/elasticity/CFEM_Knowles_NearInc.cpp \
+  ../src/numerics/elasticity/CFEM_IdealDE.cpp \
+  ../src/numerics/elasticity/CFEM_DielectricElastomer.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \

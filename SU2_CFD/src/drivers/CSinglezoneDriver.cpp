@@ -202,7 +202,8 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
-                                                               solver_container[ZONE_0][INST_0][MESH_0], TimeIter, StopCalc);
+                                                               solver_container[ZONE_0][INST_0][MESH_0],
+                                                               TimeIter, StopCalc);
 
   if (wrote_files){
 

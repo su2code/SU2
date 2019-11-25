@@ -229,7 +229,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals = [-6.492475, -6.401201, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -254,7 +254,7 @@ def main():
     ### Coupled FSI Adjoint         ###
     ###################################
    
-    # Structural model
+    # Legacy driver
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
@@ -265,6 +265,17 @@ def main():
     discadj_fsi.tol       = 0.00001
     test_list.append(discadj_fsi)
 
+    # Multi physics framework
+    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
+    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
+    discadj_fsi2.cfg_file  = "config.cfg"
+    discadj_fsi2.test_iter = 8
+    discadj_fsi2.test_vals = [-5.207224, -2.5436e-13] #last 2 columns
+    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    discadj_fsi2.timeout   = 1600
+    discadj_fsi2.tol       = 1e-16
+    test_list.append(discadj_fsi2)
+
     ###################################
     ### Coupled CHT Adjoint         ###
     ###################################
@@ -274,7 +285,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.403782, -3.097868, -3.097839, -3.097835] #last 4 columns
+    discadj_cht.test_vals = [-2.381654, -3.099873, -3.099844, -3.099841] #last 4 columns
     discadj_cht.su2_exec  = "parallel_computation.py -f"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
@@ -302,20 +313,6 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
-    ###################################
-    ### Coupled FSI Adjoint         ###
-    ###################################
-
-    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
-    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
-    discadj_fsi2.cfg_file  = "config.cfg"
-    discadj_fsi2.test_iter = 0
-    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
-    discadj_fsi2.timeout   = 1600
-    discadj_fsi2.reference_file = "grad_young.opt.ref"
-    discadj_fsi2.test_file = "grad_young.opt"
-    pass_list.append(discadj_fsi2.run_filediff())
-    test_list.append(discadj_fsi2)
 
     # Tests summary
     print('==================================================================')

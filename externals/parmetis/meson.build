@@ -1,3 +1,4 @@
+parmetis_c_args = ['-DUSE_GKREGEX']
 parmetis_include = include_directories(['include','libparmetis'])
 parmetis = static_library('parmetis',
            'libparmetis/frename.c',
@@ -40,6 +41,6 @@ parmetis = static_library('parmetis',
            'libparmetis/match.c',
            'libparmetis/mmetis.c',
            install : false, include_directories: parmetis_include,
-	   dependencies: [mpi_dep, metis_dep])
+	   dependencies: [mpi_dep, metis_dep], c_args: parmetis_c_args)
 
 parmetis_dep = declare_dependency(link_with: parmetis, include_directories: parmetis_include)

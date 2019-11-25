@@ -2973,21 +2973,40 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::Add_ExternalOld_To_Solution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    base_nodes->AddSolution(iPoint, base_nodes->Get_ExternalOld(iPoint));
+void CSolver::Add_External_To_Solution() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
 }
 
-void CSolver::Add_Solution_To_External(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+void CSolver::Add_Solution_To_External() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
 }
 
-void CSolver::Add_Solution_To_ExternalOld(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    base_nodes->Add_ExternalOld(iPoint, base_nodes->GetSolution(iPoint));
+void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
+
+  /*--- This method is for discrete adjoint solvers and it is used in multi-physics
+   *    contexts, "cross_term" is the old value, the new one is in "Solution".
+   *    We update "cross_term" and the sum of all cross terms (in "External")
+   *    with a fraction of the difference between new and old.
+   *    When "alpha" is 1, i.e. no relaxation, we effectively subtract the old
+   *    value and add the new one to the total ("External"). ---*/
+
+  passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      passivedouble
+      new_val = SU2_TYPE::GetValue(base_nodes->GetSolution(iPoint,iVar)),
+      delta = alpha * (new_val - cross_term(iPoint,iVar));
+      /*--- Update cross term. ---*/
+      cross_term(iPoint,iVar) += delta;
+      Solution[iVar] = delta;
+    }
+    /*--- Update the sum of all cross-terms. ---*/
+    base_nodes->Add_External(iPoint, Solution);
   }
 }
 
@@ -4045,11 +4064,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
@@ -4121,11 +4137,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
     if (rbuf_NotMatching != 0) {
       SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);

@@ -49,8 +49,9 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
     Solution_BGS.resize(nPoint,nDim) = su2double(0.0);
   }
 
-  if (config->GetMultizone_Problem())
-    Solution_BGS_k.resize(nPoint,nDim) = su2double(0.0);
+  if (config->GetMultizone_Problem()) {
+    External.resize(nPoint,nVar) = su2double(0.0);
+  }
 
   /*--- Nothing else to allocate ---*/
   if (!unsteady) return;
