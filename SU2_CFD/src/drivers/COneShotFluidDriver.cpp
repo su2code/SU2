@@ -296,7 +296,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Update constraint multiplier ---*/
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){  
-      LoadMultiplier();
+      LoadOldMultiplier();
       UpdateMultiplier(1.0);
     }
 
