@@ -83,7 +83,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
 
   if (refgeom) Reference_Geometry.resize(nPoint,nVar);
 
-  if (prestretch_fem)  Prestretch.resize(nPoint,nVar);
+  if (prestretch_fem) Prestretch.resize(nPoint,nVar);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();

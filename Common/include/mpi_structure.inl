@@ -53,7 +53,11 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
 #else
   /* MPI_Ibarrier function is not supported. Simply wait for one
      second to give other ranks the opportunity to reach this point. */
+#ifdef _MSC_VER
+  _sleep(1);
+#else
   sleep(1);
+#endif
 #endif
 
   if( flag ) {
