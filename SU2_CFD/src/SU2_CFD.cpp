@@ -95,12 +95,11 @@ int main(int argc, char *argv[]) {
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
-  
-  CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_CFD);
-  nZone    = config->GetnZone();
-  fsi      = config->GetFSI_Simulation();
-  turbo    = config->GetBoolTurbomachinery();
+
+  CConfig *config = new CConfig(config_file_name, SU2_CFD);
+  nZone  = config->GetnZone();
+  fsi    = config->GetFSI_Simulation();
+  turbo  = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -163,7 +162,7 @@ int main(int argc, char *argv[]) {
     } else {
       
       /*--- Multi-zone problem: instantiate the multi-zone driver class by default
-    or a specialized driver class for a particular multi-physics problem. ---*/
+            or a specialized driver class for a particular multi-physics problem. ---*/
       
       if (turbo) {
         

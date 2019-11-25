@@ -2685,10 +2685,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-  bool input              = true;
-  bool push_index         = true;
-
-  if(config->GetMultizone_Problem()) push_index = false;
+  bool input = true;
+  bool push_index = config->GetMultizone_Problem()? false : true;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -9067,7 +9065,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     }
     else cout << "." << endl;
     
-    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX;
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;

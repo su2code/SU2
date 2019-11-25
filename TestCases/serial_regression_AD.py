@@ -269,7 +269,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.403785, -3.097865, -3.097836, -3.097833] #last 4 columns
+    discadj_cht.test_vals = [-2.381658, -3.099873, -3.099844, -3.099841] #last 4 columns
     discadj_cht.su2_exec  = "parallel_computation.py -f"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
