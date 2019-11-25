@@ -12317,7 +12317,7 @@ public:
   /*!
    * \brief Extract the solution of the linear solver and store it in the sensitivities of the discrete adjoint solver.
    */
-  void Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config);
+  void Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker=0);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -12357,6 +12357,10 @@ public:
    */
   void BC_Surface_Dirichlet(CGeometry *geometry, CConfig *config, unsigned short val_marker);
 
+  /*!
+   * \brief Extract the Coordinates of the element from geometry
+   */
+  std::vector<std::vector<su2double>> GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND = 0);
 
 };
 

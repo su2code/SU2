@@ -109,6 +109,4 @@ inline void CElement::Add_HiHj(su2double val, unsigned short nodeA, unsigned sho
 
 inline su2double CElement::Get_HiHj(unsigned short nodeA, unsigned short nodeB) { return HiHj[nodeA][nodeB]; }
 
-inline su2double *CElement::Get_DHiHj(unsigned short nodeA, unsigned short nodeB) { return DHiHj[nodeA][nodeB];}
-
 inline su2double **CElement::Get_DHiDHj(unsigned short nodeA, unsigned short nodeB) { return DHiDHj[nodeA][nodeB];}

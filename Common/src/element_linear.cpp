@@ -1076,6 +1076,8 @@ CLINE::CLINE(void) : CElement() {
 CLINE::CLINE(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
+  su2double Xi, val_Ni;
+
   /*--- Allocate internal structures ---*/
 
   nNodes = 2;
@@ -1084,21 +1086,24 @@ CLINE::CLINE(unsigned short val_nDim, CConfig *config)
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 0.2113248654;  GaussWeight[0] = 0.5;
-  GaussCoord[1][0] = 0.7886751346;  GaussWeight[1] = 0.5;
+  su2double oneOnSqrt3 = 0.577350269189626;
+  GaussCoord[0][0] = -oneOnSqrt3;  GaussWeight[0] = 1.0;
+  GaussCoord[1][0] = oneOnSqrt3;  GaussWeight[1] = 1.0;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
   unsigned short iGauss;
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
 
-    GaussPoint[iGauss]->SetNi(GaussCoord[iGauss][0], 0);
-    GaussPoint[iGauss]->SetNi(1-GaussCoord[iGauss][0], 1);
+    Xi = GaussCoord[iGauss][0];
+
+    val_Ni = 0.5*(1.0-Xi);  GaussPoint[iGauss]->SetNi(val_Ni, 0);
+    val_Ni = 0.5*(1.0+Xi);  GaussPoint[iGauss]->SetNi(val_Ni, 1);
 
     /*--- dN/d xi ---*/
 
-    dNiXj[iGauss][0][0] = 1.0;
-    dNiXj[iGauss][1][0] = -1.0;
+    dNiXj[iGauss][0][0] = -0.5;
+    dNiXj[iGauss][1][0] = 0.5;
 
   }
 

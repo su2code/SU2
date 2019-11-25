@@ -43,6 +43,7 @@ class CSobolevSmoothingVariable : public CVariable {
 public:
 
     bool* boundary_vertex;  /*!< \brief Stores if a point belongs to the boundary of a boundary. */
+    unsigned long nBoundPoints;
 
   /*!
    * \brief Constructor of the class.
@@ -66,5 +67,10 @@ public:
    * \brief return wether a point is a boundary of a boundary
    */
   bool IsBoundaryPoint(unsigned long iPoint);
+
+  /*!
+   * \brief return the number of marked points
+   */
+  unsigned int GetNBoundPoints();
 
 };

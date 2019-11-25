@@ -48,15 +48,20 @@ CGaussVariable::CGaussVariable(void) {
 
 }
 
+
+/* needed to increase the number of dimensions in GradNi_Xj for the surface case by 1
+ * change to a BETTER SOLUTION later
+ * 25.11. T.Dick
+ */
 CGaussVariable::CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes) {
 
 	 GradNi_Xj = new su2double* [val_nNodes];
 	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
-		 GradNi_Xj[iNode] = new su2double [val_nDim];
+     GradNi_Xj[iNode] = new su2double [val_nDim+1];
 
 	 GradNi_xj = new su2double* [val_nNodes];
 	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
-		 GradNi_xj[iNode] = new su2double [val_nDim];
+     GradNi_xj[iNode] = new su2double [val_nDim];
 
 	 J_X = 0.0;
 	 J_x = 0.0;

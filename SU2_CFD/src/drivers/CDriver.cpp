@@ -3221,7 +3221,8 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
   if (!fem_solver && (config->GetGrid_Movement() ||
                       (config->GetDirectDiff() == D_DESIGN ) ||
-                      config->GetProject2Surface()) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
+                      config->GetProject2Surface() ||
+                      config->GetSmoothOnSurface()) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
     if (rank == MASTER_NODE)
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);

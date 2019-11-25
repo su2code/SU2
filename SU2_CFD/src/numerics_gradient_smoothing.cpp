@@ -38,75 +38,76 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CGradSmoothing::CGradSmoothing(void) : CFEAElasticity () {
+CGradSmoothing::CGradSmoothing(void) : CNumerics () {
 
-  unsigned short iDim;
-  Aux_Mat = NULL;
-  if (nDim == 2) {
-    Aux_Mat = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Aux_Mat[iDim]      = new su2double[3];
-    }
-  }
-  else if (nDim == 3) {
-    Aux_Mat = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Aux_Mat[iDim]      = new su2double[6];
-    }
-  }
+  GradNi_Ref_Mat = NULL;
+  val_DHiDHj = NULL;
+  Ni_Vec = NULL;
 
 }
 
 CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
-  : CFEAElasticity(val_nDim, val_nDim, config) {
+  : CNumerics(val_nDim, val_nDim, config) {
 
-  unsigned short iDim;
-  Aux_Mat = NULL;
-  if (nDim == 2) {
-    Aux_Mat = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Aux_Mat[iDim]      = new su2double[3];
-    }
+  unsigned short iNode, iDim;
+
+  /*--- 8 is the max number of nodes in 3D ---*/
+  GradNi_Ref_Mat = new su2double* [8];
+  val_DHiDHj = new su2double* [nDim];
+  for (iDim=0; iDim<nDim; iDim++) {
+    val_DHiDHj[iDim] = new su2double[nDim];
   }
-  else if (nDim == 3) {
-    Aux_Mat = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Aux_Mat[iDim]      = new su2double[6];
-    }
+  for (iNode = 0; iNode < 8; iNode++) {
+    GradNi_Ref_Mat[iNode]   = new su2double[nDim];
   }
+  Ni_Vec  = new su2double [8];
 
 }
 
 CGradSmoothing::~CGradSmoothing(void) {
 
-  unsigned short iDim;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] Aux_Mat[iDim];
+  unsigned short iDim, iNode;
+
+  if (val_DHiDHj != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (val_DHiDHj[iDim] != NULL) delete [] val_DHiDHj[iDim];
+    }
+    delete [] val_DHiDHj;
   }
-  delete [] Aux_Mat;
+
+  if (GradNi_Ref_Mat != NULL) {
+    for (iNode = 0; iNode < 8; iNode++) {
+      if (GradNi_Ref_Mat[iNode] != NULL) delete [] GradNi_Ref_Mat[iNode];
+    }
+    delete [] GradNi_Ref_Mat;
+  }
+
+  if (Ni_Vec != NULL) delete [] Ni_Vec;
 
 }
 
 void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
 
-  unsigned short iDim, jDim, kDim;
+  unsigned short iDim, jDim;
   unsigned short iGauss, nGauss;
   unsigned short iNode, jNode, nNode;
-  unsigned short bDim;
 
-  su2double Weight, Jac_X, GradNiXGradNj = 0;
+  unsigned short nDimGlobal = nDim;   /*--- need a different number of dimensions if we are on a curved surface --*/
+  if (config->GetSmoothOnSurface()) nDimGlobal=nDim+1;
 
-  su2double val_HiHj;
-  su2double *val_DHiHj;
-  val_DHiHj = new su2double[nDim];
+  su2double Weight, Jac_X, val_HiHj, GradNiXGradNj = 0;
 
   su2double epsilon = config->GetSmoothingParam();
   su2double zeta = config->GetSmoothingParamSecond();
 
   element->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
-  element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
+  if (config->GetSmoothOnSurface()) {
+    element->ComputeGrad_Linear(Coord);
+  } else {
+    element->ComputeGrad_Linear();
+  }
 
   /*--- contribution from the gradients of the shape functions ---*/
 
@@ -126,26 +127,26 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
       /*--- Assumming symmetry ---*/
       for (jNode = iNode; jNode < nNode; jNode++) {
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (iDim = 0; iDim < nDimGlobal; iDim++) {
           GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][iDim];
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
             if (iDim == jDim) {
-              KAux_ab[iDim][jDim] = Weight * Jac_X * epsilon * epsilon * GradNiXGradNj;
+              val_DHiDHj[iDim][jDim] = Weight * Jac_X * epsilon * epsilon * GradNiXGradNj;
             } else {
-              KAux_ab[iDim][jDim] = 0;
+              val_DHiDHj[iDim][jDim] = 0;
             }
           }
         }
 
         GradNiXGradNj=0;
 
-        element->Add_DHiDHj(KAux_ab,iNode, jNode);
+        element->Add_DHiDHj(val_DHiDHj,iNode, jNode);
         /*--- Symmetric terms --*/
         if (iNode != jNode) {
-          element->Add_DHiDHj_T(KAux_ab, jNode, iNode);
+          element->Add_DHiDHj_T(val_DHiDHj, jNode, iNode);
         }
 
       }
@@ -174,6 +175,8 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
   }
 
-  delete [] val_DHiHj;
+}
 
+void CGradSmoothing::SetCoord(std::vector<std::vector<su2double>>& val_coord) {
+  Coord = val_coord;
 }

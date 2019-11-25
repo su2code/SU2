@@ -70,7 +70,6 @@ CElement::CElement(void) {
 
   HiHj = NULL;
   DHiDHj = NULL;
-  DHiHj = NULL;
 
 }
 
@@ -109,7 +108,6 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 
   HiHj = NULL;
   DHiDHj = NULL;
-  DHiHj = NULL;
 
 }
 
@@ -231,16 +229,6 @@ CElement::~CElement(void) {
     delete [] DHiDHj;
   }
 
-  if (DHiHj != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      for (jNode = 0; jNode < nNodes; jNode++) {
-        delete [] DHiHj [iNode][jNode];
-      }
-      delete [] DHiHj[iNode];
-    }
-    delete [] DHiHj;
-  }
-
 }
 
 void CElement::AllocateStructures(const bool body_forces, const bool gradient_smoothing) {
@@ -323,7 +311,7 @@ void CElement::AllocateStructures(const bool body_forces, const bool gradient_sm
 
   }
 
-  /*--- allocate my structures for testing / add emaningfull if option later ---*/
+  /*--- allocate structures for gradient smoothing ---*/
   if ( gradient_smoothing ) {
 
     HiHj = new su2double *[nNodes];
@@ -339,14 +327,6 @@ void CElement::AllocateStructures(const bool body_forces, const bool gradient_sm
         for (iDim = 0; iDim < nDim; iDim++) {
           DHiDHj[iNode][jNode][iDim] = new su2double [nDim];
         }
-      }
-    }
-
-    DHiHj = new su2double **[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      DHiHj[iNode] = new su2double *[nNodes];
-      for (jNode = 0; jNode < nNodes; jNode++) {
-        DHiHj[iNode][jNode] = new su2double [nDim];
       }
     }
 
@@ -418,15 +398,6 @@ void CElement::Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned shor
   }
 }
 
-void CElement::Add_DHiHj(su2double *val, unsigned short nodeA, unsigned short nodeB) {
-
-  unsigned short iDim;
-
-  for(iDim = 0; iDim < nDim; iDim++) {
-    DHiHj[nodeA][nodeB][iDim] += val[iDim];
-  }
-}
-
 void CElement::clearElement(const bool gradient_smoothing) {
   
   unsigned short iNode, jNode, iDim, jDim, nDimSq;
@@ -452,7 +423,6 @@ void CElement::clearElement(const bool gradient_smoothing) {
       for (jNode = 0; jNode < nNodes; jNode++) {
         if (HiHj != NULL) HiHj[iNode][jNode] = 0.0;
         for(iDim = 0; iDim < nDim; iDim++) {
-          if (DHiHj != NULL) DHiHj[iNode][jNode][iDim] = 0.0;
           for(jDim = 0; jDim < nDim; jDim++) {
             if (DHiDHj != NULL) DHiDHj[iNode][jNode][iDim][jDim] = 0.0;
           }
@@ -490,22 +460,91 @@ void CElement::Set_ElProperties(CProperty *input_element) {
 
 void CElement::ComputeGrad_Linear(void) {
 
-  if (nDim==2)
+  if (nDim==1) {
+    ComputeGrad_1D(REFERENCE);
+  } else if (nDim==2)
     ComputeGrad_2D(REFERENCE);
   else
     ComputeGrad_3D(REFERENCE);
 
 }
 
+void CElement::ComputeGrad_Linear(std::vector<std::vector<su2double>>& Coord) {
+
+  if (nDim==1) {
+    ComputeGrad_1D(Coord);
+  } else {
+    ComputeGrad_2D(Coord);
+  }
+}
+
 void CElement::ComputeGrad_NonLinear(void) {
 
-  if (nDim==2) {
+  if (nDim==1) {
+    ComputeGrad_1D(REFERENCE);
+    ComputeGrad_1D(CURRENT);
+  } else if (nDim==2) {
     ComputeGrad_2D(REFERENCE);
     ComputeGrad_2D(CURRENT);
   }
   else {
     ComputeGrad_3D(REFERENCE);
     ComputeGrad_3D(CURRENT);
+  }
+
+}
+
+void CElement::ComputeGrad_1D(const FrameType mode) {
+
+  su2double Jacobian;
+  unsigned short iNode, iGauss;
+
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
+  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    Jacobian = (Coord[1][0] - Coord[0][0]);
+
+    if (mode==REFERENCE) {
+      GaussPoint[iGauss]->SetJ_X(Jacobian);
+    }
+    else
+      GaussPoint[iGauss]->SetJ_x(Jacobian);
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      if (mode==REFERENCE)
+        GaussPoint[iGauss]->SetGradNi_Xj(dNiXj[iGauss][iNode][0]/Jacobian, 0, iNode);
+      else
+        GaussPoint[iGauss]->SetGradNi_xj(dNiXj[iGauss][iNode][0]/Jacobian, 0, iNode);
+     }
+  }
+
+}
+
+void CElement::ComputeGrad_1D(std::vector<std::vector<su2double>>& Coord) {
+
+  su2double volJacobian;
+  su2double Jacobian[2];
+
+  unsigned short iNode, iDim, iGauss;
+
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    Jacobian[0] = (Coord[1][0] - Coord[0][0]);
+    Jacobian[1] = (Coord[1][1] - Coord[0][1]);
+    volJacobian = sqrt(Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1]);
+
+    GaussPoint[iGauss]->SetJ_X(volJacobian);
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      for (iDim=0; iDim<2; iDim++) {
+        GaussPoint[iGauss]->SetGradNi_Xj( (dNiXj[iGauss][iNode][0]*Jacobian[iDim])/(volJacobian*volJacobian), iDim, iNode);
+      }
+    }
+
   }
 
 }
@@ -571,6 +610,55 @@ void CElement::ComputeGrad_2D(const FrameType mode) {
           GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
         else
           GaussPoint[iGauss]->SetGradNi_xj(GradNi_Xj, iDim, iNode);
+      }
+    }
+
+  }
+
+}
+
+void CElement::ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord) {
+
+  su2double Jacobian[3][2], JTJ[2][2];
+  su2double volJacobian, GradNi_Xj;
+  unsigned short iNode, iDim, jDim, kDim, iGauss;
+
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+
+    /*--- Jacobian transformation ---*/
+    /*--- This does dX/dXi transpose ---*/
+
+    for (iDim = 0; iDim < 3; iDim++) {
+      for (jDim = 0; jDim < 2; jDim++) {
+          Jacobian[iDim][jDim] = Coord[jDim+1][iDim] - Coord[0][iDim];
+       }
+    }
+
+    for (iDim = 0; iDim < 2; iDim++) {
+      for (jDim = 0; jDim < 2; jDim++) {
+        JTJ[iDim][jDim] = 0.0;
+        for (kDim = 0; kDim < 3; kDim++) {
+          JTJ[iDim][jDim] += Jacobian[kDim][iDim]*Jacobian[kDim][jDim];
+        }
+      }
+    }
+
+    /*--- matrix volume of Jacobian ---*/
+
+    volJacobian = sqrt(JTJ[0][0]*JTJ[1][1]-JTJ[0][1]*JTJ[1][0]);
+
+    GaussPoint[iGauss]->SetJ_X(volJacobian);
+
+    /*--- Derivatives with respect to global coordinates ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      for (iDim = 0; iDim < 3; iDim++) {
+        GradNi_Xj = dNiXj[iGauss][iNode][jDim];
+        for (jDim = 0; jDim < 2; jDim++) {
+          GradNi_Xj += (dNiXj[iGauss][iNode][jDim]/ volJacobian) * (Jacobian[jDim][iDim]/volJacobian);
+        }
+        GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
+
       }
     }
 

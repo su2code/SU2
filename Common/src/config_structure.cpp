@@ -1705,7 +1705,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Switch to activate the projection onto the surface */
   addBoolOption("PROJECT_TO_SURFACE",Project2Surface, false);
   /* DESCRIPTION: Switch to activate working on the surface only */
-  addBoolOption("SMOTH_ON_SURFACE",SmoothOnSurface, false);
+  addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
   /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
   addBoolOption("DEBUG_MODE",DebugMode, false);
 

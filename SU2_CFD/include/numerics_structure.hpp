@@ -553,6 +553,11 @@ public:
                 su2double *val_coord_3);
   
   /*!
+   * \param[in] val_coord - vector of coordinates.
+   */
+  virtual void SetCoord(std::vector<std::vector<su2double>>& val_coord);
+
+  /*!
    * \brief Set the velocity of the computational grid.
    * \param[in] val_gridvel_i - Grid velocity of the point i.
    * \param[in] val_gridvel_j - Grid velocity of the point j.
@@ -4351,9 +4356,12 @@ public:
  * \author T. Dick
  * \version 6.2.0 "Falcon"
  */
-class CGradSmoothing : public CFEAElasticity {
+class CGradSmoothing : public CNumerics {
 
-    su2double **Aux_Mat;
+    su2double **GradNi_Ref_Mat;
+    su2double **val_DHiDHj;
+    su2double *Ni_Vec;
+    std::vector<std::vector<su2double>> Coord;
 
 public:
 
@@ -4376,6 +4384,11 @@ public:
   ~CGradSmoothing(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
+
+  /*!
+   * \brief set coordinates to a given vector
+   */
+  void SetCoord(std::vector<std::vector<su2double> > &val_coord);
 
 };
 

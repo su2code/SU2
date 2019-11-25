@@ -87,7 +87,6 @@ protected:
 
   su2double **HiHj;
   su2double ****DHiDHj;
-  su2double ***DHiHj;
 
 public:
   enum FrameType {REFERENCE=1, CURRENT=2}; /*!< \brief Type of nodal coordinates. */
@@ -98,13 +97,31 @@ protected:
 	 * \param[in] body_forces - If we need dead loads.
 	 */
   void AllocateStructures(const bool body_forces, const bool gradient_smoothing = false);
-	
+
+  /*!
+   * \brief Compute gradients for 1D elements.
+   * \param[in] mode - Type of coordinates to consider.
+   */
+  void ComputeGrad_1D(const FrameType mode);
+
+  /*!
+   * \brief Compute gradients for 1D elements.
+   * \param[in] Coord - coordinates to consider.
+   */
+  void ComputeGrad_1D(std::vector<std::vector<su2double>>& Coord);
+
 	/*!
 	 * \brief Compute gradients for 2D elements.
 	 * \param[in] mode - Type of coordinates to consider.
 	 */
 	void ComputeGrad_2D(const FrameType mode);
 	
+  /*!
+   * \brief Compute gradients for 2D elements.
+   * \param[in] mode - Type of coordinates to consider.
+   */
+  void ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord);
+
 	/*!
 	 * \brief Compute gradients for 3D elements.
 	 * \param[in] mode - Type of coordinates to consider.
@@ -274,14 +291,6 @@ public:
   void Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned short nodeB);
 
   /*!
-   * \brief Add the scalar product of the gradients of shape functions with the shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[in] val - value of the term that will contribute.
-   */
-  void Add_DHiHj(su2double *val, unsigned short nodeA, unsigned short nodeB);
-
-  /*!
    * \brief Get the scalar product of the shape functions to the tangent matrix.
    * \param[in] nodeA - index of Node a.
    * \param[in] nodeB - index of Node b.
@@ -296,16 +305,6 @@ public:
    * \param[out] val - value of the term that will contribute.
    */
   su2double** Get_DHiDHj(unsigned short nodeA, unsigned short nodeB);
-
-  /*!
-   * \brief Get the scalar product of the gradients of shape functions with the shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[out] val - value of the term that will contribute.
-   */
-  su2double* Get_DHiHj(unsigned short nodeA, unsigned short nodeB);
-
-
 
 	/*!
 	 * \brief Restarts the values in the element.
@@ -479,7 +478,14 @@ public:
 	 * \param[in] val_solution - Solution of the problem.
 	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
 	 */
-	void ComputeGrad_Linear(void);
+  void ComputeGrad_Linear(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the given coordinates.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the given Coordinates
+   */
+  void ComputeGrad_Linear(std::vector<std::vector<su2double> > &Coord);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.

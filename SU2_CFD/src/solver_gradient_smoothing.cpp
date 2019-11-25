@@ -113,20 +113,22 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   /*--- linear system ---*/
-  if ( config->GetSepDim() || config->GetSmoothOnSurface() ) {
-    LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
-    Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config);
-  } else {
-    LinSysSol.Initialize(nPoint, nPointDomain, nDim, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nDim, 0.0);
-    Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config);
-  }
+  if ( !config->GetSmoothOnSurface() ) {
+    if ( config->GetSepDim() ) {
+      LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
+      LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
+      Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config);
+    } else {
+      LinSysSol.Initialize(nPoint, nPointDomain, nDim, 0.0);
+      LinSysRes.Initialize(nPoint, nPointDomain, nDim, 0.0);
+      Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config);
+    }
 
-  // initialize auxiliar helper vectors
-  auxVecInp.Initialize(nPoint, nPointDomain, nDim, 0.0);
-  auxVecRHS.Initialize(nPoint, nPointDomain, nDim, 0.0);
-  auxVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
+    // initialize auxiliar helper vectors
+    auxVecInp.Initialize(nPoint, nPointDomain, nDim, 0.0);
+    auxVecRHS.Initialize(nPoint, nPointDomain, nDim, 0.0);
+    auxVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  }
 
   /*--- Initialize the boundary of the boundary ---*/
 
@@ -178,20 +180,17 @@ CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
     delete [] element_container;
   }
 
-  delete [] Residual;
-  delete [] Solution;
+  if (Residual != NULL) delete [] Residual;
+  if (Solution != NULL) delete [] Solution;
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] mZeros_Aux[iDim];
-    delete [] mId_Aux[iDim];
+    if (mZeros_Aux[iDim] != NULL) delete [] mZeros_Aux[iDim];
+    if (mId_Aux[iDim] != NULL) delete [] mId_Aux[iDim];
   }
-  delete [] mZeros_Aux;
-  delete [] mId_Aux;
+  if (mZeros_Aux != NULL) delete [] mZeros_Aux;
+  if (mId_Aux != NULL) delete [] mId_Aux;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] Jacobian_ij[iDim];
-  }
-  delete [] Jacobian_ij;
+  if (nodes != NULL) delete nodes;
 
 }
 
@@ -381,16 +380,17 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
   // TO DO
   // - check initialisation of nElem_Bound and bound
 
-  unsigned long iElem;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  unsigned long iElem, iPoint, iVertex;
+  unsigned short iNode, jNode, iDim, nNodes = 0, NelNodes;
+  std::vector<unsigned long> indexNode(8, 0.0);
+  std::vector<unsigned long> indexVertex(8, 0.0);
   su2double val_Coord;
   int EL_KIND = 0;
 
   su2double **DHiDHj = NULL;
   su2double HiHj = 0.0;
 
-  unsigned short NelNodes, jNode;
+  std::vector<std::vector<su2double>> Coord;
 
   /*--- Loops over all the elements ---*/
 
@@ -406,6 +406,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
     }
 
     /*--- Retrieve the boundary reference and current coordinates ---*/
+
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim-1; iDim++) {
@@ -414,8 +415,18 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
       }
     }
 
-    /*--- compute the contributions of the single elements inside the numerics container ---*/
+    Coord = GetElementCoordinates(geometry, indexNode, EL_KIND);
 
+    /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
+      }
+    }
+
+    /*--- compute the contributions of the single elements inside the numerics container ---*/
+    numerics[GRAD_TERM]->SetCoord(Coord);
     numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
 
     NelNodes = element_container[GRAD_TERM][EL_KIND]->GetnNodes();
@@ -430,7 +441,10 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
         DHiDHj[0][0] += HiHj;
 
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], DHiDHj);
+        auto meshVertexI = geometry->node[indexNode[iNode]]->GetGlobalIndex();
+        auto meshVertexJ = geometry->node[indexNode[jNode]]->GetGlobalIndex();
+        std::cout << "Setting block " << indexVertex[iNode] << ", " << indexVertex[jNode] << " aka " << meshVertexI << ", " << meshVertexJ << " to: " << DHiDHj[0][0] << std::endl;
+        Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], DHiDHj);
 
       }
     }
@@ -443,7 +457,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
   unsigned long iElem;
   unsigned short iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  std::vector<unsigned long> indexNode(8, 0.0);
   su2double Weight, Jac_X;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -527,8 +541,8 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   unsigned long iElem, iPoint, iVertex;
   unsigned short iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  unsigned long indexVertex[4] = {0,0,0,0};
+  std::vector<unsigned long> indexNode(8, 0.0);
+  std::vector<unsigned long> indexVertex(8, 0.0);
   su2double Weight, Jac_X, val_Coord, normalSens = 0.0, norm;
   su2double* normal = NULL;
 
@@ -577,10 +591,6 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 
     for (unsigned short iGauss = 0; iGauss < nGauss; iGauss++) {
 
-      for (iNode = 0; iNode < nNodes; iNode++) {
-        indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      }
-
       Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
       Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
 
@@ -588,13 +598,14 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 
         for (iDim = 0; iDim < nDim; iDim++) {
           if (config->GetSobDebugMode()) {
-            normalSens += normal[iDim] * auxVecInp.GetBlock(indexNode[iNode], iDim);
+            normalSens += normal[iDim] * auxVecInp.GetBlock(indexVertex[iNode], iDim);
           } else {
+            /*--- use indexNode here since we want the sensitivity (3D info) ---*/
             normalSens += normal[iDim] * solver->GetNodes()->GetSensitivity(indexNode[iNode], iDim);
           }
         }
         Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * normalSens;
-        LinSysRes.AddBlock(indexNode[iNode], Residual);
+        LinSysRes.AddBlock(indexVertex[iNode], Residual);
 
         Residual[0] = 0;
         normalSens = 0;
@@ -609,20 +620,13 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   unsigned short iMarker;
-
   /*--- Get the boundary markers and iterate over them ---------------------------------*/
   /* Notice that for no marker we automatically impose Zero Neumann boundary conditions */
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
     if (config->GetMarker_All_SobolevBC(iMarker) == YES) {
-      if (config->GetSmoothOnSurface()) {
-        BC_Surface_Dirichlet(geometry, config, iMarker);
-      } else {
-        BC_Dirichlet(geometry, NULL, numerics, config, iMarker);
-      }
+      BC_Dirichlet(geometry, NULL, numerics, config, iMarker);
     }
-
   }
 
 }
@@ -733,33 +737,39 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig
 
     if ( nodes->IsBoundaryPoint(iPoint) ) {
 
+      std::cout << "Node " << iPoint << " at ("<< geometry->node[iPoint]->GetCoord(0) << ", " << geometry->node[iPoint]->GetCoord(1) << ") is a bound of a bound." << std::endl;
+
       su2double one = 1.0;
       su2double zero = 0.0;
 
       if (geometry->node[iPoint]->GetDomain()) {
 
-        LinSysRes.SetBlock(iPoint, &zero);
-        LinSysSol.SetBlock(iPoint, &zero);
+        LinSysRes.SetBlock(iVertex, &zero);
+        LinSysSol.SetBlock(iVertex, &zero);
 
-        for (iVar = 0; iVar < nPoint; iVar++) {
-          if (iVar==iPoint) {
-            Jacobian.SetBlock(iVar,iPoint, &one);
+        for (iVar = 0; iVar < geometry->nVertex[val_marker]; iVar++) {
+          if (iVar==iVertex) {
+            std::cout << "Setting block " << iVar << ", " << iVertex << std::endl;
+            Jacobian.SetBlock(iVar,iVertex, &one);
           }
           else {
-            Jacobian.SetBlock(iVar,iPoint, &zero);
+            std::cout << "Setting block " << iVar << ", " << iVertex << std::endl;
+            Jacobian.SetBlock(iVar,iVertex, &zero);
           }
         }
         /*--- Delete the rows for a particular node ---*/
-        for (jVar = 0; jVar < nPoint; jVar++) {
-          if (iPoint!=jVar) {
-            Jacobian.SetBlock(iPoint,jVar, &zero);
+        for (jVar = 0; jVar < geometry->nVertex[val_marker]; jVar++) {
+          if (iVertex!=jVar) {
+            std::cout << "Setting block " << iVertex << ", " << jVar << std::endl;
+            Jacobian.SetBlock(iVertex,jVar, &zero);
           }
         }
 
       } else {
         /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
-        for (iVar = 0; iVar < nPoint; iVar++) {
-          Jacobian.SetBlock(iVar,iPoint, &zero);
+        for (iVar = 0; iVar < geometry->nVertex[val_marker]; iVar++) {
+          std::cout << "Setting block " << iVar<< ", " << iVertex << std::endl;
+          Jacobian.SetBlock(iVar,iVertex, &zero);
         }
       }
     }
@@ -785,7 +795,7 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 }
 
 
-void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config){
+void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
 
   unsigned long iPoint, total_index;
   unsigned short iDim;
@@ -798,9 +808,12 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
 
   } else if ( config->GetSmoothOnSurface() ) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
+
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[iPoint]);
+        solver->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[iVertex]);
       }
     }
 
@@ -881,30 +894,128 @@ void CGradientSmoothingSolver::SetBoundaryDerivativesForMultiplication(CGeometry
 }
 
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
+std::vector<std::vector<su2double>> CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND) {
 
-  /*--- Initialize vector and sparse matrix ---*/
-  LinSysSol.SetValZero();
-  LinSysRes.SetValZero();
-  Jacobian.SetValZero();
+  std::vector<std::vector<su2double>> Coord;
 
-  for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-    su2double x = geometry->node[iPoint]->GetCoord(0);
-    su2double y = geometry->node[iPoint]->GetCoord(1);
-    for (auto iDim = 0; iDim < nDim ; iDim++) {
-      auxVecInp.SetBlock(iPoint, iDim, -2.0*3.14159265359*3.14159265359*sin(3.14159265359*x)*sin(3.14159265359*y) );
+  switch (EL_KIND) {
+
+  case EL_LINE:
+
+    for(auto iNode=0; iNode<2; iNode++) {
+      Coord.push_back(std::vector<su2double>());
+      for(auto iDim=0; iDim<2; iDim++) {
+        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+      }
     }
+    break;
+
+  case EL_TRIA:
+
+    for(auto iNode=0; iNode<3; iNode++) {
+      Coord.push_back(std::vector<su2double>());
+      for(auto iDim=0; iDim<3; iDim++) {
+        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+      }
+    }
+    break;
+
+  case EL_TRIA2:
+
+    for(auto iNode=0; iNode<3; iNode++) {
+      Coord.push_back(std::vector<su2double>());
+      for(auto iDim=0; iDim<3; iDim++) {
+        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+      }
+    }
+    break;
+
+  case EL_QUAD:
+
+    for(auto iNode=0; iNode<4; iNode++) {
+      Coord.push_back(std::vector<su2double>());
+      for(auto iDim=0; iDim<3; iDim++) {
+        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+      }
+    }
+    break;
+
+  default:
+    std::cout << "Type of element is not supported. " <<std::endl;
+
   }
 
+  return Coord;
+
+}
+
+
+void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  /*--- Initialize vector and sparse matrix ---*/
+  LinSysSol.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
+  LinSysRes.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
+  Jacobian.InitOwnConnectivity(geometry->nVertex[val_marker], 1, 1, val_marker, geometry, config);
+  LinSysSol.SetValZero();
+  LinSysRes.SetValZero();
+
+  auxVecInp.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 2, 0.0);
+  auxVecRHS.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
+  auxVecOut.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
+  auxVecInp.SetValZero();
+  auxVecRHS.SetValZero();
+  auxVecOut.SetValZero();
+
+  for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    su2double x = geometry->node[iPoint]->GetCoord(0);
+    su2double y = geometry->node[iPoint]->GetCoord(1);
+    for (iDim=0;iDim<nDim;iDim++) {
+      auxVecInp.SetBlock(iVertex, iDim, -2.0*sin(3.14159265359*x));
+    }
+
+    //iPoint, iDim, -2.0*3.14159265359*3.14159265359*sin(3.14159265359*x)*sin(3.14159265359*y) );
+  }
+
+  ofstream input ("input.txt");
+  auxVecInp.printVec(input);
+  input.close();
+
   Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
+
+  ofstream matrix ("matrix.dat");
+  Jacobian.printMat(matrix);
+  matrix.close();
 
   Compute_Surface_Residual(geometry, solver, config, val_marker);
 
   /* need to figure out how to adress this boundary??? */
-  // Impose_BC(geometry, numerics, config);
+  BC_Surface_Dirichlet(geometry, config, val_marker);
+
+  for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
+    auxVecRHS.SetBlock(iVertex, 0, LinSysRes.GetBlock(iVertex,0));
+  }
+
+  ofstream rhs ("rhs.txt");
+  auxVecRHS.printVec(rhs);
+  rhs.close();
 
   Solve_Linear_System(geometry, config);
 
-  Set_Sensitivities(geometry, solver, config);
+  Set_Sensitivities(geometry, solver, config, val_marker);
+
+  for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
+    auxVecOut.SetBlock(iVertex, 0, LinSysSol.GetBlock(iVertex,0));
+  }
+
+  ofstream output ("output.txt");
+  auxVecOut.printVec(output);
+  output.close();
+
 
 }
