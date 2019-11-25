@@ -3507,41 +3507,38 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         /*--- Initialize the appropriate transfer strategy ---*/
       if (rank == MASTER_NODE) cout << "Transferring ";
 
-      if (fluid_donor && structural_target && (!discrete_adjoint)) {
+      if (fluid_donor && structural_target) {
         interface_types[donorZone][targetZone] = FLOW_TRACTION;
         nVarTransfer = 2;
-        interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
+        if(!discrete_adjoint) {
+          interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
+        } else {
+          interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
+        }
+        if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
       }
-      else if (structural_donor && fluid_target && (!discrete_adjoint)) {
+      else if (structural_donor && fluid_target) {
         /*--- If we are using the new mesh solver, we transfer the total boundary displacements (not incremental) --*/
-        if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL){
+        if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL) {
           interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
           nVarTransfer = 0;
           interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);
-          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. "<< endl;
+          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
         }
         /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
-        else{
-          interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
+        /// TODO: LEGACY CLEANUP remove the "else" part and every class and enum referenced there,
+        ///       add a check above to make sure MESH_SOL has been instantiated.
+        else {
           nVarTransfer = 0;
-          interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
-          if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+          if(!discrete_adjoint) {
+            interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
+            interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+          } else {
+            interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
+            interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+          }
+          if (rank == MASTER_NODE) cout << "structural displacements (legacy). " << endl;
         }
-      }
-      else if (fluid_donor && structural_target && discrete_adjoint) {
-        interface_types[donorZone][targetZone] = FLOW_TRACTION;
-        nVarTransfer = 2;
-        interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
-
-        if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
-      }
-      else if (structural_donor && fluid_target && discrete_adjoint){
-        interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
-        nVarTransfer = 0;
-        interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer,
-                                                                                    config[donorZone]);
-        if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
       }
       else if (fluid_donor && fluid_target) {
         interface_types[donorZone][targetZone] = SLIDING_INTERFACE;
