@@ -41,7 +41,7 @@
 #ifdef HAVE_PASTIX
 
 #include "../config_structure.hpp"
-#include "../geometry_structure.hpp"
+#include "../geometry/CGeometry.hpp"
 
 namespace PaStiX {
 extern "C" {

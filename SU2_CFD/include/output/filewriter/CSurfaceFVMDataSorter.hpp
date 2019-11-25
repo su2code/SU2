@@ -1,6 +1,6 @@
 /*!
  * \file CSurfaceFVMDataSorter.hpp
- * \brief Headers fo the surface FVM data sorter class.
+ * \brief Headers for the surface FVM data sorter class.
  * \author T. Albring
  * \version 6.2.0 "Falcon"
  *

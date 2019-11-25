@@ -36,7 +36,7 @@
  */
 
 #include "../../include/output/CMeshOutput.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 
 CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 

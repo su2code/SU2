@@ -6,7 +6,6 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'fem_integration_rules.cpp',
            'config_structure.cpp',
            'dual_grid_structure.cpp',
-           'geometry_structure.cpp',
            'blas_structure.cpp',
            'ad_structure.cpp',
            'grid_movement_structure.cpp',
@@ -29,6 +28,7 @@ common_src =files(['geometry_structure_fem_part.cpp',
 
 subdir('linear_algebra')
 subdir('toolboxes')
+subdir('geometry')
 subdir('geometry/elements')
 
 if get_option('enable-normal')
