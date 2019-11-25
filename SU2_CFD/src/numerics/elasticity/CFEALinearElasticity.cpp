@@ -1,5 +1,5 @@
 /*!
- * \file numerics_direct_elasticity_linear.cpp
+ * \file CFEALinearElasticity.cpp
  * \brief This file contains the routines for setting the FEM elastic structural problem.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
@@ -35,33 +35,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/numerics_structure.hpp"
-#include <limits>
+#include "../../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 
-CFEALinearElasticity::CFEALinearElasticity(void) : CFEAElasticity () {
-
-  nodalDisplacement = NULL;
-
-}
 
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
-
-  unsigned short iVar;
-
-  if (nDim == 2) {
-    nodalDisplacement = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-    for (iVar = 0; iVar < 4; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
-  }
-  else if (nDim == 3) {
-    nodalDisplacement = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-    for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
-  }
-
-}
-
-CFEALinearElasticity::~CFEALinearElasticity(void) {
-
+                                           CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
+  if (nDim == 2)
+    nodalDisplacement.resize(NNODES_2D,nDim);
+  else
+    nodalDisplacement.resize(NNODES_3D,nDim);
 }
 
 void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
@@ -75,11 +57,11 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   su2double Weight, Jac_X;
 
   su2double AuxMatrix[3][6], *res_aux = new su2double[nVar];
-  
+
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
-  
+
   /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
@@ -89,13 +71,12 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
-  
+
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
 
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
@@ -110,7 +91,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
   }
 
-  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -136,7 +117,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
         Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
       }
-      else if (nDim == 3) {
+      else {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
@@ -148,7 +129,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
         Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
       }
 
-        /*--- Compute the BT.D Matrix ---*/
+      /*--- Compute the BT.D Matrix ---*/
 
       for (iVar = 0; iVar < nDim; iVar++) {
         for (jVar = 0; jVar < bDim; jVar++) {
@@ -167,7 +148,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
           Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
           Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
         }
-        else if (nDim ==3) {
+        else {
           Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
           Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
           Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
@@ -188,10 +169,10 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
           }
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode) {
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
         }
 
       }
@@ -199,40 +180,39 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
 
   }
-  
-  // compute residual
+
+  /*--- Compute residual ---*/
   for(iNode = 0; iNode<nNode; ++iNode)
   {
     for(jNode = 0; jNode<nNode; ++jNode)
     {
-      su2double *Kab = element->Get_Kab(iNode,jNode);
-      
+      const su2double *Kab = element->Get_Kab(iNode,jNode);
+
       for (iVar = 0; iVar < nVar; iVar++) {
         res_aux[iVar] = 0.0;
         for (jVar = 0; jVar < nVar; jVar++)
           res_aux[iVar] += Kab[iVar*nVar+jVar]*
             (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
       }
-      element->Add_Kt_a(res_aux,iNode);
+      element->Add_Kt_a(iNode, res_aux);
     }
   }
-  
+
   /*--- Register the stress residual as preaccumulation output ---*/
   element->SetPreaccOut_Kt_a();
   AD::EndPreacc();
-  
+
   delete[] res_aux;
 }
 
 
 void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) {
 
-     /*--- Compute the D Matrix (for plane stress and 2-D)---*/
+  /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
 
   if (nDim == 2) {
     if (plane_stress) {
-
       /*--- We enable plane stress cases ---*/
 
       D_Mat[0][0] = E/(1-Nu*Nu);        D_Mat[0][1] = (E*Nu)/(1-Nu*Nu);  D_Mat[0][2] = 0.0;
@@ -242,13 +222,13 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
     else {
       /*--- Assuming plane strain as a general case ---*/
 
-      D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
-      D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
-      D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
+      D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = 0.0;
+      D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = 0.0;
+      D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;              D_Mat[2][2] = Mu;
     }
 
   }
-  else if (nDim == 3) {
+  else {
 
     su2double Lbda_2Mu = Lambda + 2.0*Mu;
 
@@ -263,6 +243,7 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 
 }
 
+
 void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar;
@@ -272,7 +253,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Auxiliary vector ---*/
   su2double Strain[6], Stress[6];
-  
+
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
@@ -280,8 +261,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Initialize auxiliary matrices ---*/
 
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
+  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iVar = 0; iVar < bDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
@@ -289,7 +269,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     }
   }
 
-  element->clearStress();       /*--- Clears the stress in the element: avoids adding over previous results in other elements --*/
+  element->ClearStress(); /*--- Clears the stress in the element to avoid adding over previous results. --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -318,7 +298,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
         Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
       }
-      else if (nDim ==3) {
+      else {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
@@ -330,7 +310,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
         Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
       }
 
-        /*--- Compute the Strain Vector as B*u ---*/
+      /*--- Compute the Strain Vector as B*u ---*/
 
       for (iVar = 0; iVar < bDim; iVar++) {
         for (jVar = 0; jVar < nDim; jVar++) {
@@ -340,7 +320,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
     }
 
-      /*--- Compute the Stress Vector as D*epsilon ---*/
+    /*--- Compute the Stress Vector as D*epsilon ---*/
 
     for (iVar = 0; iVar < bDim; iVar++) {
       Stress[iVar] = 0.0;
@@ -350,26 +330,25 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
     }
 
     for (iNode = 0; iNode < nNode; iNode++) {
-      /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz, while in the ---*/
-      /*--- output it is the 4th component for practical reasons ---*/
+
+      su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
+
       if (nDim == 2) {
-        element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-        element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-        element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+        for(iVar = 0; iVar < 3; ++iVar)
+          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
       }
-      else if (nDim == 3) {
-        element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
-        element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
-        element->Add_NodalStress(Stress[3] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
-        element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
-        element->Add_NodalStress(Stress[4] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
-        element->Add_NodalStress(Stress[5] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
+      else {
+        /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
+         *    while in the output it is the 4th component for practical reasons. ---*/
+        element->Add_NodalStress(iNode, 0, Stress[0] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 1, Stress[1] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 2, Stress[3] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 3, Stress[2] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 4, Stress[4] * Ni_Extrap);
+        element->Add_NodalStress(iNode, 5, Stress[5] * Ni_Extrap);
       }
     }
 
-
-
   }
-
 
 }

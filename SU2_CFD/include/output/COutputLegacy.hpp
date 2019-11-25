@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
@@ -206,10 +206,10 @@ class COutputLegacy {
         **NuFactorOut;
 
   unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
-  vector<string> Marker_Tags_InletFile;   /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
+  vector<string> Marker_Tags_InletFile;  /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
   unsigned long *nRow_InletFile;         /*!< \brief Counters for the number of points per marker in the inlet profile file. */
   unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
-  su2double **InletCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
+  su2double **InletCoords;               /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
 
 protected:
 

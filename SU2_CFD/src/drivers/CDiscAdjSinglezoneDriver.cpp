@@ -505,8 +505,6 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
-  bool steady = !config->GetTime_Domain();
-
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
@@ -550,8 +548,4 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
-  if(steady) {
-    output_container[ZONE_0]->SetResult_Files(geometry, config, solver,
-                                              config->GetInnerIter(), true);
-  }
 }

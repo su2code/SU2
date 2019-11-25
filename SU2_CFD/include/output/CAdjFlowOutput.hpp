@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CAdjFlowCompOutput.hpp
  * \brief Headers of the adjoint compressible flow output.
  * \author T. Albring
@@ -47,7 +47,7 @@
 class CAdjFlowCompOutput final: public COutput {
 private:
 
-  bool cont_adj; /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
+  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/
 
 public:

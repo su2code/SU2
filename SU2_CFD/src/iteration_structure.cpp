@@ -1408,10 +1408,13 @@ void CFEAIteration::Iterate(COutput *output,
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
     if (!incremental_load) {
-      
+
+      /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases as file output depends on it ---*/
+      unsigned long CurIter = config[val_iZone]->GetInnerIter();
+
       IntIter = 0;
       config[val_iZone]->SetInnerIter(IntIter);
-      
+
       /*--- FEA equations ---*/
 
       config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
@@ -1428,8 +1431,11 @@ void CFEAIteration::Iterate(COutput *output,
 
       for (IntIter = 1; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
 
-        /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
-        if (disc_adj_fem) break;
+        /*--- Limit to only one iteration for the discrete adjoint recording, restore inner iter (see above) ---*/
+        if (disc_adj_fem) {
+          config[val_iZone]->SetInnerIter(CurIter);
+          break;
+        }
 
         config[val_iZone]->SetInnerIter(IntIter);
         
@@ -1452,6 +1458,7 @@ void CFEAIteration::Iterate(COutput *output,
       solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
 
       /*--- The load increment is 1.0 ---*/
+
       loadIncrement = 1.0;
       solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
       solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetForceCoeff(loadIncrement);
@@ -1469,7 +1476,6 @@ void CFEAIteration::Iterate(COutput *output,
 
       integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
           config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
       
@@ -1499,8 +1505,8 @@ void CFEAIteration::Iterate(COutput *output,
       Residual_ETOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(2));
 
       meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-          ( Residual_RTOL <  Criteria_RTOL ) &&
-          ( Residual_ETOL <  Criteria_ETOL ) );
+                       ( Residual_RTOL <  Criteria_RTOL ) &&
+                       ( Residual_ETOL <  Criteria_ETOL ) );
 
       /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
       if (meetCriteria) {
@@ -2911,6 +2917,12 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
           Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
   }
   else {
+    /*--- Register topology optimization densities (note direct solver) ---*/
+
+    solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+    /*--- Register mesh coordinates for geometric sensitivities ---*/
+
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
   }
 }
@@ -2997,7 +3009,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   }
 
   /*--- FSI specific dependencies. ---*/
-  if(fsi) {
+  if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
     dir_solver->PredictStruct_Displacement(nullptr, config[iZone], solver[iZone][iInst]);
   }
@@ -3010,6 +3022,17 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   if (kind_recording == MESH_COORDS) {
     structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
     structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  }
+
+  /*--- Topology optimization dependencies. ---*/
+
+  /*--- We only differentiate wrt to this variable in the adjoint secondary recording. ---*/
+  if (config[iZone]->GetTopology_Optimization() && (kind_recording == MESH_COORDS)) {
+    /*--- The filter may require the volumes of the elements. ---*/
+    structural_geometry->SetElemVolume(config[iZone]);
+    /// TODO: Ideally there would be a way to capture this dependency without the `static_cast`, but
+    ///       making it a virtual method of CSolver does not feel "right" as its purpose could be confused.
+    static_cast<CFEASolver*>(dir_solver)->FilterElementDensities(structural_geometry, config[iZone]);
   }
 
 }
