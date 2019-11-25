@@ -810,7 +810,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
     su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.) {
-      Lagrangian += gamma*helper*helper - 1./(2.*gamma)*Multiplier[iConstr]*Multiplier[iConstr];
+      // Lagrangian += gamma*helper*helper - 1./(2.*gamma)*Multiplier[iConstr]*Multiplier[iConstr];
+      Lagrangian += gamma*helper*helper;
     }
   }
 
@@ -1185,10 +1186,12 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.)) {
-        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+        helper += BCheck_Inv[iConstr][jConstr]*(ConstrFunc_Store[jConstr]+Multiplier_Old[jConstr]/gamma);
       }
       else {
-        helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
+        // helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
+        helper -= Multiplier_Old[iConstr];
+        break;
       }
     }
     Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
