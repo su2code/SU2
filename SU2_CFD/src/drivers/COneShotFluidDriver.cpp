@@ -919,7 +919,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma();
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier_Old[iConstr] > 0.) {
+    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier_Old[iConstr]/gamma > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
