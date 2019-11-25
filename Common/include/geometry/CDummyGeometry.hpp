@@ -1,7 +1,6 @@
 /*!
- * \file definition_structure.hpp
- * \brief Headers of the main subroutines used by SU2_CFD.
- *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
+ * \file geometry_structure.hpp
+ * \brief Headers of the dummy geometry class used in "dry run" mode.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
@@ -38,26 +37,28 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-
-#include <ctime>
-
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry/CGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
-
-using namespace std;
+#include "CGeometry.hpp"
 
 /*!
- * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
+ * \class CDummyGeometry
+ * \brief Class for defining a geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
  */
-void Partition_Analysis(CGeometry *geometry, CConfig *config);
+class CDummyGeometry : public CGeometry{
 
-/*!
- * \brief Performs an analysis of the mesh partitions for distributed memory calculations for the FEM solver.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config);
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDummyGeometry(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDummyGeometry();
+
+};
+

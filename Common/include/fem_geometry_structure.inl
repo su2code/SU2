@@ -150,7 +150,7 @@ inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
 
 inline void CMeshFEM_DG::SetGlobal_nPointDomain(unsigned long val_global_npoint) { Global_nPointDomain =  val_global_npoint; }
 
-inline unsigned long CMeshFEM_DG::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
+inline unsigned long CMeshFEM_DG::GetGlobal_nPointDomain(void) const { return Global_nPointDomain; }
 
 inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
   Global_to_Local_Point.clear();
@@ -162,13 +162,10 @@ inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
   }
 }
 
-inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) {
-  map<unsigned long, unsigned long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
-  if (MI != Global_to_Local_Point.end()) {
-    return Global_to_Local_Point[val_ipoint];
-  } else {
-    return -1;
-  }
+inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) const {
+  if (Global_to_Local_Point.count(val_ipoint))
+    return Global_to_Local_Point.at(val_ipoint);
+  return -1;
 }
 
 inline su2double* CMeshFEM_DG::GetTimeCoefADER_DG(void) {return timeCoefADER_DG.data();}

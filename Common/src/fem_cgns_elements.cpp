@@ -31,7 +31,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry_structure.hpp"
+#include "../include/geometry/CGeometry.hpp"
 
 #ifdef HAVE_CGNS
 #if CGNS_VERSION >= 3300

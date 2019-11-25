@@ -47,7 +47,7 @@
 #include <stdexcept>
 
 #include "config_structure.hpp"
-#include "geometry_structure.hpp"
+#include "geometry/CGeometry.hpp"
 
 using namespace std;
 

@@ -57,7 +57,7 @@
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/linear_algebra/CSysMatrix.hpp"
 #include "../../Common/include/linear_algebra/CSysVector.hpp"
@@ -6888,7 +6888,8 @@ public:
    * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
    * \param[in] density_miz - value of the mixed-out avaraged density.
    */
-  void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+  void MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
+                         const su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
 
   /*!
    * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
@@ -6903,7 +6904,8 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+  void ComputeTurboVelocity(const su2double *cartesianVelocity, const su2double *turboNormal, su2double *turboVelocity,
+                            unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
@@ -6911,7 +6913,8 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+  void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
+                           unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
    * \brief Provide the average density at the boundary of interest.

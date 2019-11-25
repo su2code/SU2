@@ -5172,7 +5172,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           
           /* Check the number of columns and allocate temp array. */
           
-          unsigned short nColumns;
+          unsigned short nColumns = 0;
           for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
             if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
               nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);

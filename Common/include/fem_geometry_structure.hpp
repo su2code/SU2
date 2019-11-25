@@ -32,7 +32,11 @@
 
 #pragma once
 
-#include "geometry_structure.hpp"
+#include "geometry/CGeometry.hpp"
+#include "fem_standard_element.hpp"
+#ifdef HAVE_CGNS
+#include "fem_cgns_elements.hpp"
+#endif
 #include "wall_model.hpp"
 #include "blas_structure.hpp"
 
@@ -1046,9 +1050,9 @@ public:
 
   /*!
    * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
-   * \returns Total number of nodes in a simulation across all processors (excluding halos).
+   * \return Total number of nodes in a simulation across all processors (excluding halos).
    */
-  unsigned long GetGlobal_nPointDomain();
+  unsigned long GetGlobal_nPointDomain() const override;
 
   /*!
    * \brief Set the local index that correspond with the global numbering index.
@@ -1058,9 +1062,9 @@ public:
   /*!
    * \brief Get the local index that correspond with the global numbering index.
    * \param[in] val_ipoint - Global point.
-   * \returns Local index that correspond with the global index, -1 if not found on the current rank.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank.
    */
-  long GetGlobal_to_Local_Point(unsigned long val_ipoint);
+  long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override;
 
   /*!
    * \brief Function, which carries out the preprocessing tasks
