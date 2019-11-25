@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CFlowIncCompOutput.hpp
  * \brief  Headers of the incompressible flow output.
  * \author T. Albring, R. Sanchez
@@ -49,11 +49,11 @@ class CVariable;
 class CFlowIncOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model, /*!< \brief The kind of turbulence model*/
-                 streamwise_periodic;  /*!< \brief  */
-  bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/
-  weakly_coupled_heat, /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
-  streamwise_periodic_temperature;  /*!< \brief  */
+  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
+  bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
+  bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
+  unsigned short streamwise_periodic; /*!< \brief Boolean indicating whether it si a streamwise periodic simulation */
+  bool streamwise_periodic_temperature;  /*!< \brief  */
 
 public:
 

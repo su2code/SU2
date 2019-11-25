@@ -12,16 +12,34 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-default_warning_flags = ['-Wno-unused-parameter',
-                         '-Wno-empty-body',
-                         '-Wno-format-security',
-                         '-Wno-deprecated-declarations',
-                         '-Wno-non-virtual-dtor',
-                         '-Wno-inconsistent-missing-override']
+if build_machine.system() == 'windows'
+  default_warning_flags = []
+else
+  default_warning_flags = ['-Wno-unused-parameter',
+                           '-Wno-empty-body',
+                           '-Wno-format-security',
+                           '-Wno-deprecated-declarations',
+                           '-Wno-non-virtual-dtor']
+endif
 
-# external dependencies 
-mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 
-           dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
+# meson script path
+script_path = meson.source_root() / 'meson_scripts'
+
+# mpi flag
+mpi = false
+
+# If custom mpi mode is enabled, include and library pathes for MPI have to be set manually to env variables
+if get_option('custom-mpi')
+  mpi_dep = []
+  mpi = true
+# Otherwise they are automatically determined
+else
+  mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 
+             dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
+  if mpi_dep[0].found() or mpi_dep[1].found()
+    mpi = true
+  endif
+endif
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
@@ -42,7 +60,7 @@ if get_option('buildtype')!='debug'
 endif
 
 # check if MPI dependencies are found and add them
-if mpi_dep[0].found() and mpi_dep[1].found() 
+if mpi
 
   # add MPI dependency 
   su2_deps += mpi_dep
@@ -74,7 +92,7 @@ endif
 
 # PaStiX
 if get_option('enable-pastix')
-  assert(mpi_dep[0].found() and mpi_dep[1].found(),
+  assert(mpi,
          'PaStiX support requires MPI')
   assert(get_option('enable-mkl') or get_option('enable-openblas'),
          'PaStiX support requires either mkl or openblas')
