@@ -45,7 +45,7 @@
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
  */
-class CMultiGridGeometry : public CGeometry {
+class CMultiGridGeometry final : public CGeometry {
 
 public:
 

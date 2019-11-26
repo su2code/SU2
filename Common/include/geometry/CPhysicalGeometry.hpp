@@ -45,7 +45,7 @@
  * \brief Class for reading a defining the primal grid which is read from the grid file in .su2 or .cgns format.
  * \author F. Palacios, T. Economon, J. Alonso
  */
-class CPhysicalGeometry : public CGeometry {
+class CPhysicalGeometry final : public CGeometry {
 
   map<unsigned long, unsigned long> Global_to_Local_Point;  /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point;                              /*!< \brief Local-global indexation for the points. */
