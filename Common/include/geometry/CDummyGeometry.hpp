@@ -46,7 +46,7 @@
  *        going through the time-consuming mesh initialization and paritioning.
  * \author T. Albring
  */
-class CDummyGeometry : public CGeometry{
+class CDummyGeometry final : public CGeometry{
 
 public:
   /*!
