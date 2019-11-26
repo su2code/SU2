@@ -1210,7 +1210,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.)) {
+      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
         helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
       }
       else {
@@ -1219,7 +1219,10 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
         break;
       }
     }
-    Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+    Multiplier[iConstr] = Multiplier_Store[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+    if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
+      Multiplier_Store[iConstr] = Multiplier[iConstr];
+    }
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     // if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma <= 0.) {
