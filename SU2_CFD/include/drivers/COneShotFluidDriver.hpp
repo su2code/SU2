@@ -182,13 +182,15 @@ public:
 
   /*!
    * \brief Check if the first Wolfe descent condition is fulfilled (line search condition).
+   * \param[in] design_update - whether a design update is being performed.
    */
-  bool CheckFirstWolfe();
+  bool CheckFirstWolfe(bool design_update);
 
   /*!
    * \brief Store gradient dotted with search direction for first Armijo search iteration.
+   * \param[in] design_update - whether a design update is being performed.
    */
-  void StoreGradDotDir();
+  void StoreGradDotDir(bool design_update);
 
   /*!
    * \brief Perform parabolic backtracking.
