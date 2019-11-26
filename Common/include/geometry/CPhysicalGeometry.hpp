@@ -300,8 +300,9 @@ public:
    * \return Local index that correspond with the global index, -1 if not found on the current rank (process).
    */
   inline long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override {
-    if (Global_to_Local_Point.count(val_ipoint))
-      return Global_to_Local_Point.at(val_ipoint);
+    auto it = Global_to_Local_Point.find(val_ipoint);
+    if (it != Global_to_Local_Point.cend())
+      return it->second;
     return -1;
   }
 
