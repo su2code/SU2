@@ -234,8 +234,6 @@ void COneShotFluidDriver::RunOneShot(){
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         stepsize_tmp = UpdateStepSizeQuadratic();
-        // Lagrangian_p = Lagrangian;
-        // stepsize_p   = stepsize;
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         if(stepsize < tol) {
           stepsize = tol;
@@ -244,19 +242,18 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // LoadOldMultiplier();
       }
       else{
-        /*--- Update constraint multiplier ---*/
-        // StoreMultiplierGrad();
-        // UpdateMultiplier(1.0);
+        /*--- Store gradient of augmented Lagrangian wrt multiplier ---*/
+        StoreMultiplierGrad();
       }
 
       /*--- Compute and store GradL dot p ---*/
-      StoreGradDotDir();
+      StoreGradDotDir(true);
 
-      /*--- Update multiplier ---*/
-      // UpdateMultiplier(stepsize);
+      /*--- Update constraint multiplier ---*/
+      LoadOldMultiplier();
+      UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -283,8 +280,6 @@ void COneShotFluidDriver::RunOneShot(){
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        // LoadOldMultiplier();
-        // UpdateMultiplier(0.0);
         ComputeDesignVarUpdate(0.0);
       }
 
@@ -294,22 +289,14 @@ void COneShotFluidDriver::RunOneShot(){
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
-    /*--- Update constraint multiplier ---*/
-    if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){  
-      LoadOldMultiplier();
-      UpdateMultiplier(1.0);
-    }
-
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
 
     ArmijoIter++;
 
-  } while(InnerIter > config->GetOneShotStart() && 
-          InnerIter < config->GetOneShotStop()  &&
-          !CheckFirstWolfe()                    && 
-          ArmijoIter < nArmijoIter+1            &&
-          !bool_tol);
+  } while((InnerIter > config->GetOneShotStart()) && 
+          (InnerIter < config->GetOneShotStop())  &&
+          (!CheckFirstWolfe(true)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
@@ -319,9 +306,42 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
        InnerIter > config->GetOneShotStart()                   && 
        InnerIter < config->GetOneShotStop()                    &&
-       (!config->GetZeroStep() || CheckFirstWolfe())) {
+       (!config->GetZeroStep() || CheckFirstWolfe(true))) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
+  }
+
+  /*--- If line search failed, perform new line search on just multiplier ---*/
+  if((nConstr > 0)                           &&
+     (InnerIter > config->GetOneShotStart()) && 
+     (InnerIter < config->GetOneShotStop())  &&
+     ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol)) {
+      su2double stepsize_mu = 1.0;
+      ArmijoIter = 0;
+      bool_tol = false;
+      do {
+        if(ArmijoIter > 0){
+        /*--- Parabolic backtracking ---*/
+        stepsize_tmp = UpdateStepSizeQuadratic();
+        stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+        if(stepsize_mu < tol) {
+          stepsize_mu  = tol;
+          bool_tol     = true;
+        }
+      }
+      /*--- Compute and store GradL dot p ---*/
+      StoreGradDotDir(false);
+
+      /*--- Update constraint multiplier ---*/
+      LoadOldMultiplier();
+      UpdateMultiplier(stepsize_mu);
+
+      /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+      CalculateLagrangian();
+
+      ArmijoIter++;
+
+    } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
   }
 
   if(InnerIter >= config->GetOneShotStart() && 
@@ -722,38 +742,43 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   delete [] sk;
 }
 
-bool COneShotFluidDriver::CheckFirstWolfe(){
+bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   unsigned short iDV;
   su2double admissible_step = 0.0;
 
-  for (iDV = 0; iDV < nDV_Total; iDV++){
-    /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+  if(design_update) {
+    for (iDV = 0; iDV < nDV_Total; iDV++){
+      /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
+      admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    }
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
+  }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
 }
 
-void COneShotFluidDriver::StoreGradDotDir(){
+void COneShotFluidDriver::StoreGradDotDir(bool design_update){
   unsigned short iDV;
   GradDotDir = 0.0;
-  for (iDV = 0; iDV < nDV_Total; iDV++){
-    /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+
+  if(design_update) {
+    for (iDV = 0; iDV < nDV_Total; iDV++){
+      /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
+      GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+    }
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+    }
+  }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
