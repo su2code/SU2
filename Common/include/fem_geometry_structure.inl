@@ -163,8 +163,9 @@ inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
 }
 
 inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) const {
-  if (Global_to_Local_Point.count(val_ipoint))
-    return Global_to_Local_Point.at(val_ipoint);
+  auto it = Global_to_Local_Point.find(val_ipoint);
+  if (it != Global_to_Local_Point.cend())
+    return it->second;
   return -1;
 }
 
