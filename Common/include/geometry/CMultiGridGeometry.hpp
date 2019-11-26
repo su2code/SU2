@@ -210,10 +210,5 @@ public:
    */
   void FindNormal_Neighbor(CConfig *config) override;
 
-  /*!
-   * \brief Indentify geometrical planes in the mesh
-   */
-  void SetGeometryPlanes(CConfig *config) override;
-
 };
 

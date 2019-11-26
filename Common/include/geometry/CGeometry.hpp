@@ -1150,7 +1150,7 @@ public:
   /*!
    * \brief Indentify geometrical planes in the mesh
    */
-  inline virtual void SetGeometryPlanes(CConfig *config) {}
+  void SetGeometryPlanes(CConfig *config);
 
   /*!
    * \brief Get geometrical planes in the mesh
