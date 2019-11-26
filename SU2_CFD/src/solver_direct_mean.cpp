@@ -3181,27 +3181,14 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
     }
   }
   
-  // Reference Solution (set)
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    su2double node_sol[nVar];
-    
-    for (unsigned long i = 0; i < nVar; i++){
-      node_sol[i] = ref_sol[i + iPoint*nVar];
-      //node_sol[i] = 0.0;
-    }
-    
-    nodes->Set_RefSolution(iPoint, &node_sol[0]);
-  }
-  
-  // y0 = Phi^T * (w0 - w_ref) : Initial Condition:
+  // Initial Condition: y0 = Phi^T * (w0 - w_ref) :
   double *init_sol = new double[nPointDomain * nVar]();
   //su2double w0[4];
   //w0[0] = config->GetDensity_FreeStream();
   //w0[1] = config->GetVelocity_FreeStream()[0]*w0[0];
   //w0[2] = config->GetVelocity_FreeStream()[0]*w0[0];
   //w0[3] = config->GetEnergy_FreeStream()*w0[0];
-  string fff = "init_snapshot.csv"; // TODO: make a variable to import ref solution from file
+  string fff = "init_snapshot.csv"; // TODO: make a variable to import initial solution from file
   ifstream inn2(fff);
   s = 0;
   
@@ -3218,6 +3205,22 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
     }
   }
   
+  // Reference Solution (set)
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double node_sol[nVar];
+    
+    for (unsigned long iVar = 0; iVar < nVar; iVar++){
+      node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
+      //node_sol[i] = 0.0;
+      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+    }
+    
+    nodes->Set_RefSolution(iPoint, &node_sol[0]);
+  }
+  
+  
   
   
   for (i = 0; i < nsnaps; i++) {
@@ -3226,7 +3229,6 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         //std::cout << TrialBasis[i][iPoint*nVar + iVar] << ", " << w0[iVar] << ", " << node[iPoint]->Get_RefSolution(iVar) << std::endl;
         //std::cout << TrialBasis[i][iPoint*nVar + iVar] << ", " << w0[iVar] - node[iPoint]->Get_RefSolution(iVar) << std::endl;
-        
         sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
       }
     }
@@ -5229,25 +5231,20 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
 void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
+  unsigned short iVar, jVar;
+  unsigned long iPoint, kNeigh, kPoint, jPoint;
+  
   su2double* prod = new su2double[nVar];
-  
-  /*--- The the number of iterations of the linear solver ---*/
-  
-  SetIterLinSolver(IterLinSol);
-  
-  /*--- Set the residual --- */
-  // from develop
-  //valResidual = System.GetResidual();
   
   /*--- Compute Test Basis: W = J * Phi ---*/
   
-  bool printing = false;
+  bool debug = false;
   double *TestBasis2 = new double[nPointDomain * nVar * TrialBasis[0].size()]();
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (unsigned long kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
-      unsigned long kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
-      for (unsigned long jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
+    for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
+      kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
+      for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
         
         su2double* mat_i = Jacobian.GetBlock(iPoint, kPoint);
         
@@ -5270,7 +5267,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           TestBasis2[jPoint*nPointDomain*nVar + iPoint*nVar + i] += prod[i];
         }
           
-        if (printing) {
+        if (debug) {
           std::cout << "iPoint, kPoint and jPoint: " << iPoint << ", " << kPoint << " and " << jPoint << std::endl;
           std::cout << "Jacobian Matrix:" << std::endl;
           for (unsigned short i = 0; i < nVar; i++){
@@ -5311,7 +5308,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
             TestBasis2[jPoint*nPointDomain*nVar + iPoint*nVar + i] += prod[i];
           }
           
-          if (printing) {
+          if (debug) {
             std::cout << "iPoint, kPoint and jPoint: " << iPoint << ", " << k << " and " << jPoint << std::endl;
             std::cout << "Jacobian Matrix:" << std::endl;
             for (unsigned short i = 0; i < nVar; i++){
@@ -5331,85 +5328,79 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         }
       }
     }
+  }
   
   
-    // Set up variables for QR decomposition, A = QR
-    int m = (int)nPointDomain*nVar; // number of rows in TestBasis2 (A)
-    int n = (int)TrialBasis[0].size(); // number of columns in TestBasis2
-    // LDA = m
-    const char TRANS = 'N';
-    const int NRHS = 1;
-    double WORK[n];
-    int LWORK = -1;
-    int INFO = 1;
-    double r[m];
-    for (int i=0; i < m; i++){
-      //r[i] = -LinSysRes[i];
-      r[i] = LinSysRes[i];
-    }
-    //if (printing) {
-    if (true) {
-      ofstream fs;
-      std::string fname = "testbasis_output.csv";
-      fs.open(fname);
-      for(int i=0; i < m; i++){
-        for(int j=0; j < n; j++){
-          fs << TestBasis2[i +j*m] << "," ;
-          TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1);
-          //std::cout << "Test Basis[" << i+j*m << "]: " << TestBasis2[i +j*m] << std::endl;
-        }
-        fs << "\n";
-      }
-      fs.close();
-      
-      std::string fname2 = "residual_output.csv";
-      fs.open(fname2);
-      for(int i=0; i < m; i++){
-        fs << r[i] << "\n" ;
-      }
-      fs.close();
-    }
-    
-    // Compute least-squares solution using QR decomposition
-    // https://johnwlambert.github.io/least-squares/
-    // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
-#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-    dgels_(&TRANS, &m, &n, &NRHS, TestBasis2, &m, r, &m, WORK, &LWORK, &INFO);
-#endif
-    
-    if (INFO < 0) std::cout << "Unsucsessful exit of least-squares for ROM" << std::endl;
-    
+  // Set up variables for QR decomposition, A = QR
+  int m = (int)nPointDomain*nVar; // number of rows in TestBasis2 (A)
+  int n = (int)TrialBasis[0].size(); // number of columns in TestBasis2
+  // LDA = m
+  const char TRANS = 'N';
+  const int NRHS = 1;
+  double WORK[n];
+  int LWORK = -1;
+  int INFO = 1;
+  double r[m];
+  for (int i=0; i < m; i++){
+    //r[i] = -LinSysRes[i];
+    r[i] = LinSysRes[i];
+  }
+
+  if (true) {
     ofstream fs;
-    std::string fname3 = "LS_solution_output.csv";
-    fs.open(fname3);
+    std::string fname = "testbasis_output.csv";
+    fs.open(fname);
+    for(int i=0; i < m; i++){
+      for(int j=0; j < n; j++){
+        fs << TestBasis2[i +j*m] << "," ;
+        TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1);
+        //std::cout << "Test Basis[" << i+j*m << "]: " << TestBasis2[i +j*m] << std::endl;
+      }
+      fs << "\n";
+    }
+    fs.close();
+    
+    std::string fname2 = "residual_output.csv";
+    fs.open(fname2);
     for(int i=0; i < m; i++){
       fs << r[i] << "\n" ;
     }
     fs.close();
-    
-    double d[n];
-    //double f[n];
-    // backtracking line search to find step size:
-    double a = 0.1;
-    
-    for (int i = 0; i < n; i++) {
-      d[i] = r[i];
-      std::cout << "Direction: " << d[i] << std::endl;
-      //std::cout << "Before: " << GenCoordsY[i] << std::endl;
-      GenCoordsY[i] += a * d[i];
-      //std::cout << "After: " << GenCoordsY[i] << std::endl;
-    }
-    
-    std::string fname4 = "red_coords_y_output.csv";
-    fs.open(fname4);
-    for(int i=0; i < n; i++){
-      fs << GenCoordsY[i] << "\n" ;
-    }
-    fs.close();
-    
-    
-    
   }
+  
+  // Compute least-squares solution using QR decomposition
+  // https://johnwlambert.github.io/least-squares/
+  // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
+#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
+  dgels_(&TRANS, &m, &n, &NRHS, TestBasis2, &m, r, &m, WORK, &LWORK, &INFO);
+#endif
+    
+  if (INFO < 0) std::cout << "Unsucsessful exit of least-squares for ROM" << std::endl;
+  
+  ofstream fs;
+  std::string fname3 = "LS_solution_output.csv";
+  fs.open(fname3);
+  for(int i=0; i < m; i++){
+    fs << r[i] << "\n" ;
+  }
+  fs.close();
+  
+  // backtracking line search to find step size:
+  double a = 0.1;
+  
+  for (int i = 0; i < n; i++) {
+    //std::cout << "Direction: " << r[i] << std::endl;
+    //std::cout << "Before: " << GenCoordsY[i] << std::endl;
+    GenCoordsY[i] += a * r[i];
+    //std::cout << "After: " << GenCoordsY[i] << std::endl;
+  }
+  
+  std::string fname4 = "red_coords_y_output.csv";
+  fs.open(fname4);
+  for(int i=0; i < n; i++){
+    fs << GenCoordsY[i] << "\n" ;
+  }
+  fs.close();
   
   delete [] prod;
   delete [] TestBasis2;
@@ -5450,6 +5441,11 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   bool low_mach_prec = config->Low_Mach_Preconditioning();
   bool rom = config->GetReduced_Model();
+  
+  if (rom) {
+    ROM_Iteration(geometry, solver_container, config);
+    return;
+  }
   
   /*--- Set maximum residual to zero ---*/
   
@@ -5522,72 +5518,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- The the number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
-  
-  /*--- ROM-specific methods ---*/
-  
-  if (rom) {
-
-    
-      // Compute QR decomposition TestBasis2 = QR
-      //#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-      //dgeqrf_(&m, &n, TestBasis2, &m, TAU,
-      //                        WORK, &LWORK, &INFO);
-      //#endif
-      //
-      //if (INFO < 0) std::cout << "Unsucsessful exit of QR decomposition" << std::endl;
-      //
-      //// Setup Rx = -(Q^T)r variables
-      //// https://www.nag.com/numeric/fl/nagdoc_fl22/pdf/F08/f08aef.pdf
-      //int nrhs = 1;
-      //char side = 'L';
-      //char trans = 'T';
-      //char uplo = 'U';
-      //char notrans = 'N';
-      //char diag = 'N';
-      //
-      //// Compute C = (Q^T) * r
-      //#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-      //dormqr_(&side, &trans, &m, &nrhs, &n, TestBasis2, &m,
-      //            TAU, r, &m, WORK, &LWORK, &INFO);
-      //#endif
-      //
-      //if (INFO < 0) std::cout << "Unsucsessful exit of C = -(Q^T)r" << std::endl;
-      //
-      //// Compute R * x = C via least-squares
-      //#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-      //dtrtrs_(&uplo, &notrans, &diag, &n, &nrhs, TestBasis2, &m,
-      //        r, &m, &INFO);
-      //#endif
-      //
-      //if (INFO < 0) std::cout << "Unsucsessful exit of Rx = C" << std::endl;
-      
-      //double c1 = 0.0001;
-      //double f = LinSysRes.norm();
-      //
-      //double y2[n];
-      //for (int i = 0; i < n; i++) {
-      //  d[i] = r[i];
-      //  //std::cout << "Before: " << GenCoordsY[i] << std::endl;
-      //  y2[i] = GenCoordsY[i] + a * d[i];
-      //  //std::cout << "After: " << GenCoordsY[i] << std::endl;
-      //}
-      //
-      //CSysMatrix Jacobian2 = Jacobian;
-      //CSysVector LinSysRes2 = LinSysRes;
-      //CSysVector LinSysSol2 = LinSysSol;
-      //IterLinSol = System.Solve(Jacobian2, LinSysRes2, LinSysSol2, geometry, config);
-      //
-      //double f2 = LinSysRes2.norm();
-      //LinSysRes2.Plus_AX(-1.0, LinSysRes);
-      //unsigned long size = LinSysRes2.GetSize();
-      //double df[size];
-      //LinSysRes2.CopyToArray(df);
-      //for (unsigned long i = 0; i < size; i++) {
-      //  if (df[i] > 0.0) std::cout << df[i] << std::endl;
-      //}
-      
-    
-    
   
   /*--- Update solution (system written in terms of increments) ---*/
   if (!adjoint) {
