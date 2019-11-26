@@ -33,7 +33,10 @@
 
 #pragma once
 
+#include "datatype_structure.hpp"
+
 #include <vector>
+#include <algorithm>
 
 /*!
  * \struct CUnsignedLong2T
@@ -133,7 +136,7 @@ public:
 
   /*--- Member function, which creates a unique numbering for the corner points.
         A sort in increasing order is OK for this purpose.                       ---*/
-  inline void CreateUniqueNumbering(void) { sort(cornerPoints, cornerPoints+nCornerPoints); }
+  inline void CreateUniqueNumbering(void) { std::sort(cornerPoints, cornerPoints+nCornerPoints); }
 
   /*--- Member function, which creates a unique numbering for the corner points
         while the orientation is taken into account. ---*/
