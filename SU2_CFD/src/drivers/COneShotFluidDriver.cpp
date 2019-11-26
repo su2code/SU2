@@ -315,7 +315,7 @@ void COneShotFluidDriver::RunOneShot(){
   if((nConstr > 0)                           &&
      (InnerIter > config->GetOneShotStart()) && 
      (InnerIter < config->GetOneShotStop())  &&
-     ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol)) {
+     ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))) {
       su2double stepsize_mu = 1.0;
       ArmijoIter = 0;
       bool_tol = false;
