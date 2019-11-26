@@ -1214,9 +1214,9 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
         helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
       }
       else {
-        // helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
-        helper -= Multiplier_Old[iConstr];
-        break;
+        helper -= BCheck_Inv[iConstr][jConstr]*Multiplier_Old[jConstr]/gamma;
+        // helper -= Multiplier_Old[iConstr];
+        // break;
       }
     }
     Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
@@ -1273,8 +1273,8 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
       if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] - Multiplier_Old[iConstr]/gamma > 0.) {
-        // my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
-        my_Gradient += ConstrFunc[iConstr];
+        my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
+        // my_Gradient += ConstrFunc[iConstr];
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
