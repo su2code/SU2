@@ -39,33 +39,33 @@
 #include "CFileWriter.hpp"
 
 class CSU2BinaryFileWriter final: public CFileWriter{
-  
+
 
 public:
-  
+
   /*!
    * \brief File extension
    */
   const static string fileExt;
-  
+
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
-   */  
-  CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim, 
+   */
+  CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim,
                        string fileName, CParallelDataSorter* data_sorter);
-  
+
   /*!
    * \brief Destructor
    */
   ~CSU2BinaryFileWriter() override;
-  
+
   /*!
    * \brief Write sorted data to file in SU2 binary file format
    */
   void Write_Data() override;
-  
+
 };

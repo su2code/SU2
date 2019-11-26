@@ -707,7 +707,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc=0.0;
   Total_NetThrust = 0.0;
-  Total_Power = 0.0;      AoA_Prev           = 0.0;
+  Total_Power = 0.0;      AoA_Prev           = 0.0;    AoA_inc            = 0.0;
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev      = 0.0; Total_CMy_Prev      = 0.0; Total_CMz_Prev      = 0.0;
   Total_AeroCD = 0.0;  Total_SolidCD = 0.0;   Total_IDR   = 0.0;    Total_IDC   = 0.0;
@@ -12547,7 +12547,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool static_fsi = ((config->GetTime_Marching() == STEADY) &&
-                     (config->GetFSI_Simulation()));
+                      config->GetFSI_Simulation());
   bool steady_restart = config->GetSteadyRestart();
   bool turbulent     = (config->GetKind_Turb_Model() != NONE);
 

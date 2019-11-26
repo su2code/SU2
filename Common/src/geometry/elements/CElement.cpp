@@ -1,8 +1,7 @@
 /*!
- * \file CFEAMeshNumerics.hpp
- * \brief Declaration and inlines of the class to compute
- *        the stiffness matrix of a linear, pseudo-elastic mesh problem.
- * \author Ruben Sanchez
+ * \file CElement.cpp
+ * \brief Definition of the Finite Element structure (elements)
+ * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -36,40 +35,48 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../../../include/geometry/elements/CElement.hpp"
 
-#include "../numerics_structure.hpp"
 
-class CFEAMeshElasticity : public CFEALinearElasticity {
+CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short ndim) {
 
-  bool element_based;
-  bool stiffness_set;
+  nGaussPoints = ngauss;
+  nNodes = nnodes;
+  nDim = ndim;
 
-public:
+  /*--- Allocate structures. ---*/
 
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config);
+  CurrentCoord.resize(nNodes, nDim) = su2double(0.0);
+  RefCoord.resize(nNodes, nDim) = su2double(0.0);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAMeshElasticity(void);
+  GaussPoint.reserve(nGaussPoints);
+  for(unsigned short iGauss = 0; iGauss < nGaussPoints; ++iGauss)
+    GaussPoint.emplace_back(iGauss, nDim, nNodes);
 
-  inline void SetElement_Properties(CElement *element, CConfig *config){
-    if(element_based){E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();}
-  }
+  GaussWeight.resize(nGaussPoints) = su2double(0.0);
+  NodalExtrap.resize(nNodes, nGaussPoints) = su2double(0.0);
 
-  /*!
-   * \brief Set the element-based local properties in mesh problems
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  inline void SetMeshElasticProperties(unsigned long iElem, su2double val_E){
-    if (element_based){ E_i[iElem]  = val_E;}
-  }
+  NodalStress.resize(nNodes, 6) = su2double(0.0);
 
-};
+  Mab.resize(nNodes, nNodes);
+  Ks_ab.resize(nNodes, nNodes);
+  Kab.resize(nNodes);
+  for(auto& kab_i : Kab) kab_i.resize(nNodes, nDim*nDim);
+
+  Kt_a.resize(nNodes, nDim);
+  FDL_a.resize(nNodes, nDim);
+
+  ClearElement();
+}
+
+void CElement::ClearElement(void) {
+
+  Mab.setConstant(0.0);
+  Kt_a.setConstant(0.0);
+  FDL_a.setConstant(0.0);
+  Ks_ab.setConstant(0.0);
+
+  for(auto& kab_i : Kab)
+    kab_i.setConstant(0.0);
+}
+
