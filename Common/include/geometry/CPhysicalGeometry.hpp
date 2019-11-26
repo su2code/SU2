@@ -770,11 +770,6 @@ public:
   inline unsigned long GetnElemPyra(void) const override { return nelem_pyramid; }
 
   /*!
-   * \brief Indentify geometrical planes in the mesh
-   */
-  void SetGeometryPlanes(CConfig *config) override;
-
-  /*!
    * \brief Read the sensitivity from an input file.
    * \param[in] config - Definition of the particular problem.
    */

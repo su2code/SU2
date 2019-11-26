@@ -3741,3 +3741,103 @@ void CGeometry::UpdateBoundaries(CConfig *config){
 
 }
 
+void CGeometry::SetGeometryPlanes(CConfig *config) {
+
+  bool loop_on;
+  unsigned short iMarker = 0;
+  su2double *Face_Normal = NULL, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
+
+  /*--- Compute the total number of points on the near-field ---*/
+  nVertex_Wall = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+      nVertex_Wall += nVertex[iMarker];
+
+
+  /*--- Create an array with all the coordinates, points, pressures, face area,
+   equivalent area, and nearfield weight ---*/
+  Xcoord = new su2double[nVertex_Wall];
+  Ycoord = new su2double[nVertex_Wall];
+  if (nDim == 3) Zcoord = new su2double[nVertex_Wall];
+  FaceArea = new su2double[nVertex_Wall];
+
+  /*--- Copy the boundary information to an array ---*/
+  iVertex_Wall = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
+        Ycoord[iVertex_Wall] = node[iPoint]->GetCoord(1);
+        if (nDim==3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
+        Face_Normal = vertex[iMarker][iVertex]->GetNormal();
+        FaceArea[iVertex_Wall] = fabs(Face_Normal[nDim-1]);
+        iVertex_Wall ++;
+      }
+
+
+  //vector<su2double> XCoordList;
+  vector<su2double>::iterator IterXCoordList;
+
+  for (iVertex = 0; iVertex < nVertex_Wall; iVertex++)
+    XCoordList.push_back(Xcoord[iVertex]);
+
+  sort( XCoordList.begin(), XCoordList.end());
+  IterXCoordList = unique( XCoordList.begin(), XCoordList.end());
+  XCoordList.resize( IterXCoordList - XCoordList.begin() );
+
+  /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
+  Xcoord_plane.resize(XCoordList.size());
+  Ycoord_plane.resize(XCoordList.size());
+  if (nDim==3) Zcoord_plane.resize(XCoordList.size());
+  FaceArea_plane.resize(XCoordList.size());
+  Plane_points.resize(XCoordList.size());
+
+
+  su2double dist_ratio;
+  unsigned long iCoord;
+
+  /*--- Distribute the values among the different PhiAngles ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    if (node[iPoint]->GetDomain()) {
+      loop_on = true;
+      for (ixCoord = 0; ixCoord < XCoordList.size()-1 && loop_on; ixCoord++) {
+        dist_ratio = (node[iPoint]->GetCoord(0) - XCoordList[ixCoord])/(XCoordList[ixCoord+1]- XCoordList[ixCoord]);
+        if (dist_ratio >= 0 && dist_ratio <= 1.0) {
+          if (dist_ratio <= 0.5) iCoord = ixCoord;
+          else iCoord = ixCoord+1;
+          Xcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(0) );
+          Ycoord_plane[iCoord].push_back(node[iPoint]->GetCoord(1) );
+          if (nDim==3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
+          FaceArea_plane[iCoord].push_back(node[iPoint]->GetVolume());   ///// CHECK AREA CALCULATION
+          Plane_points[iCoord].push_back(iPoint );
+          loop_on = false;
+        }
+      }
+    }
+  }
+
+  /*--- Order the arrays in ascending values of y ---*/
+  /// TODO: Depending on the size of the arrays, this may not be a good way of sorting them.
+  for (ixCoord = 0; ixCoord < XCoordList.size(); ixCoord++)
+    for (iVertex = 0; iVertex < Xcoord_plane[ixCoord].size(); iVertex++)
+      for (jVertex = 0; jVertex < Xcoord_plane[ixCoord].size() - 1 - iVertex; jVertex++)
+        if (Ycoord_plane[ixCoord][jVertex] > Ycoord_plane[ixCoord][jVertex+1]) {
+          swap(Xcoord_plane[ixCoord][jVertex], Xcoord_plane[ixCoord][jVertex+1]);
+          swap(Ycoord_plane[ixCoord][jVertex], Ycoord_plane[ixCoord][jVertex+1]);
+          if (nDim==3) swap(Zcoord_plane[ixCoord][jVertex], Zcoord_plane[ixCoord][jVertex+1]);
+          swap(Plane_points[ixCoord][jVertex], Plane_points[ixCoord][jVertex+1]);
+          swap(FaceArea_plane[ixCoord][jVertex], FaceArea_plane[ixCoord][jVertex+1]);
+        }
+
+  /*--- Delete structures ---*/
+  delete[] Xcoord; delete[] Ycoord;
+  if (Zcoord != NULL) delete[] Zcoord;
+  delete[] FaceArea;
+}
+
