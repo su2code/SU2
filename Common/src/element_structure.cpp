@@ -528,20 +528,22 @@ void CElement::ComputeGrad_1D(std::vector<std::vector<su2double>>& Coord) {
 
   su2double volJacobian;
   su2double Jacobian[2];
+  su2double val_grad;
 
   unsigned short iNode, iDim, iGauss;
 
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+  Jacobian[0] = (Coord[1][0] - Coord[0][0]);
+  Jacobian[1] = (Coord[1][1] - Coord[0][1]);
+  volJacobian = sqrt(Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1]);
 
-    Jacobian[0] = (Coord[1][0] - Coord[0][0]);
-    Jacobian[1] = (Coord[1][1] - Coord[0][1]);
-    volJacobian = sqrt(Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1]);
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
 
     GaussPoint[iGauss]->SetJ_X(volJacobian);
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       for (iDim=0; iDim<2; iDim++) {
-        GaussPoint[iGauss]->SetGradNi_Xj( (dNiXj[iGauss][iNode][0]*Jacobian[iDim])/(volJacobian*volJacobian), iDim, iNode);
+        val_grad = (dNiXj[iGauss][iNode][0]*Jacobian[iDim])/volJacobian;
+        GaussPoint[iGauss]->SetGradNi_Xj( val_grad, iDim, iNode);
       }
     }
 
@@ -620,7 +622,7 @@ void CElement::ComputeGrad_2D(const FrameType mode) {
 void CElement::ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord) {
 
   su2double Jacobian[3][2], JTJ[2][2];
-  su2double volJacobian, GradNi_Xj;
+  su2double volJacobian, GradN_Xi;
   unsigned short iNode, iDim, jDim, kDim, iGauss;
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -653,12 +655,11 @@ void CElement::ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord) {
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       for (iDim = 0; iDim < 3; iDim++) {
-        GradNi_Xj = dNiXj[iGauss][iNode][jDim];
+        GradN_Xi = 0.0;
         for (jDim = 0; jDim < 2; jDim++) {
-          GradNi_Xj += (dNiXj[iGauss][iNode][jDim]/ volJacobian) * (Jacobian[jDim][iDim]/volJacobian);
+          GradN_Xi += (dNiXj[iGauss][iNode][jDim]/ volJacobian) * (Jacobian[jDim][iDim]/volJacobian);
         }
-        GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
-
+        GaussPoint[iGauss]->SetGradNi_Xj(GradN_Xi, iDim, iNode);
       }
     }
 

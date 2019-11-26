@@ -342,6 +342,8 @@ inline bool CConfig::GetProject2Surface(void) { return Project2Surface; }
 
 inline bool CConfig::GetSmoothOnSurface(void) { return SmoothOnSurface; }
 
+inline bool CConfig::GetDirichletSurfaceBound(void) { return DirichletSurfaceBound; }
+
 inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }

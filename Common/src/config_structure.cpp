@@ -1706,6 +1706,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("PROJECT_TO_SURFACE",Project2Surface, false);
   /* DESCRIPTION: Switch to activate working on the surface only */
   addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
+  /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
+  addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
   /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
   addBoolOption("DEBUG_MODE",DebugMode, false);
 

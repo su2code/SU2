@@ -117,7 +117,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     Jac_X = element->GetJ_X(iGauss);
 
     for (iNode = 0; iNode < nNode; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (iDim = 0; iDim < nDimGlobal; iDim++) {
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
       }
     }

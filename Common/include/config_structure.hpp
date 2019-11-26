@@ -428,6 +428,7 @@ private:
   bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
   bool Project2Surface; /*!< \brief Flag for calculating the projection onto the surface mesh from the SetVolume_Deformation routines stiffness matrix. */
   bool SmoothOnSurface; /*!< \brief Flag for assembling the system only on the surface. */
+  bool DirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
   bool DebugMode; /*!< \brief temporary flag for some debuging stuff
 
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -2834,6 +2835,12 @@ public:
    * \return true means that smoothing is done on the surface level
    */
   bool GetSmoothOnSurface(void);
+
+  /*!
+   * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
+   * \return true means that we use zero Dirichlet boundary
+   */
+  bool GetDirichletSurfaceBound(void);
 
   /*!
    * \brief Check if we want some simplified debugging stuff

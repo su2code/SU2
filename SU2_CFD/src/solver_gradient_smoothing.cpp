@@ -409,10 +409,6 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim-1; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-      }
     }
 
     Coord = GetElementCoordinates(geometry, indexNode, EL_KIND);
@@ -543,8 +539,9 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   int EL_KIND = 0;
   std::vector<unsigned long> indexNode(8, 0.0);
   std::vector<unsigned long> indexVertex(8, 0.0);
-  su2double Weight, Jac_X, val_Coord, normalSens = 0.0, norm;
+  su2double Weight, Jac_X, normalSens = 0.0, norm;
   su2double* normal = NULL;
+  std::vector<std::vector<su2double>> Coord;
 
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
@@ -560,11 +557,9 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
     /*--- Retrieve the boundary reference and current coordinates ---*/
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim-1; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-      }
     }
+
+    Coord = GetElementCoordinates(geometry, indexNode, EL_KIND);
 
     /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -586,7 +581,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
     }
 
     element_container[GRAD_TERM][EL_KIND]->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
-    element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear();
+    element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear(Coord);
     unsigned short nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
     for (unsigned short iGauss = 0; iGauss < nGauss; iGauss++) {
@@ -964,11 +959,10 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
 
   auxVecInp.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 2, 0.0);
   auxVecRHS.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
-  auxVecOut.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
   auxVecInp.SetValZero();
   auxVecRHS.SetValZero();
-  auxVecOut.SetValZero();
 
+  /*--- here we can set a customized rhs for the solver if SobolevDebugMode is set ---*/
   for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -976,7 +970,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
     su2double x = geometry->node[iPoint]->GetCoord(0);
     su2double y = geometry->node[iPoint]->GetCoord(1);
     for (iDim=0;iDim<nDim;iDim++) {
-      auxVecInp.SetBlock(iVertex, iDim, -2.0*sin(3.14159265359*x));
+      auxVecInp.SetBlock(iVertex, iDim, sin(3.14159265359*x));
     }
 
     //iPoint, iDim, -2.0*3.14159265359*3.14159265359*sin(3.14159265359*x)*sin(3.14159265359*y) );
@@ -988,14 +982,15 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
 
   Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
 
+  Compute_Surface_Residual(geometry, solver, config, val_marker);
+
+  if ( config->GetDirichletSurfaceBound() ) {
+    BC_Surface_Dirichlet(geometry, config, val_marker);
+  }
+
   ofstream matrix ("matrix.dat");
   Jacobian.printMat(matrix);
   matrix.close();
-
-  Compute_Surface_Residual(geometry, solver, config, val_marker);
-
-  /* need to figure out how to adress this boundary??? */
-  BC_Surface_Dirichlet(geometry, config, val_marker);
 
   for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
     auxVecRHS.SetBlock(iVertex, 0, LinSysRes.GetBlock(iVertex,0));
@@ -1009,13 +1004,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
 
   Set_Sensitivities(geometry, solver, config, val_marker);
 
-  for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
-    auxVecOut.SetBlock(iVertex, 0, LinSysSol.GetBlock(iVertex,0));
-  }
-
   ofstream output ("output.txt");
-  auxVecOut.printVec(output);
+  LinSysSol.printVec(output);
   output.close();
-
 
 }

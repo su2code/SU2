@@ -1086,9 +1086,9 @@ CLINE::CLINE(unsigned short val_nDim, CConfig *config)
 
   /*--- Gauss coordinates and weights ---*/
 
-  su2double oneOnSqrt3 = 0.577350269189626;
-  GaussCoord[0][0] = -oneOnSqrt3;  GaussWeight[0] = 1.0;
-  GaussCoord[1][0] = oneOnSqrt3;  GaussWeight[1] = 1.0;
+  su2double oneOnTwoSqrt3 = 0.288675134594813;
+  GaussCoord[0][0] = 0.5-oneOnTwoSqrt3;  GaussWeight[0] = 0.5;
+  GaussCoord[1][0] = 0.5+oneOnTwoSqrt3;  GaussWeight[1] = 0.5;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -1097,13 +1097,13 @@ CLINE::CLINE(unsigned short val_nDim, CConfig *config)
 
     Xi = GaussCoord[iGauss][0];
 
-    val_Ni = 0.5*(1.0-Xi);  GaussPoint[iGauss]->SetNi(val_Ni, 0);
-    val_Ni = 0.5*(1.0+Xi);  GaussPoint[iGauss]->SetNi(val_Ni, 1);
+    val_Ni = 1.0-Xi;  GaussPoint[iGauss]->SetNi(val_Ni, 0);
+    val_Ni = Xi;  GaussPoint[iGauss]->SetNi(val_Ni, 1);
 
     /*--- dN/d xi ---*/
 
-    dNiXj[iGauss][0][0] = -0.5;
-    dNiXj[iGauss][1][0] = 0.5;
+    dNiXj[iGauss][0][0] = -1.0;
+    dNiXj[iGauss][1][0] = 1.0;
 
   }
 
