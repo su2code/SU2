@@ -5202,7 +5202,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
             Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
             for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
-            Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER, Marker_Tag, geometry[iMesh-1], config);
+            Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
+                                                                           Marker_Tag, geometry[iMesh-1], config);
             for (iVar = 0; iVar < nColumns; iVar++) {
               Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
             }
