@@ -48,6 +48,12 @@
 class CMultiGridGeometry final : public CGeometry {
 
 public:
+  /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
+  using CGeometry::SetVertex;
+  using CGeometry::SetMeshFile;
+  using CGeometry::SetControlVolume;
+  using CGeometry::SetBoundControlVolume;
+  using CGeometry::SetPoint_Connectivity;
 
   /*!
    * \brief Constructor of the class.
@@ -99,21 +105,10 @@ public:
   void SetVertex(CGeometry *geometry, CConfig *config) override;
 
   /*!
-   * \brief Set boundary vertex.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetVertex(CConfig *config) override { CGeometry::SetVertex(config); }
-
-  /*!
    * \brief Set points which surround a point.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SetPoint_Connectivity(CGeometry *geometry) override;
-
-  /*!
-   * \brief Function declaration to avoid partially overridden classes.
-   */
-  inline void SetPoint_Connectivity(void) override { CGeometry::SetPoint_Connectivity(); }
 
   /*!
    * \brief Set the edge structure of the agglomerated control volume.
