@@ -98,9 +98,9 @@ def main():
         ztate.update(info)
 	
 	# Solution merging
-    	konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
-    	info = SU2.run.merge(konfig)
-    	ztate.update(info)
+        konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
+        info = SU2.run.merge(konfig)
+        ztate.update(info)
 
 
     print("\n\n =================== Performing p1c1 Component Perturbation =================== \n\n")
