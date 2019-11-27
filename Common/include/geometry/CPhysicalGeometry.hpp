@@ -53,7 +53,7 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned short *Global_to_Local_Marker;                   /*!< \brief Global to Local marker. */
   unsigned long *adj_counter;                               /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem;                            /*!< \brief Adjacency element list. */
-  su2double* Sensitivity;                                   /*! <\brief Vector holding the sensitivities at each point. */
+  su2double* Sensitivity;                                   /*!< \brief Vector holding the sensitivities at each point. */
 
   vector<vector<unsigned long> > Neighbors;
   map<unsigned long, unsigned long> Color_List;
@@ -114,6 +114,12 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_BoundQuad_Linear;
 
 public:
+  /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
+  using CGeometry::SetVertex;
+  using CGeometry::SetMeshFile;
+  using CGeometry::SetControlVolume;
+  using CGeometry::SetBoundControlVolume;
+  using CGeometry::SetPoint_Connectivity;
 
   /*!
    * \brief Constructor of the class.
@@ -408,14 +414,6 @@ public:
   void SetRCM_Ordering(CConfig *config) override;
 
   /*!
-   * \brief Function declaration to avoid partially overridden classes.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  inline void SetPoint_Connectivity(CGeometry *geometry) override {
-    CGeometry::SetPoint_Connectivity(geometry);
-  }
-
-  /*!
    * \brief Set elements which surround an element.
    */
   void SetElement_Connectivity(void) override;
@@ -430,13 +428,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetVertex(CConfig *config) override;
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetVertex(CGeometry *geometry, CConfig *config) override { CGeometry::SetVertex(geometry, config); }
 
   /*!
    * \brief Set number of span wise level for turbomachinery computation.
@@ -575,8 +566,8 @@ public:
       const vector<CFaceOfElement>               &localFaces,
       const vector<vector<unsigned long> >       &adjacency,
       const map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel,
-      vector<su2double>                    &vwgt,
-      vector<vector<su2double> >           &adjwgt);
+      vector<su2double>                          &vwgt,
+      vector<vector<su2double> >                 &adjwgt);
 
   /*!
    * \brief Determine the donor elements for the boundary elements on viscous
