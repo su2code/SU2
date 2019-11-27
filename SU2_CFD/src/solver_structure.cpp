@@ -5047,183 +5047,178 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (dual_time || time_stepping)
     profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
-    /*--- Read the profile data from an ASCII file. ---*/
+  /*--- Read the profile data from an ASCII file. ---*/
 
-    CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
 
-    /*--- Load data from the restart into correct containers. ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-    Marker_Counter = 0;
-    
-    unsigned short global_failure = 0, local_failure = 0;
-    ostringstream error_msg;
+  Marker_Counter = 0;
+  
+  unsigned short global_failure = 0, local_failure = 0;
+  ostringstream error_msg;
 
-    const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
+  const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
-        /*--- Get tag in order to identify the correct inlet data. ---*/
+      /*--- Get tag in order to identify the correct inlet data. ---*/
 
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-        for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+      for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
 
-          /*--- If we have found the matching marker string, continue. ---*/
+        /*--- If we have found the matching marker string, continue. ---*/
 
-          if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
+        if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
 
-            /*--- Increment our counter for marker matches. ---*/
+          /*--- Increment our counter for marker matches. ---*/
 
-            Marker_Counter++;
+          Marker_Counter++;
 
-            /*--- Get data for this profile. ---*/
-            
-            vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-            
-            unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-
-            vector<su2double> Inlet_Values(nColumns);
-            
-            /*--- Loop through the nodes on this marker. ---*/
-
-            for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-
-              iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
-              min_dist = 1e16;
-
-              /*--- Find the distance to the closest point in our inlet profile data. ---*/
-
-              for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
-
-                /*--- Get the coords for this data point. ---*/
-
-                index = iRow*nColumns;
-
-                dist = 0.0;
-                for (unsigned short iDim = 0; iDim < nDim; iDim++)
-                  dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
-                dist = sqrt(dist);
-
-                /*--- Check is this is the closest point and store data if so. ---*/
-
-                if (dist < min_dist) {
-                  min_dist = dist;
-                  for (iVar = 0; iVar < nColumns; iVar++)
-                    Inlet_Values[iVar] = Inlet_Data[index+iVar];
-                }
-
-              }
-
-              /*--- If the diff is less than the tolerance, match the two.
-               We could modify this to simply use the nearest neighbor, or
-               eventually add something more elaborate here for interpolation. ---*/
-
-              if (min_dist < tolerance) {
-
-                solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-
-              } else {
-
-                unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
-                cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
-                cout << "and point " << GlobalIndex;
-                cout << std::scientific;
-                cout << " at location: [" << Coord[0] << ", " << Coord[1];
-                if (nDim ==3) error_msg << ", " << Coord[2];
-                cout << "]" << endl;
-                cout << "Distance to closest point: " << min_dist << endl;
-                cout << "Current tolerance:         " << tolerance << endl;
-                cout << endl;
-                cout << "You can widen the tolerance for point matching by changing the value" << endl;
-                cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
-                local_failure++;
-                break;
-
-              }
-            }
-          }
-        }
-      }
-
-      if (local_failure > 0) break;
-    }
-
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
-                       MPI_SUM, MPI_COMM_WORLD);
-#else
-    global_failure = local_failure;
-#endif
-
-    if (global_failure > 0) {
-      SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
-    }
-
-    /*--- Copy the inlet data down to the coarse levels if multigrid is active.
-     Here, we use a face area-averaging to restrict the values. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
-
-          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          /*--- Get data for this profile. ---*/
           
-          /* Check the number of columns and allocate temp array. */
+          vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
           
-          unsigned short nColumns = 0;
-          for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
-            if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
-              nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-            }
-          }
+          unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+
           vector<su2double> Inlet_Values(nColumns);
-          vector<su2double> Inlet_Fine(nColumns);
           
           /*--- Loop through the nodes on this marker. ---*/
 
-          for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+          for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-            /*--- Get the coarse mesh point and compute the boundary area. ---*/
+            iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+            Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
+            min_dist = 1e16;
 
-            iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
-            geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area_Parent = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
-            Area_Parent = sqrt(Area_Parent);
+            /*--- Find the distance to the closest point in our inlet profile data. ---*/
 
-            /*--- Reset the values for the coarse point. ---*/
+            for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
 
-            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
+              /*--- Get the coords for this data point. ---*/
 
-            /*-- Loop through the children and extract the inlet values
-             from those nodes that lie on the boundary as well as their
-             boundary area. We build a face area-averaged value for the
-             coarse point values from the fine grid points. Note that
-             children from the interior volume will not be included in
-             the averaging. ---*/
+              index = iRow*nColumns;
 
-            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-              Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-              for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
-              Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER, Marker_Tag, geometry[iMesh-1], config);
-              for (iVar = 0; iVar < nColumns; iVar++) {
-                Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+              dist = 0.0;
+              for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
+              dist = sqrt(dist);
+
+              /*--- Check is this is the closest point and store data if so. ---*/
+
+              if (dist < min_dist) {
+                min_dist = dist;
+                for (iVar = 0; iVar < nColumns; iVar++)
+                  Inlet_Values[iVar] = Inlet_Data[index+iVar];
               }
+
             }
 
-            /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
+            /*--- If the diff is less than the tolerance, match the two.
+             We could modify this to simply use the nearest neighbor, or
+             eventually add something more elaborate here for interpolation. ---*/
 
-            solver[iMesh][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+            if (min_dist < tolerance) {
 
+              solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+            } else {
+
+              unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
+              cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+              cout << "and point " << GlobalIndex;
+              cout << std::scientific;
+              cout << " at location: [" << Coord[0] << ", " << Coord[1];
+              if (nDim ==3) error_msg << ", " << Coord[2];
+              cout << "]" << endl;
+              cout << "Distance to closest point: " << min_dist << endl;
+              cout << "Current tolerance:         " << tolerance << endl;
+              cout << endl;
+              cout << "You can widen the tolerance for point matching by changing the value" << endl;
+              cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
+              local_failure++;
+              break;
+
+            }
           }
         }
       }
     }
-  
+
+    if (local_failure > 0) break;
+  }
+
+  SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+
+  if (global_failure > 0) {
+    SU2_MPI::Error("Prescribed inlet data does not match markers within tolerance.", CURRENT_FUNCTION);
+  }
+
+  /*--- Copy the inlet data down to the coarse levels if multigrid is active.
+   Here, we use a face area-averaging to restrict the values. ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
+
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        
+        /* Check the number of columns and allocate temp array. */
+        
+        unsigned short nColumns = 0;
+        for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+          if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+          }
+        }
+        vector<su2double> Inlet_Values(nColumns);
+        vector<su2double> Inlet_Fine(nColumns);
+        
+        /*--- Loop through the nodes on this marker. ---*/
+
+        for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+
+          /*--- Get the coarse mesh point and compute the boundary area. ---*/
+
+          iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
+          Area_Parent = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
+          Area_Parent = sqrt(Area_Parent);
+
+          /*--- Reset the values for the coarse point. ---*/
+
+          for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
+
+          /*-- Loop through the children and extract the inlet values
+           from those nodes that lie on the boundary as well as their
+           boundary area. We build a face area-averaged value for the
+           coarse point values from the fine grid points. Note that
+           children from the interior volume will not be included in
+           the averaging. ---*/
+
+          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
+            Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER, Marker_Tag, geometry[iMesh-1], config);
+            for (iVar = 0; iVar < nColumns; iVar++) {
+              Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+            }
+          }
+
+          /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
+
+          solver[iMesh][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+        }
+      }
+    }
+  }
+
   delete [] Normal;
-  
+
 }
 
 void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){

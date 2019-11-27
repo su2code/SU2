@@ -3841,3 +3841,134 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
   delete[] FaceArea;
 }
 
+void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  su2double RotVel[3] = {0.0,0.0,0.0}, Distance[3] = {0.0,0.0,0.0},
+            Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0};
+
+  /*--- Center of rotation & angular velocity vector from config ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
+
+  su2double L_Ref = config->GetLength_Ref();
+
+  /*--- Print some information to the console ---*/
+
+  if (rank == MASTER_NODE && print) {
+    cout << " Rotational origin (x, y, z): ( " << Center[0] << ", " << Center[1];
+    cout << ", " << Center[2] << " )\n";
+    cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
+    cout << Omega[1] << ", " << Omega[2] << " ) rad/s" << endl;
+  }
+
+  /*--- Loop over all nodes and set the rotational velocity ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    /*--- Get the coordinates of the current node ---*/
+
+    const su2double* Coord = node[iPoint]->GetCoord();
+
+    /*--- Calculate the non-dim. distance from the rotation center ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      Distance[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
+
+    /*--- Calculate the angular velocity as omega X r ---*/
+
+    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
+    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
+    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+
+    /*--- Store the grid velocity at this node ---*/
+
+    node[iPoint]->SetGridVel(RotVel);
+
+  }
+
+}
+
+void CGeometry::SetShroudVelocity(CConfig *config) {
+
+  unsigned long iPoint, iVertex;
+  unsigned short iMarker, iMarkerShroud;
+  su2double RotVel[3] = {0.0,0.0,0.0};
+
+  /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
+      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+        for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          node[iPoint]->SetGridVel(RotVel);
+        }
+      }
+    }
+  }
+}
+
+void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
+
+  su2double xDot[3] = {0.0,0.0,0.0};
+
+  /*--- Get the translational velocity vector from config ---*/
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
+
+  /*--- Print some information to the console ---*/
+
+  if (rank == MASTER_NODE && print) {
+    cout << " Non-dim. translational velocity: ("
+         << xDot[0] << ", " << xDot[1] << ", " << xDot[2] << ")." << endl;
+  }
+
+  /*--- Loop over all nodes and set the translational velocity ---*/
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint]->SetGridVel(xDot);
+
+}
+
+void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
+
+  /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
+
+  bool FirstOrder = (config->GetTime_Marching() == DT_STEPPING_1ST);
+  bool SecondOrder = (config->GetTime_Marching() == DT_STEPPING_2ND);
+
+  su2double TimeStep = config->GetDelta_UnstTimeND();
+
+  /*--- Compute the velocity of each node in the volume mesh ---*/
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+
+    const su2double *Coord_nM1 = node[iPoint]->GetCoord_n1();
+    const su2double *Coord_n   = node[iPoint]->GetCoord_n();
+    const su2double *Coord_nP1 = node[iPoint]->GetCoord();
+
+    /*--- Compute and store mesh velocity with 1st or 2nd-order approximation ---*/
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+      su2double GridVel = 0.0;
+
+      if (FirstOrder)
+        GridVel = (Coord_nP1[iDim] - Coord_n[iDim]) / TimeStep;
+
+      if (SecondOrder)
+        GridVel = (1.5*Coord_nP1[iDim] - 2.0*Coord_n[iDim] + 0.5*Coord_nM1[iDim]) / TimeStep;
+
+      node[iPoint]->SetGridVel(iDim, GridVel);
+    }
+  }
+
+}
