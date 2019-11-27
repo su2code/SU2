@@ -818,64 +818,80 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     int Unst_RestartIter;
     if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
     else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
-    string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
-    /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+    if (Unst_RestartIter < 0) {
 
-    if (config->GetRead_Binary_Restart()) {
-      Read_SU2_Restart_Binary(geometry, config, filename_n);
-    } else {
-      Read_SU2_Restart_ASCII(geometry, config, filename_n);
-    }
-
-    /*--- Load data from the restart into correct containers. ---*/
-    int counter = 0;
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-
-      long iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
-
-      if (iPoint_Local > -1) {
-
-        /*--- We need to store this point's data, so jump to the correct
-         offset in the buffer of data from the restart file and load it. ---*/
-
-        unsigned long index = counter*Restart_Vars[1];
+      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting initial mesh" << endl;
+      
+      /*--- Set loaded solution into correct previous time containers. ---*/
+      unsigned long iPoint;
+      for (iPoint = 0; iPoint < nPoint; iPoint++ ) {
         for (unsigned short iDim = 0; iDim < nDim; iDim++){
-          curr_coord = Restart_Data[index+iDim];
-          displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
-
           if(iStep==1)
-            nodes->Set_Solution_time_n(iPoint_Local, iDim, displ);
+            nodes->Set_Solution_time_n(iPoint, iDim, nodes->GetSolution(iPoint, iDim));
           else
-            nodes->Set_Solution_time_n1(iPoint_Local, iDim, displ);
+            nodes->Set_Solution_time_n1(iPoint, iDim, nodes->GetSolution(iPoint, iDim));  
         }
-        iPoint_Global_Local++;
+      }
+    }
+    else {
+      string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
-        /*--- Increment the overall counter for how many points have been loaded. ---*/
-        counter++;
+      /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+      if (config->GetRead_Binary_Restart()) {
+        Read_SU2_Restart_Binary(geometry, config, filename_n);
+      } else {
+        Read_SU2_Restart_ASCII(geometry, config, filename_n);
       }
 
+      /*--- Load data from the restart into correct containers. ---*/
+      int counter = 0;
+      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+        /*--- Retrieve local index. If this node from the restart file lives
+        on the current processor, we will load and instantiate the vars. ---*/
+
+        long iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+        if (iPoint_Local > -1) {
+
+          /*--- We need to store this point's data, so jump to the correct
+          offset in the buffer of data from the restart file and load it. ---*/
+
+          unsigned long index = counter*Restart_Vars[1];
+          for (unsigned short iDim = 0; iDim < nDim; iDim++){
+            curr_coord = Restart_Data[index+iDim];
+            displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
+
+            if(iStep==1)
+              nodes->Set_Solution_time_n(iPoint_Local, iDim, displ);
+            else
+              nodes->Set_Solution_time_n1(iPoint_Local, iDim, displ);
+          }
+          iPoint_Global_Local++;
+
+          /*--- Increment the overall counter for how many points have been loaded. ---*/
+          counter++;
+        }
+      }
+
+      /*--- Detect a wrong solution file ---*/
+
+      if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+      SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+
+      if (rbuf_NotMatching != 0) {
+        SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
+                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+      }
+
+      /*--- Delete the class memory that is used to load the restart. ---*/
+
+      if (Restart_Vars != NULL) { delete [] Restart_Vars; Restart_Vars = NULL; }
+      if (Restart_Data != NULL) { delete [] Restart_Data; Restart_Data = NULL; }
     }
-
-    /*--- Detect a wrong solution file ---*/
-
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
-      SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-    }
-
-    /*--- Delete the class memory that is used to load the restart. ---*/
-
-    if (Restart_Vars != NULL) { delete [] Restart_Vars; Restart_Vars = NULL; }
-    if (Restart_Data != NULL) { delete [] Restart_Data; Restart_Data = NULL; }
-
     InitiateComms(geometry, config, CommType);
     CompleteComms(geometry, config, CommType);
   }
