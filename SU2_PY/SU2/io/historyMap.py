@@ -737,6 +737,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': '',
                     'GROUP': 'RMS_RES',
                     'HEADER': 'rms[RhoV]',
                     'TYPE': 'RESIDUAL'},
+ 'RMS_MOMENTUM-Z': {'DESCRIPTION': 'Root-mean square residual of the momentum '
+                                   'z-component.',
+                    'GROUP': 'RMS_RES',
+                    'HEADER': 'rms[RhoW]',
+                    'TYPE': 'RESIDUAL'},
  'RMS_NU_TILDE': {'DESCRIPTION': 'Root-mean square residual of nu tilde (SA '
                                  'model).',
                   'GROUP': 'RMS_RES',
@@ -773,6 +778,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': '',
                                    'y-component.',
                     'GROUP': 'RMS_RES',
                     'HEADER': 'rms[V]',
+                    'TYPE': 'RESIDUAL'},
+ 'RMS_VELOCITY-Z': {'DESCRIPTION': 'Root-mean square residual of the velocity '
+                                   'z-component.',
+                    'GROUP': 'RMS_RES',
+                    'HEADER': 'rms[W]',
                     'TYPE': 'RESIDUAL'},
  'SECONDARY_OVER_UNIFORMITY': {'DESCRIPTION': 'Total secondary over uniformity '
                                               'on all markers set in '

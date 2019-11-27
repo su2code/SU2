@@ -77,7 +77,7 @@ def main():
 
     # perform eigenvalue perturbations
     for comp in range(1,4):
-        print "\n\n =================== Performing " + str(comp) + "  Component Perturbation =================== \n\n"
+        print("\n\n =================== Performing " + str(comp) + "  Component Perturbation =================== \n\n")
 
         # make copies
         konfig = copy.deepcopy(config)
@@ -103,7 +103,7 @@ def main():
     	ztate.update(info)
 
 
-    print "\n\n =================== Performing p1c1 Component Perturbation =================== \n\n"
+    print("\n\n =================== Performing p1c1 Component Perturbation =================== \n\n")
 
     # make copies
     konfig = copy.deepcopy(config)
@@ -129,7 +129,7 @@ def main():
     info = SU2.run.merge(konfig)
     state.update(info)
 
-    print "\n\n =================== Performing p1c2 Component Perturbation =================== \n\n"
+    print("\n\n =================== Performing p1c2 Component Perturbation =================== \n\n")
 
     # make copies
     konfig = copy.deepcopy(config)
