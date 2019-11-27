@@ -602,31 +602,6 @@ public:
                                   map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!
-   * \brief Set the rotational velocity at each node.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the current zone.
-   */
-  void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) override;
-
-  /*!
-   * \brief Set the rotational velocity of the points on the shroud markers to 0.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetShroudVelocity(CConfig *config) override;
-
-  /*!
-   * \brief Set the translational velocity at each node.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) override;
-
-  /*!
-   * \brief Set the grid velocity via finite differencing at each node.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetGridVelocity(CConfig *config, unsigned long iter) override;
-
-  /*!
    * \brief Do an implicit smoothing of the grid coordinates.
    * \param[in] val_nSmooth - Number of smoothing iterations.
    * \param[in] val_smooth_coeff - Relaxation factor.

@@ -833,30 +833,31 @@ public:
   void SetCustomBoundary(CConfig *config);
 
   /*!
-   * \brief A virtual member.
+   * \brief Set cartesian grid velocity based on rotational speed and axis.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the current zone.
+   * \param[in] print - Display information on screen.
    */
-  inline virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {}
+  void SetRotationalVelocity(CConfig *config, bool print = false);
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the rotational velocity of the points on the shroud markers to 0.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetShroudVelocity(CConfig *config) {}
+  void SetShroudVelocity(CConfig *config);
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the translational velocity at each node.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] print - Display information on screen.
    */
-  inline virtual void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {}
+  void SetTranslationalVelocity(CConfig *config, bool print = false);
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the grid velocity via finite differencing at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iter - Current physical time step.
    */
-  inline virtual void SetGridVelocity(CConfig *config, unsigned long iter) {}
+  void SetGridVelocity(CConfig *config, unsigned long iter);
 
   /*!
    * \brief A virtual member.

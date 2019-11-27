@@ -166,32 +166,6 @@ public:
   void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker) override;
 
   /*!
-   * \brief Set the rotational velocity at each grid point on a coarse mesh.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the current zone.
-   */
-  void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) override;
-
-  /*!
-   * \brief Set the rotational velocity of the points on the shroud markers to 0.0.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetShroudVelocity(CConfig *config) override;
-
-  /*!
-   * \brief Set the translational velocity at each grid point on a coarse mesh.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) override;
-
-  /*!
-   * \brief Set the grid velocity at each node in the coarse mesh level.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time step.
-   */
-  void SetGridVelocity(CConfig *config, unsigned long iter) override;
-
-  /*!
    * \brief Set the grid velocity at each node in the coarse mesh level based
    *        on a restriction from a finer mesh.
    * \param[in] fine_mesh - Geometry container for the finer mesh level.
