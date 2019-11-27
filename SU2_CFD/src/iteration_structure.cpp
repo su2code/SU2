@@ -2151,6 +2151,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
       LoadUnsteady_Solution(geometry, solver,config, val_iInst, val_iZone, Direct_Iter);
 
+      if (config[val_iZone]->GetDeform_Mesh()) {
+        solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
+      }
+
     } else if ((TimeIter > 0) && dual_time) {
 
       /*--- 
@@ -2159,6 +2163,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       correct containers as well, i.e. follow the same logic for the solution. 
       Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
+
+      if (config[val_iZone]->GetDeform_Mesh()) {
+        solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
+      }
 
       /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
       if (dual_time_1st){
