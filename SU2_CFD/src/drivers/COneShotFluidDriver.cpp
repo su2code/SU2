@@ -316,13 +316,50 @@ void COneShotFluidDriver::RunOneShot(){
   if(InnerIter > config->GetOneShotStart() && 
      InnerIter < config->GetOneShotStop()   && 
      ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+    /*--- Perform new line search on just multiplier ---*/
+    if(nConstr > 0) {
+      su2double stepsize_mu = 1.0;
+      ArmijoIter = 0;
+      bool_tol = false;
+      do {
+        if(ArmijoIter > 0){
+          /*--- Parabolic backtracking ---*/
+          stepsize_tmp = UpdateStepSizeQuadratic();
+          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+          if(stepsize_mu < tol) {
+            stepsize_mu  = tol;
+            bool_tol     = true;
+          }
+        }
+        /*--- Compute and store GradL dot p ---*/
+        StoreGradDotDir(false);
+
+        /*--- Update constraint multiplier ---*/
+        LoadOldMultiplier();
+        UpdateMultiplier(stepsize_mu);
+
+        /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+        CalculateLagrangian();
+
+        ArmijoIter++;
+
+      } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    }
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
-    LoadOldMultiplier();
-    UpdateMultiplier(1.0);
+
+    /*--- Recalculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
     SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
   }
+
+  // /*--- If line search failed, perform new line search on just multiplier ---*/
+  // if((nConstr > 0)                           &&
+  //    (InnerIter > config->GetOneShotStart()) && 
+  //    (InnerIter < config->GetOneShotStop())  &&
+  //    ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))) {
+      
+  // }
 
   if(InnerIter >= config->GetOneShotStart() && 
      InnerIter < config->GetOneShotStop()   && 
@@ -704,11 +741,11 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
 
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
-    // unsigned short TOTAL_AUGMENTED = 3;
-    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
-    // CalculateLagrangian();
-    // SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
+    unsigned short TOTAL_AUGMENTED = 3;
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    CalculateLagrangian();
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
       for (iDV = 0; iDV < nDV_Total; iDV++){
         for (jDV = 0; jDV < nDV_Total; jDV++){
