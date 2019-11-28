@@ -4442,6 +4442,18 @@ public:
    */
   virtual void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
+  virtual void Surface_Pitching(CGeometry *geometry, CConfig *config,
+                                unsigned long iter, unsigned short iZone);
+
+  virtual void Surface_Rotating(CGeometry *geometry, CConfig *config,
+                                unsigned long iter, unsigned short iZone);
+
+  virtual void Surface_Plunging(CGeometry *geometry, CConfig *config,
+                                unsigned long iter, unsigned short iZone);
+
+  virtual void Surface_Translating(CGeometry *geometry, CConfig *config,
+                                unsigned long iter, unsigned short iZone);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.

@@ -113,53 +113,101 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Translating(geometry[MESH_0],
-                                            config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      // CVC: To do: For deformation with new mesh solver, need to access solver[MESH_0][MESH_SOL] for SetBound_Disp
+      // inside Surface_Movement functions, rest of code is identical to grid_movement_structure.cpp
+      // Either enable solver[MESH_0][MESH_SOL] inside grid_movement_structure.cpp 
+      // or move Surface_Movement functions to inside CMeshSolver
 
-      if (rank == MASTER_NODE)
+      if (!config->GetDeform_Mesh()) {
+        surface_movement->Surface_Translating(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
+      else {
+        solver[MESH_0][MESH_SOL]->Surface_Translating(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
+      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Plunging ---*/
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Plunging(geometry[MESH_0],
-                                         config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      if (!config->GetDeform_Mesh()) {
+        surface_movement->Surface_Plunging(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
+      else {
+        solver[MESH_0][MESH_SOL]->Surface_Plunging(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
 
-      if (rank == MASTER_NODE)
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
+      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Pitching ---*/
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Pitching(geometry[MESH_0],
-                                         config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      if (!config->GetDeform_Mesh()) {
+        surface_movement->Surface_Pitching(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
+      else {
+        solver[MESH_0][MESH_SOL]->Surface_Pitching(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
 
-      if (rank == MASTER_NODE)
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
+      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Rotating ---*/
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      surface_movement->Surface_Rotating(geometry[MESH_0],
-                                         config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
+      if (!config->GetDeform_Mesh()) {
+        surface_movement->Surface_Rotating(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
+      else {
+        solver[MESH_0][MESH_SOL]->Surface_Rotating(geometry[MESH_0],
+                                          config, TimeIter, val_iZone);
+      }
 
-      if (rank == MASTER_NODE)
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      /*--- Set volume deformation if new elastic mesh solver is not used ---*/
+      /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
+      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+      if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
+        grid_movement->SetVolume_Deformation(geometry[MESH_0],
                                            config, true);
+      }
 
       /*--- Update the grid velocities on the fine mesh using finite
        differencing based on node coordinates at previous times. ---*/
@@ -2117,6 +2165,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       correct containers as well, i.e. follow the same logic for the solution. 
       Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
+
       if (config[val_iZone]->GetDeform_Mesh()) {
         solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
       }
