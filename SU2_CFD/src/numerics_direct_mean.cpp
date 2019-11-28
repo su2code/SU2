@@ -4136,8 +4136,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-                          - TWO3*total_viscosity*div_vel*delta[iDim][jDim]
-                          - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+                        - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
   }
 }
 

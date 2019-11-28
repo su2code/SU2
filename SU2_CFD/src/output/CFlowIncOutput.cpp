@@ -199,7 +199,13 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+
+  AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
+  AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
+  
+  AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
+  AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
+  AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
 
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
@@ -297,18 +303,22 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
-
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
+  
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
     SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
-    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetLinSol_Residual()));
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetResLinSolver()));
   }
-
-  SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
-
-
+  
+  SetHistoryOutputValue("MIN_DELTA_TIME", flow_solver->GetMin_Delta_Time());
+  SetHistoryOutputValue("MAX_DELTA_TIME", flow_solver->GetMax_Delta_Time());
+  
+  SetHistoryOutputValue("MIN_CFL", flow_solver->GetMin_CFL_Local());
+  SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
+  SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
+  
   /*--- Set the analyse surface history values --- */
 
   SetAnalyzeSurface(flow_solver, geometry, config, false);
@@ -601,10 +611,10 @@ void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 }
 
 bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
-
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curTimeIter < 2));
-
+  
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
+        (config->GetTime_Marching() == STEADY && (curInnerIter < 2)); 
+  
 }
 
 bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){

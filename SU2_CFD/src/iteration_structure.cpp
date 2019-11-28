@@ -508,11 +508,6 @@ void CFluidIteration::Preprocess(COutput *output,
     SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
   }
 
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
-    output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
-  }
-
 }
 
 void CFluidIteration::Iterate(COutput *output,
@@ -584,6 +579,13 @@ void CFluidIteration::Iterate(COutput *output,
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics,
                                                                      config, RUNTIME_HEAT_SYS, val_iZone, val_iInst);
+  }
+  
+  /*--- Adapt the CFL number using an exponential progression
+   with under-relaxation approach. ---*/
+  
+  if (config[val_iZone]->GetCFL_Adapt() == YES) {
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone]);
   }
   
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -682,11 +684,6 @@ bool CFluidIteration::Monitor(COutput *output,
                               config[val_iZone]->GetTimeIter(),
                               config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter());
-  }
-  
-  if (config[val_iZone]->GetCFL_Adapt() == YES) {
-      if (!(config[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
   }
 
   /*--- If convergence was reached --*/
@@ -1205,11 +1202,6 @@ void CHeatIteration::Preprocess(COutput *output,
                                 unsigned short val_iInst) {
 
   unsigned long OuterIter = config[val_iZone]->GetOuterIter();
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
-    output->SetCFL_Number(solver[val_iZone], config[val_iZone]);
-  }
 
 }
 
