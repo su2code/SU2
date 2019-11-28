@@ -106,21 +106,12 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
-  bool rans = (config->GetKind_Solver()== RANS);
+  bool rans = (config->GetKind_Solver()== INC_RANS);
 
   string UnstExt, text_line;
   ifstream restart_file;
-  string restart_filename = config->GetSolution_FileName();
 
-  /*--- Modify file name for multizone problems ---*/
-  if (nZone >1)
-    restart_filename = config->GetMultizone_FileName(restart_filename, iZone, ".dat");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (dual_time|| time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter, ".dat");
-
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
@@ -140,6 +131,12 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   if (nDim == 2) skipVars += 6;
   if (nDim == 3) skipVars += 8;
+
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+
+  if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
   /*--- Skip turbulent variables ---*/
 
