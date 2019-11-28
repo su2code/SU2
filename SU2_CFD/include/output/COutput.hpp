@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
@@ -347,13 +347,6 @@ public:
    * \return - The current restart filename
    */
   inline string GetRestart_Filename() {return restartFilename;}
-
-  /*!
-   * \brief Set the CFL number based on the current residuals
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCFL_Number(CSolver ****solver_container, CConfig *config);
 
   /*!
    * \brief Set the current iteration indices

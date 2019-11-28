@@ -141,9 +141,9 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
 
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetLinSol_Residual()));
-
-}
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
+  
+} 
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
