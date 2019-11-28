@@ -42,6 +42,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+
 }
 
 CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
@@ -68,8 +69,6 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
     Solution_Adj_Old.resize(nPoint,nVar);
   }
-
-  Non_Physical.resize(nPoint) = false;
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     AD_InputIndex.resize(nPoint,nVar) = -1;
