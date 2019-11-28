@@ -174,6 +174,10 @@ def download_module(name, alt_name, git_repo, commit_sha):
       # Unzip file 
       zipf = MyZipFile(sys.path[0] + os.path.sep + filename)
       zipf.extractall(sys.path[0] + os.path.sep + 'externals')
+      
+      # Remove directory if exists
+      if os.path.exists(alt_name):
+        os.rmdir(alt_name)
 
       os.rename(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
 
