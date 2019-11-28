@@ -31,6 +31,7 @@ su2_cfd_src = files(['solver_direct_transition.cpp',
                      'numerics_structure.cpp',
                      'numerics_template.cpp',
                      'solver_adjoint_discrete.cpp',
+                     'CMarkerProfileReaderFVM.cpp',
                      'SU2_CFD.cpp'])
 
 su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',

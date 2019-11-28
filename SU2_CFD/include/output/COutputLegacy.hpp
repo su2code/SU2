@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file output.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
@@ -194,12 +194,6 @@ class COutputLegacy {
         **Turb2LamViscRatioOut,
         **NuFactorIn,
         **NuFactorOut;
-
-  unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
-  vector<string> Marker_Tags_InletFile;  /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
-  unsigned long *nRow_InletFile;         /*!< \brief Counters for the number of points per marker in the inlet profile file. */
-  unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
-  su2double **InletCoords;               /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
 
 protected:
 
@@ -758,19 +752,6 @@ public:
   void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
-   */
-  void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);
-
-  /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
    *  on the surface and in the volume to a file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1016,28 +997,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Merge the node coordinates of all inlet boundaries from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void MergeInletCoordinates(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Write a template inlet profile file for all inlets for flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Solver container.
-   */
-  void Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver **solver);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing inlet boundary coordinates.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateInletCoordinates(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Create and write a CSV file with a slice of data.
