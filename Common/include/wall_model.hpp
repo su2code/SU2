@@ -102,7 +102,10 @@ protected:
   su2double Pr_lam;  /*!< \brief Laminar Prandtl number. */
   su2double Pr_turb; /*!< \brief Turbulent Prandtl number. */
   su2double karman;  /*!< \brief von Karman constant. */
-
+  su2double RGas;    /*!< \brief Dimensional Gas Constant. */
+  su2double Cp;
+  su2double Cv;
+  
 private:
   /*!
    * \brief Default constructor of the class, disabled.

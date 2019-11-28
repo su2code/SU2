@@ -47,7 +47,16 @@ CWallModel::CWallModel(CConfig *config) {
   Pr_lam  = config->GetPrandtl_Lam();
   Pr_turb = config->GetPrandtl_Turb();
 
-  karman = 0.41; // von Karman constant -> k = 0.41; or 0.38;
+  /* von Karman constant -> k = 0.41; or 0.38 */
+  karman = 0.41;
+
+  /*--- Get the dimensional Gas Constant.---*/
+  RGas = config->GetGas_Constant();
+    
+  Cv = RGas/(config->GetGamma()-1.0);
+  Cp = config->GetGamma()*Cv;
+
+
 }
 
 void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
@@ -354,6 +363,7 @@ CWallModelLogLaw::CWallModelLogLaw(CConfig      *config,
      and set the exchange height. */
   const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
   h_wm = doubleInfo[0];
+    
 }
 
 void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
@@ -376,12 +386,12 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
 
   FluidModel->SetTDState_PT(pExchange, TWall);
 
-  /* Get the required data from the fluid model. */
-  const su2double rho_wall = FluidModel->GetDensity();
-  const su2double mu_wall  = FluidModel->GetLaminarViscosity();
-  const su2double c_p      = FluidModel->GetCp();
-  const su2double c_v      = FluidModel->GetCv();
-  const su2double nu_wall  = mu_wall / rho_wall;
+  // TODO: Fix the constant laminar viscosity assumption in LogLaw wall model.
+  /* Get the required data from the fluid model.
+     Caution! Here we are assuming that laminar viscosity is constant! */
+  const su2double mu_wall  = muExchange;
+  const su2double rho_wall = pExchange / (TWall * RGas);
+  const su2double nu_wall  = muExchange / rho_wall;
 
   /* Initial guess of the friction velocity. */ 
   su2double u_tau = max(0.01*velExchange, 1.e-5);
@@ -410,13 +420,11 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
                            +                              (1.0/33.0)*u_tau0*pow(h_wm,2.0)*exp(-0.33*y_plus)/pow(nu_wall, 2.0))
                            - 1.0*h_wm/(nu_wall*(karman*y_plus + 1.0));
   
-    /* Newton method
-     */
+    /* Newton method */
     const su2double newton_step = fval/fprime;
     u_tau = u_tau0 - newton_step;
     
-    /* Define a norm
-     */
+    /* Define a norm */
     if (abs(1.0 - u_tau/u_tau0) < tol) converged = true;
   }
   
@@ -426,7 +434,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
     /* The Kader's law will be used to approximate the variations of the temperature inside the boundary layer.
      */
     const su2double y_plus = u_tau*h_wm/nu_wall;
-    const su2double lhs = - ((tExchange - TWall) * rho_wall * c_p * u_tau);
+    const su2double lhs = - ((tExchange - TWall) * rho_wall * Cp * u_tau);
     const su2double Gamma = - (0.01 * (Pr_lam * pow(y_plus,4.0))/(1.0 + 5.0*y_plus*pow(Pr_lam,3.0)));
     const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
     const su2double rhs_2 = (2.12*log(1.0+y_plus) + pow((3.85*pow(Pr_lam,(1.0/3.0)) - 1.3),2.0) + 2.12*log(Pr_lam)) * exp(1./Gamma);
@@ -437,5 +445,5 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
   }
 
   ViscosityWall = mu_wall;
-  kOverCvWall   = FluidModel->GetThermalConductivity()/c_v;
+  kOverCvWall   = (mu_wall*Cp/Pr_lam)/Cv;
 }
