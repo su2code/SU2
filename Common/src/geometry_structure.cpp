@@ -39,7 +39,7 @@
 #include "../include/adt_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/element_structure.hpp"
+#include "../include/geometry/elements/CElement.hpp"
 #include "../include/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
 #include "../include/CRectangularMeshReaderFVM.hpp"
@@ -49,6 +49,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
 
 /*--- Epsilon definition ---*/
 
@@ -2682,10 +2685,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-  bool input              = true;
-  bool push_index         = true;
-
-  if(config->GetMultizone_Problem()) push_index = false;
+  bool input = true;
+  bool push_index = config->GetMultizone_Problem()? false : true;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -3681,13 +3682,13 @@ void CGeometry::SetElemVolume(CConfig *config)
 
   /*--- Create a bank of elements to avoid instantiating inside loop ---*/
   if (nDim==2) {
-    elements[0] = new CTRIA1(nDim,config);
-    elements[1] = new CQUAD4(nDim,config);
+    elements[0] = new CTRIA1();
+    elements[1] = new CQUAD4();
   } else {
-    elements[0] = new CTETRA1(nDim,config);
-    elements[1] = new CPYRAM5(nDim,config);
-    elements[2] = new CPRISM6(nDim,config);
-    elements[3] = new CHEXA8(nDim,config);
+    elements[0] = new CTETRA1();
+    elements[1] = new CPYRAM5();
+    elements[2] = new CPRISM6();
+    elements[3] = new CHEXA8();
   }
 
   /*--- Compute and store the volume of each "elem" ---*/
@@ -3709,7 +3710,7 @@ void CGeometry::SetElemVolume(CConfig *config)
       unsigned long node_idx = elem[iElem]->GetNode(iNode);
       for (unsigned short iDim=0; iDim<nDim; ++iDim) {
         su2double coord = node[node_idx]->GetCoord(iDim);
-        element->SetRef_Coord(coord, iNode, iDim);
+        element->SetRef_Coord(iNode, iDim, coord);
       }
     }
     /*--- Compute ---*/
@@ -9064,7 +9065,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     }
     else cout << "." << endl;
     
-    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX;
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;

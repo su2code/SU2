@@ -1808,7 +1808,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
+         (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -2702,28 +2703,27 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           FFDBox[iFFDBox]->SetSphe2Cart_CornerPoints(config);
           FFDBox[iFFDBox]->SetSphe2Cart_ControlPoints(config);
         }
-        
-        /*--- Output original FFD FFDBox ---*/
-        
-        if (rank == MASTER_NODE) {
-          for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-            unsigned short *FileFormat = config->GetVolumeOutputFiles();
-            if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
-              cout << "Writing a Paraview file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
-              }
-            } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
-              cout << "Writing a Tecplot file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
-              }
+      }
+      /*--- Output original FFD FFDBox ---*/
+      
+      if (rank == MASTER_NODE) {
+        for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+          unsigned short *FileFormat = config->GetVolumeOutputFiles();
+          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
+            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-            else if (FileFormat[iFile] == CGNS)  {
-              cout << "Writing a CGNS file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
-              }
+          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
+            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+            }
+          }
+          else if (FileFormat[iFile] == CGNS)  {
+            cout << "Writing a CGNS file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
             }
           }
         }  
@@ -9180,14 +9180,14 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
       element_container[iKind] = NULL;
     }
     if (nDim == 2){
-      element_container[EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[EL_QUAD] = new CQUAD4(nDim, config);
+      element_container[EL_TRIA] = new CTRIA1();
+      element_container[EL_QUAD] = new CQUAD4();
     }
-    else if (nDim == 3){
-      element_container[EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CPYRAM5(nDim, config);
-      element_container[EL_PRISM] = new CPRISM6(nDim, config);
+    else {
+      element_container[EL_TETRA] = new CTETRA1();
+      element_container[EL_HEXA]  = new CHEXA8();
+      element_container[EL_PYRAM] = new CPYRAM5();
+      element_container[EL_PRISM] = new CPRISM6();
     }
 
     /*--- Term ij of the Jacobian ---*/
@@ -9576,7 +9576,7 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -9627,7 +9627,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
   su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double *Kab = NULL;
+  const su2double *Kab = NULL;
   unsigned short NelNodes, jNode;
 
   su2double ElemVolume;
@@ -9651,7 +9651,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -9750,7 +9750,7 @@ void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfi
     }
   }
 
-  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -9831,10 +9831,10 @@ void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfi
           }
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode){
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
         }
 
       }

@@ -57,7 +57,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.610567, -9.034912, -0.000000, 0.005621] #last 4 columns
+    discadj_naca0012.test_vals = [-3.559002, -8.926022, -0.000000, 0.005588] #last 4 columns
     discadj_naca0012.su2_exec  = "parallel_computation.py -f"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -68,7 +68,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.757340, -3.857847, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.724803, -3.838647, 0.000000, 0.000000] #last 4 columns
     discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.275220, 1.750269, 47258.000000, 0.000000] #last 4 columns
+    discadj_arina2k.test_vals    = [2.438813, 1.976484, 47258.000000, 0.000000] #last 4 columns
     discadj_arina2k.su2_exec     = "parallel_computation.py -f"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -94,7 +94,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751966, 0.485697, 0.183154, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.678810, 0.181780, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -105,7 +105,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.654042, -0.500944, 0.154703, -0.000022] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-2.223209, -0.496681, 0.154390, -0.000022] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -161,7 +161,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845805, -2.415680, -8.430441, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845625, -2.413047, -8.419973, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012_sst.timeout   = 1600
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
@@ -208,7 +208,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.167347, -1.635137, -0.020862, 0.000050] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.091129, -1.545863, -0.037418, 0.000108] #last 4 columns
     discadj_pitchingNACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -224,7 +224,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000,-1.923936, -2.119783] #last 4 columns
+    discadj_trans_stator.test_vals = [79.000000, -1.927296, -1.401205] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
@@ -239,7 +239,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals = [-6.492475, -6.401201, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -254,7 +254,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.281765, 0.706785, -0.743990, -6.866000] #last 4 columns
+    discadj_heat.test_vals = [-2.281765, 0.706808, -0.743990, -6.866000] #last 4 columns
     discadj_heat.su2_exec  = "parallel_computation.py -f"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
@@ -264,7 +264,7 @@ def main():
     ### Coupled FSI Adjoint         ###
     ###################################
    
-    # Structural model
+    # Legacy driver
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
@@ -275,6 +275,17 @@ def main():
     discadj_fsi.tol       = 0.00001
     test_list.append(discadj_fsi)
 
+    # Multi physics framework
+    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
+    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
+    discadj_fsi2.cfg_file  = "config.cfg"
+    discadj_fsi2.test_iter = 8
+    discadj_fsi2.test_vals = [-5.070991, -2.5239e-13] #last 2 columns
+    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    discadj_fsi2.timeout   = 1600
+    discadj_fsi2.tol       = 1e-16
+    test_list.append(discadj_fsi2)
+
     ###################################
     ### Coupled CHT Adjoint         ###
     ###################################
@@ -284,7 +295,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.403782, -3.097868, -3.097839, -3.097835] #last 4 columns
+    discadj_cht.test_vals = [-2.381654, -3.099873, -3.099844, -3.099841] #last 4 columns
     discadj_cht.su2_exec  = "parallel_computation.py -f"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
@@ -312,20 +323,6 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
-    ###################################
-    ### Coupled FSI Adjoint         ###
-    ###################################
-
-    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
-    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
-    discadj_fsi2.cfg_file  = "config.cfg"
-    discadj_fsi2.test_iter = 0
-    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
-    discadj_fsi2.timeout   = 1600
-    discadj_fsi2.reference_file = "grad_young.opt.ref"
-    discadj_fsi2.test_file = "grad_young.opt"
-    pass_list.append(discadj_fsi2.run_filediff())
-    test_list.append(discadj_fsi2)
 
     # Tests summary
     print('==================================================================')

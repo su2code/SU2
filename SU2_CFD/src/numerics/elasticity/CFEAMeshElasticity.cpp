@@ -35,11 +35,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/numerics/CFEAMeshElasticity.hpp"
-#include <limits>
+#include "../../../include/numerics/elasticity/CFEAMeshElasticity.hpp"
 
-CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config) : CFEALinearElasticity() {
 
+CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
+                                       unsigned long val_nElem, CConfig *config) :
+                                       CFEALinearElasticity() {
   DV_Val         = NULL;
   FAux_Dead_Load = NULL;
   Rho_s_i        = NULL;
@@ -48,12 +49,6 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
 
   nDim = val_nDim;
   nVar = val_nVar;
-
-  const unsigned short DIM_STRAIN_2D = 3; //Exx, Eyy, Gxy
-  const unsigned short DIM_STRAIN_3D = 6; //Exx, Eyy, Ezz, Gxy, Gxz, Gyz
-
-  const unsigned short NNODES_2D = 4;     // Maximum number of nodes for 2D problems
-  const unsigned short NNODES_3D = 8;     // Maximum number of nodes for 3D problems
 
   unsigned long iVar;
 
@@ -74,7 +69,7 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
 
   E_i  = NULL;
   if (element_based){
-    E_i         = new su2double[val_nElem];
+    E_i = new su2double[val_nElem];
     for (iVar = 0; iVar < val_nElem; iVar++){
       E_i[iVar] = E;
     }
@@ -85,44 +80,23 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
     KAux_ab[iVar] = new su2double[nDim];
   }
 
-  if (nDim == 2) {
-    Ba_Mat = new su2double* [DIM_STRAIN_2D];
-    Bb_Mat = new su2double* [DIM_STRAIN_2D];
-    D_Mat  = new su2double* [DIM_STRAIN_2D];
-    Ni_Vec  = new su2double [NNODES_2D];
-    GradNi_Ref_Mat = new su2double* [NNODES_2D];
-    GradNi_Curr_Mat = new su2double* [NNODES_2D];
-    for (iVar = 0; iVar < DIM_STRAIN_2D; iVar++) {
-      Ba_Mat[iVar] = new su2double[nDim];
-      Bb_Mat[iVar] = new su2double[nDim];
-      D_Mat[iVar]  = new su2double[DIM_STRAIN_2D];
-    }
-    for (iVar = 0; iVar < NNODES_2D; iVar++) {
-      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
-      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
-    }
+  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
+  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
+
+  Ba_Mat = new su2double* [nStrain];
+  Bb_Mat = new su2double* [nStrain];
+  D_Mat  = new su2double* [nStrain];
+  Ni_Vec  = new su2double [nNodes];
+  GradNi_Ref_Mat = new su2double* [nNodes];
+  GradNi_Curr_Mat = new su2double* [nNodes];
+  for (iVar = 0; iVar < nStrain; iVar++) {
+    Ba_Mat[iVar] = new su2double[nDim];
+    Bb_Mat[iVar] = new su2double[nDim];
+    D_Mat[iVar] = new su2double[nStrain];
   }
-  else if (nDim == 3) {
-    Ba_Mat = new su2double* [DIM_STRAIN_3D];
-    Bb_Mat = new su2double* [DIM_STRAIN_3D];
-    D_Mat  = new su2double* [DIM_STRAIN_3D];
-    Ni_Vec  = new su2double [NNODES_3D];
-    GradNi_Ref_Mat = new su2double* [NNODES_3D];
-    GradNi_Curr_Mat = new su2double* [NNODES_3D];
-    for (iVar = 0; iVar < DIM_STRAIN_3D; iVar++) {
-      Ba_Mat[iVar] = new su2double[nDim];
-      Bb_Mat[iVar] = new su2double[nDim];
-      D_Mat[iVar]  = new su2double[DIM_STRAIN_3D];
-    }
-    for (iVar = 0; iVar < NNODES_3D; iVar++) {
-      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
-      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
-    }
+  for (iVar = 0; iVar < nNodes; iVar++) {
+    GradNi_Ref_Mat[iVar] = new su2double[nDim];
+    GradNi_Curr_Mat[iVar] = new su2double[nDim];
   }
 
 }
-
-CFEAMeshElasticity::~CFEAMeshElasticity(void) {
-
-}
-

@@ -51,6 +51,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+
 }
 
 CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
@@ -74,11 +75,9 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
-	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
-	  Solution_Adj_Old.resize(nPoint,nVar);
-	}
-
-  Non_Physical.resize(nPoint) = false;
+  if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
+    Solution_Adj_Old.resize(nPoint,nVar);
+  }
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     AD_InputIndex.resize(nPoint,nVar) = -1;
@@ -99,6 +98,8 @@ void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
 
 void CVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
 
+void CVariable::Restore_BGSSolution_k() { Solution = Solution_BGS_k; }
+
 void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
 
 void CVariable::SetAuxVarGradientZero() { Grad_AuxVar.setConstant(0.0); }
@@ -110,8 +111,6 @@ void CVariable::SetRmatrixZero() { Rmatrix.storage.setConstant(0.0); }
 void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }
 
 void CVariable::SetExternalZero() { External.setConstant(0.0); }
-
-void CVariable::Set_OldExternal() { External_Old = External; }
 
 void CVariable::RegisterSolution(bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
