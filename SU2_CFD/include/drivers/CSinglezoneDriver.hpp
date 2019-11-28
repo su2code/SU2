@@ -33,7 +33,7 @@
  * \class CSinglezoneDriver
  * \brief Class for driving single-zone solvers.
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CSinglezoneDriver : public CDriver {
 protected:
