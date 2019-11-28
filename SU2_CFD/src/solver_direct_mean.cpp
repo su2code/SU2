@@ -4030,7 +4030,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double MeanVelocity[3] = {0.0, 0.0, 0.0};
       su2double *Normal         = geometry->edge[iEdge]->GetNormal();
       su2double ProjFlux[5]     = {0.0, 0.0, 0.0, 0.0, 0.0};
-      su2double Dissipation_ij  = 0.01;
+      su2double Dissipation_ij  = 0.0;
       
       for (iDim = 0; iDim < nDim; iDim++) {
         MeanVelocity[iDim] = 0.5 * (Primitive_i[iDim+1] + Primitive_j[iDim+1]);
@@ -4040,8 +4040,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double MeandRhodT = -MeanDensity/MeanTemperature;
       
       /*--- Get projected flux tensor ---*/
-      //numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
-      numerics->GetInviscidProjFlux_SkewSym(Primitive_i, Primitive_j, Normal, ProjFlux);
+      numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
+      //numerics->GetInviscidProjFlux_SkewSym(Primitive_i, Primitive_j, Normal, ProjFlux);
       //numerics->GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &BetaInc2, &MeanEnthalpy, Normal, ProjFlux);
       
       //
@@ -4104,14 +4104,24 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           for (unsigned short kVar = 0; kVar < nVar; kVar++){
             Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
           }
-          ProjFlux[iVar] -= 0.001*Proj_ModJac_Tensor_ij*Diff_Lapl[jVar]*Area;
+          ProjFlux[iVar] -= (1./1024.)*0.5*Proj_ModJac_Tensor_ij*Diff_Lapl[jVar]*Area;
         }
       }
+      
       // End compressible
       
       // Incompressible
-      /*--- Eigenvalues of the preconditioned system ---*/
-       
+      
+//      /*--- Difference of primitive variables at iPoint and jPoint ---*/
+//
+//      su2double Diff_V[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+//      Diff_V[0] = (Primitive_j[nDim+1] - Primitive_i[nDim+1]);
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Diff_V[iDim+1] = Primitive_j[iDim+1] - Primitive_i[iDim+1];
+//      Diff_V[nDim+1] = Primitive_j[0] - Primitive_i[0];
+//
+//      /*--- Eigenvalues of the preconditioned system ---*/
+//
 //      if (nDim == 2) {
 //        Lambda[0] = ProjVelocity;
 //        Lambda[1] = ProjVelocity;
@@ -4149,7 +4159,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 //          su2double Proj_ModJac_Tensor_ij = 0.0;
 //          for (unsigned short kVar = 0; kVar < nVar; kVar++)
 //            Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*invP_Tensor[kVar][jVar];
-//          ProjFlux[iVar] -= 0.001*Proj_ModJac_Tensor_ij*Diff_Lapl[jVar]*Area;
+//          ProjFlux[iVar] -= 0.001*Proj_ModJac_Tensor_ij*Diff_V[jVar]*Area;
 //        }
 //      }
 
@@ -18533,7 +18543,12 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
       
       TauWall = node[iPoint]->GetTauWall();
       Wall_HeatFlux = node[iPoint]->GetHeatFlux();
-      Residual[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
+      
+      /*--- Compute the normal gradient in temperature using Twall ---*/
+      su2double *DirNorWM = node[iPoint]->GetDirNormalWM();
+      Residual[nDim+1] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Residual[nDim+1] += (Wall_HeatFlux - TauWall * velWall_tan) * DirNorWM[iDim] * Area;
       
       LinSysRes.SubtractBlock(iPoint, Residual);
       
@@ -19517,8 +19532,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
       }
       else {
         Temperature_Prescribed = true;
-        Wall_Temperature       = config->GetIsothermal_Temperature(Marker_Tag)
-        / config->GetTemperature_Ref();
+        Wall_Temperature       = config->GetIsothermal_Temperature(Marker_Tag);
       }
       
       /*--- Loop over all of the vertices on this boundary marker ---*/
@@ -19551,18 +19565,25 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           }
         }
         
-        su2double vel2Mag = vel_LES[0]*vel_LES[0] + vel_LES[1]*vel_LES[1] + vel_LES[2]*vel_LES[2];
-        e_LES    = e_LES - 0.5*vel2Mag;
-        
         /*--- Load the fluid model to have pressure and temperature at exchange location---*/
         FluidModel->SetTDState_rhoe(rho_LES, e_LES);
-        const su2double Pressure = FluidModel->GetPressure();
-        const su2double Temperature = FluidModel->GetTemperature();
-        const su2double LaminarViscosity= FluidModel->GetLaminarViscosity();
+        su2double p_LES = FluidModel->GetPressure();
+        su2double t_LES = FluidModel->GetTemperature();
+        su2double mu_LES = FluidModel->GetLaminarViscosity();
         
+        /*--- Compute dimensional variables before calling the Wall Model ---*/
+        rho_LES *= config->GetDensity_Ref();
+        for (iDim = 0; iDim < nDim; iDim++ ){
+          vel_LES[iDim] *= config->GetVelocity_Ref();
+        }
+        e_LES *= config->GetEnergy_Ref();
+        p_LES *= config->GetPressure_Ref();
+        t_LES *= config->GetTemperature_Ref();
+        mu_LES *= (config->GetPressure_Ref()/config->GetVelocity_Ref());
+
         /* TODO: Subtract the prescribed wall velocity, i.e. grid velocity
          from the velocity in the exchange point. */
-        for(iDim=0; iDim<nDim; ++iDim) vel_LES[iDim] -= node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetSolution(0);
+        //for(iDim=0; iDim<nDim; ++iDim) vel_LES[iDim] -= node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetSolution(0);
         
         /* Determine the tangential velocity by subtracting the normal
          velocity component. */
@@ -19582,18 +19603,17 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           /* Compute the wall shear stress and heat flux vector using
            the wall model. */
           su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-          WallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
+          WallModel->WallShearStressAndHeatFlux(t_LES, velTan, mu_LES, p_LES,
                                                 Wall_HeatFlux, HeatFlux_Prescribed,
                                                 Wall_Temperature, Temperature_Prescribed,
                                                 FluidModel, tauWall, qWall, ViscosityWall,
                                                 kOverCvWall);
-
-          /* Compute the wall velocity in tangential direction. */
-          const su2double *solWall = node[iPoint]->GetSolution();
-          su2double velWallTan = 0.0;
-          for( iDim = 0; iDim < nDim; iDim++)
-            velWallTan += solWall[iDim+1]*dirTan[iDim];
-          velWallTan /= solWall[0];
+          
+          
+          /*--- Compute the non-dimensional values if necessary. ---*/
+          tauWall /= config->GetPressure_Ref();
+          qWall   /= (config->GetPressure_Ref() * config->GetVelocity_Ref());
+          ViscosityWall /= (config->GetPressure_Ref()/config->GetVelocity_Ref());
           
           /*--- Set tau wall and heat flux at the node. ---*/
           node[iPoint]->SetTauWall_Flag(true);
