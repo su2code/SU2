@@ -39,7 +39,7 @@
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config) {
+  : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
@@ -51,7 +51,11 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
+  }
+  
+  if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
@@ -63,4 +67,9 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
   Delta_Time.resize(nPoint) = su2double(0.0);
+
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+  
 }
