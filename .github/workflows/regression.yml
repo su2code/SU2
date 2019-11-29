@@ -87,5 +87,5 @@ jobs:
       - name: Run Tests in Container
         uses: docker://su2code/test-su2:20191031
         with:
-          args: -b ${{github.ref}} -t release_v7.0.0 -c develop -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   
