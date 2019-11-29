@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '6.2.0',
+        version: '7.0.0',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -161,12 +161,12 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 6.2.0 'Falcon'                            |
+         |   / __| | | |_  )   Release 7.0.0 'Blackbird'                         |
          |   \__ \ |_| |/ /                                                      |
-         |   |___/\___//___|   Configuration Summary                             |
+         |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
          -------------------------------------------------------------------------
-
+         
          Option          Value
          ---------------------
          TecIO:          @2@
