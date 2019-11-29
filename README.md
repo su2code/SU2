@@ -2,9 +2,8 @@
 <img width="250" height="154" src="Common/doc/logoSU2small.png">
 </p>
 
------------------------------------------------------------
-  SU2 (ver. 7.0.0 "Blackbird"): The Open-Source CFD Code
------------------------------------------------------------
+
+# SU2 (ver. 7.0.0 "Blackbird"): The Open-Source CFD Code
 
 Computational analysis tools have revolutionized the way we design engineering systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making multiphysics analysis and design optimization freely available as open-source software and involving everyone in its creation and development. 
 
@@ -18,9 +17,7 @@ Continuous Integration:<br/>
 [![Regression Testing](https://github.com/su2code/SU2/workflows/Regression%20Testing/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
 [![Release](https://github.com/su2code/SU2/workflows/Release%20Management/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
 
-----------------------------------------------------------
-  SU2 INTRODUCTION 
-----------------------------------------------------------
+# SU2 Introduction
 
 SU2 is a suite of open-source software tools written in C++ for the numerical solution of partial differential equations (PDE) and performing PDE constrained optimization. 
 
@@ -33,9 +30,14 @@ You will find more information and the latest news in:
    - Twitter: https://twitter.com/su2code
    - Facebook: https://www.facebook.com/su2code
 
----------------------------------------------------
-  SU2 INSTALLATION
----------------------------------------------------
+
+# SU2 Installation
+
+## Precompiled binaries for Linux, MacOS, Windows
+
+You can find precompiled binaries of the latest version on our [download page](https://su2code.github.io/download/) or under [releases](https://github.com/su2code/SU2/releases).
+
+## Build SU2
 The build system of SU2 is based on a combination of [meson](http://mesonbuild.com/) (as the front-end) and [ninja](https://ninja-build.org/) (as the back-end). Meson is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible. Ninja is a small low-level build system with a focus on speed. 
 
 Short summary of the minimal requirements:
@@ -57,9 +59,7 @@ Use `ninja` to compile and install the code
 
 For more information on how to install and build SU2 on Linux, MacOS or Windows, have a look at the [documentation](https://su2code.github.io/docs_v7/).
 
-----------------------------------------------------------
-  SU2 PATH SETUP 
-----------------------------------------------------------
+##  SU2 Path setup
 
 When installation is complete, please be sure to add the `$SU2_HOME` and `$SU2_RUN` environment variables, and update your `$PATH` with `$SU2_RUN`. 
 
@@ -79,9 +79,9 @@ Thanks for building, and happy optimizing!
 
 - The SU2 Development Team
 
-----------------------------------------------------------
-  SU2 DEVELOPERS
-----------------------------------------------------------
+
+# SU2 Developers
+
 
 We follow the popular "GitFlow" branching model for scalable development. In the SU2 repository, the master branch represents the latest stable major or minor release (7.0, 6.2.0, etc.), it should only be modified during version releases. Work that is staged for release is put into the develop branch via Pull Requests on GitHub from various "feature" branches where folks do their day-to-day work on the code. At release time, the work that has been merged into the develop branch is pushed to the master branch and tagged as a release.
 
