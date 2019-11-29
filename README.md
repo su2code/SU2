@@ -16,7 +16,7 @@ Please note that this project is released with a [Contributor Code of Conduct](C
 
 Continuous Integration:<br/>
 [![Regression Testing](https://github.com/su2code/SU2/workflows/Regression%20Testing/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
-
+[![Release](https://github.com/su2code/SU2/workflows/Release%20Management/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
 
 ----------------------------------------------------------
   SU2 INTRODUCTION 
