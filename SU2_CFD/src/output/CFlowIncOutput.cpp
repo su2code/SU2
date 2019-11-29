@@ -2,7 +2,7 @@
  * \file output_flow_inc.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
