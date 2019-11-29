@@ -34,7 +34,7 @@
  * \class CMultizoneDriver
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
- * \version 6.0.1 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CMultizoneDriver : public CDriver {
 protected:
