@@ -2,7 +2,7 @@
 swig = find_program('swig')
 
 # add mpi4py include
-if mpi_dep[0].found() and mpi_dep[1].found()
+if mpi
     mpi4py_include = run_command(python, '-c', 'import mpi4py; print(mpi4py.get_include())').stdout().strip()
     assert(not mpi4py_include.contains('Traceback'), 'python does not have mpi4py module')
     message('Using mpi4py from ' + mpi4py_include)
