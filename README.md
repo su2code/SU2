@@ -36,8 +36,26 @@ You will find more information and the latest news in:
 ---------------------------------------------------
   SU2 INSTALLATION
 ---------------------------------------------------
+The build system of SU2 is based on a combination of [meson](http://mesonbuild.com/) (as the front-end) and [ninja](https://ninja-build.org/) (as the back-end). Meson is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible. Ninja is a small low-level build system with a focus on speed. 
 
-To build SU2 from the source code, first open a terminal and execute the ./bootstrap script provided in the root directory of the source distribution in order to set the makefiles for your local system. Then, simply run the './configure', 'make', and 'make install' commands. You can provide an install location using the prefix option to configure. Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
+Short summary of the minimal requirements:
+
+- C/C++ compiler
+- Python 3
+
+**Note:** all other necessary build tools and dependencies are shipped with the source code or are downloaded automatically.
+
+If you have these tools installed, you can create a configuration using the `meson.py` found in the root source code folder:
+```
+./meson.py build
+```
+Use `ninja` to compile and install the code
+
+```
+./ninja -C build install
+```
+
+For more information on how to install and build SU2 on Linux, MacOS or Windows, have a look at the [documentation](https://su2code.github.io/docs_v7/).
 
 ----------------------------------------------------------
   SU2 PATH SETUP 
@@ -68,16 +86,4 @@ We follow the popular "GitFlow" branching model for scalable development. In the
 
 SU2 is being developed by individuals and organized teams all around the world. 
 
-The current SU2 release has been coordinated by the SU2 International Developers Society with selected contributions from the open-source community.
-
-The main research teams contributing to the current release are:
-- Prof. Juan J. Alonso's group at Stanford University.
-- Prof. Piero Colonna's group at Delft University of Technology.
-- Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology.
-- Prof. Alberto Guardone's group at Polytechnic University of Milan.
-- Prof. Rafael Palacios' group at Imperial College London.
-- Prof. Vincent Terrapon's group at the University of Liege.
-- Prof. Edwin van der Weide's group at the University of Twente.
-- Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
-
-Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
+A list of current contributors can be found in the AUTHORS.md file.
