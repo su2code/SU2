@@ -48,41 +48,33 @@ Ana Lourenco
 Andrew Burkett
 Andrew Wendorff
 Aniket C. Aranake
-Anil Variyar
 Antonio Rubino
 Arne Bachmann
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brandon Tracey
-Brian Munguia
 Carsten Othmer
-Charanya Venkatesan-Crome
 Clark Pederson
-Daniel Linton
+Daumantas Kavolis
 Dave Taflin
-David Manosalvas-Kjono
-Dheevatsa Mudigere
 Eduardo Molina
-Edwin van der Weide
-Eran Arad
 Ethan Alan Hereth
 Francisco D. Palacios
 Gaurav Bansal
 Giulio Gori
 Guillaume Bâty
 Harichand M V
-Heather Kline
 IndianaStokes
 J. Sinsay
-Jae hwan Choi
+JSmith36
 Jairo Paes Cavalcante Filho
 Jason Howison
 Jayant Mukhopadhaya
 Jeffrey van Oostrom
 Jessie Lauzon
-Jonathan Smith
 João Loureiro
 Kedar Naik
+LaSerpe
 Matteo Pini
 Max Sagebaum
 Mickael Philit
@@ -100,14 +92,22 @@ Samet Cakmakcioglu
 Scott Imlay
 Steven Endres
 Teus van der Stelt
-The Codacy Badger
 Thomas D. Economon
 Tim Albring
-Timothy B. Costa
-Tobias Kattmann
+TobiKattmann
 Trent Lukaczyk
 VivaanKhatri
 Wally Maier
+anilvar
+bmunguia
+chamsolli
+costat
+cvencro
+daniel-linton
+demanosalvas
+dmudiger
+erangit
+hlkline
 juliendm
 jvanoostrom
 mcolonno
@@ -117,6 +117,7 @@ sametcaka
 sravya91
 srcopela
 tobadavid
+vdweide
 vfrancesmolla
 ```
 
