@@ -312,7 +312,7 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Recompute alpha, beta, gamma if line search failed ---*/
-  solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
+  if(InnerIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
   if(InnerIter > config->GetOneShotStart() && 
      InnerIter < config->GetOneShotStop()   && 
      ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
@@ -363,7 +363,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   if(InnerIter >= config->GetOneShotStart() && 
      InnerIter < config->GetOneShotStop()   && 
-     InnerIter > 1) {
+     InnerIter > 0) {
     /*--- Calculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     // solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
     // // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);

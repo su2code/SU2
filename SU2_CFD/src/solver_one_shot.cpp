@@ -50,7 +50,7 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   rho       = 0.0;
   rho_old   = 1.0;
-  theta     = 0.0;
+  theta     = 1.0;
   theta_old = 1.0;
   nConstr   = config->GetnConstr();
   nActiveDV = 0;
