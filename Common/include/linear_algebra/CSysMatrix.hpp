@@ -206,14 +206,14 @@ private:
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
    */
-  inline void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
+  void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
 
   /*!
    * \brief Invert a small dense matrix.
    * \param[in] matrix - the matrix.
    * \param[out] inverse - the matrix inverse.
    */
-  inline void MatrixInverse(const ScalarType *matrix, ScalarType *inverse);
+  void MatrixInverse(const ScalarType *matrix, ScalarType *inverse);
 
   /*!
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
@@ -262,20 +262,12 @@ private:
   inline void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
 
   /*!
-   * \brief Subtracts the specified block to the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to subtract to A(i, j).
-   */
-  inline void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
-
-  /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
    * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
    */
-  void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  inline void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
 
   /*!
    * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
@@ -283,7 +275,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
    */
-  void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  inline void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
 
   /*!
    * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
@@ -291,7 +283,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
    */
-  void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  inline void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
 
   /*!
    * \brief Performs the product of i-th row of a sparse matrix by a vector.
