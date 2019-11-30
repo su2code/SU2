@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -33,31 +33,33 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
-  ilu_fill_in       = 0;
+  matrix            = nullptr;
+  row_ptr           = nullptr;
+  dia_ptr           = nullptr;
+  col_ind           = nullptr;
 
-  /*--- Array initialization ---*/
+  ILU_matrix        = nullptr;
+  row_ptr_ilu       = nullptr;
+  dia_ptr_ilu       = nullptr;
+  col_ind_ilu       = nullptr;
 
-  matrix            = NULL;
-  ILU_matrix        = NULL;
-  row_ptr           = NULL;
-  col_ind           = NULL;
-  row_ptr_ilu       = NULL;
-  col_ind_ilu       = NULL;
-  block             = NULL;
-  prod_row_vector   = NULL;
-  aux_vector        = NULL;
-  sum_vector        = NULL;
-  invM              = NULL;
-  block_weight      = NULL;
-  block_inverse     = NULL;
+  invM              = nullptr;
+
+  block             = nullptr;
+  block_weight      = nullptr;
+  block_inverse     = nullptr;
+
+  prod_row_vector   = nullptr;
+  aux_vector        = nullptr;
+  sum_vector        = nullptr;
 
 #ifdef USE_MKL
-  MatrixMatrixProductJitter              = NULL;
-  MatrixVectorProductJitterBetaOne       = NULL;
-  MatrixVectorProductJitterBetaZero      = NULL;
-  MatrixVectorProductJitterAlphaMinusOne = NULL;
-  MatrixVectorProductTranspJitterBetaOne = NULL;
-  mkl_ipiv = NULL;
+  MatrixMatrixProductJitter              = nullptr;
+  MatrixVectorProductJitterBetaOne       = nullptr;
+  MatrixVectorProductJitterBetaZero      = nullptr;
+  MatrixVectorProductJitterAlphaMinusOne = nullptr;
+  MatrixVectorProductTranspJitterBetaOne = nullptr;
+  mkl_ipiv = nullptr;
 #endif
 
 }
@@ -65,124 +67,105 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
 template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
-  /*--- Memory deallocation ---*/
+  if (matrix     != nullptr)  delete [] matrix;
+  if (ILU_matrix != nullptr)  delete [] ILU_matrix;
+  if (invM       != nullptr)  delete [] invM;
 
-  if (matrix != NULL)             delete [] matrix;
-  if (ILU_matrix != NULL)         delete [] ILU_matrix;
-  if (row_ptr != NULL)            delete [] row_ptr;
-  if (col_ind != NULL)            delete [] col_ind;
+  if (block         != nullptr)  delete [] block;
+  if (block_weight  != nullptr)  delete [] block_weight;
+  if (block_inverse != nullptr)  delete [] block_inverse;
 
-  if (ilu_fill_in != 0) {
-    if (row_ptr_ilu != NULL) delete [] row_ptr_ilu;
-    if (col_ind_ilu != NULL) delete [] col_ind_ilu;
-  }
-
-  if (block != NULL)              delete [] block;
-  if (block_weight != NULL)       delete [] block_weight;
-  if (block_inverse != NULL)      delete [] block_inverse;
-
-  if (prod_row_vector != NULL)    delete [] prod_row_vector;
-  if (aux_vector != NULL)         delete [] aux_vector;
-  if (sum_vector != NULL)         delete [] sum_vector;
-  if (invM != NULL)               delete [] invM;
+  if (prod_row_vector != nullptr)  delete [] prod_row_vector;
+  if (aux_vector      != nullptr)  delete [] aux_vector;
+  if (sum_vector      != nullptr)  delete [] sum_vector;
 
 #ifdef USE_MKL
-  if ( MatrixMatrixProductJitter != NULL )              mkl_jit_destroy( MatrixMatrixProductJitter );
-  if ( MatrixVectorProductJitterBetaZero != NULL )      mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
-  if ( MatrixVectorProductJitterBetaOne  != NULL )      mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
-  if ( MatrixVectorProductJitterAlphaMinusOne != NULL ) mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
-  if ( MatrixVectorProductTranspJitterBetaOne != NULL ) mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
-  if ( mkl_ipiv != NULL ) delete [] mkl_ipiv;
+  if ( MatrixMatrixProductJitter != nullptr )              mkl_jit_destroy( MatrixMatrixProductJitter );
+  if ( MatrixVectorProductJitterBetaZero != nullptr )      mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
+  if ( MatrixVectorProductJitterBetaOne  != nullptr )      mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
+  if ( MatrixVectorProductJitterAlphaMinusOne != nullptr ) mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
+  if ( MatrixVectorProductTranspJitterBetaOne != nullptr ) mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
+  if ( mkl_ipiv != nullptr ) delete [] mkl_ipiv;
 #endif
 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::Initialize(unsigned long nPoint, unsigned long nPointDomain,
-                            unsigned short nVar, unsigned short nEqn,
+void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain,
+                            unsigned short nvar, unsigned short neqn,
                             bool EdgeConnect, CGeometry *geometry, CConfig *config) {
 
-  /*--- Don't delete *row_ptr, *col_ind because they are
-   asigned to the Jacobian structure. ---*/
+  if(matrix != nullptr)
+    SU2_MPI::Error("CSysMatrix can only be initialized once.", CURRENT_FUNCTION);
 
-  unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem, iVar;
-  unsigned short iNeigh, iElem, iNode, *nNeigh, *nNeigh_ilu;
-  vector<unsigned long>::iterator it;
-  vector<unsigned long> vneighs, vneighs_ilu;
+  /*--- Application of this matrix, FVM or FEM. ---*/
+  auto type = EdgeConnect? ConnectivityType::FiniteVolume : ConnectivityType::FiniteElement;
 
-  /*--- Set the ILU fill in level --*/
+  /*--- Types of preconditioner the matrix will be asked to build. ---*/
+  unsigned short sol_prec = config->GetKind_Linear_Solver_Prec();
+  unsigned short def_prec = config->GetKind_Deform_Linear_Solver_Prec();
+  unsigned short adj_prec = config->GetKind_DiscAdj_Linear_Prec();
+  bool adjoint = config->GetDiscrete_Adjoint();
 
-  ilu_fill_in = config->GetLinear_Solver_ILU_n();
+  bool ilu_needed = (sol_prec==ILU) || (def_prec==ILU) || (adjoint && (adj_prec==ILU));
 
-  /*--- Compute the number of neighbors ---*/
+  /*--- Basic dimensions. ---*/
+  nVar = nvar;
+  nEqn = neqn;
+  nPoint = npoint;
+  nPointDomain = npointdomain;
 
-  nNeigh = new unsigned short [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  /*--- Get sparse structure pointers from geometry,
+   *    the data is managed by CGeometry to allow re-use. ---*/
 
-    if (EdgeConnect) {
-      nNeigh[iPoint] = (geometry->node[iPoint]->GetnPoint()+1);  // +1 -> to include diagonal element
-    }
-    else {
-      vneighs.clear();
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
+  const auto& csr = geometry->GetSparsePattern(type,0);
 
-      sort(vneighs.begin(), vneighs.end());
-      it = unique(vneighs.begin(), vneighs.end());
-      vneighs.resize(it - vneighs.begin());
-      nNeigh[iPoint] = vneighs.size();
-    }
+  row_ptr = csr.outerPtr();
+  col_ind = csr.innerIdx();
+  dia_ptr = csr.diagPtr();
+  nnz = csr.getNumNonZeros();
 
+  /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
+
+  if(ilu_needed)
+  {
+    ilu_fill_in = config->GetLinear_Solver_ILU_n();
+
+    const auto& csr_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
+
+    row_ptr_ilu = csr_ilu.outerPtr();
+    col_ind_ilu = csr_ilu.innerIdx();
+    dia_ptr_ilu = csr_ilu.diagPtr();
+    nnz_ilu = csr_ilu.getNumNonZeros();
   }
 
-  /*--- Create row_ptr structure, using the number of neighbors ---*/
+  /*--- Allocate data. ---*/
 
-  row_ptr = new unsigned long [nPoint+1];
-  row_ptr[0] = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
-  nnz = row_ptr[nPoint];
+#define ALLOC_AND_INIT(ptr,sz) {\
+  ptr = new ScalarType [sz]; for(size_t k=0; k<sz; ++k) ptr[k]=0.0; }
 
-  /*--- Create col_ind structure ---*/
+  ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
 
-  col_ind = new unsigned long [nnz];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  ALLOC_AND_INIT(block, nVar*nEqn)
+  ALLOC_AND_INIT(block_weight, nVar*nEqn)
+  ALLOC_AND_INIT(block_inverse, nVar*nEqn)
 
-    vneighs.clear();
+  ALLOC_AND_INIT(aux_vector, nVar)
+  ALLOC_AND_INIT(sum_vector, nVar)
+  ALLOC_AND_INIT(prod_row_vector, nVar)
 
-    if (EdgeConnect) {
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++)
-        vneighs.push_back(geometry->node[iPoint]->GetPoint(iNeigh));
-      vneighs.push_back(iPoint);
-    }
-    else {
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-    }
+  /*--- Preconditioners. ---*/
 
-    sort(vneighs.begin(), vneighs.end());
-    it = unique(vneighs.begin(), vneighs.end());
-    vneighs.resize( it - vneighs.begin() );
-
-    index = row_ptr[iPoint];
-    for (iNeigh = 0; iNeigh < vneighs.size(); iNeigh++) {
-      col_ind[index] = vneighs[iNeigh];
-      index++;
-    }
-
+  if (ilu_needed) {
+    ALLOC_AND_INIT(ILU_matrix, nnz_ilu*nVar*nEqn)
   }
 
-  /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
-
-  SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
+  if (ilu_needed || (sol_prec==JACOBI) || (sol_prec==LINELET) ||
+      (adjoint && (adj_prec==JACOBI)) || (def_prec==JACOBI))
+  {
+    ALLOC_AND_INIT(invM, nPointDomain*nVar*nEqn);
+  }
+#undef ALLOC_AND_INIT
 
   /*--- Generate MKL Kernels ---*/
 
@@ -204,171 +187,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long nPoint, unsigned long nPoi
 
   mkl_ipiv = new lapack_int [ nVar ];
 #endif
-
-  /*--- Initialization matrix to zero ---*/
-
-  SetValZero();
-
-  delete [] nNeigh;
-
-  /*--- ILU(n) preconditioner with a specific sparse structure ---*/
-
-  if (ilu_fill_in != 0) {
-
-    nNeigh_ilu = new unsigned short [nPoint];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-      vneighs_ilu.clear();
-      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
-      sort(vneighs_ilu.begin(), vneighs_ilu.end());
-      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-      vneighs_ilu.resize(it - vneighs_ilu.begin());
-      nNeigh_ilu[iPoint] = vneighs_ilu.size();
-
-    }
-
-    row_ptr_ilu = new unsigned long [nPoint+1];
-    row_ptr_ilu[0] = 0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      row_ptr_ilu[iPoint+1] = row_ptr_ilu[iPoint] + nNeigh_ilu[iPoint];
-    nnz_ilu = row_ptr_ilu[nPoint];
-
-    /*--- Create col_ind structure ---*/
-
-    col_ind_ilu = new unsigned long [nnz_ilu];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-      vneighs_ilu.clear();
-      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
-      sort(vneighs_ilu.begin(), vneighs_ilu.end());
-      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-      vneighs_ilu.resize( it - vneighs_ilu.begin() );
-
-      index = row_ptr_ilu[iPoint];
-      for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
-        col_ind_ilu[index] = vneighs_ilu[iNeigh];
-        index++;
-      }
-
-    }
-
-    ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
-    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-
-    invM = new ScalarType [nPointDomain*nVar*nEqn];
-    for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
-
-    delete [] nNeigh_ilu;
-
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
-                               bool EdgeConnect, vector<unsigned long> & vneighs) {
-  unsigned long Point, iElem, Elem;
-  unsigned short iNode;
-
-
-  if (EdgeConnect) {
-    vneighs.push_back(iPoint);
-    for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-      Point = geometry->node[iPoint]->GetPoint(iNode);
-      vneighs.push_back(Point);
-      if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
-    }
-  }
-  else {
-    for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-      Elem =  geometry->node[iPoint]->GetElem(iElem);
-      for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
-        Point = geometry->elem[Elem]->GetNode(iNode);
-        vneighs.push_back(Point);
-        if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
-      }
-    }
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
-
-  unsigned long iVar;
-
-  nPoint       = val_nPoint;        // Assign number of points in the mesh
-  nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
-  nVar         = val_nVar;          // Assign number of vars in each block system
-  nEqn         = val_nEq;           // Assign number of eqns in each block system
-
-  row_ptr      = val_row_ptr;       // Assign row values in the spare system structure (Jacobian structure)
-  col_ind      = val_col_ind;       // Assign colums values in the spare system structure (Jacobian structure)
-  nnz          = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (Jacobian structure)
-
-  if (ilu_fill_in == 0) {
-    row_ptr_ilu  = val_row_ptr;       // Assign row values in the spare system structure (ILU structure)
-    col_ind_ilu  = val_col_ind;       // Assign colums values in the spare system structure (ILU structure)
-    nnz_ilu      = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (ILU structure)
-  }
-
-  matrix            = new ScalarType [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
-  block             = new ScalarType [nVar*nEqn];
-  block_weight      = new ScalarType [nVar*nEqn];
-  block_inverse     = new ScalarType [nVar*nEqn];
-
-  prod_row_vector   = new ScalarType [nVar];
-  aux_vector        = new ScalarType [nVar];
-  sum_vector        = new ScalarType [nVar];
-
-  /*--- Memory initialization ---*/
-
-  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_inverse[iVar] = 0.0;
-
-  for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
-
-  if (ilu_fill_in == 0) {
-
-    /*--- Set specific preconditioner matrices (ILU) ---*/
-
-    if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-        ((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-        ((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-        (config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
-        (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
-
-      /*--- Reserve memory for the ILU matrix. ---*/
-
-      ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
-      for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-
-      invM = new ScalarType [nPointDomain*nVar*nEqn];
-      for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
-
-    }
-
-  }
-
-  /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
-
-  if ((config->GetKind_Linear_Solver_Prec() == JACOBI) ||
-      (config->GetKind_Linear_Solver_Prec() == LINELET) ||
-     ((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
-     ((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
-      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI) ||
-      (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == JACOBI))   {
-
-    /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
-
-    invM = new ScalarType [nPointDomain*nVar*nEqn];
-    for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
-
-  }
 
 }
 
@@ -1154,7 +972,7 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
 
   /*--- Memory allocation --*/
 
-  LineletUpper.resize(max_nElem,NULL);
+  LineletUpper.resize(max_nElem,nullptr);
   LineletInvDiag.resize(max_nElem*nVar*nVar,0.0);
   LineletVector.resize(max_nElem*nVar,0.0);
 
@@ -1168,9 +986,9 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
   unsigned long iVar, iElem, nElem, iLinelet, iPoint, im1Point;
   /*--- Pointers to lower, upper, and diagonal blocks ---*/
-  const ScalarType *l = NULL, *u = NULL, *d = NULL;
+  const ScalarType *l = nullptr, *u = nullptr, *d = nullptr;
   /*--- Inverse of d_{i-1}, modified d_i, modified b_i (rhs) ---*/
-  ScalarType *inv_dm1 = NULL, *d_prime = NULL, *b_prime = NULL;
+  ScalarType *inv_dm1 = nullptr, *d_prime = nullptr, *b_prime = nullptr;
 
 //  if (size != SINGLE_NODE)
 //    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);

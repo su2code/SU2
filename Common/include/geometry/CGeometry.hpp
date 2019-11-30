@@ -53,6 +53,7 @@ extern "C" {
 #include "../dual_grid_structure.hpp"
 #include "../config_structure.hpp"
 #include "../geometry_structure_fem_part.hpp"
+#include "../toolboxes/graph_toolbox.hpp"
 
 using namespace std;
 
@@ -157,6 +158,14 @@ protected:
   su2double **SpanAreaOut;               /*!< \brief Area at each span wise section for each turbomachinery marker.*/
   su2double **TurboRadiusIn;
   su2double **TurboRadiusOut;            /*!< \brief Radius at each span wise section for each turbomachinery marker*/
+
+  /*--- Sparsity patterns associated with the geometry. ---*/
+
+  CCompressedSparsePatternUL
+  finiteVolumeCSRFill0,                  /*!< \brief 0-fill FVM sparsity. */
+  finiteVolumeCSRFillN,                  /*!< \brief N-fill FVM sparsity (e.g. for ILUn preconditioner). */
+  finiteElementCSRFill0,                 /*!< \brief 0-fill FEM sparsity. */
+  finiteElementCSRFillN;                 /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
 
 public:
   /*--- Main geometric elements of the grid. ---*/
@@ -1590,6 +1599,15 @@ public:
    * \param config - Config
    */
   inline virtual void ComputeMeshQualityStatistics(CConfig *config) {}
+
+  /*!
+   * \brief Get the sparse pattern of "type" with given level of fill.
+   * \note This method also builds the pattern if that has not been done yet.
+   * \param[in] type - Finite volume or finite element.
+   * \param[in] fillLvl - Level of fill of the pattern.
+   * \return Reference to the sparse pattern.
+   */
+  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl);
 
 };
 

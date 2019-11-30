@@ -75,19 +75,23 @@ class CSysMatrix {
 private:
   int rank;     /*!< \brief MPI Rank. */
   int size;     /*!< \brief MPI Size. */
+
   unsigned long nPoint,   /*!< \brief Number of points in the grid. */
   nPointDomain,           /*!< \brief Number of points in the grid. */
   nVar,                   /*!< \brief Number of variables. */
   nEqn;                   /*!< \brief Number of equations. */
-  ScalarType *matrix;            /*!< \brief Entries of the sparse matrix. */
-  ScalarType *ILU_matrix;         /*!< \brief Entries of the ILU sparse matrix. */
-  unsigned long nnz;                 /*!< \brief Number of possible nonzero entries in the matrix. */
-  unsigned long *row_ptr;            /*!< \brief Pointers to the first element in each row. */
-  unsigned long *col_ind;            /*!< \brief Column index for each of the elements in val(). */
-  unsigned long nnz_ilu;             /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
-  unsigned long *row_ptr_ilu;        /*!< \brief Pointers to the first element in each row (ILU). */
-  unsigned long *col_ind_ilu;        /*!< \brief Column index for each of the elements in val() (ILU). */
-  unsigned short ilu_fill_in;        /*!< \brief Fill in level for the ILU preconditioner. */
+
+  ScalarType *matrix;               /*!< \brief Entries of the sparse matrix. */
+  ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
+  unsigned long nnz;                /*!< \brief Number of possible nonzero entries in the matrix. */
+  const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
+  const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
+  const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
+  unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
+  const unsigned long *row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
+  const unsigned long *dia_ptr_ilu; /*!< \brief Pointers to the diagonal element in each row (ILU). */
+  const unsigned long *col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
+  unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
   ScalarType *block;             /*!< \brief Internal array to store a subblock of the matrix. */
   ScalarType *block_inverse;     /*!< \brief Internal array to store a subblock of the matrix. */
@@ -140,29 +144,6 @@ private:
     return val;
 #endif
   }
-
-  /*!
-   * \brief Assigns values to the sparse-matrix structure (used in Initialize).
-   * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
-   * \param[in] val_nVar - Number of nVar x nVar variables in each subblock of the matrix-by-block structure.
-   * \param[in] val_nEq - Number of nEqn x nVar variables in each subblock of the matrix-by-block structure.
-   * \param[in] val_row_ptr - Pointers to the first element in each row.
-   * \param[in] val_col_ind - Column index for each of the elements in val().
-   * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config);
-
-  /*!
-   * \brief Assigns values to the sparse-matrix structure (used in Initialize).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] iPoint - Base point to compute neighbours.
-   * \param[in] deep_level - Deep level for the recursive algorithm.
-   * \param[in] fill_level - ILU fill in level.
-   * \param[in] EdgeConnect - There is (or not) an edge structure).
-   * \param[in] vneighs - Storage the neighbours points to iPoint.
-   */
-  void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
 
   /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
@@ -334,12 +315,15 @@ public:
 
   /*!
    * \brief Initializes sparse matrix system.
-   * \param[in] nVar - Number of variables.
-   * \param[in] nEqn - Number of equations.
+   * \param[in] npoint - Number of points including halos.
+   * \param[in] npointdomain - Number of points excluding halos.
+   * \param[in] nvar - Number of variables.
+   * \param[in] neqn - Number of equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
+  void Initialize(unsigned long npoint, unsigned long npointdomain,
+                  unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry *geometry, CConfig *config);
 
   /*!
