@@ -29,6 +29,7 @@
 
 #include "CGeometry.hpp"
 #include "../CMeshReaderFVM.hpp"
+#include "../toolboxes/C2DContainer.hpp"
 
 /*!
  * \class CPhysicalGeometry
@@ -43,7 +44,7 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned short *Global_to_Local_Marker;                   /*!< \brief Global to Local marker. */
   unsigned long *adj_counter;                               /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem;                            /*!< \brief Adjacency element list. */
-  su2double* Sensitivity;                                   /*!< \brief Vector holding the sensitivities at each point. */
+  su2activematrix Sensitivity;                              /*!< \brief Matrix holding the sensitivities at each point. */
 
   vector<vector<unsigned long> > Neighbors;
   map<unsigned long, unsigned long> Color_List;
@@ -619,114 +620,6 @@ public:
   void FindNormal_Neighbor(CConfig *config) override;
 
   /*!
-   * \brief Retrieve total number of nodes in a simulation across all processors (including halos).
-   * \return Total number of nodes in a simulation across all processors (including halos).
-   */
-  inline unsigned long GetGlobal_nPoint(void) const override { return Global_nPoint; }
-
-  /*!
-   * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
-   * \return Total number of nodes in a simulation across all processors (excluding halos).
-   */
-  inline unsigned long GetGlobal_nPointDomain(void) const override { return Global_nPointDomain; }
-
-  /*!
-   * \brief Retrieve total number of elements in a simulation across all processors.
-   * \return Total number of elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElem(void) const override { return Global_nElem; }
-
-  /*!
-   * \brief  Retrieve total number of elements in a simulation across all processors (excluding halos).
-   * \return Total number of elements in a simulation across all processors (excluding halos).
-   */
-  inline unsigned long GetGlobal_nElemDomain(void) const override { return Global_nElemDomain; }
-
-  /*!
-   * \brief Retrieve total number of triangular elements in a simulation across all processors.
-   * \return Total number of line elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemLine(void) const override { return Global_nelem_edge; }
-
-  /*!
-   * \brief Retrieve total number of triangular elements in a simulation across all processors.
-   * \return Total number of triangular elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemTria(void) const override { return Global_nelem_triangle; }
-
-  /*!
-   * \brief Retrieve total number of quadrilateral elements in a simulation across all processors.
-   * \return Total number of quadrilateral elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemQuad(void) const override { return Global_nelem_quad; }
-
-  /*!
-   * \brief Retrieve total number of tetrahedral elements in a simulation across all processors.
-   * \return Total number of tetrahedral elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemTetr(void) const override { return Global_nelem_tetra; }
-
-  /*!
-   * \brief Retrieve total number of hexahedral elements in a simulation across all processors.
-   * \return Total number of hexahedral elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemHexa(void) const override { return Global_nelem_hexa; }
-
-  /*!
-   * \brief Retrieve total number of prism elements in a simulation across all processors.
-   * \return Total number of prism elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemPris(void) const override { return Global_nelem_prism; }
-
-  /*!
-   * \brief Retrieve total number of pyramid elements in a simulation across all processors.
-   * \return Total number of pyramid elements in a simulation across all processors.
-   */
-  inline unsigned long GetGlobal_nElemPyra(void) const override { return Global_nelem_pyramid; }
-
-  /*!
-   * \brief Get number of triangular elements.
-   * \return Number of line elements.
-   */
-  inline unsigned long GetnElemLine(void) const override { return nelem_edge; }
-
-  /*!
-   * \brief Get number of triangular elements.
-   * \return Number of triangular elements.
-   */
-  inline unsigned long GetnElemTria(void) const override { return nelem_triangle; }
-
-  /*!
-   * \brief Get number of quadrilateral elements.
-   * \return Number of quadrilateral elements.
-   */
-  inline unsigned long GetnElemQuad(void) const override { return nelem_quad; }
-
-  /*!
-   * \brief Get number of tetrahedral elements.
-   * \return Number of tetrahedral elements.
-   */
-  inline unsigned long GetnElemTetr(void) const override { return nelem_tetra; }
-
-  /*!
-   * \brief Get number of hexahedral elements.
-   * \return Number of hexahedral elements.
-   */
-  inline unsigned long GetnElemHexa(void) const override { return nelem_hexa; }
-
-  /*!
-   * \brief Get number of prism elements.
-   * \return Number of prism elements.
-   */
-  inline unsigned long GetnElemPris(void) const override { return nelem_prism; }
-
-  /*!
-   * \brief Get number of pyramid elements.
-   * \return Number of pyramid elements.
-   */
-  inline unsigned long GetnElemPyra(void) const override { return nelem_pyramid; }
-
-  /*!
    * \brief Read the sensitivity from an input file.
    * \param[in] config - Definition of the particular problem.
    */
@@ -878,7 +771,7 @@ public:
    * \param[in] iDim - The component of the dim. vector.
    * \return The sensitivity at point iPoint and dim. iDim.
    */
-  inline su2double GetSensitivity(unsigned long iPoint, unsigned short iDim) const override { return Sensitivity[iPoint*nDim+iDim]; }
+  inline su2double GetSensitivity(unsigned long iPoint, unsigned short iDim) const override { return Sensitivity(iPoint,iDim); }
 
   /*!
    * \brief Set the Sensitivity at a specific point.
@@ -886,7 +779,7 @@ public:
    * \param[in] iDim - The component of the dim. vector.
    * \param[in] val - Value of the sensitivity.
    */
-  inline void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) override {Sensitivity[iPoint*nDim+iDim] = val;}
+  inline void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) override { Sensitivity(iPoint,iDim) = val; }
 
   /*!
    * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
@@ -894,214 +787,4 @@ public:
    */
   void Check_Periodicity(CConfig *config) override;
 
-  /*!
-   * \brief Get the average normal at a specific span for a given marker in the turbomachinery reference of frame.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   * \return The span-wise averaged turbo normal.
-   */
-  inline const su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span) const override {
-    return AverageTurboNormal[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the average normal at a specific span for a given marker.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   * \return The span-wise averaged normal.
-   */
-  inline const su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span) const override {
-    return AverageNormal[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the total area for each span.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   * \return The span-wise area.
-   */
-  inline su2double GetSpanArea(unsigned short val_marker, unsigned short val_span) const override {
-    return SpanArea[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the total area for each span.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   * \return The span-wise averaged turbo normal.
-   */
-  inline su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span) const override {
-    return TurboRadius[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the average tangential rotational velocity for each span.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   * \return The span-wise averaged tangential velocity.
-   */
-  inline su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span) const override {
-    return AverageTangGridVel[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the inflow tangential velocity at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   * \return The span-wise inflow tangential velocity.
-   */
-  inline su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span) const override {
-    return TangGridVelIn[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the outflow tangential velocity at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   * \return The span-wise outflow tangential velocity.
-   */
-  inline su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span) const override {
-    return TangGridVelOut[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the inflow area at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   * \return The span-wise inflow area.
-   */
-  inline su2double GetSpanAreaIn(unsigned short val_marker, unsigned short val_span) const override {
-    return SpanAreaIn[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the outflow area at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   * \return The span-wise outflow area.
-   */
-  inline su2double GetSpanAreaOut(unsigned short val_marker, unsigned short val_span) const override {
-    return SpanAreaOut[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the inflow radius at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   * \return The span-wise inflow radius.
-   */
-  inline su2double GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span) const override {
-    return TurboRadiusIn[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the value of the outflow radius at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   * \return The span-wise outflow radius.
-   */
-  inline su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span) const override {
-    return TurboRadiusOut[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Set the value of the inflow tangential velocity at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   */
-  inline void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span) override {
-    TangGridVelIn[val_marker][val_span] = value;
-  }
-
-  /*!
-   * \brief Set the value of the outflow tangential velocity at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   */
-  inline void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span) override {
-    TangGridVelOut[val_marker][val_span] = value;
-  }
-
-  /*!
-   * \brief Get the value of the inflow area at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   */
-  inline void SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span) override {
-    SpanAreaIn[val_marker][val_span] = value;
-  }
-
-  /*!
-   * \brief Set the value of the outflow area at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   */
-  inline void SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span) override {
-    SpanAreaOut[val_marker][val_span] = value;
-  }
-
-  /*!
-   * \brief Set the value of the inflow radius at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   */
-  inline void SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span) override {
-    TurboRadiusIn[val_marker][val_span] = value;
-  }
-
-  /*!
-   * \brief Set the value of the outflow radius at each span.
-   * \param[in] val_marker - marker turbo-performance value.
-   * \param[in] val_span - span value.
-   */
-  inline void SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span) override {
-    TurboRadiusOut[val_marker][val_span] = value;
-  }
-
-  /*!
-   * \brief A total number of vertex independently from the MPI partions.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   */
-  inline unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span) const override {
-    return nTotVertexSpan[val_marker][val_span];
-  }
-
-  /*!
-   * \brief min angular pitch independently from the MPI partions.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   */
-  inline su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span) const override {
-    return MinAngularCoord[val_marker][val_span];
-  }
-
-  /*!
-   * \brief max angular pitch independently from the MPI partions.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   */
-  inline su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span) const override {
-    return MaxAngularCoord[val_marker][val_span];
-  }
-
-  /*!
-   * \brief min Relatice angular coord independently from the MPI partions.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   */
-  inline su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span) const override {
-    return MinRelAngularCoord[val_marker][val_span];
-  }
-
-  /*!
-   * \brief Get the average grid velocity at a specific span for a given marker.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   */
-  inline const su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span) const override {
-    return AverageGridVel[val_marker][val_span];
-  }
-
 };
-
