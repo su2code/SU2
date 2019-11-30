@@ -1,7 +1,7 @@
 /*!
- * \file matrix_structure.hpp
+ * \file CSysMatrix.hpp
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
- *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>CSysMatrix.cpp</i> file.
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 6.2.0 "Falcon"
  *
