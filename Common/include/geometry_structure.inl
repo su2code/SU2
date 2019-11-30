@@ -2,24 +2,14 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -137,19 +127,7 @@ inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short 
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
-inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
+inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
@@ -303,7 +281,7 @@ inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
-inline void CGeometry::MatchInterface(CConfig *config) { }
+inline void CGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
 
@@ -386,6 +364,10 @@ inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, u
 inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
 
 inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
+
+inline void CGeometry::SetMGLevel(unsigned short val_iMesh) { MGLevel = val_iMesh; }
+
+inline unsigned short CGeometry::GetMGLevel(void) { return MGLevel; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
@@ -483,6 +465,8 @@ inline void CGeometry::SetSensitivity(CConfig* config) {}
 inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}
 
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
+
+inline void CGeometry::ComputeMeshQualityStatistics(CConfig* config) {}
 
 inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
 

@@ -2,24 +2,14 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,14 +40,14 @@ inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 inline void CIntegration::SetConvergence_FSI(bool valueFSI) { Convergence_FSI = valueFSI; }
 
 inline void CIntegration::MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container, 
-                        CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst) { }
+                        CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { }
   
 inline void CIntegration::MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                 unsigned long Iteration, unsigned short iZone, unsigned short iInst) { }
+                 unsigned short iZone, unsigned short iInst) { }
                     
 inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
-                                                      CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
+                                                      CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, 
                                                       su2double *monitor) { }
   
 inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh) { }
@@ -81,10 +71,10 @@ inline void CIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse
                       CConfig *config, unsigned short iMesh) { }
 
 inline void CIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container, 
-                        CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst) { }
+                        CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { }
 
 inline void CIntegration::Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container, 
-                        CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst) { }
+                        CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { }
 
 
 inline void CIntegration::SetPotential_Solver(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container, 
