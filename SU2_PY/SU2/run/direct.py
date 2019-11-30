@@ -3,30 +3,20 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -90,13 +80,13 @@ def direct ( config ):
     multizone_cases = su2io.get_multizone(konfig)
 
     # merge
-    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
+    konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
-        konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
+        konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     su2merge(konfig)
     
     # filenames
-    plot_format      = konfig['OUTPUT_FORMAT']
+    plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
     history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
@@ -114,7 +104,7 @@ def direct ( config ):
     # info out
     info = su2io.State()
     info.FUNCTIONS.update( aerodynamics )
-    info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
+    info.FILES.DIRECT = konfig['RESTART_FILENAME']
     if 'EQUIV_AREA' in special_cases:
         info.FILES.WEIGHT_NF = 'WeightNF.dat'
     if 'INV_DESIGN_CP' in special_cases:

@@ -2,6 +2,10 @@
 #include "CodeContract.h"
  #if defined MSWIN
 #   include "UnicodeStringUtils.h"
+ #else
+#   include <sys/types.h>
+#   include <sys/stat.h>
+#   include <unistd.h>
  #endif
  #if !defined NO_THIRD_PARTY_LIBS
 #  include "ThirdPartyHeadersBegin.h"
@@ -36,7 +40,13 @@ return _wremove(tecplot::utf8ToWideString(___1394).c_str());
  #else
 return remove(___1394.c_str());
  #endif
-}
+} bool fileSize(char const* ___1394, uint64_t&   sizeResult) { bool ___3358 = false;
+ #if defined MSWIN
+struct _stat64 s; int statResult = _wstati64(tecplot::utf8ToWideString(___1394).c_str(),&s);
+ #else
+struct stat s; int statResult = stat(___1394,&s);
+ #endif
+if (statResult == 0) { ___3358 = true; sizeResult = static_cast<uint64_t>(s.st_size); } return ___3358; } bool fileSize(std::string const& ___1394, uint64_t&          sizeResult) { return fileSize(___1394.c_str(),sizeResult); }
  #if !defined NO_THIRD_PARTY_LIBS
 bool fileExists(boost::filesystem::path const& filePath) { REQUIRE("filepath can be valid or empty"); bool ___3358 = filePath.has_filename(); if (___3358) { bs::error_code errorCode; bfs::file_status fileStatus; fileStatus = bfs::status(filePath,errorCode); ___3358 = bfs::exists(filePath, errorCode) && !bfs::is_directory(filePath, errorCode); } return ___3358; } bool dirExists(boost::filesystem::path const& dirPath) { REQUIRE("dirpath can be anything - including empty"); bool ___3358 = dirPath.has_filename(); if (___3358) { bs::error_code errorCode; ___3358 = bfs::exists(dirPath, errorCode) && bfs::is_directory(dirPath, errorCode); } return ___3358; }
  #endif

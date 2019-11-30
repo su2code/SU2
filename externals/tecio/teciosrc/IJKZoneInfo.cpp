@@ -6,4 +6,4 @@ adjacentCells[7] = m_cszInfo.itemAddressAtItemIJK(cellIJKp); numAdjCells = 8; } 
  #ifndef NO_ASSERTS
 for (___465 adjCell = 0; adjCell < numAdjCells; adjCell++) { ENSURE(validCellAddress(adjacentCells[adjCell])); if (adjCell > 0) { ___465 const adjCellIndexM = m_cszInfo.itemIndexAtItemAddress(adjacentCells[adjCell - 1]); ___465 const adjCellIndexP = m_cszInfo.itemIndexAtItemAddress(adjacentCells[adjCell]); ENSURE(adjCellIndexM < adjCellIndexP); } }
  #endif
-return numAdjCells; } ___465 ___1881::getCellsAroundNodeAddress( ___2090            nodeAddress, ___3269<___2090>& adjacentCells) const { REQUIRE(validNodeAddress(nodeAddress)); REQUIRE(adjacentCells.empty()); ___1844 const zoneNodeIJK = m_nszInfo.itemIJKAtItemAddress(nodeAddress); return getCellsAroundNodeIJK(zoneNodeIJK, adjacentCells); } }}
+return numAdjCells; } }}

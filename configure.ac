@@ -3,30 +3,20 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 6.2.0 "Falcon"
+# \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -156,6 +146,9 @@ su2_externals_LIBPTHREAD=""
 CONFIGURE_TECIO
 if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
+  if ( test x$have_MPI = xyes ); then
+    su2_externals_INCLUDES="-DTECIOMPI $su2_externals_INCLUDES"
+  fi
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
   # Check if boost directory exists, otherwise extract the sources
   if ( ! test -d "$srcdir/externals/tecio/boost" ); then
@@ -172,7 +165,10 @@ else
 fi
 
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
+AM_CONDITIONAL(BUILD_TECIOMPI, test x$enabletecio = xyes -a x$have_MPI = xyes)
 AC_CONFIG_FILES([externals/tecio/Makefile])
+AC_CONFIG_FILES([externals/tecio/teciosrc/Makefile])
+AC_CONFIG_FILES([externals/tecio/teciompisrc/Makefile])
 
 # Metis
 CONFIGURE_METIS
@@ -211,6 +207,7 @@ AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
 AC_SUBST([su2_externals_LIBPTHREAD])
 
+su2_externals_INCLUDES="-I\$(top_srcdir)/externals/CLI11 $su2_externals_INCLUDES"
 
 ##########################
 
@@ -303,6 +300,10 @@ then
   build_SOL=no
   build_GEO=no
   build_PY=no
+fi
+
+if test $build_DIRECTDIFF == "yes"
+then
   build_PY_WRAPPER=no
 fi
 

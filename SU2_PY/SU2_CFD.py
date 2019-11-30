@@ -3,30 +3,20 @@
 ## \file SU2_CFD.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -56,7 +46,6 @@ def main():
   parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
-  parser.add_option("--periodic", dest="periodic", default="False", help="Define whether the problem has periodic boundary conditions", metavar="PERIODIC")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
   parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
@@ -73,7 +62,6 @@ def main():
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
   options.nZone = int( options.nZone )
-  options.periodic = options.periodic.upper() == 'TRUE'
   options.fsi = options.fsi.upper() == 'TRUE'
   options.fem = options.fem.upper() == 'TRUE'
   options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
@@ -93,13 +81,13 @@ def main():
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
     if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
     elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
-    elif (options.nZone == 2) and (options.fsi):
-      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, comm);
+    elif (options.nZone >= 2):
+      SU2Driver = pysu2.CMultizoneDriver(options.filename, options.nZone, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:

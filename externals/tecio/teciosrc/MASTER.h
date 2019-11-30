@@ -160,13 +160,6 @@
  #endif
 #include <stdarg.h>
  #define OEM_INVALID_CHECKSUM (___2227) -1
- #if defined NDEBUG
- # define ___943          ___1425
- # define CHECKHASHEDCODE           ___1200
- # define UPDATECLASSICOEMEHCKSUM   ___4184
- # define UPDATEOEMCHECKSUM         ___538
- # define ___1938           ___1933
- #endif
  #if defined MSWIN
  #define USE_TRUETYPEFONTS
  #endif
@@ -205,24 +198,33 @@ typedef void *Widget;
  #if !defined (TRACE)
  #if defined NDEBUG
  #if defined MSWIN
- #define TRACE              __noop
- #define TRACE0(s)          __noop
- #define TRACE1(S,a1)       __noop
- #define TRACE2(s,a1,a2)    __noop
- #define TRACE3(s,a1,a2,a3) __noop
+ #define TRACE                       __noop
+ #define TRACE0(s)                   __noop
+ #define TRACE1(S,a1)                __noop
+ #define TRACE2(s,a1,a2)             __noop
+ #define TRACE3(s,a1,a2,a3)          __noop
+ #define TRACE4(s,a1,a2,a3,a4)       __noop
+ #define TRACE5(s,a1,a2,a3,a4,a5)    __noop
+ #define TRACE6(s,a1,a2,a3,a4,a5,a6) __noop
  #else
- #define TRACE(str)           ((void)0)
- #define TRACE0(str)          ((void)0)
- #define TRACE1(str,a1)       ((void)0)
- #define TRACE2(str,a1,a2)    ((void)0)
- #define TRACE3(str,a1,a2,a3) ((void)0)
+ #define TRACE(str)                      ((void)0)
+ #define TRACE0(str)                     ((void)0)
+ #define TRACE1(str,a1)                  ((void)0)
+ #define TRACE2(str,a1,a2)               ((void)0)
+ #define TRACE3(str,a1,a2,a3)            ((void)0)
+ #define TRACE4(str,a1,a2,a3,a4)         ((void)0)
+ #define TRACE5(str,a1,a2,a3,a4,a5)      ((void)0)
+ #define TRACE6(str,a1,a2,a3,a4,a5,a6)   ((void)0)
  #endif 
  #else 
  #if defined MSWIN
- # define TRACE(str)           do { OutputDebugStringA(str); } while (0)
- # define TRACE1(str,a1)       do { char s[5000]; sprintf(s,str,a1);       OutputDebugStringA(s); } while (0)
- # define TRACE2(str,a1,a2)    do { char s[5000]; sprintf(s,str,a1,a2);    OutputDebugStringA(s); } while (0)
- # define TRACE3(str,a1,a2,a3) do { char s[5000]; sprintf(s,str,a1,a2,a3); OutputDebugStringA(s); } while (0)
+ # define TRACE(str)                    do {                                                 OutputDebugStringA(str); }    while (0)
+ # define TRACE1(str,a1)                do { char s[5000]; sprintf(s,str,a1);                OutputDebugStringA(s);   }    while (0)
+ # define TRACE2(str,a1,a2)             do { char s[5000]; sprintf(s,str,a1,a2);             OutputDebugStringA(s);   }    while (0)
+ # define TRACE3(str,a1,a2,a3)          do { char s[5000]; sprintf(s,str,a1,a2,a3);          OutputDebugStringA(s);   }    while (0)
+ # define TRACE4(str,a1,a2,a3,a4)       do { char s[5000]; sprintf(s,str,a1,a2,a3,a4);       OutputDebugStringA(s);   }    while (0)
+ # define TRACE5(str,a1,a2,a3,a4,a5)    do { char s[5000]; sprintf(s,str,a1,a2,a3,a4,a5);    OutputDebugStringA(s);   }    while (0)
+ # define TRACE6(str,a1,a2,a3,a4,a5,a6) do { char s[5000]; sprintf(s,str,a1,a2,a3,a4,a5,a6); OutputDebugStringA(s);   }    while (0)
  # define TRACE0(str) TRACE(str)
  #else
  #define TRACE  printf
@@ -230,6 +232,9 @@ typedef void *Widget;
  #define TRACE1 printf
  #define TRACE2 printf
  #define TRACE3 printf
+ #define TRACE4 printf
+ #define TRACE5 printf
+ #define TRACE6 printf
  #endif 
  #endif 
  #endif 

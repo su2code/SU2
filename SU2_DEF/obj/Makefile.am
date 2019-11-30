@@ -3,30 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DEF
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.2.0 "Falcon"
+# \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -48,15 +38,9 @@ ___bin_SU2_DEF_SOURCES = \
   
 
 ___bin_SU2_DEF_CXXFLAGS =
-___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o
+___bin_SU2_DEF_LDADD = \
+  ../../SU2_CFD/obj/libSU2Core.a \
+  ../../Common/lib/libSU2.a
 
 # always link to built dependencies from ./externals
 ___bin_SU2_DEF_CXXFLAGS += @su2_externals_INCLUDES@

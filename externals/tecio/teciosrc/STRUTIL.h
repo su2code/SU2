@@ -16,11 +16,11 @@ namespace tecplot { class ___3441; } EXTERN void ___1476(void); EXTERN char *___
  #if !defined MSWIN
 EXTERN void ___3352(char *S, short ___2871, short ___2696);
  #endif
-EXTERN void ___2335(char *str); EXTERN void ___2336(char *str); EXTERN char *___4225(char *___3813); EXTERN char *___3818(char *___3813); EXTERN char *___3859(char *___3813, int   ___2376); EXTERN char *___3858(char* ___3813, int   ___2376);
+EXTERN void ___2335(char *str); EXTERN void ___2336(char *str); EXTERN char *___4225(char *___3813); EXTERN char *___3818(char *___3813); EXTERN char *___3859(char *___3813, int   ___2376); char* ___3858( char* ___3813, int   ___2376);
  #ifndef MSWIN
 EXTERN ___3839 ___2245(const char *___3813, uint32_t    ___4477);
  #endif
-EXTERN void ___3335(const char **___685); EXTERN void ___3609(const char **___685); EXTERN void ___3608(char **___685); EXTERN const char *ustrstr(const char *___3430, const char *___3431); EXTERN int  ustrncmp(const char *___3430, const char *___3431, size_t      ___2223); EXTERN int  ustrcmp(const char *___3430, const char *___3431);
+EXTERN void SkipSeparator(char const** ___685); EXTERN void ___3609(char const** ___685); EXTERN void ___3608(char const** ___685); EXTERN const char *ustrstr(const char *___3430, const char *___3431); EXTERN int  ustrncmp(const char *___3430, const char *___3431, size_t      ___2223); EXTERN int  ustrcmp(const char *___3430, const char *___3431);
  #if !defined NO_ASSERTS
 EXTERN ___372 ___1982(char       **___3433, const char  *___2700, ___372    ___2063, const char  *___1395, int          ___2262);
  #  define ___3355(___3433, ___2700, ___2063) ___1982( \

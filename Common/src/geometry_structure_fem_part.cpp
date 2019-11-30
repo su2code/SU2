@@ -2,20 +2,14 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * SU2 Project Website: https://su2code.github.io
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,7 +80,7 @@ CFaceOfElement::CFaceOfElement() {
   nDOFsElem0      = nDOFsElem1 = 0;
   elemType0       = elemType1  = 0;
   faceID0         = faceID1    = 0;
-  periodicIndex   = 0;
+  periodicIndex   = periodicIndexDonor = 0;
   faceIndicator   = 0;
 
   JacFaceIsConsideredConstant = false;
@@ -106,7 +100,7 @@ CFaceOfElement::CFaceOfElement(const unsigned short VTK_Type,
   nDOFsElem0      = nDOFsElem1 = 0;
   elemType0       = elemType1  = 0;
   faceID0         = faceID1    = 0;
-  periodicIndex   = 0;
+  periodicIndex   = periodicIndexDonor = 0;
   faceIndicator   = 0;
 
   JacFaceIsConsideredConstant = false;
@@ -186,8 +180,9 @@ void CFaceOfElement::Copy(const CFaceOfElement &other) {
   faceID0    = other.faceID0;
   faceID1    = other.faceID1;
 
-  periodicIndex = other.periodicIndex;
-  faceIndicator = other.faceIndicator;
+  periodicIndex      = other.periodicIndex;
+  periodicIndexDonor = other.periodicIndexDonor;
+  faceIndicator      = other.faceIndicator;
 
   JacFaceIsConsideredConstant = other.JacFaceIsConsideredConstant;
   elem0IsOwner                = other.elem0IsOwner;
@@ -423,7 +418,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string::size_type position;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
-  bool time_spectral = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool time_spectral = config->GetTime_Marching() == HARMONIC_BALANCE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   nZone = val_nZone;
 
@@ -440,9 +435,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate memory for the linear partition of the elements of the mesh.
         These arrays are the size of the number of ranks. ---*/
 
-  starting_node = new unsigned long[size];
-  ending_node   = new unsigned long[size];
-  npoint_procs  = new unsigned long[size];
+  beg_node = new unsigned long[size];
+  end_node = new unsigned long[size];
+  nPointLinear  = new unsigned long[size];
 
   /*--- Open grid file ---*/
 
@@ -523,23 +518,23 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
             balancing for any remainder elements. ---*/
       unsigned long total_elem_accounted = 0;
       for(unsigned long i = 0; i < (unsigned long)size; i++) {
-        npoint_procs[i] = Global_nElem/size;
-        total_elem_accounted = total_elem_accounted + npoint_procs[i];
+        nPointLinear[i] = Global_nElem/size;
+        total_elem_accounted = total_elem_accounted + nPointLinear[i];
       }
 
       /*--- Get the number of remainder elements after the even division ---*/
       unsigned long rem_elem = Global_nElem - total_elem_accounted;
       for (unsigned long i = 0; i<rem_elem; i++) {
-        ++npoint_procs[i];
+        ++nPointLinear[i];
       }
 
       /*--- Store the local number of elements and the beginning/end index ---*/
-      nElem = npoint_procs[rank];
-      starting_node[0] = 0;
-      ending_node[0]   = starting_node[0] + npoint_procs[0];
+      nElem = nPointLinear[rank];
+      beg_node[0] = 0;
+      end_node[0] = beg_node[0] + nPointLinear[0];
       for (unsigned long i = 1; i < (unsigned long)size; i++) {
-        starting_node[i] = ending_node[i-1];
-        ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+        beg_node[i] = end_node[i-1];
+        end_node[i] = beg_node[i] + nPointLinear[i] ;
       }
 
       /*--- Allocate space for elements ---*/
@@ -581,7 +576,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         /*--- Allocate the memory for a new primary grid FEM element if
               this element must be stored on this rank.                 ---*/
-        if ((i >= starting_node[rank]) && (i < ending_node[rank])) {
+        if ((i >= beg_node[rank]) && (i < end_node[rank])) {
 
           elem[loc_element_count] = new CPrimalGridFEM(i, VTK_Type, nPolyGrid, nPolySol,
                                                        nDOFsGrid, nDOFsSol, nDOFs_tot,
@@ -697,7 +692,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + starting_node[rank];
+      thisFace.elemID0 = k + beg_node[rank];
 
       thisFace.CreateUniqueNumbering();
       localFaces.push_back(thisFace);
@@ -816,19 +811,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           /*--- Check if this boundary face must be stored on this rank.
                 If so, create an object of CBoundaryFace and add it
                 to boundElems.                                          ---*/
-          if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-            vector<CFaceOfElement>::iterator low;
-            low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          vector<CFaceOfElement>::iterator low;
+          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          if(low != localFaces.end()) {
+            if( !(thisFace < *low) ) {
 
-            CBoundaryFace thisBoundFace;
-            thisBoundFace.VTK_Type          = VTK_Type;
-            thisBoundFace.nPolyGrid         = nPolyGrid;
-            thisBoundFace.nDOFsGrid         = nDOFsGrid;
-            thisBoundFace.globalBoundElemID = i;
-            thisBoundFace.domainElementID   = low->elemID0;
-            thisBoundFace.Nodes             = nodeIDs;
+              CBoundaryFace thisBoundFace;
+              thisBoundFace.VTK_Type          = VTK_Type;
+              thisBoundFace.nPolyGrid         = nPolyGrid;
+              thisBoundFace.nDOFsGrid         = nDOFsGrid;
+              thisBoundFace.globalBoundElemID = i;
+              thisBoundFace.domainElementID   = low->elemID0;
+              thisBoundFace.Nodes             = nodeIDs;
 
-            boundElems.push_back(thisBoundFace);
+              boundElems.push_back(thisBoundFace);
+            }
           }
         }
 
@@ -900,9 +897,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate memory for the linear partition of the elements of the mesh.
         These arrays are the size of the number of ranks. ---*/
-  starting_node = new unsigned long[size];
-  ending_node   = new unsigned long[size];
-  npoint_procs  = new unsigned long[size];
+  beg_node = new unsigned long[size];
+  end_node = new unsigned long[size];
+  nPointLinear  = new unsigned long[size];
 
   /* Open the CGNS file for reading and check if it went OK. */
   int fn;
@@ -1008,23 +1005,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         balancing for any remainder elements. ---*/
   unsigned long total_elem_accounted = 0;
   for(unsigned long i = 0; i < (unsigned long)size; i++) {
-    npoint_procs[i] = Global_nElem/size;
-    total_elem_accounted = total_elem_accounted + npoint_procs[i];
+    nPointLinear[i] = Global_nElem/size;
+    total_elem_accounted = total_elem_accounted + nPointLinear[i];
   }
 
   /*--- Get the number of remainder elements after the even division ---*/
   const unsigned long rem_elem = Global_nElem - total_elem_accounted;
   for (unsigned long i = 0; i<rem_elem; i++) {
-    ++npoint_procs[i];
+    ++nPointLinear[i];
   }
 
   /*--- Store the local number of elements and the beginning/end index ---*/
-  nElem = npoint_procs[rank];
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nElem = nPointLinear[rank];
+  beg_node[0] = 0;
+  end_node[0]   = beg_node[0] + nPointLinear[0];
   for(int i=1; i<size; i++) {
-    starting_node[i] = ending_node[i-1];
-    ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+    beg_node[i] = end_node[i-1];
+    end_node[i]   = beg_node[i] + nPointLinear[i] ;
   }
 
   /*--- Allocate space for elements ---*/
@@ -1044,8 +1041,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       elemCount += CGNSElemTypes[iConn].nElem;
 
       /* Check for overlap with the element range this rank is responsible for. */
-      const unsigned long indBegOverlap = max(elemCountOld, starting_node[rank]);
-      const unsigned long indEndOverlap = min(elemCount, ending_node[rank]);
+      const unsigned long indBegOverlap = max(elemCountOld, beg_node[rank]);
+      const unsigned long indEndOverlap = min(elemCount, end_node[rank]);
 
       if(indEndOverlap > indBegOverlap) {
 
@@ -1057,7 +1054,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
         /* Read the connectivity range determined above. */
         CGNSElemTypes[iConn].ReadConnectivityRange(fn, iBase, iZone, offsetRank,
-                                                   nElemRank, starting_node[rank],
+                                                   nElemRank, beg_node[rank],
                                                    elem, locElemCount, nDOFsLoc);
       }
     }
@@ -1390,7 +1387,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + starting_node[rank];
+      thisFace.elemID0 = k + beg_node[rank];
       thisFace.elemID1 = rank;
 
       thisFace.CreateUniqueNumbering();
@@ -1807,16 +1804,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         /* Check if the face is actually present. If not, print an error message
            and exit. */
         thisFace.CreateUniqueNumbering();
-        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
-          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
-                         CURRENT_FUNCTION);
-
-        /* Carry out the search again, but now with lower_bound to find the
-           actual entry to determine the domain element and the rank where
-           this boundary element should be sent to.. */
         vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
+        bool thisFaceFound = false;
+        if(low != localFaces.end()) {
+          if( !(thisFace < *low) ) thisFaceFound = true;
+        }
+
+        if( !thisFaceFound )
+          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
+                         CURRENT_FUNCTION);
+
+        /* Determine the domain element and the rank where
+           this boundary element should be sent to.. */
         const unsigned long domainElementID = low->elemID0;
         const int rankBoundElem = (int) low->elemID1;
 
@@ -1936,14 +1937,19 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       /* Check if the face is actually present. If not, print an error message
          and exit. */
       thisFace.CreateUniqueNumbering();
-      if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
+      vector<CFaceOfElement>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      bool thisFaceFound = false;
+      if(low != localFaces.end()) {
+        if( !(thisFace < *low) ) thisFaceFound = true;
+      }
+
+      if( !thisFaceFound )
         SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
                        CURRENT_FUNCTION);
 
-      /* Carry out the search again, but now with lower_bound to find the
-         actual entry to set the domain element. */
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      /* Set the domain element. */
       boundElems[i].domainElementID = low->elemID0;
     }
 #endif
@@ -2020,7 +2026,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0    = starting_node[rank] + k;
+      thisFace.elemID0    = beg_node[rank] + k;
       thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
       thisFace.elemType0  = elem[k]->GetVTK_Type();
@@ -2378,53 +2384,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
          << "These are ignored in the partitioning." << endl;
   }
 
-  /*--- In case of periodic boundaries with only one element in the periodic
-        direction, there are faces for which both adjacent elements are the
-        same. This also means that these faces are still present twice and one
-        must be removed. This is done below. ---*/
-  map<CUnsignedLong2T, unsigned long> mapFaceToInd;
-
-  nFacesLocOr = nFacesLoc;
-  for(unsigned long i=0; i<nFacesLoc; ++i) {
-    if(localFaces[i].elemID0 == localFaces[i].elemID1) {
-
-      /* Search for this entry in mapFaceToInd. */
-      CUnsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
-      map<CUnsignedLong2T, unsigned long>::const_iterator MMI;
-      MMI = mapFaceToInd.find(thisFace);
-
-      if(MMI == mapFaceToInd.end()) {
-
-        /* This face is not stored in the map yet. Do so now. */
-        mapFaceToInd[thisFace] = i;
-      }
-      else {
-
-        /* This face is already stored in the map, which means that it is
-           already present in the list of faces. Invalidate this face. */
-        localFaces[i].nCornerPoints = 4;
-        localFaces[i].cornerPoints[0] = Global_nPoint;
-        localFaces[i].cornerPoints[1] = Global_nPoint;
-        localFaces[i].cornerPoints[2] = Global_nPoint;
-        localFaces[i].cornerPoints[3] = Global_nPoint;
-        --nFacesLoc;
-      }
-    }
-  }
-
-  /*--- Check if the number of faces removed is identical to the number
-        of faces stored in the map mapFaceToInd. ---*/
-  nFacesLocOr -= nFacesLoc;
-  if(nFacesLocOr != mapFaceToInd.size())
-    SU2_MPI::Error(string("Something wrong with periodic faces for which elements are ") +
-                   string("their own neighbors"), CURRENT_FUNCTION);
-
-  /*--- Remove the invalidated faces, if any present. ---*/
-  if( nFacesLocOr ) {
-    sort(localFaces.begin(), localFaces.end());
-    localFaces.resize(nFacesLoc);
-  }
-
   /*--- Determine whether or not the Jacobians of the elements and faces
         can be considered constant. ---*/
   DetermineFEMConstantJacobiansAndLenScale(config);
@@ -2447,14 +2406,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       /* Determine the time level for both elements. Elem0 is always owned, while
          elem1 is either owned or external. The data for external elements is
          stored in mapExternalElemIDToTimeLevel. */
-      unsigned long  elemID0    = localFaces[i].elemID0 - starting_node[rank];
+      unsigned long  elemID0    = localFaces[i].elemID0 - beg_node[rank];
       unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
       unsigned short timeLevel1;
-      if(localFaces[i].elemID1 >= starting_node[rank] &&
-         localFaces[i].elemID1 <  starting_node[rank]+nElem) {
+      if(localFaces[i].elemID1 >= beg_node[rank] &&
+         localFaces[i].elemID1 <  beg_node[rank]+nElem) {
 
-        unsigned long elemID1 = localFaces[i].elemID1 - starting_node[rank];
+        unsigned long elemID1 = localFaces[i].elemID1 - beg_node[rank];
         timeLevel1 = elem[elemID1]->GetTimeLevel();
       }
       else {
@@ -2469,13 +2428,25 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       /* Check if both elements have the same time level. */
       if(timeLevel0 == timeLevel1) {
 
-        /* Same time level, hence both elements can own the face. The decision
-           below makes an attempt to spread the workload evenly. */
-        const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
-        if( sumElemID%2 )
-          localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
-        else
-          localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+        /* Same time level, hence both elements can own the face. First check whether
+           elemID0 == elemID1 (which happens for periodic problems with only one
+           element in the periodic direction), because this is a special case. */
+        if(localFaces[i].elemID0 == localFaces[i].elemID1) {
+
+          /* This face occurs twice, but should be owned only once. Base this
+             decision on the periodic index. */
+          localFaces[i].elem0IsOwner = localFaces[i].periodicIndex < localFaces[i].periodicIndexDonor;
+        }
+        else {
+
+          /* Different elements on both sides of the face. The ownership decision
+             below makes an attempt to spread the workload evenly. */
+          const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
+          if( sumElemID%2 )
+            localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
+          else
+            localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+        }
       }
       else {
 
@@ -2507,27 +2478,29 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0    = starting_node[rank] + k;
+      thisFace.elemID0    = beg_node[rank] + k;
       thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
       thisFace.CreateUniqueNumbering();
 
-      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      vector<CFaceOfElement>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-        if(low->elemID0 == thisFace.elemID0) {
-          elem[k]->SetNeighbor_Elements(low->elemID1, i);
-          elem[k]->SetOwnerFace(low->elem0IsOwner, i);
-        }
-        else {
-          elem[k]->SetNeighbor_Elements(low->elemID0, i);
-          elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
-        }
+      if(low != localFaces.end() ) {
+        if( !(thisFace < *low) ) {
+          if(low->elemID0 == thisFace.elemID0) {
+            elem[k]->SetNeighbor_Elements(low->elemID1, i);
+            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
+          }
+          else {
+            elem[k]->SetNeighbor_Elements(low->elemID0, i);
+            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
+          }
 
-        if(low->periodicIndex > 0)
-          elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+          if(low->periodicIndex > 0)
+            elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+        }
       }
     }
   }
@@ -2536,11 +2509,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         of the graph. First the faces. ---*/
   vector<vector<unsigned long> > adjacency(nElem, vector<unsigned long>(0));
   for(unsigned long i=0; i<nFacesLoc; ++i) {
-    long ii = localFaces[i].elemID0 - starting_node[rank];
+    long ii = localFaces[i].elemID0 - beg_node[rank];
     adjacency[ii].push_back(localFaces[i].elemID1);
 
     if(localFaces[i].periodicIndex == 0) {
-      ii = localFaces[i].elemID1 - starting_node[rank];
+      ii = localFaces[i].elemID1 - beg_node[rank];
       if(ii >= 0 && ii < (long) nElem)
         adjacency[ii].push_back(localFaces[i].elemID0);
     }
@@ -2556,6 +2529,24 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     adjacency[i].erase(lastEntry, adjacency[i].end());
   }
 
+  /* Due to periodic boundary conditions it is also possible that self entries
+     are present. ParMETIS is not able to deal with self entries, hence
+     they must be removed as well. */
+  for(unsigned long i=0; i<nElem; ++i) {
+    const unsigned long globalElemID = i + beg_node[rank];
+    unsigned long nEntriesNew = adjacency[i].size();
+
+    for(unsigned long j=0; j<adjacency[i].size(); ++j) {
+      if(adjacency[i][j] == globalElemID) {
+        adjacency[i][j] = ULONG_MAX;
+        --nEntriesNew;
+      }
+    }
+
+    sort(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].resize(nEntriesNew);
+  }
+
   /*--- Possibly add the connectivities in the graph from the wall function
         treatment. As these connectivities are one-sided, they must be stored
         and communicated later. ---*/
@@ -2566,7 +2557,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
       /* Get the global and local element ID adjacent to this boundary face. */
       const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
-      const unsigned long elemID       = globalElemID - starting_node[rank];
+      const unsigned long elemID       = globalElemID - beg_node[rank];
 
       /* Get the number of donor elements for the wall function treatment
          and the pointer to the array which stores this info. */
@@ -2587,12 +2578,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
             sort(adjacency[elemID].begin(), adjacency[elemID].end());
 
             /* Check if the donor element is stored locally. */
-            if(donors[i] >= starting_node[rank] &&
-               donors[i] <  starting_node[rank]+nElem) {
+            if(donors[i] >= beg_node[rank] &&
+               donors[i] <  beg_node[rank]+nElem) {
 
               /* Donor is stored locally. Add the entry to the graph
                  and sort it afterwards. */
-              const unsigned long localDonorID = donors[i] - starting_node[rank];
+              const unsigned long localDonorID = donors[i] - beg_node[rank];
               adjacency[localDonorID].push_back(globalElemID);
               sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
             }
@@ -2620,12 +2611,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     /* Determine the rank where this external is stored. */
     const unsigned long elemID = additionalExternalEntriesGraph[i];
     int rankElem;
-    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    if(elemID >= beg_node[size-1]) rankElem = size-1;
     else {
       const unsigned long *low;
-      low = lower_bound(starting_node, starting_node+size, elemID);
+      low = lower_bound(beg_node, beg_node+size, elemID);
 
-      rankElem = low - starting_node;
+      rankElem = low - beg_node;
       if(*low > elemID) --rankElem;
     }
 
@@ -2677,7 +2668,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     /* Loop over the contents of the receive buffer and update the
        graph accordingly. */
     for(int j=0; j<sizeMess; j+=2) {
-      const unsigned long elemID = recvBuf[j] - starting_node[rank];
+      const unsigned long elemID = recvBuf[j] - beg_node[rank];
       adjacency[elemID].push_back(recvBuf[j+1]);
       sort(adjacency[elemID].begin(), adjacency[elemID].end());
     }
@@ -2725,7 +2716,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     vector<idx_t> vtxdist(size+1);
     vtxdist[0] = 0;
     for(int i=0; i<size; ++i)
-      vtxdist[i+1] = (idx_t)ending_node[i];
+      vtxdist[i+1] = (idx_t)end_node[i];
 
     /* Create the array xadjPar, which contains the number of edges for each
        vertex of the graph in ParMETIS format. */
@@ -3096,15 +3087,17 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
 
         /*--- Check if thisMatchingFace is present in facesDonor. If so, set the
               missing information in the face corresponding to the iterator low. ---*/
-        if( binary_search(facesDonor.begin(), facesDonor.end(), thisMatchingFace) ) {
+        vector<CMatchingFace>::const_iterator donorLow;
+        donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
-          vector<CMatchingFace>::const_iterator donorLow;
-          donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
-
-          low->elemID1    = donorLow->elemID;
-          low->nPolySol1  = donorLow->nPoly;
-          low->nDOFsElem1 = donorLow->nDOFsElem;
-          low->elemType1  = donorLow->elemType;
+        if(donorLow != facesDonor.end()) {
+          if( !(thisMatchingFace < *donorLow) ) {
+            low->elemID1            = donorLow->elemID;
+            low->nPolySol1          = donorLow->nPoly;
+            low->nDOFsElem1         = donorLow->nDOFsElem;
+            low->elemType1          = donorLow->elemType;
+            low->periodicIndexDonor = jMarker + 1;
+          }
         }
       }
     }
@@ -3587,7 +3580,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
                element and the polynomial degree for the solution and grid. */
             const unsigned short VTK_Type  = bound[iMarker][l]->GetVTK_Type();
             const unsigned long  elemID    = bound[iMarker][l]->GetDomainElement()
-                                           - starting_node[rank];
+                                           - beg_node[rank];
             const unsigned short nPolyGrid = bound[iMarker][l]->GetNPolyGrid();
             const unsigned short nPolySol  = elem[elemID]->GetNPolySol();
             const unsigned short VTK_Elem  = elem[elemID]->GetVTK_Type();
@@ -4059,8 +4052,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                                              FI!=localFaces.end(); ++FI) {
     if(FI->elemID1 < Global_nElem) {     // Safeguard against non-matching faces.
 
-      if(FI->elemID1 <  starting_node[rank] ||
-         FI->elemID1 >= starting_node[rank]+nElem) {
+      if(FI->elemID1 <  beg_node[rank] ||
+         FI->elemID1 >= beg_node[rank]+nElem) {
 
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
@@ -4093,8 +4086,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
          mapExternalElemIDToTimeLevel, if not already present. */
       for(unsigned short i=0; i<nDonors; ++i) {
 
-        if(donors[i] <  starting_node[rank] ||
-           donors[i] >= starting_node[rank]+nElem) {
+        if(donors[i] <  beg_node[rank] ||
+           donors[i] >= beg_node[rank]+nElem) {
 
           map<unsigned long,CUnsignedShort2T>::iterator MI;
           MI = mapExternalElemIDToTimeLevel.find(donors[i]);
@@ -4108,12 +4101,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
              ID of this element in the send buffers for the additional
              externals. */
           int rankDonor;
-          if(donors[i] >= starting_node[size-1]) rankDonor = size-1;
+          if(donors[i] >= beg_node[size-1]) rankDonor = size-1;
           else {
             const unsigned long *low;
-            low = lower_bound(starting_node, starting_node+size, donors[i]);
+            low = lower_bound(beg_node, beg_node+size, donors[i]);
 
-            rankDonor = (int)(low - starting_node);
+            rankDonor = (int)(low - beg_node);
             if(*low > donors[i]) --rankDonor;
           }
 
@@ -4293,12 +4286,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /* Determine the rank where this external is stored. */
     const unsigned long elemID = MI->first;
     int rankElem;
-    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    if(elemID >= beg_node[size-1]) rankElem = size-1;
     else {
       const unsigned long *low;
-      low = lower_bound(starting_node, starting_node+size, elemID);
+      low = lower_bound(beg_node, beg_node+size, elemID);
 
-      rankElem = low - starting_node;
+      rankElem = low - beg_node;
       if(*low > elemID) --rankElem;
     }
 
@@ -4329,12 +4322,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
     const unsigned long elemID = MI->first;
     int rankElem;
-    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    if(elemID >= beg_node[size-1]) rankElem = size-1;
     else {
       const unsigned long *low;
-      low = lower_bound(starting_node, starting_node+size, elemID);
+      low = lower_bound(beg_node, beg_node+size, elemID);
 
-      rankElem = low - starting_node;
+      rankElem = low - beg_node;
       if(*low > elemID) --rankElem;
     }
 
@@ -4379,7 +4372,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                   sendRank[i], rank, MPI_COMM_WORLD, &status);
 
     for(int j=0; j<sizeMess; ++j)
-      sendElem[i][j] -= starting_node[rank];
+      sendElem[i][j] -= beg_node[rank];
   }
 
   /* Complete the non-blocking sends. Synchronize the processors afterwards,
@@ -4476,7 +4469,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
           /* Determine the ID of the adjacent element. */
           const unsigned long elemID = bound[iMarker][l]->GetDomainElement()
-                                     - starting_node[rank];
+                                     - beg_node[rank];
 
           /* Get the number of donor elements for the wall function treatment
              and the pointer to the array which stores this info. */
@@ -4487,12 +4480,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
           for(unsigned short i=0; i<nDonors; ++i) {
 
             /* Determine the status of the donor element. */
-            if(donors[i] >= starting_node[rank] &&
-               donors[i] <  starting_node[rank]+nElem) {
+            if(donors[i] >= beg_node[rank] &&
+               donors[i] <  beg_node[rank]+nElem) {
 
               /* Donor is stored locally. Determine its local ID and
                  get the time levels of both elements. */
-              const unsigned long  donorID    = donors[i] - starting_node[rank];
+              const unsigned long  donorID    = donors[i] - beg_node[rank];
               const unsigned short timeLevelB = elem[elemID]->GetTimeLevel();
               const unsigned short timeLevelD = elem[donorID]->GetTimeLevel();
               const unsigned short timeLevel  = min(timeLevelB, timeLevelD);
@@ -4548,17 +4541,17 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
           /* Local element ID of the first element. Per definition this is
              always a locally stored element. Also store its time level. */
-          const unsigned long  elemID0    = FI->elemID0 - starting_node[rank];
+          const unsigned long  elemID0    = FI->elemID0 - beg_node[rank];
           const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
           /* Determine the status of the second element. */
-          if(FI->elemID1 >= starting_node[rank] &&
-             FI->elemID1 <  starting_node[rank]+nElem) {
+          if(FI->elemID1 >= beg_node[rank] &&
+             FI->elemID1 <  beg_node[rank]+nElem) {
 
             /* Both elements are stored locally. Determine the local
                element of the second element and determine the minimum
                time level. */
-            const unsigned long  elemID1    = FI->elemID1 - starting_node[rank];
+            const unsigned long  elemID1    = FI->elemID1 - beg_node[rank];
             const unsigned short timeLevel1 = elem[elemID1]->GetTimeLevel();
             const unsigned short timeLevel  = min(timeLevel0, timeLevel1);
 
@@ -4788,7 +4781,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
     /*------------------------------------------------------------------------*/
 
     /* Determine the global element ID of this element. */
-    unsigned long elemID = starting_node[rank] + i;
+    unsigned long elemID = beg_node[rank] + i;
 
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
     unsigned short nFaces;
@@ -4818,9 +4811,15 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
         thisFace.cornerPoints[k] = faceConn[j][k];
       thisFace.CreateUniqueNumbering();
 
-      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<CFaceOfElement>::const_iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      vector<CFaceOfElement>::const_iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      bool thisFaceFound = false;
+      if(low != localFaces.end()) {
+        if( !(thisFace < *low) ) thisFaceFound = true;
+      }
+
+      if( thisFaceFound ) {
 
         /* Check if this internal matching face is owned by this element. */
         bool faceIsOwned;
@@ -4910,7 +4909,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
                not the Jacobian can be considered constant. */
             const unsigned short VTK_Type_Face = bound[iMarker][l]->GetVTK_Type();
             const unsigned long  elemID        = bound[iMarker][l]->GetDomainElement()
-                                               - starting_node[rank];
+                                               - beg_node[rank];
             const unsigned short nPolySol      = elem[elemID]->GetNPolySol();
             const unsigned short VTK_Type_Elem = elem[elemID]->GetVTK_Type();
             const bool JacIsConstant           = bound[iMarker][l]->GetJacobianConsideredConstant();
@@ -4993,12 +4992,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       unsigned short timeLevel1, nDOFs1;
 
       /* Check if the neighor is stored locally. */
-      if(adjacency[i][j] >= starting_node[rank] &&
-         adjacency[i][j] <  starting_node[rank]+nElem) {
+      if(adjacency[i][j] >= beg_node[rank] &&
+         adjacency[i][j] <  beg_node[rank]+nElem) {
 
         /* Locally stored element. Determine its local ID and set the
            time level and number of solution DOFs. */
-        unsigned long elemID1 = adjacency[i][j] - starting_node[rank];
+        unsigned long elemID1 = adjacency[i][j] - beg_node[rank];
         timeLevel1 = elem[elemID1]->GetTimeLevel();
         nDOFs1     = elem[elemID1]->GetNDOFsSol();
       }

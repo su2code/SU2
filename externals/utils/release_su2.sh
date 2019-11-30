@@ -35,7 +35,8 @@ git checkout tags/v$1
 
 # Build the vanilla version of SU2
 printf "\n\n Configuring and building the vanilla version...\n\n"
-./configure --prefix=${SU2DIR} CXXFLAGS='-O3'
+./bootstrap
+./configure --prefix=${SU2DIR} CXXFLAGS='-O3' LDFLAGS='-static-libstdc++'
 make clean
 make -j$4 install
 cd ${BUILDDIR}
