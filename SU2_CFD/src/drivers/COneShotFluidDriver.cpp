@@ -350,7 +350,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Recalculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
-    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED);
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
   }
 
   // /*--- If line search failed, perform new line search on just multiplier ---*/
