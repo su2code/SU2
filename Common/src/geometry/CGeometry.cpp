@@ -3962,3 +3962,22 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   }
 
 }
+
+const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl)
+{
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+
+  CCompressedSparsePatternUL* pattern = nullptr;
+
+  if (fillLvl == 0)
+    pattern = fvm? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
+  else
+    pattern = fvm? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
+
+  if (pattern->empty()) {
+    *pattern = buildCSRPattern(*this, type, fillLvl);
+    pattern->buildDiagPtr();
+  }
+
+  return *pattern;
+}

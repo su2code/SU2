@@ -61,6 +61,8 @@ public:
   using CEdgeToNonZeroMap =
     C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
 
+  CCompressedSparsePattern() = default;
+
   /*!
    * \brief Construct from vector-like objects of any type with
    *        methods "size()" and "data()" (returning a pointer).
@@ -189,6 +191,7 @@ public:
     return m_diagPtr.data();
   }
 };
+using CCompressedSparsePatternUL = CCompressedSparsePattern<unsigned long>;
 
 
 /*!
@@ -199,13 +202,13 @@ public:
  *        of immediate neighbors.
  * \param[in] geometry - Definition of the grid.
  * \param[in] type - Of connectivity.
- * \param[in] fillLevel - Target degree of neighborhood (immediate neighbors always added).
+ * \param[in] fillLvl - Target degree of neighborhood (immediate neighbors always added).
  * \return Compressed-Storage-Row sparse pattern.
  */
 template<class Geometry_t, typename Index_t>
 CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
                                                   ConnectivityType type,
-                                                  Index_t fillLevel)
+                                                  Index_t fillLvl)
 {
   Index_t nPoint = geometry.GetnPoint();
 
@@ -256,7 +259,7 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
           {
             auto elem = geometry.elem[point->GetElem(iNeigh)];
 
-            for(unsigned short iNode = 0; iNode < elem->GetnNode(); ++iNode)
+            for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
             {
               Index_t kPoint = elem->GetNode(iNode);
 
@@ -269,7 +272,7 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
 
       neighbors.insert(newNeighbors.begin(), newNeighbors.end());
 
-      if(iLevel >= fillLevel) break;
+      if(iLevel >= fillLvl) break;
 
       /*--- For the next level we get the neighbours of the new points. ---*/
       addedNeighbors = newNeighbors;
@@ -295,12 +298,12 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
  * \return nEdge by 2 matrix.
  */
 template<class Geometry_t, typename Index_t>
-CCompressedSparsePattern<Index_t>::CEdgeToNonZeroMap mapEdgesToSparsePattern(
+typename CCompressedSparsePattern<Index_t>::CEdgeToNonZeroMap mapEdgesToSparsePattern(
   Geometry_t& geometry, const CCompressedSparsePattern<Index_t>& pattern)
 {
   assert(!pattern.empty());
 
-  pattern::CEdgeToNonZeroMap edgeMap(geometry.GetnEdge(),2);
+  typename CCompressedSparsePattern<Index_t>::CEdgeToNonZeroMap edgeMap(geometry.GetnEdge(),2);
 
   for(Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge)
   {
