@@ -9638,12 +9638,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
 
   su2double AoASens;
-  unsigned short nTimeIter, iDim;
-  unsigned long iPoint, index;
+  unsigned short nTimeIter;
+  unsigned long index;
   string::size_type position;
   int counter = 0;
 
-  Sensitivity = new su2double[nPoint*nDim];
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   if (config->GetTime_Domain()) {
     nTimeIter = config->GetnTime_Iter();
@@ -9656,13 +9656,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
 
   iPoint_Global = 0;
 
@@ -9977,13 +9970,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
          offset in the buffer of data from the restart file and load it. ---*/
 
         index = counter*nFields + sens_x_idx - 1;
-        Sensitivity[iPoint_Local*nDim+0] = Restart_Data[index];
+        Sensitivity(iPoint_Local,0) = Restart_Data[index];
         index = counter*nFields + sens_y_idx - 1;
-        Sensitivity[iPoint_Local*nDim+1] = Restart_Data[index];
+        Sensitivity(iPoint_Local,1) = Restart_Data[index];
 
         if (nDim == 3){
           index = counter*nFields + sens_z_idx - 1;
-          Sensitivity[iPoint_Local*nDim+2] = Restart_Data[index];
+          Sensitivity(iPoint_Local,2) = Restart_Data[index];
         }
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -10128,11 +10121,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-      Sensitivity[iPoint_Local*nDim+0] = PrintingToolbox::stod(point_line[sens_x_idx]);
-      Sensitivity[iPoint_Local*nDim+1] = PrintingToolbox::stod(point_line[sens_y_idx]);
+      Sensitivity(iPoint_Local,0) = PrintingToolbox::stod(point_line[sens_x_idx]);
+      Sensitivity(iPoint_Local,1) = PrintingToolbox::stod(point_line[sens_y_idx]);
       if (nDim == 3)
-        Sensitivity[iPoint_Local*nDim+2] = PrintingToolbox::stod(point_line[sens_z_idx]);
-
+        Sensitivity(iPoint_Local,2) = PrintingToolbox::stod(point_line[sens_z_idx]);
     }
 
   }
@@ -10187,12 +10179,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
 
   /*--- Allocate space for the sensitivity and initialize. ---*/
 
-  Sensitivity = new su2double[nPoint*nDim];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Get the filename for the unordered ASCII sensitivity file input. ---*/
 
@@ -10265,7 +10252,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
           /*--- Store the sensitivities at the matched local node. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            Sensitivity[pointID*nDim+iDim] = Sens_External[iDim];
+            Sensitivity(pointID,iDim) = Sens_External[iDim];
 
           /*--- Keep track of how many points we match. ---*/
 

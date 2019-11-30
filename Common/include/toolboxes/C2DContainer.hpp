@@ -31,6 +31,7 @@
 #include "../datatype_structure.hpp"
 
 #include <utility>
+#include <type_traits>
 
 /*!
  * \enum StorageType
@@ -360,7 +361,7 @@ template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, 
 class C2DContainer :
   public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
-  static_assert(is_integral<Index_t>::value,"");
+  static_assert(std::is_integral<Index_t>::value,"");
 
 private:
   using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
