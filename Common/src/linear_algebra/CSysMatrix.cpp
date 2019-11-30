@@ -468,6 +468,93 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 }
 
 template<class ScalarType>
+void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) {
+
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, mkl_ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, mkl_ipiv, vec, 1 );
+#else
+  int iVar, jVar, kVar, nvar = int(nVar);
+  ScalarType weight;
+
+  /*--- Transform system in Upper Matrix ---*/
+  for (iVar = 1; iVar < nvar; iVar++) {
+    for (jVar = 0; jVar < iVar; jVar++) {
+      weight = matrix[iVar*nvar+jVar] / matrix[jVar*nvar+jVar];
+      for (kVar = jVar; kVar < nvar; kVar++)
+        matrix[iVar*nvar+kVar] -= weight*matrix[jVar*nvar+kVar];
+      vec[iVar] -= weight*vec[jVar];
+    }
+  }
+
+  /*--- Backwards substitution ---*/
+  for (iVar = nvar-1; iVar >= 0; iVar--) {
+    for (jVar = iVar+1; jVar < nvar; jVar++)
+      vec[iVar] -= matrix[iVar*nvar+jVar]*vec[jVar];
+    vec[iVar] /= matrix[iVar*nvar+iVar];
+  }
+#endif
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, ScalarType *inverse) {
+
+  /*---
+   This is a generalization of Gaussian elimination for multiple rhs' (the basis vectors).
+   We could call "Gauss_Elimination" multiple times or fully generalize it for multiple rhs,
+   the performance of both routines would suffer in both cases without the use of exotic templating.
+   And so it feels reasonable to have some duplication here.
+  ---*/
+
+  int iVar, jVar, nvar = int(nVar);
+
+  /*--- Initialize the inverse and make a copy of the matrix ---*/
+  for (iVar = 0; iVar < nvar; iVar++) {
+    for (jVar = 0; jVar < nvar; jVar++) {
+      block[iVar*nvar+jVar] = matrix[iVar*nvar+jVar];
+      inverse[iVar*nvar+jVar] = ScalarType(iVar==jVar); // identity
+    }
+  }
+
+  /*--- Inversion ---*/
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, block, nVar, mkl_ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, block, nVar, mkl_ipiv, inverse, nVar );
+#else
+  int kVar;
+  ScalarType weight;
+
+  /*--- Transform system in Upper Matrix ---*/
+  for (iVar = 1; iVar < nvar; iVar++) {
+    for (jVar = 0; jVar < iVar; jVar++)
+    {
+      weight = block[iVar*nvar+jVar] / block[jVar*nvar+jVar];
+
+      for (kVar = jVar; kVar < nvar; kVar++)
+        block[iVar*nvar+kVar] -= weight*block[jVar*nvar+kVar];
+
+      /*--- at this stage "inverse" is lower triangular so not all cols need updating ---*/
+      for (kVar = 0; kVar <= jVar; kVar++)
+        inverse[iVar*nvar+kVar] -= weight*inverse[jVar*nvar+kVar];
+    }
+  }
+
+  /*--- Backwards substitution ---*/
+  for (iVar = nvar-1; iVar >= 0; iVar--)
+  {
+    for (jVar = iVar+1; jVar < nvar; jVar++)
+      for (kVar = 0; kVar < nvar; kVar++)
+        inverse[iVar*nvar+kVar] -= block[iVar*nvar+jVar] * inverse[jVar*nvar+kVar];
+
+    for (kVar = 0; kVar < nvar; kVar++)
+      inverse[iVar*nvar+kVar] /= block[iVar*nvar+iVar];
+  }
+#endif
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 
   unsigned long block_i = i/nVar;
@@ -479,52 +566,6 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
       matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
     if (col_ind[index] == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    if (col_j > row_i) {
-      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
-    }
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    if (col_j < row_i) {
-      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
-    }
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
-  for (unsigned long index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] == row_i) {
-      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[row_i*nVar], prod_row_vector);
-      break;
-    }
   }
 
 }
@@ -550,16 +591,14 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
   unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
+#ifndef NDEBUG
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    cerr << "CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>&, CSysVector<ScalarType>): "
-    << "nVar values incompatible." << endl;
-    throw(-1);
+    SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
   if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    cerr << "CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>&, CSysVector<ScalarType>): "
-    << "nPoint and nBlk values incompatible." << endl;
-    throw(-1);
+    SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
+#endif
 
   prod = ScalarType(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
@@ -584,12 +623,14 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
   unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
+#ifndef NDEBUG
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
     SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
   if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
+#endif
 
   prod = ScalarType(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
@@ -634,25 +675,35 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
   unsigned long index, index_, iVar;
-  ScalarType *Block_ij;
+  ScalarType *Block_ij, *Block_ik;
   const ScalarType *Block_jk;
   long iPoint, jPoint, kPoint;
 
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm, so that we have the factorization stored
-   in the ILUMatrix at the end of this preprocessing. ---*/
+  /*--- Copy block matrix to compute factorization in-place. ---*/
 
-  for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+  if ((ilu_fill_in == 0) && !transposed) {
+    /*--- ILU0, direct copy. ---*/
+    for (iVar = 0; iVar < nnz*nVar*nVar; ++iVar)
+      ILU_matrix[iVar] = matrix[iVar];
+  }
+  else {
+    /*--- ILUn clear the ILU matrix first, for ILU0^T
+     *    the copy takes care of the clearing. ---*/
+    if (ilu_fill_in > 0)
+      for (iVar = 0; iVar < nnz_ilu*nVar*nVar; iVar++)
+        ILU_matrix[iVar] = 0.0;
 
-  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      jPoint = col_ind[index];
-      if (transposed) {
-        Block_ij = GetBlock(jPoint, iPoint);
-        SetBlockTransposed_ILUMatrix(iPoint, jPoint, Block_ij);
-      } else {
-        Block_ij = GetBlock(iPoint, jPoint);
-        SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+    /*--- Transposed or ILUn, traverse matrix to access its blocks
+     *    sequentially and set them in the ILU matrix. ---*/
+    for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
+      for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+        jPoint = col_ind[index];
+        Block_ij = &matrix[index*nVar*nVar];
+        if (transposed) {
+          SetBlockTransposed_ILUMatrix(jPoint, iPoint, Block_ij);
+        } else {
+          SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+        }
       }
     }
   }
@@ -665,54 +716,43 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
     InverseDiagonalBlock_ILUMatrix(iPoint-1, &invM[(iPoint-1)*nVar*nVar]);
 
-    /*--- For each row (unknown), loop over all entries in A on this row
-     row_ptr_ilu[iPoint+1] will have the index for the first entry on the next
-     row. ---*/
+    /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
 
-    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+    for (index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
 
-      /*--- jPoint here is the column for each entry on this row ---*/
+      /*--- jPoint is the column index (jPoint < iPoint). ---*/
 
       jPoint = col_ind_ilu[index];
 
-      /*--- Check that this column is in the lower triangular portion ---*/
+      /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
 
-      if (jPoint < iPoint) {
+      Block_ij = &ILU_matrix[index*nVar*nEqn];
+      MatrixMatrixProduct(Block_ij, &invM[jPoint*nVar*nVar], block_weight);
 
-        /*--- If we're in the lower triangle, multiply the block by
-         the inverse of the corresponding diagonal block. ---*/
+      /*--- block_weight holds Aij*inv(Ajj). Jump to the upper part of the jPoint row. ---*/
 
-        Block_ij = &ILU_matrix[index*nVar*nEqn];
-        MatrixMatrixProduct(Block_ij, &invM[jPoint*nVar*nVar], block_weight);
+      for (index_ = dia_ptr_ilu[jPoint]+1; index_ < row_ptr_ilu[jPoint+1]; index_++) {
 
-        /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
+        /*--- Get the column index (kPoint > jPoint). ---*/
 
-        for (index_ = row_ptr_ilu[jPoint]; index_ < row_ptr_ilu[jPoint+1]; index_++) {
+        kPoint = col_ind_ilu[index_];
 
-          /*--- Get the column of the entry ---*/
+        /*--- If Aik exists, update it: Aik -= Aij*inv(Ajj)*Ajk ---*/
 
-          kPoint = col_ind_ilu[index_];
+        Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
 
-          /*--- If the column is greater than or equal to jPoint, i.e., the
-           upper triangular part, then multiply and modify the matrix.
-           Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
-
-          if (kPoint > jPoint) {
-
-            Block_jk = &ILU_matrix[index_*nVar*nEqn];
-            MatrixMatrixProduct(block_weight, Block_jk, block);
-            SubtractBlock_ILUMatrix(iPoint, kPoint, block);
-
-          }
+        if (Block_ik != nullptr) {
+          Block_jk = &ILU_matrix[index_*nVar*nEqn];
+          MatrixMatrixProduct(block_weight, Block_jk, block);
+          MatrixSubtraction(Block_ik, block, Block_ik);
         }
-
-        /*--- Lastly, store block_weight in the lower triangular part, which
-         will be reused during the forward solve in the precon/smoother. ---*/
-
-        for (iVar = 0; iVar < nVar*nEqn; ++iVar)
-          Block_ij[iVar] = block_weight[iVar];
-
       }
+
+      /*--- Lastly, store block_weight in the lower triangular part, which
+       will be reused during the forward solve in the precon/smoother. ---*/
+
+      for (iVar = 0; iVar < nVar*nEqn; ++iVar)
+        Block_ij[iVar] = block_weight[iVar];
     }
   }
 
@@ -737,12 +777,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
    that we are overwriting the residual vector as we go. ---*/
 
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
-    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+    for (index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
       jPoint = col_ind_ilu[index];
-      if (jPoint < iPoint) {
-        Block_ij = &ILU_matrix[index*nVar*nEqn];
-        MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], &prod[iPoint*nVar]);
-      }
+      Block_ij = &ILU_matrix[index*nVar*nEqn];
+      MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], &prod[iPoint*nVar]);
     }
   }
 
@@ -753,9 +791,9 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
     for (iVar = 0; iVar < nVar; iVar++)
       sum_vector[iVar] = prod[iPoint*nVar+iVar];
 
-    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+    for (index = dia_ptr_ilu[iPoint]+1; index < row_ptr_ilu[iPoint+1]; index++) {
       jPoint = col_ind_ilu[index];
-      if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
+      if (jPoint < (long)nPointDomain) {
         Block_ij = &ILU_matrix[index*nVar*nEqn];
         MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], sum_vector);
       }
@@ -960,13 +998,8 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
   }
   Local_nLineLets = nLinelet;
 
-#ifndef HAVE_MPI
-  Global_nPoints = Local_nPoints;
-  Global_nLineLets = Local_nLineLets;
-#else
   SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   MeanPoints = SU2_TYPE::Int(ScalarType(Global_nPoints)/ScalarType(Global_nLineLets));
 
@@ -989,9 +1022,6 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   const ScalarType *l = nullptr, *u = nullptr, *d = nullptr;
   /*--- Inverse of d_{i-1}, modified d_i, modified b_i (rhs) ---*/
   ScalarType *inv_dm1 = nullptr, *d_prime = nullptr, *b_prime = nullptr;
-
-//  if (size != SINGLE_NODE)
-//    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
 
   /*--- Jacobi preconditioning where there is no linelet ---*/
 
