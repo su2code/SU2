@@ -193,10 +193,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     /*--- Implicit part ---*/
     
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     
   }
   
@@ -242,10 +239,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocks<su2double,-1>(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     
   }
   

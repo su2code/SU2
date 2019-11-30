@@ -58,9 +58,6 @@ private:
   su2vector<Index_t> m_diagPtr;  /*!< \brief Position of the diagonal entry. */
 
 public:
-  using CEdgeToNonZeroMap =
-    C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
-
   CCompressedSparsePattern() = default;
 
   /*!
@@ -191,7 +188,18 @@ public:
     return m_diagPtr.data();
   }
 };
+
+/*!
+ * \brief Alias a type of container as the edge map class, this is a N by 2 container
+ *        that maps the two sparse entries referenced by an edge (ij and ji) to two
+ *        non zero entries of a sparse pattern.
+ */
+template<typename Index_t>
+using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
+
+
 using CCompressedSparsePatternUL = CCompressedSparsePattern<unsigned long>;
+using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<unsigned long>;
 
 
 /*!
@@ -298,12 +306,12 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
  * \return nEdge by 2 matrix.
  */
 template<class Geometry_t, typename Index_t>
-typename CCompressedSparsePattern<Index_t>::CEdgeToNonZeroMap mapEdgesToSparsePattern(
-  Geometry_t& geometry, const CCompressedSparsePattern<Index_t>& pattern)
+CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
+                                                   const CCompressedSparsePattern<Index_t>& pattern)
 {
   assert(!pattern.empty());
 
-  typename CCompressedSparsePattern<Index_t>::CEdgeToNonZeroMap edgeMap(geometry.GetnEdge(),2);
+  CEdgeToNonZeroMap<Index_t> edgeMap(geometry.GetnEdge(),2);
 
   for(Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge)
   {

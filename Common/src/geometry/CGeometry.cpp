@@ -3981,3 +3981,14 @@ const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType t
 
   return *pattern;
 }
+
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
+{
+  if (edgeToCSRMap.empty()) {
+    if (finiteVolumeCSRFill0.empty()) {
+      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
+    }
+    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
+  }
+  return edgeToCSRMap;
+}
