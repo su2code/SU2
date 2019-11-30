@@ -125,6 +125,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   dia_ptr = csr.diagPtr();
   nnz = csr.getNumNonZeros();
 
+  if (type == ConnectivityType::FiniteVolume)
+    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
+
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 
   if(ilu_needed)
@@ -576,7 +579,7 @@ void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec, unsi
   unsigned long iVar, index, col_j;
 
   for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
+    prod_row_vector[iVar] = 0.0;
 
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     col_j = col_ind[index];

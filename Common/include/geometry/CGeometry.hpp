@@ -167,6 +167,8 @@ protected:
   finiteElementCSRFill0,                 /*!< \brief 0-fill FEM sparsity. */
   finiteElementCSRFillN;                 /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
 
+  CEdgeToNonZeroMapUL edgeToCSRMap;      /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
+
 public:
   /*--- Main geometric elements of the grid. ---*/
 
@@ -189,7 +191,7 @@ public:
   unsigned long *end_node;           /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
   unsigned long *nPointLinear;       /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
   unsigned long *nPointCumulative;   /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
-  
+
   /*--- Data structures for point-to-point MPI communications. ---*/
 
   int countPerPoint;                     /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
@@ -1462,7 +1464,7 @@ public:
   inline su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span) const {
     return MinAngularCoord[val_marker][val_span];
   }
-  
+
   /*!
    * \brief max angular pitch independently from the MPI partions.
    * \param[in] val_marker - marker value.
@@ -1602,12 +1604,19 @@ public:
 
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.
-   * \note This method also builds the pattern if that has not been done yet.
+   * \note This method builds the pattern if that has not been done yet.
    * \param[in] type - Finite volume or finite element.
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
   const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl);
+
+  /*!
+   * \brief Get the edge to sparse pattern map.
+   * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
+   * \return Reference to the map.
+   */
+  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
 
 };
 

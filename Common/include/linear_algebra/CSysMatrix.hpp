@@ -127,6 +127,20 @@ private:
 #endif
 
   /*!
+   * \brief Auxilary type to wrap the edge map pointer used in fast block updates, i.e. without
+   */
+  struct edgemap {
+    const unsigned long *ptr = nullptr;
+
+    inline unsigned long operator() (unsigned long edge, unsigned long node) const {
+      return ptr[2*edge+node];
+    }
+    inline unsigned long ij(unsigned long edge) const { return ptr[2*edge]; }
+    inline unsigned long ji(unsigned long edge) const { return ptr[2*edge+1]; }
+
+  } edge_ptr;
+
+  /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
    * \note See specializations for discrete adjoint right outside this class's declaration.
    */
@@ -390,7 +404,7 @@ public:
    * \brief Set the value of a block in the sparse matrix.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
-   * \param[in] **val_block - Block to set to A(i, j).
+   * \param[in] val_block - Block to set to A(i, j).
    */
   template<class OtherType>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
@@ -411,7 +425,7 @@ public:
    * \brief Set the value of a block in the sparse matrix.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
-   * \param[in] *val_block - Block to set to A(i, j).
+   * \param[in] val_block - Block to set to A(i, j).
    */
   template<class OtherType>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
@@ -431,7 +445,7 @@ public:
    * \brief Adds the specified block to the sparse matrix.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
-   * \param[in] **val_block - Block to add to A(i, j).
+   * \param[in] val_block - Block to add to A(i, j).
    */
   template<class OtherType>
   inline void AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
@@ -452,7 +466,7 @@ public:
    * \brief Subtracts the specified block to the sparse matrix.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
-   * \param[in] **val_block - Block to subtract to A(i, j).
+   * \param[in] val_block - Block to subtract to A(i, j).
    */
   template<class OtherType>
   inline void SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
@@ -465,6 +479,36 @@ public:
           for (jVar = 0; jVar < nEqn; jVar++)
             matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
         break;
+      }
+    }
+  }
+
+  /*!
+   * \brief Update 4 blocks ii, ij, ji, jj.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] iPoint - Row index.
+   * \param[in] jPoint - Column index.
+   * \param[in] block_i - Adds to ii, subs from ji.
+   * \param[in] block_j - Adds to ij, subs from jj.
+   */
+  template<class OtherType, int Sign = 1>
+  inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
+                           OtherType **block_i, OtherType **block_j) {
+
+    ScalarType *bii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
+    ScalarType *bjj = &matrix[dia_ptr[jPoint]*nVar*nEqn];
+    ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
+    ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bii[offset] += PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        bij[offset] += PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        bji[offset] -= PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        bjj[offset] -= PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        ++offset;
       }
     }
   }
