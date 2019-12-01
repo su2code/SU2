@@ -1,7 +1,7 @@
 /*!
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
- * \author P. Gomes, F. Palacios, A. Bueno, T. Economon
+ * \author P. Gomes
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,7 +31,9 @@
 
 #include <set>
 #include <vector>
+#include <limits>
 #include <cassert>
+#include <algorithm>
 
 /*!
  * \enum ConnectivityType
@@ -58,7 +60,23 @@ private:
   su2vector<Index_t> m_diagPtr;  /*!< \brief Position of the diagonal entry. */
 
 public:
+  using IndexType = Index_t;
+
   CCompressedSparsePattern() = default;
+
+  /*!
+   * \brief Construct from rvalue refs.
+   * \note This is the most efficient constructor as no data copy occurs.
+   * \param[in] outerPtr - Outer index pointers.
+   * \param[in] innerIdx - Inner indices.
+   */
+  CCompressedSparsePattern(su2vector<Index_t>&& outerPtr,
+                           su2vector<Index_t>&& innerIdx) :
+    m_outerPtr(outerPtr), m_innerIdx(innerIdx)
+  {
+    /*--- perform a basic sanity check ---*/
+    assert(m_innerIdx.size() == m_outerPtr(m_outerPtr.size()-1));
+  }
 
   /*!
    * \brief Construct from vector-like objects of any type with
@@ -117,18 +135,30 @@ public:
    * \param[in] iOuterIdx - Outer index.
    * \return Number of inner indices associated with the outer index.
    */
-  inline Index_t getNumNeighbors(Index_t iOuterIdx) const {
+  inline Index_t getNumNonZeros(Index_t iOuterIdx) const {
     return m_outerPtr(iOuterIdx+1) - m_outerPtr(iOuterIdx);
   }
 
   /*!
    * \param[in] iOuterIdx - Outer index.
-   * \param[in] iNeigh - Relative position of the inner index.
-   * \return The index of the iNeigh'th inner index associated with the outer index.
+   * \param[in] iNonZero - Relative position of the inner index.
+   * \return The index of the i'th inner index associated with the outer index.
    */
-  inline Index_t getInnerIdx(Index_t iOuterIdx, Index_t iNeigh) const {
-    assert(iNeigh >= 0 && iNeigh < getNumNeighbors(iOuterIdx));
-    return m_innerIdx(m_outerPtr(iOuterIdx) + iNeigh);
+  inline Index_t getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) const {
+    assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
+    return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
+  }
+
+  /*!
+   * \param[in] iOuterIdx - Outer index (row/col).
+   * \param[in] iInnerIdx - Inner index (col/row).
+   * \return Absolute position of non zero entry (iOuterIdx,iInnerIdx),
+   *         or NNZ if position does not belong to the pattern.
+   */
+  inline Index_t findInnerIdx(Index_t iOuterIdx, Index_t iInnerIdx) const {
+    for(Index_t k = m_outerPtr(iOuterIdx); k < m_outerPtr(iOuterIdx+1); ++k)
+      if(m_innerIdx(k) == iInnerIdx) return k;
+    return m_innerIdx.size();
   }
 
   /*!
@@ -137,19 +167,16 @@ public:
    * \return True if (iOuterIdx,iInnerIdx) exists, i.e. is non zero.
    */
   inline bool isNonZero(Index_t iOuterIdx, Index_t iInnerIdx) const {
-    for(Index_t k = m_outerPtr(iOuterIdx); k < m_outerPtr(iOuterIdx+1); ++k)
-      if(m_innerIdx(k) == iInnerIdx) return true;
-    return false;
+    return findInnerIdx(iOuterIdx, iInnerIdx) < m_innerIdx.size();
   }
 
   /*!
    * \param[in] iOuterIdx - Outer index (row/col).
    * \param[in] iInnerIdx - Inner index (col/row).
    * \return Absolute position of non zero entry (iOuterIdx,iInnerIdx).
-   * \note Method segfaults if (iOuterIdx,iInnerIdx) is not a non zero.
-   *       On DEBUG builds this requirement is asserted.
+   * \note This method is only safe if the entry exists.
    */
-  inline Index_t findInnerIdx(Index_t iOuterIdx, Index_t iInnerIdx) const {
+  inline Index_t quickFindInnerIdx(Index_t iOuterIdx, Index_t iInnerIdx) const {
     assert(isNonZero(iOuterIdx, iInnerIdx) && "Error, j does not belong to NZ(i).");
     Index_t k = m_outerPtr(iOuterIdx);
     while(m_innerIdx(k) != iInnerIdx) ++k;
@@ -187,6 +214,26 @@ public:
     assert(!m_diagPtr.empty() && "Diagonal map has not been built.");
     return m_diagPtr.data();
   }
+
+  /*!
+   * \return The minimum inner index.
+   */
+  Index_t getMinInnerIdx() const {
+    Index_t idx = std::numeric_limits<Index_t>::max();
+    for(Index_t k=0; k<m_innerIdx.size(); ++k)
+      idx = std::min(idx, m_innerIdx(k));
+    return idx;
+  }
+
+  /*!
+   * \return The maximum inner index.
+   */
+  Index_t getMaxInnerIdx() const {
+    Index_t idx = std::numeric_limits<Index_t>::min();
+    for(Index_t k=0; k<m_innerIdx.size(); ++k)
+      idx = std::max(idx, m_innerIdx(k));
+    return idx;
+  }
 };
 
 /*!
@@ -208,6 +255,8 @@ using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<unsigned long>;
  *        points in level N-1 are also considered neighbors of the base point.
  *        The resulting pattern is that of A^{N+1} where A is the sparse matrix
  *        of immediate neighbors.
+ * \note Algorithm is equivalent to the implementation by F. Palacios,
+ *       A. Bueno, and T. Economon from CSysMatrix.
  * \param[in] geometry - Definition of the grid.
  * \param[in] type - Of connectivity.
  * \param[in] fillLvl - Target degree of neighborhood (immediate neighbors always added).
@@ -318,9 +367,123 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
     Index_t iPoint = geometry.edge[iEdge]->GetNode(0);
     Index_t jPoint = geometry.edge[iEdge]->GetNode(1);
 
-    edgeMap(iEdge,0) = pattern.findInnerIdx(iPoint,jPoint);
-    edgeMap(iEdge,1) = pattern.findInnerIdx(jPoint,iPoint);
+    edgeMap(iEdge,0) = pattern.quickFindInnerIdx(iPoint,jPoint);
+    edgeMap(iEdge,1) = pattern.quickFindInnerIdx(jPoint,iPoint);
   }
 
   return edgeMap;
+}
+
+
+/*!
+ * \brief Color contiguous groups of outer indices of a sparse pattern such that
+ *        within each color, any two groups do not have inner indices in common.
+ * \note  Within a group, two outer indices will generally have common inner indices.
+ *        The coloring is returned as a compressed sparse pattern where the colors
+ *        are outer indices, and the outer indices of the input pattern are the
+ *        inner indices of the coloring. A simple greedy algorithm is used.
+ *        Using a sparse pattern as input allows "anything" to be colored e.g.
+ *        FVM edges, FEM elements, the rows/columns of a sparse matrix, etc.
+ * \note  The worst that can happen in this method is needing an unreasonable number
+ *        of colors, or too much memory due to a large range of the inner indices.
+ *        The last two template parameters limit both, in case of failure an empty
+ *        pattern is returned.
+ * \param[in] pattern - Sparse pattern to be colored.
+ * \param[in] groupSize - Size of the outer index groups, default 1.
+ * \param[out] indexColor - Optional, vector with colors given to the outer indices.
+ * \return Coloring in the same type of the input pattern.
+ */
+template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
+T colorSparsePattern(const T& pattern, size_t groupSize = 1,
+                     std::vector<Color_t>* indexColor = nullptr)
+{
+  static_assert(std::is_integral<Color_t>::value,"");
+  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors,"");
+
+  using Index_t = typename T::IndexType;
+
+  const Index_t grpSz = groupSize;
+  const Index_t nOuter = pattern.getOuterSize();
+  const Index_t minIdx = pattern.getMinInnerIdx();
+  const Index_t nInner = pattern.getMaxInnerIdx()+1-minIdx;
+
+  /*--- Check the max memory condition (<< 23 is to count bits). ---*/
+  if(size_t(nInner) > (MaxMB << 23)) return T();
+
+  /*--- Vector with the color given to each outer index. ---*/
+  std::vector<Color_t> idxColor(nOuter);
+
+  /*--- Start with one color, with no indices assigned. ---*/
+  std::vector<Index_t> colorSize(1,0);
+  Color_t color, nColor = 1;
+
+  {
+  /*--- For each color keep track of the inner indices that are in it. ---*/
+  std::vector<std::vector<bool> > innerInColor;
+  innerInColor.emplace_back(nInner, false);
+
+  auto outerPtr = pattern.outerPtr();
+  auto innerIdx = pattern.innerIdx();
+
+  for(Index_t iOuter = 0; iOuter < nOuter; iOuter += grpSz)
+  {
+    Index_t grpEnd = std::min(iOuter+grpSz, nOuter);
+
+    for(color = 0; color < nColor; ++color)
+    {
+      bool free = true;
+      /*--- Traverse entire group as a large outer index. ---*/
+      for(Index_t k = outerPtr[iOuter]; k < outerPtr[grpEnd] && free; ++k)
+      {
+        free = !innerInColor[color][innerIdx[k]-minIdx];
+      }
+      /*--- If none of the inner indices in the group appears in
+       *    this color yet, it is assigned to the group. ---*/
+      if(free) break;
+    }
+
+    /*--- No color was free, make space for a new one. ---*/
+    if(color == nColor)
+    {
+      ++nColor;
+      if(nColor == MaxColors) return T();
+      colorSize.push_back(0);
+      innerInColor.emplace_back(nInner, false);
+    }
+
+    /*--- Assign color to group. ---*/
+    for(Index_t k = iOuter; k < grpEnd; ++k) idxColor[k] = color;
+
+    /*--- Mark the inner indices of the group as belonging to the color. ---*/
+    for(Index_t k = outerPtr[iOuter]; k < outerPtr[grpEnd]; ++k)
+    {
+      innerInColor[color][innerIdx[k]-minIdx] = true;
+    }
+
+    /*--- Update count for the assigned color. ---*/
+    colorSize[color] += grpEnd - iOuter;
+  }
+  } // matrix of bools goes out of scope
+
+
+  /*--- Compress the coloring information. ---*/
+
+  su2vector<Index_t> colorPtr(nColor+1); colorPtr(0) = 0;
+  su2vector<Index_t> outerIdx(nOuter);
+
+  Index_t k = 0;
+  for(color = 0; color < nColor; ++color)
+  {
+    colorPtr(color+1) = colorPtr(color)+colorSize[color];
+
+    for(Index_t iOuter = 0; iOuter < nOuter; ++iOuter)
+      if(idxColor[iOuter] == color)
+        outerIdx(k++) = iOuter;
+  }
+
+  /*--- Optional return of the direct color information. ---*/
+  if(indexColor) *indexColor = std::move(idxColor);
+
+  /*--- Move compressed coloring into result pattern instance. ---*/
+  return T(std::move(colorPtr), std::move(outerIdx));
 }

@@ -169,6 +169,14 @@ protected:
 
   CEdgeToNonZeroMapUL edgeToCSRMap;      /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
 
+  /*--- Edge and element colorings. ---*/
+
+  CCompressedSparsePatternUL
+  edgeColoring,                          /*!< \brief Edge coloring structure for thread-based parallelization. */
+  elemColoring;                          /*!< \brief Element coloring structure for thread-based parallelization. */
+  unsigned long edgeColorGroupSize = 1;  /*!< \brief Size of the edge groups within each color. */
+  unsigned long elemColorGroupSize = 1;  /*!< \brief Size of the element groups within each color. */
+
 public:
   /*--- Main geometric elements of the grid. ---*/
 
@@ -1617,6 +1625,20 @@ public:
    * \return Reference to the map.
    */
   const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
+
+  /*!
+   * \brief Get the edge coloring.
+   * \note This method computes the coloring if that has not been done yet.
+   * \return Reference to the coloring.
+   */
+  const CCompressedSparsePatternUL& GetEdgeColoring(void);
+
+  /*!
+   * \brief Get the element coloring.
+   * \note This method computes the coloring if that has not been done yet.
+   * \return Reference to the coloring.
+   */
+  const CCompressedSparsePatternUL& GetElementColoring(void);
 
 };
 
