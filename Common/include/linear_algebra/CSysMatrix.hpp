@@ -76,29 +76,31 @@ private:
   int rank;     /*!< \brief MPI Rank. */
   int size;     /*!< \brief MPI Size. */
 
-  unsigned long nPoint,   /*!< \brief Number of points in the grid. */
-  nPointDomain,           /*!< \brief Number of points in the grid. */
-  nVar,                   /*!< \brief Number of variables. */
-  nEqn;                   /*!< \brief Number of equations. */
+  enum : size_t {MAXNVAR = 8};      /*!< \brief Maximum number of variables the matrix can handle. The static
+                                                size is needed for fast, per-thread, static memory allocation. */
+
+  unsigned long omp_chunk_size;     /*!< \brief Chunk size used in parallel for loops. */
+  unsigned long omp_num_parts;      /*!< \brief Number of threads used in thread-parallel LU_SGS and ILU. */
+  unsigned long *omp_partitions;    /*!< \brief Point indexes of LU_SGS and ILU thread-parallel sub partitioning. */
+
+  unsigned long nPoint,             /*!< \brief Number of points in the grid. */
+  nPointDomain,                     /*!< \brief Number of points in the grid. */
+  nVar,                             /*!< \brief Number of variables. */
+  nEqn;                             /*!< \brief Number of equations. */
 
   ScalarType *matrix;               /*!< \brief Entries of the sparse matrix. */
-  ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz;                /*!< \brief Number of possible nonzero entries in the matrix. */
   const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
   const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
+
+  ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
   const unsigned long *row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
   const unsigned long *dia_ptr_ilu; /*!< \brief Pointers to the diagonal element in each row (ILU). */
   const unsigned long *col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
-  ScalarType *block;             /*!< \brief Internal array to store a subblock of the matrix. */
-  ScalarType *block_inverse;     /*!< \brief Internal array to store a subblock of the matrix. */
-  ScalarType *block_weight;      /*!< \brief Internal array to store a subblock of the matrix. */
-  ScalarType *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
-  ScalarType *aux_vector;        /*!< \brief Auxiliary array to store intermediate results. */
-  ScalarType *sum_vector;        /*!< \brief Auxiliary array to store intermediate results. */
   ScalarType *invM;              /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 
   unsigned long nLinelet;                       /*!< \brief Number of Linelets in the system. */
@@ -119,7 +121,6 @@ private:
   dgemm_jit_kernel_t MatrixVectorProductKernelAlphaMinusOne;   /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
   void * MatrixVectorProductTranspJitterBetaOne;               /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
   dgemm_jit_kernel_t MatrixVectorProductTranspKernelBetaOne;   /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
-  lapack_int * mkl_ipiv;
 #endif
 
 #ifdef HAVE_PASTIX
@@ -193,16 +194,13 @@ private:
 
   /*!
    * \brief Calculates the matrix-matrix product
-   * \param[in] matrix_a
-   * \param[in] matrix_b
-   * \param[out] product
    */
   inline void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product);
 
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  inline void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
+  inline void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) const {
     for(unsigned long iVar = 0; iVar < nVar; iVar++)
       c[iVar] = a[iVar] - b[iVar];
   }
@@ -210,9 +208,24 @@ private:
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  inline void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
+  inline void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) const {
     for(unsigned long iVar = 0; iVar < nVar*nEqn; iVar++)
       c[iVar] = a[iVar] - b[iVar];
+  }
+
+  /*!
+   * \brief Copy matrix src into dst, transpose is required.
+   */
+  inline void MatrixCopy(const ScalarType *src, ScalarType *dst, bool transposed = false) const {
+    if (!transposed) {
+      for(auto iVar = 0ul; iVar < nVar*nVar; ++iVar)
+        dst[iVar] = src[iVar];
+    }
+    else {
+      for (auto iVar = 0ul; iVar < nVar; ++iVar)
+        for (auto jVar = 0ul; jVar < nVar; ++jVar)
+          dst[iVar*nVar+jVar] = src[jVar*nVar+iVar];
+    }
   }
 
   /*!
@@ -220,37 +233,37 @@ private:
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
    */
-  void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
+  void Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const;
 
   /*!
    * \brief Invert a small dense matrix.
-   * \param[in] matrix - the matrix.
+   * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[out] inverse - the matrix inverse.
    */
-  void MatrixInverse(const ScalarType *matrix, ScalarType *inverse);
+  void MatrixInverse(ScalarType *matrix, ScalarType *inverse) const;
 
   /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
+   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
+   * \param[in] block_i - Index of the (i,i) diagonal block.
    * \param[in] rhs - Right-hand-side of the linear system.
    * \param[in] transposed - If true the transposed of the block is used (default = false).
    * \return Solution of the linear system (overwritten on rhs).
    */
-  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false);
+  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false) const;
 
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose = false);
+  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transposed = false) const;
 
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock);
+  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock) const;
 
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
@@ -279,17 +292,21 @@ private:
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
    * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
+   * \param[in] col_ub - Exclusive upper bound for column indices considered in multiplication.
+   * \param[out] prod - Result of the product U(A)*vec.
    */
-  inline void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  inline void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
+                           unsigned long col_ub, ScalarType *prod);
 
   /*!
    * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
    * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
+   * \param[in] col_lb - Inclusive lower bound for column indices considered in multiplication.
+   * \param[out] prod - Result of the product L(A)*vec.
    */
-  inline void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  inline void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
+                           unsigned long col_lb, ScalarType *prod);
 
   /*!
    * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
@@ -297,7 +314,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
    */
-  inline void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  inline void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod);
 
   /*!
    * \brief Performs the product of i-th row of a sparse matrix by a vector.
@@ -305,7 +322,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return Result of the product (stored at *prod_row_vector).
    */
-  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod);
 
 public:
 
@@ -336,9 +353,17 @@ public:
    * \brief Sets to zero all the entries of the sparse matrix.
    */
   inline void SetValZero(void) {
-    if(matrix != NULL)
-      for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
-        matrix[index] = 0.0;
+    for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
+      matrix[index] = 0.0;
+  }
+
+  /*!
+   * \brief Sets to zero all the block diagonal entries of the sparse matrix.
+   */
+  inline void SetValDiagonalZero(void) {
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint)
+      for (unsigned long index = 0; index < nVar*nEqn; ++index)
+        matrix[dia_ptr[iPoint]*nVar*nEqn + index] = 0.0;
   }
 
   /*!
@@ -352,7 +377,7 @@ public:
   void InitiateComms(CSysVector<OtherType> & x,
                      CGeometry *geometry,
                      CConfig *config,
-                     unsigned short commType);
+                     unsigned short commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data in the vector.
@@ -365,7 +390,7 @@ public:
   void CompleteComms(CSysVector<OtherType> & x,
                      CGeometry *geometry,
                      CConfig *config,
-                     unsigned short commType);
+                     unsigned short commType) const;
 
   /*!
    * \brief Get a pointer to the start of block "ij"
@@ -378,8 +403,7 @@ public:
     for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
       if (col_ind[index] == block_j)
         return &(matrix[index*nVar*nEqn]);
-
-    return NULL;
+    return nullptr;
   }
 
   /*!
@@ -396,7 +420,6 @@ public:
     for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
       if (col_ind[index] == block_j)
         return matrix[index*nVar*nEqn+iVar*nEqn+jVar];
-
     return 0.0;
   }
 
@@ -484,10 +507,12 @@ public:
   }
 
   /*!
-   * \brief Update 4 blocks ii, ij, ji, jj.
+   * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
+   * \note The template parameter Sign, can be used create a "subtractive"
+   *       update i.e. subtract from row i and add to row j instead.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
-   * \param[in] iPoint - Row index.
-   * \param[in] jPoint - Column index.
+   * \param[in] iPoint - Row to which we add the blocks.
+   * \param[in] jPoint - Row from which we subtract the blocks.
    * \param[in] block_i - Adds to ii, subs from ji.
    * \param[in] block_j - Adds to ij, subs from jj.
    */

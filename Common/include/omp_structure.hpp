@@ -1,13 +1,13 @@
 /*!
- * \file SU2_DEF.hpp
- * \brief Headers of the main subroutines of the code SU2_DEF.
- *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file omp_structure.hpp
+ * \brief OpenMP interface header, provides compatibility functions
+ *        if the code is built without OpenMP support.
+ * \author P. Gomes
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,21 +26,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
+#ifdef _OPENMP
+#define HAVE_OMP
+#include <omp.h>
+#else
+inline int omp_get_max_threads(void) {return 1;}
 
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-
-#include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output/CMeshOutput.hpp"
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-
-using namespace std;
+inline int omp_get_thread_num(void) {return 0;}
+#endif
