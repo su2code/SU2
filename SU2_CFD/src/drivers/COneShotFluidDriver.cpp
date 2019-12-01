@@ -856,7 +856,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
       // Lagrangian += gamma*helper*helper - 1./(2.*gamma)*Multiplier[iConstr]*Multiplier[iConstr];
-      Lagrangian += gamma*helper*helper;
+      Lagrangian += gamma/2.*helper*helper;
     }
   }
 
