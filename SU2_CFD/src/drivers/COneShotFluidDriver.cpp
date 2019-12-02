@@ -347,8 +347,8 @@ void COneShotFluidDriver::RunOneShot(){
 
       } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
     }
-    LoadOldMultiplier();
-    UpdateMultiplier(1.0);
+    // LoadOldMultiplier();
+    // UpdateMultiplier(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
 
