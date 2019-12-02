@@ -35,6 +35,7 @@
 /*--- Forward declaration of template friend functions. ---*/
 template<class T> class CSysVector;
 template<class T> T dotProd(const CSysVector<T> & u, const CSysVector<T> & v);
+template<class T> T dotProdImpl(unsigned long N, const T* u, const T* v);
 
 /*!
  * \class CSysVector
@@ -49,13 +50,15 @@ template<class ScalarType>
 class CSysVector {
 
 private:
+  enum { OMP_STAT_SIZE = 16384 };   /*!< \brief Chunk size used in parallel for loops. */
+
+  ScalarType* vec_val;      /*!< \brief storage for the element values, 64 byte aligned (do not use normal new/delete) */
   unsigned long nElm;       /*!< \brief total number of elements (or number elements on this processor) */
   unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
   unsigned long nElmGlobal; /*!< \brief total number of elements over all processors */
   unsigned long nVar;       /*!< \brief number of elements in a block */
   unsigned long nBlk;       /*!< \brief number of blocks (or number of blocks on this processor) */
   unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
-  ScalarType* vec_val;      /*!< \brief storage for the element values, 64 byte aligned (do not use normal new/delete) */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -346,9 +349,18 @@ public:
   }
 
   /*!
-   * \brief dot-product between two CSysVectors
+   * \brief Dot product between two CSysVectors
    * \param[in] u - first CSysVector in dot product
    * \param[in] v - second CSysVector in dot product
    */
   friend ScalarType dotProd<ScalarType>(const CSysVector & u, const CSysVector & v);
+
+  /*!
+   * \brief Generic dot product implementation.
+   * \note The passive double specialization uses OpenMP parallel for with reduction.
+   * \param[in] N - array size
+   * \param[in] u - first array
+   * \param[in] v - second array
+   */
+  friend ScalarType dotProdImpl<ScalarType>(unsigned long N, const ScalarType* u, const ScalarType* v);
 };

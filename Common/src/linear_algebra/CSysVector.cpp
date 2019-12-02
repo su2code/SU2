@@ -27,6 +27,7 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/mpi_structure.hpp"
+#include "../../include/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 
@@ -62,10 +63,14 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
   if (vec_val == nullptr)
     vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
 
-  if(!valIsArray)
+  if(!valIsArray) {
+    SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
     for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
-  else
+  }
+  else {
+    SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
     for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
+  }
 }
 
 template<class ScalarType>
@@ -95,6 +100,7 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
   if (vec_val == nullptr)
     vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = SU2_TYPE::GetValue(other[i]);
 }
@@ -111,6 +117,7 @@ void CSysVector<ScalarType>::Equals_AX(ScalarType a, const CSysVector<ScalarType
 
   assert(nElm == x.nElm && "Sizes do not match");
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = a * x.vec_val[i];
 }
@@ -120,6 +127,7 @@ void CSysVector<ScalarType>::Plus_AX(ScalarType a, const CSysVector<ScalarType> 
 
   assert(nElm == x.nElm && "Sizes do not match");
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] += a * x.vec_val[i];
 }
@@ -129,6 +137,7 @@ void CSysVector<ScalarType>::Equals_AX_Plus_BY(ScalarType a, const CSysVector<Sc
                                                ScalarType b, const CSysVector<ScalarType> & y) {
   assert(nElm == x.nElm && nElm == y.Elm && "Sizes do not match");
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
 }
@@ -143,6 +152,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<Scal
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(ScalarType val) {
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
   return *this;
@@ -153,6 +163,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator+=(const CSysVector<Sca
 
   assert(nElm == u.nElm && "Sizes do not match");
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] += u.vec_val[i];
   return *this;
@@ -163,6 +174,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<Sca
 
   assert(nElm == u.nElm && "Sizes do not match");
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] -= u.vec_val[i];
   return *this;
@@ -171,6 +183,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<Sca
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(ScalarType val) {
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] *= val;
   return *this;
@@ -179,6 +192,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(ScalarType val) {
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(ScalarType val) {
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] /= val;
   return *this;
@@ -187,8 +201,24 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(ScalarType val) {
 template<class ScalarType>
 void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
 
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
     u_array[i] = vec_val[i];
+}
+
+template<class T>
+inline T dotProdImpl(unsigned long N, const T* u, const T* v) {
+  T sum = 0.0;
+  for (auto i = 0ul; i < N; i++) sum += u[i]*v[i];
+  return sum;
+}
+
+template<>
+inline passivedouble dotProdImpl(unsigned long N, const passivedouble* u, const passivedouble* v) {
+  passivedouble sum = 0.0;
+  SU2_OMP(parallel for schedule(static,CSysVector<passivedouble>::OMP_STAT_SIZE) reduction(+:sum))
+  for (auto i = 0ul; i < N; i++) sum += u[i]*v[i];
+  return sum;
 }
 
 template<class ScalarType>
@@ -196,15 +226,12 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
 
   assert(u.nElm == v.nElm && "Sizes do not match");
 
-  /*--- find local inner product and, if a parallel run, sum over all
-   processors (we use nElemDomain instead of nElem) ---*/
-  ScalarType loc_prod = 0.0;
-  for (unsigned long i = 0; i < u.nElmDomain; i++)
-    loc_prod += u.vec_val[i]*v.vec_val[i];
+  /*--- Local dot product, only the elements that belong to this rank. ---*/
+  ScalarType loc_prod = dotProdImpl(u.nElmDomain, u.vec_val, v.vec_val);
+
+  /*--- Reduce reduce across all mpi ranks. ---*/
   ScalarType prod = 0.0;
-
   SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
   return prod;
 }
 
