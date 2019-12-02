@@ -9,7 +9,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -33,7 +33,7 @@
 #if defined(_WIN32)
 #include <malloc.h>
 #else
-#include <stdlib.h> 
+#include <stdlib.h>
 #endif
 
 #include <cassert>
@@ -44,6 +44,11 @@ namespace MemoryAllocation
 inline constexpr bool is_power_of_two(size_t x)
 {
   return x && !(x & (x-1));
+}
+
+inline constexpr size_t round_up(size_t multiple, size_t x)
+{
+  return ((x+multiple-1)/multiple)*multiple;
 }
 
 /*!
@@ -58,6 +63,8 @@ inline T* aligned_alloc(size_t alignment, size_t size) noexcept
   assert(is_power_of_two(alignment));
 
   if(alignment < alignof(void*)) alignment = alignof(void*);
+
+  size = round_up(alignment, size);
 
   void* ptr = nullptr;
 

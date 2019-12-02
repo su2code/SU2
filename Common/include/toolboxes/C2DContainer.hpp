@@ -404,12 +404,9 @@ private:
       free(m_data);
     }
 
-    /*--- round up size to a multiple of the alignment specification if necessary ---*/
-    size_t bytes = reqSize*sizeof(Scalar_t);
-    size_t allocSize = (AlignSize==0)? bytes : ((bytes+AlignSize-1)/AlignSize)*AlignSize;
-
     /*--- request actual allocation to base class as it needs specialization ---*/
-    m_allocate(allocSize,rows,cols);
+    size_t bytes = reqSize*sizeof(Scalar_t);
+    m_allocate(bytes,rows,cols);
 
     return reqSize;
   }
