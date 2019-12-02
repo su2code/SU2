@@ -29,6 +29,7 @@
 #include "../../include/mpi_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
+
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {
 
@@ -65,6 +66,37 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
     for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
   else
     for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
+}
+
+template<class ScalarType>
+template<class T>
+void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
+
+  /*--- This is a method and not the overload of an operator to make sure who
+   calls it knows the consequence to the derivative information (lost) ---*/
+
+  /*--- check if self-assignment, otherwise perform deep copy ---*/
+  if ((const void*)this == (const void*)&other) return;
+
+  /*--- determine if (re-)allocation is needed ---*/
+  if (nElm != other.GetLocSize() && vec_val != nullptr) {
+    MemoryAllocation::aligned_free(vec_val);
+    vec_val = nullptr;
+  }
+
+  /*--- copy ---*/
+  nElm = other.GetLocSize();
+  nElmDomain = other.GetNElmDomain();
+  nBlk = other.GetNBlk();
+  nBlkDomain = other.GetNBlkDomain();
+  nVar = other.GetNVar();
+  nElmGlobal = other.GetSize();
+
+  if (vec_val == nullptr)
+    vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
+
+  for (unsigned long i = 0; i < nElm; i++)
+    vec_val[i] = SU2_TYPE::GetValue(other[i]);
 }
 
 template<class ScalarType>
@@ -157,37 +189,6 @@ void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
 
   for (unsigned long i = 0; i < nElm; i++)
     u_array[i] = vec_val[i];
-}
-
-template<class ScalarType>
-template<class T>
-void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
-
-  /*--- This is a method and not the overload of an operator to make sure who
-   calls it knows the consequence to the derivative information (lost) ---*/
-
-  /*--- check if self-assignment, otherwise perform deep copy ---*/
-  if ((const void*)this == (const void*)&other) return;
-
-  /*--- determine if (re-)allocation is needed ---*/
-  if (nElm != other.GetLocSize() && vec_val != NULL) {
-    MemoryAllocation::aligned_free(vec_val);
-    vec_val = nullptr;
-  }
-
-  /*--- copy ---*/
-  nElm = other.GetLocSize();
-  nElmDomain = other.GetNElmDomain();
-  nBlk = other.GetNBlk();
-  nBlkDomain = other.GetNBlkDomain();
-  nVar = other.GetNVar();
-  nElmGlobal = other.GetSize();
-
-  if (vec_val == nullptr)
-    vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
-
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = SU2_TYPE::GetValue(other[i]);
 }
 
 template<class ScalarType>
