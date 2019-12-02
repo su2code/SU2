@@ -540,7 +540,7 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {}
 
-inline void CBaseMPIWrapper::Init_thread(int *argc, char***argv, int required, int* provided) {provided = required;}
+inline void CBaseMPIWrapper::Init_thread(int *argc, char***argv, int required, int* provided) {*provided = required;}
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size) {}
 
