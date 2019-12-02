@@ -28,7 +28,7 @@
 
 #include "../../include/output/COutputLegacy.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solver_structure.hpp"
 
 void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {

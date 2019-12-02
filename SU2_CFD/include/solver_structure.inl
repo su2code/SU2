@@ -1600,7 +1600,8 @@ inline void CEulerSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP
 
 inline void CEulerSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuOut[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short kind_turb) {
+inline void CEulerSolver::ComputeTurboVelocity(const su2double *cartesianVelocity, const su2double *turboNormal, su2double *turboVelocity,
+                                               unsigned short marker_flag, unsigned short kind_turb) {
 
   if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
     turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
@@ -1619,7 +1620,8 @@ inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2
   }
 }
 
-inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short kind_turb){
+inline void CEulerSolver::ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
+                                              unsigned short marker_flag, unsigned short kind_turb){
 
   if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
     cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];

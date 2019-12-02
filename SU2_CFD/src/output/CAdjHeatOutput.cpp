@@ -28,7 +28,7 @@
 
 #include "../../include/output/CAdjHeatOutput.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solver_structure.hpp"
 
 CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {

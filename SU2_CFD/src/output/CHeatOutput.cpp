@@ -27,7 +27,7 @@
 
 
 #include "../../include/output/CHeatOutput.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solver_structure.hpp"
 
 CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {

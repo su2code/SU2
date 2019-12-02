@@ -1,4 +1,3 @@
-
 /*!
  * \file CMarkerProfileReaderFVM.hpp
  * \brief Header file for the class CMarkerProfileReaderFVM.
@@ -46,7 +45,7 @@
 
 #include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 
 using namespace std;
 
