@@ -119,7 +119,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     }
     BCheck_Inv[iConstr][iConstr] = config->GetOneShotGamma();
   }
-  BCheck_Norm = pow(config->GetBCheckEpsilon(), su2double(nConstr));
+  BCheck_Norm = 1./config->GetOneShotGamma();
 
   /*----- calculate values for bound projection algorithm -------*/
   lb=-config->GetBound()*config->GetDesignScale();
@@ -312,11 +312,12 @@ void COneShotFluidDriver::RunOneShot(){
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
-  /*--- Recompute alpha, beta, gamma if line search failed ---*/
+  /*--- Compute alpha, beta, gamma at first one-shot iteration, or recompute if line search failed ---*/
   if(InnerIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-  if(InnerIter > config->GetOneShotStart() && 
-     InnerIter < config->GetOneShotStop()   && 
-     ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+  if((InnerIter == config->GetOneShotStart()) ||
+     (InnerIter > config->GetOneShotStart() && 
+      InnerIter < config->GetOneShotStop()  && 
+      ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol)))){
     // /*--- Perform new line search on just multiplier ---*/
     // if(nConstr > 0) {
     //   su2double stepsize_mu = 1.0;
