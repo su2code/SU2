@@ -229,10 +229,14 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
   /*--- Local dot product, only the elements that belong to this rank. ---*/
   ScalarType loc_prod = dotProdImpl(u.nElmDomain, u.vec_val, v.vec_val);
 
+#ifdef HAVE_MPI
   /*--- Reduce reduce across all mpi ranks. ---*/
   ScalarType prod = 0.0;
   SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return prod;
+#else
+  return loc_prod;
+#endif
 }
 
 /*--- Explicit instantiations ---*/
