@@ -1,5 +1,5 @@
 /*!
- * \file vector_structure.cpp
+ * \file CSysVector.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
  * \version 7.0.0 "Blackbird"

@@ -28,8 +28,12 @@
 
 #ifdef HAVE_PASTIX
 
-#include "../../include/linear_algebra/CPastixWrapper.hpp"
+#include "../../include/mpi_structure.hpp"
 #include "../../include/omp_structure.hpp"
+#include "../../include/config_structure.hpp"
+#include "../../include/geometry/CGeometry.hpp"
+#include "../../include/linear_algebra/CPastixWrapper.hpp"
+
 #include<numeric>
 
 void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
