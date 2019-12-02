@@ -1,13 +1,12 @@
 /*!
- * \file SU2_SOL.hpp
- * \brief Headers of the main subroutines of the code SU2_SOL.
- *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CDummyGeometry.hpp
+ * \brief Headers of the dummy geometry class used in "dry run" mode.
+ * \author T. Albring
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,19 +25,30 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "CGeometry.hpp"
 
-#include <ctime>
+/*!
+ * \class CDummyGeometry
+ * \brief Class for defining a geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
+ */
+class CDummyGeometry final : public CGeometry{
 
-#include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDummyGeometry(CConfig *config);
 
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDummyGeometry();
 
-void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput* output, unsigned long TimeIter);
+};
 
-using namespace std;

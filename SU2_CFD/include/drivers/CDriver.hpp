@@ -47,7 +47,7 @@
 #include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
 #include "../solvers/CDiscAdjMeshSolver.hpp"
 #include "../solvers/CMeshSolver.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"

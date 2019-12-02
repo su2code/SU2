@@ -31,7 +31,7 @@
 #include <vector>
 
 #include "mpi_structure.hpp"
-#include "geometry_structure.hpp"
+#include "geometry/CGeometry.hpp"
 
 using namespace std;
 

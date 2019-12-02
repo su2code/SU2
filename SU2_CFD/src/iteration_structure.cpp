@@ -1190,11 +1190,7 @@ void CHeatIteration::Preprocess(COutput *output,
                                 CVolumetricMovement ***grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone,
-                                unsigned short val_iInst) {
-
-  unsigned long OuterIter = config[val_iZone]->GetOuterIter();
-
-}
+                                unsigned short val_iInst) { }
 
 void CHeatIteration::Iterate(COutput *output,
                              CIntegration ****integration,

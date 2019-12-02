@@ -40,7 +40,7 @@
 #include <stdio.h>
 
 #include "../../../Common/include/config_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../solver_structure.hpp"
 
 using namespace std;

@@ -62,8 +62,6 @@ lib_sources = \
   ../include/fem_geometry_structure.inl \
   ../include/fem_standard_element.hpp \
   ../include/fem_standard_element.inl \
-  ../include/geometry_structure.hpp \
-  ../include/geometry_structure.inl \
   ../include/CMultiGridQueue.hpp \
   ../include/CMeshReaderFVM.hpp \
   ../include/CSU2ASCIIMeshReaderFVM.hpp \
@@ -121,7 +119,6 @@ lib_sources = \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
-  ../src/geometry_structure.cpp \
   ../src/CMultiGridQueue.cpp \
   ../src/CMeshReaderFVM.cpp \
   ../src/CSU2ASCIIMeshReaderFVM.cpp \
@@ -136,6 +133,10 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
+  ../src/geometry/CGeometry.cpp \
+  ../src/geometry/CPhysicalGeometry.cpp \
+  ../src/geometry/CMultiGridGeometry.cpp \
+  ../src/geometry/CDummyGeometry.cpp \
   ../src/geometry/elements/CElement.cpp \
   ../src/geometry/elements/CTRIA1.cpp \
   ../src/geometry/elements/CQUAD4.cpp \

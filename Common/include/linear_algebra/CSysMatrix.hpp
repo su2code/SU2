@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../mpi_structure.hpp"
@@ -36,7 +35,7 @@
 #include <cstdlib>
 
 #include "../config_structure.hpp"
-#include "../geometry_structure.hpp"
+#include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 

@@ -25,9 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry_structure.hpp"
-
 #ifdef HAVE_CGNS
+#include "../include/fem_cgns_elements.hpp"
+#include "../include/geometry_structure_fem_part.hpp"
+#include "../include/mpi_structure.hpp"
+#include "../include/datatype_structure.hpp"
+
+#include <cmath>
+#include <climits>
+#include <algorithm>
+
 #if CGNS_VERSION >= 3300
 
 void CCGNSElementType::DetermineMetaData(const unsigned short nDim,
