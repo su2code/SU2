@@ -109,7 +109,7 @@ FORCEINLINE void gemm_impl(const unsigned long n, const T *a, const T *b, T *c) 
 }
 
 #define __MATVECPROD_SIGNATURE__(TYPE,NAME) \
-FORCEINLINE void CSysMatrix<TYPE>::NAME(const TYPE *matrix, const TYPE *vector, TYPE *product)
+FORCEINLINE void CSysMatrix<TYPE>::NAME(const TYPE *matrix, const TYPE *vector, TYPE *product) const
 
 #define MATVECPROD_SIGNATURE(NAME) template<class ScalarType> __MATVECPROD_SIGNATURE__(ScalarType,NAME)
 
@@ -135,7 +135,7 @@ MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
 }
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
+FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const {
   gemm_impl<ScalarType>(nVar, matrix_a, matrix_b, product);
 }
 #else
@@ -161,7 +161,7 @@ MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
 }
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
+FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const {
   MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
                             const_cast<ScalarType*>(matrix_b), product );
 }
@@ -185,7 +185,7 @@ MATVECPROD_SPECIALIZATION( MatrixVectorProductTransp ) {
 }
 
 template<>
-FORCEINLINE void CSysMatrix<su2double>::MatrixMatrixProduct(const su2double *matrix_a, const su2double *matrix_b, su2double *product) {
+FORCEINLINE void CSysMatrix<su2double>::MatrixMatrixProduct(const su2double *matrix_a, const su2double *matrix_b, su2double *product) const {
   gemm_impl<su2double>(nVar, matrix_a, matrix_b, product);
 }
 #undef MATVECPROD_SPECIALIZATION
@@ -227,7 +227,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned
 
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
-                                                      unsigned long col_ub, ScalarType *prod) {
+                                                      unsigned long col_ub, ScalarType *prod) const {
   unsigned long iVar, index, col_j;
 
   for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
@@ -241,7 +241,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarTyp
 
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
-                                                      unsigned long col_lb, ScalarType *prod) {
+                                                      unsigned long col_lb, ScalarType *prod) const {
   unsigned long iVar, index, col_j;
 
   for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
@@ -255,7 +255,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarTyp
 
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType> & vec,
-                                                         unsigned long row_i, ScalarType *prod) {
+                                                         unsigned long row_i, ScalarType *prod) const {
 
   MatrixVectorProduct(&matrix[dia_ptr[row_i]*nVar*nVar], &vec[row_i*nVar], prod);
 }
