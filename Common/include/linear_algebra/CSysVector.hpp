@@ -1,7 +1,7 @@
 /*!
- * \file vector_structure.hpp
- * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
- *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
+ * \file CSysVector.hpp
+ * \brief Declararion of the vector class used in the solution of
+ *        large, distributed, sparse linear systems.
  * \author F. Palacios, J. Hicken, T. Economon
  * \version 7.0.0 "Blackbird"
  *

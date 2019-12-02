@@ -28,20 +28,22 @@
 
 #pragma once
 
-#include <cstdlib>
-
-#include "../mpi_structure.hpp"
-#include "../config_structure.hpp"
-#include "../geometry/CGeometry.hpp"
+#include "../../include/mpi_structure.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
+#include <cstdlib>
+#include <vector>
+
+using namespace std;
+
+/*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
 #ifndef __INTEL_MKL__
   #error Could not determine the MKL version
 #endif
-/*--- JIT is only available since 2019 ---*/
+/*--- JIT is only available since 2019. ---*/
 #if __INTEL_MKL__ >= 2019
 #define USE_MKL
 /*---
@@ -56,6 +58,8 @@
 #endif
 #endif
 
+class CConfig;
+class CGeometry;
 
 /*!
  * \class CSysMatrix
@@ -345,19 +349,12 @@ public:
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
-  inline void SetValZero(void) {
-    for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
-      matrix[index] = 0.0;
-  }
+  void SetValZero(void);
 
   /*!
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
-  inline void SetValDiagonalZero(void) {
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint)
-      for (unsigned long index = 0; index < nVar*nEqn; ++index)
-        matrix[dia_ptr[iPoint]*nVar*nEqn + index] = 0.0;
-  }
+  void SetValDiagonalZero(void);
 
   /*!
    * \brief Routine to load a vector quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
@@ -650,8 +647,9 @@ public:
    * \brief Build the Linelet preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Average number of points per linelet.
    */
-  unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
+  unsigned long BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Multiply CSysVector by the preconditioner

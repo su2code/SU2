@@ -2,6 +2,8 @@
  * \file omp_structure.hpp
  * \brief OpenMP interface header, provides compatibility functions
  *        if the code is built without OpenMP support.
+ *        Parallel pragmas are defined here so that they can be
+ *        completely "disabled" when compiling without OpenMP.
  * \author P. Gomes
  * \version 7.0.0 "Blackbird"
  *
@@ -31,8 +33,18 @@
 #ifdef _OPENMP
 #define HAVE_OMP
 #include <omp.h>
+
+
 #else
+/*!
+ * \brief Maximum number of threads available.
+ */
 inline int omp_get_max_threads(void) {return 1;}
 
+/*!
+ * \brief Index of current thread, akin to MPI rank.
+ */
 inline int omp_get_thread_num(void) {return 0;}
+
+
 #endif

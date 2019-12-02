@@ -26,6 +26,9 @@
  */
 
 #include "../../include/linear_algebra/CSysMatrix.inl"
+
+#include "../../include/geometry/CGeometry.hpp"
+#include "../../include/config_structure.hpp"
 #include "../../include/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
@@ -476,6 +479,19 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 }
 
 template<class ScalarType>
+void CSysMatrix<ScalarType>::SetValZero() {
+  for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
+    matrix[index] = 0.0;
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::SetValDiagonalZero() {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint)
+    for (unsigned long index = 0; index < nVar*nEqn; ++index)
+      matrix[dia_ptr[iPoint]*nVar*nEqn + index] = 0.0;
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const {
 
 #ifdef USE_MKL_LAPACK
@@ -896,11 +912,11 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 }
 
 template<class ScalarType>
-unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
 
   bool add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode, MeanPoints;
+  unsigned short iMarker, iNode;
   su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
 
@@ -1050,15 +1066,13 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
   SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
-  MeanPoints = SU2_TYPE::Int(ScalarType(Global_nPoints)/ScalarType(Global_nLineLets));
-
   /*--- Memory allocation --*/
 
   LineletUpper.resize(max_nElem,nullptr);
   LineletInvDiag.resize(max_nElem*nVar*nVar,0.0);
   LineletVector.resize(max_nElem*nVar,0.0);
 
-  return MeanPoints;
+  return (unsigned long)(passivedouble(Global_nPoints) / Global_nLineLets);
 
 }
 
