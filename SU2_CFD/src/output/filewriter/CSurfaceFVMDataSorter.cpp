@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,7 +26,8 @@
  */
 
 #include "../../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
-#include "../../../../Common/include/geometry_structure.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+
 
 CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFVMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
 

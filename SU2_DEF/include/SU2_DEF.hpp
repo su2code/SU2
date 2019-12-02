@@ -38,7 +38,7 @@
 
 #include "../../SU2_CFD/include/solver_structure.hpp"
 #include "../../SU2_CFD/include/output/CMeshOutput.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 

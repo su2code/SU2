@@ -28,7 +28,7 @@
 
 #include "../../include/output/COutputLegacy.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solver_structure.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
@@ -4326,7 +4326,7 @@ void COutputLegacy::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 }
 
 void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
-  char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000];
+  char cstr[200], turb_resid[1000], adj_turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
   
@@ -11823,7 +11823,7 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
   unsigned short iDim, iSpan;
 
   unsigned long iExtIter = config[val_iZone]->GetInnerIter();
-  su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
+  const su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
   ofstream myfile;
   string spanwise_performance_filename;
 

@@ -28,6 +28,10 @@
 #include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
 
+#include "../../../Common/include/geometry/CDummyGeometry.hpp"
+#include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
+
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEAMeshElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEM_NeoHookean_Comp.hpp"
@@ -3623,7 +3627,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
            rotating reference frame. ---*/
 
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-          geometry[iMGlevel]->SetRotationalVelocity(config, iZone, true);
+          geometry[iMGlevel]->SetRotationalVelocity(config, true);
           geometry[iMGlevel]->SetShroudVelocity(config);
         }
 
@@ -3641,7 +3645,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
         /*--- Set the translational velocity on all grid levels. ---*/
 
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, iZone, true);
+          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
 
         break;
 
@@ -4340,7 +4344,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;
           }
-          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
           geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }

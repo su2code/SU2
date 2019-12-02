@@ -41,7 +41,7 @@
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
 
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solver_structure.hpp"
 
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
