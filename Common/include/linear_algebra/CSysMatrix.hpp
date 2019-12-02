@@ -1,7 +1,7 @@
 /*!
  * \file CSysMatrix.hpp
- * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
- *        The subroutines and functions are in the <i>CSysMatrix.cpp</i> file.
+ * \brief Declaration of the block-sparse matrix class.
+ *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 7.0.0 "Blackbird"
  *
@@ -28,12 +28,9 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
-#include <limits>
-#include <iostream>
-#include <cmath>
 #include <cstdlib>
 
+#include "../mpi_structure.hpp"
 #include "../config_structure.hpp"
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
@@ -58,10 +55,6 @@
   #warning The current version of MKL does not support JIT gemm kernels
 #endif
 #endif
-
-using namespace std;
-
-const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
 
 
 /*!

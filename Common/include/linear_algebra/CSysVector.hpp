@@ -26,13 +26,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <cmath>
 #include <cstdlib>
 
-using namespace std;
 
 /*--- Forward declaration of template friend functions. ---*/
 template<class T> class CSysVector;
@@ -45,8 +43,7 @@ template<class T> T dotProd(const CSysVector<T> & u, const CSysVector<T> & v);
  *
  * We could use the STL vector as a base class here, but this gives us
  * more flexibility with the underlying data (e.g. we may decide to
- * use a block storage scheme rather than a continuous storage
- * scheme).
+ * use a block storage scheme rather than a continuous storage scheme).
  */
 template<class ScalarType>
 class CSysVector {
@@ -58,7 +55,7 @@ private:
   unsigned long nVar;       /*!< \brief number of elements in a block */
   unsigned long nBlk;       /*!< \brief number of blocks (or number of blocks on this processor) */
   unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
-  ScalarType* vec_val;      /*!< \brief storage for the element values */
+  ScalarType* vec_val;      /*!< \brief storage for the element values, 64 byte aligned (do not use normal new/delete) */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -130,6 +127,13 @@ public:
     nElm = 0; vec_val = nullptr;
     Initialize(u.nBlk, u.nBlkDomain, u.nVar, u.vec_val, true);
   }
+
+  /*!
+   * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
+   * \param[in] other - source CSysVector
+   */
+  template<class T>
+  void PassiveCopy(const CSysVector<T>& other);
 
   /*!
    * \brief class destructor
@@ -347,11 +351,4 @@ public:
    * \param[in] v - second CSysVector in dot product
    */
   friend ScalarType dotProd<ScalarType>(const CSysVector & u, const CSysVector & v);
-
-  /*!
-   * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
-   * \param[in] other - source CSysVector
-   */
-  template<class T>
-  void PassiveCopy(const CSysVector<T>& other);
 };

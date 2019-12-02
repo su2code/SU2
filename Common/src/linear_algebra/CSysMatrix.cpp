@@ -1,6 +1,6 @@
 /*!
- * \file matrix_structure.cpp
- * \brief Main subroutines for doing the sparse structures
+ * \file CSysMatrix.cpp
+ * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 7.0.0 "Blackbird"
  *
@@ -27,6 +27,9 @@
 
 #include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/omp_structure.hpp"
+#include "../../include/toolboxes/allocation_toolbox.hpp"
+
+#include <cmath>
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
@@ -68,9 +71,9 @@ template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
   if (omp_partitions != nullptr) delete [] omp_partitions;
-  if (ILU_matrix != nullptr) delete [] ILU_matrix;
-  if (matrix != nullptr) delete [] matrix;
-  if (invM != nullptr) delete [] invM;
+  if (ILU_matrix != nullptr) MemoryAllocation::aligned_free(ILU_matrix);
+  if (matrix != nullptr) MemoryAllocation::aligned_free(matrix);
+  if (invM != nullptr) MemoryAllocation::aligned_free(invM);
 
 #ifdef USE_MKL
   if ( MatrixMatrixProductJitter != nullptr )              mkl_jit_destroy( MatrixMatrixProductJitter );
@@ -138,9 +141,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   /*--- Allocate data. ---*/
-
 #define ALLOC_AND_INIT(ptr,sz) {\
-  ptr = new ScalarType [sz]; for(size_t k=0; k<sz; ++k) ptr[k]=0.0; }
+  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,sz);\
+  for(size_t k=0; k<sz; ++k) ptr[k]=0.0; }
 
   ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
 
