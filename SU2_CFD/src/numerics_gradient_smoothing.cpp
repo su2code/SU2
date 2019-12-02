@@ -90,7 +90,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
   unsigned short iDim, jDim;
   unsigned short iGauss, nGauss;
-  unsigned short iNode, jNode, nNode;
+  unsigned short iShape, jShape, nNode;
 
   unsigned short nDimGlobal = nDim;   /*--- need a different number of dimensions if we are on a curved surface --*/
   if (config->GetSmoothOnSurface()) nDimGlobal=nDim+1;
@@ -116,19 +116,29 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     Weight = element->GetWeight(iGauss);
     Jac_X = element->GetJ_X(iGauss);
 
-    for (iNode = 0; iNode < nNode; iNode++) {
+    for (iShape = 0; iShape < nNode; iShape++) {
       for (iDim = 0; iDim < nDimGlobal; iDim++) {
-        GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+        GradNi_Ref_Mat[iShape][iDim] = element->GetGradNi_X(iShape,iGauss,iDim);
       }
     }
 
-    for (iNode = 0; iNode < nNode; iNode++) {
+    /*
+    for (iShape = 0; iShape < nNode; iShape++) {
+      std::cout << "Grad for " << iShape << " : ("
+                << GradNi_Ref_Mat[iShape][0] << ", "
+                << GradNi_Ref_Mat[iShape][1] << ", "
+                << GradNi_Ref_Mat[iShape][2] << ", "
+                << std::endl;
+    }
+    */
+
+    for (iShape = 0; iShape < nNode; iShape++) {
 
       /*--- Assumming symmetry ---*/
-      for (jNode = iNode; jNode < nNode; jNode++) {
+      for (jShape = iShape; jShape < nNode; jShape++) {
 
         for (iDim = 0; iDim < nDimGlobal; iDim++) {
-          GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][iDim];
+          GradNiXGradNj += GradNi_Ref_Mat[iShape][iDim]* GradNi_Ref_Mat[jShape][iDim];
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -143,11 +153,13 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
         GradNiXGradNj=0;
 
-        element->Add_DHiDHj(val_DHiDHj,iNode, jNode);
+        element->Add_DHiDHj(val_DHiDHj,iShape, jShape);
         /*--- Symmetric terms --*/
-        if (iNode != jNode) {
-          element->Add_DHiDHj_T(val_DHiDHj, jNode, iNode);
+        if (iShape != jShape) {
+          element->Add_DHiDHj_T(val_DHiDHj, jShape, iShape);
         }
+
+        //std::cout << iShape << ", " << jShape << ", "<< val_DHiDHj[0][0] <<std::endl;
 
       }
 
@@ -162,14 +174,14 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     Weight = element->GetWeight(iGauss);
     Jac_X = element->GetJ_X(iGauss);
 
-    for (iNode = 0; iNode < nNode; iNode++) {
-      Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
+    for (iShape = 0; iShape < nNode; iShape++) {
+      Ni_Vec[iShape] = element->GetNi(iShape,iGauss);
     }
 
-    for (iNode = 0; iNode < nNode; iNode++) {
-      for (jNode = 0; jNode < nNode; jNode++) {
-        val_HiHj = Weight * Jac_X * zeta * Ni_Vec[iNode] * Ni_Vec[jNode];
-        element->Add_HiHj(val_HiHj, iNode, jNode);
+    for (iShape = 0; iShape < nNode; iShape++) {
+      for (jShape = 0; jShape < nNode; jShape++) {
+        val_HiHj = Weight * Jac_X * zeta * Ni_Vec[iShape] * Ni_Vec[jShape];
+        element->Add_HiHj(val_HiHj, iShape, jShape);
       }
     }
 

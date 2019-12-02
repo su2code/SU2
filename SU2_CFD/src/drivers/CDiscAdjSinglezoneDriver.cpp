@@ -526,7 +526,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   if ( config->GetSmoothGradient() && config->GetSmoothOnSurface() ) {
 
     // project to the surfaces
-    grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
+    // grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
     // smooth on the marked boundaries
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {

@@ -526,7 +526,6 @@ void CElement::ComputeGrad_1D(const FrameType mode) {
 
 void CElement::ComputeGrad_1D(std::vector<std::vector<su2double>>& Coord) {
 
-  su2double volJacobian;
   su2double Jacobian[2];
   su2double val_grad;
 
@@ -534,7 +533,8 @@ void CElement::ComputeGrad_1D(std::vector<std::vector<su2double>>& Coord) {
 
   Jacobian[0] = (Coord[1][0] - Coord[0][0]);
   Jacobian[1] = (Coord[1][1] - Coord[0][1]);
-  volJacobian = sqrt(Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1]);
+  const su2double JTJ = Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1];
+  const su2double volJacobian = sqrt(JTJ);
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
 
@@ -542,7 +542,7 @@ void CElement::ComputeGrad_1D(std::vector<std::vector<su2double>>& Coord) {
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       for (iDim=0; iDim<2; iDim++) {
-        val_grad = (dNiXj[iGauss][iNode][0]*Jacobian[iDim])/volJacobian;
+        val_grad = Jacobian[iDim]*dNiXj[iGauss][iNode][0]/JTJ;
         GaussPoint[iGauss]->SetGradNi_Xj( val_grad, iDim, iNode);
       }
     }
@@ -623,7 +623,7 @@ void CElement::ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord) {
 
   su2double Jacobian[3][2], JTJ[2][2];
   su2double volJacobian, GradN_Xi;
-  unsigned short iNode, iDim, jDim, kDim, iGauss;
+  unsigned short iShape, iDim, jDim, jVertex, kDim, iGauss;
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
 
@@ -631,9 +631,9 @@ void CElement::ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord) {
     /*--- This does dX/dXi transpose ---*/
 
     for (iDim = 0; iDim < 3; iDim++) {
-      for (jDim = 0; jDim < 2; jDim++) {
-          Jacobian[iDim][jDim] = Coord[jDim+1][iDim] - Coord[0][iDim];
-       }
+      for (jVertex = 0; jVertex < 2; jVertex++) {
+          Jacobian[iDim][jVertex] = Coord[jVertex+1][iDim] - Coord[0][iDim];
+      }
     }
 
     for (iDim = 0; iDim < 2; iDim++) {
@@ -646,25 +646,43 @@ void CElement::ComputeGrad_2D(std::vector<std::vector<su2double>>& Coord) {
     }
 
     /*--- matrix volume of Jacobian ---*/
+    const su2double detJacobian=JTJ[0][0]*JTJ[1][1]-JTJ[0][1]*JTJ[1][0];
 
-    volJacobian = sqrt(JTJ[0][0]*JTJ[1][1]-JTJ[0][1]*JTJ[1][0]);
+    volJacobian = sqrt(detJacobian);
 
     GaussPoint[iGauss]->SetJ_X(volJacobian);
 
     /*--- Derivatives with respect to global coordinates ---*/
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < 3; iDim++) {
-        GradN_Xi = 0.0;
-        for (jDim = 0; jDim < 2; jDim++) {
-          GradN_Xi += (dNiXj[iGauss][iNode][jDim]/ volJacobian) * (Jacobian[jDim][iDim]/volJacobian);
+    su2double JTJinv[2][2];
+    JTJinv[0][0]=JTJ[1][1]/detJacobian;
+    JTJinv[1][1]=JTJ[0][0]/detJacobian;
+    JTJinv[0][1]=-JTJ[0][1]/detJacobian;
+    JTJinv[1][0]=-JTJ[1][0]/detJacobian;
+
+    su2double Jdagger[2][3];
+
+    for (iDim = 0; iDim < 2; iDim++) {
+      for (jDim = 0; jDim < 3; jDim++) {
+        Jdagger[iDim][jDim] = 0.0;
+        for (kDim = 0; kDim < 2; kDim++) {
+          Jdagger[iDim][jDim] += JTJinv[iDim][kDim]*Jacobian[jDim][kDim];
         }
-        GaussPoint[iGauss]->SetGradNi_Xj(GradN_Xi, iDim, iNode);
+      }
+    }
+
+    su2double GradOut[3];
+    for (iShape = 0; iShape < nNodes; iShape++) {
+      for (iDim = 0; iDim < 3; iDim++) {
+        GradOut[iDim] = 0.0;
+        for (jDim = 0; jDim < 2; jDim++) {
+          GradOut[iDim] += Jdagger[jDim][iDim]*dNiXj[iGauss][iShape][jDim];
+        }
+        GaussPoint[iGauss]->SetGradNi_Xj(GradOut[iDim], iDim, iShape);
       }
     }
 
   }
-
 }
 
 void CElement::ComputeGrad_3D(const FrameType mode) {

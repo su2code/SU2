@@ -69,15 +69,15 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
 
-    val_Ni = Xi;        GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = Eta;       GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 1-Xi-Eta;  GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = 1-Xi-Eta;        GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = Xi;              GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = Eta;             GaussPoint[iGauss]->SetNi(val_Ni,2);
 
     /*--- dN/d xi, dN/d eta ---*/
 
-    dNiXj[iGauss][0][0] =  1.0;  dNiXj[iGauss][0][1] =  0.0;
-    dNiXj[iGauss][1][0] =  0.0;  dNiXj[iGauss][1][1] =  1.0;
-    dNiXj[iGauss][2][0] = -1.0;  dNiXj[iGauss][2][1] = -1.0;
+    dNiXj[iGauss][0][0] =  -1.0;  dNiXj[iGauss][0][1] =  -1.0;
+    dNiXj[iGauss][1][0] =   1.0;  dNiXj[iGauss][1][1] =   0.0;
+    dNiXj[iGauss][2][0] =   0.0;  dNiXj[iGauss][2][1] =   1.0;
 
   }
 
@@ -144,15 +144,15 @@ CTRIA3::CTRIA3(unsigned short val_nDim, CConfig *config)
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
 
-    val_Ni = Xi;        GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = Eta;       GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 1-Xi-Eta;  GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = 1-Xi-Eta;        GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = Xi;              GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = Eta;             GaussPoint[iGauss]->SetNi(val_Ni,2);
 
     /*--- dN/d xi, dN/d eta ---*/
 
-    dNiXj[iGauss][0][0] =  1.0;  dNiXj[iGauss][0][1] =  0.0;
-    dNiXj[iGauss][1][0] =  0.0;  dNiXj[iGauss][1][1] =  1.0;
-    dNiXj[iGauss][2][0] = -1.0;  dNiXj[iGauss][2][1] = -1.0;
+    dNiXj[iGauss][0][0] =  -1.0;  dNiXj[iGauss][0][1] =  -1.0;
+    dNiXj[iGauss][1][0] =   1.0;  dNiXj[iGauss][1][1] =   0.0;
+    dNiXj[iGauss][2][0] =   0.0;  dNiXj[iGauss][2][1] =   1.0;
 
   }
 

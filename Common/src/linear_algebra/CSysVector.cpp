@@ -497,7 +497,7 @@ void CSysVector<ScalarType>::printVec(std::ofstream& file) {
 
   for (unsigned long i = 0; i < nElm; i++) {
     file << (*this)[i];
-    if (i!=nElm-1) { file << ", "; }
+    if (i!=nElm-1) { file << std::endl; }
   }
 }
 
