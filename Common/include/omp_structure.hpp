@@ -4,6 +4,14 @@
  *        if the code is built without OpenMP support.
  *        Parallel pragmas are defined here so that they can be
  *        completely "disabled" when compiling without OpenMP.
+ * \note Do not include omp.h explicitly anywhere, use this header instead.
+ * \note If you use an omp_*** function define a compatibility version here,
+ *       if that is not practical use define "HAVE_OMP" to guard that function.
+ * \note Always use the macro "SU2_OMP" to create OpenMP constructs, this is so
+ *       we can disable pragmas. Other convenient pragmas are also defined here
+ *       e.g. SU2_OMP_PARALLEL. Exotic pragmas of limited portability should be
+ *       defined here with suitable fallback versions to limit the spread of
+ *       compiler tricks in other areas of the code.
  * \author P. Gomes
  * \version 7.0.0 "Blackbird"
  *
@@ -30,12 +38,25 @@
 
 #pragma once
 
+#if defined(_MSC_VER)
+#define PRAGMIZE(X) __pragma(X)
+#else
+#define PRAGMIZE(X) _Pragma(#X)
+#endif
+
+/*--- Detect compilation with OpenMP support. ---*/
 #ifdef _OPENMP
 #define HAVE_OMP
 #include <omp.h>
 
+/*--- The generic start of OpenMP constructs. ---*/
+#define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
 
-#else
+#else // Compile without OpenMP
+
+/*--- Disable pragmas to quiet compilation warnings. ---*/
+#define SU2_OMP(ARGS)
+
 /*!
  * \brief Maximum number of threads available.
  */
@@ -46,5 +67,19 @@ inline int omp_get_max_threads(void) {return 1;}
  */
 inline int omp_get_thread_num(void) {return 0;}
 
-
 #endif
+
+/*--- Convenience macros (do not use excessive nesting of macros). ---*/
+#define SU2_OMP_SIMD SU2_OMP(simd)
+
+#define SU2_OMP_BARRIER SU2_OMP(barrier)
+
+#define SU2_OMP_PARALLEL SU2_OMP(parallel)
+#define SU2_OMP_PARALLEL_(ARGS) SU2_OMP(parallel ARGS)
+#define SU2_OMP_PARALLEL_ON(NTHREADS) SU2_OMP(parallel num_threads(NTHREADS))
+
+#define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
+#define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
+
+#define SU2_OMP_PAR_FOR_DYN(CHUNK) SU2_OMP(parallel for schedule(dynamic,CHUNK))
+#define SU2_OMP_PAR_FOR_STAT(CHUNK) SU2_OMP(parallel for schedule(static,CHUNK))
