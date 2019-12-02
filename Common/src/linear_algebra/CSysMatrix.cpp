@@ -65,7 +65,6 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
   MatrixVectorProductJitterBetaZero      = nullptr;
   MatrixVectorProductJitterAlphaMinusOne = nullptr;
   MatrixVectorProductTranspJitterBetaOne = nullptr;
-  mkl_ipiv = nullptr;
 #endif
 
 }
@@ -166,7 +165,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Thread parallel initialization. ---*/
 
   int num_threads = omp_get_max_threads();
-  omp_chunk_size = min(2048ul, nPointDomain/num_threads);
+
+  /*--- If the domain is very small we do an even division of the points,
+   *    otherwise we limit the maximum amount of work a thread is given. ---*/
+  omp_chunk_size = min<unsigned long>(OMP_MAX_SIZE, (nPointDomain+num_threads-1)/num_threads);
 
   /// TODO: Get this from the config.
   omp_num_parts = num_threads;
@@ -480,12 +482,14 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
     matrix[index] = 0.0;
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetValDiagonalZero() {
+  SU2_OMP_PAR_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint)
     for (unsigned long index = 0; index < nVar*nEqn; ++index)
       matrix[dia_ptr[iPoint]*nVar*nEqn + index] = 0.0;
@@ -530,6 +534,8 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType *matrix, ScalarType *inver
    We could call "Gauss_Elimination" multiple times or fully generalize it for multiple rhs,
    the performance of both routines would suffer in both cases without the use of exotic templating.
    And so it feels reasonable to have some duplication here. ---*/
+
+  assert((matrix != inverse) && "Output cannot be the same as the input.");
 
 #define M(I,J) inverse[(I)*nVar+(J)]
 
@@ -595,7 +601,7 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
-                                        unsigned long row_i, ScalarType *prod) {
+                                        unsigned long row_i, ScalarType *prod) const {
   unsigned long iVar, index, col_j;
 
   for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
@@ -609,7 +615,7 @@ void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                 CGeometry *geometry, CConfig *config) {
+                                                 CGeometry *geometry, CConfig *config) const {
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
@@ -622,7 +628,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 #endif
 
   /*--- OpenMP parallelization ---*/
-  #pragma omp parallel for schedule(dynamic,omp_chunk_size)
+  SU2_OMP_PAR_FOR_DYN(omp_chunk_size)
   for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
     auto prod_begin = row_i*nVar; // offset to beginning of block row_i
     for(auto iVar = 0ul; iVar < nVar; iVar++)
@@ -642,7 +648,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                           CGeometry *geometry, CConfig *config) {
+                                                           CGeometry *geometry, CConfig *config) const {
 
   unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
 
@@ -678,7 +684,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
-  #pragma omp parallel for schedule(dynamic,omp_chunk_size)
+  SU2_OMP_PAR_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
 
@@ -686,10 +692,10 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) {
+                                                         CGeometry *geometry, CConfig *config) const {
 
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
-  #pragma omp parallel for schedule(dynamic,omp_chunk_size)
+  SU2_OMP_PAR_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
@@ -706,7 +712,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
   if ((ilu_fill_in == 0) && !transposed) {
     /*--- ILU0, direct copy. ---*/
-    #pragma omp parallel for schedule(static,16384)
+    SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
     for (auto iVar = 0ul; iVar < nnz*nVar*nVar; ++iVar)
       ILU_matrix[iVar] = matrix[iVar];
   }
@@ -714,14 +720,14 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
     /*--- ILUn clear the ILU matrix first, for ILU0^T
      *    the copy takes care of the clearing. ---*/
     if (ilu_fill_in > 0) {
-      #pragma omp parallel for schedule(static,16384)
+      SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
       for (auto iVar = 0ul; iVar < nnz_ilu*nVar*nVar; iVar++)
         ILU_matrix[iVar] = 0.0;
     }
 
     /*--- Transposed or ILUn, traverse matrix to access its blocks
      *    sequentially and set them in the ILU matrix. ---*/
-    #pragma omp parallel for schedule(dynamic,omp_chunk_size)
+    SU2_OMP_PAR_FOR_DYN(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
         auto jPoint = col_ind[index];
@@ -736,7 +742,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
   /*--- Transform system in Upper Matrix ---*/
 
-  #pragma omp parallel num_threads(omp_num_parts)
+  SU2_OMP_PARALLEL_ON(omp_num_parts)
   {
   int thread = omp_get_thread_num();
   const auto begin = omp_partitions[thread];
@@ -803,9 +809,9 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                      CGeometry *geometry, CConfig *config) {
+                                                      CGeometry *geometry, CConfig *config) const {
 
-  #pragma omp parallel num_threads(omp_num_parts)
+  SU2_OMP_PARALLEL_ON(omp_num_parts)
   {
   int thread = omp_get_thread_num();
   const auto begin = omp_partitions[thread];
@@ -858,12 +864,12 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) {
+                                                         CGeometry *geometry, CConfig *config) const {
 
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
   /*--- OpenMP Parallelization ---*/
-  #pragma omp parallel num_threads(omp_num_parts)
+  SU2_OMP_PARALLEL_ON(omp_num_parts)
   {
   int thread = omp_get_thread_num();
   const auto begin = omp_partitions[thread];
@@ -887,7 +893,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
 
   /*--- OpenMP Parallelization ---*/
-  #pragma omp parallel num_threads(omp_num_parts)
+  SU2_OMP_PARALLEL_ON(omp_num_parts)
   {
   int thread = omp_get_thread_num();
   const auto begin = omp_partitions[thread];
@@ -1068,9 +1074,9 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   /*--- Memory allocation --*/
 
-  LineletUpper.resize(max_nElem,nullptr);
-  LineletInvDiag.resize(max_nElem*nVar*nVar,0.0);
-  LineletVector.resize(max_nElem*nVar,0.0);
+  LineletUpper.resize(omp_num_parts, vector<const ScalarType*>(max_nElem,nullptr));
+  LineletVector.resize(omp_num_parts, vector<ScalarType>(max_nElem*nVar,0.0));
+  LineletInvDiag.resize(omp_num_parts, vector<ScalarType>(max_nElem*nVar*nVar,0.0));
 
   return (unsigned long)(passivedouble(Global_nPoints) / Global_nLineLets);
 
@@ -1078,19 +1084,12 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                          CGeometry *geometry, CConfig *config) {
-
-  unsigned long iVar, iElem, nElem, iLinelet, iPoint, im1Point;
-  /*--- Pointers to lower, upper, and diagonal blocks ---*/
-  const ScalarType *l = nullptr, *u = nullptr, *d = nullptr;
-  /*--- Inverse of d_{i-1}, modified d_i, modified b_i (rhs) ---*/
-  ScalarType *inv_dm1 = nullptr, *d_prime = nullptr, *b_prime = nullptr;
-
-  ScalarType block_weight[MAXNVAR*MAXNVAR], aux_vector[MAXNVAR];
+                                                          CGeometry *geometry, CConfig *config) const {
 
   /*--- Jacobi preconditioning where there is no linelet ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  SU2_OMP_PAR_FOR_DYN(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
     if (!LineletBool[iPoint])
       MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
@@ -1101,76 +1100,87 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
   /*--- Solve linelet using the Thomas algorithm ---*/
 
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+  SU2_OMP(parallel for num_threads(omp_num_parts) schedule(dynamic,1))
+  for (auto iLinelet = 0ul; iLinelet < nLinelet; iLinelet++) {
 
-    nElem = LineletPoint[iLinelet].size();
+    /*--- Get references to the working vectors allocated for this thread. ---*/
+
+    int thread = omp_get_thread_num();
+    vector<const ScalarType*>& lineletUpper = LineletUpper[thread];
+    vector<ScalarType>& lineletInvDiag = LineletInvDiag[thread];
+    vector<ScalarType>& lineletVector = LineletVector[thread];
 
     /*--- Initialize the solution vector with the rhs ---*/
 
-    for (iElem = 0; iElem < nElem; iElem++) {
-      iPoint = LineletPoint[iLinelet][iElem];
-      for (iVar = 0; iVar < nVar; iVar++)
-        LineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
+    auto nElem = LineletPoint[iLinelet].size();
+
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+      auto iPoint = LineletPoint[iLinelet][iElem];
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        lineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
 
-    /*--- Forward pass, eliminate lower entries, modify diagonal and rhs ---*/
+    /*--- Forward pass, eliminate lower entries, modify diagonal and rhs. ---*/
 
-    iPoint = LineletPoint[iLinelet][0];
-    d = GetBlock(iPoint, iPoint);
-    for (iVar = 0; iVar < nVar*nVar; ++iVar)
-      LineletInvDiag[iVar] = d[iVar];
+    /*--- Small temporaries. ---*/
+    ScalarType aux_block[MAXNVAR*MAXNVAR], aux_vector[MAXNVAR];
 
-    for (iElem = 1; iElem < nElem; iElem++) {
+    /*--- Copy diagonal block for first point in this linelet. ---*/
+    MatrixCopy(&matrix[dia_ptr[LineletPoint[iLinelet][0]]*nVar*nVar],
+               lineletInvDiag.data());
+
+    for (auto iElem = 1ul; iElem < nElem; iElem++) {
 
       /*--- Setup pointers to required matrices and vectors ---*/
-      im1Point = LineletPoint[iLinelet][iElem-1];
-      iPoint = LineletPoint[iLinelet][iElem];
+      auto im1Point = LineletPoint[iLinelet][iElem-1];
+      auto iPoint = LineletPoint[iLinelet][iElem];
 
-      d = GetBlock(iPoint, iPoint);
-      l = GetBlock(iPoint, im1Point);
-      u = GetBlock(im1Point, iPoint);
+      auto d = &matrix[dia_ptr[iPoint]*nVar*nVar];
+      auto l = GetBlock(iPoint, im1Point);
+      auto u = GetBlock(im1Point, iPoint);
 
-      inv_dm1 = &LineletInvDiag[(iElem-1)*nVar*nVar];
-      d_prime = &LineletInvDiag[iElem*nVar*nVar];
-      b_prime = &LineletVector[iElem*nVar];
+      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
+      auto d_prime = &lineletInvDiag[iElem*nVar*nVar];
+      auto b_prime = &lineletVector[iElem*nVar];
 
       /*--- Invert previous modified diagonal ---*/
-      MatrixInverse(inv_dm1, inv_dm1);
+      MatrixCopy(inv_dm1, aux_block);
+      MatrixInverse(aux_block, inv_dm1);
 
       /*--- Left-multiply by lower block to obtain the weight ---*/
-      MatrixMatrixProduct(l, inv_dm1, block_weight);
+      MatrixMatrixProduct(l, inv_dm1, aux_block);
 
       /*--- Multiply weight by upper block to modify current diagonal ---*/
-      MatrixMatrixProduct(block_weight, u, d_prime);
+      MatrixMatrixProduct(aux_block, u, d_prime);
       MatrixSubtraction(d, d_prime, d_prime);
 
       /*--- Update the rhs ---*/
-      MatrixVectorProduct(block_weight, &LineletVector[(iElem-1)*nVar], aux_vector);
+      MatrixVectorProduct(aux_block, &lineletVector[(iElem-1)*nVar], aux_vector);
       VectorSubtraction(b_prime, aux_vector, b_prime);
 
       /*--- Cache upper block pointer for the backward substitution phase ---*/
-      LineletUpper[iElem-1] = u;
+      lineletUpper[iElem-1] = u;
     }
 
     /*--- Backwards substitution, LineletVector becomes the solution ---*/
 
     /*--- x_n = d_n^{-1} * b_n ---*/
-    Gauss_Elimination(&LineletInvDiag[(nElem-1)*nVar*nVar], &LineletVector[(nElem-1)*nVar]);
+    Gauss_Elimination(&lineletInvDiag[(nElem-1)*nVar*nVar], &lineletVector[(nElem-1)*nVar]);
 
     /*--- x_i = d_i^{-1}*(b_i - u_i*x_{i+1}) ---*/
-    for (iElem = nElem-1; iElem > 0; --iElem) {
-      inv_dm1 = &LineletInvDiag[(iElem-1)*nVar*nVar];
-      MatrixVectorProduct(LineletUpper[iElem-1], &LineletVector[iElem*nVar], aux_vector);
-      VectorSubtraction(&LineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
-      MatrixVectorProduct(inv_dm1, aux_vector, &LineletVector[(iElem-1)*nVar]);
+    for (auto iElem = nElem-1; iElem > 0; --iElem) {
+      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
+      MatrixVectorProduct(lineletUpper[iElem-1], &lineletVector[iElem*nVar], aux_vector);
+      VectorSubtraction(&lineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
+      MatrixVectorProduct(inv_dm1, aux_vector, &lineletVector[(iElem-1)*nVar]);
     }
 
     /*--- Copy results to product vector ---*/
 
-    for (iElem = 0; iElem < nElem; iElem++) {
-      iPoint = LineletPoint[iLinelet][iElem];
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod[iPoint*nVar+iVar] = LineletVector[iElem*nVar+iVar];
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+      auto iPoint = LineletPoint[iLinelet][iElem];
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        prod[iPoint*nVar+iVar] = lineletVector[iElem*nVar+iVar];
     }
 
   }
@@ -1183,11 +1193,11 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res) {
-
-  ScalarType aux_vec[MAXNVAR];
-  #pragma omp parallel for schedule(dynamic,omp_chunk_size) private(aux_vec)
+void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f,
+                                             CSysVector<ScalarType> & res) const {
+  SU2_OMP_PAR_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    ScalarType aux_vec[MAXNVAR];
     RowProduct(sol, iPoint, aux_vec);
     VectorSubtraction(aux_vec, &f[iPoint*nVar], &res[iPoint*nVar]);
   }
@@ -1244,7 +1254,7 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) {
+                                                         CGeometry *geometry, CConfig *config) const {
 #ifdef HAVE_PASTIX
   pastix_wrapper.Solve(vec,prod);
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
@@ -1262,7 +1272,7 @@ void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConf
 }
 template<>
 void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2double> & vec, CSysVector<su2double> & prod,
-                                                        CGeometry *geometry, CConfig *config) {
+                                                        CGeometry *geometry, CConfig *config) const {
   SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
 }
 #endif

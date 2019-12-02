@@ -73,8 +73,11 @@ private:
   int rank;     /*!< \brief MPI Rank. */
   int size;     /*!< \brief MPI Size. */
 
-  enum : size_t {MAXNVAR = 8};      /*!< \brief Maximum number of variables the matrix can handle. The static
+  enum : size_t { MAXNVAR = 8 };    /*!< \brief Maximum number of variables the matrix can handle. The static
                                                 size is needed for fast, per-thread, static memory allocation. */
+
+  enum : size_t { OMP_MAX_SIZE = 2048 };    /*!< \brief Maximum chunk size used in heavy parallel for loops. */
+  enum : size_t { OMP_STAT_SIZE = 16384 };  /*!< \brief Chunk size used in trivial parallel for loops. */
 
   unsigned long omp_chunk_size;     /*!< \brief Chunk size used in parallel for loops. */
   unsigned long omp_num_parts;      /*!< \brief Number of threads used in thread-parallel LU_SGS and ILU. */
@@ -100,12 +103,14 @@ private:
 
   ScalarType *invM;              /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 
-  unsigned long nLinelet;                       /*!< \brief Number of Linelets in the system. */
-  vector<bool> LineletBool;                     /*!< \brief Identify if a point belong to a Linelet. */
-  vector<vector<unsigned long> > LineletPoint;  /*!< \brief Linelet structure. */
-  vector<const ScalarType*> LineletUpper;       /*!< \brief Pointers to the upper blocks of the tri-diag system. */
-  vector<ScalarType> LineletInvDiag;            /*!< \brief Inverse of the diagonal blocks of the tri-diag system. */
-  vector<ScalarType> LineletVector;             /*!< \brief Solution and RHS of the tri-diag system. */
+  unsigned long nLinelet;                      /*!< \brief Number of Linelets in the system. */
+  vector<bool> LineletBool;                    /*!< \brief Identify if a point belong to a Linelet. */
+  vector<vector<unsigned long> > LineletPoint; /*!< \brief Linelet structure. */
+
+  /*--- Temporary working memory used in the Linelet preconditioner, outer vector is for threads ---*/
+  mutable vector<vector<const ScalarType*> > LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
+  mutable vector<vector<ScalarType> > LineletInvDiag;      /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
+  mutable vector<vector<ScalarType> > LineletVector;       /*!< \brief Solution and RHS of the tri-diag system (working memory). */
 
 #ifdef USE_MKL
   void * MatrixMatrixProductJitter;                            /*!< \brief Jitter handle for MKL JIT based GEMM. */
@@ -121,7 +126,7 @@ private:
 #endif
 
 #ifdef HAVE_PASTIX
-  CPastixWrapper pastix_wrapper;
+  mutable CPastixWrapper pastix_wrapper;
 #endif
 
   /*!
@@ -163,7 +168,7 @@ private:
    * \param[in] vector
    * \param[out] product
    */
-  inline void MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  inline void MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
    * \brief Calculates the matrix-vector product: product += matrix*vector
@@ -171,7 +176,7 @@ private:
    * \param[in] vector
    * \param[in,out] product
    */
-  inline void MatrixVectorProductAdd(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  inline void MatrixVectorProductAdd(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
    * \brief Calculates the matrix-vector product: product -= matrix*vector
@@ -179,7 +184,7 @@ private:
    * \param[in] vector
    * \param[in,out] product
    */
-  inline void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  inline void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
    * \brief Calculates the matrix-vector product: product += matrix^T * vector
@@ -187,12 +192,12 @@ private:
    * \param[in] vector
    * \param[in,out] product
    */
-  inline void MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  inline void MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
    * \brief Calculates the matrix-matrix product
    */
-  inline void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product);
+  inline void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const;
 
   /*!
    * \brief Subtract b from a and store the result in c.
@@ -293,7 +298,7 @@ private:
    * \param[out] prod - Result of the product U(A)*vec.
    */
   inline void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
-                           unsigned long col_ub, ScalarType *prod);
+                           unsigned long col_ub, ScalarType *prod) const;
 
   /*!
    * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
@@ -303,7 +308,7 @@ private:
    * \param[out] prod - Result of the product L(A)*vec.
    */
   inline void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
-                           unsigned long col_lb, ScalarType *prod);
+                           unsigned long col_lb, ScalarType *prod) const;
 
   /*!
    * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
@@ -311,7 +316,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
    */
-  inline void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod);
+  inline void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod) const;
 
   /*!
    * \brief Performs the product of i-th row of a sparse matrix by a vector.
@@ -319,7 +324,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return Result of the product (stored at *prod_row_vector).
    */
-  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod);
+  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod) const;
 
 public:
 
@@ -397,6 +402,17 @@ public:
   }
 
   /*!
+   * \brief Get a pointer to the start of block "ij", const version
+   */
+  inline const ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) const {
+
+    for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
+      if (col_ind[index] == block_j)
+        return &(matrix[index*nVar*nEqn]);
+    return nullptr;
+  }
+
+  /*!
    * \brief Gets the value of a particular entry in block "ij".
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
@@ -405,7 +421,7 @@ public:
    * \return Value of the block entry.
    */
   inline ScalarType GetBlock(unsigned long block_i, unsigned long block_j,
-                             unsigned short iVar, unsigned short jVar) {
+                             unsigned short iVar, unsigned short jVar) const {
 
     for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
       if (col_ind[index] == block_j)
@@ -596,7 +612,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-  void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
@@ -605,7 +621,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-  void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.
@@ -619,7 +635,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Build the ILU preconditioner.
@@ -634,14 +650,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Build the Linelet preconditioner.
@@ -656,7 +672,7 @@ public:
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Compute the residual Ax-b
@@ -664,7 +680,7 @@ public:
    * \param[in] f - Result of the product A*vec.
    * \param[out] res - Result of the product A*vec.
    */
-  void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
+  void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res) const;
 
   /*!
    * \brief Factorize matrix using PaStiX.
@@ -682,7 +698,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
 
 };
 
