@@ -243,18 +243,17 @@ void COneShotFluidDriver::RunOneShot(){
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
       }
-      else{
-        /*--- Store gradient of augmented Lagrangian wrt multiplier ---*/
-        StoreMultiplierGrad();
-      }
+      // else{
+      //   /*--- Store gradient of augmented Lagrangian wrt multiplier ---*/
+      //   StoreMultiplierGrad();
+      // }
 
-      /*--- Compute and store GradL dot p ---*/
-      StoreGradDotDir(true);
+      // /*--- Compute and store GradL dot p ---*/
+      // StoreGradDotDir(true);
 
-      /*--- Update constraint multiplier ---*/
-      LoadOldMultiplier();
-      UpdateMultiplier(stepsize);
-      // UpdateMultiplier(1.0);
+      // /*--- Update constraint multiplier ---*/
+      // LoadOldMultiplier();
+      // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
       solver[ADJFLOW_SOL]->LoadSolution();
@@ -289,6 +288,16 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+
+    if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
+      StoreMultiplierGrad();
+      /*--- Update constraint multiplier ---*/
+      LoadOldMultiplier();
+      UpdateMultiplier(stepsize);
+
+      /*--- Compute and store GradL dot p ---*/
+      StoreGradDotDir(true);
+    }
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
@@ -1250,11 +1259,13 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
       Multiplier[iConstr] = 0.;
     }
-    else {
+    /*--- Only update if constraint violation improves ---*/
+    else if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr] < 0.) ||
+            ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.) {
       Multiplier[iConstr] = Multiplier_Store[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Multiplier_Store[iConstr] = Multiplier[iConstr];
+      Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
-    Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
     // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
@@ -1295,7 +1306,8 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
+      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr] < 0.) || 
+        (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0. && ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
         // my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
         my_Gradient += ConstrFunc[iConstr];
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
