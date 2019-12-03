@@ -143,9 +143,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   /*--- Allocate data. ---*/
-#define ALLOC_AND_INIT(ptr,sz) {\
-  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,sz);\
-  for(size_t k=0; k<sz; ++k) ptr[k]=0.0; }
+#define ALLOC_AND_INIT(ptr,num) {\
+  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,num*sizeof(ScalarType));\
+  for(size_t k=0; k<num; ++k) ptr[k]=0.0; }
 
   ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
 
