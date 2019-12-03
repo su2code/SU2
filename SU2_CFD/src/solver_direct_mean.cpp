@@ -17710,19 +17710,11 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
-  
-  /*---------------------------------------------------------------------------------------------*/
-  /*--- Preprocessing: Based on BC_Sym_Plane                                                  ---*/
-  /*---------------------------------------------------------------------------------------------*/
-  
+    
   /*--- Identify the boundary by string name ---*/
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
-  /*--- Get the specified wall heat flux from config.---*/
-  
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  
+    
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -17800,15 +17792,18 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
       if (config->GetWall_Models()){
         /*--- Scalars are copied and the velocity is mirrored along the wall boundary,
          i.e. the velocity in normal direction is substracted twice. ---*/
+        
         /*--- Force the velocity to be tangential ---*/
         for (iDim = 0; iDim < nDim; iDim++)
           V_reflected[iDim+1] = node[iPoint]->GetVelocity(iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
         
         /*--- Set Primitive and Secondary for numerics class. ---*/
+        
         conv_numerics->SetPrimitive(V_domain, V_reflected);
         conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
         
         /*--- Compute the residual using an upwind scheme. ---*/
+        
         conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         
       }
@@ -17818,13 +17813,9 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
         
         /*--- Store the corrected velocity at the wall which will
          be zero (v = 0), unless there are moving walls (v = u_wall)---*/
+        /*--- TODO: Before adding the moving walls capability make sure that it is running correctly. ---*/
         
-//        if (grid_movement) {
-//          GridVel = geometry->node[iPoint]->GetGridVel();
-//          for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
-//        } else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-//        }
         
         /*--- Impose the value of the velocity as a strong boundary
          condition (Dirichlet). Fix the velocity and remove any
@@ -17836,27 +17827,21 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
           LinSysRes.SetBlock_Zero(iPoint, iDim+1);
         node[iPoint]->SetVel_ResTruncError_Zero();
         
-//        /*--- Force the velocity to be 0 ---*/
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          V_reflected[iDim+1] = - V_domain[iDim+1];
-      
-      
       }
       
       /*--- Update residual value ---*/
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration. ---*/
+      
       if (implicit) {
         if (config->GetWall_Models()){
-          
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         }
         else{
         
           /*--- Enforce the no-slip boundary condition in a strong way by
            modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
-        
           for (iVar = 1; iVar <= nDim; iVar++) {
             unsigned long total_index = iPoint*nVar+iVar;
             Jacobian.DeleteValsRowi(total_index);
@@ -17864,126 +17849,49 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
         }
       }
       
-      /*-------------------------------------------------------------------------------*/
-      /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
-      /*---         Primitive variables and their gradients. The viscous numerics   ---*/
-      /*---         container is filled just as the convective numerics container,  ---*/
-      /*---         but the primitive gradients of the reflected state have to be   ---*/
-      /*---         determined additionally such that symmetry at the boundary is   ---*/
-      /*---         enforced. Based on the Viscous_Residual routine.                ---*/
-      /*-------------------------------------------------------------------------------*/
-      
-      /*--- Set the normal vector and the coordinates. ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Set the primitive and Secondary variables. ---*/
-      visc_numerics->SetPrimitive(V_domain, V_reflected);
-      visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
-      
-      /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-       1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
-       2. The gradients of the velocity components need more attention, i.e. the gradient of the
-       normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-       normal direction is mirrored. TODO: Need to check if it is necessary---*/
-      
-      /*--- Get gradients of primitives of boundary cell ---*/
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          Grad_Reflected[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
-      
+      /*-------------------------------------------------------*/
+      /*-------------------------------------------------------*/
+      /*--- Viscous residual contribution of the wall model ---*/
+      /*--- TODO: Build the jacobian contribution of the WM ---*/
+      /*-------------------------------------------------------*/
+      /*-------------------------------------------------------*/
+
       if (config->GetWall_Models()){
         
-        /*--- Reflect the gradients for all scalars including the velocity components.
-         The gradients of the velocity components are set later with the
-         correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if(iVar == 0 || iVar > nDim) { // Exclude velocity component gradients
-            
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGradient += Grad_Reflected[iVar][iDim]*UnitNormal[iDim];
-            
-            for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
-          }
-        }
-        
-        /*--- Compute gradients of normal and tangential velocity:
-         grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-         grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[iDim+1][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[iDim+1][iVar] * Tangential[iDim];
-          }
-        }
-        
-        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
-         component twice, just as done with velocity above.
-         grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-         grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        ProjNormVelGrad = 0.0;
-        ProjTangVelGrad = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([v*t])*n
-        }
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
-        
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-         grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-         grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-         ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
-            Grad_Reflected[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
-      
-     
-        /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
-        
-        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-        
-        visc_numerics->SetTauWall_Flag(node[iPoint]->GetTauWall_Flag(), node[iPoint]->GetTauWall_Flag());
-        visc_numerics->SetTauWall(node[iPoint]->GetTauWall(),node[iPoint]->GetTauWall());
-        visc_numerics->SetDirTan(node[iPoint]->GetDirTanWM(),node[iPoint]->GetDirTanWM());
-        visc_numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[iPoint]->GetDirNormalWM());
-        
-        /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
-         following routine based upon the velocity-component gradients. ---*/
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
         /*--- Weakly enforce the WM heat flux for the energy equation---*/
-        velWall_tan = 0.;
-        DirTanWM = node[iPoint]->GetDirTanWM();
+        su2double velWall_tan = 0.;
+        su2double *DirTanWM = node[iPoint]->GetDirTanWM();
+  //      su2double *DirNorWM = node[iPoint]->GetDirNormalWM();
+
+        su2double TauWall = node[iPoint]->GetTauWall();
+        su2double Wall_HeatFlux = node[iPoint]->GetHeatFlux();
+
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          velWall_tan +=  V_domain[iDim+1] * DirTanWM[iDim];
-        
-        TauWall = node[iPoint]->GetTauWall();
-        Residual[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
+          velWall_tan +=  node[iPoint]->GetVelocity(iDim) * DirTanWM[iDim];
+
+        Res_Visc[0] = 0.0;
+        Res_Visc[nDim+1] = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Res_Visc[iDim+1] = 0.0;
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Res_Visc[iDim+1] = - TauWall * DirTanWM[iDim] * Area;
+
+        Res_Visc[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
       }
       else{
         
-        for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+        /*--- Get the specified wall heat flux from config.---*/
+        su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+
+        for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
         
         /*--- Weakly impose the WM heat flux for the energy equation---*/
         Res_Visc[nDim+1] = Wall_HeatFlux * Area;
         
       }
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      
-      /*--- Jacobian contribution for implicit integration. ---*/
-      if (implicit && (config->GetWall_Models()))
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+          
     }
   }
   
@@ -18304,26 +18212,22 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Allocation of variables necessary for convective fluxes. ---*/
-  su2double Area, ProjVelocity_i, Twall, *DirTanWM;
+  su2double Area, ProjVelocity_i, Twall;
   su2double *V_reflected, *V_domain;
   su2double *Normal     = new su2double[nDim];
   su2double *UnitNormal = new su2double[nDim];
   
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
-  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad;
-  su2double TauWall, Wall_HeatFlux, velWall_tan;
+  
   su2double *Tangential      = new su2double[nDim];
   su2double *GradNormVel     = new su2double[nDim];
   su2double *GradTangVel     = new su2double[nDim];
   
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
+  
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
-  
-  /*---------------------------------------------------------------------------------------------*/
-  /*--- Preprocessing: Based on BC_Sym_Plane                                                  ---*/
-  /*---------------------------------------------------------------------------------------------*/
   
   /*--- Identify the boundary by string name ---*/
   
@@ -18438,123 +18342,35 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
-      /*-------------------------------------------------------------------------------*/
-      /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
-      /*---         Primitive variables and their gradients. The viscous numerics   ---*/
-      /*---         container is filled just as the convective numerics container,  ---*/
-      /*---         but the primitive gradients of the reflected state have to be   ---*/
-      /*---         determined additionally such that symmetry at the boundary is   ---*/
-      /*---         enforced. Based on the Viscous_Residual routine.                ---*/
-      /*-------------------------------------------------------------------------------*/
+      /*-------------------------------------------------------*/
+      /*-------------------------------------------------------*/
+      /*--- Viscous residual contribution of the wall model ---*/
+      /*--- TODO: Build the jacobian contribution of the WM ---*/
+      /*-------------------------------------------------------*/
+      /*-------------------------------------------------------*/
       
-      /*--- Set the normal vector and the coordinates. ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Set the primitive and Secondary variables. ---*/
-      visc_numerics->SetPrimitive(V_domain, V_reflected);
-      visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
-      
-      /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-       1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
-       2. The gradients of the velocity components need more attention, i.e. the gradient of the
-       normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-       normal direction is mirrored. TODO: Need to check if it is necessary---*/
-      
-      /*--- Get gradients of primitives of boundary cell ---*/
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          Grad_Reflected[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
-      
-      if (config->GetWall_Models()){
-
-        /*--- Reflect the gradients for all scalars including the velocity components.
-         The gradients of the velocity components are set later with the
-         correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if(iVar == 0 || iVar > nDim) { // Exclude velocity component gradients
-
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGradient += Grad_Reflected[iVar][iDim]*UnitNormal[iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
-          }
-        }
-
-        /*--- Compute gradients of normal and tangential velocity:
-         grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-         grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[iDim+1][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[iDim+1][iVar] * Tangential[iDim];
-          }
-        }
-
-        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
-         component twice, just as done with velocity above.
-         grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-         grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        ProjNormVelGrad = 0.0;
-        ProjTangVelGrad = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([v*t])*n
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
-
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-         grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-         grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-         ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
-            Grad_Reflected[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
-      }
-      
-      /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
-      
-      /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-      visc_numerics->SetTauWall_Flag(node[iPoint]->GetTauWall_Flag(), node[iPoint]->GetTauWall_Flag());
-      visc_numerics->SetTauWall(node[iPoint]->GetTauWall(),node[iPoint]->GetTauWall());
-      visc_numerics->SetDirTan(node[iPoint]->GetDirTanWM(),node[iPoint]->GetDirTanWM());
-      visc_numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[iPoint]->GetDirNormalWM());
-      //visc_numerics->SetqWall(node[iPoint]->GetHeatFlux(), node[iPoint]->GetHeatFlux());
-      
-      /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
-       following routine based upon the velocity-component gradients. ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
       /*--- Weakly enforce the WM heat flux for the energy equation---*/
-      velWall_tan = 0.;
-      DirTanWM = node[iPoint]->GetDirTanWM();
+      su2double velWall_tan = 0.;
+      su2double *DirTanWM = node[iPoint]->GetDirTanWM();
+//      su2double *DirNorWM = node[iPoint]->GetDirNormalWM();
+
+      su2double TauWall = node[iPoint]->GetTauWall();
+      su2double Wall_HeatFlux = node[iPoint]->GetHeatFlux();
+
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        velWall_tan +=  0.5 * (V_domain[iDim+1] + V_reflected[iDim+1]) * DirTanWM[iDim];
-      
-      TauWall = node[iPoint]->GetTauWall();
-      Wall_HeatFlux = node[iPoint]->GetHeatFlux();
-      
-      /*--- Compute the normal gradient in temperature using Twall ---*/
-      su2double *DirNorWM = node[iPoint]->GetDirNormalWM();
-      Residual[nDim+1] = 0.0;
+        velWall_tan +=  node[iPoint]->GetVelocity(iDim) * DirTanWM[iDim];
+
+      Res_Visc[0] = 0.0;
+      Res_Visc[nDim+1] = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Residual[nDim+1] += (Wall_HeatFlux - TauWall * velWall_tan) * DirNorWM[iDim] * Area;
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      
-      /*--- Jacobian contribution for implicit integration. ---*/
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Res_Visc[iDim+1] = 0.0;
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Res_Visc[iDim+1] = - TauWall * DirTanWM[iDim] * Area;
+
+      Res_Visc[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
+
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
     }
   }
