@@ -1260,7 +1260,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       Multiplier[iConstr] = 0.;
     }
     /*--- Only update if constraint violation improves ---*/
-    else if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr] < 0.) ||
+    else if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr] < 0.)) ||
             ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.) {
       Multiplier[iConstr] = Multiplier_Store[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       Multiplier_Store[iConstr] = Multiplier[iConstr];
@@ -1306,7 +1306,7 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       su2double my_Gradient = 0.;
-      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr] < 0.) || 
+      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr] < 0.)) || 
         (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0. && ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
         // my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
         my_Gradient += ConstrFunc[iConstr];
