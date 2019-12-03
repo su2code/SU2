@@ -742,11 +742,16 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
   /*--- Transform system in Upper Matrix ---*/
 
+  /*--- OpenMP Parallelization ---*/
   SU2_OMP_PARALLEL_ON(omp_num_parts)
   {
   int thread = omp_get_thread_num();
   const auto begin = omp_partitions[thread];
   const auto end = omp_partitions[thread+1];
+
+  /*--- Each thread will work on the submatrix defined from row/col "begin"
+   *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
+   *    what the MPI-only implementation does. ---*/
 
   ScalarType weight[MAXNVAR*MAXNVAR], aux_block[MAXNVAR*MAXNVAR];
 
@@ -810,7 +815,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                                       CGeometry *geometry, CConfig *config) const {
-
+  /*--- OpenMP Parallelization ---*/
   SU2_OMP_PARALLEL_ON(omp_num_parts)
   {
   int thread = omp_get_thread_num();
@@ -875,6 +880,11 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   const auto begin = omp_partitions[thread];
   const auto end = omp_partitions[thread+1];
 
+  /*--- Each thread will work on the submatrix defined from row/col "begin"
+   *    to row/col "end-1", except the last thread that also considers halos.
+   *    This is NOT exactly equivalent to the MPI implementation on the same
+   *    number of domains, for that we would need to define "thread-halos". ---*/
+
   ScalarType low_prod[MAXNVAR];
 
   for (auto iPoint = begin; iPoint < end; ++iPoint) {
@@ -897,15 +907,18 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   {
   int thread = omp_get_thread_num();
   const auto begin = omp_partitions[thread];
-  const auto end = omp_partitions[thread+1];
+  const auto row_end = omp_partitions[thread+1];
+  /*--- On the last thread partition the upper
+   *    product should consider halo columns. ---*/
+  const auto col_end = (row_end==nPointDomain)? nPoint : row_end;
 
   ScalarType up_prod[MAXNVAR], dia_prod[MAXNVAR];
 
-  for (auto iPoint = end; iPoint > begin;) {
+  for (auto iPoint = row_end; iPoint > begin;) {
     iPoint--; // because of unsigned type
     auto idx = iPoint*nVar;
     DiagonalProduct(prod, iPoint, dia_prod);          // Compute D.x*
-    UpperProduct(prod, iPoint, end, up_prod);         // Compute U.x_(n+1)
+    UpperProduct(prod, iPoint, col_end, up_prod);     // Compute U.x_(n+1)
     VectorSubtraction(dia_prod, up_prod, &prod[idx]); // Compute y = D.x*-U.x_(n+1)
     Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x* = y
   }
