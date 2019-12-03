@@ -135,7 +135,7 @@ void CSysVector<ScalarType>::Plus_AX(ScalarType a, const CSysVector<ScalarType> 
 template<class ScalarType>
 void CSysVector<ScalarType>::Equals_AX_Plus_BY(ScalarType a, const CSysVector<ScalarType> & x,
                                                ScalarType b, const CSysVector<ScalarType> & y) {
-  assert(nElm == x.nElm && nElm == y.Elm && "Sizes do not match");
+  assert(nElm == x.nElm && nElm == y.nElm && "Sizes do not match");
 
   SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
   for (unsigned long i = 0; i < nElm; i++)
@@ -230,7 +230,7 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
   ScalarType loc_prod = dotProdImpl(u.nElmDomain, u.vec_val, v.vec_val);
 
 #ifdef HAVE_MPI
-  /*--- Reduce reduce across all mpi ranks. ---*/
+  /*--- Reduce across all mpi ranks. ---*/
   ScalarType prod = 0.0;
   SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return prod;
