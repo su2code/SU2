@@ -336,7 +336,7 @@ void COneShotFluidDriver::RunOneShot(){
           InnerIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     /*--- Perform new line search on just multiplier ---*/
-    if(nConstr > 0 && !config->GetZeroStep()) {
+    if(nConstr > 0 && config->GetZeroStep()) {
       su2double stepsize_mu = 1.0;
       ArmijoIter = 0;
       bool_tol = false;
