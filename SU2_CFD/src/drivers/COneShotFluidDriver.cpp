@@ -314,10 +314,18 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Compute alpha, beta, gamma at first one-shot iteration, or recompute if line search failed ---*/
   if(InnerIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-  if((InnerIter == config->GetOneShotStart()) ||
-     (InnerIter > config->GetOneShotStart() && 
-      InnerIter < config->GetOneShotStop()  && 
-      ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol)))){
+  if(InnerIter == config->GetOneShotStart()) {
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+
+    /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
+    CalculateLagrangian();
+    SetAugmentedLagrangianGradient(TOTAL_AUGMENTED_OLD);
+  }
+  else if(InnerIter > config->GetOneShotStart() && 
+          InnerIter < config->GetOneShotStop()  && 
+          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     /*--- Perform new line search on just multiplier ---*/
     if(nConstr > 0) {
       su2double stepsize_mu = 1.0;
