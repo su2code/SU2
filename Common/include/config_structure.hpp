@@ -9422,35 +9422,47 @@ public:
   unsigned long GetOneShotStop(void);
 
   /*!
-   * \brief Get the multiplier for the "alpha"-term in the doubly augmented Lagrangian.
-   * \return Value for alpha multiplier in one-shot method
+   * \brief Get the coefficient for the "alpha"-term in the doubly augmented Lagrangian.
+   * \return Value for alpha coefficient in one-shot method
    */
   su2double GetOneShotAlpha(void);
 
   /*!
-   * \brief Get the multiplier for the "beta"-term in the doubly augmented Lagrangian.
-   * \return Value for beta multiplier in one-shot method
+   * \brief Get the coefficient for the "beta"-term in the doubly augmented Lagrangian.
+   * \return Value for beta coefficient in one-shot method
    */
   su2double GetOneShotBeta(void);
 
   /*!
-   * \brief Get the multiplier for the "gamma"-term in the doubly augmented Lagrangian.
-   * \return Value for gamma multiplier in one-shot method
+   * \brief Get the coefficient for the "gamma"-term in the doubly augmented Lagrangian.
+   * \return Value for gamma coefficient in one-shot method
    */
   su2double GetOneShotGamma(void);
 
   /*!
-   * \brief Set the multiplier for the "alpha"-term in the doubly augmented Lagrangian.
+   * \brief Get the minimum rate of increase of the coefficient for the "gamma"-term in the doubly augmented Lagrangian.
+   * \return Value for the minimum rate of increase of the gamma coefficient in one-shot method
+   */
+  su2double GetOneShotGammaRate(void);
+
+  /*!
+   * \brief Get the maximum coefficient for the "gamma"-term in the doubly augmented Lagrangian.
+   * \return Value for maximum gamma coefficient in one-shot method
+   */
+  su2double GetOneShotGammaMax(void);
+
+  /*!
+   * \brief Set the coefficient for the "alpha"-term in the doubly augmented Lagrangian.
    */
   void SetOneShotAlpha(su2double input);
 
   /*!
-   * \brief Set the multiplier for the "beta"-term in the doubly augmented Lagrangian.
+   * \brief Set the coefficient for the "beta"-term in the doubly augmented Lagrangian.
    */
   void SetOneShotBeta(su2double input);
 
   /*!
-   * \brief Set the multiplier for the "gamma"-term in the doubly augmented Lagrangian.
+   * \brief Set the coefficient for the "gamma"-term in the doubly augmented Lagrangian.
    */
   void SetOneShotGamma(su2double input);
 
