@@ -346,7 +346,7 @@ void COneShotFluidDriver::RunOneShot(){
           stepsize_tmp = UpdateStepSizeQuadratic();
           stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
           if(stepsize_mu < tol) {
-            stepsize_mu  = tol;
+            stepsize_mu  = 0.;
             bool_tol     = true;
           }
         }
