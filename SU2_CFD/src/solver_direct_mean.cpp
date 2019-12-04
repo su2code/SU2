@@ -43,7 +43,10 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <Accelerate/Accelerate.h>
 
+//extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
+//                       int*, passivedouble*, int*, int*);
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 //#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
 //extern "C" void dgeqrf_(int*, int*, passivedouble*, int*, passivedouble*,
@@ -5234,12 +5237,15 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   unsigned short iVar, jVar;
   unsigned long iPoint, kNeigh, kPoint, jPoint;
   
+  int m = (int)nPointDomain * nVar;
+  int n = (int)TrialBasis[0].size();
+  
   su2double* prod = new su2double[nVar];
   
   /*--- Compute Test Basis: W = J * Phi ---*/
   
   bool debug = false;
-  double *TestBasis2 = new double[nPointDomain * nVar * TrialBasis[0].size()]();
+  vector<double> TestBasis2(m*n, 0.0);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
@@ -5264,7 +5270,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         //Jacobian.MatrixVectorProduct(mat_i, &phi[0], prod);
         
         for (unsigned long i = 0; i < nVar; i++){ // column order
-          TestBasis2[jPoint*nPointDomain*nVar + iPoint*nVar + i] += prod[i];
+          TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
         }
           
         if (debug) {
@@ -5281,7 +5287,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           std::cout << prod[0] << " " << prod[1] << " " << prod[2] << " " << prod[3] << std::endl;
           
           std::cout << "Current TestBasis:" << std::endl;
-          unsigned long test = jPoint*nPointDomain*nVar + iPoint*nVar;
+          unsigned long test = jPoint*m + iPoint*nVar;
           std::cout << TestBasis2[test] << " " << TestBasis2[test+1] << " " << TestBasis2[test+2] << " " << TestBasis2[test+3] << std::endl;
         }
         
@@ -5305,7 +5311,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           
           //TestBasis.AddBlock(iPoint, j, prod);
           for (unsigned long i = 0; i < nVar; i++){
-            TestBasis2[jPoint*nPointDomain*nVar + iPoint*nVar + i] += prod[i];
+            TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
           }
           
           if (debug) {
@@ -5322,7 +5328,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
             std::cout << prod[0] << " " << prod[1] << " " << prod[2] << " " << prod[3] << std::endl;
             
             std::cout << "Current TestBasis:" << std::endl;
-            unsigned long test = jPoint*nPointDomain*nVar + iPoint*nVar;
+            unsigned long test = jPoint*m + iPoint*nVar;
             std::cout << TestBasis2[test] << " " << TestBasis2[test+1] << " " << TestBasis2[test+2] << " " << TestBasis2[test+3] << std::endl;
           }
         }
@@ -5332,35 +5338,33 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   
   // Set up variables for QR decomposition, A = QR
-  int m = (int)nPointDomain*nVar; // number of rows in TestBasis2 (A)
-  int n = (int)TrialBasis[0].size(); // number of columns in TestBasis2
   // LDA = m
-  const char TRANS = 'N';
-  const int NRHS = 1;
-  double WORK[n];
-  int LWORK = -1;
+  char TRANS = 'T';
+  int NRHS = 1;
+  int LWORK = n+n;
+  vector<double> WORK(LWORK,0.0);
   int INFO = 1;
-  double r[m];
+  
+  vector<double> r(m,0.0);
   for (int i=0; i < m; i++){
-    //r[i] = -LinSysRes[i];
     r[i] = LinSysRes[i];
   }
 
   if (true) {
     ofstream fs;
-    std::string fname = "testbasis_output.csv";
+    std::string fname = "check_testbasis.csv";
     fs.open(fname);
     for(int i=0; i < m; i++){
       for(int j=0; j < n; j++){
         fs << TestBasis2[i +j*m] << "," ;
-        TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1);
+        TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1.0);
         //std::cout << "Test Basis[" << i+j*m << "]: " << TestBasis2[i +j*m] << std::endl;
       }
       fs << "\n";
     }
     fs.close();
     
-    std::string fname2 = "residual_output.csv";
+    std::string fname2 = "check_residual.csv";
     fs.open(fname2);
     for(int i=0; i < m; i++){
       fs << r[i] << "\n" ;
@@ -5371,14 +5375,15 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   // Compute least-squares solution using QR decomposition
   // https://johnwlambert.github.io/least-squares/
   // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
-#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-  dgels_(&TRANS, &m, &n, &NRHS, TestBasis2, &m, r, &m, WORK, &LWORK, &INFO);
-#endif
-    
+//#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
+    int info2;
+  info2 = dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
+//#endif
+
   if (INFO < 0) std::cout << "Unsucsessful exit of least-squares for ROM" << std::endl;
   
   ofstream fs;
-  std::string fname3 = "LS_solution_output.csv";
+  std::string fname3 = "check_LS_solution.csv";
   fs.open(fname3);
   for(int i=0; i < m; i++){
     fs << r[i] << "\n" ;
@@ -5386,7 +5391,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a = 0.1;
+  double a = 1.0;
   
   for (int i = 0; i < n; i++) {
     //std::cout << "Direction: " << r[i] << std::endl;
@@ -5395,7 +5400,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     //std::cout << "After: " << GenCoordsY[i] << std::endl;
   }
   
-  std::string fname4 = "red_coords_y_output.csv";
+  std::string fname4 = "check_red_coords_y.csv";
   fs.open(fname4);
   for(int i=0; i < n; i++){
     fs << GenCoordsY[i] << "\n" ;
@@ -5403,7 +5408,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   delete [] prod;
-  delete [] TestBasis2;
   
   /*--- Update solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
