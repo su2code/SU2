@@ -957,6 +957,8 @@ inline void CSolver::Set_NewSolution(CGeometry *geometry) { }
 
 inline unsigned short CSolver::GetnVar(void) { return nVar; }
 
+inline unsigned short CSolver::GetnVar_Avg(void) { return nVar_Avg; }
+
 inline unsigned short CSolver::GetnOutputVariables(void) { return nOutputVariables; }
 
 inline unsigned short CSolver::GetnPrimVar(void) { return nPrimVar; }

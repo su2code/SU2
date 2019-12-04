@@ -643,6 +643,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   //if (SolContainer_Position == FLOW_SOL && calculate_average) {
   if (calculate_average) {
     
+    unsigned short nVar_Avg = solver->GetnVar_Avg();
+    unsigned short iVar_Avg;
+    
     Solution_Avg_Aux = new su2double[solver->GetnVar()];
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -650,27 +653,43 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       for (iVar = 0; iVar < solver->GetnVar(); iVar++)
         Solution_Avg_Aux[iVar] = solver->node[iPoint]->GetSolution(iVar);
       
-      solver->node[iPoint]->AddSolution_Avg(0, Solution_Avg_Aux[0]);
-      for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
-        solver->node[iPoint]->AddSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
-      solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()-1, Solution_Avg_Aux[solver->GetnVar()-1]/Solution_Avg_Aux[0]);
-      solver->node[iPoint]->AddSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
+      iVar_Avg = 0;
+      solver->node[iPoint]->AddSolution_Avg(iVar_Avg, Solution_Avg_Aux[0]);
+      
+      for ( iDim = 0; iDim < geometry->GetnDim(); iDim++){
+        iVar_Avg += 1;
+        solver->node[iPoint]->AddSolution_Avg(iVar_Avg, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+      }
+      
+      iVar_Avg += 1;
+      solver->node[iPoint]->AddSolution_Avg(iVar_Avg, Solution_Avg_Aux[solver->GetnVar()-1]/Solution_Avg_Aux[0]);
+      
+      iVar_Avg += 1;
+      solver->node[iPoint]->AddSolution_Avg(iVar_Avg, solver->node[iPoint]->GetPressure());
       
       if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
-        solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+1, Aux_Frict_x[iPoint]);
-        solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+2, Aux_Frict_y[iPoint]);
+        iVar_Avg += 1;
+        solver->node[iPoint]->AddSolution_Avg(iVar_Avg, Aux_Frict_x[iPoint]);
+        
+        iVar_Avg += 1;
+        solver->node[iPoint]->AddSolution_Avg(iVar_Avg, Aux_Frict_y[iPoint]);
+        
         if (geometry->GetnDim() == 3){
-          solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+3, Aux_Frict_z[iPoint]);
-          solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+4, solver->node[iPoint]->GetEddyViscosity()/solver->node[iPoint]->GetLaminarViscosity());
-          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-            solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+5, solver->node[iPoint]->GetRoe_Dissipation());
-          }
+          iVar_Avg += 1;
+          solver->node[iPoint]->AddSolution_Avg(iVar_Avg, Aux_Frict_z[iPoint]);
         }
-        else{
-          solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+3, solver->node[iPoint]->GetEddyViscosity()/solver->node[iPoint]->GetLaminarViscosity());
-          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-            solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+4, solver->node[iPoint]->GetRoe_Dissipation());
-          }
+        
+        iVar_Avg += 1;
+        solver->node[iPoint]->AddSolution_Avg(iVar_Avg, solver->node[iPoint]->GetEddyViscosity()/solver->node[iPoint]->GetLaminarViscosity());
+        
+        if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+          iVar_Avg += 1;
+          solver->node[iPoint]->AddSolution_Avg(iVar_Avg, solver->node[iPoint]->GetRoe_Dissipation());
+        }
+        
+        if (config->GetWall_Models()){
+          iVar_Avg += 1;
+          solver->node[iPoint]->AddSolution_Avg(iVar_Avg, solver->node[iPoint]->GetTauWall());
         }
       }
       

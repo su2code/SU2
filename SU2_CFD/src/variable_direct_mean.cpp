@@ -270,6 +270,10 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       nVar_Avg += 1;
     }
     
+    if (config->GetWall_Models()){
+      nVar_Avg += 1;
+    }
+    
     Solution_Avg = new su2double [nVar_Avg];
     for (iVar = 0; iVar < nVar_Avg; iVar++)
       Solution_Avg[iVar] = 0.0;
@@ -476,6 +480,10 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
       nVar_Avg += 1;
     }
     
+    if (config->GetWall_Models()){
+      nVar_Avg += 1;
+    }
+
     Solution_Avg = new su2double [nVar_Avg];
     for (iVar = 0; iVar < nVar_Avg; iVar++)
       Solution_Avg[iVar] = 0.0;

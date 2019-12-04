@@ -146,6 +146,7 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+  unsigned short nVar_Avg; /*!< \brief Number of variables to calculate average. */
   
 public:
   
@@ -301,6 +302,11 @@ public:
    * \brief Get the number of variables of the problem.
    */
   unsigned short GetnVar(void);
+  
+  /*!
+   * \brief Get the number of variables that needs to calculate averages.
+   */
+  unsigned short GetnVar_Avg(void);
   
   /*!
    * \brief Get the number of variables of the problem.

@@ -12927,6 +12927,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           nVar_Par +=1;
           Variable_Names.push_back("RoeDissipationMean");
         }
+        if (wall_model){
+          nVar_Par +=1;
+          Variable_Names.push_back("TauWallMean");
+        }
       }
       
       if (geometry->GetnDim()==2){
@@ -13245,35 +13249,46 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
         
         if (calculate_average){
+          unsigned short iVar_Avg = -1;
           for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
+            iVar_Avg += 1;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
             iVar++;
           }
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
+          
+          iVar_Avg += 1;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
           iVar++;
           
           if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+1) / Avg_Iter;
+            iVar_Avg += 1;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
             iVar++;
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+2) / Avg_Iter;
+            
+            iVar_Avg += 1;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
             iVar++;
+            
             if (geometry->GetnDim() == 3){
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+3) / Avg_Iter;
+              iVar_Avg += 1;
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
               iVar++;
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+4) / Avg_Iter;
-              iVar++;
-              if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-                Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+5) / Avg_Iter;
-                iVar++;
-              }
             }
-            else{
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+3) / Avg_Iter;
+            
+            iVar_Avg += 1;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
+            iVar++;
+            
+            if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+              iVar_Avg += 1;
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
               iVar++;
-              if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-                Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+4) / Avg_Iter;
-                iVar++;
-              }
+            }
+            
+            if (wall_model){
+              iVar_Avg += 1;
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(iVar_Avg) / Avg_Iter;
+              iVar++;
             }
           }
           

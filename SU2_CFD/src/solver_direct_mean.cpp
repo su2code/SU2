@@ -189,6 +189,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool fsi     = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FlowFileName();
+  bool calculate_average = config->GetCompute_Average();
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -362,6 +363,25 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nVar = nDim+2;
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
+  
+  if (calculate_average){
+    if (nDim == 2){
+      /*--- Density, U, V, E, Pressure, Cfx, Cfy, nut/nu*/
+      nVar_Avg = nVar + 4;
+    }
+    else{
+      /*--- Density, U, V, W, E, Pressure, Cfx, Cfy, Cfz, nut/nu */
+      nVar_Avg = nVar + 5;
+    }
+    
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      nVar_Avg += 1;
+    }
+    
+    if (config->GetWall_Models()){
+      nVar_Avg += 1;
+    }
+  }
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -3294,6 +3314,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     unsigned long iMarker, iVertex;
     unsigned short iVar;
     
+    unsigned short nVar_Avg = solver_container[MESH_0][FLOW_SOL]->GetnVar_Avg();
+    unsigned short iVar_Avg;
+    
     if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
       
       /*--- Copy from COutput::LoadLocalData_Flow for computing mean skin friction values
@@ -3333,32 +3356,47 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       for (iVar = 0; iVar < nVar; iVar++)
         Solution_Avg_Aux[iVar] = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
       
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(0, Solution_Avg_Aux[0]);
+      iVar_Avg = 0;
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, Solution_Avg_Aux[0]);
       
-      for ( iDim = 0; iDim < nDim; iDim++)
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+      for ( iDim = 0; iDim < nDim; iDim++){
+        iVar_Avg += 1;
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+      }
       
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar-1, Solution_Avg_Aux[nVar-1]/Solution_Avg_Aux[0]);
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      iVar_Avg += 1;
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, Solution_Avg_Aux[nVar-1]/Solution_Avg_Aux[0]);
+      
+      iVar_Avg += 1;
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
       
       if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == NAVIER_STOKES)){
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+1, Aux_Frict_x[iPoint]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+2, Aux_Frict_y[iPoint]);
+        
+        iVar_Avg += 1;
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, Aux_Frict_x[iPoint]);
+        
+        iVar_Avg += 1;
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, Aux_Frict_y[iPoint]);
+        
         if (nDim == 3){
-          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+3, Aux_Frict_z[iPoint]);
-          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+4, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetEddyViscosity()/solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-            solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+5, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation());
-          }
+          iVar_Avg += 1;
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, Aux_Frict_z[iPoint]);
         }
-        else{
-          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+3, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetEddyViscosity()/solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-            solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+4, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation());
-            //cout << solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation() << endl;
-          }
+        
+        iVar_Avg += 1;
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetEddyViscosity()/solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        
+        if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+          iVar_Avg += 1;
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation());
+        }
+        
+        if (config->GetWall_Models()){
+          iVar_Avg += 1;
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar_Avg, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetTauWall());
         }
       }
+        
       
       if (nDim == 2){
         for ( iDim = 0; iDim < nDim; iDim++)
@@ -15353,6 +15391,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool calculate_average = config->GetCompute_Average();
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -15467,6 +15506,24 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
+  if (calculate_average){
+    if (nDim == 2){
+      /*--- Density, U, V, E, Pressure, Cfx, Cfy, nut/nu*/
+      nVar_Avg = nVar + 4;
+    }
+    else{
+      /*--- Density, U, V, W, E, Pressure, Cfx, Cfy, Cfz, nut/nu */
+      nVar_Avg = nVar + 5;
+    }
+    
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      nVar_Avg += 1;
+    }
+    
+    if (config->GetWall_Models()){
+      nVar_Avg += 1;
+    }
+  }
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
