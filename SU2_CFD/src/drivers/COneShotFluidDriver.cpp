@@ -290,11 +290,10 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
-      // StoreMultiplierGrad();
+      StoreMultiplierGrad();
       /*--- Update constraint multiplier ---*/
       LoadOldMultiplier();
-      // UpdateMultiplier(stepsize);
-      UpdateMultiplier(1.0);
+      UpdateMultiplier(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
@@ -336,35 +335,35 @@ void COneShotFluidDriver::RunOneShot(){
   else if(InnerIter > config->GetOneShotStart() && 
           InnerIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-    // /*--- Perform new line search on just multiplier ---*/
-    // if(nConstr > 0 && config->GetZeroStep()) {
-    //   su2double stepsize_mu = 1.0;
-    //   ArmijoIter = 0;
-    //   bool_tol = false;
-    //   do {
-    //     if(ArmijoIter > 0){
-    //       /*--- Parabolic backtracking ---*/
-    //       stepsize_tmp = UpdateStepSizeQuadratic();
-    //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-    //       if(stepsize_mu < tol) {
-    //         stepsize_mu  = tol;
-    //         bool_tol     = true;
-    //       }
-    //     }
-    //     /*--- Compute and store GradL dot p ---*/
-    //     StoreGradDotDir(false);
+    /*--- Perform new line search on just multiplier ---*/
+    if(nConstr > 0 && config->GetZeroStep()) {
+      su2double stepsize_mu = 1.0;
+      ArmijoIter = 0;
+      bool_tol = false;
+      do {
+        if(ArmijoIter > 0){
+          /*--- Parabolic backtracking ---*/
+          stepsize_tmp = UpdateStepSizeQuadratic();
+          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+          if(stepsize_mu < tol) {
+            stepsize_mu  = tol;
+            bool_tol     = true;
+          }
+        }
+        /*--- Compute and store GradL dot p ---*/
+        StoreGradDotDir(false);
 
-    //     /*--- Update constraint multiplier ---*/
-    //     LoadOldMultiplier();
-    //     UpdateMultiplier(stepsize_mu);
+        /*--- Update constraint multiplier ---*/
+        LoadOldMultiplier();
+        UpdateMultiplier(stepsize_mu);
 
-    //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    //     CalculateLagrangian();
+        /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+        CalculateLagrangian();
 
-    //     ArmijoIter++;
+        ArmijoIter++;
 
-    //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    // }
+      } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    }
     // LoadOldMultiplier();
     // UpdateMultiplier(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
@@ -1252,27 +1251,6 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     // }
     // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
 
-    // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
-    // helper = 0.0;
-    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-    //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
-    // }
-    // Multiplier[iConstr] = Multiplier_Store[iConstr];
-    // if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
-    //   Multiplier[iConstr] = 0.;
-    // }
-    // /*--- Only update if constraint violation improves ---*/
-    // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) ||
-    //         (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.)) {
-    //   Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Multiplier_Store[iConstr] = Multiplier[iConstr];
-    // }
-    // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) ||
-    //    (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.)) {
-    //   Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    // }
-
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     helper = 0.0;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1283,13 +1261,18 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       Multiplier[iConstr] = 0.;
     }
     /*--- Only update if constraint violation improves ---*/
-    else {
+    else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) ||
+            (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.)) {
       Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       // Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
-    Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
- 
+    if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) ||
+       (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.)) {
+      Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    }
+    // Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
     // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
     //   Multiplier[iConstr] = Multiplier_Old[iConstr] + stepsize*gamma*ConstrFunc_Store[iConstr];
