@@ -3,30 +3,20 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -92,9 +82,11 @@ def State_Factory(state=None,config=None):
             MESH: mesh.su2
             DIRECT: solution_flow.dat
             ADJOINT_DRAG: solution_adj_cd.dat
+            FLOW_META: flow.meta
             MULTIPOINT_DIRECT: [solution_flow_point0.dat solution_flow_point1.dat, ...]
             MULTIPOINT_ADJOINT_DRAG: [solution_adj_point0_cd.dat solution_adj_point1_cd.dat, ...]
             MULTIPOINT_MESH_FILENAME: [mesh_0.su2, mesh_1.su2, ... ]
+            MULTIPOINT_FLOW_META: [flow_point0.meta, flow_point1.meta, ...]
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
@@ -326,6 +318,7 @@ class State(ordered_bunch):
 
         register_file('MESH',mesh_name)
 
+        # direct solutions
         if restart:
             register_file('DIRECT',direct_name)
             if multipoint:
@@ -333,6 +326,13 @@ class State(ordered_bunch):
                 name_list = expand_zones(name_list,config)
                 register_file('MULTIPOINT_DIRECT',name_list)
         
+        # flow meta data file
+        if restart:
+            register_file('FLOW_META','flow.meta')
+            if multipoint:
+                name_list = expand_multipoint('flow.meta',config)
+                register_file('MULTIPOINT_FLOW_META',name_list)
+
         # adjoint solutions
         if restart:
             for obj, suff in adj_map.items():
@@ -355,9 +355,6 @@ class State(ordered_bunch):
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
             register_file('TARGET_HEATFLUX',targetheatflux_name)
-        
-        # flow meta data file
-        register_file('FLOW_META', 'flow.meta')
 
         return
     

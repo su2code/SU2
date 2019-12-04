@@ -2,24 +2,14 @@
  * \file CFEABoundVariable.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,40 +25,52 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/variables/CFEABoundVariable.hpp"
 
 
-CFEABoundVariable::CFEABoundVariable(void) : CFEAVariable() {
+CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+  : CFEAVariable(val_fea, npoint, ndim, nvar, config) {
 
-  Residual_Ext_Surf     = NULL;    // Residual component due to external surface forces
-  Residual_Ext_Surf_n   = NULL;    // Residual component due to external surface forces at time n (for gen-alpha methods)
-
+  VertexMap.Reset(nPoint);
 }
 
-CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
-                                     CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config) {
+void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
-  unsigned short iVar;
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  unsigned long nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
+
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-
-  Residual_Ext_Surf     = NULL;
-  Residual_Ext_Surf_n   = NULL;
+  fsi_analysis   = config->GetFSI_Simulation();
 
   /*--- Surface residual ---*/
-  Residual_Ext_Surf = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  Residual_Ext_Surf.resize(nBoundPt,nVar) = su2double(0.0);
+
+  /*--- Flow traction ---*/
+  if (fsi_analysis) FlowTraction.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
   if (gen_alpha) {
-    Residual_Ext_Surf_n = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n[iVar] = 0.0;
-  }
+    Residual_Ext_Surf_n.resize(nBoundPt,nVar) = su2double(0.0);
 
+    if (fsi_analysis) FlowTraction_n.resize(nBoundPt,nVar) = su2double(0.0);
+  }
 }
 
-CFEABoundVariable::~CFEABoundVariable(void) {
+void CFEABoundVariable::Set_FlowTraction_n() { FlowTraction_n = FlowTraction; }
 
-  if (Residual_Ext_Surf     != NULL) delete [] Residual_Ext_Surf;
-  if (Residual_Ext_Surf_n    != NULL) delete [] Residual_Ext_Surf_n;
+void CFEABoundVariable::Set_SurfaceLoad_Res_n() { Residual_Ext_Surf_n = Residual_Ext_Surf; }
 
+void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
+
+void CFEABoundVariable::RegisterFlowTraction() {
+  if (!fsi_analysis) return;
+  for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(FlowTraction(iVertex,iVar));
 }

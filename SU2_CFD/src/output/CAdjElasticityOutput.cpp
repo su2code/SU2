@@ -1,25 +1,15 @@
 /*!
- * \file output_adj_elasticity.cpp
+ * \file CAdjElasticityOutput.cpp
  * \brief Main subroutines for elasticity discrete adjoint output
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,20 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/output/CAdjElasticityOutput.hpp"
 
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
 CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
- 
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  
+
   /*--- Initialize number of variables ---*/
-  if (linear_analysis) nVar_FEM = nDim;
-  if (nonlinear_analysis) nVar_FEM = 3;
-  
+  nVar_FEM = nDim;
+
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
@@ -71,60 +58,59 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   if (nRequestedVolumeFields == 0){
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
-    requestedVolumeFields.emplace_back("SENSITIVITY");    
+    requestedVolumeFields.emplace_back("SENSITIVITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
   stringstream ss;
-  ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
+  ss << "Zone " << config->GetiZone() << " (Adj. Structure)";
   multiZoneHeaderString = ss.str();
 
   /*--- Set the volume filename --- */
-  
+
   volumeFilename = config->GetAdj_FileName();
-  
+
   /*--- Set the surface filename --- */
-  
+
   surfaceFilename = config->GetSurfAdjCoeff_FileName();
-  
+
   /*--- Set the restart filename --- */
-  
+
   restartFilename = config->GetRestart_AdjFileName();
-  
+
   /*--- Add the obj. function extension --- */
-  
+
   restartFilename = config->GetObjFunc_Extension(restartFilename);
 
   /*--- Set the default convergence field --- */
 
   if (convFields.empty() ) convFields.emplace_back("ADJOINT_DISP_X");
-  
+
 }
 
 CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
-  
+
   // Residuals
   AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
   AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
   AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
-  
-  //Sensitivities
-  AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::FIXED, "SENSITIVITY", "");
-  AddHistoryOutput("SENS_NU","Sens[Nu]", ScreenOutputFormat::FIXED, "SENSITIVITY", "");
 
-  
+  //Sensitivities
+  AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
+  AddHistoryOutput("SENS_NU","Sens[Nu]", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
+
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
-  
+
   SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_RMS(0)));
   SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_RMS(1)));
   if (nVar_FEM == 3){
-    SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_RMS(2)));    
+    SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_RMS(2)));
   }
-  su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;  
+  su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;
   if (config->GetnElasticityMod() == 1){
     Total_SensE = solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
     Total_SensNu = solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
@@ -132,22 +118,20 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
   else{
     // TODO: Update this and change tests
     for (unsigned short iVar = 0; iVar < config->GetnElasticityMod(); iVar++){
-      Total_SensE += solver[ADJFEA_SOL]->GetGlobal_Sens_E(0)
-                    *solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
-      Total_SensNu += solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
-                     *solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+      Total_SensE += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_E(0),2);
+      Total_SensNu += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0),2);
     }
   Total_SensE = sqrt(Total_SensE);
   Total_SensNu = sqrt(Total_SensNu);
   }
   SetHistoryOutputValue("SENS_E", Total_SensE);
   SetHistoryOutputValue("SENS_NU", Total_SensNu);
-  
+
 }
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint];
+  CVariable* Node_Struc = solver[ADJFEA_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
@@ -155,10 +139,15 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
 
-  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSolution(0));
-  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSolution(1));
-  if (nDim == 3) SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSolution(2));
+  SetVolumeOutputValue("ADJOINT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("ADJOINT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
+  if (nVar_FEM == 3)
+    SetVolumeOutputValue("ADJOINT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
 }
 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -169,15 +158,24 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
+  /// BEGIN_GROUP: SOLUTION, DESCRIPTION: Adjoint variables of the current objective function.
+  /// DESCRIPTION: Adjoint x-component.
+  AddVolumeOutput("ADJOINT-X", "Adjoint_x", "SOLUTION", "adjoint of displacement in the x direction");
+  /// DESCRIPTION: Adjoint y-component.
+  AddVolumeOutput("ADJOINT-Y", "Adjoint_y", "SOLUTION", "adjoint of displacement in the y direction");
+  if (nVar_FEM == 3)
+    /// DESCRIPTION: Adjoint z-component.
+    AddVolumeOutput("ADJOINT-Z", "Adjoint_z", "SOLUTION", "adjoint of displacement in the z direction");
+  /// END_GROUP
+
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
   /// DESCRIPTION: Sensitivity x-component.
-  AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "x-component of the sensitivity vector"); 
+  AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "geometric sensitivity in the x direction");
   /// DESCRIPTION: Sensitivity y-component.
-  AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "y-component of the sensitivity vector");
+  AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "geometric sensitivity  in the y direction");
   if (nDim == 3)
     /// DESCRIPTION: Sensitivity z-component.
-    AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");   
-  /// DESCRIPTION: Sensitivity in normal direction.
-  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction"); 
+    AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "geometric sensitivity  in the z direction");
   /// END_GROUP
+
 }

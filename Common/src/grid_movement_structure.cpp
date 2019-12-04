@@ -2,24 +2,14 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -141,7 +131,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
-  Smoothing_Iter = config->GetGridDef_Linear_Iter();
+  Smoothing_Iter = config->GetDeform_Linear_Solver_Iter();
   Screen_Output  = config->GetDeform_Output();
   NumError       = config->GetDeform_Linear_Solver_Error();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
@@ -1809,7 +1799,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
+         (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -1904,7 +1895,6 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
 
   /*--- Problem dimension and physical time step ---*/
   nDim = geometry->GetnDim();
@@ -2067,7 +2057,6 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
@@ -2207,14 +2196,13 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
+  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2346,7 +2334,6 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
-
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2707,28 +2694,27 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           FFDBox[iFFDBox]->SetSphe2Cart_CornerPoints(config);
           FFDBox[iFFDBox]->SetSphe2Cart_ControlPoints(config);
         }
-        
-        /*--- Output original FFD FFDBox ---*/
-        
-        if (rank == MASTER_NODE) {
-          for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-            unsigned short *FileFormat = config->GetVolumeOutputFiles();
-            if (FileFormat[iFile] == PARAVIEW) {
-              cout << "Writing a Paraview file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
-              }
-            } else if (FileFormat[iFile] == TECPLOT) {
-              cout << "Writing a Tecplot file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
-              }
+      }
+      /*--- Output original FFD FFDBox ---*/
+      
+      if (rank == MASTER_NODE) {
+        for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+          unsigned short *FileFormat = config->GetVolumeOutputFiles();
+          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
+            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-            else if (FileFormat[iFile] == CGNS)  {
-              cout << "Writing a CGNS file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
-              }
+          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
+            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+            }
+          }
+          else if (FileFormat[iFile] == CGNS)  {
+            cout << "Writing a CGNS file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
             }
           }
         }  
@@ -2799,12 +2785,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           unsigned short *FileFormat = config->GetVolumeOutputFiles();
           
-          if (FileFormat[iFile] == PARAVIEW) {
+          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (FileFormat[iFile] == TECPLOT) {
+          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -2978,12 +2964,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             unsigned short *FileFormat = config->GetVolumeOutputFiles();
             
-            if (FileFormat[iFile] == PARAVIEW) {
+            if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
               cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
               }
-            } else if (FileFormat[iFile] == TECPLOT) {
+            } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
               cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
@@ -9185,14 +9171,14 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
       element_container[iKind] = NULL;
     }
     if (nDim == 2){
-      element_container[EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[EL_QUAD] = new CQUAD4(nDim, config);
+      element_container[EL_TRIA] = new CTRIA1();
+      element_container[EL_QUAD] = new CQUAD4();
     }
-    else if (nDim == 3){
-      element_container[EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CPYRAM5(nDim, config);
-      element_container[EL_PRISM] = new CPRISM6(nDim, config);
+    else {
+      element_container[EL_TETRA] = new CTETRA1();
+      element_container[EL_HEXA]  = new CHEXA8();
+      element_container[EL_PYRAM] = new CPYRAM5();
+      element_container[EL_PRISM] = new CPRISM6();
     }
 
     /*--- Term ij of the Jacobian ---*/
@@ -9581,7 +9567,7 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -9632,7 +9618,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
   su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double *Kab = NULL;
+  const su2double *Kab = NULL;
   unsigned short NelNodes, jNode;
 
   su2double ElemVolume;
@@ -9656,7 +9642,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -9755,7 +9741,7 @@ void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfi
     }
   }
 
-  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -9836,10 +9822,10 @@ void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfi
           }
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode){
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
         }
 
       }

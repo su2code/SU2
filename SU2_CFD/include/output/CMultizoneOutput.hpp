@@ -2,24 +2,14 @@
  * \file CDriverOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 6.1.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,10 +54,10 @@ class CMultizoneOutput final: public COutput {
 
 protected:
   unsigned short nZone; //!< Number of zones
-  
+
   string bgs_res_name; //!< Block-Gauss seidel residual name
   bool write_zone;     //!< Boolean indicating whether the individual zones write to screen
-  
+
 public:
 
   /*!
@@ -82,14 +72,14 @@ public:
 
   /*!
    * \brief Load the multizone history output field values
-   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem.
    */
   void LoadMultizoneHistoryData(COutput **output, CConfig **config) override;
 
   /*!
    * \brief Set the available multizone history output fields
-   * \param[in] output - Container holding the output instances per zone.   
+   * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) override;
@@ -99,13 +89,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteHistoryFile_Output(CConfig *config) override;
-  
+
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteScreen_Header(CConfig *config) override;
-  
+
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.

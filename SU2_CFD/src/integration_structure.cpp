@@ -2,24 +2,14 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/integration_structure.hpp"
 
@@ -311,8 +302,9 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
       if (iMGLevel != config[iZone]->GetnMGLevels()) {
         SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
-        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
-                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+//        ToDo: The flow solvers do not use the conservative variable gradients
+//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+//                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
       }
       
     }
@@ -385,67 +377,80 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     case (GENERALIZED_ALPHA):
       solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);
       break;
-    }
+  }
 
   /*--- Apply ESSENTIAL BOUNDARY CONDITIONS ---*/
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case CLAMPED_BOUNDARY:
-          solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
-          break;
-        case DISP_DIR_BOUNDARY:
-          solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
-          break;
-        case DISPLACEMENT_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
-          break;
-      }
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case CLAMPED_BOUNDARY:
+        solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
+      case DISP_DIR_BOUNDARY:
+        solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
+      case DISPLACEMENT_BOUNDARY:
+        solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
+    }
+  }
 
   /*--- Solver linearized system ---*/
 
-    solver_container[MainSolver]->Solve_System(geometry, config);
+  solver_container[MainSolver]->Solve_System(geometry, config);
 
   /*--- Update solution ---*/
 
-    switch (config->GetKind_TimeIntScheme_FEA()) {
-      case (CD_EXPLICIT):
-        solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
-        break;
-      case (NEWMARK_IMPLICIT):
-        solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
-        break;
-      case (GENERALIZED_ALPHA):
-        solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
-        break;
-      }
+  switch (config->GetKind_TimeIntScheme_FEA()) {
+    case (CD_EXPLICIT):
+      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+      break;
+    case (NEWMARK_IMPLICIT):
+      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+      break;
+    case (GENERALIZED_ALPHA):
+      solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
+      break;
+  }
 
   /*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
-      break;
+        solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
 //      case DISPLACEMENT_BOUNDARY:
-//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
-//      break;
+//        solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
+//        break;
     }
+  }
 
-    /*--- Perform the MPI communication of the solution ---*/
+  /*--- Perform the MPI communication of the solution ---*/
 
-    solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
-    solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
+  solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
+  solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+
   unsigned long iPoint;
-  
+
+  solver->GetNodes()->Set_Solution_time_n1();
+  solver->GetNodes()->Set_Solution_time_n();
+  solver->ResetCFLAdapt();
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    solver->node[iPoint]->Set_Solution_time_n1();
-    solver->node[iPoint]->Set_Solution_time_n();
+    
+    /*--- Initialize the underrelaxation ---*/
+    
+    solver->GetNodes()->SetUnderRelaxation(iPoint, 1.0);
+    
+    /*--- Initialize the local CFL number ---*/
+    
+    solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
     
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
@@ -529,36 +534,27 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 }
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver->node[iPoint]->Set_Solution_time_n();
-    solver->node[iPoint]->SetSolution_Vel_time_n();
-    solver->node[iPoint]->SetSolution_Accel_time_n();
-    
-  }
-  
+
+  solver->GetNodes()->Set_Solution_time_n();
+  solver->GetNodes()->SetSolution_Vel_time_n();
+  solver->GetNodes()->SetSolution_Accel_time_n();
+
   bool fsi = config->GetFSI_Simulation();
-  
+
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-  
+
   if (fsi) {
-    
+
     su2double WAitk=0.0;
-    
+
     WAitk = solver->GetWAitken_Dyn();
     solver->SetWAitken_Dyn_tn1(WAitk);
-    
+
   }
-  
-  
 }
 
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
+
   bool fsi = config->GetFSI_Simulation();
   
   /*--- Update the solution according to the integration scheme used ---*/
@@ -575,25 +571,21 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
       break;
   }
-  
+
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver_container[FEA_SOL]->node[iPoint]->Set_Solution_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
-    
-  }
-  
+
+  solver_container[FEA_SOL]->GetNodes()->Set_Solution_time_n();
+  solver_container[FEA_SOL]->GetNodes()->SetSolution_Vel_time_n();
+  solver_container[FEA_SOL]->GetNodes()->SetSolution_Accel_time_n();
+
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-  
+
   if (fsi) {
-    
+
     su2double WAitk=0.0;
-    
+
     WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
     solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
-    
+
   }
-  
 }

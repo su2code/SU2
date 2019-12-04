@@ -1,25 +1,15 @@
-/*!
+﻿/*!
  * \file CAdjFlowIncOutput.hpp
  * \brief Headers of the adjoint incompressible flow output.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,11 +36,11 @@
  */
 class CAdjFlowIncOutput final: public COutput {
 private:
-  
+
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/ 
-  bool heat,                 /*!< \brief Boolean indicating whether have a heat problem*/ 
-  weakly_coupled_heat; /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/ 
-  
+  bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/ 
+  bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
+
 public:
 
 
@@ -70,19 +60,19 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-  
+
   /*!
    * \brief Set the available history output fields
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryOutputFields(CConfig *config) override;
-  
+
   /*!
    * \brief Set the available volume output fields
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields(CConfig *config) override;
-  
+
   /*!
    * \brief Set the values of the volume output fields for a point.
    * \param[in] config - Definition of the particular problem.
@@ -91,7 +81,7 @@ public:
    * \param[in] iPoint - Index of the point.
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
-  
+
   /*!
    * \brief Set the values of the volume output fields for a surface point.
    * \param[in] config - Definition of the particular problem.
@@ -101,16 +91,16 @@ public:
    * \param[in] iMarker - Index of the surface marker.
    * \param[in] iVertex - Index of the vertex on the marker.
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, 
-                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;  
-  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
+                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
+
   /*!
    * \brief Check whether the base values for relative residuals should be initialized
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
   bool SetInit_Residuals(CConfig *config) override;
-  
+
   /*!
    * \brief Check whether the averaged values should be updated
    * \param[in] config - Definition of the particular problem.

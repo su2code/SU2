@@ -39,7 +39,7 @@ double gk_CPUSeconds(void)
 #ifdef __OPENMPXXXX__
   return omp_get_wtime();
 #else
-  #if defined(WIN32) || defined(__MINGW32__)
+  #if defined(WIN32) || defined(__MINGW32__) || defined(_MSC_VER)
     return((double) clock()/CLOCKS_PER_SEC);
   #else
     struct rusage r;

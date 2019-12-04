@@ -3,24 +3,14 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -176,8 +166,8 @@ private:
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
   su2double MaxLength;                /*!< \brief The maximum cell-center to cell-center length. */
-  int *Input_AdjIndices,              /*!< \brief Indices of Coord variables in the adjoint vector. */
-  *Output_AdjIndices;                 /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  int *AD_InputIndex,                 /*!< \brief Indices of Coord variables in the adjoint vector. */
+  *AD_OutputIndex;                    /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
 public:
 	
@@ -297,7 +287,7 @@ public:
    * \brief Set the adjoint vector indices of Coord vector.
    * \param[in] input - Save them to the input or output indices vector.
    */
-  void SetAdjIndices(bool input);
+  void SetIndex(bool input);
 
   /*!
    * \brief Set the adjoint values of the (geometric) coordinates.
@@ -811,10 +801,22 @@ public:
   void SetAdjointCoord(su2double *adj_coor);
 
   /*!
+   * \brief Set the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void SetAdjointCoord_LocalIndex(su2double *adj_coor);
+
+  /*!
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
   void GetAdjointCoord(su2double *adj_coor);
+
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void GetAdjointCoord_LocalIndex(su2double *adj_coor);
 
 };
 

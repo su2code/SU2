@@ -2,24 +2,14 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,8 +29,8 @@
 #include "../include/adt_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 #include "../include/toolboxes/CLinearPartitioner.hpp"
+#include "../include/geometry/elements/CElement.hpp"
 #include "../include/toolboxes/SU2_LOG.hpp"
-#include "../include/element_structure.hpp"
 #include "../include/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
 #include "../include/CRectangularMeshReaderFVM.hpp"
@@ -50,6 +40,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
 
 /*--- Epsilon definition ---*/
 
@@ -2683,19 +2676,16 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
+  bool input = true;
+  bool push_index = config->GetMultizone_Problem()? false : true;
 
-  bool input    = true;
-  
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if(config->GetMultizone_Problem()) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
-        node[iPoint]->SetAdjIndices(input);
-      }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      AD::RegisterInput(node[iPoint]->GetCoord()[iDim], push_index);
     }
-    else {
+    if(!push_index) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+        node[iPoint]->SetIndex(input);
       }
     }
   }
@@ -3683,13 +3673,13 @@ void CGeometry::SetElemVolume(CConfig *config)
 
   /*--- Create a bank of elements to avoid instantiating inside loop ---*/
   if (nDim==2) {
-    elements[0] = new CTRIA1(nDim,config);
-    elements[1] = new CQUAD4(nDim,config);
+    elements[0] = new CTRIA1();
+    elements[1] = new CQUAD4();
   } else {
-    elements[0] = new CTETRA1(nDim,config);
-    elements[1] = new CPYRAM5(nDim,config);
-    elements[2] = new CPRISM6(nDim,config);
-    elements[3] = new CHEXA8(nDim,config);
+    elements[0] = new CTETRA1();
+    elements[1] = new CPYRAM5();
+    elements[2] = new CPRISM6();
+    elements[3] = new CHEXA8();
   }
 
   /*--- Compute and store the volume of each "elem" ---*/
@@ -3711,7 +3701,7 @@ void CGeometry::SetElemVolume(CConfig *config)
       unsigned long node_idx = elem[iElem]->GetNode(iNode);
       for (unsigned short iDim=0; iDim<nDim; ++iDim) {
         su2double coord = node[node_idx]->GetCoord(iDim);
-        element->SetRef_Coord(coord, iNode, iDim);
+        element->SetRef_Coord(iNode, iDim, coord);
       }
     }
     /*--- Compute ---*/
@@ -9066,7 +9056,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     }
     else cout << "." << endl;
     
-    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX;
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;

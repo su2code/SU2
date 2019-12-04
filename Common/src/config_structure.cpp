@@ -2,24 +2,14 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -243,8 +233,6 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   if (runtime_file) {
     if (all_options.find("TIME_ITER") == all_options.end())
       config->SetnTime_Iter(nTimeIter);
-    if (all_options.find("CFL_NUMBER") == all_options.end())
-      config->SetCFL(MESH_0, CFLFineGrid);
   }
 }
 
@@ -789,8 +777,6 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_Simulation = false;
 
   nSpanMaxAllZones = 1;
-
-  Wrt_InletFile = false;
  
   Restart_Bandwidth_Agg = 0.0;
   
@@ -902,6 +888,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
+  addBoolOption("ADJ_FSI", FSI_Problem, NO);
+  
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -936,8 +924,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
-  /* DESCRIPTION: Heat capacity used for heat equation */
-  addDoubleOption("SPECIFIC_HEAT_CP_SOLID", Specific_Heat_Cp_Solid, 896.0);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
@@ -1056,7 +1042,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION: Thermal conductivity used for heat equation */
-  addDoubleOption("THERMAL_CONDUCTIVITY_SOLID", Thermal_Conductivity_Solid, 0.0);
+  addDoubleOption("SOLID_THERMAL_CONDUCTIVITY", Thermal_Conductivity_Solid, 0.0);
   /* DESCRIPTION: Solids temperature at freestream conditions */
   addDoubleOption("SOLID_TEMPERATURE_INIT", Temperature_Freestream_Solid, 288.15);
   /* DESCRIPTION: Density used in solids */
@@ -1095,8 +1081,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DCM_DIH", dCM_diH, 0.05);
-  /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
-  addUnsignedLongOption("UPDATE_ALPHA", Update_Alpha, 5);
+  /* DESCRIPTION: Maximum number of iterations between AoA updates for fixed CL problem. */
+  addUnsignedLongOption("UPDATE_AOA_ITER_LIMIT", Update_AoA_Iter_Limit, 200);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_IH", Update_iH, 5);
   /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
@@ -1448,12 +1434,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
-  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation for the FVM heat solver. */
-  addDoubleOption("LINEAR_SOLVER_ERROR_HEAT", Linear_Solver_Error_Heat, 1E-8);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
-  /* DESCRIPTION: Max iterations of the linear solver for the FVM heat solver. */
-  addUnsignedLongOption("LINEAR_SOLVER_ITER_HEAT", Linear_Solver_Iter_Heat, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -1461,10 +1443,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
-  /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
-  /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
   addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
@@ -1540,6 +1518,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief NUM_METHOD_GRAD
    *  \n DESCRIPTION: Numerical method for spatial gradients \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: WEIGHTED_LEAST_SQUARES. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
+  /*!\brief NUM_METHOD_GRAD
+   *  \n DESCRIPTION: Numerical method for spatial gradients used only for upwind reconstruction \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: NO_GRADIENT. \ingroup Config*/
+  addEnumOption("NUM_METHOD_GRAD_RECON", Kind_Gradient_Method_Recon, Gradient_Map, NO_GRADIENT);
   /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
@@ -1574,7 +1555,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
-  addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 1.0);
+  addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1692,7 +1673,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
-  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
@@ -1994,8 +1975,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
-  /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Deform limit in m or inches */
@@ -2476,7 +2455,7 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
-
+  
   /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
   addPythonOption("MULTIPOINT_MESH_FILENAME");
 
@@ -2772,7 +2751,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                        |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2786,22 +2765,12 @@ void CConfig::SetHeader(unsigned short val_software){
     cout << "|                                                                       |" << endl;
     //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The current SU2 release has been coordinated by the                   |" << endl;
-    cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
-    cout << "| with selected contributions from the open-source community.           |" << endl;
+    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
+    cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The main research teams contributing to the current release are:      |" << endl;
-    cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
-    cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
-    cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
-    cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
-    cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-    cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
-    cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
-    cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
-    cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
+    cout << "| Copyright 2012-2019, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -2886,8 +2855,7 @@ void CConfig::SetnZone(){
     
     nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
   
-  }
-  
+  }  
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -2905,7 +2873,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Set the default output files ---*/
-  if (nVolumeOutputFiles == 0){
+  if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
     VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
     VolumeOutputFiles[0] = RESTART_BINARY;
@@ -2927,9 +2895,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 #ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
+    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
+    }
   }
 #endif
 
@@ -2957,9 +2927,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Initialize the AoA and Sideslip variables for the incompressible
-   solver. This is typically unused (often internal flows). This also
-   is necessary to avoid any issues with the AoA adjustments for the
-   compressible code for fixed lift mode (including the adjoint). ---*/
+   solver. This is typically unused (often internal flows). Also fixed CL
+   mode for incompressible flows is not implemented ---*/
 
   if (Kind_Solver == INC_EULER ||
       Kind_Solver == INC_NAVIER_STOKES ||
@@ -2986,6 +2955,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     SetAoA(alpha);
     SetAoS(beta);
+
+    if (Fixed_CL_Mode) {
+      SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
+    }
     
   }
 
@@ -3138,7 +3111,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
+  /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
   
   if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
     Discard_InFiles = false;
@@ -3147,27 +3120,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
       (TimeMarching == TIME_STEPPING)) { nMGLevels = 0; }
-
-  /*--- If Fluid Structure Interaction, set the solver for each zone.
-   *--- ZONE_0 is the zone of the fluid.
-   *--- All the other zones are structure.
-   *--- This will allow us to define multiple physics structural problems */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
-
-    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
-    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
-    // Discrete adjoint linear solver
-    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
-    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
-
-    Multizone_Residual = true;
-  }
-  else { FSI_Problem = false; }
   
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
@@ -3184,12 +3136,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }  else {
     Kind_Regime = NO_FLOW;
   }  
-
-
-  if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
-    Linear_Solver_Iter = Linear_Solver_Iter_Heat;
-    Linear_Solver_Error = Linear_Solver_Error_Heat;
-  }
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
@@ -3391,6 +3337,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
   }
+
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
   if (Kind_SU2 != SU2_DEF) {
@@ -3923,18 +3870,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Evaluate when the Cl should be evaluated ---*/
   
-  Iter_Fixed_CL        = SU2_TYPE::Int(nInnerIter / (su2double(Update_Alpha)+1));
   Iter_Fixed_CM        = SU2_TYPE::Int(nInnerIter / (su2double(Update_iH)+1));
   Iter_Fixed_NetThrust = SU2_TYPE::Int(nInnerIter / (su2double(Update_BCThrust)+1));
 
   /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
 
   if (ContinuousAdjoint) {
-    Relaxation_Factor_Flow = Relaxation_Factor_AdjFlow;
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
-    Iter_Fixed_CL = SU2_TYPE::Int(su2double (Iter_Fixed_CL) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_CM = SU2_TYPE::Int(su2double (Iter_Fixed_CM) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
@@ -3947,7 +3891,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kappa_Flow[1] = Kappa_AdjFlow[1];
   }
   
-  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nInnerIter+1; Update_Alpha = 0; }
+  if (Update_AoA_Iter_Limit == 0 && Fixed_CL_Mode) { 
+    SU2_MPI::Error("ERROR: Please specify non-zero UPDATE_AOA_ITER_LIMIT.", CURRENT_FUNCTION); 
+  }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nInnerIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nInnerIter+1; Update_BCThrust = 0; }
 
@@ -4228,16 +4174,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 
-  /*--- If it is a fixed mode problem, then we will add 100 iterations to
+  /*--- If it is a fixed mode problem, then we will add Iter_dCL_dAlpha iterations to
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
-  	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
-    ConvCriteria = RESIDUAL;
-  		nInnerIter += Iter_dCL_dAlpha;
-  		MinLogResidual = -24;
-  	}
+    if (Fixed_CL_Mode) nInnerIter += Iter_dCL_dAlpha;
+
+    if (Fixed_CM_Mode) {
+      nInnerIter += Iter_dCL_dAlpha;
+      ConvCriteria = RESIDUAL;
+      MinLogResidual = -24;
+    }
   }
+
+  /* --- Set Finite Difference mode to false by default --- */
+
+  Finite_Difference_Mode = false;
 
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
@@ -4586,6 +4538,81 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RampOutletPressure = false;
     RampRotatingFrame = false;
   }
+  
+  /* 2nd-order MUSCL is not possible for the continuous adjoint
+   turbulence model. */
+  
+  if (MUSCL_AdjTurb) {
+    SU2_MPI::Error(string("MUSCL_ADJTURB= YES not currently supported.\n") +
+                   string("Please select MUSCL_ADJTURB= NO (first-order)."),
+                   CURRENT_FUNCTION);
+  }
+  
+  /* Check for whether we need a second gradient method to calculate
+   gradients for uwpind reconstruction. Set additional booleans to
+   minimize overhead as appropriate. */
+  
+  if (MUSCL_Flow || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
+    
+    ReconstructionGradientRequired = true;
+    
+    if ((Kind_Gradient_Method_Recon == NO_GRADIENT) ||
+        (Kind_Gradient_Method_Recon == Kind_Gradient_Method)) {
+
+      /* The default behavior if no reconstruction gradient is specified
+       is to use the same gradient as needed for the viscous/source terms
+       without recomputation. If they are using the same method, then
+       we also want to avoid recomputation. */
+
+      ReconstructionGradientRequired = false;
+      Kind_Gradient_Method_Recon     = Kind_Gradient_Method;
+    }
+    
+  }
+  
+  /* Simpler boolean to control allocation of least-squares memory. */
+  
+  LeastSquaresRequired = false;
+  if ((Kind_Gradient_Method_Recon == LEAST_SQUARES) ||
+      (Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES) ||
+      (Kind_Gradient_Method       == LEAST_SQUARES) ||
+      (Kind_Gradient_Method       == WEIGHTED_LEAST_SQUARES)) {
+    LeastSquaresRequired = true;
+  }
+  
+  if (Kind_Gradient_Method == LEAST_SQUARES) {
+    SU2_MPI::Error(string("LEAST_SQUARES gradient method not allowed for viscous / source terms.\n") +
+                   string("Please select either WEIGHTED_LEAST_SQUARES or GREEN_GAUSS."),
+                   CURRENT_FUNCTION);
+  }
+  
+  /* Protect against using CFL adaption for non-flow or certain
+   unsteady flow problems. */
+  
+  bool fvm_flow = ((Kind_Solver == INC_EULER) ||
+                   (Kind_Solver == INC_NAVIER_STOKES) ||
+                   (Kind_Solver == INC_RANS) ||
+                   (Kind_Solver == EULER) ||
+                   (Kind_Solver == NAVIER_STOKES) ||
+                   (Kind_Solver == RANS) ||
+                   (Kind_Solver == DISC_ADJ_EULER) ||
+                   (Kind_Solver == DISC_ADJ_RANS) ||
+                   (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+                   (Kind_Solver == DISC_ADJ_INC_EULER) ||
+                   (Kind_Solver == DISC_ADJ_INC_RANS) ||
+                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
+  if (CFL_Adapt && !fvm_flow) {
+    SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
+                   string("Please select CFL_ADAPT = NO."),
+                   CURRENT_FUNCTION);
+  }
+  
+  if (CFL_Adapt && (TimeMarching == TIME_STEPPING)) {
+    SU2_MPI::Error(string("CFL adaption not available for TIME_STEPPING integration.\n") +
+                   string("Please select CFL_ADAPT = NO."),
+                   CURRENT_FUNCTION);
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -4618,7 +4645,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_ZoneInterface;
   
@@ -5072,6 +5099,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_Load[iMarker_Fluid_Load];
+    iMarker_CfgFile++;
+  }
 
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FlowLoad[iMarker_FlowLoad];
@@ -5162,21 +5193,23 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
         Marker_CfgFile_DV[iMarker_CfgFile] = YES;
   }
-  
+
   /*--- Add an extra check for DV_MARKER to make sure that any given marker
-   name is recognized as an existing boundary in the problem. ---*/
-  
-  unsigned short markerCount = 0;
+   *    name is recognized as an existing boundary in the problem. ---*/
+
   for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+    bool found = false;
     for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
-        markerCount++;
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV]) {
+        found = true;
+        break;
+      }
+    }
+    if(!found) {
+      SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
     }
   }
-  if ((nMarker_DV > 0) && (markerCount != nMarker_DV)) {
-    SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
-  }
-  
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Moving[iMarker_CfgFile] = NO;
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
@@ -5983,9 +6016,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
        Kind_Solver != DISC_ADJ_FEM_EULER && Kind_Solver != DISC_ADJ_FEM_NS && 
        Kind_Solver != DISC_ADJ_FEM_RANS) {
       if (!fea){
+        switch (Kind_Gradient_Method_Recon) {
+          case GREEN_GAUSS: cout << "Gradient for upwind reconstruction: Green-Gauss." << endl; break;
+          case LEAST_SQUARES: cout << "Gradient for upwind reconstruction: unweighted Least-Squares." << endl; break;
+          case WEIGHTED_LEAST_SQUARES: cout << "Gradient for upwind reconstruction: inverse-distance weighted Least-Squares." << endl; break;
+        }
         switch (Kind_Gradient_Method) {
-          case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
-          case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+          case GREEN_GAUSS: cout << "Gradient for viscous and source terms: Green-Gauss." << endl; break;
+          case LEAST_SQUARES: cout << "Gradient for viscous and source terms: unweighted Least-Squares." << endl; break;
+          case WEIGHTED_LEAST_SQUARES: cout << "Gradient for viscous and source terms: inverse-distance weighted Least-Squares." << endl; break;
         }
       }
       else{
@@ -6046,10 +6085,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 	else {
 		if (Time_Domain) {
-			cout << "Static structural analysis." << endl; 
+            cout << "Dynamic structural analysis."<< endl;
+            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
 		 } else {
-			cout << "Dynamic structural analysis."<< endl;
-			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+            cout << "Static structural analysis." << endl;
 		}
 	}
 
@@ -6264,8 +6303,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
     cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
-    cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
+    if (Multizone_Problem)
+      cout << "Maximum number of solver outer iterations: " << nOuterIter <<"."<< endl;
+    if (Time_Domain)
+      cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
     
+    cout << "Begin convergence monitoring at iteration " << StartConv_Iter << "." << endl;    
+    cout << "Residual minimum value: 1e" << MinLogResidual << "." << endl;
+    cout << "Cauchy series min. value: " << Cauchy_Eps << "." << endl;
+    cout << "Number of Cauchy elements: " << Cauchy_Elems << "." << endl;
   }
 
   if (val_software == SU2_MSH) {
@@ -6303,18 +6349,25 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << "Writing a solution file every " << Wrt_Sol_Freq <<" iterations."<< endl;
-    cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
-    if ((TimeMarching == DT_STEPPING_1ST) || (TimeMarching == DT_STEPPING_2ND)) {
-      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
-      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
+    cout << "Writing solution files every " << VolumeWrtFreq <<" iterations."<< endl;
+    cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
+    if (Multizone_Problem){
+      cout << "Writing the convergence history file every " << HistoryWrtFreq[1] <<" outer iterations."<< endl;      
+    }
+    if (Time_Domain) {
+      cout << "Writing the convergence history file every " << HistoryWrtFreq[0] <<" time iterations."<< endl;      
+    }
+    cout << "Writing the screen convergence history every " << ScreenWrtFreq[2] <<" inner iterations."<< endl;
+    if (Multizone_Problem){
+      cout << "Writing the screen convergence history every " << ScreenWrtFreq[1] <<" outer iterations."<< endl;      
+    }
+    if (Time_Domain) {
+      cout << "Writing the screen convergence history every " << ScreenWrtFreq[0] <<" time iterations."<< endl;      
     }
 
     switch (Tab_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
-      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6323,7 +6376,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   
     if (!ContinuousAdjoint && !DiscreteAdjoint) {
-      cout << "Surface coefficients file name: " << SurfCoeff_FileName << "." << endl;
+      cout << "Surface file name: " << SurfCoeff_FileName << "." << endl;
       cout << "Volume file name: " << Volume_FileName << "." << endl;
       cout << "Restart file name: " << Restart_FileName << "." << endl;
     }
@@ -6332,17 +6385,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
       cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
-      cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
+      cout << "Surface adjoint file name: " << SurfAdjCoeff_FileName << "." << endl;
     }
 
   }
 
   if (val_software == SU2_SOL) {
     switch (Tab_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
-      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }

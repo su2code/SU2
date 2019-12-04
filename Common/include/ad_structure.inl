@@ -2,24 +2,14 @@
  * \file ad_structure.inl
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -76,10 +66,12 @@ namespace AD{
 
   extern codi::PreaccumulationHelper<su2double> PreaccHelper;  
 
-  inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
-                                             inputValues.push_back(data.getGradientData());}
-
-  inline void RegisterInput_intIndexBased(su2double &data) {AD::globalTape.registerInput(data);}
+  inline void RegisterInput(su2double &data, bool push_index) {
+    AD::globalTape.registerInput(data);
+    if (push_index) {
+      inputValues.push_back(data.getGradientData());
+    }
+  }
 
   inline void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}
 
@@ -116,7 +108,7 @@ namespace AD{
     }    
   }
 
-  inline void SetAdjIndex(int &index, const su2double &data) {
+  inline void SetIndex(int &index, const su2double &data) {
     index = data.getGradientData();
   }
 
@@ -269,9 +261,7 @@ namespace AD{
 
   /*--- Default implementation if reverse mode is disabled ---*/
 
-  inline void RegisterInput(su2double &data) {}
-
-  inline void RegisterInput_intIndexBased(su2double &data) {}
+  inline void RegisterInput(su2double &data, bool push_index) {}
 
   inline void RegisterOutput(su2double& data) {}
 
@@ -289,7 +279,7 @@ namespace AD{
 
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
 
-  inline void SetAdjIndex(int &index, const su2double &data) {}
+  inline void SetIndex(int &index, const su2double &data) {}
 
   inline void SetDerivative(int index, const double val) {}
 

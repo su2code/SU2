@@ -45,7 +45,7 @@
 #if defined(__WITHPCRE__)
   #include <pcreposix.h>
 #else
-  #if defined(USE_GKREGEX)
+  #if defined(USE_GKREGEX) || defined(_MSC_VER)
     #include "gkregex.h"
   #else
     #include <regex.h>

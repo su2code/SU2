@@ -3,24 +3,14 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,8 +44,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area,
       Twall, Tnormal, dTdn, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
-      thermal_diffusivity, thermal_conductivity, thermal_conductivityND,
-      heat_flux_density, conductivity_over_dist;
+      thermal_diffusivity, thermal_conductivity=0.0, thermal_conductivityND,
+      heat_flux_density=0.0, conductivity_over_dist=0.0;
 
   nDim = donor_geometry->GetnDim();
 
@@ -97,22 +87,21 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   if (compressible_flow) {
 
-    Twall   = donor_solution->node[Point_Donor]->GetPrimitive(0);
-    Tnormal = donor_solution->node[PointNormal]->GetPrimitive(0);
+    Twall   = donor_solution->GetNodes()->GetPrimitive(Point_Donor,0);
+    Tnormal = donor_solution->GetNodes()->GetPrimitive(PointNormal,0);
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (incompressible_flow) {
 
-    Twall   = donor_solution->node[Point_Donor]->GetTemperature();
-    Tnormal = donor_solution->node[PointNormal]->GetTemperature();
+    Twall   = donor_solution->GetNodes()->GetTemperature(Point_Donor);
+    Tnormal = donor_solution->GetNodes()->GetTemperature(PointNormal);
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (heat_equation) {
-
-    Twall   = donor_solution->node[Point_Donor]->GetSolution(0);
-    Tnormal = donor_solution->node[PointNormal]->GetSolution(0);
+    Twall   = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
+    Tnormal = donor_solution->GetNodes()->GetSolution(PointNormal,0);
 
     // TODO: Check if these improve accuracy, if needed at all
     //    for (iDim = 0; iDim < nDim; iDim++) {
@@ -135,7 +124,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     su2double Cp            = (Gamma / (Gamma - 1.0)) * Gas_Constant;
 
     Prandtl_Lam             = donor_config->GetPrandtl_Lam();
-    laminar_viscosity       = donor_solution->node[Point_Donor]->GetLaminarViscosity(); // TDE check for consistency
+    laminar_viscosity       = donor_solution->GetNodes()->GetLaminarViscosity(Point_Donor); // TDE check for consistency
     Cp                      = (Gamma / (Gamma - 1.0)) * Gas_Constant;
 
     thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
@@ -149,7 +138,9 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   }
   else if (incompressible_flow) {
 
-    thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
+    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+
+    thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
     heat_flux_density       = thermal_conductivityND*dTdn;
 
     if (donor_config->GetCHT_Robin()) {
@@ -177,7 +168,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     heat_flux_density       = thermal_diffusivity*dTdn;
 
     if (donor_config->GetCHT_Robin()) {
-      rho_cp_solid            = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
+      rho_cp_solid            = donor_config->GetSpecific_Heat_Cp()*donor_config->GetDensity_Solid();
       conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
     }
   }

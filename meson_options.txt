@@ -5,7 +5,6 @@ option('enable-autodiff',  type : 'boolean', value : false, description: 'enable
 option('enable-directdiff',  type : 'boolean', value : false, description: 'enable AD (forward) support')
 option('enable-pywrapper',  type : 'boolean', value : false, description: 'enable Python wrapper support')
 option('enable-normal',  type : 'boolean', value : true, description: 'enable normal build')
-option('python_path',  type : 'string', value : '', description: 'Python path')
 option('enable-mkl', type : 'boolean', value : false, description: 'enable Intel-MKL support')
 option('mkl_root', type : 'string', value : '/opt/intel/mkl', description: 'root of Intel-MKL installation (only for non-intel compilers)')
 option('enable-openblas', type : 'boolean', value : false, description: 'enable BLAS and LAPACK support via OpenBLAS')
@@ -13,3 +12,4 @@ option('blas-name', type : 'string', value : 'openblas', description: 'name of t
 option('enable-pastix', type : 'boolean', value : false, description: 'enable PaStiX support')
 option('pastix_root', type : 'string', value : 'externals/pastix/', description: 'PaStiX base directory')
 option('scotch_root', type : 'string', value : 'externals/scotch/', description: 'Scotch base directory')
+option('custom-mpi',  type : 'boolean', value : false, description: 'Use custom mpi include and library path from env variables')
