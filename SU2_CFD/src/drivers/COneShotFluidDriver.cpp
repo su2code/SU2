@@ -108,10 +108,10 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   for (unsigned short iConstr = 0; iConstr  < nConstr; iConstr++){
     ConstrFunc[iConstr] = 0.0;
     ConstrFunc_Store[iConstr] = 0.0;
-    Multiplier[iConstr] = 0.0;
-    Multiplier_Old[iConstr] = 0.0;
-    Multiplier_Store[iConstr] = 0.0;
-    Multiplier_Store_Old[iConstr] = 0.0;
+    Multiplier[iConstr] = config->GetMultiplierStart(iConstr);
+    Multiplier_Old[iConstr] = config->GetMultiplierStart(iConstr);
+    Multiplier_Store[iConstr] = config->GetMultiplierStart(iConstr);
+    Multiplier_Store_Old[iConstr] = config->GetMultiplierStart(iConstr);
     AugmentedLagrangianMultiplierGradient[iConstr] = 0.0;
     BCheck_Inv[iConstr] = new su2double[nConstr];
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
