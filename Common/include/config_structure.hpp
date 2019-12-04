@@ -1108,7 +1108,9 @@ private:
   bool BFGS_Reset; /*!< \brief flag for reset of the Hessian to Identity in one-shot method */
   unsigned long One_Shot_Start; /*!< \brief Start iteration for one-shot method */
   unsigned long One_Shot_Stop; /*!< \brief Stop iteration for one-shot method */
-  su2double One_Shot_Alpha, One_Shot_Beta, One_Shot_Gamma; /*!< \brief factors for augmented Lagrangian in one-shot method */ 
+  su2double One_Shot_Alpha, One_Shot_Beta, One_Shot_Gamma; /*!< \brief penalty coefficients for augmented Lagrangian in one-shot method */ 
+  su2double One_Shot_Gamma_Rate; /*!< \brief minimum rate of increase of gamma in one-shot method */ 
+  su2double One_Shot_Gamma_Max; /*!< \brief maximum value of gamma in one-shot method */ 
   su2double One_Shot_FD; /*!< \brief Finite difference step-size for one-shot method */
   su2double OS_Design_Scale; /*!< \brief Value for scaling the design space */
   su2double Obj_Func_Scale; /*!< \brief Value for scaling the objective function */

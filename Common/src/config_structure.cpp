@@ -2508,6 +2508,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Factor for third additional term in augmented Lagrangian \ingroup Config*/
   addDoubleOption("ONE_SHOT_GAMMA", One_Shot_Gamma, 1.0E-8);
 
+  /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Factor for minimum rate of increase of gamma penalty coefficient \ingroup Config*/
+  addDoubleOption("ONE_SHOT_GAMMA_RATE", One_Shot_Gamma_Rate, 1.1);
+
+  /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Maximum value of gamma penalty coefficient \ingroup Config*/
+  addDoubleOption("ONE_SHOT_GAMMA_MAX", One_Shot_Gamma_Max, 1.0E3);
+
   /*!\brief ONE_SHOT_FD \n DESCRIPTION: Finite difference step size for second additional term in augmented Lagrangian \ingroup Config*/
   addDoubleOption("ONE_SHOT_FD_STEP", One_Shot_FD, 1E-5);
 
@@ -3284,6 +3290,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Constraint_Scale[iConstr] = 1.0;
     }
   }
+
+  /*--- Ensure that gamma is non-decreasing for one-shot optimization ---*/
+  if(nConstr != 0 && One_Shot_Gamma_Rate < 1.0) One_Shot_Gamma_Rate = 1.0;
   
   /*--- Check for unsteady problem ---*/
   

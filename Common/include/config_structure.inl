@@ -2130,6 +2130,10 @@ inline su2double CConfig::GetOneShotBeta(void) { return One_Shot_Beta; }
 
 inline su2double CConfig::GetOneShotGamma(void) { return One_Shot_Gamma; }
 
+inline su2double CConfig::GetOneShotGammaRate(void) { return One_Shot_Gamma_Rate; }
+
+inline su2double CConfig::GetOneShotGammaMax(void) { return One_Shot_Gamma_Max; }
+
 inline su2double CConfig::GetFDStep(void) { return One_Shot_FD; }
 
 inline su2double CConfig::GetDesignScale(void) { return OS_Design_Scale; }
