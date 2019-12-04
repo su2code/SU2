@@ -290,10 +290,11 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
-      StoreMultiplierGrad();
+      // StoreMultiplierGrad();
       /*--- Update constraint multiplier ---*/
       LoadOldMultiplier();
-      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(stepsize);
+      UpdateMultiplier(1.0);
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
@@ -335,35 +336,35 @@ void COneShotFluidDriver::RunOneShot(){
   else if(InnerIter > config->GetOneShotStart() && 
           InnerIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-    /*--- Perform new line search on just multiplier ---*/
-    if(nConstr > 0 && config->GetZeroStep()) {
-      su2double stepsize_mu = 1.0;
-      ArmijoIter = 0;
-      bool_tol = false;
-      do {
-        if(ArmijoIter > 0){
-          /*--- Parabolic backtracking ---*/
-          stepsize_tmp = UpdateStepSizeQuadratic();
-          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-          if(stepsize_mu < tol) {
-            stepsize_mu  = tol;
-            bool_tol     = true;
-          }
-        }
-        /*--- Compute and store GradL dot p ---*/
-        StoreGradDotDir(false);
+    // /*--- Perform new line search on just multiplier ---*/
+    // if(nConstr > 0 && config->GetZeroStep()) {
+    //   su2double stepsize_mu = 1.0;
+    //   ArmijoIter = 0;
+    //   bool_tol = false;
+    //   do {
+    //     if(ArmijoIter > 0){
+    //       /*--- Parabolic backtracking ---*/
+    //       stepsize_tmp = UpdateStepSizeQuadratic();
+    //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+    //       if(stepsize_mu < tol) {
+    //         stepsize_mu  = tol;
+    //         bool_tol     = true;
+    //       }
+    //     }
+    //     /*--- Compute and store GradL dot p ---*/
+    //     StoreGradDotDir(false);
 
-        /*--- Update constraint multiplier ---*/
-        LoadOldMultiplier();
-        UpdateMultiplier(stepsize_mu);
+    //     /*--- Update constraint multiplier ---*/
+    //     LoadOldMultiplier();
+    //     UpdateMultiplier(stepsize_mu);
 
-        /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-        CalculateLagrangian();
+    //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+    //     CalculateLagrangian();
 
-        ArmijoIter++;
+    //     ArmijoIter++;
 
-      } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    }
+    //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    // }
     // LoadOldMultiplier();
     // UpdateMultiplier(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
