@@ -63,8 +63,7 @@ class CGeometry;
 
 /*!
  * \class CSysMatrix
- * \brief Main class for defining sparse matrices-by-blocks
- with compressed row format.
+ * \brief Main class for defining block-compressed-row-storage sparse matrices.
  * \author A. Bueno, F. Palacios
  */
 template<class ScalarType>
