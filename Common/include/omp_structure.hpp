@@ -72,6 +72,7 @@ inline int omp_get_thread_num(void) {return 0;}
 /*--- Convenience macros (do not use excessive nesting of macros). ---*/
 #define SU2_OMP_SIMD SU2_OMP(simd)
 
+#define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_BARRIER SU2_OMP(barrier)
 
 #define SU2_OMP_PARALLEL SU2_OMP(parallel)
