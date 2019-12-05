@@ -32,11 +32,6 @@
 #include <cstdlib>
 
 
-/*--- Forward declaration of template friend functions. ---*/
-template<class T> class CSysVector;
-template<class T> T dotProd(const CSysVector<T> & u, const CSysVector<T> & v);
-template<class T> T dotProdImpl(unsigned long N, const T* u, const T* v);
-
 /*!
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
@@ -50,15 +45,17 @@ template<class ScalarType>
 class CSysVector {
 
 private:
-  enum { OMP_STAT_SIZE = 16384 };   /*!< \brief Chunk size used in parallel for loops. */
+  enum { OMP_MAX_SIZE = 4096 };   /*!< \brief Maximum chunk size used in parallel for loops. */
 
-  ScalarType* vec_val;      /*!< \brief storage for the element values, 64 byte aligned (do not use normal new/delete) */
-  unsigned long nElm;       /*!< \brief total number of elements (or number elements on this processor) */
-  unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
-  unsigned long nElmGlobal; /*!< \brief total number of elements over all processors */
-  unsigned long nVar;       /*!< \brief number of elements in a block */
-  unsigned long nBlk;       /*!< \brief number of blocks (or number of blocks on this processor) */
-  unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
+  unsigned long omp_chunk_size;   /*!< \brief Static chunk size used in loop, determined at initialization. */
+  ScalarType* vec_val;            /*!< \brief storage for the element values, 64 byte aligned (do not use normal new/delete) */
+  unsigned long nElm;             /*!< \brief total number of elements (or number elements on this processor) */
+  unsigned long nElmDomain;       /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
+  unsigned long nVar;             /*!< \brief number of elements in a block */
+  mutable ScalarType dotRes;      /*!< \brief result of dot product, to perform a reduction with OpenMP the
+                                              variable needs to be declared outside the parallel region */
+  unsigned long nBlk;             /*!< \brief number of blocks (or number of blocks on this processor) */
+  unsigned long nBlkDomain;       /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -165,11 +162,6 @@ public:
   inline unsigned long GetNElmDomain() const { return nElmDomain; }
 
   /*!
-   * \brief return the size of the CSysVector (over all processors)
-   */
-  inline unsigned long GetSize() const { return nElmGlobal; }
-
-  /*!
    * \brief return the number of variables at each block (typically number per node)
    */
   inline unsigned long GetNVar() const { return nVar; }
@@ -249,6 +241,19 @@ public:
   CSysVector & operator/=(ScalarType val);
 
   /*!
+   * \brief Dot product between "this" and another vector
+   * \param[in] u - Another vector.
+   * \return result of dot product
+   */
+  ScalarType dot(const CSysVector & u) const;
+
+  /*!
+   * \brief L2 norm of the vector (via dot with self)
+   * \return L2 norm
+   */
+  inline ScalarType norm() const { return sqrt(dot(*this)); }
+
+  /*!
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
@@ -259,12 +264,6 @@ public:
    * \param[in] i = local index to access
    */
   inline const ScalarType & operator[](const unsigned long & i) const { return vec_val[i]; }
-
-  /*!
-   * \brief the L2 norm of the CSysVector
-   * \return the L2 norm
-   */
-  inline ScalarType norm() const { return sqrt(dotProd(*this,*this)); }
 
   /*!
    * \brief copies the contents of the calling CSysVector into an array
@@ -347,20 +346,4 @@ public:
   inline ScalarType GetBlock(unsigned long val_ipoint, unsigned long val_var) const {
     return vec_val[val_ipoint*nVar+val_var];
   }
-
-  /*!
-   * \brief Dot product between two CSysVectors
-   * \param[in] u - first CSysVector in dot product
-   * \param[in] v - second CSysVector in dot product
-   */
-  friend ScalarType dotProd<ScalarType>(const CSysVector & u, const CSysVector & v);
-
-  /*!
-   * \brief Generic dot product implementation.
-   * \note The passive double specialization uses OpenMP parallel for with reduction.
-   * \param[in] N - array size
-   * \param[in] u - first array
-   * \param[in] v - second array
-   */
-  friend ScalarType dotProdImpl<ScalarType>(unsigned long N, const ScalarType* u, const ScalarType* v);
 };

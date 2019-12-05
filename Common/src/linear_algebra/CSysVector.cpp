@@ -47,6 +47,9 @@ template<class ScalarType>
 void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain,
                                         unsigned long numVar, const ScalarType* val, bool valIsArray) {
 
+  /*--- Assert that this method is only called by one thread. ---*/
+  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the vector.");
+
   if ((nElm != numBlk*numVar) && (vec_val != nullptr)) {
     MemoryAllocation::aligned_free(vec_val);
     vec_val = nullptr;
@@ -64,11 +67,9 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
     vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
 
   if(!valIsArray) {
-    SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
     for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
   }
   else {
-    SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
     for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
   }
 }
@@ -79,6 +80,9 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
 
   /*--- This is a method and not the overload of an operator to make sure who
    calls it knows the consequence to the derivative information (lost) ---*/
+
+  /*--- Assert that this method is only called by one thread. ---*/
+  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the vector.");
 
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if ((const void*)this == (const void*)&other) return;
@@ -144,10 +148,12 @@ void CSysVector<ScalarType>::Equals_AX_Plus_BY(ScalarType a, const CSysVector<Sc
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<ScalarType> & u) {
-  /*--- check if self-assignment, otherwise perform deep copy ---*/
-  if (this != &u)
-    Initialize(u.nBlk, u.nBlkDomain, u.nVar, u.vec_val, true);
-  return *this;
+
+  assert(nElm == x.nElm && "Sizes do not match");
+
+  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
+  for (unsigned long i = 0; i < nElm; i++)
+    vec_val[i] += u.vec_val[i];
 }
 
 template<class ScalarType>
@@ -199,6 +205,35 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(ScalarType val) {
 }
 
 template<class ScalarType>
+ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
+#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  SU2_OMP_BARRIER
+
+  ScalarType sum = 0.0;
+  SU2_OMP(for schedule)
+  for(auto i=0ul; i<nElmDomain; ++i)
+
+#else
+  /*--- Compatible version, no OMP reductions, no atomics, master does everything. ---*/
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER
+  {
+    ScalarType sum = 0.0;
+    for(auto i=0ul; i<nElmDomain; ++i)
+      sum += vec_val[i]*u.vec_val[i];
+#ifdef HAVE_MPI
+    /*--- Reduce across all mpi ranks. ---*/
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    dotRes = sum;
+#endif
+  }
+  SU2_OMP_BARRIER
+#endif
+  return dotRes;
+}
+
+template<class ScalarType>
 void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
 
   SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
@@ -242,11 +277,9 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2double>;
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
-template su2double dotProd<su2double>(const CSysVector<su2double> & u, const CSysVector<su2double> & v);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
 template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
-template passivedouble dotProd<passivedouble>(const CSysVector<passivedouble> & u, const CSysVector<passivedouble> & v);
 #endif
