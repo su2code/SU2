@@ -53,6 +53,7 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
+  VectorType uq_delta_b;
 
 public:
   /*!
@@ -96,4 +97,15 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+  /*!
+   * \brief Set the value of UQ perturbation magnitude
+   */
+
+  inline void SetUQ_Delta_B(unsigned long iPoint, su2double val_uq_delta_b) override { uq_delta_b(iPoint) = val_uq_delta_b; }
+
+  /*!
+   * \brief Get the value of UQ perturbation magnitude
+   */
+  inline su2double GetUQ_Delta_B(unsigned long iPoint) const override { return uq_delta_b(iPoint); }
 };

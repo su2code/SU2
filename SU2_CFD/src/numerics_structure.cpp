@@ -180,6 +180,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     New_Eig_Vec         = new su2double* [3];
     Corners             = new su2double* [3];
     Eig_Val             = new su2double [3];
+    Target_Eig_Val      = new su2double [3];
     Barycentric_Coord   = new su2double [2];
     New_Coord           = new su2double [2];
     for (iDim = 0; iDim < 3; iDim++){
@@ -196,6 +197,27 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     uq_delta_b = config->GetUQ_Delta_B();
     uq_urlx = config->GetUQ_URLX();
     uq_permute = config->GetUQ_Permute();
+
+    if (Eig_Val_Comp == 1){
+      Target_Eig_Val[0] = -1.0/3.0;
+      Target_Eig_Val[1] = -1.0/3.0; 
+      Target_Eig_Val[2] = 2.0/3.0;
+    }
+    else if(Eig_Val_Comp == 2){
+      Target_Eig_Val[0] = -1.0/3.0;
+      Target_Eig_Val[1] = 1.0/6.0; 
+      Target_Eig_Val[2] = 1.0/6.0;
+    }
+    else if(Eig_Val_Comp == 3){
+      Target_Eig_Val[0] = 0.0;
+      Target_Eig_Val[1] = 0.0; 
+      Target_Eig_Val[2] = 0.0;
+    }
+    else{
+      Target_Eig_Val[0] = -1.0/3.0;
+      Target_Eig_Val[1] = 1.0/6.0; 
+      Target_Eig_Val[2] = 1.0/6.0;
+    }
 
     /* define barycentric traingle corner points */
     Corners[0][0] = 1.0;

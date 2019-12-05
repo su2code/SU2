@@ -1975,6 +1975,19 @@ public:
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
 
   /*!
+   * \brief Get the value of UQ perturbation magnitude
+   * \return the value of the UQ perturbation magnitude
+   */
+  inline virtual su2double GetUQ_Delta_B(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of UQ perturbation magnitude
+   * \param[in] val_uq_delta_b
+   */
+  inline virtual void SetUQ_Delta_B(unsigned long iPoint, su2double val_uq_delta_b) {}
+
+
+  /*!
    * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] iSpecies - Value of iSpecies to which the eigenvalue belongs

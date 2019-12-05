@@ -3581,6 +3581,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+
+    /* --- Set perturbation magnitude --- */
+
+    nodes->SetUQ_Delta_B(iPoint, numerics->GetUQ_Delta_B());
     
     /*--- Subtract residual and the Jacobian ---*/
     

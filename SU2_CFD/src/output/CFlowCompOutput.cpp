@@ -411,6 +411,10 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     }
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
+
+  if (config->GetKind_Turb_Model() == SST && config->GetUsing_UQ()){
+    AddVolumeOutput("UQ_DELTA_B", "UQ_Perturbation", "SST_UQ", "Magnitude of UQ perturbation");
+  }
   
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
@@ -549,6 +553,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
     } 
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);      
+  }
+
+  if (config->GetKind_Turb_Model() == SST && config->GetUsing_UQ()){
+    SetVolumeOutputValue("UQ_DELTA_B", iPoint, Node_Turb->GetUQ_Delta_B(iPoint));
   }
   
   if (config->GetTime_Domain()){

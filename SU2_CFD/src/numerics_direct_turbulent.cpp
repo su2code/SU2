@@ -1426,6 +1426,12 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
     New_Coord[0] = Corners[1][0];
     New_Coord[1] = Corners[1][1];
   }
+
+  uq_delta_b = 1.0;
+  for (iDim = 0; iDim < 3; iDim++){
+    uq_delta_b = min(uq_delta_b, 1/(1+Target_Eig_Val[iDim]/Eig_Val[iDim]));
+  }
+  // uq_delta_b = max(uq_delta_b, 0.0);
   /* calculate perturbed barycentric coordinates */
 
   Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);

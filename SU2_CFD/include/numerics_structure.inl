@@ -585,3 +585,5 @@ inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
 }
 
 inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }
+
+inline su2double CNumerics::GetUQ_Delta_B(void) { return uq_delta_b; }
