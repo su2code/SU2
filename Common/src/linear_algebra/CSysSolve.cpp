@@ -43,7 +43,7 @@ CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false),
 }
 
 template<class ScalarType>
-static void CSysSolve<ScalarType>::ApplyGivens(ScalarType s, ScalarType c, ScalarType & h1, ScalarType & h2) {
+void CSysSolve<ScalarType>::ApplyGivens(ScalarType s, ScalarType c, ScalarType & h1, ScalarType & h2) const {
 
   ScalarType temp = c*h1 + s*h2;
   h2 = c*h2 - s*h1;
@@ -51,7 +51,7 @@ static void CSysSolve<ScalarType>::ApplyGivens(ScalarType s, ScalarType c, Scala
 }
 
 template<class ScalarType>
-static void CSysSolve<ScalarType>::GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c) {
+void CSysSolve<ScalarType>::GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c) const {
 
   if ( (dx == 0.0) && (dy == 0.0) ) {
     c = 1.0;
@@ -81,8 +81,8 @@ static void CSysSolve<ScalarType>::GenerateGivens(ScalarType & dx, ScalarType & 
 }
 
 template<class ScalarType>
-static void CSysSolve<ScalarType>::SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
-                                                const vector<ScalarType> & rhs, vector<ScalarType> & x) {
+void CSysSolve<ScalarType>::SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
+                                         const vector<ScalarType> & rhs, vector<ScalarType> & x) const {
   // initialize...
   for (int i = 0; i < n; i++)
     x[i] = rhs[i];
@@ -96,8 +96,8 @@ static void CSysSolve<ScalarType>::SolveReduced(int n, const vector<vector<Scala
 }
 
 template<class ScalarType>
-static void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg,
-                                                  vector<CSysVector<ScalarType> > & w) {
+void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg,
+                                           vector<CSysVector<ScalarType> > & w) const {
 
   /*--- Parameter for reorthonormalization ---*/
 
@@ -106,7 +106,7 @@ static void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarTyp
   /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
 
-  ScalarType nrm = dotProd(w[i+1], w[i+1]);
+  ScalarType nrm = w[i+1].squaredNorm();
   ScalarType thr = nrm*reorth;
 
   /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
@@ -120,14 +120,14 @@ static void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarTyp
   /*--- Begin main Gram-Schmidt loop ---*/
 
   for (int k = 0; k < i+1; k++) {
-    ScalarType prod = dotProd(w[i+1], w[k]);
+    ScalarType prod = w[i+1].dot(w[k]);
     Hsbg[k][i] = prod;
     w[i+1].Plus_AX(-prod, w[k]);
 
     /*--- Check if reorthogonalization is necessary ---*/
 
     if (prod*prod > thr) {
-      prod = dotProd(w[i+1], w[k]);
+      prod = w[i+1].dot(w[k]);
       Hsbg[k][i] += prod;
       w[i+1].Plus_AX(-prod, w[k]);
     }
@@ -151,7 +151,7 @@ static void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarTyp
 }
 
 template<class ScalarType>
-static void CSysSolve<ScalarType>::WriteHeader(const string & solver, ScalarType restol, ScalarType resinit) {
+void CSysSolve<ScalarType>::WriteHeader(const string & solver, ScalarType restol, ScalarType resinit) const {
 
   cout << "\n# " << solver << " residual history\n";
   cout << "# Residual tolerance target = " << restol << "\n";
@@ -160,7 +160,7 @@ static void CSysSolve<ScalarType>::WriteHeader(const string & solver, ScalarType
 }
 
 template<class ScalarType>
-static void CSysSolve<ScalarType>::WriteHistory(unsigned long iter, ScalarType res) {
+void CSysSolve<ScalarType>::WriteHistory(unsigned long iter, ScalarType res) const {
 
   cout << "     " << iter << "     " << res << endl;
 
@@ -237,8 +237,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Calculate step-length alpha ---*/
 
-    r_dot_z = dotProd(r, z);
-    alpha = dotProd(A_x, p);
+    r_dot_z = r.dot(z);
+    alpha = A_x.dot(p);
     alpha = r_dot_z / alpha;
 
     /*--- Update solution and residual: ---*/
@@ -265,7 +265,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
      beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
 
     beta = 1.0 / r_dot_z;
-    r_dot_z = dotProd(r, z);
+    r_dot_z = r.dot(z);
     beta *= r_dot_z;
 
     /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
@@ -535,7 +535,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Compute rho_i ---*/
 
-    rho = dotProd(r, r_0);
+    rho = r.dot(r_0);
 
     /*--- Compute beta ---*/
 
@@ -554,7 +554,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Calculate step-length alpha ---*/
 
-    ScalarType r_0_v = dotProd(r_0, v);
+    ScalarType r_0_v = r_0.dot(v);
     alpha = rho / r_0_v;
 
     /*--- Update solution and residual: ---*/
@@ -571,7 +571,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Calculate step-length omega ---*/
 
-    omega = dotProd(A_x, r) / dotProd(A_x, A_x);
+    omega = A_x.dot(r) / A_x.squaredNorm();
 
     /*--- Update solution and residual: ---*/
 
@@ -771,7 +771,7 @@ void CSysSolve<passivedouble>::HandleTemporariesOut(CSysVector<su2double> & LinS
 #endif
 
 template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CSysVector<su2double> & LinSysRes,
+unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
                                            CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
@@ -890,7 +890,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
           /*--- Enforce a hard limit on total number of iterations ---*/
           unsigned long IterLimit = min(RestartIter, MaxIter-iter);
           iter += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-          if ( residual < SolverTol*Norm0 ) break;
+          if ( residual < SolverTol*norm0 ) break;
         }
         break;
       case SMOOTHER:
@@ -966,7 +966,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
 }
 
 template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, CSysVector<su2double> & LinSysRes,
+unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
                                              CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
 #ifdef CODI_REVERSE_TYPE
 

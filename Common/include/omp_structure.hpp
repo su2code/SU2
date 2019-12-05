@@ -44,8 +44,9 @@
 #define PRAGMIZE(X) _Pragma(#X)
 #endif
 
-/*--- Detect compilation with OpenMP support. ---*/
-#ifdef _OPENMP
+/*--- Detect compilation with OpenMP support, protect agaisnt
+ *    using OpenMP with AD (not supported yet). ---*/
+#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 #define HAVE_OMP
 #include <omp.h>
 
@@ -60,12 +61,12 @@
 /*!
  * \brief Maximum number of threads available.
  */
-inline int omp_get_max_threads(void) {return 1;}
+inline constexpr int omp_get_max_threads(void) {return 1;}
 
 /*!
  * \brief Index of current thread, akin to MPI rank.
  */
-inline int omp_get_thread_num(void) {return 0;}
+inline constexpr int omp_get_thread_num(void) {return 0;}
 
 #endif
 
@@ -82,5 +83,31 @@ inline int omp_get_thread_num(void) {return 0;}
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
 
-#define SU2_OMP_PAR_FOR_DYN(CHUNK) SU2_OMP(parallel for schedule(dynamic,CHUNK))
-#define SU2_OMP_PAR_FOR_STAT(CHUNK) SU2_OMP(parallel for schedule(static,CHUNK))
+
+/*--- Convenience functions (e.g. to compute chunk sizes). ---*/
+
+/*!
+ * \brief Integer division rounding up.
+ */
+inline constexpr size_t roundUpDiv(size_t numerator, size_t denominator)
+{
+  return (numerator+denominator-1)/denominator;
+}
+
+/*!
+ * \brief Compute a chunk size based on totalWork and number of threads such that
+ *        all threads get the same number of chunks (with limited size).
+ * \param[in] totalWork - e.g. total number of loop iterations.
+ * \param[in] numThreads - Number of threads that will share the work.
+ * \param[in] maxChunkSize - Upper bound for chunk size.
+ * \return The chunkSize.
+ */
+inline size_t computeStaticChunkSize(size_t totalWork,
+                                     size_t numThreads,
+                                     size_t maxChunkSize)
+{
+  size_t workPerThread = roundUpDiv(totalWork, numThreads);
+  size_t chunksPerThread = roundUpDiv(workPerThread, maxChunkSize);
+  return roundUpDiv(workPerThread, chunksPerThread);
+}
+

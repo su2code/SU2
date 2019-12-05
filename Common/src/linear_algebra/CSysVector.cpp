@@ -30,6 +30,17 @@
 #include "../../include/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
+/*!
+ * \brief OpenMP worksharing construct used in CSysVector for loops.
+ * \note The loop will only run in parallel if methods are called from a
+ * parallel region (if not the results will still be correct).
+ * Static schedule to reduce overhead, chunk size determined at initialization.
+ * "nowait" clause is safe when calling CSysVector methods after each other
+ * as the loop size is the same. Methods of other classes that operate on a
+ * CSysVector and do not have the same work scheduling must use a
+ * SU2_OMP_BARRIER before using the vector.
+ */
+#define PARALLEL_FOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {
@@ -37,10 +48,9 @@ CSysVector<ScalarType>::CSysVector(void) {
   vec_val = nullptr;
   nElm = 0;
   nElmDomain = 0;
-  nElmGlobal = 0;
   nVar = 0;
-  nBlk = 0;
-  nBlkDomain = 0;
+  omp_chunk_size = OMP_MAX_SIZE;
+  dotRes = 0.0;
 }
 
 template<class ScalarType>
@@ -55,13 +65,11 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
     vec_val = nullptr;
   }
 
-  nBlk = numBlk;
   nElm = numBlk*numVar;
-  nBlkDomain = numBlkDomain;
   nElmDomain = numBlkDomain*numVar;
   nVar = numVar;
 
-  SU2_MPI::Allreduce(&nElm, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
   if (vec_val == nullptr)
     vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
@@ -96,16 +104,15 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
   /*--- copy ---*/
   nElm = other.GetLocSize();
   nElmDomain = other.GetNElmDomain();
-  nBlk = other.GetNBlk();
-  nBlkDomain = other.GetNBlkDomain();
   nVar = other.GetNVar();
-  nElmGlobal = other.GetSize();
+
+  omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
   if (vec_val == nullptr)
     vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++)
     vec_val[i] = SU2_TYPE::GetValue(other[i]);
 }
 
@@ -121,9 +128,8 @@ void CSysVector<ScalarType>::Equals_AX(ScalarType a, const CSysVector<ScalarType
 
   assert(nElm == x.nElm && "Sizes do not match");
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = a * x.vec_val[i];
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] = a * x.vec_val[i];
 }
 
 template<class ScalarType>
@@ -131,9 +137,8 @@ void CSysVector<ScalarType>::Plus_AX(ScalarType a, const CSysVector<ScalarType> 
 
   assert(nElm == x.nElm && "Sizes do not match");
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] += a * x.vec_val[i];
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] += a * x.vec_val[i];
 }
 
 template<class ScalarType>
@@ -141,8 +146,8 @@ void CSysVector<ScalarType>::Equals_AX_Plus_BY(ScalarType a, const CSysVector<Sc
                                                ScalarType b, const CSysVector<ScalarType> & y) {
   assert(nElm == x.nElm && nElm == y.nElm && "Sizes do not match");
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++)
     vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
 }
 
@@ -151,16 +156,18 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<Scal
 
   assert(nElm == x.nElm && "Sizes do not match");
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] += u.vec_val[i];
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] = u.vec_val[i];
+
+  return *this;
 }
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(ScalarType val) {
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = val;
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] = val;
+
   return *this;
 }
 
@@ -169,9 +176,9 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator+=(const CSysVector<Sca
 
   assert(nElm == u.nElm && "Sizes do not match");
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] += u.vec_val[i];
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] += u.vec_val[i];
+
   return *this;
 }
 
@@ -180,40 +187,72 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<Sca
 
   assert(nElm == u.nElm && "Sizes do not match");
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] -= u.vec_val[i];
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] -= u.vec_val[i];
+
   return *this;
 }
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(ScalarType val) {
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] *= val;
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] *= val;
+
   return *this;
 }
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(ScalarType val) {
 
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] /= val;
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] /= val;
+
   return *this;
+}
+
+template<class ScalarType>
+void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++)
+    u_array[i] = vec_val[i];
 }
 
 template<class ScalarType>
 ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 #if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  /*--- One thread clears the OpenMP reduction variable. ---*/
+  SU2_OMP_MASTER
+  dotRes = 0.0;
+
+  /*--- All threads get the same "view" of the vectors. ---*/
   SU2_OMP_BARRIER
 
+  /*--- Each thread updates the reduction variable atomically. ---*/
   ScalarType sum = 0.0;
-  SU2_OMP(for schedule)
-  for(auto i=0ul; i<nElmDomain; ++i)
 
-#else
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElmDomain; ++i)
+    sum += vec_val[i]*u.vec_val[i];
+
+  SU2_OMP(atomic)
+  dotRes += sum;
+
+  /*--- Wait for all updates. ---*/
+  SU2_OMP_BARRIER
+
+#ifdef HAVE_MPI
+  /*--- Reduce across all mpi ranks, only one thread communicates. ---*/
+  SU2_OMP_MASTER
+  {
+    sum = dotRes;
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
+  /*--- Make view of result consistent across threads. ---*/
+  SU2_OMP_BARRIER
+#endif // MPI
+#else // CODI_TYPE
   /*--- Compatible version, no OMP reductions, no atomics, master does everything. ---*/
   SU2_OMP_BARRIER
   SU2_OMP_MASTER
@@ -226,52 +265,11 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
     SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
     dotRes = sum;
-#endif
+#endif // MPI
   }
   SU2_OMP_BARRIER
-#endif
+#endif // CODI
   return dotRes;
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
-
-  SU2_OMP_PAR_FOR_STAT(OMP_STAT_SIZE)
-  for (unsigned long i = 0; i < nElm; i++)
-    u_array[i] = vec_val[i];
-}
-
-template<class T>
-inline T dotProdImpl(unsigned long N, const T* u, const T* v) {
-  T sum = 0.0;
-  for (auto i = 0ul; i < N; i++) sum += u[i]*v[i];
-  return sum;
-}
-
-template<>
-inline passivedouble dotProdImpl(unsigned long N, const passivedouble* u, const passivedouble* v) {
-  passivedouble sum = 0.0;
-  SU2_OMP(parallel for schedule(static,CSysVector<passivedouble>::OMP_STAT_SIZE) reduction(+:sum))
-  for (auto i = 0ul; i < N; i++) sum += u[i]*v[i];
-  return sum;
-}
-
-template<class ScalarType>
-ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType> & v) {
-
-  assert(u.nElm == v.nElm && "Sizes do not match");
-
-  /*--- Local dot product, only the elements that belong to this rank. ---*/
-  ScalarType loc_prod = dotProdImpl(u.nElmDomain, u.vec_val, v.vec_val);
-
-#ifdef HAVE_MPI
-  /*--- Reduce across all mpi ranks. ---*/
-  ScalarType prod = 0.0;
-  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  return prod;
-#else
-  return loc_prod;
-#endif
 }
 
 /*--- Explicit instantiations ---*/
