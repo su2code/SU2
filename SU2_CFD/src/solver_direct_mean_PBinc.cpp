@@ -527,6 +527,18 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   }
   delete [] Normal;
   
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
+  
   /*--- Perform the MPI communication of the solution ---*/
 
   InitiateComms(geometry, config, SOLUTION);
@@ -1723,8 +1735,7 @@ su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, Normal[3],
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Loop over all the edges ---*/
-  //cout<<"In centered residual routine"<<endl;
-  
+    
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
@@ -1740,9 +1751,28 @@ su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, Normal[3],
     /*--- Get primitive variables ---*/
     
     V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
-    S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+    }
+      
+    Gradient_i = node[iPoint]->GetGradient_Primitive();
+    Gradient_j = node[jPoint]->GetGradient_Primitive();
+    
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+        }
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;       
+      }
     
     numerics->SetPrimitive(Primitive_i, Primitive_j);
+    //numerics->SetPrimitive(V_i, V_j);
   
     /*--- Compute the residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
@@ -3437,7 +3467,8 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   /*--- Update the solution ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     Delta = node[iPoint]->GetDelta_Time() / Vol;
     
     local_Res_TruncError = node[iPoint]->GetResTruncError();
@@ -3501,13 +3532,14 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
     /*--- Read the volume ---*/
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      Jacobian.AddVal2Diag(iPoint, Delta);
+	  Jacobian.AddVal2Diag(iPoint, Delta);
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -3559,6 +3591,11 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       }
     }
   }
+  /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
   
   /*--- MPI solution ---*/
   
@@ -3584,7 +3621,8 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
       for (iVar = 0; iVar < nVar; iVar++) {
         Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
       }     
-      Vol = geometry->node[iPoint]->GetVolume();
+      Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
 	  delT = node[iPoint]->GetDelta_Time();
       
       node[iPoint]->Set_Mom_Coeff_nbZero();
@@ -3686,6 +3724,8 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
@@ -3723,7 +3763,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       if (geometry->node[iPoint]->GetDomain()) {
         node[iPoint]->AddMax_Lambda_Inv(Lambda+EPS);
       }
-
+	 }
     }
   }
   
@@ -4566,6 +4606,8 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
     /*---  Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         /*--- Initialize the Residual / Jacobian container to zero. ---*/
@@ -4603,7 +4645,7 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         LinSysRes.AddBlock(iPoint, Residual);
-        
+	   }
       }
     }
     
@@ -5427,7 +5469,23 @@ void CPBIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_conta
 
 }
 
+/*--- Note that velocity indices in residual are hard coded in solver_structure. Need to be careful. ---*/
 
+void CPBIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                               CNumerics *numerics, CConfig *config) {
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated correctly during the communications. For implicit calculations,
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+  
+}
 
 
 void CPBIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
@@ -5988,9 +6046,25 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
+  
   /*--- Perform the MPI communication of the solution ---*/
 
-  //Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, PRESSURE_VAR);
+  CompleteComms(geometry, config, PRESSURE_VAR);
 
 }
 

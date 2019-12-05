@@ -208,6 +208,14 @@ CCentPB_Flow::~CCentPB_Flow(void) {
 
 void CCentPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                            CConfig *config) {
+  /*--- To do list
+   * 1. Find upwind direction, upwind node and downwind node
+   * 2. Compute normalised variable for the upwind node using the gradient of the upwind node
+   * 3. Find face velocity using central difference scheme
+   * 4. Use the ULTIMATE limiter to find the adjusted face velocity
+   * 5. Find residual as FaceFlux * AdjustedFaceVelocity
+   * */
+  
   
   su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF, Vel0, Vel1, ProjGridVelFlux = 0.0;
   
@@ -248,11 +256,12 @@ void CCentPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Upw_j = round(fabs(Flux1/(fabs(Face_Flux)+EPS)));
 
   for (iVar = 0; iVar < nVar; iVar++) {
-	  val_residual[iVar] = Face_Flux*MeanVelocity[iVar];
 	  Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1]; 
 	  if (dynamic_grid) Velocity_upw[iVar] -= (Upw_i*GridVel_i[iVar] + Upw_j*GridVel_j[iVar]); 
+	  val_residual[iVar] = Face_Flux*MeanVelocity[iVar];
   }
 
+  /*--- For implicit schemes, compute jacobians based on the upwind scheme for stability issues. (See ANSYS user guide) ---*/
   if (implicit) {
 	  for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++) {
@@ -261,13 +270,15 @@ void CCentPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         val_Jacobian_upw[iVar][jVar] = 0.0;
 	}
 
-	GetInviscidPBProjJac(&DensityInc_i, Velocity_upw,  Normal, 0.5, val_Jacobian_upw);
+	//GetInviscidPBProjJac(&DensityInc_i, Velocity_upw,  Normal, 0.5, val_Jacobian_upw);
+	GetInviscidPBProjJac(&DensityInc_i, Velocity_i,  Normal, 0.5, val_Jacobian_i);
+	GetInviscidPBProjJac(&DensityInc_i, Velocity_j,  Normal, 0.5, val_Jacobian_j);
 
-	 for (iVar = 0; iVar < nVar; iVar++)
+	 /*for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++) {
         val_Jacobian_i[iVar][jVar] = Upw_i*val_Jacobian_upw[iVar][jVar];
         val_Jacobian_j[iVar][jVar] = Upw_j*val_Jacobian_upw[iVar][jVar];
-	}
+	}*/
   }
 
 }

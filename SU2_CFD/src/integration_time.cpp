@@ -1240,13 +1240,13 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 	  
 	 /*--- Momentum solve (Predict velocities using existing pressure field)---*/
 	 switch( config[iZone]->GetKind_Solver() ) {
-		  case EULER: 
+		  case INC_EULER: 
 		  config[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, Iteration); break;
 		  
-		  case NAVIER_STOKES:
+		  case INC_NAVIER_STOKES:
 		  config[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, Iteration); break;
 		  
-		  case RANS:
+		  case INC_RANS:
 		  config[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, Iteration); break;
      }
      
@@ -1278,13 +1278,13 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 		 
 		 /*--- Momentum solve (Predict velocities using existing pressure field)---*/
 		 switch( config[iZone]->GetKind_Solver() ) {
-			 case EULER: 
+			 case INC_EULER: 
 			 config[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, Iteration); break;
 			 
-			 case NAVIER_STOKES:
+			 case INC_NAVIER_STOKES:
 			 config[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, Iteration); break;
 			 
-			 case RANS:
+			 case INC_RANS:
 			 config[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, Iteration); break;
 		}
 		
