@@ -68,7 +68,7 @@ CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
 template<class ScalarType>
 class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
 private:
-  const CSysMatrix<ScalarType>* matrix;  /*!< \brief pointer to matrix that defines the product. */
+  const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
   CConfig* config;                       /*!< \brief config of the problem. */
 
@@ -80,11 +80,10 @@ public:
    * \param[in] config_ref - config of the problem
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType> & matrix_ref,
-                                 CGeometry *geometry_ref, CConfig *config_ref) {
-    matrix = &matrix_ref;
-    geometry = geometry_ref;
-    config = config_ref;
-  }
+                                 CGeometry *geometry_ref, CConfig *config_ref) :
+    matrix(matrix_ref),
+    geometry(geometry_ref),
+    config(config_ref) {}
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -97,7 +96,7 @@ public:
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
-    sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
+    matrix.MatrixVectorProduct(u, v, geometry, config);
   }
 };
 
@@ -109,7 +108,7 @@ public:
 template<class ScalarType>
 class CSysMatrixVectorProductTransposed final : public CMatrixVectorProduct<ScalarType> {
 private:
-  const CSysMatrix<ScalarType>* matrix;  /*!< \brief pointer to matrix that defines the product. */
+  const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
   CConfig* config;                       /*!< \brief config of the problem. */
 
@@ -121,11 +120,10 @@ public:
    * \param[in] config_ref - config of the problem
    */
   inline CSysMatrixVectorProductTransposed(const CSysMatrix<ScalarType> & matrix_ref,
-                                           CGeometry *geometry_ref, CConfig *config_ref) {
-    matrix = &matrix_ref;
-    geometry = geometry_ref;
-    config = config_ref;
-  }
+                                           CGeometry *geometry_ref, CConfig *config_ref) :
+    matrix(matrix_ref),
+    geometry(geometry_ref),
+    config(config_ref) {}
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -138,6 +136,6 @@ public:
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
-    sparse_matrix->MatrixVectorProductTransposed(u, v, geometry, config);
+    matrix.MatrixVectorProductTransposed(u, v, geometry, config);
   }
 };

@@ -52,10 +52,8 @@ private:
   unsigned long nElm;             /*!< \brief total number of elements (or number elements on this processor) */
   unsigned long nElmDomain;       /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
   unsigned long nVar;             /*!< \brief number of elements in a block */
-  mutable ScalarType dotRes;      /*!< \brief result of dot product, to perform a reduction with OpenMP the
+  mutable ScalarType dotRes;      /*!< \brief result of dot product. to perform a reduction with OpenMP the
                                               variable needs to be declared outside the parallel region */
-  unsigned long nBlk;             /*!< \brief number of blocks (or number of blocks on this processor) */
-  unsigned long nBlkDomain;       /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -125,7 +123,7 @@ public:
    */
   CSysVector(const CSysVector & u) {
     nElm = 0; vec_val = nullptr;
-    Initialize(u.nBlk, u.nBlkDomain, u.nVar, u.vec_val, true);
+    Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true);
   }
 
   /*!
@@ -169,12 +167,12 @@ public:
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  inline unsigned long GetNBlk() const { return nBlk; }
+  inline unsigned long GetNBlk() const { return nElm/nVar; }
 
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  inline unsigned long GetNBlkDomain() const { return nBlkDomain; }
+  inline unsigned long GetNBlkDomain() const { return nElmDomain/nVar; }
 
   /*!
    * \brief set calling CSysVector to scaling of another CSysVector
@@ -248,10 +246,16 @@ public:
   ScalarType dot(const CSysVector & u) const;
 
   /*!
-   * \brief L2 norm of the vector (via dot with self)
+   * \brief squared L2 norm of the vector (via dot with self)
+   * \return squared L2 norm
+   */
+  inline ScalarType squaredNorm() const { return dot(*this); }
+  
+  /*!
+   * \brief L2 norm of the vector
    * \return L2 norm
    */
-  inline ScalarType norm() const { return sqrt(dot(*this)); }
+  inline ScalarType norm() const { return sqrt(squaredNorm()); }
 
   /*!
    * \brief indexing operator with assignment permitted

@@ -117,7 +117,7 @@ private:
    * \param[in,out] h1 - first element of 2x1 vector being transformed
    * \param[in,out] h2 - second element of 2x1 vector being transformed
    */
-  static void ApplyGivens(ScalarType s, ScalarType c, ScalarType & h1, ScalarType & h2);
+  void ApplyGivens(ScalarType s, ScalarType c, ScalarType & h1, ScalarType & h2) const;
 
   /*!
    * \brief generates the Givens rotation matrix for a given 2-vector
@@ -129,7 +129,7 @@ private:
    * Based on givens() of SPARSKIT, which is based on p.202 of
    * "Matrix Computations" by Golub and van Loan.
    */
-  static void GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c);
+  void GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c) const;
 
   /*!
    * \brief finds the solution of the upper triangular system Hsbg*x = rhs
@@ -142,8 +142,8 @@ private:
    * \pre the upper Hessenberg matrix has been transformed into a
    * triangular matrix.
    */
-  static void SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
-                           const vector<ScalarType> & rhs, vector<ScalarType> & x);
+  void SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
+                    const vector<ScalarType> & rhs, vector<ScalarType> & x) const;
 
   /*!
    * \brief Modified Gram-Schmidt orthogonalization
@@ -162,7 +162,7 @@ private:
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  static void ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg, vector<VectorType> & w);
+  void ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg, vector<VectorType> & w) const;
 
   /*!
    * \brief writes header information for a CSysSolve residual history
@@ -172,7 +172,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  static void WriteHeader(const string & solver, ScalarType restol, ScalarType resinit);
+  void WriteHeader(const string & solver, ScalarType restol, ScalarType resinit) const;
 
   /*!
    * \brief writes residual convergence data for one iteration to a stream
@@ -182,7 +182,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  static void WriteHistory(unsigned long iter, ScalarType res);
+  void WriteHistory(unsigned long iter, ScalarType res) const;
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.

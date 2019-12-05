@@ -76,10 +76,10 @@ private:
   enum : size_t { MAXNVAR = 8 };    /*!< \brief Maximum number of variables the matrix can handle. The static
                                                 size is needed for fast, per-thread, static memory allocation. */
 
-  enum : size_t { OMP_MAX_SIZE = 2048 };    /*!< \brief Maximum chunk size used in heavy parallel for loops. */
-  enum : size_t { OMP_STAT_SIZE = 16384 };  /*!< \brief Chunk size used in trivial parallel for loops. */
-
-  unsigned long omp_chunk_size;     /*!< \brief Chunk size used in parallel for loops. */
+  enum { OMP_MAX_SIZE_L = 8192 };   /*!< \brief Max. chunk size used in light parallel for loops. */
+  enum { OMP_MAX_SIZE_H = 512 };    /*!< \brief Max. chunk size used in heavy parallel for loops. */
+  unsigned long omp_light_size;     /*!< \brief Actual chunk size used in light loops (e.g. over non zeros). */
+  unsigned long omp_heavy_size;     /*!< \brief Actual chunk size used in heavy loops (e.g. over rows). */
   unsigned long omp_num_parts;      /*!< \brief Number of threads used in thread-parallel LU_SGS and ILU. */
   unsigned long *omp_partitions;    /*!< \brief Point indexes of LU_SGS and ILU thread-parallel sub partitioning. */
 
@@ -362,20 +362,22 @@ public:
   void SetValDiagonalZero(void);
 
   /*!
-   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
+   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
+   *        communication and to launch non-blocking sends and recvs.
    * \param[in] x        - CSysVector holding the array of data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   template<class OtherType>
-  void InitiateComms(CSysVector<OtherType> & x,
+  void InitiateComms(const CSysVector<OtherType> & x,
                      CGeometry *geometry,
                      CConfig *config,
                      unsigned short commType) const;
 
   /*!
-   * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data in the vector.
+   * \brief Routine to complete the set of non-blocking communications launched by
+   *        InitiateComms() and unpacking of the data in the vector.
    * \param[in] x        - CSysVector holding the array of data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
@@ -612,7 +614,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-  void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                           CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
@@ -621,7 +624,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-  void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                     CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.
@@ -635,7 +639,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                   CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Build the ILU preconditioner.
@@ -650,14 +655,16 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                   CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Build the Linelet preconditioner.
@@ -672,7 +679,8 @@ public:
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                    CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief Compute the residual Ax-b
@@ -680,7 +688,8 @@ public:
    * \param[in] f - Result of the product A*vec.
    * \param[out] res - Result of the product A*vec.
    */
-  void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res) const;
+  void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f,
+                       CSysVector<ScalarType> & res) const;
 
   /*!
    * \brief Factorize matrix using PaStiX.
@@ -698,7 +707,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) const;
+  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                   CGeometry *geometry, CConfig *config) const;
 
 };
 

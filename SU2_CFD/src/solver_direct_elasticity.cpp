@@ -2139,7 +2139,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       Conv_Check[0] = LinSysSol.norm();               // Norm of the delta-solution vector
       Conv_Check[1] = LinSysRes.norm();               // Norm of the residual
-      Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
+      Conv_Check[2] = LinSysSol.dot(LinSysRes);       // Position for the energy tolerance
 
       /*--- MPI solution ---*/
 
