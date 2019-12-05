@@ -682,10 +682,10 @@ public:
                                     CGeometry *geometry, CConfig *config) const;
 
   /*!
-   * \brief Compute the residual Ax-b
-   * \param[in] sol - CSysVector to be multiplied by the preconditioner.
-   * \param[in] f - Result of the product A*vec.
-   * \param[out] res - Result of the product A*vec.
+   * \brief Compute the linear residual.
+   * \param[in] sol - Solution (x).
+   * \param[in] f - Right hand side (b).
+   * \param[out] res - Residual (Ax-b).
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f,
                        CSysVector<ScalarType> & res) const;
