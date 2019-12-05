@@ -3878,6 +3878,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
     Kappa_Flow[0] = Kappa_AdjFlow[0];
     Kappa_Flow[1] = Kappa_AdjFlow[1];
+    CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
+    CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
+    CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
   }
   
   if (Update_AoA_Iter_Limit == 0 && Fixed_CL_Mode) { 
