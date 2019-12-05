@@ -29,6 +29,9 @@
 #include "../include/adt_structure.hpp"
 #include <list>
 
+#include "../include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../include/linear_algebra/CPreconditioner.hpp"
+
 using namespace std;
 
 CGridMovement::CGridMovement(void) { }

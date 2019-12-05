@@ -31,8 +31,6 @@
 
 #include "../mpi_structure.hpp"
 
-#include <climits>
-#include <limits>
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -40,13 +38,13 @@
 #include <iomanip>
 #include <string>
 
-#include "../option_structure.hpp"
-#include "../config_structure.hpp"
-#include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
-#include "CSysMatrix.hpp"
-#include "CMatrixVectorProduct.hpp"
-#include "CPreconditioner.hpp"
+
+class CConfig;
+class CGeometry;
+template<class T> class CSysMatrix;
+template<class T> class CMatrixVectorProduct;
+template<class T> class CPreconditioner;
 
 using namespace std;
 
@@ -172,17 +170,32 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHeader(const string & solver, ScalarType restol, ScalarType resinit) const;
+  void WriteHeader(string solver, ScalarType restol, ScalarType resinit) const;
 
   /*!
    * \brief writes residual convergence data for one iteration to a stream
    * \param[in] iter - current iteration
-   * \param[in] res - the (absolute) residual norm value
-   * \param[in] resinit - the initial residual norm
+   * \param[in] res - the residual norm to display
    *
    * \pre the ostream object os should be open
    */
   void WriteHistory(unsigned long iter, ScalarType res) const;
+
+  /*!
+   * \brief writes final residual convergence information
+   * \param[in] solver - string describing the solver
+   * \param[in] iter - current iteration
+   * \param[in] res - the residual norm
+   */
+  void WriteFinalResidual(string solver, unsigned long iter, ScalarType res) const;
+
+  /*!
+   * \brief writes the convergence warning
+   * \param[in] res_calc - the residual norm computed iteratively
+   * \param[in] res_true - the recomputed residual norm
+   * \param[in] tol - the residual norm
+   */
+  void WriteWarning(ScalarType res_calc, ScalarType res_true, ScalarType tol) const;
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.

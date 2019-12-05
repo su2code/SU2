@@ -57,6 +57,7 @@ private:
 
   /*!
    * \brief Generic initialization from a scalar or array.
+   * \note If val==nullptr vec_val is not initialized, only allocated.
    * \param[in] numBlk - number of blocks locally
    * \param[in] numBlkDomain - number of blocks locally (without g cells)
    * \param[in] numVar - number of variables in each block
@@ -139,7 +140,7 @@ public:
   ~CSysVector();
 
   /*!
-   * \brief Initialize the class.
+   * \brief Initialize the class with a scalar.
    * \param[in] numBlk - number of blocks locally
    * \param[in] numBlkDomain - number of blocks locally (without g cells)
    * \param[in] numVar - number of variables in each block
@@ -147,6 +148,18 @@ public:
    */
   void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, ScalarType val = 0.0) {
     Initialize(numBlk, numBlkDomain, numVar, &val, false);
+  }
+
+  /*!
+   * \brief Initialize the class with an array.
+   * \note If ptr==nullptr no copy occurs.
+   * \param[in] numBlk - number of blocks locally
+   * \param[in] numBlkDomain - number of blocks locally (without g cells)
+   * \param[in] numVar - number of variables in each block
+   * \param[in] ptr - pointer to data with which to initialize the vector
+   */
+  void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* ptr) {
+    Initialize(numBlk, numBlkDomain, numVar, ptr, true);
   }
 
   /*!
@@ -250,7 +263,7 @@ public:
    * \return squared L2 norm
    */
   inline ScalarType squaredNorm() const { return dot(*this); }
-  
+
   /*!
    * \brief L2 norm of the vector
    * \return L2 norm

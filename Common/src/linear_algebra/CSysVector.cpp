@@ -74,11 +74,13 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
   if (vec_val == nullptr)
     vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
 
-  if(!valIsArray) {
-    for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
-  }
-  else {
-    for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
+  if(val != nullptr) {
+    if(!valIsArray) {
+      for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
+    }
+    else {
+      for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
+    }
   }
 }
 
@@ -215,8 +217,7 @@ template<class ScalarType>
 void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
 
   PARALLEL_FOR
-  for(auto i=0ul; i<nElm; i++)
-    u_array[i] = vec_val[i];
+  for(auto i=0ul; i<nElm; i++) u_array[i] = vec_val[i];
 }
 
 template<class ScalarType>
