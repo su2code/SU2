@@ -766,7 +766,7 @@ void CSysSolve<su2double>::HandleTemporariesOut(CSysVector<su2double> & LinSysSo
 
 #ifdef CODI_REVERSE_TYPE
 template<>
-void CSysSolve<passivedouble>::HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
+void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is different we need to copy data to the temporaries ---*/
   /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
@@ -1025,17 +1025,17 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   switch(KindPrecond) {
     case ILU:
-      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config);
+      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config, RequiresTranspose);
       break;
     case JACOBI:
-      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
+      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config, RequiresTranspose);
       break;
     case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
+      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, RequiresTranspose);
       break;
   }
 
-  CMatrixVectorProduct<ScalarType>* mat_vec = new CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
+  auto mat_vec = CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
 
   /*--- Solve the system ---*/
 
@@ -1043,13 +1043,13 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   switch(KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
@@ -1057,7 +1057,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
+        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
         if ( Residual < SolverTol*Norm0 ) break;
       }
       break;
@@ -1073,7 +1073,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   HandleTemporariesOut(LinSysSol);
 
-  delete mat_vec;
   delete precond;
 
   return IterLinSol;
