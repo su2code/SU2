@@ -802,8 +802,10 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
 
   if(design_update) {
     for (iDV = 0; iDV < nDV_Total; iDV++){
-      /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+      /*--- ShiftedLagrangianGradient is the gradient at the old iterate. ---*/
+      GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+      // /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
+      // GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
   if (nConstr > 0) {
