@@ -2,24 +2,14 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,15 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../include/SU2_DOT.hpp"
 using namespace std;
 
 int main(int argc, char *argv[]) {
-  
+
   unsigned short iZone, nZone = SINGLE_ZONE, iInst;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-  
-  char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
+
+  char config_file_name[MAX_STRING_SIZE];
   ofstream Gradient_file;
   bool fem_solver = false;
 
@@ -52,7 +43,7 @@ int main(int argc, char *argv[]) {
   int rank, size;
 
   /*--- MPI initialization, and buffer setting ---*/
-  
+
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
@@ -62,9 +53,9 @@ int main(int argc, char *argv[]) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-  
+
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
-  
+
   CConfig **config_container            = NULL;
   CConfig *driver_config                = NULL;
   CGeometry ***geometry_container       = NULL;
@@ -74,7 +65,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
-  
+
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
 
@@ -88,15 +79,15 @@ int main(int argc, char *argv[]) {
   nZone    = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
-  
+
   config_container    = new CConfig*[nZone];
   geometry_container  = new CGeometry**[nZone];
   surface_movement    = new CSurfaceMovement*[nZone];
   grid_movement       = new CVolumetricMovement*[nZone];
-  
+
   nInst               = new unsigned short[nZone];
   driver_config       = NULL;
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
@@ -104,7 +95,7 @@ int main(int argc, char *argv[]) {
     surface_movement[iZone]       = NULL;
     nInst[iZone]                  = 1;
   }
-  
+
   /*--- Initialize the configuration of the driver ---*/
   driver_config = new CConfig(config_file_name, SU2_DOT, false);
 
@@ -120,7 +111,7 @@ int main(int argc, char *argv[]) {
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
-    
+
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);
@@ -131,7 +122,7 @@ int main(int argc, char *argv[]) {
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
-  
+
   /*--- Set the multizone part of the problem. ---*/
   if (driver_config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -139,11 +130,11 @@ int main(int argc, char *argv[]) {
       config_container[iZone]->SetMultizone(driver_config, config_container);
     }
   }
-  
+
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Determine whether or not the FEM solver is used, which decides the
@@ -205,7 +196,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Create the vertex structure (required for MPI) ---*/
 
-      if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
+      if (rank == MASTER_NODE) cout << "Identify vertices." << endl;
       geometry_container[iZone][iInst]->SetVertex(config_container[iZone]);
 
       /*--- Store the global to local mapping after preprocessing. ---*/
@@ -232,68 +223,68 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  
+
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
-  
+
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-  
-  for (iZone = 0; iZone < nZone; iZone++){
-  
-  if (rank == MASTER_NODE)
-    cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-  
-  /*--- Compute elements surrounding points, points surrounding points ---*/
 
-  if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-    geometry_container[iZone][INST_0]->SetPoint_Connectivity();
-  
-  /*--- Check the orientation before computing geometrical quantities ---*/
-  
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    if (rank == MASTER_NODE)
+      cout << "\n----------------------- Preprocessing computations ----------------------" << endl;
+
+    /*--- Compute elements surrounding points, points surrounding points ---*/
+
+    if (rank == MASTER_NODE) cout << "Setting local point connectivity." << endl;
+      geometry_container[iZone][INST_0]->SetPoint_Connectivity();
+
+    /*--- Check the orientation before computing geometrical quantities ---*/
+
     geometry_container[iZone][INST_0]->SetBoundVolume();
     if (config_container[iZone]->GetReorientElements()) {
-      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." << endl;
       geometry_container[iZone][INST_0]->Check_IntElem_Orientation(config_container[iZone]);
       geometry_container[iZone][INST_0]->Check_BoundElem_Orientation(config_container[iZone]);
     }
-  
-  /*--- Create the edge structure ---*/
-  
-  if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-    geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
-  
-  /*--- Compute center of gravity ---*/
-  
-  if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[iZone][INST_0]->SetCoord_CG();
-  
-  /*--- Create the dual control volume structures ---*/
-  
-  if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-  geometry_container[iZone][INST_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-  /*--- Store the global to local mapping after preprocessing. ---*/
- 
-  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-  geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
- 
-  /*--- Create the point-to-point MPI communication structures. ---*/
-    
-  geometry_container[iZone][INST_0]->PreprocessP2PComms(geometry_container[iZone][INST_0], config_container[iZone]);
-    
-  /*--- Load the surface sensitivities from file. This is done only
-   once: if this is an unsteady problem, a time-average of the surface
-   sensitivities at each node is taken within this routine. ---*/
-    if (!config_container[iZone]->GetDiscrete_Adjoint()){
+    /*--- Create the edge structure ---*/
+
+    if (rank == MASTER_NODE) cout << "Identify edges and vertices." << endl;
+      geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
+
+    /*--- Compute center of gravity ---*/
+
+    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+    geometry_container[iZone][INST_0]->SetCoord_CG();
+
+    /*--- Create the dual control volume structures ---*/
+
+    if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+    geometry_container[iZone][INST_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+
+    /*--- Store the global to local mapping after preprocessing. ---*/
+
+    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+    geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
+
+    /*--- Create the point-to-point MPI communication structures. ---*/
+
+    geometry_container[iZone][INST_0]->PreprocessP2PComms(geometry_container[iZone][INST_0], config_container[iZone]);
+
+    /*--- Load the surface sensitivities from file. This is done only
+     once: if this is an unsteady problem, a time-average of the surface
+     sensitivities at each node is taken within this routine. ---*/
+
+    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
       if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
       geometry_container[iZone][INST_0]->SetBoundSensitivity(config_container[iZone]);
-    } else {
-
-      if (rank == MASTER_NODE)
-        cout << "Reading volume sensitivities at each node from file." << endl;
+    }
+    else {
+      if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0], config_container[iZone]);
 
       /*--- Read in sensitivities from file. ---*/
@@ -303,85 +294,81 @@ int main(int argc, char *argv[]) {
         geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
 
       if (rank == MASTER_NODE)
-        cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
+        cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
       grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][INST_0], config_container[iZone], false, true);
 
     }
   }
 
-   if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
-     if (rank == MASTER_NODE)
-       cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
-     SetSensitivity_Files(geometry_container, config_container, nZone);
-   }
 
-   if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
-       (config_container[ZONE_0]->GetDesign_Variable(0) != SURFACE_FILE)){
+  if (config_container[ZONE_0]->GetDiscrete_Adjoint()) {
+    if (rank == MASTER_NODE)
+      cout << "\n------------------------ Mesh sensitivity Output ------------------------" << endl;
+    SetSensitivity_Files(geometry_container, config_container, nZone);
+  }
 
-     /*--- Initialize structure to store the gradient ---*/
+  if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
+      (config_container[ZONE_0]->GetDesign_Variable(0) != SURFACE_FILE)) {
 
-     Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+    /*--- Initialize structure to store the gradient ---*/
 
-     for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-       Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
-       for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
-         Gradient[iDV][iDV_Value] = 0.0;
-       }
-     }
+    Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
 
-     if (rank == MASTER_NODE)
-       cout << endl <<"---------- Start gradient evaluation using sensitivity information ----------" << endl;
+    for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+      Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
+      for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
+        Gradient[iDV][iDV_Value] = 0.0;
+      }
+    }
 
-     /*--- Write the gradient in a external file ---*/
+    if (rank == MASTER_NODE)
+      cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
 
-     if (rank == MASTER_NODE) {
-       cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-       strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-       Gradient_file.open(cstr, ios::out);
-     }
+    /*--- Write the gradient in a external file ---*/
 
-     /*--- Loop through each zone and add it's contribution to the gradient array ---*/
+    if (rank == MASTER_NODE)
+      Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
-     for (iZone = 0; iZone < nZone; iZone++){
+    /*--- Loop through each zone and add it's contribution to the gradient array ---*/
 
-       /*--- Definition of the Class for surface deformation ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
 
-       surface_movement[iZone] = new CSurfaceMovement();
+      /*--- Definition of the Class for surface deformation ---*/
 
-       /*--- Copy coordinates to the surface structure ---*/
+      surface_movement[iZone] = new CSurfaceMovement();
 
-       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0], config_container[iZone]);
+      /*--- Copy coordinates to the surface structure ---*/
 
-       /*--- If AD mode is enabled we can use it to compute the projection,
-        *    otherwise we use finite differences. ---*/
+      surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0], config_container[iZone]);
 
-       if (config_container[iZone]->GetAD_Mode()){
-         SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
-       }else{
-         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
-       }
-     }
+      /*--- If AD mode is enabled we can use it to compute the projection,
+       *    otherwise we use finite differences. ---*/
 
-     /*--- Print gradients to screen and file ---*/
+      if (config_container[iZone]->GetAD_Mode())
+        SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
+      else
+        SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
+    }
 
-     OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
+    /*--- Print gradients to screen and file ---*/
 
-     if (rank == MASTER_NODE)
-       Gradient_file.close();
+    OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
 
-     for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-       delete [] Gradient[iDV];
-     }
-     delete [] Gradient;
+    if (rank == MASTER_NODE)
+      Gradient_file.close();
 
-   }
+    for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+      delete [] Gradient[iDV];
+    }
+    delete [] Gradient;
+  }
 
   delete config;
   config = NULL;
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
-  
+    cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
+
   if (geometry_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (geometry_container[iZone] != NULL) {
@@ -396,7 +383,7 @@ int main(int argc, char *argv[]) {
     delete [] geometry_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
-  
+
   if (surface_movement != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (surface_movement[iZone] != NULL) {
@@ -406,7 +393,7 @@ int main(int argc, char *argv[]) {
     delete [] surface_movement;
   }
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
-  
+
   if (grid_movement != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (grid_movement[iZone] != NULL) {
@@ -416,7 +403,7 @@ int main(int argc, char *argv[]) {
     delete [] grid_movement;
   }
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
-  
+
   delete config;
   config = NULL;
   if (config_container != NULL) {
@@ -428,18 +415,16 @@ int main(int argc, char *argv[]) {
     delete [] config_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-  
-  if (cstr != NULL) delete cstr;
-  
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
-  
+
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-  
+
   /*--- Compute/print the total time for performance benchmarking. ---*/
 
   UsedTime = StopTime-StartTime;
@@ -447,41 +432,41 @@ int main(int argc, char *argv[]) {
     cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
-  
+
   /*--- Exit the solver cleanly ---*/
-  
+
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Exit Success (SU2_DOT) ------------------------" << endl << endl;
-  
+    cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
+
   /*--- Finalize MPI parallelization ---*/
-  
+
 #ifdef HAVE_MPI
   SU2_MPI::Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
-  
+
 }
 
 void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
-  
+
   unsigned short iDV, nDV, iFFDBox, nDV_Value, iMarker, iDim;
   unsigned long iVertex, iPoint;
   su2double delta_eps, my_Gradient, localGradient, *Normal, dS, *VarCoord, Sensitivity,
   dalpha[3], deps[3], dalpha_deps;
   bool *UpdatePoint, MoveSurface, Local_MoveSurface;
   CFreeFormDefBox **FFDBox;
-  
+
   int rank = SU2_MPI::GetRank();
-  
+
   nDV = config->GetnDV();
-  
+
   /*--- Boolean controlling points to be updated ---*/
-  
+
   UpdatePoint = new bool[geometry->GetnPoint()];
-  
+
   /*--- Definition of the FFD deformation class ---*/
-  
+
   unsigned short nFFDBox = MAX_NUMBER_FFD;
   FFDBox = new CFreeFormDefBox*[nFFDBox];
   for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
@@ -494,17 +479,17 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   }
 
   /*--- Continuous adjoint gradient computation ---*/
-  
+
   if (rank == MASTER_NODE)
     cout << "Evaluate functional gradient using Finite Differences." << endl;
-  
+
   for (iDV = 0; iDV < nDV; iDV++) {
-    
+
     MoveSurface = true;
     Local_MoveSurface = true;
-    
+
     /*--- Free Form deformation based ---*/
-    
+
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
@@ -517,51 +502,51 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
         (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
-      
+
       /*--- Read the FFD information in the first iteration ---*/
-      
+
       if (iDV == 0) {
-        
+
         if (rank == MASTER_NODE)
           cout << "Read the FFD information from mesh file." << endl;
-        
+
         /*--- Read the FFD information from the grid file ---*/
-        
+
         surface_movement->ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName());
-        
+
         /*--- If the FFDBox was not defined in the input file ---*/
         if (!surface_movement->GetFFDBoxDefinition()) {
           SU2_MPI::Error("The input grid doesn't have the entire FFD information!", CURRENT_FUNCTION);
         }
-        
+
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
-          
+
           if (rank == MASTER_NODE) cout << "Checking FFD box dimension." << endl;
           surface_movement->CheckFFDDimension(geometry, config, FFDBox[iFFDBox], iFFDBox);
-          
+
           if (rank == MASTER_NODE) cout << "Check the FFD box intersections with the solid surfaces." << endl;
           surface_movement->CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
-          
+
         }
-        
+
         if (rank == MASTER_NODE)
           cout <<"-------------------------------------------------------------------------" << endl;
-        
+
       }
-      
+
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Performing 3D deformation of the surface." << endl;
       }
-      
+
       /*--- Apply the control point change ---*/
-      
+
       MoveSurface = false;
-      
+
       for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
-        
+
         /*--- Reset FFD box ---*/
-        
+
         switch (config->GetDesign_Variable(iDV) ) {
           case FFD_CONTROL_POINT_2D : Local_MoveSurface = surface_movement->SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
           case FFD_CAMBER_2D :        Local_MoveSurface = surface_movement->SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
@@ -577,24 +562,24 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
           case FFD_CONTROL_SURFACE :  Local_MoveSurface = surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
           case FFD_ANGLE_OF_ATTACK :  Gradient[iDV][0] = config->GetAoA_Sens(); break;
         }
-        
+
         /*--- Recompute cartesian coordinates using the new control points position ---*/
-        
+
         if (Local_MoveSurface) {
           MoveSurface = true;
           surface_movement->SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, true);
         }
-        
+
       }
-      
+
     }
-    
+
     /*--- Hicks Henne design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
       surface_movement->SetHicksHenne(geometry, config, iDV, true);
     }
-    
+
     /*--- Surface bump design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == SURFACE_BUMP) {
@@ -602,114 +587,109 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     }
 
     /*--- Kulfan (CST) design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == CST) {
       surface_movement->SetCST(geometry, config, iDV, true);
     }
-    
+
     /*--- Displacement design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == TRANSLATION) {
       surface_movement->SetTranslation(geometry, config, iDV, true);
     }
-    
+
     /*--- Angle of Attack design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) {
       Gradient[iDV][0] = config->GetAoA_Sens();
     }
-    
+
     /*--- Scale design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == SCALE) {
       surface_movement->SetScale(geometry, config, iDV, true);
     }
-    
+
     /*--- Rotation design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == ROTATION) {
       surface_movement->SetRotation(geometry, config, iDV, true);
     }
-    
+
     /*--- NACA_4Digits design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == NACA_4DIGITS) {
       surface_movement->SetNACA_4Digits(geometry, config);
     }
-    
+
     /*--- Parabolic design variable ---*/
-    
+
     else if (config->GetDesign_Variable(iDV) == PARABOLIC) {
       surface_movement->SetParabolic(geometry, config);
     }
-    
+
     /*--- Design variable not implement ---*/
-    
+
     else {
       if (rank == MASTER_NODE)
         cout << "Design Variable not implement yet" << endl;
     }
-    
+
     /*--- Load the delta change in the design variable (finite difference step). ---*/
-    
+
     if ((config->GetDesign_Variable(iDV) != ANGLE_OF_ATTACK) &&
         (config->GetDesign_Variable(iDV) != FFD_ANGLE_OF_ATTACK)) {
-      
+
       /*--- If the Angle of attack is not involved, reset the value of the gradient ---*/
-      
+
       my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
-      
+
       if (MoveSurface) {
-        
+
         delta_eps = config->GetDV_Value(iDV);
-        
+
         for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
           UpdatePoint[iPoint] = true;
-        
+
         for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
           if (config->GetMarker_All_DV(iMarker) == YES) {
             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-              
+
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
               if ((iPoint < geometry->GetnPointDomain()) && UpdatePoint[iPoint]) {
-                
+
                 Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
                 VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
                 Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
-                
+
                 dS = 0.0;
                 for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                   dS += Normal[iDim]*Normal[iDim];
                   deps[iDim] = VarCoord[iDim] / delta_eps;
                 }
                 dS = sqrt(dS);
-                
+
                 dalpha_deps = 0.0;
                 for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                   dalpha[iDim] = Normal[iDim] / dS;
                   dalpha_deps -= dalpha[iDim]*deps[iDim];
                 }
-                
+
                 my_Gradient += Sensitivity*dalpha_deps;
                 UpdatePoint[iPoint] = false;
               }
             }
           }
         }
-        
       }
-      
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    localGradient = my_Gradient;
-#endif
-    Gradient[iDV][0] += localGradient;
+
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      Gradient[iDV][0] += localGradient;
     }
   }
-  
+
   /*--- Delete memory for parameterization. ---*/
-  
+
   if (FFDBox != NULL) {
     for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
       if (FFDBox[iFFDBox] != NULL) {
@@ -718,76 +698,76 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     }
     delete [] FFDBox;
   }
-  
+
   delete [] UpdatePoint;
-  
+
 }
-  
+
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
 
   su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
-  
+
   int rank = SU2_MPI::GetRank();
 
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
-  
+
   VarCoord = NULL;
 
   /*--- Discrete adjoint gradient computation ---*/
-  
+
   if (rank == MASTER_NODE)
     cout  << endl << "Evaluate functional gradient using Algorithmic Differentiation (ZONE " << config->GetiZone() << ")." << endl;
 
   /*--- Start recording of operations ---*/
-  
+
   AD::StartRecording();
-  
+
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
-  
-  
-  
+
+
+
   for (iDV = 0; iDV < nDV; iDV++){
-    
+
     nDV_Value =  config->GetnDV_Value(iDV);
-    
+
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      
+
       /*--- Initilization with su2double resets the index ---*/
-      
+
       DV_Value = 0.0;
-      
+
       AD::RegisterInput(DV_Value);
-      
+
       config->SetDV_Value(iDV, iDV_Value, DV_Value);
     }
   }
-  
+
   /*--- Call the surface deformation routine ---*/
-  
+
   surface_movement->SetSurface_Deformation(geometry, config);
-  
+
   /*--- Stop the recording --- */
-  
+
   AD::StopRecording();
-  
-  /*--- Create a structure to identify points that have been already visited. 
+
+  /*--- Create a structure to identify points that have been already visited.
    * We need that to make sure to set the sensitivity of surface points only once
    *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
-  
+
   bool* visited = new bool[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
     visited[iPoint] = false;
   }
-  
+
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
-  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
@@ -796,13 +776,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         if (!visited[iPoint]){
           VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
           Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
-          
+
           Area = 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
             Area += Normal[iDim]*Normal[iDim];
           }
           Area = sqrt(Area);
-          
+
           for (iDim = 0; iDim < nDim; iDim++){
             if (config->GetDiscrete_Adjoint()){
               Sensitivity = geometry->GetSensitivity(iPoint, iDim);
@@ -816,16 +796,16 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       }
     }
   }
-  
+
   delete [] visited;
-  
+
   /*--- Compute derivatives and extract gradient ---*/
-  
+
   AD::ComputeAdjoint();
-  
+
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
-    
+
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
@@ -836,7 +816,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 #endif
       /*--- Angle of Attack design variable (this is different,
        the value comes form the input file) ---*/
-      
+
       if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
           (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
         Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
@@ -851,39 +831,39 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 }
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){
-  
+
   unsigned short nDV, iDV, iDV_Value, nDV_Value;
-  
+
   int rank = SU2_MPI::GetRank();
-  
+
   nDV = config->GetnDV();
-  
+
   /*--- Loop through all design variables and their gradients ---*/
-  
+
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
     if (rank == MASTER_NODE){
-      
+
       /*--- Print the kind of design variable on screen ---*/
-      
+
       cout << endl << "Design variable (";
       for (std::map<string, ENUM_PARAM>::const_iterator it = Param_Map.begin(); it != Param_Map.end(); ++it ){
         if (it->second == config->GetDesign_Variable(iDV)){
           cout << it->first << ") number "<< iDV << "." << endl;
         }
       }
-      
+
       /*--- Print the kind of objective function to screen ---*/
-      
+
       for (std::map<string, ENUM_OBJECTIVE>::const_iterator it = Objective_Map.begin(); it != Objective_Map.end(); ++it ){
         if (it->second == config->GetKind_ObjFunc()){
           cout << it->first << " gradient : ";
           if (iDV == 0) Gradient_file << it->first << " gradient " << endl;
         }
       }
-      
+
       /*--- Print the gradient to file and screen ---*/
-      
+
       for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
         cout << Gradient[iDV][iDV_Value];
         if (iDV_Value != nDV_Value-1 ){
@@ -900,25 +880,25 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
 
 void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
 
-  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
+  unsigned short iMarker,iDim, nDim, nMarker, nVar;
   unsigned long iVertex, iPoint, nPoint, nVertex;
   su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-  
+
   unsigned short iZone;
-  
+
   CSolver *solver  = NULL;
   COutput *output  = NULL;
 
-  
+
   for (iZone = 0; iZone < val_nZone; iZone++) {
-    
+
     nPoint = geometry[iZone][INST_0]->GetnPoint();
     nDim   = geometry[iZone][INST_0]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
     nVar = nDim + 1;
-    
+
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
-    
+
     vector<string> fieldnames;
     fieldnames.push_back("\"Point\"");
     fieldnames.push_back("\"x\"");
@@ -932,78 +912,76 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
       fieldnames.push_back("\"Sensitivity_z\"");
     }
     fieldnames.push_back("\"Surface_Sensitivity\"");
-    
+
     solver = new CBaselineSolver(geometry[iZone][INST_0], config[iZone], nVar+nDim, fieldnames);
-    
+
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver->GetNodes()->SetSolution(iPoint, iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
-      }
-      for (iVar = 0; iVar < nDim; iVar++) {
-        solver->GetNodes()->SetSolution(iPoint, iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
+        solver->GetNodes()->SetSolution(iPoint, iDim,      geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
+        solver->GetNodes()->SetSolution(iPoint, iDim+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iDim));
       }
     }
-    
+
     /*--- Compute the sensitivity in normal direction ---*/
-    
+
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      
+
       if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
-        
-        
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE ) ||
+         (config[iZone]->GetMarker_All_DV(iMarker) == YES )) {
+
         nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
-        
+
         for (iVertex = 0; iVertex < nVertex; iVertex++) {
           iPoint = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNode();
           Normal = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNormal();
           Prod = 0.0;
           Area = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            
+
             /*--- Retrieve the gradient calculated with discrete adjoint method ---*/
-            
+
             SensDim = geometry[iZone][INST_0]->GetSensitivity(iPoint, iDim);
-            
+
             /*--- Calculate scalar product for projection onto the normal vector ---*/
-            
+
             Prod += Normal[iDim]*SensDim;
-            
+
             Area += Normal[iDim]*Normal[iDim];
           }
-          
+
           Area = sqrt(Area);
-          
+
           /*--- Projection of the gradient onto the normal vector of the surface ---*/
-          
+
           Sens = Prod/Area;
-          
+
           solver->GetNodes()->SetSolution(iPoint, 2*nDim, Sens);
-          
+
         }
       }
     }
-    
-    output = new CBaselineOutput(config[iZone], geometry[iZone][INST_0]->GetnDim(), solver);
+
+    output = new CBaselineOutput(config[iZone], nDim, solver);
     output->PreprocessVolumeOutput(config[iZone]);
     output->PreprocessHistoryOutput(config[iZone], false);
-    
+
     /*--- Load the data --- */
-    
+
     output->Load_Data(geometry[iZone][INST_0], config[iZone], &solver);
 
     /*--- Set the surface filename ---*/
-    
+
     output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
-    
+
     /*--- Set the surface filename ---*/
-    
+
     output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
-    
+
     /*--- Write to file ---*/
-    
+
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
       unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
       if (FileFormat[iFile] != RESTART_ASCII &&
@@ -1011,14 +989,13 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
           FileFormat[iFile] != CSV)
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
-    
+
     /*--- Free memory ---*/
-    
+
     delete output;
-    delete solver;    
-    
+    delete solver;
+
   }
-  
 
 }
 

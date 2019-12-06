@@ -2,24 +2,14 @@
  * \file CElementProperty.hpp
  * \brief Light classes to define finite element properties.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +31,7 @@
  * \class CProperty
  * \brief Base class for defining element properties.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CProperty {
 protected:
@@ -58,12 +48,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CProperty(void) = default;
+  virtual ~CProperty(void) {}
 
   /*!
    * \brief Get the material model to use for the element.
    */
-  inline virtual unsigned long GetMat_Mod(void) const { return 0; } 
+  inline virtual unsigned long GetMat_Mod(void) const { return 0; }
 
   /*!
    * \brief Get index of the physical properties.
@@ -116,7 +106,7 @@ public:
  * \class CElementProperty
  * \brief Class for defining element properties for the structural solver.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CElementProperty final : public CProperty {
 private:
@@ -144,6 +134,11 @@ public:
     iDV(valDV), design_rho(valDensity), physical_rho(valDensity) {}
 
   /*!
+   * \brief Destructor of the class.
+   */
+  ~CElementProperty(void) {}
+
+  /*!
    * \brief Get the material model to use for the element.
    */
   inline unsigned long GetMat_Mod(void) const override { return iMat_Mod; }
@@ -157,32 +152,32 @@ public:
    * \brief Get index of the design variable.
    */
   inline unsigned long GetDV(void) const override { return iDV; }
-  
+
   /*!
    * \brief Set the Design density (topology optimization variable).
    */
   inline void SetDesignDensity(su2double valDensity) override { design_rho = valDensity; }
-  
+
   /*!
    * \brief Get the value of the Design density.
    */
   inline su2double GetDesignDensity(void) const override { return design_rho; }
-  
+
   /*!
    * \brief Set the Physical density (used to penalize element stiffness by the FEM solver).
    */
   inline void SetPhysicalDensity(su2double valDensity) override { physical_rho = valDensity; }
-  
+
   /*!
    * \brief Get the value of the Physical density.
    */
   inline su2double GetPhysicalDensity(void) const override { return physical_rho; }
-  
+
   /*!
    * \brief Extract the derivative of the Design density.
    */
   inline su2double GetAdjointDensity(void) const override { return SU2_TYPE::GetDerivative(design_rho); }
-  
+
   /*!
    * \brief Register the Design density as an AD input variable.
    */

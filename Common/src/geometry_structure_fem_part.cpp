@@ -2,20 +2,14 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * SU2 Project Website: https://su2code.github.io
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry_structure.hpp"
+#include "../include/geometry/CPhysicalGeometry.hpp"
+#include "../include/fem_standard_element.hpp"
+#ifdef HAVE_CGNS
+#include "../include/fem_cgns_elements.hpp"
+#endif
 #include "../include/adt_structure.hpp"
 #include "../include/blas_structure.hpp"
 #include <iomanip>
@@ -39,43 +37,6 @@
 #include <sys/stat.h>
 /*--- Epsilon definition ---*/
 
-bool CUnsignedLong2T::operator<(const CUnsignedLong2T &other) const {
-  if(long0 != other.long0) return (long0 < other.long0);
-  if(long1 != other.long1) return (long1 < other.long1);
-
-  return false;
-}
-
-bool CUnsignedLong2T::operator==(const CUnsignedLong2T &other) const {
-  if(long0 != other.long0) return false;
-  if(long1 != other.long1) return false;
-
-  return true;
-}
-
-void CUnsignedLong2T::Copy(const CUnsignedLong2T &other) {
-  long0 = other.long0;
-  long1 = other.long1;
-}
-
-bool CUnsignedShort2T::operator<(const CUnsignedShort2T &other) const {
-  if(short0 != other.short0) return (short0 < other.short0);
-  if(short1 != other.short1) return (short1 < other.short1);
-
-  return false;
-}
-
-bool CUnsignedShort2T::operator==(const CUnsignedShort2T &other) const {
-  if(short0 != other.short0) return false;
-  if(short1 != other.short1) return false;
-
-  return true;
-}
-
-void CUnsignedShort2T::Copy(const CUnsignedShort2T &other) {
-  short0 = other.short0;
-  short1 = other.short1;
-}
 
 CFaceOfElement::CFaceOfElement() {
   nCornerPoints   = 0;
