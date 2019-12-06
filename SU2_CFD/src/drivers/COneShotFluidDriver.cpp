@@ -372,7 +372,7 @@ void COneShotFluidDriver::RunOneShot(){
     // LoadOldMultiplier();
     // UpdateMultiplier(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, su2double* val_constr_func);
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
