@@ -1270,6 +1270,9 @@ void COneShotFluidDriver::LoadOldMultiplier(){
 void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
+    const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Store[iConstr];
+    const su2double hdh = ConstrFunc_Store[iConstr]*dh;
+    
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     // helper = 0.0;
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1309,10 +1312,6 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     // // Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
-    su2double helper = 0.0;
-    const su2double gamma = config->GetOneShotGamma(iConstr);
-    const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Store[iConstr];
-    const su2double hdh = ConstrFunc_Store[iConstr]*dh;
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
