@@ -223,20 +223,26 @@ void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
 template<class ScalarType>
 ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 #if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
-  /*--- All threads get the same "view" of the vectors. ---*/
+
+  /*--- All threads get the same "view" of the vectors and shared variable. ---*/
+  dotRes = 0.0;
   SU2_OMP_BARRIER
 
   /*--- Reduction over all threads in this mpi rank using the shared variable. ---*/
   ScalarType sum = 0.0;
 
-  SU2_OMP(for schedule(static,omp_chunk_size) reduction(+:dotRes))
-  for(auto i=0ul; i<nElmDomain; ++i) {
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElmDomain; ++i)
     sum += vec_val[i]*u.vec_val[i];
-    dotRes = sum;
-  }
+
+  SU2_OMP(atomic)
+  dotRes += sum;
+
+  /*--- Wait for all atomic updates. ---*/
+  SU2_OMP_BARRIER
 
 #ifdef HAVE_MPI
-  /*--- Reduce across all mpi ranks, only one thread communicates. ---*/
+  /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
   SU2_OMP_MASTER
   {
     sum = dotRes;
