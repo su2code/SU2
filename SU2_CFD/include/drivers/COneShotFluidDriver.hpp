@@ -53,37 +53,37 @@ protected:
   unsigned short nDV_Total; /*!< \brief Total number of design variables used in optimization.*/
   unsigned short nConstr;   /*!< \brief Total number of constraints used in optimization.*/
 
-  su2double* Gradient;                              /*!< \brief Vector to store gradient obtained from projection .*/
-  su2double* Gradient_Old;                          /*!< \brief Vector to store gradient obtained from projection (old value) .*/
-  su2double* ShiftedLagrangianGradient;             /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
-  su2double* ShiftedLagrangianGradient_Old;         /*!< \brief Saved gradient N_u of the shifted Lagrangian (old value) .*/
-  su2double* DesignVarUpdate;                       /*!< \brief Update of the design variable Delta u = u_{k+1} - u_k .*/
-  su2double* SearchDirection;                       /*!< \brief Search direction for optimization.*/
-  su2double** BFGS_Inv;                             /*!< \brief Inverse matrix for BFGS update.*/
-  su2double* DesignVariable;                        /*!< \brief Current design variable value.*/
-  su2double* AugmentedLagrangianGradient;           /*!< \brief Gradient of doubly augmented Lagrangian.*/
-  su2double* AugmentedLagrangianGradientAlpha;      /*!< \brief Alpha term of gradient of doubly augmented Lagrangian.*/
-  su2double* AugmentedLagrangianGradientBeta;       /*!< \brief Beta term of gradient of doubly augmented Lagrangian.*/
-  su2double** AugmentedLagrangianGradientGamma;     /*!< \brief Gamma term of gradient of doubly augmented Lagrangian.*/
-  su2double* AugmentedLagrangianGradient_Old;       /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
-  su2double* AugmentedLagrangianMultiplierGradient; /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
-  su2double Lagrangian, Lagrangian_Old;             /*!< \brief Value of doubly augmented Lagrangian.*/
-  su2double GradDotDir;                             /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
-  su2double ObjFunc_Store;                          /*!< \brief Objective function at old flow, new design.*/
+  su2double* Gradient;                  /*!< \brief Vector to store gradient obtained from projection .*/
+  su2double* Gradient_Old;              /*!< \brief Vector to store gradient obtained from projection (old value) .*/
+  su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
+  su2double* ShiftLagGrad_Old;          /*!< \brief Saved gradient N_u of the shifted Lagrangian (old value) .*/
+  su2double* DesignVarUpdate;           /*!< \brief Update of the design variable Delta u = u_{k+1} - u_k .*/
+  su2double* SearchDirection;           /*!< \brief Search direction for optimization.*/
+  su2double** BFGS_Inv;                 /*!< \brief Inverse matrix for BFGS update.*/
+  su2double* DesignVar;                 /*!< \brief Current design variable value.*/
+  su2double* AugLagGrad;                /*!< \brief Gradient of doubly augmented Lagrangian.*/
+  su2double* AugLagGradAlpha;           /*!< \brief Alpha term of gradient of doubly augmented Lagrangian.*/
+  su2double* AugLagGradBeta;            /*!< \brief Beta term of gradient of doubly augmented Lagrangian.*/
+  su2double** AugLagGradGamma;          /*!< \brief Gamma term of gradient of doubly augmented Lagrangian.*/
+  su2double* AugLagGrad_Old;            /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
+  su2double* AugLagLamGrad;             /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
+  su2double Lagrangian, Lagrangian_Old; /*!< \brief Value of doubly augmented Lagrangian.*/
+  su2double GradDotDir;                 /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
+  su2double ObjFunc_Store;              /*!< \brief Objective function at old flow, new design.*/
   
   su2double lb, ub;    /*!< \brief Lower and upper bounds of design variables.*/
   su2double epsilon;   /*!< \brief Estimator for the active set.*/
   su2double cwolfeone; /*!< \brief First Wolfe line search parameter.*/
-  bool* activeset;     /*!< \brief Flag for indices belonging to the active set (lower and upper design bounds are reached).*/
+  bool* ActiveSetDV;   /*!< \brief Flag for indices belonging to the active set (lower and upper design bounds are reached).*/
 
-  su2double* ConstrFunc;           /*!< \brief Constraint function values.*/
-  su2double* Multiplier;           /*!< \brief Lagrange multipliers for constraint functions.*/
-  su2double* Multiplier_Old;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
-  su2double* Multiplier_Store;     /*!< \brief Stored Lagrange multipliers for update.*/
-  su2double* Multiplier_Store_Old; /*!< \brief Old stored Lagrange multipliers for update.*/
-  su2double* ConstrFunc_Store;     /*!< \brief Old constraint function (stored when overwritten).*/
-  su2double** BCheck_Inv;          /*!< \brief Inverse matrix for multiplier update.*/
-  su2double  BCheck_Norm;          /*!< \brief Norm of the matrix for multiplier update.*/
+  su2double* ConstrFunc;       /*!< \brief Constraint function values.*/
+  su2double* ConstrFunc_Store; /*!< \brief Old constraint function (stored when overwritten).*/
+  su2double* Lambda;           /*!< \brief Lagrange multipliers for constraint functions.*/
+  su2double* Lambda_Old;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* Lambda_Store;     /*!< \brief Stored Lagrange multipliers for update.*/
+  su2double* Lambda_Store_Old; /*!< \brief Old stored Lagrange multipliers for update.*/
+  su2double** BCheck_Inv;      /*!< \brief Inverse matrix for multiplier update.*/
+  su2double  BCheck_Norm;      /*!< \brief Norm of the matrix for multiplier update.*/
 
   su2double BFGS_Init;
 
@@ -205,7 +205,7 @@ public:
   /*!
    * \brief Store values for the updated design variables.
    */
-  void UpdateDesignVariable();
+  void UpdateDesignVar();
 
   /*!
    * \brief Store the values for the Lagrangian and its gradient.
@@ -220,13 +220,13 @@ public:
   /*!
    * \brief Store the gradient of the shifted Lagrangian.
    */
-  void SetShiftedLagrangianGradient();
+  void SetShiftLagGrad();
 
   /*!
    * \brief Store the gradient of the augmented Lagrangian.
    * \param[in] kind - which gradient term is being stored (alpha, beta, gamma, total)
    */
-  void SetAugmentedLagrangianGradient(unsigned short kind);
+  void SetAugLagGrad(unsigned short kind);
 
   /*!
    * \brief Initialize the adjoint value of the objective function with 0.0.
@@ -277,28 +277,28 @@ public:
   /*!
    * \brief Store the old constraint multiplier.
    */
-  void StoreOldMultiplier();
+  void StoreOldLambda();
 
     /*!
    * \brief Load the old constraint multiplier.
    */
-  void LoadOldMultiplier();
+  void LoadOldLambda();
 
   /*!
    * \brief Update the constraint multiplier.
    */
-  void UpdateMultiplier(su2double stepsize);
+  void UpdateLambda(su2double stepsize);
 
   /*!
    * \brief Store the gradient of the augmented Lagrangian wrt the constraint multiplier.
    */
-  void StoreMultiplierGrad();
+  void StoreLambdaGrad();
 
 
   /*!
    * \brief Check the sign of the constraint multiplier.
    */
-  void CheckMultiplier();
+  void CheckLambda();
 
   /*!
    * \brief Set the constraint functions.
