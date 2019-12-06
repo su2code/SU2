@@ -264,7 +264,7 @@ void COneShotFluidDriver::RunOneShot(){
       solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
-      if ((ArmijoIter != nArmijoIter-1 && !bool_tol) || (!config->GetZeroStep())) {
+      if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
         ComputeDesignVarUpdate(stepsize);
         config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
         SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
@@ -306,7 +306,7 @@ void COneShotFluidDriver::RunOneShot(){
     }
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    if((Armijo_Iter != nArmijoIter-1) || (!config->GetZeroStep())) CalculateLagrangian();
+    if(((Armijo_Iter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
 
     ArmijoIter++;
 
