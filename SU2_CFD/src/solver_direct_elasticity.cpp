@@ -2,24 +2,14 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
@@ -947,9 +938,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 }
 
 
-
-void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
-
+void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
+                               unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
   bool initial_calc = (config->GetTimeIter() == 0) && (config->GetInnerIter() == 0);                  // Checks if it is the first calculation.
@@ -1007,7 +997,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * so we ask "geometry" to compute them.
    * This only needs to be done for the undeformed (initial) shape.
    */
-  if (topology_mode && (!topol_filter_applied || disc_adj_fem)) {
+  if (topology_mode && !topol_filter_applied) {
     geometry->SetElemVolume(config);
     FilterElementDensities(geometry,config);
     topol_filter_applied = true;
@@ -2920,14 +2910,14 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
   unsigned long *halo_point_all = new unsigned long[size*nHaloMax];
   su2double *halo_force_all = new su2double[size*nHaloMax*nDim];
 
-  /*--- If necessary put dummy values in halo_point_glb to get a valid pointer ---*/
-  if (halo_point_glb.empty()) halo_point_glb.resize(1);
-  /*--- Pad halo_force to avoid (observed) issues in the adjoint when nHaloLoc!=nHaloMax ---*/
-  while (halo_force.size() < nHaloMax*nDim) halo_force.push_back(0.0);
+  /*--- Make "allgathers" extra safe by resizing all vectors to the same size (some
+        issues observed when nHaloLoc = 0, especially with the discrete adjoint. ---*/
+  halo_point_glb.resize(nHaloMax,0);
+  halo_force.resize(nHaloMax*nDim,0.0);
 
   MPI_Allgather(&nHaloLoc,1,MPI_UNSIGNED_LONG,halo_point_num,1,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
-  MPI_Allgather(&halo_point_glb[0],nHaloLoc,MPI_UNSIGNED_LONG,halo_point_all,nHaloMax,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&halo_force[0],nHaloMax*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
+  MPI_Allgather(halo_point_glb.data(),nHaloMax,MPI_UNSIGNED_LONG,halo_point_all,nHaloMax,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
+  SU2_MPI::Allgather(halo_force.data(),nHaloMax*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
 
   /*--- Find shared points with other ranks and update our values ---*/
   for (int proc = 0; proc < size; ++proc)
@@ -3627,13 +3617,14 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   /*--- Store the value of the residual. ---*/
 
-  valResidual = System.GetResidual();
-
+  SetResLinSolver(System.GetResidual());
+  
 }
 
 
 void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
-                                                       CConfig *fea_config, CSolver ***fea_solution) {
+                                            CConfig *fea_config,
+                                            CSolver ***fea_solution) {
 
   unsigned short predOrder = fea_config->GetPredictorOrder();
   su2double Delta_t = fea_config->GetDelta_DynTime();
@@ -3855,11 +3846,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double objective_function_averaged = 0.0;
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nPointDomain,  &nTotalPoint,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nTotalPoint        = nPointDomain;
-#endif
+  SU2_MPI::Allreduce(&nPointDomain, &nTotalPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   weight_OF = config->GetRefGeom_Penalty() / nTotalPoint;
 
@@ -3879,11 +3866,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    objective_function_reduce        = objective_function;
-#endif
+  SU2_MPI::Allreduce(&objective_function, &objective_function_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   Total_OFRefGeom = objective_function_reduce + PenaltyValue;
 
@@ -3977,7 +3960,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar;
   unsigned long iPoint;
 
-  bool dynamic = (config->GetTime_Domain());
+  bool dynamic = config->GetTime_Domain();
 
   unsigned long TimeIter = config->GetTimeIter();
 
@@ -4022,15 +4005,9 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&difX,  &difX_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&difY,  &difY_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    objective_function_reduce        = objective_function;
-    difX_reduce                      = difX;
-    difY_reduce                      = difY;
-#endif
+  SU2_MPI::Allreduce(&objective_function, &objective_function_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&difX, &difX_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&difY, &difY_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   Total_OFRefNode = objective_function_reduce + PenaltyValue;
 
@@ -4124,7 +4101,6 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-
 }
 
 void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config)
@@ -4145,17 +4121,13 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
     }
   }
 
-#ifdef HAVE_MPI
-  {
-    su2double tmp;
-    SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    total_volume = tmp;
-    SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    integral = tmp;
-    SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    discreteness = tmp;
-  }
-#endif
+  su2double tmp;
+  SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  total_volume = tmp;
+  SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  integral = tmp;
+  SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  discreteness = tmp;
 
   if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
     Total_OFVolFrac = discreteness/total_volume;
@@ -4220,11 +4192,9 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
       Total_OFCompliance += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
   }
 
-#ifdef HAVE_MPI
   su2double tmp;
   SU2_MPI::Allreduce(&Total_OFCompliance,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   Total_OFCompliance = tmp;
-#endif
 
   // TODO: Temporary output file for the objective function. Will be integrated in the output once refurbished.
   if (rank == MASTER_NODE) {
@@ -4549,4 +4519,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 
   delete [] design_rho;
   delete [] physical_rho;
+
+  /*--- For when this method is called directly, e.g. by the adjoint solver. ---*/
+  topol_filter_applied = true;
 }

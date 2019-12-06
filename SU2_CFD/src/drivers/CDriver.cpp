@@ -2,24 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,6 +27,10 @@
 
 #include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
+
+#include "../../../Common/include/geometry/CDummyGeometry.hpp"
+#include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
 
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEAMeshElasticity.hpp"
@@ -528,12 +522,13 @@ void CDriver::Postprocessing() {
     cout.precision(6);
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
+    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
+    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
     cout << setw(25) << "Cores:" << setw(12) << size << " | ";
     cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
     cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/(su2double)size << " | ";
     cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/(su2double)size << endl;
-    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
-    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << setw(25) << "Ghost/Owned Point Ratio:" << setw(12) << (Mpoints-MpointsDomain)/MpointsDomain << " | " << endl;
     cout << endl;
     cout << "Preprocessing phase:" << endl;
     cout << setw(25) << "Preproc. Time (s):"  << setw(12)<< UsedTimePreproc << " | ";
@@ -715,8 +710,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
-  if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
-  else Partition_Analysis(geometry[MESH_0], config);
+  if (!dummy){
+    if( fem_solver ) Partition_Analysis_FEM(geometry[MESH_0], config);
+    else Partition_Analysis(geometry[MESH_0], config);
+  }
 #endif
 
   /*--- Check if Euler & Symmetry markers are straight/plane. This information
@@ -3507,41 +3504,38 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         /*--- Initialize the appropriate transfer strategy ---*/
       if (rank == MASTER_NODE) cout << "Transferring ";
 
-      if (fluid_donor && structural_target && (!discrete_adjoint)) {
+      if (fluid_donor && structural_target) {
         interface_types[donorZone][targetZone] = FLOW_TRACTION;
         nVarTransfer = 2;
-        interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
+        if(!discrete_adjoint) {
+          interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
+        } else {
+          interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
+        }
+        if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
       }
-      else if (structural_donor && fluid_target && (!discrete_adjoint)) {
+      else if (structural_donor && fluid_target) {
         /*--- If we are using the new mesh solver, we transfer the total boundary displacements (not incremental) --*/
-        if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL){
+        if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL) {
           interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
           nVarTransfer = 0;
           interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);
-          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. "<< endl;
+          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
         }
         /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
-        else{
-          interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
+        /// TODO: LEGACY CLEANUP remove the "else" part and every class and enum referenced there,
+        ///       add a check above to make sure MESH_SOL has been instantiated.
+        else {
           nVarTransfer = 0;
-          interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
-          if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+          if(!discrete_adjoint) {
+            interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
+            interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+          } else {
+            interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
+            interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+          }
+          if (rank == MASTER_NODE) cout << "structural displacements (legacy). " << endl;
         }
-      }
-      else if (fluid_donor && structural_target && discrete_adjoint) {
-        interface_types[donorZone][targetZone] = FLOW_TRACTION;
-        nVarTransfer = 2;
-        interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
-
-        if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
-      }
-      else if (structural_donor && fluid_target && discrete_adjoint){
-        interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
-        nVarTransfer = 0;
-        interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer,
-                                                                                    config[donorZone]);
-        if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
       }
       else if (fluid_donor && fluid_target) {
         interface_types[donorZone][targetZone] = SLIDING_INTERFACE;
@@ -3633,7 +3627,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
            rotating reference frame. ---*/
 
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-          geometry[iMGlevel]->SetRotationalVelocity(config, iZone, true);
+          geometry[iMGlevel]->SetRotationalVelocity(config, true);
           geometry[iMGlevel]->SetShroudVelocity(config);
         }
 
@@ -3651,7 +3645,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
         /*--- Set the translational velocity on all grid levels. ---*/
 
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, iZone, true);
+          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
 
         break;
 
@@ -4039,6 +4033,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   }
 
 }
+
 void CFluidDriver::Run() {
 
   unsigned short iZone, jZone, checkConvergence;
@@ -4158,14 +4153,6 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetTimeIter(ExtIter);
   delete runtime;
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
-    }
-  }
 
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
@@ -4305,7 +4292,6 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
-  su2double CFL;
   su2double rot_z_ini, rot_z_final ,rot_z;
   su2double outPres_ini, outPres_final, outPres;
   unsigned long rampFreq, finalRamp_Iter;
@@ -4341,26 +4327,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    if(mixingplane){
-      CFL = 0;
-      for (iZone = 0; iZone < nZone; iZone++){
-        output_container[iZone]->SetCFL_Number(solver_container[iZone], config_container[iZone]);
-        CFL += config_container[iZone]->GetCFL(MESH_0);
-      }
-      /*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
-      for (iZone = 0; iZone < nZone; iZone++){
-        config_container[iZone]->SetCFL(MESH_0, CFL/nZone);
-      }
-    }
-    else{
-      output_container[ZONE_0]->SetCFL_Number(solver_container[ZONE_0], config_container[ZONE_0]);
-    }
-  }
-
-
   /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
@@ -4378,7 +4344,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;
           }
-          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
           geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }

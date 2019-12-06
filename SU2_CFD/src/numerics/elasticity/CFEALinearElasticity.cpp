@@ -2,24 +2,14 @@
  * \file CFEALinearElasticity.cpp
  * \brief This file contains the routines for setting the FEM elastic structural problem.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -189,10 +179,10 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
       const su2double *Kab = element->Get_Kab(iNode,jNode);
 
       for (iVar = 0; iVar < nVar; iVar++) {
-          res_aux[iVar] = 0.0;
-          for (jVar = 0; jVar < nVar; jVar++)
-            res_aux[iVar] += Kab[iVar*nVar+jVar]*
-              (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
+        res_aux[iVar] = 0.0;
+        for (jVar = 0; jVar < nVar; jVar++)
+          res_aux[iVar] += Kab[iVar*nVar+jVar]*
+            (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
       }
       element->Add_Kt_a(iNode, res_aux);
     }
@@ -215,9 +205,9 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
     if (plane_stress) {
       /*--- We enable plane stress cases ---*/
 
-      D_Mat[0][0] = E/(1-Nu*Nu);      D_Mat[0][1] = (E*Nu)/(1-Nu*Nu); D_Mat[0][2] = 0.0;
-      D_Mat[1][0] = (E*Nu)/(1-Nu*Nu); D_Mat[1][1] = E/(1-Nu*Nu);      D_Mat[1][2] = 0.0;
-      D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;              D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
+      D_Mat[0][0] = E/(1-Nu*Nu);        D_Mat[0][1] = (E*Nu)/(1-Nu*Nu);  D_Mat[0][2] = 0.0;
+      D_Mat[1][0] = (E*Nu)/(1-Nu*Nu);   D_Mat[1][1] = E/(1-Nu*Nu);       D_Mat[1][2] = 0.0;
+      D_Mat[2][0] = 0.0;                D_Mat[2][1] = 0.0;               D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
     }
     else {
       /*--- Assuming plane strain as a general case ---*/
@@ -229,14 +219,15 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 
   }
   else {
-    su2double Lbd_2Mu = Lambda + 2.0*Mu;
 
-    D_Mat[0][0] = Lbd_2Mu;  D_Mat[0][1] = Lambda;   D_Mat[0][2] = Lambda;   D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
-    D_Mat[1][0] = Lambda;   D_Mat[1][1] = Lbd_2Mu;  D_Mat[1][2] = Lambda;   D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
-    D_Mat[2][0] = Lambda;   D_Mat[2][1] = Lambda;   D_Mat[2][2] = Lbd_2Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
-    D_Mat[3][0] = 0.0;      D_Mat[3][1] = 0.0;      D_Mat[3][2] = 0.0;      D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
-    D_Mat[4][0] = 0.0;      D_Mat[4][1] = 0.0;      D_Mat[4][2] = 0.0;      D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
-    D_Mat[5][0] = 0.0;      D_Mat[5][1] = 0.0;      D_Mat[5][2] = 0.0;      D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
+    su2double Lbda_2Mu = Lambda + 2.0*Mu;
+
+    D_Mat[0][0] = Lbda_2Mu;  D_Mat[0][1] = Lambda;    D_Mat[0][2] = Lambda;    D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
+    D_Mat[1][0] = Lambda;    D_Mat[1][1] = Lbda_2Mu;  D_Mat[1][2] = Lambda;    D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
+    D_Mat[2][0] = Lambda;    D_Mat[2][1] = Lambda;    D_Mat[2][2] = Lbda_2Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
+    D_Mat[3][0] = 0.0;       D_Mat[3][1] = 0.0;       D_Mat[3][2] = 0.0;       D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
+    D_Mat[4][0] = 0.0;       D_Mat[4][1] = 0.0;       D_Mat[4][2] = 0.0;       D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
+    D_Mat[5][0] = 0.0;       D_Mat[5][1] = 0.0;       D_Mat[5][2] = 0.0;       D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
 
   }
 

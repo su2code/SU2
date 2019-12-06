@@ -1,26 +1,16 @@
-﻿/*!
+/*!
  * \file output.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.1.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -204,12 +194,6 @@ class COutputLegacy {
         **Turb2LamViscRatioOut,
         **NuFactorIn,
         **NuFactorOut;
-
-  unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
-  vector<string> Marker_Tags_InletFile;  /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
-  unsigned long *nRow_InletFile;         /*!< \brief Counters for the number of points per marker in the inlet profile file. */
-  unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
-  su2double **InletCoords;               /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
 
 protected:
 
@@ -768,19 +752,6 @@ public:
   void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
-   */
-  void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);
-
-  /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
    *  on the surface and in the volume to a file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1026,28 +997,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Merge the node coordinates of all inlet boundaries from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void MergeInletCoordinates(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Write a template inlet profile file for all inlets for flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Solver container.
-   */
-  void Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver **solver);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing inlet boundary coordinates.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateInletCoordinates(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Create and write a CSV file with a slice of data.
