@@ -962,7 +962,7 @@ void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
                                        + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
                                        + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta();
       for(iConstr = 0; iConstr < nConstr; iConstr++) {
-        AugmentedLagrangianGradient[iDV] += AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma(iConstr);
+        AugmentedLagrangianGradient[iDV] += AugmentedLagrangianGradientGamma[iDV][iConstr]*config->GetOneShotGamma(iConstr);
       }
     }   
     else if(kind == TOTAL_AUGMENTED_OLD) {
@@ -970,7 +970,7 @@ void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
                                            + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
                                            + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta();
       for(iConstr = 0; iConstr < nConstr; iConstr++) {
-        AugmentedLagrangianGradient_Old[iDV] += AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma(iConstr);
+        AugmentedLagrangianGradient_Old[iDV] += AugmentedLagrangianGradientGamma[iDV][iConstr]*config->GetOneShotGamma(iConstr);
       }
     }   
   }
