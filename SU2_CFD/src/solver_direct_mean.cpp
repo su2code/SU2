@@ -30,6 +30,8 @@
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../include/variables/CEulerVariable.hpp"
 #include "../include/variables/CNSVariable.hpp"
+#include "../include/gradients/computeGradientsGreenGauss.hpp"
+
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
   
@@ -5268,105 +5270,12 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
 }
 
 void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
-  unsigned long iPoint, jPoint, iEdge, iVertex;
-  unsigned short iDim, iVar, iMarker;
-  su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
-  Partial_Gradient, Partial_Res, *Normal, Vol;
-  
-  /*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho) ---*/
 
-  PrimVar_Vertex = new su2double [nPrimVarGrad];
-  PrimVar_i = new su2double [nPrimVarGrad];
-  PrimVar_j = new su2double [nPrimVarGrad];
-  
-  /*--- Set Gradient_Primitive to zero ---*/
+  auto primitives = nodes->GetPrimitive();
+  auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
-  nodes->SetGradient_PrimitiveZero();
-
-  /*--- Loop interior edges ---*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
-      PrimVar_j[iVar] = nodes->GetPrimitive(jPoint,iVar);
-    }
-    
-    Normal = geometry->edge[iEdge]->GetNormal();
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Res = PrimVar_Average*Normal[iDim];
-        if (geometry->node[iPoint]->GetDomain())
-          nodes->AddGradient_Primitive(iPoint,iVar, iDim, Partial_Res);
-        if (geometry->node[jPoint]->GetDomain())
-          nodes->SubtractGradient_Primitive(jPoint,iVar, iDim, Partial_Res);
-      }
-    }
-  }
-
-  /*--- Loop boundary edges ---*/
-  
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()) {
-        
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          PrimVar_Vertex[iVar] = nodes->GetPrimitive(iPoint,iVar);
-        
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
-            nodes->SubtractGradient_Primitive(iPoint,iVar, iDim, Partial_Res);
-          }
-      }
-    }
-    }
-  }
-
-  /*--- Correct the sensor values across any periodic boundaries. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_GG);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_GG);
-  }
-  
-  /*--- Update gradient value ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- Get the volume, which may include periodic components. ---*/
-    
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
-    
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = nodes->GetGradient_Primitive(iPoint, iVar, iDim)/Vol;
-        if (reconstruction)
-          nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, Partial_Gradient);
-        else
-          nodes->SetGradient_Primitive(iPoint, iVar, iDim, Partial_Gradient);
-      }
-    }
-    
-  }
-
-  delete [] PrimVar_Vertex;
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-
-  /*--- Communicate the gradient values via MPI. ---*/
-
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
-  
+  computeGradientsGreenGauss(*this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
+                             *config, *primitives, 0, nPrimVarGrad, *gradient);
 }
 
 void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {

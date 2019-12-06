@@ -28,6 +28,7 @@
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CBaselineVariable.hpp"
+#include "../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
@@ -267,9 +268,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                     CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
-  
+
+  /*--- Check for dummy communication. ---*/
+
+  if (commType == PERIODIC_NONE) return;
+
   /*--- Local variables ---*/
-  
+
   bool boundary_i, boundary_j;
   bool weighted = true;
 
@@ -1487,9 +1492,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                                     CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
-  
+
+  /*--- Check for dummy communication. ---*/
+
+  if (commType == PERIODIC_NONE) return;
+
   /*--- Local variables ---*/
-  
+
   unsigned short nPeriodic = config->GetnMarker_Periodic();
   unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
   
@@ -2754,64 +2763,12 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
-  
-  unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
-  unsigned short nDim = geometry->GetnDim(), iDim, iMarker;
-  
-  su2double AuxVar_Vertex, AuxVar_i, AuxVar_j, AuxVar_Average;
-  su2double *Gradient, DualArea, Partial_Res, Grad_Val, *Normal;
-  
-  /*--- Set Gradient to Zero ---*/
 
-  base_nodes->SetAuxVarGradientZero();
-  
-  /*--- Loop interior edges ---*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    AuxVar_i = base_nodes->GetAuxVar(iPoint);
-    AuxVar_j = base_nodes->GetAuxVar(jPoint);
-    
-    Normal = geometry->edge[iEdge]->GetNormal();
-    AuxVar_Average =  0.5 * ( AuxVar_i + AuxVar_j);
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Partial_Res = AuxVar_Average*Normal[iDim];
-      base_nodes->AddAuxVarGradient(iPoint, iDim, Partial_Res);
-      base_nodes->SubtractAuxVarGradient(jPoint,iDim, Partial_Res);
-    }
-  }
-  
-  /*--- Loop boundary edges ---*/
-  
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      Point = geometry->vertex[iMarker][iVertex]->GetNode();
-      AuxVar_Vertex = base_nodes->GetAuxVar(Point);
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Res = AuxVar_Vertex*Normal[iDim];
-        base_nodes->SubtractAuxVarGradient(Point,iDim, Partial_Res);
-      }
-    }
-    }
-  
-  for (iPoint=0; iPoint<geometry->GetnPoint(); iPoint++)
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Gradient = base_nodes->GetAuxVarGradient(iPoint);
-      DualArea = geometry->node[iPoint]->GetVolume();
-      Grad_Val = Gradient[iDim]/(DualArea+EPS);
-      base_nodes->SetAuxVarGradient(iPoint, iDim, Grad_Val);
-    }
-  
-  /*--- Gradient MPI ---*/
-  
-  InitiateComms(geometry, config, AUXVAR_GRADIENT);
-  CompleteComms(geometry, config, AUXVAR_GRADIENT);
+  auto solution = base_nodes->AuxVar();
+  auto gradient = base_nodes->GetAuxVarGradient();
 
+  computeGradientsGreenGauss(*this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+                             *config, *solution, 0, 1, *gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -2941,85 +2898,12 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
-  unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
-  unsigned short iVar, iDim, iMarker;
-  su2double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient,
-  Partial_Res, Grad_Val, *Normal, Vol;
-  
-  /*--- Set Gradient to Zero ---*/
-  base_nodes->SetGradientZero();
-  
-  /*--- Loop interior edges ---*/
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    Solution_i = base_nodes->GetSolution(iPoint);
-    Solution_j = base_nodes->GetSolution(jPoint);
-    Normal = geometry->edge[iEdge]->GetNormal();
-    for (iVar = 0; iVar< nVar; iVar++) {
-      Solution_Average =  0.5 * (Solution_i[iVar] + Solution_j[iVar]);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Res = Solution_Average*Normal[iDim];
-        if (geometry->node[iPoint]->GetDomain())
-          base_nodes->AddGradient(iPoint, iVar, iDim, Partial_Res);
-        if (geometry->node[jPoint]->GetDomain())
-          base_nodes->SubtractGradient(jPoint,iVar, iDim, Partial_Res);
-      }
-    }
-  }
-  
-  /*--- Loop boundary edges ---*/
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      Point = geometry->vertex[iMarker][iVertex]->GetNode();
-      Solution_Vertex = base_nodes->GetSolution(Point);
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Partial_Res = Solution_Vertex[iVar]*Normal[iDim];
-          if (geometry->node[Point]->GetDomain())
-            base_nodes->SubtractGradient(Point,iVar, iDim, Partial_Res);
-        }
-    }
-  }
-  }
-  
-  /*--- Correct the gradient values for any periodic boundaries. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_GG);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_GG);
-  }
-  
-  /*--- Compute gradient ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    
-    /*--- Get the volume, which may include periodic components. ---*/
-    
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Gradient = base_nodes->GetGradient(iPoint);
-        Grad_Val = Gradient[iVar][iDim] / (Vol+EPS);
-        if (reconstruction)
-          base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, Grad_Val);
-        else
-          base_nodes->SetGradient(iPoint, iVar, iDim, Grad_Val);
-      }
-    }
-    
-  }
-  
-  /*--- Gradient MPI ---*/
-  
-  InitiateComms(geometry, config, SOLUTION_GRADIENT);
-  CompleteComms(geometry, config, SOLUTION_GRADIENT);
-  
+  auto solution = base_nodes->GetPrimitive();
+  auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+
+  computeGradientsGreenGauss(*this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
+                             *config, *solution, 0, nVar, *gradient);
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {

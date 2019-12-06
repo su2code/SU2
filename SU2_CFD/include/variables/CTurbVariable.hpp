@@ -100,6 +100,12 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-  
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Pointer to variable reconstruction gradient.
+   */
+  inline VectorOfMatrix* GetGradient_Reconstruction(void) final { return &Gradient_Reconstruction; }
+
 };
 
