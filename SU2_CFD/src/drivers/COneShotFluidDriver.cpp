@@ -298,8 +298,8 @@ void COneShotFluidDriver::RunOneShot(){
       // StoreMultiplierGrad();
       /*--- Update constraint multiplier ---*/
       LoadOldMultiplier();
-      // UpdateMultiplier(stepsize);
-      UpdateMultiplier(1.0);
+      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(1.0);
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
