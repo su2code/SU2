@@ -306,7 +306,7 @@ void COneShotFluidDriver::RunOneShot(){
     }
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    if(((Armijo_Iter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
+    if(((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
 
     ArmijoIter++;
 
