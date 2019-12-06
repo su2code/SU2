@@ -1331,15 +1331,15 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     }
     // Lambda[iConstr] = Lambda_Store[iConstr];
     /*--- Only update if constraint violation improves ---*/
-    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
-    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
+    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
+    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] -= stepsize*Lambda_Old[iConstr]*config->GetMultiplierScale(iConstr);
       Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr];
       // Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr];
       // Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr]*config->GetMultiplierScale(iConstr);
     }
-    // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
-    else {
+    else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
+    // else {
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
