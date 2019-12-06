@@ -61,7 +61,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   AugmentedLagrangianGradient = new su2double[nDV_Total];
   AugmentedLagrangianGradientAlpha = new su2double[nDV_Total];
   AugmentedLagrangianGradientBeta = new su2double[nDV_Total];
-  AugmentedLagrangianGradientGamma = new *su2double[nDV_Total];
+  AugmentedLagrangianGradientGamma = new su2double*[nDV_Total];
   AugmentedLagrangianGradient_Old = new su2double[nDV_Total];
 
   DesignVarUpdate = new su2double[nDV_Total];
