@@ -261,7 +261,7 @@ void COneShotFluidDriver::RunOneShot(){
       // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
-      // solver[ADJFLOW_SOL]->LoadSolution();
+      solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if ((ArmijoIter != nArmijoIter-1 && !bool_tol) || (!config->GetZeroStep())) {
