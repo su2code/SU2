@@ -1286,9 +1286,9 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       Multiplier[iConstr] = 0.;
     }
     /*--- Only update if constraint violation improves ---*/
-    // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) ||
-    //         (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.)) {
-    else {
+    else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) ||
+            (ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.)) {
+    // else {
       Multiplier[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       // Multiplier_Store[iConstr] = Multiplier[iConstr];
