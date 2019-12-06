@@ -297,8 +297,8 @@ void COneShotFluidDriver::RunOneShot(){
       // StoreMultiplierGrad();
       /*--- Update constraint multiplier ---*/
       LoadOldMultiplier();
-      // UpdateMultiplier(stepsize);
-      UpdateMultiplier(1.0);
+      UpdateMultiplier(stepsize);
+      // UpdateMultiplier(1.0);
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
@@ -340,35 +340,35 @@ void COneShotFluidDriver::RunOneShot(){
   else if(InnerIter > config->GetOneShotStart() && 
           InnerIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-    // /*--- Perform new line search on just multiplier ---*/
-    // if(nConstr > 0 && config->GetZeroStep()) {
-    //   su2double stepsize_mu = 1.0;
-    //   ArmijoIter = 0;
-    //   bool_tol = false;
-    //   do {
-    //     if(ArmijoIter > 0){
-    //       /*--- Parabolic backtracking ---*/
-    //       stepsize_tmp = UpdateStepSizeQuadratic();
-    //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-    //       if(stepsize_mu < tol) {
-    //         stepsize_mu  = 0.;
-    //         bool_tol     = true;
-    //       }
-    //     }
-    //     /*--- Compute and store GradL dot p ---*/
-    //     StoreGradDotDir(false);
+    /*--- Perform new line search on just multiplier ---*/
+    if(nConstr > 0 && config->GetZeroStep()) {
+      su2double stepsize_mu = 1.0;
+      ArmijoIter = 0;
+      bool_tol = false;
+      do {
+        if(ArmijoIter > 0){
+          /*--- Parabolic backtracking ---*/
+          stepsize_tmp = UpdateStepSizeQuadratic();
+          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+          if(stepsize_mu < tol) {
+            stepsize_mu  = 0.;
+            bool_tol     = true;
+          }
+        }
+        /*--- Compute and store GradL dot p ---*/
+        StoreGradDotDir(false);
 
-    //     /*--- Update constraint multiplier ---*/
-    //     LoadOldMultiplier();
-    //     UpdateMultiplier(stepsize_mu);
+        /*--- Update constraint multiplier ---*/
+        LoadOldMultiplier();
+        UpdateMultiplier(stepsize_mu);
 
-    //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    //     CalculateLagrangian();
+        /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+        CalculateLagrangian();
 
-    //     ArmijoIter++;
+        ArmijoIter++;
 
-    //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    // }
+      } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    }
     // LoadOldMultiplier();
     // UpdateMultiplier(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
@@ -789,13 +789,13 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       // admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     // admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //     admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      // admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+    }
+  }
   admissible_step *= cwolfeone;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -813,13 +813,13 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       // GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
-  // if (nConstr > 0) {
-  //   unsigned short iConstr;
-  //   for (iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     // GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-  //     GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
-  //   }
-  // }
+  if (nConstr > 0) {
+    unsigned short iConstr;
+    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      // GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+    }
+  }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
