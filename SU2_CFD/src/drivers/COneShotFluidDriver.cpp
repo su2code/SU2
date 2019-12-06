@@ -803,16 +803,19 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   if(design_update) {
     for (iDV = 0; iDV < nDV_Total; iDV++){
       // /*--- ShiftedLagrangianGradient is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+      admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
       /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
   if (nConstr > 0) {
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-      // admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+      // admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+      const su2double gamma = config->GetOneShotGamma(iConstr);
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
+        admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+      }
     }
   }
   admissible_step *= cwolfeone;
@@ -827,16 +830,19 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
   if(design_update) {
     for (iDV = 0; iDV < nDV_Total; iDV++){
       // /*--- ShiftedLagrangianGradient is the gradient at the old iterate. ---
-      // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+      GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
       /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+      // GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
   if (nConstr > 0) {
     unsigned short iConstr;
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
-      GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
-      // GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+      // GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
+      const su2double gamma = config->GetOneShotGamma(iConstr);
+      if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
+        GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+      }
     }
   }
 }
