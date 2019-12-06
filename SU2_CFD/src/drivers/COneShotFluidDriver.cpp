@@ -61,7 +61,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   AugmentedLagrangianGradient = new su2double[nDV_Total];
   AugmentedLagrangianGradientAlpha = new su2double[nDV_Total];
   AugmentedLagrangianGradientBeta = new su2double[nDV_Total];
-  AugmentedLagrangianGradientGamma = new su2double[nDV_Total];
+  AugmentedLagrangianGradientGamma = new *su2double[nDV_Total];
   AugmentedLagrangianGradient_Old = new su2double[nDV_Total];
 
   DesignVarUpdate = new su2double[nDV_Total];
@@ -92,7 +92,8 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     AugmentedLagrangianGradient[iDV] = 0.0;
     AugmentedLagrangianGradientAlpha[iDV] = 0.0;
     AugmentedLagrangianGradientBeta[iDV] = 0.0;
-    AugmentedLagrangianGradientGamma[iDV] = 0.0;
+    AugmentedLagrangianGradientGamma[iDV] = new su2double[nConstr];
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) AugmentedLagrangianGradientGamma[iDV][iConstr] = 0.0;
     AugmentedLagrangianGradient_Old[iDV] = 0.0;
     DesignVarUpdate[iDV] = 0.0;
     DesignVariable[iDV] = 0.0;
@@ -117,9 +118,9 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck_Inv[iConstr][jConstr] = 0.0;
     }
-    BCheck_Inv[iConstr][iConstr] = config->GetOneShotGamma();
+    BCheck_Inv[iConstr][iConstr] = config->GetOneShotGamma(iConstr);
   }
-  BCheck_Norm = 1./config->GetOneShotGamma();
+  BCheck_Norm = 1./config->GetOneShotGamma(0);
 
   /*----- calculate values for bound projection algorithm -------*/
   lb=-config->GetBound()*config->GetDesignScale();
@@ -137,7 +138,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
 COneShotFluidDriver::~COneShotFluidDriver(void){
 
   /*----- free allocated memory -------*/
-  unsigned short iDV;
+  unsigned short iDV, iConstr;
   for (iDV = 0; iDV  < nDV_Total; iDV++){
     delete [] BFGS_Inv[iDV];
   }
@@ -150,6 +151,9 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   delete [] AugmentedLagrangianGradient;
   delete [] AugmentedLagrangianGradientAlpha;
   delete [] AugmentedLagrangianGradientBeta;
+  for (iDV = 0; iDV < nDV_Total; iDV++){
+    delete [] AugmentedLagrangianGradientGamma[iDV];
+  }
   delete [] AugmentedLagrangianGradientGamma;
   delete [] AugmentedLagrangianGradient_Old;
 
@@ -327,7 +331,7 @@ void COneShotFluidDriver::RunOneShot(){
   if(InnerIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
@@ -868,7 +872,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
   Lagrangian += ObjFunc_Store; //TODO use for BFGS either only objective function or normal Lagrangian
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    const su2double gamma = config->GetOneShotGamma();
+    const su2double gamma = config->GetOneShotGamma(iConstr);
     su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
@@ -939,7 +943,7 @@ void COneShotFluidDriver::SetShiftedLagrangianGradient(){
 }
 
 void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
-  unsigned short iDV;
+  unsigned short iDV, iConstr;
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
   for (iDV = 0; iDV < nDV_Total; iDV++){
     if(kind == ALPHA_TERM) {
@@ -949,19 +953,25 @@ void COneShotFluidDriver::SetAugmentedLagrangianGradient(unsigned short kind){
       AugmentedLagrangianGradientBeta[iDV] = Gradient[iDV];
     }
     else if(kind == GAMMA_TERM) {
-      AugmentedLagrangianGradientGamma[iDV] = Gradient[iDV];
+      for(iConstr = 0; iConstr < nConstr; iConstr++) {
+        AugmentedLagrangianGradientGamma[iDV][iConstr] = Gradient[iDV];
+      }
     }
     else if(kind == TOTAL_AUGMENTED) {
       AugmentedLagrangianGradient[iDV] = ShiftedLagrangianGradient[iDV]
                                        + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
-                                       + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta()
-                                       + AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma();
+                                       + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta();
+      for(iConstr = 0; iConstr < nConstr; iConstr++) {
+        AugmentedLagrangianGradient[iDV] += AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma(iConstr);
+      }
     }   
     else if(kind == TOTAL_AUGMENTED_OLD) {
       AugmentedLagrangianGradient_Old[iDV] = ShiftedLagrangianGradient[iDV]
                                            + AugmentedLagrangianGradientAlpha[iDV]*config->GetOneShotAlpha()
-                                           + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta()
-                                           + AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma();
+                                           + AugmentedLagrangianGradientBeta[iDV]*config->GetOneShotBeta();
+      for(iConstr = 0; iConstr < nConstr; iConstr++) {
+        AugmentedLagrangianGradient_Old[iDV] += AugmentedLagrangianGradientGamma[iDV]*config->GetOneShotGamma(iConstr);
+      }
     }   
   }
 }
@@ -980,7 +990,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   SetAdj_ObjFunction_Zero();
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    const su2double gamma = config->GetOneShotGamma();
+    const su2double gamma = config->GetOneShotGamma(iConstr);
     if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
@@ -1134,13 +1144,13 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
   su2double bcheck=0;
   for (iConstr = 0; iConstr  < nConstr; iConstr++){
-    BCheck[iConstr][iConstr] = 1./config->GetOneShotGamma();
+    BCheck[iConstr][iConstr] = 1./config->GetOneShotGamma(iConstr);
     for (jConstr = 0; jConstr < nConstr; jConstr++){
       BCheck[iConstr][jConstr] += config->GetOneShotBeta()*solver[ADJFLOW_SOL]->MultiplyConstrDerivative(iConstr,jConstr);
     }
   }
   if (nConstr == 1){
-      BCheck_Norm = BCheck[0][0] - 1./config->GetOneShotGamma();
+      BCheck_Norm = BCheck[0][0] - 1./config->GetOneShotGamma(0);
       BCheck_Inv[0][0] = 1./BCheck[0][0];
   } else {
     bcheck=1./(BCheck[0][0]*BCheck[1][1]*BCheck[2][2]+BCheck[1][0]*BCheck[2][1]*BCheck[0][2]+BCheck[2][0]*BCheck[0][1]*BCheck[1][2]-BCheck[0][0]*BCheck[2][1]*BCheck[1][2]-BCheck[2][0]*BCheck[1][1]*BCheck[0][2]-BCheck[1][0]*BCheck[0][1]*BCheck[2][2]);
@@ -1242,8 +1252,9 @@ void COneShotFluidDriver::LoadOldMultiplier(){
 }
 
 void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
-  su2double helper, gamma = config->GetOneShotGamma();
+  su2double helper;
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    const su2double gamma = config->GetOneShotGamma(iConstr);
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     // helper = 0.0;
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1339,8 +1350,9 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
   if(nConstr > 0) {
     unsigned short iConstr, iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
     unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
-    const su2double beta = config->GetOneShotBeta(), gamma = config->GetOneShotGamma();
+    const su2double beta = config->GetOneShotBeta();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      const su2double gamma = config->GetOneShotGamma(iConstr);
       su2double my_Gradient = 0.;
       // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) || 
       //    ((ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.) && (ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.))) {

@@ -1108,7 +1108,7 @@ private:
   bool BFGS_Reset; /*!< \brief flag for reset of the Hessian to Identity in one-shot method */
   unsigned long One_Shot_Start; /*!< \brief Start iteration for one-shot method */
   unsigned long One_Shot_Stop; /*!< \brief Stop iteration for one-shot method */
-  su2double One_Shot_Alpha, One_Shot_Beta, One_Shot_Gamma; /*!< \brief penalty coefficients for augmented Lagrangian in one-shot method */ 
+  su2double One_Shot_Alpha, One_Shot_Beta, *One_Shot_Gamma; /*!< \brief penalty coefficients for augmented Lagrangian in one-shot method */ 
   su2double One_Shot_Gamma_Rate; /*!< \brief minimum rate of increase of gamma in one-shot method */ 
   su2double One_Shot_Gamma_Max; /*!< \brief maximum value of gamma in one-shot method */ 
   su2double One_Shot_FD; /*!< \brief Finite difference step-size for one-shot method */
@@ -9437,7 +9437,7 @@ public:
    * \brief Get the coefficient for the "gamma"-term in the doubly augmented Lagrangian.
    * \return Value for gamma coefficient in one-shot method
    */
-  su2double GetOneShotGamma(void);
+  su2double GetOneShotGamma(unsigned short val_cons);
 
   /*!
    * \brief Get the minimum rate of increase of the coefficient for the "gamma"-term in the doubly augmented Lagrangian.
@@ -9464,7 +9464,7 @@ public:
   /*!
    * \brief Set the coefficient for the "gamma"-term in the doubly augmented Lagrangian.
    */
-  void SetOneShotGamma(su2double input);
+  void SetOneShotGamma(su2double input, unsigned short val_cons);
 
   /*!
    * \brief Get the finite difference step size for the "beta"-term in the doubly augmented Lagrangian.
