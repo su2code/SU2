@@ -1307,6 +1307,26 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 }
 
 template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B) {
+
+  /*--- Check the sparse structure is shared between the two matrices,
+   *    comparing pointers is ok as they are obtained from CGeometry. ---*/
+  bool ok = (row_ptr == B.row_ptr) && (col_ind == B.col_ind) &&
+            (nVar == B.nVar) && (nEqn == B.nEqn) && (nnz == B.nnz);
+
+  if (!ok) {
+    SU2_OMP_MASTER
+    SU2_MPI::Error("Matrices do not have compatible sparsity.", CURRENT_FUNCTION);
+  }
+
+  SU2_OMP_FOR_STAT(omp_light_size)
+  for (auto i = 0ul; i < nnz*nVar*nEqn; ++i)
+    matrix[i] += PassiveAssign<ScalarType,OtherType>(alpha*B.matrix[i]);
+
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
                                                        unsigned short kind_fact, bool transposed) {
 #ifdef HAVE_PASTIX
@@ -1361,6 +1381,7 @@ template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
@@ -1370,4 +1391,6 @@ template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(passivedouble, const CSysMatrix<passivedouble>&);
+template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
 #endif

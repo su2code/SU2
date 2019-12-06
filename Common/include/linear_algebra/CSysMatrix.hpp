@@ -69,6 +69,9 @@ class CGeometry;
 template<class ScalarType>
 class CSysMatrix {
 private:
+  /*--- We are friends with all other possible CSysMatrices. ---*/
+  template<class T> friend class CSysMatrix;
+
   int rank;     /*!< \brief MPI Rank. */
   int size;     /*!< \brief MPI Size. */
 
@@ -82,10 +85,10 @@ private:
   unsigned long omp_num_parts;      /*!< \brief Number of threads used in thread-parallel LU_SGS and ILU. */
   unsigned long *omp_partitions;    /*!< \brief Point indexes of LU_SGS and ILU thread-parallel sub partitioning. */
 
-  unsigned long nPoint,             /*!< \brief Number of points in the grid. */
-  nPointDomain,                     /*!< \brief Number of points in the grid. */
-  nVar,                             /*!< \brief Number of variables. */
-  nEqn;                             /*!< \brief Number of equations. */
+  unsigned long nPoint;             /*!< \brief Number of points in the grid. */
+  unsigned long nPointDomain;       /*!< \brief Number of points in the grid (excluding halos). */
+  unsigned long nVar;               /*!< \brief Number of variables. */
+  unsigned long nEqn;               /*!< \brief Number of equations. */
 
   ScalarType *matrix;               /*!< \brief Entries of the sparse matrix. */
   unsigned long nnz;                /*!< \brief Number of possible nonzero entries in the matrix. */
@@ -100,13 +103,13 @@ private:
   const unsigned long *col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
-  ScalarType *invM;              /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
+  ScalarType *invM;                 /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 
   unsigned long nLinelet;                      /*!< \brief Number of Linelets in the system. */
   vector<bool> LineletBool;                    /*!< \brief Identify if a point belong to a Linelet. */
   vector<vector<unsigned long> > LineletPoint; /*!< \brief Linelet structure. */
 
-  /*--- Temporary working memory used in the Linelet preconditioner, outer vector is for threads ---*/
+  /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
   mutable vector<vector<const ScalarType*> > LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
   mutable vector<vector<ScalarType> > LineletInvDiag;      /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
   mutable vector<vector<ScalarType> > LineletVector;       /*!< \brief Solution and RHS of the tri-diag system (working memory). */
@@ -129,9 +132,9 @@ private:
 #endif
 
   /*!
-   * \brief Auxilary type to wrap the edge map pointer used in fast block updates, i.e. without
+   * \brief Auxilary object to wrap the edge map pointer used in fast block updates, i.e. without linear searches.
    */
-  struct edgemap {
+  struct {
     const unsigned long *ptr = nullptr;
 
     inline unsigned long operator() (unsigned long edge, unsigned long node) const {
@@ -605,6 +608,15 @@ public:
    */
   template<class OtherType>
   void EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+
+  /*!
+   * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).
+   * \note Matrices must have the same sparse pattern.
+   * \param[in] alpha - The scaling constant.
+   * \param[in] B - Matrix being.
+   */
+  template<class OtherType>
+  void MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B);
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.

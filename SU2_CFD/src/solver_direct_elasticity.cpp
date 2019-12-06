@@ -3024,8 +3024,8 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 
 void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned long iPoint, jPoint;
-  unsigned short iVar, jVar;
+  unsigned long iPoint;
+  unsigned short iVar;
 
   bool first_iter = (config->GetInnerIter() == 0);
   bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
@@ -3099,16 +3099,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
      *
      */
     if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (jPoint = 0; jPoint < nPoint; jPoint++) {
-          for(iVar = 0; iVar < nVar; iVar++) {
-            for (jVar = 0; jVar < nVar; jVar++) {
-              Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
-            }
-          }
-          Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-        }
-      }
+      Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
     }
 
 
@@ -3330,8 +3321,8 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
 
 void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned long iPoint, jPoint;
-  unsigned short iVar, jVar;
+  unsigned long iPoint;
+  unsigned short iVar;
 
   bool first_iter = (config->GetInnerIter() == 0);
   bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
@@ -3398,16 +3389,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
      *
      */
     if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (jPoint = 0; jPoint < nPoint; jPoint++) {
-          for(iVar = 0; iVar < nVar; iVar++) {
-            for (jVar = 0; jVar < nVar; jVar++) {
-              Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
-            }
-          }
-          Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-        }
-      }
+      Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
     }
 
 
