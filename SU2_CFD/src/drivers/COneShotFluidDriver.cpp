@@ -230,11 +230,6 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
-  /*--- Do a primal and adjoint update ---*/
-  PrimalDualStep();
-  solver[ADJFLOW_SOL]->SetSaveSolution();
-  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
 
@@ -296,23 +291,19 @@ void COneShotFluidDriver::RunOneShot(){
 
     }
 
-    // /*--- Do a primal and adjoint update ---*/
-    // PrimalDualStep();
-    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    /*--- Do a primal and adjoint update ---*/
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
-      StoreMultiplierGrad();
+      // StoreMultiplierGrad();
       /*--- Update constraint multiplier ---*/
       LoadOldMultiplier();
-      UpdateMultiplier(stepsize);
-      // UpdateMultiplier(1.0);
+      // UpdateMultiplier(stepsize);
+      UpdateMultiplier(1.0);
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
-
-      /*---Load a solution with reduced stepsize---*/
-      solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
-      solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
     }
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
@@ -388,10 +379,10 @@ void COneShotFluidDriver::RunOneShot(){
 
     //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
     // }
-    solver[ADJFLOW_SOL]->LoadStepSolution(1.0);
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    LoadOldMultiplier();
-    UpdateMultiplier(1.0);
+    // solver[ADJFLOW_SOL]->LoadStepSolution(1.0);
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // LoadOldMultiplier();
+    // UpdateMultiplier(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
