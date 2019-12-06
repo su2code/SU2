@@ -8,7 +8,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -82,11 +82,13 @@ protected:
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
 
   su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
-  su2vector<unsigned short> Non_Physical_Counter; /*!< \brief Number of consecutive iterations that a point has been treated first-order. After a specified number of successful reconstructions, the point can be returned to second-order. */
-  
+  su2vector<unsigned short>
+  Non_Physical_Counter;          /*!< \brief Number of consecutive iterations that a point has been treated first-order.
+                                  After a specified number of successful reconstructions, the point can be returned to second-order. */
+
   VectorType UnderRelaxation;  /*!< \brief Value of the under-relxation parameter local to the control volume. */
   VectorType LocalCFL;         /*!< \brief Value of the CFL number local to the control volume. */
-  
+
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
@@ -459,6 +461,12 @@ public:
   }
 
   /*!
+   * \brief Get the entire solution of the problem.
+   * \return Pointer to the solution matrix.
+   */
+  inline const MatrixType* GetSolution(void) { return &Solution; }
+
+  /*!
    * \brief Get the solution of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.
@@ -554,21 +562,21 @@ public:
    * \param[in] val_under_relaxation - the input value of the under-relaxation parameter for this CV.
    */
   inline void SetUnderRelaxation(unsigned long iPoint, su2double val_under_relaxation) { UnderRelaxation(iPoint) = val_under_relaxation; }
-  
+
   /*!
    * \brief Get the value of the under-relaxation parameter for the current control volume (CV).
    * \param[in] iPoint - Point index.
    * \return Value of the under-relaxation parameter for this CV.
    */
   inline su2double GetUnderRelaxation(unsigned long iPoint) const { return UnderRelaxation(iPoint); }
-  
+
   /*!
    * \brief Set the value of the local CFL number for the current control volume (CV).
    * \param[in] iPoint - Point index.
    * \param[in] val_cfl - the input value of the local CFL number for this CV.
    */
   inline void SetLocalCFL(unsigned long iPoint, su2double val_cfl) { LocalCFL(iPoint) = val_cfl; }
-  
+
   /*!
    * \brief Get the value of the local CFL number for the current control volume (CV).
    * \param[in] iPoint - Point index.
@@ -743,6 +751,12 @@ public:
   inline void SubtractGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) -= value; }
 
   /*!
+   * \brief Get the gradient of the entire solution.
+   * \return Pointer to gradient.
+   */
+  inline VectorOfMatrix* GetGradient(void) { return &Gradient; }
+
+  /*!
    * \brief Get the value of the solution gradient.
    * \param[in] iPoint - Point index.
    * \return Value of the gradient solution.
@@ -796,6 +810,12 @@ public:
    * \return Value of the Rmatrix entry.
    */
   inline su2double **GetRmatrix(unsigned long iPoint) { return Rmatrix[iPoint]; }
+
+  /*!
+   * \brief Get the value Rmatrix for the entire domain.
+   * \return Pointer to the Rmatrix.
+   */
+  inline VectorOfMatrix* GetRmatrix(void) { return &Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -1967,7 +1987,7 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim) const { return 0.0; }
-  
+
   /*!
    * \brief Set the value of the primitive gradient for MUSCL reconstruction.
    * \param[in] val_var - Index of the variable.
@@ -1975,13 +1995,19 @@ public:
    * \param[in] val_value - Value of the gradient.
    */
   inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) {}
-  
+
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
    * \return Value of the primitive gradient for MUSCL reconstruction.
    */
   inline virtual su2double **GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
-  
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Pointer to variable reconstruction gradient.
+   */
+  inline virtual VectorOfMatrix* GetGradient_Reconstruction(void) { return nullptr; }
+
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.

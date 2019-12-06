@@ -70,6 +70,18 @@ public:
   void SetGradient_PrimitiveZero() final;
 
   /*!
+   * \brief Get the primitive variable gradients for all points.
+   * \return Pointer to primitive variable gradient.
+   */
+  inline VectorOfMatrix* GetGradient_Primitive(void) { return &Gradient_Primitive; }
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Pointer to variable reconstruction gradient.
+   */
+  inline VectorOfMatrix* GetGradient_Reconstruction(void) final { return &Gradient_Reconstruction; }
+
+  /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -181,6 +193,12 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint,0) = Solution(iPoint,0); }
+
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Pointer to primitives.
+   */
+  inline const MatrixType* GetPrimitive(void) const { return &Primitive; }
 
   /*!
    * \brief Get the primitive variables.

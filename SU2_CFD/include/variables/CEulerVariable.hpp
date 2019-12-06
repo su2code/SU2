@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -156,6 +156,18 @@ public:
   }
 
   /*!
+   * \brief Get the primitive variable gradients for all points.
+   * \return Pointer to primitive variable gradient.
+   */
+  inline VectorOfMatrix* GetGradient_Primitive(void) { return &Gradient_Primitive; }
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Pointer to variable reconstruction gradient.
+   */
+  inline VectorOfMatrix* GetGradient_Reconstruction(void) final { return &Gradient_Reconstruction; }
+
+  /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
@@ -177,7 +189,7 @@ public:
   inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Reconstruction(iPoint,iVar,iDim);
   }
-  
+
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -188,14 +200,14 @@ public:
   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
   }
-  
+
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-  
+
   /*!
    * \brief A virtual member.
    */
@@ -243,6 +255,12 @@ public:
    * \brief A virtual member.
    */
   void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
+
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Pointer to primitives.
+   */
+  inline const MatrixType* GetPrimitive(void) const { return &Primitive; }
 
   /*!
    * \brief Get the primitive variables.
