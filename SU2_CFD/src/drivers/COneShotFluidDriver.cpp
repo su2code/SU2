@@ -301,7 +301,7 @@ void COneShotFluidDriver::RunOneShot(){
     // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
-      // StoreMultiplierGrad();
+      StoreMultiplierGrad();
       /*--- Update constraint multiplier ---*/
       LoadOldMultiplier();
       UpdateMultiplier(stepsize);
