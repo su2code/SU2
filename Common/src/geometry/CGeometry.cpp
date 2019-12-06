@@ -4027,7 +4027,7 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
     vector<unsigned long> outerPtr(nElem+1);
     vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
 
-    for(unsigned long iElem = 0; iElem < nEdge; ++iElem) {
+    for(unsigned long iElem = 0; iElem < nElem; ++iElem) {
       outerPtr[iElem] = innerIdx.size();
 
       for(unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
