@@ -787,9 +787,9 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   if(design_update) {
     for (iDV = 0; iDV < nDV_Total; iDV++){
       // /*--- ShiftedLagrangianGradient is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
       /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+      admissible_step += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
   if (nConstr > 0) {
@@ -804,7 +804,8 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
       //    ((active) && (dh <= 0.))) {
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-        admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+        // admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+        admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
       }
     }
   }
@@ -819,10 +820,10 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
 
   if(design_update) {
     for (iDV = 0; iDV < nDV_Total; iDV++){
-      // /*--- ShiftedLagrangianGradient is the gradient at the old iterate. ---
-      GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
+      // /*--- ShiftedLagrangianGradient is the gradient at the old iterate. ---*/
+      // GradDotDir += DesignVarUpdate[iDV]*ShiftedLagrangianGradient[iDV];
       /*--- AugmentedLagrangianGradient is the gradient at the old iterate. ---*/
-      // GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
+      GradDotDir += DesignVarUpdate[iDV]*AugmentedLagrangianGradient[iDV];
     }
   }
   if (nConstr > 0) {
@@ -837,7 +838,8 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
       //    ((active) && (dh <= 0.))) {
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-        GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+        // GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
+        GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*AugmentedLagrangianMultiplierGradient[iConstr];
       }
     }
   }
