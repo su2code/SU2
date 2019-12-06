@@ -800,8 +800,9 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       const su2double gamma = config->GetOneShotGamma(iConstr);
       const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Store[iConstr];
       const su2double hdh = ConstrFunc_Store[iConstr]*dh;
+      const bool active = (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.);
       if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
-         ((ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) && (dh <= 0.))) {
+         ((active) && (dh <= 0.))) {
         admissible_step += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
       }
     }
@@ -830,8 +831,9 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       const su2double gamma = config->GetOneShotGamma(iConstr);
       const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Store[iConstr];
       const su2double hdh = ConstrFunc_Store[iConstr]*dh;
+      const bool active = (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.);
       if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
-         ((ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) && (dh <= 0.))) {
+         ((active) && (dh <= 0.))) {
         GradDotDir += (Multiplier[iConstr]-Multiplier_Old[iConstr])*ConstrFunc_Store[iConstr];
       }
     }
@@ -889,9 +891,10 @@ void COneShotFluidDriver::CalculateLagrangian(){
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
+    const su2double helper = ConstrFunc_Store[iConstr] + Multiplier[iConstr]/gamma;
+    const bool active = (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
+    if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Multiplier[iConstr]*Multiplier[iConstr];
       // Lagrangian += gamma/2.*helper*helper;
     }
@@ -1007,7 +1010,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    if(config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR || ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.) {
+    const bool active = (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.);
+    if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
     else {
@@ -1273,6 +1277,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Store[iConstr];
     const su2double hdh = ConstrFunc_Store[iConstr]*dh;
+    const bool active = (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     // helper = 0.0;
@@ -1317,8 +1322,9 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
     // Multiplier[iConstr] = Multiplier_Store[iConstr];
-    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR && ConstrFunc_Store[iConstr] + Multiplier_Old[iConstr]/gamma <= 0.) {
-      Multiplier[iConstr] = 0.;
+    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
+      // Multiplier[iConstr] = 0.;
+      Multiplier[iConstr] = helper*stepsize*config->GetMultiplierScale(iConstr);
       // Multiplier_Store[iConstr] -= stepsize*Multiplier_Store[iConstr];
       // Multiplier_Store[iConstr] -= stepsize*Multiplier_Store[iConstr]*config->GetMultiplierScale(iConstr);
     }
@@ -1331,7 +1337,7 @@ void COneShotFluidDriver::UpdateMultiplier(su2double stepsize){
       // Multiplier[iConstr] = Multiplier_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       // Multiplier_Store[iConstr] = Multiplier[iConstr];
     }
-    if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh < 0.)) ||
+    if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) ||
        (dh <= 0.)) {
       Multiplier_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
@@ -1376,10 +1382,11 @@ void COneShotFluidDriver::StoreMultiplierGrad() {
     const su2double beta = config->GetOneShotBeta();
     for (iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
+      const bool active = (ConstrFunc_Store[iConstr] - Multiplier_Old[iConstr]/gamma > 0.);
       su2double my_Gradient = 0.;
       // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) || 
       //    ((ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.) && (ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.))) {
-      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc[iConstr] + Multiplier_Old[iConstr]/gamma > 0.)) {
+      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         // my_Gradient += ConstrFunc[iConstr] + Multiplier[iConstr]/gamma;
         my_Gradient += ConstrFunc[iConstr];
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
