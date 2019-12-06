@@ -92,6 +92,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
                             unsigned short nvar, unsigned short neqn,
                             bool EdgeConnect, CGeometry *geometry, CConfig *config) {
 
+  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
+
   if(matrix != nullptr) {
     SU2_OMP_MASTER
     SU2_MPI::Error("CSysMatrix can only be initialized once.", CURRENT_FUNCTION);
@@ -985,6 +987,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   vector<bool> check_Point(nPoint,true);
 
+  LineletBool.clear();
   LineletBool.resize(nPoint,false);
 
   nLinelet = 0;
@@ -1145,21 +1148,12 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
   /*--- Jacobi preconditioning where there is no linelet ---*/
 
-  SU2_OMP_FOR_DYN(omp_heavy_size)
+  SU2_OMP(for schedule(dynamic,omp_heavy_size) nowait)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
     if (!LineletBool[iPoint])
       MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
-  /*--- MPI Parallelization ---*/
-
-  SU2_OMP_MASTER
-  {
-    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-  }
-  SU2_OMP_BARRIER
-
-  /*--- Solve linelet using the Thomas algorithm ---*/
+  /*--- Solve each linelet using the Thomas algorithm ---*/
 
   SU2_OMP_FOR_DYN(1)
   for (auto iLinelet = 0ul; iLinelet < nLinelet; iLinelet++) {
