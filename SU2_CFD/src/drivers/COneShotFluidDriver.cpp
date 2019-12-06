@@ -230,6 +230,11 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
+  /*--- Do a primal and adjoint update ---*/
+  PrimalDualStep();
+  solver[ADJFLOW_SOL]->SetSaveSolution();
+  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+
   /*--- This is the line search loop that is only called once, if no update is performed ---*/
   do {
 
@@ -246,6 +251,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
+
       }
       // else{
       //   /*--- Store gradient of augmented Lagrangian wrt multiplier ---*/
@@ -260,7 +266,7 @@ void COneShotFluidDriver::RunOneShot(){
       // UpdateMultiplier(stepsize);
 
       /*--- Load the old solution for line search (either y_k or y_k-1) ---*/
-      solver[ADJFLOW_SOL]->LoadSolution();
+      // solver[ADJFLOW_SOL]->LoadSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if ((ArmijoIter != nArmijoIter-1 && !bool_tol) || (!config->GetZeroStep())) {
@@ -285,13 +291,14 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
+        break;
       }
 
     }
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
       // StoreMultiplierGrad();
@@ -302,6 +309,10 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
+
+      /*---Load a solution with reduced stepsize---*/
+      solver[ADJFLOW_SOL]->LoadStepSolution(stepsize);
+      solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
     }
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
@@ -361,6 +372,14 @@ void COneShotFluidDriver::RunOneShot(){
         /*--- Update constraint multiplier ---*/
         LoadOldMultiplier();
         UpdateMultiplier(stepsize_mu);
+
+        if(bool_tol) {
+          solver[ADJFLOW_SOL]->LoadStepSolution(1.0);
+        }
+        else{
+          solver[ADJFLOW_SOL]->LoadStepSolution(stepsize_mu);
+        }
+        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
         /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
         CalculateLagrangian();
