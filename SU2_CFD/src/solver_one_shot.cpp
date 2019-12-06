@@ -425,12 +425,12 @@ void COneShotSolver::SetSolutionDelta(CGeometry *geometry){
   unsigned short iVar;
   unsigned long iPoint;
 
-  for(iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar,0.0);
-    SetRes_Max(iVar,0.0,0);
-    direct_solver->SetRes_RMS(iVar,0.0);
-    direct_solver->SetRes_Max(iVar,0.0,0);
-  }
+  // for(iVar = 0; iVar < nVar; iVar++) {
+  //   SetRes_RMS(iVar,0.0);
+  //   SetRes_Max(iVar,0.0,0);
+  //   direct_solver->SetRes_RMS(iVar,0.0);
+  //   direct_solver->SetRes_Max(iVar,0.0,0);
+  // }
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
@@ -440,11 +440,11 @@ void COneShotSolver::SetSolutionDelta(CGeometry *geometry){
       direct_solver->GetNodes()->SetSolution_Delta(iPoint, iVar, res_y);
       nodes->SetSolution_Delta(iPoint, iVar, res_bary);
 
-      direct_solver->AddRes_RMS(iVar,res_y*res_y);
-      direct_solver->AddRes_Max(iVar,fabs(res_y),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      // direct_solver->AddRes_RMS(iVar,res_y*res_y);
+      // direct_solver->AddRes_Max(iVar,fabs(res_y),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
 
-      AddRes_RMS(iVar,res_bary*res_bary);
-      AddRes_Max(iVar,fabs(res_bary),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      // AddRes_RMS(iVar,res_bary*res_bary);
+      // AddRes_Max(iVar,fabs(res_bary),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
     }
   }
 }
