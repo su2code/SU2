@@ -1329,7 +1329,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
     }
-    Lambda[iConstr] = Lambda_Store[iConstr];
+    if(active) Lambda[iConstr] = Lambda_Store[iConstr];
     /*--- Only update if constraint violation improves ---*/
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
