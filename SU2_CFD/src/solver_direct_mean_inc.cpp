@@ -31,6 +31,7 @@
 #include "../include/variables/CIncEulerVariable.hpp"
 #include "../include/variables/CIncNSVariable.hpp"
 #include "../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../include/gradients/computeGradientsLeastSquares.hpp"
 
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
@@ -3574,226 +3575,22 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
 }
 
 void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
-  
-  unsigned short iVar, iDim, jDim, iNeigh;
-  unsigned long iPoint, jPoint;
-  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j;
-  su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
-  su2double z11, z12, z13, z22, z23, z33, detR2;
-  bool singular;
-  
+
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  
-  bool weighted = true;
-  if (reconstruction) {
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      weighted = false;
-  } else if (config->GetKind_Gradient_Method() == LEAST_SQUARES) {
-    weighted = false;
-  }
-  
-  /*--- Clear Rmatrix, which could eventually be computed once
-   and stored for static meshes, as well as the prim gradient. ---*/
+  bool weighted;
 
-  nodes->SetRmatrixZero();
-  nodes->SetGradient_PrimitiveZero();
+  if (reconstruction)
+    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+  else
+    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
-  /*--- Loop over points of the grid ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- Set the value of the singular ---*/
-    singular = false;
-    
-    /*--- Get coordinates ---*/
-    
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    
-    /*--- Get primitives from CVariable ---*/
-    
-    PrimVar_i = nodes->GetPrimitive(iPoint);
-    
-    /*--- Inizialization of variables ---*/
-    
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      for (iDim = 0; iDim < nDim; iDim++)
-        Cvector[iVar][iDim] = 0.0;
-    
-    /*--- Clear Rmatrix, which could eventually be computed once
-     and stored for static meshes, as well as the prim gradient. ---*/
-    
-    AD::StartPreacc();
-    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-    AD::SetPreaccIn(Coord_i, nDim);
-    
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      Coord_j = geometry->node[jPoint]->GetCoord();
-      
-      PrimVar_j = nodes->GetPrimitive(jPoint);
-      
-      AD::SetPreaccIn(Coord_j, nDim);
-      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
-      
-      if (weighted) {
-        weight = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      } else {
-        weight = 1.0;
-      }
-      
-      /*--- Sumations for entries of upper triangular matrix R ---*/
-      
-      if (weight != 0.0) {
-        
-        nodes->AddRmatrix(iPoint,0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
-        nodes->AddRmatrix(iPoint,0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
-        nodes->AddRmatrix(iPoint,1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
-        
-        if (nDim == 3) {
-          nodes->AddRmatrix(iPoint,0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
-          nodes->AddRmatrix(iPoint,1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
-          nodes->AddRmatrix(iPoint,2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
-          nodes->AddRmatrix(iPoint,2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
-        }
-        
-        /*--- Entries of c:= transpose(A)*b ---*/
-        
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          for (iDim = 0; iDim < nDim; iDim++) {
-            nodes->AddGradient_Primitive(iPoint,iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight);
-          }
-        }
-        
-      }
-    }
-    AD::SetPreaccOut(nodes->GetRmatrix(iPoint), nDim, nDim);
-    AD::SetPreaccOut(nodes->GetGradient_Primitive(iPoint), nPrimVarGrad, nDim);
-    AD::EndPreacc();
-  }
-  
-  /*--- Correct the gradient values across any periodic boundaries. ---*/
+  auto primitives = nodes->GetPrimitive();
+  auto rmatrix = nodes->GetRmatrix();
+  auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    if (weighted) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
-    } else {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
-    }
-  }
-  
-  /*--- Second loop over points of the grid to compute final gradient ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- Set the value of the singular ---*/
-    
-    singular = false;
-    
-    /*--- Entries of upper triangular matrix R ---*/
-    
-    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-    
-    r11 = nodes->GetRmatrix(iPoint,0,0);
-    r12 = nodes->GetRmatrix(iPoint,0,1);
-    r22 = nodes->GetRmatrix(iPoint,1,1);
-    
-    AD::StartPreacc();
-    AD::SetPreaccIn(r11);
-    AD::SetPreaccIn(r12);
-    AD::SetPreaccIn(r22);
-    
-    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
-    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
-    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
-    
-    if (nDim == 3) {
-      r13   = nodes->GetRmatrix(iPoint,0,2);
-      r23_a = nodes->GetRmatrix(iPoint,1,2);
-      r23_b = nodes->GetRmatrix(iPoint,2,1);
-      r33   = nodes->GetRmatrix(iPoint,2,2);
-      
-      AD::SetPreaccIn(r13);
-      AD::SetPreaccIn(r23_a);
-      AD::SetPreaccIn(r23_b);
-      AD::SetPreaccIn(r33);
-      
-      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
-      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
-      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
-    }
-    
-    /*--- Compute determinant ---*/
-    
-    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
-    else detR2 = (r11*r22*r33)*(r11*r22*r33);
-    
-    /*--- Detect singular matrices ---*/
-    
-    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
-    
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    
-    if (singular) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        for (jDim = 0; jDim < nDim; jDim++)
-          Smatrix[iDim][jDim] = 0.0;
-    }
-    else {
-      if (nDim == 2) {
-        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-        Smatrix[0][1] = -r11*r12/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = r11*r11/detR2;
-      }
-      else {
-        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
-        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
-        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-        Smatrix[0][2] = (z13*z33)/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-        Smatrix[1][2] = (z23*z33)/detR2;
-        Smatrix[2][0] = Smatrix[0][2];
-        Smatrix[2][1] = Smatrix[1][2];
-        Smatrix[2][2] = (z33*z33)/detR2;
-      }
-    }
-    
-    AD::SetPreaccOut(Smatrix, nDim, nDim);
-    AD::EndPreacc();
-    
-    /*--- Computation of the gradient: S*c ---*/
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Cvector[iVar][iDim] = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++) {
-          Cvector[iVar][iDim] += Smatrix[iDim][jDim]*nodes->GetGradient_Primitive(iPoint,iVar, jDim);
-        }
-      }
-    }
-    
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (reconstruction)
-          nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, Cvector[iVar][iDim]);
-        else
-          nodes->SetGradient_Primitive(iPoint, iVar, iDim, Cvector[iVar][iDim]);
-      }
-    }
-    
-  }
-  
-  /*--- Communicate the gradient values via MPI. ---*/
-  
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
-  
+  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
+                               weighted, *primitives, 0, nPrimVarGrad, *gradient, *rmatrix);
 }
 
 void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
