@@ -1386,7 +1386,7 @@ Lambda_Init = my_Lambda;
 #endif
   Lambda_Init -= ConstrFunc[iConstr];
   Lambda_Store[iConstr] = gamma*Lambda_Init;
-  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Store[iConstr] = max(Lambda_Store[iConstr], 0.0);
+  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Store[iConstr] = min(Lambda_Store[iConstr], 0.0);
 }
 
 void COneShotFluidDriver::StoreObjFunction(){
