@@ -77,7 +77,8 @@ protected:
   bool* ActiveSetDV;   /*!< \brief Flag for indices belonging to the active set (lower and upper design bounds are reached).*/
 
   su2double* ConstrFunc;       /*!< \brief Constraint function values.*/
-  su2double* ConstrFunc_Store; /*!< \brief Old constraint function (stored when overwritten).*/
+  su2double* ConstrFunc_Store; /*!< \brief Constraint function values (stored for line search).*/
+  su2double* ConstrFunc_Old;   /*!< \brief Old constraint function values.*/
   su2double* Lambda;           /*!< \brief Lagrange multipliers for constraint functions.*/
   su2double* Lambda_Old;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
   su2double* Lambda_Store;     /*!< \brief Stored Lagrange multipliers for update.*/
@@ -299,12 +300,6 @@ public:
    */
   void InitializeLambdaStore(unsigned short iConstr);
 
-
-  /*!
-   * \brief Check the sign of the constraint multiplier.
-   */
-  void CheckLambda();
-
   /*!
    * \brief Set the constraint functions.
    */
@@ -316,9 +311,19 @@ public:
   void SetAdj_ConstrFunction(su2double *seeding);
 
   /*!
+   * \brief Store the objective.
+   */
+  void StoreObjFunction();
+
+  /*!
    * \brief Store the constraints.
    */
   void StoreConstrFunction();
+
+  /*!
+   * \brief Store the old constraints.
+   */
+  void StoreOldConstrFunction();
 
   /*!
    * \brief Compute the inverse preconditioner matrix (BCheck^(-1)) for the multiplier update.
