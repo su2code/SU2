@@ -95,11 +95,6 @@ public:
   }
 
   /*!
-   * \brief Set to zero the gradient of the primitive variables.
-   */
-  void SetGradient_PrimitiveZero() final;
-
-  /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
@@ -107,16 +102,6 @@ public:
    */
   inline void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Primitive(iPoint,iVar,iDim) += value;
-  }
-
-  /*!
-   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) -= value;
   }
 
   /*!

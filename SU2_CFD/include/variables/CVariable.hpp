@@ -607,11 +607,6 @@ public:
   }
 
   /*!
-   * \brief Set the auxiliary variable gradient to zero value.
-   */
-  void SetAuxVarGradientZero();
-
-  /*!
    * \brief Set the value of the auxiliary variable gradient.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Index of the dimension.
@@ -626,14 +621,6 @@ public:
    * \param[in] val_value - Value of the gradient to be added for the index <i>iDim</i>.
    */
   inline void AddAuxVarGradient(unsigned long iPoint, unsigned long iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) += val_value;}
-
-  /*!
-   * \brief Subtract a value to the auxiliary variable gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient to be subtracted for the index <i>iDim</i>.
-   */
-  inline void SubtractAuxVarGradient(unsigned long iPoint, unsigned long iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) -= val_value; }
 
   /*!
    * \brief Get the gradient of the auxiliary variable.
@@ -744,11 +731,6 @@ public:
   inline void SetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) = value; }
 
   /*!
-   * \brief Set to zero the gradient of the solution.
-   */
-  void SetGradientZero();
-
-  /*!
    * \brief Add <i>value</i> to the solution gradient.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -756,15 +738,6 @@ public:
    * \param[in] value - Value to add to the solution gradient.
    */
   inline void AddGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) += value; }
-
-  /*!
-   * \brief Subtract <i>value</i> to the solution gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the solution gradient.
-   */
-  inline void SubtractGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) -= value; }
 
   /*!
    * \brief Get the gradient of the entire solution.
@@ -787,20 +760,6 @@ public:
    * \return Value of the solution gradient.
    */
   inline su2double GetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient(iPoint,iVar,iDim); }
-
-  /*!
-   * \brief Set the value of an entry in the Rmatrix for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] jDim - Index of the dimension.
-   * \param[in] value - Value of the Rmatrix entry.
-   */
-  inline void SetRmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Rmatrix(iPoint,iDim,jDim) = value; }
-
-  /*!
-   * \brief Set to zero the Rmatrix for least squares gradient calculations.
-   */
-  void SetRmatrixZero();
 
   /*!
    * \brief Add <i>value</i> to the Rmatrix for least squares gradient calculations.
@@ -1935,24 +1894,11 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  virtual void SetGradient_PrimitiveZero() {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
    * \param[in] val_value - Value to add to the gradient of the primitive variables.
    */
   inline virtual void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline virtual void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
