@@ -1343,7 +1343,6 @@ void COneShotFluidDriver::StoreLambdaGrad() {
       const bool active = (ConstrFunc_Old[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-        // my_Gradient += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
@@ -1356,7 +1355,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 #else
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
-        AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
+        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
+        AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
       }
     }
   }
