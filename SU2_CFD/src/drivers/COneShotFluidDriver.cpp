@@ -786,9 +786,9 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   if(design_update) {
     for (iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   // if (nConstr > 0) {
