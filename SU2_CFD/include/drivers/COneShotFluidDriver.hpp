@@ -81,8 +81,9 @@ protected:
   su2double* ConstrFunc_Old;   /*!< \brief Old constraint function values.*/
   su2double* Lambda;           /*!< \brief Lagrange multipliers for constraint functions.*/
   su2double* Lambda_Old;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Store;     /*!< \brief Stored Lagrange multipliers for update.*/
-  su2double* Lambda_Store_Old; /*!< \brief Old stored Lagrange multipliers for update.*/
+  su2double* Lambda_Store;     /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* Lambda_Tilde;     /*!< \brief Stored Lagrange multipliers for update.*/
+  su2double* Lambda_Tilde_Old; /*!< \brief Old stored Lagrange multipliers for update.*/
   su2double** BCheck_Inv;      /*!< \brief Inverse matrix for multiplier update.*/
   su2double  BCheck_Norm;      /*!< \brief Norm of the matrix for multiplier update.*/
 
@@ -276,6 +277,16 @@ public:
   su2double ProjectionPAP(unsigned short iDV, unsigned short jDV, su2double value, bool active);
 
   /*!
+   * \brief Store the constraint multiplier from the line search.
+   */
+  void StoreLambda();
+
+    /*!
+   * \brief Load the constraint multiplier from the line search.
+   */
+  void LoadLambdaStore();
+
+  /*!
    * \brief Store the old constraint multiplier.
    */
   void StoreOldLambda();
@@ -298,7 +309,7 @@ public:
   /*!
    * \brief Compute an initial value of the constraint multiplier.
    */
-  void InitializeLambdaStore(unsigned short iConstr);
+  void InitializeLambdaTilde(unsigned short iConstr);
 
   /*!
    * \brief Set the constraint functions.

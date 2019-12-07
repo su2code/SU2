@@ -78,7 +78,8 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     Lambda = new su2double[nConstr];
     Lambda_Old = new su2double[nConstr];
     Lambda_Store = new su2double[nConstr];
-    Lambda_Store_Old = new su2double[nConstr];
+    Lambda_Tilde = new su2double[nConstr];
+    Lambda_Tilde_Old = new su2double[nConstr];
     AugLagLamGrad = new su2double[nConstr];
     BCheck_Inv = new su2double*[nConstr];
   }
@@ -114,7 +115,8 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     Lambda[iConstr] = config->GetMultiplierStart(iConstr);
     Lambda_Old[iConstr] = config->GetMultiplierStart(iConstr);
     Lambda_Store[iConstr] = config->GetMultiplierStart(iConstr);
-    Lambda_Store_Old[iConstr] = config->GetMultiplierStart(iConstr);
+    Lambda_Tilde[iConstr] = config->GetMultiplierStart(iConstr);
+    Lambda_Tilde_Old[iConstr] = config->GetMultiplierStart(iConstr);
     AugLagLamGrad[iConstr] = 0.0;
     BCheck_Inv[iConstr] = new su2double[nConstr];
     for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
@@ -171,7 +173,8 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
     delete [] Lambda;
     delete [] Lambda_Old;
     delete [] Lambda_Store;
-    delete [] Lambda_Store_Old;
+    delete [] Lambda_Tilde;
+    delete [] Lambda_Tilde_Old;
     delete [] AugLagLamGrad;
   }
 
@@ -269,6 +272,8 @@ void COneShotFluidDriver::RunOneShot(){
       ArmijoIter++;
 
     } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    StoreLambda();
+    LoadOldLambda();
     solver[ADJFLOW_SOL]->LoadSolution();
   }
 
@@ -353,6 +358,9 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
+  /*--- Load multipliers from first line search ---*/
+  LoadLambdaStore();
+
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
@@ -371,7 +379,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
-    CalculateLagrangian();
+    // CalculateLagrangian();
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
   else if(InnerIter > config->GetOneShotStart() && 
@@ -467,9 +475,9 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  /*--- Initialize Lambda_Store at first iteration ---*/
+  /*--- Initialize Lambda_Tilde at first iteration ---*/
   if(InnerIter == config->GetOneShotStart()) {
-    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaStore(iConstr);
+    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
   }
 }
 
@@ -1276,17 +1284,29 @@ void COneShotFluidDriver::SetConstrFunction(){
   }
 }
 
+void COneShotFluidDriver::StoreLambda(){
+  for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    Lambda_Store[iConstr] = Lambda[iConstr];
+  }
+}
+
+void COneShotFluidDriver::LoadLambdaStore(){
+  for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    Lambda[iConstr] = Lambda_Store[iConstr];
+  }
+}
+
 void COneShotFluidDriver::StoreOldLambda(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Lambda_Old[iConstr] = Lambda[iConstr];
-    Lambda_Store_Old[iConstr] = Lambda_Store[iConstr];
+    Lambda_Tilde_Old[iConstr] = Lambda_Tilde[iConstr];
   }
 }
 
 void COneShotFluidDriver::LoadOldLambda(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Lambda[iConstr] = Lambda_Old[iConstr];
-    Lambda_Store[iConstr] = Lambda_Store_Old[iConstr];
+    Lambda_Tilde[iConstr] = Lambda_Tilde_Old[iConstr];
   }
 }
 
@@ -1303,28 +1323,28 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
     }
-    if(active) Lambda[iConstr] = Lambda_Store[iConstr];
+    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
     /*--- Only update if constraint violation improves ---*/
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] = 0.0;
-      InitializeLambdaStore(iConstr);
-      // Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr];
-      // Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr]*config->GetMultiplierScale(iConstr);
+      InitializeLambdaTilde(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
+      // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
     }
     // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
     else {
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Store[iConstr] = Lambda[iConstr];
+      // Lambda_Tilde[iConstr] = Lambda[iConstr];
     }
     // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
-    //   Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     // }
-    // Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
     // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Lambda_Old[iConstr]/gamma > 0.)) {
@@ -1333,12 +1353,12 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // else {
     //   Lambda[iConstr] = 0.;
     // }
-    // Lambda_Store[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
+    // Lambda_Tilde[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
 
 
     if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
       Lambda[iConstr] = max(Lambda[iConstr], 0.);
-      Lambda_Store[iConstr] = max(Lambda_Store[iConstr], 0.);
+      Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
     }
   }
 }
@@ -1373,7 +1393,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
   }
 }
 
-void COneShotFluidDriver::InitializeLambdaStore(unsigned short iConstr) {
+void COneShotFluidDriver::InitializeLambdaTilde(unsigned short iConstr) {
   unsigned short iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
   unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
   const su2double beta = config->GetOneShotBeta();
@@ -1394,8 +1414,8 @@ SU2_MPI::Allreduce(&my_Lambda, &Lambda_Init, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WO
 Lambda_Init = my_Lambda;
 #endif
   Lambda_Init -= ConstrFunc[iConstr];
-  Lambda_Store[iConstr] = gamma*Lambda_Init;
-  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Store[iConstr] = max(Lambda_Store[iConstr], 0.0);
+  Lambda_Tilde[iConstr] = gamma*Lambda_Init;
+  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
 }
 
 void COneShotFluidDriver::StoreObjFunction(){
