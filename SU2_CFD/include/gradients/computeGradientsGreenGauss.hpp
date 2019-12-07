@@ -32,10 +32,13 @@
 
 /*!
  * \brief Compute the gradient of a field using the Green-Gauss theorem.
- * \note Gradients can be computed only for a contiguous range of variables, defined by
- *       [varBegin, varEnd[ (e.g. 0,1 computes the gradient of the 1st variable).
+ * \note Gradients can be computed only for a contiguous range of variables, defined
+ *       by [varBegin, varEnd[ (e.g. 0,1 computes the gradient of the 1st variable).
  *       This can be used, for example, to compute only velocity gradients.
- * \param[in] solver - Solver associated with the field, used for MPI communications.
+ * \note The function uses an optional solver object to perform communications, if
+ *       none (nullptr) is provided the function does not fail (the objective of
+ *       this is to improve test-ability).
+ * \param[in] solver - Optional, solver associated with the field (used only for MPI).
  * \param[in] kindMpiComm - Type of MPI communication required.
  * \param[in] kindPeriodicComm - Type of periodic communication required.
  * \param[in] geometry - Geometric grid properties.
@@ -46,7 +49,7 @@
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  */
 template<class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver& solver,
+void computeGradientsGreenGauss(CSolver* solver,
                                 MPI_QUANTITIES kindMpiComm,
                                 PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry,
@@ -56,13 +59,16 @@ void computeGradientsGreenGauss(CSolver& solver,
                                 size_t varEnd,
                                 GradientType& gradient)
 {
-  constexpr size_t OMP_MAX_CHUNK = 512;
-
   size_t nPointDomain = geometry.GetnPointDomain();
   size_t nDim = geometry.GetnDim();
+  size_t nVar = varEnd-varBegin;
+
+#ifdef HAVE_OMP
+  constexpr size_t OMP_MAX_CHUNK = 512;
 
   size_t chunkSize = computeStaticChunkSize(nPointDomain,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
+#endif
 
   /*--- Start OpenMP parallel section. ---*/
 
@@ -73,9 +79,12 @@ void computeGradientsGreenGauss(CSolver& solver,
     SU2_OMP_FOR_DYN(chunkSize)
     for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
     {
-      /// TODO: Add pre-accumulation to this loop
-
       auto node = geometry.node[iPoint];
+
+      AD::StartPreacc();
+      AD::SetPreaccIn(&field(iPoint,varBegin), nVar);
+      AD::SetPreaccIn(node->GetVolume());
+      AD::SetPreaccIn(node->GetPeriodicVolume());
 
       /*--- Clear the gradient. --*/
 
@@ -102,6 +111,9 @@ void computeGradientsGreenGauss(CSolver& solver,
 
         const su2double* area = geometry.edge[iEdge]->GetNormal();
 
+        AD::SetPreaccIn(&field(jPoint,varBegin), nVar);
+        AD::SetPreaccIn(area, nDim);
+
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
         {
           su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
@@ -112,6 +124,10 @@ void computeGradientsGreenGauss(CSolver& solver,
 
       }
 
+      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+        AD::SetPreaccOut(&gradient(iPoint,iVar,0), nDim);
+
+      AD::EndPreacc();
     }
 
     /*--- Add boundary fluxes. ---*/
@@ -151,17 +167,21 @@ void computeGradientsGreenGauss(CSolver& solver,
 
   } // end SU2_OMP_PARALLEL
 
+  /*--- If no solver was provided we do not communicate ---*/
+
+  if (solver == nullptr) return;
+
   /*--- Account for periodic contributions. ---*/
 
   for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; iPeriodic++)
   {
-    solver.InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
-    solver.CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
   }
 
   /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
 
-  solver.InitiateComms(&geometry, &config, kindMpiComm);
-  solver.CompleteComms(&geometry, &config, kindMpiComm);
+  solver->InitiateComms(&geometry, &config, kindMpiComm);
+  solver->CompleteComms(&geometry, &config, kindMpiComm);
 
 }

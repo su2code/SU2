@@ -599,6 +599,14 @@ public:
   inline su2double GetAuxVar(unsigned long iPoint) const { return AuxVar(iPoint); }
 
   /*!
+   * \brief Get the auxiliary variable.
+   * \return 2D view of the auxiliary variable.
+   */
+  inline C2DDummyLastView<const VectorType> GetAuxVar(void) const {
+    return C2DDummyLastView<const VectorType>(AuxVar);
+  }
+
+  /*!
    * \brief Set the auxiliary variable gradient to zero value.
    */
   void SetAuxVarGradientZero();
@@ -633,6 +641,14 @@ public:
    * \return Value of the gradient of the auxiliary variable.
    */
   inline su2double *GetAuxVarGradient(unsigned long iPoint) { return Grad_AuxVar[iPoint]; }
+
+  /*!
+   * \brief Get the gradient of the auxiliary variable.
+   * \return 3D view of the gradient of the auxiliary variable.
+   */
+  inline C3DDummyMiddleView<MatrixType> GetAuxVarGradient() {
+    return C3DDummyMiddleView<MatrixType>(Grad_AuxVar);
+  }
 
   /*!
    * \brief Get the gradient of the auxiliary variable.

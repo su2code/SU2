@@ -3569,7 +3569,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   auto primitives = nodes->GetPrimitive();
   auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
-  computeGradientsGreenGauss(*this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
+  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
                              *config, *primitives, 0, nPrimVarGrad, *gradient);
 }
 

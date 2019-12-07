@@ -2764,11 +2764,11 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 
-  auto solution = base_nodes->AuxVar();
+  auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
 
-  computeGradientsGreenGauss(*this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, *solution, 0, 1, *gradient);
+  computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+                             *config, solution, 0, 1, gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -2899,10 +2899,10 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
 
-  auto solution = base_nodes->GetPrimitive();
-  auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+  auto solution = base_nodes->GetSolution();
+  auto gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
 
-  computeGradientsGreenGauss(*this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
+  computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
                              *config, *solution, 0, nVar, *gradient);
 }
 
