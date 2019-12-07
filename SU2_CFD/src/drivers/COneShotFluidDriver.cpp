@@ -242,7 +242,6 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    solver[ADJFLOW_SOL]->SetSaveSolution();
     StoreObjFunction();
     StoreConstrFunction();
 
@@ -335,9 +334,6 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
-        solver[ADJFLOW_SOL]->LoadSaveSolution();
-        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-        break;
       }
 
     }
@@ -347,7 +343,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    CalculateLagrangian();
+    if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
 
     ArmijoIter++;
 
