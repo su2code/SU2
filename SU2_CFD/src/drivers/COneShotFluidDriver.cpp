@@ -252,9 +252,9 @@ void COneShotFluidDriver::RunOneShot(){
 
       }
       else{
-        /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
-        UpdateLambda(1.0);
+        // /*--- Update constraint multiplier ---*/
+        // // LoadOldLambda();
+        // UpdateLambda(1.0);
         /*--- Store gradient of augmented Lagrangian wrt multiplier ---*/
         // StoreLambdaGrad();
       }
@@ -289,6 +289,10 @@ void COneShotFluidDriver::RunOneShot(){
         StoreObjFunction();
         SetConstrFunction();
         StoreConstrFunction();
+
+        /*--- Update constraint multiplier ---*/
+        LoadOldLambda();
+        UpdateLambda(1.0);
       }
       else {
         stepsize = 0.0;
@@ -369,8 +373,8 @@ void COneShotFluidDriver::RunOneShot(){
     // }
     // solver[ADJFLOW_SOL]->LoadStepSolution(1.0);
     // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    // LoadOldLambda();
-    // UpdateLambda(1.0);
+    LoadOldLambda();
+    UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
