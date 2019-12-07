@@ -388,6 +388,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
     StoreOldLambda();
     StoreOldConstrFunction();
+    StoreObjFunction();
     StoreConstrFunction();
     CalculateLagrangian();
     // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
