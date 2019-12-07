@@ -294,6 +294,11 @@ public:
    */
   void StoreLambdaGrad();
 
+  /*!
+   * \brief Compute an initial value of the constraint multiplier.
+   */
+  void InitializeLambdaStore(unsigned short iConstr);
+
 
   /*!
    * \brief Check the sign of the constraint multiplier.

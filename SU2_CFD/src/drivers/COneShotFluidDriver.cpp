@@ -466,6 +466,11 @@ void COneShotFluidDriver::RunOneShot(){
 
     StoreLagrangianInformation();
   }
+
+  /*--- Initialize Lambda_Store at first iteration ---*/
+  if(InnerIter == config->GetOneShotStart()) {
+    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaStore(iConstr);
+  }
 }
 
 void COneShotFluidDriver::PrimalDualStep(){
@@ -1337,13 +1342,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] = 0.0;
-      // Lambda[iConstr] -= stepsize*Lambda_Old[iConstr]*config->GetMultiplierScale(iConstr);
-        // su2double ObjGradNorm = 0.0, ConstrGradNorm = 0.0;
-        // for(unsigned short iDV = 0; iDV < nDV_Total; iDV++) {
-        //   ObjGradNorm += pow()
-        //   ConstrGradNorm += pow(AugLagGradGamma[iDV][iConstr]/ConstrFunc_Store[iConstr], 2.);
-        // }
-      Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      InitializeLambdaStore(iConstr);
+      // Lambda_Store[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr];
       // Lambda_Store[iConstr] -= stepsize*Lambda_Store[iConstr]*config->GetMultiplierScale(iConstr);
     }
@@ -1424,33 +1424,29 @@ void COneShotFluidDriver::StoreLambdaGrad() {
   }
 }
 
-// void COneShotFluidDriver::InitialLambda(unsigned short iConstr) {
-//   unsigned short iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
-//   unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
-//   const su2double beta = config->GetOneShotBeta();
-//   const su2double gamma = config->GetOneShotGamma(iConstr);
-//   // const bool active = (ConstrFunc_Store[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
-//   const bool active = (ConstrFunc_Store[iConstr] > 0.);
-//   su2double my_Lambda = 0.;
-//   // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (ConstrFunc_Store[iConstr]*(ConstrFunc[iConstr]-ConstrFunc_Store[iConstr]) < 0.)) || 
-//   //    ((ConstrFunc[iConstr] - ConstrFunc_Store[iConstr] < 0.) && (ConstrFunc[iConstr] + Lambda_Old[iConstr]/gamma > 0.))) {
-//   if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-//     // my_Gradient += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
-//     my_Gradient += ConstrFunc[iConstr];
-//     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-//       for (iVar = 0; iVar < nVar; iVar++) {
-//         my_Gradient += beta
-//             * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
-//             * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
-//       }
-//     }
-//   }
-// #ifdef HAVE_MPI
-// SU2_MPI::Allreduce(&my_Gradient, &AugLagLamGrad[iConstr], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-// #else
-// AugLagLamGrad[iConstr] = my_Gradient;
-// #endif
-// }
+void COneShotFluidDriver::InitializeLambdaStore(unsigned short iConstr) {
+  unsigned short iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
+  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
+  const su2double beta = config->GetOneShotBeta();
+  const su2double gamma = config->GetOneShotGamma(iConstr);
+  const bool active = (ConstrFunc_Store[iConstr] > 0.);
+  su2double my_Lambda = 0., Lambda_Init;
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      my_Lambda -= beta
+          * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
+          * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
+    }
+  }
+#ifdef HAVE_MPI
+SU2_MPI::Allreduce(&my_Lambda, &Lambda_Init, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+Lambda_Init = my_Lambda;
+#endif
+  Lambda_Init -= ConstrFunc[iConstr];
+  Lambda_Store[iConstr] = gamma*my_Lambda;
+  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Store[iConstr] = max(Lambda_Store[iConstr], 0.0);
+}
 
 void COneShotFluidDriver::CheckLambda(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
