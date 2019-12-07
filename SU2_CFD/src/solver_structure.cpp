@@ -29,6 +29,7 @@
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CBaselineVariable.hpp"
 #include "../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
@@ -2772,129 +2773,14 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
-  
-  unsigned short iDim, jDim, iNeigh;
-  unsigned short nDim = geometry->GetnDim();
-  unsigned long iPoint, jPoint;
-  su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j, weight, r11, r12, r13, r22, r23, r23_a,
-  r23_b, r33, z11, z12, z13, z22, z23, z33, detR2, product;
-  bool singular = false;
-  
-  su2double *Cvector = new su2double [nDim];
-  
-  /*--- Loop over points of the grid ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    AuxVar_i = base_nodes->GetAuxVar(iPoint);
-    
-    /*--- Inizialization of variables ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      Cvector[iDim] = 0.0;
-    
-    r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-    
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      Coord_j = geometry->node[jPoint]->GetCoord();
-      AuxVar_j = base_nodes->GetAuxVar(jPoint);
-      
-      weight = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      
-      /*--- Sumations for entries of upper triangular matrix R ---*/
-      
-      if (fabs(weight) > EPS) {
-        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
-        if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
-        }
-        
-        /*--- Entries of c:= transpose(A)*b ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/(weight);
-      }
-      
-    }
-    
-    /*--- Entries of upper triangular matrix R ---*/
-    
-    if (fabs(r11) < EPS) r11 = EPS;
-    r11 = sqrt(r11);
-    r12 = r12/r11;
-    r22 = sqrt(r22-r12*r12);
-    if (fabs(r22) < EPS) r22 = EPS;
-    if (nDim == 3) {
-      r13 = r13/r11;
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
-    }
-    
-    /*--- Compute determinant ---*/
-    
-    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
-    else detR2 = (r11*r22*r33)*(r11*r22*r33);
-    
-    /*--- Detect singular matrices ---*/
-    
-    if (fabs(detR2) < EPS) singular = true;
-    
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    
-    if (singular) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        for (jDim = 0; jDim < nDim; jDim++)
-          Smatrix[iDim][jDim] = 0.0;
-    }
-    else {
-      if (nDim == 2) {
-        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-        Smatrix[0][1] = -r11*r12/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = r11*r11/detR2;
-      }
-      else {
-        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
-        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
-        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-        Smatrix[0][2] = (z13*z33)/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-        Smatrix[1][2] = (z23*z33)/detR2;
-        Smatrix[2][0] = Smatrix[0][2];
-        Smatrix[2][1] = Smatrix[1][2];
-        Smatrix[2][2] = (z33*z33)/detR2;
-      }
-    }
-    
-    /*--- Computation of the gradient: S*c ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++) {
-      product = 0.0;
-      for (jDim = 0; jDim < nDim; jDim++)
-        product += Smatrix[iDim][jDim]*Cvector[jDim];
-      if (geometry->node[iPoint]->GetDomain())
-        base_nodes->SetAuxVarGradient(iPoint, iDim, product);
-    }
-  }
-  
-  delete [] Cvector;
-  
-  /*--- Gradient MPI ---*/
-  
-  InitiateComms(geometry, config, AUXVAR_GRADIENT);
-  CompleteComms(geometry, config, AUXVAR_GRADIENT);
-  
+
+  bool weighted = true;
+  auto solution = base_nodes->GetAuxVar();
+  auto gradient = base_nodes->GetAuxVarGradient();
+  auto rmatrix  = base_nodes->GetRmatrix();
+
+  computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
+                               weighted, solution, 0, 1, gradient, *rmatrix);
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
@@ -2907,203 +2793,22 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
-  
-  unsigned short iDim, jDim, iVar, iNeigh;
-  unsigned long iPoint, jPoint;
-  su2double *Coord_i, *Coord_j, *Solution_i, *Solution_j;
-  su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
-  su2double detR2, z11, z12, z13, z22, z23, z33;
-  bool singular = false;
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  
-  bool weighted = true;
-  if (reconstruction) {
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      weighted = false;
-  } else if (config->GetKind_Gradient_Method() == LEAST_SQUARES) {
-    weighted = false;
-  }
-  
-  /*--- Clear Rmatrix, which could eventually be computed once
-     and stored for static meshes, as well as the gradient. ---*/
+  bool weighted;
 
-  base_nodes->SetRmatrixZero();
-  base_nodes->SetGradientZero();
+  if (reconstruction)
+    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+  else
+    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
-  /*--- Loop over points of the grid ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    
-    /*--- Set the value of the singular ---*/
-    singular = false;
-    
-    /*--- Get coordinates ---*/
-    
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    
-    /*--- Get consevative solution ---*/
-    
-    Solution_i = base_nodes->GetSolution(iPoint);
-    
-    /*--- Inizialization of variables ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (iDim = 0; iDim < nDim; iDim++)
-        Cvector[iVar][iDim] = 0.0;
+  auto solution = base_nodes->GetSolution();
+  auto rmatrix = base_nodes->GetRmatrix();
+  auto gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
+  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      Coord_j = geometry->node[jPoint]->GetCoord();
-      
-      Solution_j = base_nodes->GetSolution(jPoint);
-
-      if (weighted) {
-        weight = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      } else {
-        weight = 1.0;
-      }
-      
-      /*--- Sumations for entries of upper triangular matrix R ---*/
-      
-      if (weight != 0.0) {
-        
-        base_nodes->AddRmatrix(iPoint,0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
-        base_nodes->AddRmatrix(iPoint,0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
-        base_nodes->AddRmatrix(iPoint,1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
-        
-        if (nDim == 3) {
-          base_nodes->AddRmatrix(iPoint,0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
-          base_nodes->AddRmatrix(iPoint,1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
-          base_nodes->AddRmatrix(iPoint,2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
-          base_nodes->AddRmatrix(iPoint,2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
-        }
-        
-        /*--- Entries of c:= transpose(A)*b ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (iDim = 0; iDim < nDim; iDim++) {
-            base_nodes->AddGradient(iPoint, iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight);
-          }
-        }
-        
-      }
-    }
-  }
-  
-  /*--- Correct the gradient values for any periodic boundaries. ---*/
-  
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    if (weighted) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
-    } else {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_ULS);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_ULS);
-    }
-  }
-  
-  /*--- Second loop over points of the grid to compute final gradient ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- Set the value of the singular ---*/
-    
-    singular = false;
-    
-    /*--- Entries of upper triangular matrix R ---*/
-    
-    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-    
-    r11 = base_nodes->GetRmatrix(iPoint,0,0);
-    r12 = base_nodes->GetRmatrix(iPoint,0,1);
-    r22 = base_nodes->GetRmatrix(iPoint,1,1);
-    
-    /*--- Entries of upper triangular matrix R ---*/
-    
-    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
-    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
-    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
-    
-    if (nDim == 3) {
-      r13   = base_nodes->GetRmatrix(iPoint,0,2);
-      r23_a = base_nodes->GetRmatrix(iPoint,1,2);
-      r23_b = base_nodes->GetRmatrix(iPoint,2,1);
-      r33   = base_nodes->GetRmatrix(iPoint,2,2);
-      
-      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
-      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
-      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
-    }
-    
-    /*--- Compute determinant ---*/
-    
-    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
-    else detR2 = (r11*r22*r33)*(r11*r22*r33);
-    
-    /*--- Detect singular matrices ---*/
-    
-    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
-    
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    
-    if (singular) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        for (jDim = 0; jDim < nDim; jDim++)
-          Smatrix[iDim][jDim] = 0.0;
-    }
-    else {
-      if (nDim == 2) {
-        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-        Smatrix[0][1] = -r11*r12/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = r11*r11/detR2;
-      }
-      else {
-        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
-        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
-        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-        Smatrix[0][2] = (z13*z33)/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-        Smatrix[1][2] = (z23*z33)/detR2;
-        Smatrix[2][0] = Smatrix[0][2];
-        Smatrix[2][1] = Smatrix[1][2];
-        Smatrix[2][2] = (z33*z33)/detR2;
-      }
-    }
-    
-    /*--- Computation of the gradient: S*c ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Cvector[iVar][iDim] = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++) {
-          Cvector[iVar][iDim] += Smatrix[iDim][jDim]*base_nodes->GetGradient(iPoint, iVar, jDim);
-        }
-      }
-    }
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (reconstruction)
-          base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, Cvector[iVar][iDim]);
-        else
-          base_nodes->SetGradient(iPoint, iVar, iDim, Cvector[iVar][iDim]);
-      }
-    }
-    
-  }
-  
-  /*--- Gradient MPI ---*/
-  
-  InitiateComms(geometry, config, SOLUTION_GRADIENT);
-  CompleteComms(geometry, config, SOLUTION_GRADIENT);
-  
+  computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
+                               weighted, *solution, 0, nVar, *gradient, *rmatrix);
 }
 
 void CSolver::Add_External_To_Solution() {

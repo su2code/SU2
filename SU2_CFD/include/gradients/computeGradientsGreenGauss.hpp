@@ -61,7 +61,6 @@ void computeGradientsGreenGauss(CSolver* solver,
 {
   size_t nPointDomain = geometry.GetnPointDomain();
   size_t nDim = geometry.GetnDim();
-  size_t nVar = varEnd-varBegin;
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -82,9 +81,11 @@ void computeGradientsGreenGauss(CSolver* solver,
       auto node = geometry.node[iPoint];
 
       AD::StartPreacc();
-      AD::SetPreaccIn(&field(iPoint,varBegin), nVar);
       AD::SetPreaccIn(node->GetVolume());
       AD::SetPreaccIn(node->GetPeriodicVolume());
+
+      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+        AD::SetPreaccIn(field(iPoint,iVar));
 
       /*--- Clear the gradient. --*/
 
@@ -110,12 +111,12 @@ void computeGradientsGreenGauss(CSolver* solver,
         su2double weight = dir * halfOnVol;
 
         const su2double* area = geometry.edge[iEdge]->GetNormal();
-
-        AD::SetPreaccIn(&field(jPoint,varBegin), nVar);
         AD::SetPreaccIn(area, nDim);
 
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
         {
+          AD::SetPreaccIn(field(jPoint,iVar));
+
           su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
 
           for (size_t iDim = 0; iDim < nDim; ++iDim)
@@ -125,7 +126,8 @@ void computeGradientsGreenGauss(CSolver* solver,
       }
 
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        AD::SetPreaccOut(&gradient(iPoint,iVar,0), nDim);
+        for (size_t iDim = 0; iDim < nDim; ++iDim)
+          AD::SetPreaccOut(gradient(iPoint,iVar,iDim));
 
       AD::EndPreacc();
     }
@@ -173,7 +175,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- Account for periodic contributions. ---*/
 
-  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; iPeriodic++)
+  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
   {
     solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
     solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
