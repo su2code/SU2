@@ -1325,7 +1325,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // }
     // Lambda_Store[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
 
-    else {
+
+    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
       Lambda[iConstr] = max(Lambda[iConstr], 0.);
       Lambda_Store[iConstr] = max(Lambda_Store[iConstr], 0.);
     }
