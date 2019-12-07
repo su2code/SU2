@@ -330,8 +330,8 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
-        solver[ADJFLOW_SOL]->SetSaveSolution();
-        solver[ADJFLOW_SOL]->LoadSolutionDelta(geometry);
+        solver[ADJFLOW_SOL]->LoadSaveSolution();
+        solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
         break;
       }
 
