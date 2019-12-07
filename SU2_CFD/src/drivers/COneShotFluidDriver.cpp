@@ -1384,7 +1384,7 @@ SU2_MPI::Allreduce(&my_Lambda, &Lambda_Init, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WO
 Lambda_Init = my_Lambda;
 #endif
   Lambda_Init -= ConstrFunc[iConstr];
-  Lambda_Store[iConstr] = gamma*my_Lambda;
+  Lambda_Store[iConstr] = gamma*Lambda_Init;
   if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Store[iConstr] = max(Lambda_Store[iConstr], 0.0);
 }
 
