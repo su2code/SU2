@@ -383,8 +383,10 @@ void COneShotFluidDriver::RunOneShot(){
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
   else if(InnerIter > config->GetOneShotStart() && 
-          InnerIter < config->GetOneShotStop()  && 
-          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+          InnerIter < config->GetOneShotStop()) {
+  // else if(InnerIter > config->GetOneShotStart() && 
+          // InnerIter < config->GetOneShotStop()  && 
+          // ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
