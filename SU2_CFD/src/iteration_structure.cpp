@@ -104,11 +104,6 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
 
       /*--- Compute the new node locations for moving markers ---*/
 
-      // CVC: To do: For deformation with new mesh solver, need to access solver[MESH_0][MESH_SOL] for SetBound_Disp
-      // inside Surface_Movement functions, rest of code is identical to grid_movement_structure.cpp
-      // Either enable solver[MESH_0][MESH_SOL] inside grid_movement_structure.cpp 
-      // or move Surface_Movement functions to inside CMeshSolver
-
       if (!config->GetDeform_Mesh()) {
         surface_movement->Surface_Translating(geometry[MESH_0],
                                           config, TimeIter, val_iZone);
@@ -121,7 +116,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       /*--- Deform the volume grid around the new boundary locations ---*/
       /*--- Set volume deformation if new elastic mesh solver is not used ---*/
       /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
-      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+      // To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
 
       if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
@@ -145,7 +140,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       /*--- Deform the volume grid around the new boundary locations ---*/
       /*--- Set volume deformation if new elastic mesh solver is not used ---*/
       /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
-      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+      // To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
 
       if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
@@ -169,7 +164,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       /*--- Deform the volume grid around the new boundary locations ---*/
       /*--- Set volume deformation if new elastic mesh solver is not used ---*/
       /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
-      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+      // To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
 
       if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
@@ -193,7 +188,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       /*--- Deform the volume grid around the new boundary locations ---*/
       /*--- Set volume deformation if new elastic mesh solver is not used ---*/
       /*--- If Deform_Mesh true, the mesh deformation is handled by SetMesh_Deformation ---*/
-      // CVC: Debug: To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
+      // To Do: What if multiple prescribed movements? E.g., Pitching + Plunging?
       if (rank == MASTER_NODE && !config->GetDeform_Mesh()) {
         cout << " Deforming the volume grid." << endl;
         grid_movement->SetVolume_Deformation(geometry[MESH_0],

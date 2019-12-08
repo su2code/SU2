@@ -4268,10 +4268,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
   else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
   filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".csv");
-//=======
-//  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-//  filename_n = config->GetFilename(filename, ".csv", Unst_RestartIter);
-//>>>>>>> develop
 
   /*--- Open the restart file, throw an error if this fails. ---*/
 
@@ -4343,10 +4339,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
     else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-2;
     filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".csv");
-//=======
-//    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-//    filename_n1 = config->GetFilename(filename, ".csv", Unst_RestartIter);
-//>>>>>>> develop
 
     /*--- Open the restart file, throw an error if this fails. ---*/
 
