@@ -1425,7 +1425,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
     }
-    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
     /*--- Only update if constraint violation improves ---*/
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
@@ -1443,7 +1443,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] = Lambda[iConstr];
     }
-    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
     //   Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     // }
