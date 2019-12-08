@@ -382,11 +382,11 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   }
-  // else if(InnerIter > config->GetOneShotStart() && 
-          // InnerIter < config->GetOneShotStop()) {
   else if(InnerIter > config->GetOneShotStart() && 
-          InnerIter < config->GetOneShotStop()  && 
-          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+          InnerIter < config->GetOneShotStop()) {
+  // else if(InnerIter > config->GetOneShotStart() && 
+          // InnerIter < config->GetOneShotStop()  && 
+          // ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
