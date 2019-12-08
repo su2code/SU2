@@ -559,7 +559,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda_Old);
+  SetAdj_ConstrFunction(Lambda_Tilde);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -975,8 +975,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
     // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-      Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
-      // Lagrangian += gamma/2.*helper*helper;
+      // Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
+      Lagrangian += gamma/2.*helper*helper;
     }
   }
 
@@ -1168,21 +1168,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-  su2double* seeding = new su2double[nConstr];
-  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    const su2double gamma = config->GetOneShotGamma(iConstr);
-    const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    // const bool active = (ConstrFunc[iConstr] > 0.);
-    if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-      seeding[iConstr] = Lambda[iConstr];
-    }
-    else {
-      seeding[iConstr] = 0.;
-    }
-  }
-
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(seeding);
+  SetAdj_ConstrFunction(Lambda_Tilde);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -1564,8 +1551,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 #else
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
-        AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
-        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
+        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
+        AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
       }
     }
   }
