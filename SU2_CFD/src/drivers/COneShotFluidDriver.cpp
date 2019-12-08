@@ -379,7 +379,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
     solver[ADJFLOW_SOL]->LoadSaveSolution();
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   }
   // else if(InnerIter > config->GetOneShotStart() && 
           // InnerIter < config->GetOneShotStop()) {
@@ -389,7 +389,7 @@ void COneShotFluidDriver::RunOneShot(){
     // LoadOldLambda();
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
     // /*--- Feasibility step on constraint multipliers ---*/
     // su2double stepsize_mu = 1.0;
@@ -426,7 +426,7 @@ void COneShotFluidDriver::RunOneShot(){
     // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
 
-  // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+  solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
   if(InnerIter > config->GetOneShotStart() && 
      InnerIter < config->GetOneShotStop()) {
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
