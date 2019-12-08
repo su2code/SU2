@@ -189,35 +189,36 @@ void COneShotFluidDriver::Run(){
 
   unsigned long PrimalDualIter, nOneShotIter = config->GetnInner_Iter();;
 
-  for(PrimalDualIter = 0; PrimalDualIter < nOneShotIter; PrimalDualIter++) {
+  // for(PrimalDualIter = 0; PrimalDualIter < config->GetOneShotStart(); PrimalDualIter++) {
 
-    config->SetInnerIter(PrimalDualIter);
+  //   config->SetInnerIter(PrimalDualIter);
 
-    /*--- Preprocess the one-shot iteration ---*/
+  //   /*--- Preprocess the one-shot iteration ---*/
 
-    iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
-                          solver_container, numerics_container, config_container,
-                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  //   iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
+  //                         solver_container, numerics_container, config_container,
+  //                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
    
-    /*--- Run an iteration of the one-shot solver ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    if(PrimalDualIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-    solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
-    solver[ADJFLOW_SOL]->SetArmijoIter(1);
+  //   /*--- Run an iteration of the one-shot solver ---*/
+  //   PrimalDualStep();
+  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  //   if(PrimalDualIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
+  //   solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
+  //   solver[ADJFLOW_SOL]->SetArmijoIter(1);
 
-    /*--- Screen output ---*/
-    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                  solver_container, numerics_container, config_container,
-                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  //   /*--- Screen output ---*/
+  //   StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+  //                                 solver_container, numerics_container, config_container,
+  //                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-    if(StopCalc) break;
+  //   if(StopCalc) break;
 
-  }
+  // }
 
   for(OneShotIter = 0; OneShotIter < nOneShotIter; OneShotIter++) {
 
-    config->SetInnerIter(OneShotIter+PrimalDualIter+1);
+    // config->SetInnerIter(OneShotIter+PrimalDualIter+1);
+    config->SetInnerIter(OneShotIter);
 
     /*--- Preprocess the one-shot iteration ---*/
 
@@ -400,7 +401,7 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Compute alpha, beta, gamma at first one-shot iteration, or recompute if line search failed ---*/
-  solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
+  if(OneShotIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
   if(OneShotIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->SetSaveSolution();
