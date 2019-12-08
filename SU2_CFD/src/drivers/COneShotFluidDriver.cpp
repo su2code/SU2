@@ -233,7 +233,7 @@ void COneShotFluidDriver::Run(){
     if(StopCalc) {
       for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
-           ((ConstrFunc[iConstr] > 0.) || (Lambda[iConstr] < 0.))) {
+           ((ConstrFunc[iConstr] > 0.) || (Lambda[iConstr] > -1.0E-16))) {
           StopCalc = false;
           break;
         }
@@ -405,11 +405,11 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   }
-  else if(OneShotIter > config->GetOneShotStart() && 
-          OneShotIter < config->GetOneShotStop()) {
   // else if(OneShotIter > config->GetOneShotStart() && 
-          // OneShotIter < config->GetOneShotStop()  && 
-          // ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+          // OneShotIter < config->GetOneShotStop()) {
+  else if(OneShotIter > config->GetOneShotStart() && 
+          OneShotIter < config->GetOneShotStop()  && 
+          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
