@@ -325,10 +325,10 @@ void COneShotFluidDriver::RunOneShot(){
       solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      else {
-        LoadOldLambda();
-        UpdateLambda(1.0);
-      }
+      // else {
+      //   LoadOldLambda();
+      //   UpdateLambda(1.0);
+      // }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
@@ -355,15 +355,15 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
+        LoadOldLambda();
         // UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
+        UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
-        // LoadOldLambda();
+        LoadOldLambda();
         // UpdateLambda(1.0);
       }
 
@@ -879,7 +879,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  else {
+  // else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         // admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
@@ -896,7 +896,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         }
       }
     }
-  }
+  // }
   admissible_step *= CWolfeOne;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -914,7 +914,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  else {
+  // else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         // GradDotDir += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
@@ -931,7 +931,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         }
       }
     }
-  }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
