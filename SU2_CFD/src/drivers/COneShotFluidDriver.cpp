@@ -373,7 +373,7 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Compute alpha, beta, gamma at first one-shot iteration, or recompute if line search failed ---*/
-  if(InnerIter > 1) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
+  if(InnerIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
   if(InnerIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->SetSaveSolution();
