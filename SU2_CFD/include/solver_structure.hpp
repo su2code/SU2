@@ -4704,7 +4704,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func);
+  virtual void CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func, su2double* val_gamma);
 
   /*!
    * \brief A virtual member.
@@ -15983,7 +15983,7 @@ public:
   /*!
    * \brief Store estimates for gamma of the doubly augmented Lagrangian
    */
-  void CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func);
+  void CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func, su2double* val_gamma);
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration

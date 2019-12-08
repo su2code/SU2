@@ -2534,7 +2534,7 @@ inline void CSolver::CalculateRhoTheta(CConfig *config){}
 
 inline void CSolver::CalculateAlphaBeta(CConfig *config){}
 
-inline void CSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func){}
+inline void CSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func, su2double* val_gamma){}
 
 inline void CSolver::SetStoreSolution(){}
 
