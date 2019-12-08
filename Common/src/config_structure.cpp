@@ -3255,7 +3255,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- One-shot options ---*/
-  One_Shot_Start = max(One_Shot_Start, 1);
+  if(One_Shot_Start < 1) One_Shot_Start = 1;
 
   /*--- Allocate constraint arrays if running one-shot optimization ---*/
   if(nConstr!=0 && One_Shot_Gamma == NULL){
