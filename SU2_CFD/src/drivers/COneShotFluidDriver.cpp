@@ -320,9 +320,9 @@ void COneShotFluidDriver::RunOneShot(){
         if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
             solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
         }
-        SetObjFunction();
+        SetObjFunction(false);
         StoreObjFunction();
-        SetConstrFunction();
+        SetConstrFunction(false);
         StoreConstrFunction();
 
         // /*--- Update constraint multiplier ---*/
@@ -559,9 +559,9 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Extract the objective function and store it --- */
 
-  SetObjFunction();
+  SetObjFunction(true);
 
-  SetConstrFunction();
+  SetConstrFunction(true);
 
   AD::StopRecording();
 
@@ -1255,7 +1255,7 @@ void COneShotFluidDriver::SetAdj_ConstrFunction_Zero(){
   }
 }
 
-void CDiscAdjSinglezoneDriver::SetObjFunction(bool registering){
+void COneShotFluidDriver::SetObjFunction(bool registering){
 
   bool heat         = (config->GetWeakly_Coupled_Heat());
   bool turbo        = (config->GetBoolTurbomachinery());
