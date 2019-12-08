@@ -475,10 +475,10 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  /*--- Initialize Lambda_Tilde at first iteration ---*/
-  if(InnerIter == config->GetOneShotStart()) {
-    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
-  }
+  // /*--- Initialize Lambda_Tilde at first iteration ---*/
+  // if(InnerIter == config->GetOneShotStart()) {
+  //   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
+  // }
 }
 
 void COneShotFluidDriver::PrimalDualStep(){
@@ -1430,7 +1430,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] = 0.0;
-      InitializeLambdaTilde(iConstr);
+      // InitializeLambdaTilde(iConstr);
       // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
       // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
@@ -1438,12 +1438,12 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
     else {
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] = Lambda[iConstr];
     }
-    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
     //   Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     // }
@@ -1489,8 +1489,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 #else
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
-        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
-        AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
+        AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
+        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
       }
     }
   }
