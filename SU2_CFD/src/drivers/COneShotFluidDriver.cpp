@@ -1097,7 +1097,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
       seeding[iConstr] = 0.;
     }
   }
-  
+
   SetAdj_ConstrFunction(seeding);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
@@ -1175,7 +1175,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     const bool active = (ConstrFunc[iConstr] - Lambda[iConstr]/gamma > 0.);
     // const bool active = (ConstrFunc[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-      seeding[iConstr] = -ßLambda[iConstr];
+      seeding[iConstr] = -Lambda[iConstr];
     }
     else {
       seeding[iConstr] = 0.;
