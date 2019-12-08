@@ -532,6 +532,19 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
+  su2double* seeding = new su2double[nConstr];
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    const su2double gamma = config->GetOneShotGamma(iConstr);
+    const bool active = (ConstrFunc[iConstr] - Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc[iConstr] > 0.);
+    if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
+      seeding[iConstr] = -Lambda[iConstr];
+    }
+    else {
+      seeding[iConstr] = 0.;
+    }
+  }
+
   SetAdj_ObjFunction();
   SetAdj_ConstrFunction(Lambda);
 
@@ -550,6 +563,8 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
   AD::ClearAdjoints();
+
+  delete [] seeding;
 
 }
 
@@ -1082,6 +1097,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
       seeding[iConstr] = 0.;
     }
   }
+  
   SetAdj_ConstrFunction(seeding);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
@@ -1159,12 +1175,13 @@ void COneShotFluidDriver::ComputeBetaTerm(){
     const bool active = (ConstrFunc[iConstr] - Lambda[iConstr]/gamma > 0.);
     // const bool active = (ConstrFunc[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-      seeding[iConstr] = Lambda[iConstr];
+      seeding[iConstr] = -ßLambda[iConstr];
     }
     else {
       seeding[iConstr] = 0.;
     }
   }
+
   SetAdj_ObjFunction();
   SetAdj_ConstrFunction(seeding);
 
