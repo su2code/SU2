@@ -309,9 +309,9 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
   for(iConstr = 0; iConstr < nConstr; iConstr++) {
     su2double gamma = 2./val_bcheck_norm;
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (val_constr_func[iConstr] <= 0.0)) {
-      gamma = min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr)), config->GetOneShotGammaMax());
+      gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr)), config->GetOneShotGammaMax()), 1.0E-8);
     }
-    // gamma = min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr)), config->GetOneShotGammaMax());
+    // gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr)), config->GetOneShotGammaMax()), 1.0E-8);
     config->SetOneShotGamma(gamma, iConstr);
   }
   // su2double gamma = min(max(2./val_bcheck_norm, config->GetOneShotGammaRate()*config->GetOneShotGamma()), config->GetOneShotGammaMax());
