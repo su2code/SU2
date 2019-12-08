@@ -41,6 +41,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
                                          unsigned short val_nZone,
                                          SU2_Comm MPICommunicator) : CDiscAdjSinglezoneDriver(confFile, val_nZone, MPICommunicator) {
   /*---------- One-shot works on all design variables - find total number of design variables ---------*/
+  OneShotIter = 0;
   nDV_Total = 0;
   for (unsigned short iDV = 0; iDV  < config->GetnDV(); iDV++){
     for (unsigned short iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
@@ -186,7 +187,7 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
 void COneShotFluidDriver::Run(){
 
-  unsigned long PrimalDualIter, OneShotIter, nOneShotIter = config->GetnInner_Iter();;
+  unsigned long PrimalDualIter, nOneShotIter = config->GetnInner_Iter();;
 
   for(PrimalDualIter = 0; PrimalDualIter < nOneShotIter; PrimalDualIter++) {
 
@@ -200,6 +201,7 @@ void COneShotFluidDriver::Run(){
    
     /*--- Run an iteration of the one-shot solver ---*/
     PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
 
     /*--- Screen output ---*/
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
@@ -210,9 +212,9 @@ void COneShotFluidDriver::Run(){
 
   }
 
-  for(OneShotIter = PrimalDualIter; OneShotIter < nOneShotIter; OneShotIter++) {
+  for(OneShotIter = 0; OneShotIter < nOneShotIter; OneShotIter++) {
 
-    config->SetInnerIter(OneShotIter);
+    config->SetInnerIter(OneShotIter+PrimalDualIter+1);
 
     /*--- Preprocess the one-shot iteration ---*/
 

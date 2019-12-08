@@ -53,6 +53,8 @@ protected:
   unsigned short nDV_Total; /*!< \brief Total number of design variables used in optimization.*/
   unsigned short nConstr;   /*!< \brief Total number of constraints used in optimization.*/
 
+  unsigned long OneShotIter; /*!< \brief Iterations of One-Shot solver, after PrimalDual. */
+
   su2double* Gradient;                  /*!< \brief Vector to store gradient obtained from projection .*/
   su2double* Gradient_Old;              /*!< \brief Vector to store gradient obtained from projection (old value) .*/
   su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
