@@ -921,8 +921,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
     // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-      // Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
-      Lagrangian += gamma/2.*helper*helper;
+      Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
+      // Lagrangian += gamma/2.*helper*helper;
     }
   }
 
@@ -972,7 +972,7 @@ void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
     ActiveSetDV[iDV] = false;
     if(ub-DesignVar[iDV] <= epsilon)      ActiveSetDV[iDV] = true;
     else if(DesignVar[iDV]-lb <= epsilon) ActiveSetDV[iDV] = true;
-    else                                       nActive--;
+    else                                  nActive--;
   }
   solver[ADJFLOW_SOL]->SetnActiveDV(nActive);
 }
@@ -1141,8 +1141,6 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
 void COneShotFluidDriver::ComputePreconditioner(){
 
-  unsigned short INST_0 = 0;
-
   unsigned short iConstr, jConstr;
 
   su2double* seeding = new su2double[nConstr];
@@ -1257,7 +1255,111 @@ void COneShotFluidDriver::SetAdj_ConstrFunction_Zero(){
   }
 }
 
-void COneShotFluidDriver::SetConstrFunction(){
+void CDiscAdjSinglezoneDriver::SetObjFunction(bool registering){
+
+  bool heat         = (config->GetWeakly_Coupled_Heat());
+  bool turbo        = (config->GetBoolTurbomachinery());
+
+  ObjFunc = 0.0;
+  
+  direct_output->SetHistory_Output(geometry, solver, config,
+                                   config->GetTimeIter(),
+                                   config->GetOuterIter(),
+                                   config->GetInnerIter());
+
+  /*--- Specific scalar objective functions ---*/
+
+  switch (config->GetKind_Solver()) {
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
+  case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+  case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
+  case ONE_SHOT_EULER:           case ONE_SHOT_NAVIER_STOKES:          case ONE_SHOT_RANS:
+
+    solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+
+//    if (config->GetnMarker_Analyze() != 0)
+//      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
+
+//    if ((config->GetnMarker_Analyze() != 0) && compressible)
+//      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
+
+//    if (config->GetnMarker_NearFieldBound() != 0)
+//      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
+
+//    if (config->GetPlot_Section_Forces())
+//      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
+
+    /*--- Surface based obj. function ---*/
+
+    solver[FLOW_SOL]->Evaluate_ObjFunc(config);
+    ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+    if (heat){
+      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
+      }
+      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
+      }
+    }
+
+    /*--- This calls to be moved to a generic framework at a next stage         ---*/
+    /*--- Some things that are currently hacked into output must be reorganized ---*/
+    if (turbo){
+
+      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
+
+      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
+      case ENTROPY_GENERATION:
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        break;
+      case FLOW_ANGLE_OUT:
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        break;
+      case MASS_FLOW_IN:
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        break;
+      default:
+        break;
+      }
+
+      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
+
+    }
+
+    break;
+  case DISC_ADJ_FEM:
+    switch (config->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+        break;
+    case REFERENCE_NODE:
+        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+        break;
+    case VOLUME_FRACTION:
+        ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+        break;
+    default:
+        ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+        break;
+    }
+    break;
+  }
+
+  /*--- Scale objective for one-shot ---*/
+  switch (config->GetKind_Solver()) {
+    case ONE_SHOT_EULER: case ONE_SHOT_NAVIER_STOKES: case ONE_SHOT_RANS:
+      ObjFunc *= config->GetObjScale();
+      break;
+  }
+
+  if (rank == MASTER_NODE && registering){
+    AD::RegisterOutput(ObjFunc);
+  }
+
+}
+
+void COneShotFluidDriver::SetConstrFunction(bool registering){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -1278,7 +1380,7 @@ void COneShotFluidDriver::SetConstrFunction(){
       ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
     }
 
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && registering){
       AD::RegisterOutput(ConstrFunc[iConstr]);
     }
   }

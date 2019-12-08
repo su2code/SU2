@@ -312,9 +312,14 @@ public:
   void InitializeLambdaTilde(unsigned short iConstr);
 
   /*!
-   * \brief Set the constraint functions.
+   * \brief Set the objective function and register if requested.
    */
-  void SetConstrFunction();
+  void SetObjFunction(bool registering);
+
+  /*!
+   * \brief Set the constraint functions and register if requested.
+   */
+  void SetConstrFunction(bool registering);
 
   /*!
    * \brief Initialize the adjoint value of the constraint functions.
