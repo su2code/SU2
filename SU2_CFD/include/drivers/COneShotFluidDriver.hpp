@@ -78,16 +78,17 @@ protected:
   su2double CWolfeOne; /*!< \brief First Wolfe line search parameter.*/
   bool* ActiveSetDV;   /*!< \brief Flag for indices belonging to the active set (lower and upper design bounds are reached).*/
 
-  su2double* ConstrFunc;       /*!< \brief Constraint function values.*/
-  su2double* ConstrFunc_Store; /*!< \brief Constraint function values (stored for line search).*/
-  su2double* ConstrFunc_Old;   /*!< \brief Old constraint function values.*/
-  su2double* Lambda;           /*!< \brief Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Old;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Store;     /*!< \brief Old Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Tilde;     /*!< \brief Stored Lagrange multipliers for update.*/
-  su2double* Lambda_Tilde_Old; /*!< \brief Old stored Lagrange multipliers for update.*/
-  su2double** BCheck_Inv;      /*!< \brief Inverse matrix for multiplier update.*/
-  su2double  BCheck_Norm;      /*!< \brief Norm of the matrix for multiplier update.*/
+  su2double* ConstrFunc;         /*!< \brief Constraint function values.*/
+  su2double* ConstrFunc_Store;   /*!< \brief Constraint function values (stored for line search).*/
+  su2double* ConstrFunc_Old;     /*!< \brief Old constraint function values.*/
+  su2double* Lambda;             /*!< \brief Lagrange multipliers for constraint functions.*/
+  su2double* Lambda_Old;         /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* Lambda_Store;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* Lambda_Tilde;       /*!< \brief Stored Lagrange multipliers for update.*/
+  su2double* Lambda_Tilde_Old;   /*!< \brief Old stored Lagrange multipliers for update.*/
+  su2double* Lambda_Tilde_Store; /*!< \brief Old stored Lagrange multipliers for update.*/
+  su2double** BCheck_Inv;        /*!< \brief Inverse matrix for multiplier update.*/
+  su2double  BCheck_Norm;        /*!< \brief Norm of the matrix for multiplier update.*/
 
   su2double BFGS_Init;
 
