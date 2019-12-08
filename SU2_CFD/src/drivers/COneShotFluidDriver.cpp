@@ -233,8 +233,9 @@ void COneShotFluidDriver::Run(){
 
     if(StopCalc) {
       for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
-           ((ConstrFunc[iConstr] > 0.) || (Lambda[iConstr] > -1.0E-16))) {
+        if((OneShotIter <= config->GetOneShotStart()) || 
+           ((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
+            ((ConstrFunc[iConstr] > 0.) || (Lambda[iConstr] > -1.0E-16)))) {
           StopCalc = false;
           break;
         }
