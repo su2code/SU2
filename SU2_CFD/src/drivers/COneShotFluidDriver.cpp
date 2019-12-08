@@ -372,11 +372,7 @@ void COneShotFluidDriver::RunOneShot(){
   if(InnerIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
-
-    /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
-    // CalculateLagrangian();
-    SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
   }
   // else if(InnerIter > config->GetOneShotStart() && 
           // InnerIter < config->GetOneShotStop()) {
@@ -386,10 +382,16 @@ void COneShotFluidDriver::RunOneShot(){
     // LoadOldLambda();
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     // CalculateLagrangian();
+    // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  }
+
+  solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+  if(InnerIter > config->GetOneShotStart() && 
+     InnerIter < config->GetOneShotStop()) {
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
 
