@@ -374,7 +374,7 @@ void COneShotFluidDriver::RunOneShot(){
   if(InnerIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
-    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
   }
   // else if(InnerIter > config->GetOneShotStart() && 
           // InnerIter < config->GetOneShotStop()) {
@@ -383,8 +383,8 @@ void COneShotFluidDriver::RunOneShot(){
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
-    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
     // /*--- Feasibility step on constraint multipliers ---*/
     // su2double stepsize_mu = 1.0;
