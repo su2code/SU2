@@ -40,12 +40,10 @@
 COneShotFluidDriver::COneShotFluidDriver(char* confFile,
                                          unsigned short val_nZone,
                                          SU2_Comm MPICommunicator) : CDiscAdjSinglezoneDriver(confFile, val_nZone, MPICommunicator) {
-  unsigned short iDV, jDV, iDV_Value;
-
   /*---------- One-shot works on all design variables - find total number of design variables ---------*/
   nDV_Total = 0;
-  for (iDV = 0; iDV  < config->GetnDV(); iDV++){
-    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
+  for (unsigned short iDV = 0; iDV  < config->GetnDV(); iDV++){
+    for (unsigned short iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
       nDV_Total++;
     }
   }
@@ -86,7 +84,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
 
   BFGS_Init = config->GetBFGSInitValue();
 
-  for (iDV = 0; iDV  < nDV_Total; iDV++){
+  for (unsigned short iDV = 0; iDV  < nDV_Total; iDV++){
     Gradient[iDV] = 0.0;
     Gradient_Old[iDV] = 0.0;
     ShiftLagGrad[iDV] = 0.0;
@@ -102,7 +100,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     SearchDirection[iDV] = 0.0;
     ActiveSetDV[iDV]=false;
     BFGS_Inv[iDV] = new su2double[nDV_Total];
-    for (jDV = 0; jDV < nDV_Total; jDV++){
+    for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
       BFGS_Inv[iDV][jDV] = 0.0;
       if (iDV==jDV) BFGS_Inv[iDV][jDV] = BFGS_Init;
     }
@@ -142,8 +140,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
 COneShotFluidDriver::~COneShotFluidDriver(void){
 
   /*----- free allocated memory -------*/
-  unsigned short iDV, iConstr;
-  for (iDV = 0; iDV  < nDV_Total; iDV++){
+  for (unsigned short iDV = 0; iDV  < nDV_Total; iDV++){
     delete [] BFGS_Inv[iDV];
   }
   delete [] BFGS_Inv;
@@ -155,7 +152,7 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   delete [] AugLagGrad;
   delete [] AugLagGradAlpha;
   delete [] AugLagGradBeta;
-  for (iDV = 0; iDV < nDV_Total; iDV++){
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     delete [] AugLagGradGamma[iDV];
   }
   delete [] AugLagGradGamma;
@@ -622,8 +619,8 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient){
 
   su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
-  unsigned long iVertex, nVertex, iPoint;
+  unsigned short nMarker, nDim, nDV, nDV_Value;
+  unsigned long nVertex, iPoint;
   unsigned long nDV_Count = 0;
 
   nMarker = config->GetnMarker_All();
@@ -643,11 +640,11 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
 
-  for (iDV = 0; iDV < nDV; iDV++){
+  for (unsigned short iDV = 0; iDV < nDV; iDV++){
 
     nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+    for (unsigned short iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
 
       /*--- Initilization with su2double resets the index ---*/
 
@@ -673,22 +670,22 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
    *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
 
   bool* visited = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
     visited[iPoint] = false;
   }
 
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
-      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+      for (unsigned long iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
         if (!visited[iPoint]){
           VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (unsigned short iDim = 0; iDim < nDim; iDim++){
             Sensitivity = geometry->GetSensitivity(iPoint, iDim);
             SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
           }
@@ -704,10 +701,10 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
 
   AD::ComputeAdjoint();
 
-  for (iDV = 0; iDV  < nDV; iDV++){
+  for (unsigned short iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+    for (unsigned short iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
 #ifdef HAVE_MPI
@@ -728,14 +725,14 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
 
 void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
 
-  unsigned short iMarker, iDV, iDV_Value, nDV_Value;
+  unsigned short nDV_Value;
   bool allmoving=true;
   unsigned long nDV_Count = 0;
 
-  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+  for (unsigned short iDV = 0; iDV < config->GetnDV(); iDV++) {
     nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+    for (unsigned short iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       config->SetDV_Value(iDV,iDV_Value, DesignVarUpdate[nDV_Count]/config->GetDesignScale());
       nDV_Count++;
     }
@@ -748,7 +745,7 @@ void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *confi
   /*--- For scale, translation and rotation if all boundaries are moving they are set via volume method
    * Otherwise, the surface deformation has been set already in SetSurface_Deformation.  --- */
   /*--- Loop over markers, set flag to false if any are not moving ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     if (config->GetMarker_All_DV(iMarker) == NO)
       allmoving = false;
   }
@@ -776,54 +773,52 @@ void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *confi
 }
 
 void COneShotFluidDriver::BFGSUpdate(CConfig *config){
-  unsigned long iDV, jDV, kDV, lDV;
 
-  su2double *yk, *sk;
-  su2double vk=0;
-  su2double normyk=0;
-  su2double normsk=0;
+  su2double vk = 0;
+  su2double normyk = 0;
+  su2double normsk = 0;
 
-  yk=new su2double[nDV_Total];
-  sk=new su2double[nDV_Total];
-  for (iDV = 0; iDV < nDV_Total; iDV++){
-    yk[iDV]=ProjectionSet(iDV, AugLagGrad[iDV]-AugLagGrad_Old[iDV], false);
-    sk[iDV]=ProjectionSet(iDV, DesignVarUpdate[iDV], false);
-    vk+=yk[iDV]*sk[iDV];
-    normyk+=yk[iDV]*yk[iDV];
-    normsk+=sk[iDV]*sk[iDV];
+  su2double* yk = new su2double[nDV_Total];
+  su2double* sk = new su2double[nDV_Total];
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+    yk[iDV] = ProjectionSet(iDV, AugLagGrad[iDV]-AugLagGrad_Old[iDV], false);
+    sk[iDV] = ProjectionSet(iDV, DesignVarUpdate[iDV], false);
+    vk += yk[iDV]*sk[iDV];
+    normyk += yk[iDV]*yk[iDV];
+    normsk += sk[iDV]*sk[iDV];
   }
 
   if (vk>0){
-    su2double** MatA;
-    MatA=new su2double*[nDV_Total];
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      MatA[iDV]=new su2double[nDV_Total];
-      for (jDV=0;jDV<nDV_Total;jDV++){
-          MatA[iDV][jDV]=0.0;
+    su2double** MatA = new su2double*[nDV_Total];
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+      MatA[iDV] = new su2double[nDV_Total];
+      for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
+          MatA[iDV][jDV] = 0.0;
       }
     }
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      for (jDV=0;jDV<nDV_Total;jDV++){
-        MatA[iDV][jDV]=ProjectionPAP(iDV,jDV,BFGS_Inv[iDV][jDV],false)+(1.0/vk)*sk[iDV]*sk[jDV];
-        for (kDV=0; kDV<nDV_Total; kDV++){
-          MatA[iDV][jDV]+=-(1.0/vk)*sk[iDV]*ProjectionPAP(kDV,jDV,BFGS_Inv[kDV][jDV],false)*yk[kDV]-(1.0/vk)*sk[jDV]*ProjectionPAP(iDV,kDV,BFGS_Inv[iDV][kDV],false)*yk[kDV];
-          for (lDV=0; lDV<nDV_Total; lDV++){
-            MatA[iDV][jDV]+=(1.0/vk)*(1.0/vk)*sk[iDV]*sk[jDV]*yk[lDV]*ProjectionPAP(lDV,kDV,BFGS_Inv[lDV][kDV],false)*yk[kDV];
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+      for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
+        MatA[iDV][jDV] = ProjectionPAP(iDV,jDV,BFGS_Inv[iDV][jDV],false)+(1.0/vk)*sk[iDV]*sk[jDV];
+        for (unsigned short kDV = 0; kDV < nDV_Total; kDV++){
+          MatA[iDV][jDV] += -(1.0/vk)*sk[iDV]*ProjectionPAP(kDV,jDV,BFGS_Inv[kDV][jDV],false)*yk[kDV]
+                            -(1.0/vk)*sk[jDV]*ProjectionPAP(iDV,kDV,BFGS_Inv[iDV][kDV],false)*yk[kDV];
+          for (unsigned short lDV = 0; lDV < nDV_Total; lDV++){
+            MatA[iDV][jDV] += (1.0/vk)*(1.0/vk)*sk[iDV]*sk[jDV]*yk[lDV]*ProjectionPAP(lDV,kDV,BFGS_Inv[lDV][kDV],false)*yk[kDV];
           }
         }
       }
     }
-    for (iDV=0;iDV<nDV_Total;iDV++){
-      for (jDV=0;jDV<nDV_Total;jDV++){
-        BFGS_Inv[iDV][jDV]=MatA[iDV][jDV];
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+      for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
+        BFGS_Inv[iDV][jDV] = MatA[iDV][jDV];
       }
     }
-    for (iDV=0;iDV<nDV_Total;iDV++){
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       delete [] MatA[iDV];
     }
     delete [] MatA;
     if(config->GetBFGSInit()){
-      for (iDV=0;iDV<nDV_Total;iDV++){
+      for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
         BFGS_Init = vk/normyk;
       }
     }
@@ -836,10 +831,10 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     // CalculateLagrangian();
     // SetAugLagGrad(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
-      for (iDV = 0; iDV < nDV_Total; iDV++){
-        for (jDV = 0; jDV < nDV_Total; jDV++){
-          BFGS_Inv[iDV][jDV]=0.0;
-          if(iDV==jDV){ BFGS_Inv[iDV][jDV]=ProjectionSet(iDV,BFGS_Init,false); }
+      for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+        for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
+          BFGS_Inv[iDV][jDV] = 0.0;
+          if(iDV==jDV){ BFGS_Inv[iDV][jDV] = ProjectionSet(iDV,BFGS_Init,false); }
         }
       }
     }
@@ -849,11 +844,10 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
 }
 
 bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
-  unsigned short iDV;
   su2double admissible_step = 0.0;
 
   if(design_update) {
-    for (iDV = 0; iDV < nDV_Total; iDV++){
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
       admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
@@ -862,8 +856,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   }
   else {
     if (nConstr > 0) {
-      unsigned short iConstr;
-      for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         // admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
@@ -885,11 +878,11 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
 }
 
 void COneShotFluidDriver::StoreGradDotDir(bool design_update){
-  unsigned short iDV;
+
   GradDotDir = 0.0;
 
   if(design_update) {
-    for (iDV = 0; iDV < nDV_Total; iDV++){
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
       GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
@@ -898,8 +891,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
   }
   else {
     if (nConstr > 0) {
-      unsigned short iConstr;
-      for (iConstr = 0; iConstr < nConstr; iConstr++) {
+      for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         // GradDotDir += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
@@ -929,17 +921,15 @@ su2double COneShotFluidDriver::UpdateStepSizeBound(su2double stepsize, su2double
 
 
 void COneShotFluidDriver::ComputeDesignVarUpdate(su2double stepsize){
-  unsigned short iDV;
-  for (iDV=0;iDV<nDV_Total;iDV++){
+  for (unsigned short iDV=0;iDV<nDV_Total;iDV++){
     DesignVarUpdate[iDV]=BoundProjection(DesignVar[iDV]+stepsize*SearchDirection[iDV]*config->GetDesignScale())-DesignVar[iDV];
   }
 }
 
 void COneShotFluidDriver::ComputeSearchDirection(){
-  unsigned short iDV, jDV;
-  for (iDV=0;iDV<nDV_Total;iDV++){
+  for (unsigned short iDV=0;iDV<nDV_Total;iDV++){
     SearchDirection[iDV]=0.0;
-    for (jDV=0;jDV<nDV_Total;jDV++){
+    for (unsigned short jDV=0;jDV<nDV_Total;jDV++){
       SearchDirection[iDV]+= BFGS_Inv[iDV][jDV]*ProjectionSet(jDV,-ShiftLagGrad[jDV],false);
     }
     SearchDirection[iDV]=-ProjectionSet(iDV, ShiftLagGrad[iDV],true)+ProjectionSet(iDV, SearchDirection[iDV], false);
@@ -947,16 +937,14 @@ void COneShotFluidDriver::ComputeSearchDirection(){
 }
 
 void COneShotFluidDriver::StoreLagrangianInformation(){
-  unsigned short iDV;
-  for (iDV=0; iDV<nDV_Total; iDV++){
+  for (unsigned short iDV=0; iDV<nDV_Total; iDV++){
     AugLagGrad_Old[iDV] = AugLagGrad[iDV];
   }
   Lagrangian_Old = Lagrangian;
 }
 
 void COneShotFluidDriver::UpdateDesignVar(){
-  unsigned short iDV;
-  for (iDV=0; iDV<nDV_Total; iDV++){
+  for (unsigned short iDV=0; iDV<nDV_Total; iDV++){
     DesignVar[iDV] += DesignVarUpdate[iDV];
   }
 }
@@ -1009,10 +997,9 @@ su2double COneShotFluidDriver::BoundProjection(su2double value){
 
 void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
   //Compute ||x-P(x-gradx)||
-  unsigned short iDV;
   su2double norm = 0.0;
 
-  for (iDV = 0; iDV < nDV_Total; iDV++) {
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++) {
     norm += (DesignVar[iDV]-BoundProjection(DesignVar[iDV]-stepsize*ShiftLagGrad[iDV]))
           * (DesignVar[iDV]-BoundProjection(DesignVar[iDV]-stepsize*ShiftLagGrad[iDV]));
   }
@@ -1020,7 +1007,7 @@ void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
   epsilon = min(norm, (ub-lb)/2.0);
   unsigned short nActive = nDV_Total;
 
-  for (iDV = 0; iDV < nDV_Total; iDV++) {
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++) {
     ActiveSetDV[iDV] = false;
     if(ub-DesignVar[iDV] <= epsilon)      ActiveSetDV[iDV] = true;
     else if(DesignVar[iDV]-lb <= epsilon) ActiveSetDV[iDV] = true;
@@ -1030,9 +1017,8 @@ void COneShotFluidDriver::ComputeActiveSet(su2double stepsize){
 }
 
 void COneShotFluidDriver::SetShiftLagGrad(){
-  unsigned short iDV;
   su2double norm = 0.;
-  for (iDV = 0; iDV < nDV_Total; iDV++){
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     ShiftLagGrad[iDV] = Gradient[iDV];
     norm += Gradient[iDV]*Gradient[iDV];
   }
@@ -1040,9 +1026,8 @@ void COneShotFluidDriver::SetShiftLagGrad(){
 }
 
 void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
-  unsigned short iDV, iConstr;
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
-  for (iDV = 0; iDV < nDV_Total; iDV++){
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     if(kind == ALPHA_TERM) {
       AugLagGradAlpha[iDV] = Gradient[iDV];
     }
@@ -1050,7 +1035,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGradBeta[iDV] = Gradient[iDV];
     }
     else if(kind == GAMMA_TERM) {
-      for(iConstr = 0; iConstr < nConstr; iConstr++) {
+      for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         AugLagGradGamma[iDV][iConstr] = Gradient[iDV];
       }
     }
@@ -1058,7 +1043,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGrad[iDV] = ShiftLagGrad[iDV]
                       + AugLagGradAlpha[iDV]*config->GetOneShotAlpha()
                       + AugLagGradBeta[iDV]*config->GetOneShotBeta();
-      for(iConstr = 0; iConstr < nConstr; iConstr++) {
+      for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         AugLagGrad[iDV] += AugLagGradGamma[iDV][iConstr]*config->GetOneShotGamma(iConstr);
       }
     }   
@@ -1066,7 +1051,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGrad_Old[iDV] = ShiftLagGrad[iDV]
                           + AugLagGradAlpha[iDV]*config->GetOneShotAlpha()
                           + AugLagGradBeta[iDV]*config->GetOneShotBeta();
-      for(iConstr = 0; iConstr < nConstr; iConstr++) {
+      for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         AugLagGrad_Old[iDV] += AugLagGradGamma[iDV][iConstr]*config->GetOneShotGamma(iConstr);
       }
     }   
@@ -1209,16 +1194,14 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
 void COneShotFluidDriver::ComputePreconditioner(){
 
-  unsigned short iConstr, jConstr;
-
   su2double* seeding = new su2double[nConstr];
-  for (iConstr = 0; iConstr < nConstr; iConstr++){
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     seeding[iConstr] = 0.0;
   }
   su2double **BCheck = new su2double*[nConstr];
-  for (iConstr = 0; iConstr  < nConstr; iConstr++){
+  for (unsigned short iConstr = 0; iConstr  < nConstr; iConstr++){
     BCheck[iConstr] = new su2double[nConstr];
-    for (jConstr = 0; jConstr  < nConstr; jConstr++){
+    for (unsigned short jConstr = 0; jConstr  < nConstr; jConstr++){
       BCheck[iConstr][jConstr] = 0.0;
     }
   }
@@ -1256,9 +1239,9 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
 
   su2double bcheck=0;
-  for (iConstr = 0; iConstr  < nConstr; iConstr++){
+  for (unsigned short iConstr = 0; iConstr  < nConstr; iConstr++){
     BCheck[iConstr][iConstr] = 1./config->GetOneShotGamma(iConstr);
-    for (jConstr = 0; jConstr < nConstr; jConstr++){
+    for (unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       BCheck[iConstr][jConstr] += config->GetOneShotBeta()*solver[ADJFLOW_SOL]->MultiplyConstrDerivative(iConstr,jConstr);
     }
   }
@@ -1544,17 +1527,17 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
 void COneShotFluidDriver::StoreLambdaGrad() {
   if(nConstr > 0) {
-    unsigned short iConstr, iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
-    unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
+    unsigned short nVar = solver[ADJFLOW_SOL]->GetnVar();
+    unsigned long nPointDomain = geometry->GetnPointDomain();
     const su2double beta = config->GetOneShotBeta();
-    for (iConstr = 0; iConstr < nConstr; iConstr++) {
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
       const bool active = (ConstrFunc_Old[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
       // const bool active = (ConstrFunc_Old[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          for (iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
                 * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
                 * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
@@ -1573,13 +1556,13 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 }
 
 void COneShotFluidDriver::InitializeLambdaTilde(unsigned short iConstr) {
-  unsigned short iVar, nVar = solver[ADJFLOW_SOL]->GetnVar();
-  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
+  unsigned short nVar = solver[ADJFLOW_SOL]->GetnVar();
+  unsigned long nPointDomain = geometry->GetnPointDomain();
   const su2double beta = config->GetOneShotBeta();
   const su2double gamma = config->GetOneShotGamma(iConstr);
   su2double my_Lambda = 0., Lambda_Init;
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       my_Lambda -= beta
           * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
           * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
