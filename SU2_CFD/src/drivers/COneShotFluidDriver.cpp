@@ -546,7 +546,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   }
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda);
+  SetAdj_ConstrFunction(seeding);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
