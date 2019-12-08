@@ -1468,56 +1468,56 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
     // const bool active = (ConstrFunc_Old[iConstr] > 0.);
 
-    // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
-    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-    //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
-    // }
-    // // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
-    // /*--- Only update if constraint violation improves ---*/
-    // // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
-    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
-    //   Lambda[iConstr] = 0.0;
-    //   // InitializeLambdaTilde(iConstr);
-    //   // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
-    //   // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
-    // }
-    // // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
-    // else {
-    //   Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-    //   // Lambda_Tilde[iConstr] = Lambda[iConstr];
-    // }
-    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-
-
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
     }
-    Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    /*--- Only update if constraint violation improves ---*/
+    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
+    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
+      Lambda[iConstr] = 0.0;
+      // InitializeLambdaTilde(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
+      // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
+    }
+    // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
+    else {
+      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] = Lambda[iConstr];
+    }
+    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
-    // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
-    //   Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    // }
-    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
-    // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
-    // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Lambda_Old[iConstr]/gamma > 0.)) {
-    //   Lambda[iConstr] = Lambda_Old[iConstr] + stepsize*gamma*ConstrFunc_Old[iConstr];
+    // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
+    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+    //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
     // }
-    // else {
-    //   Lambda[iConstr] = 0.;
-    // }
-    // Lambda_Tilde[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
+    // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+
+    // // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
+    // //   Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // // }
+    // // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+
+    // // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
+    // // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Lambda_Old[iConstr]/gamma > 0.)) {
+    // //   Lambda[iConstr] = Lambda_Old[iConstr] + stepsize*gamma*ConstrFunc_Old[iConstr];
+    // // }
+    // // else {
+    // //   Lambda[iConstr] = 0.;
+    // // }
+    // // Lambda_Tilde[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
 
 
-    // if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
-    //   Lambda[iConstr] = max(Lambda[iConstr], 0.);
-    //   Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
-    // }
+    if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
+      Lambda[iConstr] = max(Lambda[iConstr], 0.);
+      Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
+    }
   }
 }
 
