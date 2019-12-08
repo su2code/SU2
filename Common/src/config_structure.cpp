@@ -2,24 +2,14 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -243,8 +233,6 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   if (runtime_file) {
     if (all_options.find("TIME_ITER") == all_options.end())
       config->SetnTime_Iter(nTimeIter);
-    if (all_options.find("CFL_NUMBER") == all_options.end())
-      config->SetCFL(MESH_0, CFLFineGrid);
   }
 }
 
@@ -789,8 +777,6 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_Simulation = false;
 
   nSpanMaxAllZones = 1;
-
-  Wrt_InletFile = false;
  
   Restart_Bandwidth_Agg = 0.0;
   
@@ -1457,10 +1443,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
-  /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
-  /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
   addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
@@ -1536,6 +1518,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief NUM_METHOD_GRAD
    *  \n DESCRIPTION: Numerical method for spatial gradients \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: WEIGHTED_LEAST_SQUARES. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
+  /*!\brief NUM_METHOD_GRAD
+   *  \n DESCRIPTION: Numerical method for spatial gradients used only for upwind reconstruction \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: NO_GRADIENT. \ingroup Config*/
+  addEnumOption("NUM_METHOD_GRAD_RECON", Kind_Gradient_Method_Recon, Gradient_Map, NO_GRADIENT);
   /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
@@ -1570,7 +1555,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
-  addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 1.0);
+  addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -2755,7 +2740,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                        |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2769,22 +2754,12 @@ void CConfig::SetHeader(unsigned short val_software){
     cout << "|                                                                       |" << endl;
     //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The current SU2 release has been coordinated by the                   |" << endl;
-    cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
-    cout << "| with selected contributions from the open-source community.           |" << endl;
+    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
+    cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The main research teams contributing to the current release are:      |" << endl;
-    cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
-    cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
-    cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
-    cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
-    cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-    cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
-    cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
-    cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
-    cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
+    cout << "| Copyright 2012-2019, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3890,7 +3865,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
 
   if (ContinuousAdjoint) {
-    Relaxation_Factor_Flow = Relaxation_Factor_AdjFlow;
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
@@ -4553,6 +4527,81 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RampOutletPressure = false;
     RampRotatingFrame = false;
   }
+  
+  /* 2nd-order MUSCL is not possible for the continuous adjoint
+   turbulence model. */
+  
+  if (MUSCL_AdjTurb) {
+    SU2_MPI::Error(string("MUSCL_ADJTURB= YES not currently supported.\n") +
+                   string("Please select MUSCL_ADJTURB= NO (first-order)."),
+                   CURRENT_FUNCTION);
+  }
+  
+  /* Check for whether we need a second gradient method to calculate
+   gradients for uwpind reconstruction. Set additional booleans to
+   minimize overhead as appropriate. */
+  
+  if (MUSCL_Flow || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
+    
+    ReconstructionGradientRequired = true;
+    
+    if ((Kind_Gradient_Method_Recon == NO_GRADIENT) ||
+        (Kind_Gradient_Method_Recon == Kind_Gradient_Method)) {
+
+      /* The default behavior if no reconstruction gradient is specified
+       is to use the same gradient as needed for the viscous/source terms
+       without recomputation. If they are using the same method, then
+       we also want to avoid recomputation. */
+
+      ReconstructionGradientRequired = false;
+      Kind_Gradient_Method_Recon     = Kind_Gradient_Method;
+    }
+    
+  }
+  
+  /* Simpler boolean to control allocation of least-squares memory. */
+  
+  LeastSquaresRequired = false;
+  if ((Kind_Gradient_Method_Recon == LEAST_SQUARES) ||
+      (Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES) ||
+      (Kind_Gradient_Method       == LEAST_SQUARES) ||
+      (Kind_Gradient_Method       == WEIGHTED_LEAST_SQUARES)) {
+    LeastSquaresRequired = true;
+  }
+  
+  if (Kind_Gradient_Method == LEAST_SQUARES) {
+    SU2_MPI::Error(string("LEAST_SQUARES gradient method not allowed for viscous / source terms.\n") +
+                   string("Please select either WEIGHTED_LEAST_SQUARES or GREEN_GAUSS."),
+                   CURRENT_FUNCTION);
+  }
+  
+  /* Protect against using CFL adaption for non-flow or certain
+   unsteady flow problems. */
+  
+  bool fvm_flow = ((Kind_Solver == INC_EULER) ||
+                   (Kind_Solver == INC_NAVIER_STOKES) ||
+                   (Kind_Solver == INC_RANS) ||
+                   (Kind_Solver == EULER) ||
+                   (Kind_Solver == NAVIER_STOKES) ||
+                   (Kind_Solver == RANS) ||
+                   (Kind_Solver == DISC_ADJ_EULER) ||
+                   (Kind_Solver == DISC_ADJ_RANS) ||
+                   (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+                   (Kind_Solver == DISC_ADJ_INC_EULER) ||
+                   (Kind_Solver == DISC_ADJ_INC_RANS) ||
+                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
+  if (CFL_Adapt && !fvm_flow) {
+    SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
+                   string("Please select CFL_ADAPT = NO."),
+                   CURRENT_FUNCTION);
+  }
+  
+  if (CFL_Adapt && (TimeMarching == TIME_STEPPING)) {
+    SU2_MPI::Error(string("CFL adaption not available for TIME_STEPPING integration.\n") +
+                   string("Please select CFL_ADAPT = NO."),
+                   CURRENT_FUNCTION);
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5956,9 +6005,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
        Kind_Solver != DISC_ADJ_FEM_EULER && Kind_Solver != DISC_ADJ_FEM_NS && 
        Kind_Solver != DISC_ADJ_FEM_RANS) {
       if (!fea){
+        switch (Kind_Gradient_Method_Recon) {
+          case GREEN_GAUSS: cout << "Gradient for upwind reconstruction: Green-Gauss." << endl; break;
+          case LEAST_SQUARES: cout << "Gradient for upwind reconstruction: unweighted Least-Squares." << endl; break;
+          case WEIGHTED_LEAST_SQUARES: cout << "Gradient for upwind reconstruction: inverse-distance weighted Least-Squares." << endl; break;
+        }
         switch (Kind_Gradient_Method) {
-          case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
-          case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+          case GREEN_GAUSS: cout << "Gradient for viscous and source terms: Green-Gauss." << endl; break;
+          case LEAST_SQUARES: cout << "Gradient for viscous and source terms: unweighted Least-Squares." << endl; break;
+          case WEIGHTED_LEAST_SQUARES: cout << "Gradient for viscous and source terms: inverse-distance weighted Least-Squares." << endl; break;
         }
       }
       else{
