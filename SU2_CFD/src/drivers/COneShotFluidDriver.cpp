@@ -268,11 +268,24 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Perform line search on just multiplier ---*/
   if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
     StoreLambdaGrad();
+
+    /*--- Evaluate the objective at the old solution, new design ---*/
+      
+    solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+    solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+    solver[FLOW_SOL]->Friction_Forces(geometry, config);
+              
+    if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+        solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+    }
+    SetObjFunction(false);
+    StoreObjFunction();
+    SetConstrFunction(false);
+    StoreConstrFunction();
+
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    StoreObjFunction();
-    StoreConstrFunction();
 
     stepsize = 1.0;
     ArmijoIter = 0;
