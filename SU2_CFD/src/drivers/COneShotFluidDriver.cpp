@@ -426,7 +426,7 @@ void COneShotFluidDriver::RunOneShot(){
     // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
 
-  solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+  solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   if(InnerIter > config->GetOneShotStart() && 
      InnerIter < config->GetOneShotStop()) {
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
