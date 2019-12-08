@@ -250,7 +250,6 @@ void COneShotFluidDriver::RunOneShot(){
 
   su2double stepsize = 1.0, stepsize_tmp, tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
-  unsigned long InnerIter = config->GetInnerIter();
   bool bool_tol = false;
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
 
@@ -259,7 +258,7 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
   // /*--- Perform line search on just multiplier ---*/
-  // if(nConstr > 0 && InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()) {
+  // if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
   //   StoreLambdaGrad();
   //   /*--- Do a primal and adjoint update ---*/
   //   PrimalDualStep();
@@ -304,7 +303,7 @@ void COneShotFluidDriver::RunOneShot(){
   bool_tol = false;
   do {
 
-    if(InnerIter > config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){      
+    if(OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()){      
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
@@ -375,8 +374,8 @@ void COneShotFluidDriver::RunOneShot(){
 
     ArmijoIter++;
 
-  } while((InnerIter > config->GetOneShotStart()) && 
-          (InnerIter < config->GetOneShotStop())  &&
+  } while((OneShotIter > config->GetOneShotStart()) && 
+          (OneShotIter < config->GetOneShotStop())  &&
           (!CheckFirstWolfe(true)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
   /*--- Store number of search iterations ---*/
@@ -389,16 +388,16 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
-       InnerIter > config->GetOneShotStart()                   && 
-       InnerIter < config->GetOneShotStop()                    &&
+       OneShotIter > config->GetOneShotStart()                   && 
+       OneShotIter < config->GetOneShotStop()                    &&
        (!config->GetZeroStep() || CheckFirstWolfe(true))) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
 
   /*--- Compute alpha, beta, gamma at first one-shot iteration, or recompute if line search failed ---*/
-  if(InnerIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-  if(InnerIter == config->GetOneShotStart()) {
+  if(OneShotIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
+  if(OneShotIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->LoadSolution();
@@ -406,10 +405,10 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   }
-  else if(InnerIter > config->GetOneShotStart() && 
-          InnerIter < config->GetOneShotStop()) {
-  // else if(InnerIter > config->GetOneShotStart() && 
-          // InnerIter < config->GetOneShotStop()  && 
+  else if(OneShotIter > config->GetOneShotStart() && 
+          OneShotIter < config->GetOneShotStop()) {
+  // else if(OneShotIter > config->GetOneShotStart() && 
+          // OneShotIter < config->GetOneShotStop()  && 
           // ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
@@ -451,8 +450,8 @@ void COneShotFluidDriver::RunOneShot(){
     // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
 
-  if(InnerIter > config->GetOneShotStart() && 
-     InnerIter < config->GetOneShotStop()) {
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) {
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
  
@@ -466,7 +465,7 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store Deltay and DeltaBary ---*/
   solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
 
-  if(InnerIter >= config->GetOneShotStart() && InnerIter < config->GetOneShotStop()){
+  if(OneShotIter >= config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()){
 
     /*--- Update design variable ---*/
     UpdateDesignVar();
@@ -523,7 +522,7 @@ void COneShotFluidDriver::RunOneShot(){
     ComputeActiveSet(stepsize);
 
     /*--- Do a BFGS update to approximate the inverse preconditioner ---*/
-    if(InnerIter > config->GetOneShotStart()) BFGSUpdate(config);
+    if(OneShotIter > config->GetOneShotStart()) BFGSUpdate(config);
 
     /*--- Compute the search direction for the line search procedure ---*/
     ComputeSearchDirection();
@@ -532,7 +531,7 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Initialize Lambda_Tilde at first iteration ---*/
-  // if(InnerIter == config->GetOneShotStart()) {
+  // if(OneShotIter == config->GetOneShotStart()) {
   //   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
   // }
 }
