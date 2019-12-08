@@ -272,8 +272,8 @@ void COneShotFluidDriver::RunOneShot(){
       ArmijoIter++;
 
     } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    // StoreLambda();
-    // LoadOldLambda();
+    StoreLambda();
+    LoadOldLambda();
     solver[ADJFLOW_SOL]->LoadSolution();
   }
 
@@ -357,8 +357,8 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  // --- Load multipliers from first line search ---
-  // LoadLambdaStore();
+  /*--- Load multipliers from first line search ---*/
+  LoadLambdaStore();
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
