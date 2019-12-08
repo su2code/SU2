@@ -2495,7 +2495,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: One-Shot method options \ingroup Config*/
 
   /*!\brief ONE_SHOT_START \n DESCRIPTION: Starting iteration of one-shot method \ingroup Config*/
-  addUnsignedLongOption("ONE_SHOT_START_ITER", One_Shot_Start, 0);
+  addUnsignedLongOption("ONE_SHOT_START_ITER", One_Shot_Start, 1);
 
   /*!\brief ONE_SHOT_STOP \n DESCRIPTION: Stopping iteration of one-shot method \ingroup Config*/
   addUnsignedLongOption("ONE_SHOT_STOP_ITER", One_Shot_Stop, 999999);
@@ -3253,6 +3253,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
   }
+
+  /*--- One-shot options ---*/
+  One_Shot_Start = max(One_Shot_Start, 1);
 
   /*--- Allocate constraint arrays if running one-shot optimization ---*/
   if(nConstr!=0 && One_Shot_Gamma == NULL){
