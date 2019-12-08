@@ -202,6 +202,7 @@ void COneShotFluidDriver::Run(){
     /*--- Run an iteration of the one-shot solver ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
+    solver[ADJFLOW_SOL]->SetArmijoIter(1);
 
     /*--- Screen output ---*/
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
