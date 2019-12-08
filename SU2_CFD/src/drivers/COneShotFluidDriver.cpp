@@ -186,7 +186,7 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
 void COneShotFluidDriver::Run(){
 
-  unsigned long PrimalDualITer, OneShotIter, nOneShotIter = config->GetnInner_Iter();;
+  unsigned long PrimalDualIter, OneShotIter, nOneShotIter = config->GetnInner_Iter();;
 
   for(PrimalDualIter = 0; PrimalDualIter < nOneShotIter; PrimalDualIter++) {
 
