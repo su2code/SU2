@@ -186,9 +186,31 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
 void COneShotFluidDriver::Run(){
 
-  unsigned long OneShotIter, nOneShotIter = config->GetnInner_Iter();;
+  unsigned long PrimalDualITer, OneShotIter, nOneShotIter = config->GetnInner_Iter();;
 
-  for(OneShotIter = 0; OneShotIter < nOneShotIter; OneShotIter++) {
+  for(PrimalDualIter = 0; PrimalDualIter < nOneShotIter; PrimalDualIter++) {
+
+    config->SetInnerIter(PrimalDualIter);
+
+    /*--- Preprocess the one-shot iteration ---*/
+
+    iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
+                          solver_container, numerics_container, config_container,
+                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+   
+    /*--- Run an iteration of the one-shot solver ---*/
+    PrimalDualStep();
+
+    /*--- Screen output ---*/
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                  solver_container, numerics_container, config_container,
+                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+    if(StopCalc) break;
+
+  }
+
+  for(OneShotIter = PrimalDualIter; OneShotIter < nOneShotIter; OneShotIter++) {
 
     config->SetInnerIter(OneShotIter);
 
