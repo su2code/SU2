@@ -796,7 +796,8 @@ void CConfig::SetPointersNull(void) {
   
   Mesh_Box_Size = NULL;
 
-  /*--- Constraint vars for SAND ---*/
+  /*--- Constraint vars for one-shot ---*/
+  One_Shot_Gamma  = NULL;
   Multiplier_Start  = NULL;
   Multiplier_Factor = NULL;
   Multiplier_Scale  = NULL;
