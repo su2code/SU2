@@ -201,6 +201,8 @@ void COneShotFluidDriver::Run(){
    
     /*--- Run an iteration of the one-shot solver ---*/
     PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    if(PrimalDualIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
     solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
     solver[ADJFLOW_SOL]->SetArmijoIter(1);
 
@@ -398,7 +400,7 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Compute alpha, beta, gamma at first one-shot iteration, or recompute if line search failed ---*/
-  if(OneShotIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
+  solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
   if(OneShotIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->SetSaveSolution();
