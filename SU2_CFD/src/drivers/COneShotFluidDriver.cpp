@@ -326,8 +326,8 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         // /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
-        // // UpdateLambda(1.0);
+        LoadOldLambda();
+        UpdateLambda(1.0);
         // UpdateLambda(stepsize);
       }
       else {
@@ -381,36 +381,36 @@ void COneShotFluidDriver::RunOneShot(){
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
-    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
+    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc);
 
-    /*--- Feasibility step on constraint multipliers ---*/
-    su2double stepsize_mu = 1.0;
-    ArmijoIter = 0;
-    bool_tol = false;
-    do {
-      if(ArmijoIter > 0){
-        /*--- Parabolic backtracking ---*/
-        stepsize_tmp = UpdateStepSizeQuadratic();
-        stepsize  = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-        if(stepsize < tol) {
-          stepsize = 0.;
-          bool_tol = true;
-        }
-      }
-      /*--- Compute and store GradL dot p ---*/
-      StoreGradDotDir(false);
+    // /*--- Feasibility step on constraint multipliers ---*/
+    // su2double stepsize_mu = 1.0;
+    // ArmijoIter = 0;
+    // bool_tol = false;
+    // do {
+    //   if(ArmijoIter > 0){
+    //     /*--- Parabolic backtracking ---*/
+    //     stepsize_tmp = UpdateStepSizeQuadratic();
+    //     stepsize  = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+    //     if(stepsize < tol) {
+    //       stepsize = 0.;
+    //       bool_tol = true;
+    //     }
+    //   }
+    //   /*--- Compute and store GradL dot p ---*/
+    //   StoreGradDotDir(false);
 
-      /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+    //   /*--- Update constraint multiplier ---*/
+    //   LoadOldLambda();
+    //   UpdateLambda(stepsize);
 
-      /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-      CalculateLagrangian();
+    //   /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+    //   CalculateLagrangian();
 
-      ArmijoIter++;
+    //   ArmijoIter++;
 
-    } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    // } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
  
     // UpdateLambda(1.0);
 
