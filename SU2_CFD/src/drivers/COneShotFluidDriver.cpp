@@ -256,7 +256,7 @@ void COneShotFluidDriver::Run(){
 
 void COneShotFluidDriver::RunOneShot(){
 
-  su2double stepsize = 1.0, stepsize_tmp, tol = config->GetOneShotSearchTol();
+  su2double stepsize = 1.0, tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   bool bool_tol = false;
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
@@ -280,7 +280,7 @@ void COneShotFluidDriver::RunOneShot(){
     do {
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        stepsize_tmp = UpdateStepSizeQuadratic();
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
         stepsize  = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         if(stepsize < tol) {
           stepsize = 0.;
@@ -315,7 +315,7 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        stepsize_tmp = UpdateStepSizeQuadratic();
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         if(stepsize < tol) {
           stepsize = tol;
@@ -326,7 +326,7 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
 
         /*--- Load the old solution (y_k, Bary_k) for line search ---*/
-      solver[ADJFLOW_SOL]->LoadSolution();
+        solver[ADJFLOW_SOL]->LoadSolution();
 
       }
       // else {
@@ -455,13 +455,13 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     // CalculateLagrangian();
-    // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
-  }
-
-  if(OneShotIter > config->GetOneShotStart() && 
-     OneShotIter < config->GetOneShotStop()) {
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
+
+  // if(OneShotIter > config->GetOneShotStart() && 
+  //    OneShotIter < config->GetOneShotStop()) {
+  //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  // }
  
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreOldLambda();
