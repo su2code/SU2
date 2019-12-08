@@ -325,7 +325,7 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        // /*--- Update constraint multiplier ---*/
+        /*--- Update constraint multiplier ---*/
         LoadOldLambda();
         UpdateLambda(1.0);
         // UpdateLambda(stepsize);
@@ -334,6 +334,8 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
+        LoadOldLambda();
+        UpdateLambda(1.0);
       }
 
     }
