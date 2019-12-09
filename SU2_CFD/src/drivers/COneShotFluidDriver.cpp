@@ -399,7 +399,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
-    // CalculateLagrangian();
+    CalculateLagrangian();
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
 
@@ -409,7 +409,7 @@ void COneShotFluidDriver::RunOneShot(){
   StoreOldConstrFunction();
   StoreObjFunction();
   StoreConstrFunction();
-  CalculateLagrangian();
+  // CalculateLagrangian();
 
   /*--- Store Deltay and DeltaBary ---*/
   solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
