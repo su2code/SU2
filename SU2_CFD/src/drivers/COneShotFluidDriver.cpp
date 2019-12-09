@@ -426,11 +426,11 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   }
-  // else if(OneShotIter > config->GetOneShotStart() && 
-          // OneShotIter < config->GetOneShotStop()) {
   else if(OneShotIter > config->GetOneShotStart() && 
-          OneShotIter < config->GetOneShotStop()  && 
-          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+          OneShotIter < config->GetOneShotStop()) {
+  // else if(OneShotIter > config->GetOneShotStart() && 
+          // OneShotIter < config->GetOneShotStop()  && 
+          // ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     // LoadOldLambda();
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
@@ -563,9 +563,9 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Initialize Lambda_Tilde at first iteration ---*/
-  // if(OneShotIter == config->GetOneShotStart()) {
-  //   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
-  // }
+  if(OneShotIter == config->GetOneShotStart()) {
+    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
+  }
 }
 
 void COneShotFluidDriver::PrimalDualStep(){
@@ -1547,7 +1547,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] = 0.0;
-      // InitializeLambdaTilde(iConstr);
+      InitializeLambdaTilde(iConstr);
       // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
       // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
@@ -1556,11 +1556,11 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     else {
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] -= helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] = Lambda[iConstr];
     }
-    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
     // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
