@@ -340,8 +340,6 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize = 0.0;
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
-        // LoadOldLambda();
-        // UpdateLambda(1.0);
 
         /*--- Evaluate the objective at the old solution, new design ---*/
       
@@ -363,12 +361,6 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-
-    /*--- Update constraint multiplier ---*/
-    // LoadOldLambda();
-    // UpdateLambda(1.0);
-    // StoreObjFunction();
-    // StoreConstrFunction();
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
@@ -890,7 +882,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         }
       }
     }
-  }?
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
