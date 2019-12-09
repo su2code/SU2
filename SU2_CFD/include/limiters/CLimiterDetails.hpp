@@ -83,7 +83,7 @@ struct CLimiterDetails<BARTH_JESPERSEN>
    */
   inline su2double smoothFunction(size_t, su2double ratio, su2double) const
   {
-    ratio = std::min(su2double(2.0), ratio);
+    ratio = min(2.0, ratio);
     su2double lim = ratio*ratio + ratio;
     return (lim + ratio) / (lim + 2.0);
   }
@@ -106,7 +106,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
   {
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
-    eps2 = std::pow(L*K, 3);
+    eps2 = pow(L*K, 3);
   }
 
   /*!
@@ -169,8 +169,8 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        fieldMin(iThread, iVar) = std::min(fieldMin(iThread, iVar), field(iPoint, iVar));
-        fieldMax(iThread, iVar) = std::max(fieldMax(iThread, iVar), field(iPoint, iVar));
+        fieldMin(iThread, iVar) = min(fieldMin(iThread, iVar), field(iPoint, iVar));
+        fieldMax(iThread, iVar) = max(fieldMax(iThread, iVar), field(iPoint, iVar));
       }
     }
 
@@ -182,8 +182,8 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       {
         for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
         {
-          fieldMin(0,iVar) = std::min(fieldMin(0,iVar), fieldMin(iThread, iVar));
-          fieldMax(0,iVar) = std::max(fieldMax(0,iVar), fieldMax(iThread, iVar));
+          fieldMin(0,iVar) = min(fieldMin(0,iVar), fieldMin(iThread, iVar));
+          fieldMax(0,iVar) = max(fieldMax(0,iVar), fieldMax(iThread, iVar));
         }
       }
 
@@ -204,7 +204,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       su2double K = config.GetVenkat_LimiterCoeff();
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        eps2(iVar) = std::pow(K*(fieldMax(0,iVar) - fieldMin(0,iVar)), 2);
+        eps2(iVar) = pow(K*(fieldMax(0,iVar) - fieldMin(0,iVar)), 2);
     }
     SU2_OMP_BARRIER
 

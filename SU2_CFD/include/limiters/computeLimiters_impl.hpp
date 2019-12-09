@@ -206,13 +206,13 @@ void computeLimiters_impl(CSolver* solver,
           for(size_t iDim = 0; iDim < nDim; ++iDim)
             proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
 
-          projMax[iVar] = std::max(projMax[iVar], proj);
-          projMin[iVar] = std::min(projMin[iVar], proj);
+          projMax[iVar] = max(projMax[iVar], proj);
+          projMin[iVar] = min(projMin[iVar], proj);
 
           AD::SetPreaccIn(field(jPoint,iVar));
 
-          fieldMax(iPoint,iVar) = std::max(fieldMax(iPoint,iVar), field(jPoint,iVar));
-          fieldMin(iPoint,iVar) = std::min(fieldMin(iPoint,iVar), field(jPoint,iVar));
+          fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
+          fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));
         }
       }
 
@@ -228,13 +228,13 @@ void computeLimiters_impl(CSolver* solver,
          *    regions of the field this results in ratio of 2, which for most
          *    limiter functions gives a limiter of 1 (no limiting). ---*/ 
 
-        su2double deltaMax = std::max(fieldMax(iPoint,iVar) - field(iPoint,iVar), eps);
-        su2double deltaMin = std::min(fieldMin(iPoint,iVar) - field(iPoint,iVar),-eps);
-        su2double delta = std::max(deltaMax, -deltaMin);
+        su2double deltaMax = max(fieldMax(iPoint,iVar) - field(iPoint,iVar), eps);
+        su2double deltaMin = min(fieldMin(iPoint,iVar) - field(iPoint,iVar),-eps);
+        su2double delta = max(deltaMax, -deltaMin);
 
         su2double ratioMax = deltaMax / projMax[iVar];
         su2double ratioMin = deltaMin / projMin[iVar];
-        su2double ratio = std::min(ratioMax, ratioMin);
+        su2double ratio = min(ratioMax, ratioMin);
 
         limiter(iPoint,iVar) = geoFactor * details.smoothFunction(iVar, ratio, delta);
 
