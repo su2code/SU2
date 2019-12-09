@@ -190,37 +190,10 @@ void COneShotFluidDriver::Preprocess(unsigned long TimeIter) {
 
 void COneShotFluidDriver::Run(){
 
-  unsigned long PrimalDualIter, nOneShotIter = config->GetnInner_Iter();;
-
-  // for(PrimalDualIter = 0; PrimalDualIter < config->GetOneShotStart(); PrimalDualIter++) {
-
-  //   config->SetInnerIter(PrimalDualIter);
-
-  //   /*--- Preprocess the one-shot iteration ---*/
-
-  //   iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
-  //                         solver_container, numerics_container, config_container,
-  //                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-   
-  //   /*--- Run an iteration of the one-shot solver ---*/
-  //   PrimalDualStep();
-  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  //   if(PrimalDualIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
-  //   solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
-  //   solver[ADJFLOW_SOL]->SetArmijoIter(1);
-
-  //   /*--- Screen output ---*/
-  //   StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-  //                                 solver_container, numerics_container, config_container,
-  //                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-  //   if(StopCalc) break;
-
-  // }
+  unsigned long nOneShotIter = config->GetnInner_Iter();;
 
   for(OneShotIter = 0; OneShotIter < nOneShotIter; OneShotIter++) {
 
-    // config->SetInnerIter(OneShotIter+PrimalDualIter+1);
     config->SetInnerIter(OneShotIter);
 
     /*--- Preprocess the one-shot iteration ---*/
@@ -265,36 +238,27 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
-  /*--- Do a primal and adjoint update ---*/
-  PrimalDualStep();
-  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-
-  // SetObjFunction(false);
-  StoreObjFunction();
-  // SetConstrFunction(false);
-  StoreConstrFunction();
-
   /*--- Perform line search on just multiplier ---*/
   if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
     StoreLambdaGrad();
 
-    // /*--- Evaluate the objective at the old solution, new design ---*/
+    /*--- Evaluate the objective at the old solution, new design ---*/
       
-    // solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-    // solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-    // solver[FLOW_SOL]->Friction_Forces(geometry, config);
+    solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+    solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+    solver[FLOW_SOL]->Friction_Forces(geometry, config);
               
-    // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-    //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-    // }
-    // SetObjFunction(false);
-    // StoreObjFunction();
-    // SetConstrFunction(false);
-    // StoreConstrFunction();
+    if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+        solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+    }
+    SetObjFunction(false);
+    StoreObjFunction();
+    SetConstrFunction(false);
+    StoreConstrFunction();
 
-    // /*--- Do a primal and adjoint update ---*/
-    // PrimalDualStep();
-    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    /*--- Do a primal and adjoint update ---*/
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     stepsize = 1.0;
     ArmijoIter = 0;
@@ -366,15 +330,15 @@ void COneShotFluidDriver::RunOneShot(){
         SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
         config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
 
-        // /*--- Evaluate the objective at the old solution, new design ---*/
+        /*--- Evaluate the objective at the old solution, new design ---*/
       
-        // solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-        // solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-        // solver[FLOW_SOL]->Friction_Forces(geometry, config);
+        solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+        solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+        solver[FLOW_SOL]->Friction_Forces(geometry, config);
                   
-        // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-        //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-        // }
+        if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+            solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+        }
         SetObjFunction(false);
         StoreObjFunction();
         SetConstrFunction(false);
@@ -395,9 +359,9 @@ void COneShotFluidDriver::RunOneShot(){
 
     }
 
-    // /*--- Do a primal and adjoint update ---*/
-    // PrimalDualStep();
-    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    /*--- Do a primal and adjoint update ---*/
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
@@ -896,25 +860,24 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   if(design_update) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        // admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        // const bool active = (ConstrFunc_Old[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+        // const bool active = (ConstrFunc_Old[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
         if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-          admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
-          // admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+          // admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
+          admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         }
       }
     }
@@ -931,25 +894,24 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
   if(design_update) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        // GradDotDir += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        // const bool active = (ConstrFunc_Old[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+        // const bool active = (ConstrFunc_Old[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
         if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-          GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
-          // GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+          // GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
+          GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         }
       }
     }
@@ -1004,8 +966,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double helper = ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma;
-    // const bool active = (ConstrFunc_Store[iConstr] - Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       // Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
@@ -1160,8 +1122,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    // const bool active = (ConstrFunc[iConstr] - Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc[iConstr] > 0.);
+    const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
@@ -1545,8 +1507,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-    // const bool active = (ConstrFunc_Old[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    const bool active = (ConstrFunc[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc[iConstr] > 0.);
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1602,8 +1564,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
     const su2double beta = config->GetOneShotBeta();
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
-      // const bool active = (ConstrFunc_Old[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
-      const bool active = (ConstrFunc_Old[iConstr] > 0.);
+      const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+      // const bool active = (ConstrFunc_Old[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1618,8 +1580,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 #else
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
-        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
-        AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
+        // AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr];
+        AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma;
       }
     }
   }
