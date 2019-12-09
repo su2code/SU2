@@ -324,7 +324,7 @@ void COneShotFluidDriver::RunOneShot(){
     } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
     // StoreLambda();
     // LoadOldLambda();
-    solver[ADJFLOW_SOL]->LoadSolution();
+    // solver[ADJFLOW_SOL]->LoadSolution();
   }
 
   /*--- Perform line search on just the design ---*/
