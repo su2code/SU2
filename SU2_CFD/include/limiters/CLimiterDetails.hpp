@@ -70,13 +70,13 @@ struct CLimiterDetails<BARTH_JESPERSEN>
    * \brief Nothing to preprocess.
    */
   template<class... Ts>
-  inline void preprocess(Ts...) {}
+  inline void preprocess(Ts&...) {}
 
   /*!
    * \brief No geometric modification for this kind of limiter.
    */
   template<class... Ts>
-  inline su2double geometricFactor(Ts...) const {return 1.0;}
+  inline su2double geometricFactor(Ts&...) const {return 1.0;}
 
   /*!
    * \brief Smooth function of min(2,ratio).
@@ -102,7 +102,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, CConfig& config, Ts...)
+  inline void preprocess(CGeometry&, CConfig& config, Ts&...)
   {
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
@@ -113,7 +113,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
    * \brief No geometric modification for this kind of limiter.
    */
   template<class... Ts>
-  inline su2double geometricFactor(Ts...) const {return 1.0;}
+  inline su2double geometricFactor(Ts&...) const {return 1.0;}
 
   /*!
    * \brief Smooth function that disables limiting in smooth regions.
@@ -214,7 +214,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
    * \brief No geometric modification for this kind of limiter.
    */
   template<class... Ts>
-  inline su2double geometricFactor(Ts...) const {return 1.0;}
+  inline su2double geometricFactor(Ts&...) const {return 1.0;}
 
   /*!
    * \brief Smooth function that disables limiting in smooth regions.
@@ -241,7 +241,7 @@ struct CLimiterDetails<SHARP_EDGES>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, CConfig& config, Ts...)
+  inline void preprocess(CGeometry&, CConfig& config, Ts&...)
   {
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
     su2double L = config.GetRefElemLength();
@@ -287,7 +287,7 @@ struct CLimiterDetails<WALL_DISTANCE>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, CConfig& config, Ts...)
+  inline void preprocess(CGeometry&, CConfig& config, Ts&...)
   {
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
     su2double L = config.GetRefElemLength();
