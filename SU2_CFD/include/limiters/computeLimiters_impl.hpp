@@ -1,7 +1,7 @@
 /*!
- * \file generalizedLimiter.hpp
+ * \file computeLimiters_impl.hpp
  * \brief Generic and general computation of limiters.
- * \note Common methods are derived by defining only the details.
+ * \note Common methods are derived by defining only small details.
  * \author P. Gomes
  * \version 7.0.0 "Blackbird"
  *
@@ -26,42 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/omp_structure.hpp"
-
-
-/*!
- * \brief A traits class for limiters, see notes for "generalizedLimiter()".
- */
-template<ENUM_LIMITER LimiterKind>
-struct LimiterDetails
-{
-  static_assert(false, "The default LimiterDetails should not be used.");
-
-  /*!
-   * \brief Compute any global value that may be needed by the other functions.
-   * \note This function is called once by multiple threads.
-   */
-  template<class FieldType>
-  inline void preprocess(CGeometry&, CConfig&, size_t varBegin,
-                         size_t varEnd, const FieldType&) {}
-
-  /*!
-   * \brief Geometric modifier (e.g. increase limiting near sharp edges).
-   * \note This function is called once per point inside an AD pre-
-   *       -accumulation region, newly used variables should be registered.
-   */
-  inline su2double geometricFactor(size_t iPoint, CGeometry&) const {return 1.0;}
-
-  /*!
-   * \brief Smooth (usually) function of the minimum ratio (delta/projection)
-   *        and of the maximum absolute delta, over direct neighbors of a point.
-   * \note This function is called once per point and per variable
-   *       (also inside an AD pre-accumulation region).
-   */
-  inline su2double smoothFunction(size_t iVar, su2double ratio,
-                                  su2double delta) const {return 1.0;}
-};
-
 
 /*!
  * \brief General limiter computation for methods based on one limiter
@@ -69,11 +33,10 @@ struct LimiterDetails
  * \note This implementation can be used to derive most common methods
  *       by specializing the limiter functions (e.g. Venkatakrishnan)
  *       and the geometric modifications (e.g. sharp edges), this is done
- *       via specialization of "LimiterDetails" (all its methods). Then,
- *       a function that wraps the call to this one with the specialized
- *       "LimiterKind" should be created. If that function is used by more
- *       than one solver do not inline the seemingly trivial definition,
- *       put it in its own .cpp instead so it gets compiled only once.
+ *       via specialization of "CLimiterDetails" (all its methods). Then,
+ *       a call to this function with the specialized "LimiterKind" should
+ *       be added to the body of "computeLimiters()" in computeLimiters.cpp,
+ *       this allows compiling the code only once.
  *       See also the notes in computeGradientsGreenGauss.hpp
  *
  * Arguments:
@@ -97,19 +60,19 @@ struct LimiterDetails
  * \param LimiterKind - Used to instantiate the right details class.
  */
 template<class FieldType, class GradientType, ENUM_LIMITER LimiterKind>
-void generalizedLimiter(CSolver* solver,
-                        MPI_QUANTITIES kindMpiComm,
-                        PERIODIC_QUANTITIES kindPeriodicComm1,
-                        PERIODIC_QUANTITIES kindPeriodicComm2,
-                        CGeometry& geometry,
-                        CConfig& config,
-                        size_t varBegin,
-                        size_t varEnd,
-                        const FieldType& field,
-                        const GradientType& gradient,
-                        FieldType& fieldMin,
-                        FieldType& fieldMax,
-                        FieldType& limiter)
+void computeLimiters_impl(CSolver* solver,
+                          MPI_QUANTITIES kindMpiComm,
+                          PERIODIC_QUANTITIES kindPeriodicComm1,
+                          PERIODIC_QUANTITIES kindPeriodicComm2,
+                          CGeometry& geometry,
+                          CConfig& config,
+                          size_t varBegin,
+                          size_t varEnd,
+                          const FieldType& field,
+                          const GradientType& gradient,
+                          FieldType& fieldMin,
+                          FieldType& fieldMax,
+                          FieldType& limiter)
 {
   constexpr size_t MAXNDIM = 3;
   constexpr size_t MAXNVAR = 8;
@@ -117,7 +80,7 @@ void generalizedLimiter(CSolver* solver,
   if (varEnd > MAXNVAR)
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
 
-  LimiterDetails<LimiterKind> details;
+  CLimiterDetails<LimiterKind> details;
 
   su2double eps = std::numeric_limits<passivedouble>::epsilon();
 
@@ -271,7 +234,7 @@ void generalizedLimiter(CSolver* solver,
 
         su2double ratioMax = deltaMax / projMax[iVar];
         su2double ratioMin = deltaMin / projMin[iVar];
-        su2double ratio = std::min(limMax, limMin);
+        su2double ratio = std::min(ratioMax, ratioMin);
 
         limiter(iPoint,iVar) = geoFactor * details.smoothFunction(iVar, ratio, delta);
 
