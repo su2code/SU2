@@ -435,7 +435,7 @@ void COneShotFluidDriver::RunOneShot(){
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
-    UpdateLambdaFirstOrderOpt(1.0);
+    // UpdateLambdaFirstOrderOpt(1.0);
 
     // /*--- Feasibility step on constraint multipliers ---*/
     // su2double stepsize_mu = 1.0;
