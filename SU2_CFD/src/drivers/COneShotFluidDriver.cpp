@@ -607,14 +607,15 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
    *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
 
   bool* visited = new bool[geometry->GetnPoint()];
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-    visited[iPoint] = false;
-  }
 
   for(unsigned short kind_gradient = 0; kind_gradient < 4; kind_gradient++) {
 
     if(kind_gradient < 3) solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry, kind_gradient);
     else                  solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
+
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+      visited[iPoint] = false;
+    }
 
     /*--- Initialize the derivatives of the output of the surface deformation routine
      * with the discrete adjoints from the CFD solution ---*/
@@ -636,8 +637,6 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
         }
       }
     }
-
-    delete [] visited;
 
     /*--- Compute derivatives and extract gradient ---*/
 
@@ -665,6 +664,8 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
     
     AD::ClearAdjoints();
   }
+
+  delete [] visited;
 
   AD::Reset();
 }
