@@ -518,7 +518,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda);
+  SetAdj_ConstrFunction(Lambda_Tilde);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -1483,7 +1483,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       Lambda[iConstr] = 0.0;
     }
     else {
-      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);    }
+      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    }
     Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
