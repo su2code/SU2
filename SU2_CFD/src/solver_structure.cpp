@@ -1291,12 +1291,24 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              ensures that the proper min and max of the solution are found
              among all nodes adjacent to periodic faces. ---*/
             
+            /*--- We send the min and max over "our" neighbours. ---*/
+            
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               Sol_Min[iVar] = base_nodes->GetSolution_Min(iPoint, iVar);
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
-              
-              bufDSend[buf_offset+iVar]              = base_nodes->GetSolution_Min(iPoint, iVar);
-              bufDSend[buf_offset+nPrimVarGrad+iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
+            }
+            
+            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
+              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+                Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetPrimitive(jPoint, iVar));
+                Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
+              }
+            }
+            
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              bufDSend[buf_offset+iVar]              = Sol_Min[iVar];
+              bufDSend[buf_offset+nPrimVarGrad+iVar] = Sol_Max[iVar];
             }
             
             /*--- Rotate the momentum components of the min/max. ---*/
@@ -1377,12 +1389,24 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              ensures that the proper min and max of the solution are found
              among all nodes adjacent to periodic faces. ---*/
             
+            /*--- We send the min and max over "our" neighbours. ---*/
+            
             for (iVar = 0; iVar < nVar; iVar++) {
               Sol_Min[iVar] = base_nodes->GetSolution_Min(iPoint, iVar);
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
-              
-              bufDSend[buf_offset+iVar]      = base_nodes->GetSolution_Min(iPoint, iVar);
-              bufDSend[buf_offset+nVar+iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
+            }
+            
+            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
+              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+              for (iVar = 0; iVar < nVar; iVar++) {
+                Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetSolution(jPoint, iVar));
+                Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));
+              }
+            }
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar]      = Sol_Min[iVar];
+              bufDSend[buf_offset+nVar+iVar] = Sol_Max[iVar];
             }
             
             /*--- Rotate the momentum components of the min/max. ---*/
@@ -1780,13 +1804,23 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               
             case PERIODIC_LIM_PRIM_1:
               
-              /*--- Check the min and max values found on the matching
-               perioic faces for the solution, and store the proper min
-               and max for this point.  ---*/
+              /*--- Update solution min/max with min/max between "us" and
+               the periodic match plus its neighbors, computation will need to
+               be concluded on "our" side to account for "our" neighbors. ---*/
               
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-                base_nodes->SetSolution_Min(iPoint, iVar, min(base_nodes->GetSolution_Min(iPoint, iVar), bufDRecv[buf_offset+iVar]));
-                base_nodes->SetSolution_Max(iPoint, iVar, max(base_nodes->GetSolution_Max(iPoint, iVar), bufDRecv[buf_offset+nPrimVarGrad+iVar]));
+                
+                /*--- Solution minimum. ---*/
+                
+                Solution_Min = min(base_nodes->GetSolution_Min(iPoint, iVar),
+                                   bufDRecv[buf_offset+iVar]);
+                base_nodes->SetSolution_Min(iPoint, iVar, Solution_Min);
+                
+                /*--- Solution maximum. ---*/
+                
+                Solution_Max = max(base_nodes->GetSolution_Max(iPoint, iVar),
+                                   bufDRecv[buf_offset+nPrimVarGrad+iVar]);
+                base_nodes->SetSolution_Max(iPoint, iVar, Solution_Max);
               }
               
               break;
@@ -1797,16 +1831,18 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                faces for the limiter, and store the proper min value. ---*/
               
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-                base_nodes->SetLimiter_Primitive(iPoint, iVar, min(base_nodes->GetLimiter_Primitive(iPoint, iVar), bufDRecv[buf_offset+iVar]));
+                Limiter_Min = min(base_nodes->GetLimiter_Primitive(iPoint, iVar),
+                                  bufDRecv[buf_offset+iVar]);
+                base_nodes->SetLimiter_Primitive(iPoint, iVar, Limiter_Min);
               }
               
               break;
               
             case PERIODIC_LIM_SOL_1:
               
-              /*--- Check the min and max values found on the matching
-               perioic faces for the solution, and store the proper min
-               and max for this point.  ---*/
+              /*--- Update solution min/max with min/max between "us" and
+               the periodic match plus its neighbors, computation will need to
+               be concluded on "our" side to account for "our" neighbors. ---*/
               
               for (iVar = 0; iVar < nVar; iVar++) {
                 
