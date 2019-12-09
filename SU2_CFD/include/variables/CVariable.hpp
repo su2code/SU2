@@ -2856,7 +2856,7 @@ public:
 
   inline virtual su2double GetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim) { return 0.0; }
 
-  inline virtual su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind) { return 0.0; }
+  inline virtual su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind) const { return 0.0; }
 
   /*!
    * \brief Set the FSI force sensitivity at the node

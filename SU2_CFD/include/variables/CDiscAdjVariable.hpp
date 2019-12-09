@@ -256,6 +256,6 @@ public:
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind) override { return Sensitivity_AugmentedLagrangian(iPoint,iDim,kind);}
+  inline su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind) const override { return Sensitivity_AugmentedLagrangian(iPoint,iDim,kind);}
 
 };
