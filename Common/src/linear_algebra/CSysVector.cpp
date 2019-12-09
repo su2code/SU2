@@ -156,7 +156,7 @@ void CSysVector<ScalarType>::Equals_AX_Plus_BY(ScalarType a, const CSysVector<Sc
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<ScalarType> & u) {
 
-  assert(nElm == x.nElm && "Sizes do not match");
+  assert(nElm == u.nElm && "Sizes do not match");
 
   PARALLEL_FOR
   for(auto i=0ul; i<nElm; i++) vec_val[i] = u.vec_val[i];
@@ -225,15 +225,16 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 #if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 
   /*--- All threads get the same "view" of the vectors and shared variable. ---*/
-  dotRes = 0.0;
   SU2_OMP_BARRIER
 
   /*--- Reduction over all threads in this mpi rank using the shared variable. ---*/
   ScalarType sum = 0.0;
+  dotRes = 0.0;
 
   PARALLEL_FOR
   for(auto i=0ul; i<nElmDomain; ++i)
     sum += vec_val[i]*u.vec_val[i];
+  SU2_OMP_BARRIER
 
   SU2_OMP(atomic)
   dotRes += sum;
