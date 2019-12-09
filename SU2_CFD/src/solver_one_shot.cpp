@@ -319,16 +319,16 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
   su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
   su2double beta  = 2./theta;
 
-  if(config->GetInnerIter() == config->GetOneShotStart()) {
+  // if(config->GetInnerIter() == config->GetOneShotStart()) {
     config->SetOneShotAlpha(alpha);
     config->SetOneShotBeta(beta);
-  }
-  else {
-    alpha = min(max(alpha, 0.5*config->GetOneShotAlpha()), 2.0*config->GetOneShotAlpha());
-    beta  = min(max(beta, 0.5*config->GetOneShotBeta()), 2.0*config->GetOneShotBeta());
-    config->SetOneShotAlpha(alpha);
-    config->SetOneShotBeta(beta);
-  }
+  // }
+  // else {
+  //   alpha = min(max(alpha, 0.5*config->GetOneShotAlpha()), 2.0*config->GetOneShotAlpha());
+  //   beta  = min(max(beta, 0.5*config->GetOneShotBeta()), 2.0*config->GetOneShotBeta());
+  //   config->SetOneShotAlpha(alpha);
+  //   config->SetOneShotBeta(beta);
+  // }
 
 }
 
@@ -347,15 +347,15 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     //    gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // }
     // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
-    if(config->GetInnerIter() == config->GetOneShotStart()) {
+    // if(config->GetInnerIter() == config->GetOneShotStart()) {
       gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-6);
       config->SetOneShotGamma(gamma, iConstr);
-    }
-    else {
-      gamma = min(max(gamma, 0.5*config->GetOneShotGamma(iConstr)), 2.0*config->GetOneShotGamma(iConstr));
-      gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-6);
-      config->SetOneShotGamma(gamma, iConstr);
-    }
+    // }
+    // else {
+    //   gamma = min(max(gamma, 0.5*config->GetOneShotGamma(iConstr)), 2.0*config->GetOneShotGamma(iConstr));
+    //   gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-6);
+    //   config->SetOneShotGamma(gamma, iConstr);
+    // }
   }
   // su2double gamma = min(max(2./val_bcheck_norm, config->GetOneShotGammaRate()*config->GetOneShotGamma()), config->GetOneShotGammaMax());
 
