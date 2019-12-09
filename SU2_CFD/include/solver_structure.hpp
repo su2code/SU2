@@ -4672,11 +4672,23 @@ public:
    */
   virtual void SetSensitivityShiftedLagrangian(CGeometry *geometry);
 
+    /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void SetSensitivityShiftedLagrangianUncon(CGeometry *geometry);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
   virtual void SetGeometrySensitivityGradient(CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
+  virtual void SetGeometrySensitivityGradientUncon(CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
@@ -15923,6 +15935,12 @@ public:
   void SetSensitivityShiftedLagrangian(CGeometry* geometry);
 
   /*!
+   * \brief Store the geometry sensitivities (Sensitivity) in Sensitivity_ShiftedLagrangianUncon
+   * \param[in] geometry - geometry class object
+   */
+  void SetSensitivityShiftedLagrangianUncon(CGeometry* geometry);
+
+  /*!
    * \brief Calculate either the solver part of the augmented or the shifted Lagrangian
    * (without objective and constraint functions)
    * \param[in] config - config class object
@@ -15952,6 +15970,13 @@ public:
    * \param[in] geometry - geometry class object
    */
   void SetGeometrySensitivityGradient(CGeometry *geometry);
+
+  /*!
+   * \brief Set the geometry sensitivity to the sensitivity of the shifted Lagrangian
+   * (This happens for the sensitivity projection)
+   * \param[in] geometry - geometry class object
+   */
+  void SetGeometrySensitivityGradientUncon(CGeometry *geometry);
 
   /*!
    * \brief Set the geometry sensitivity to the sensitivity of the augmented Lagrangian

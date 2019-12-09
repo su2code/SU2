@@ -78,6 +78,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
 
   if (config->GetBoolOneShot()) {
     Sensitivity_ShiftedLagrangian.resize(nPoint,nDim) = su2double(0.0);
+    Sensitivity_ShiftedLagrangianUncon.resize(nPoint,nDim) = su2double(0.0);
     Sensitivity_AugmentedLagrangian.resize(nPoint,nDim) = su2double(0.0);
   }
 

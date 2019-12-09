@@ -55,7 +55,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   Gradient_Old = new su2double[nDV_Total];
 
   ShiftLagGrad = new su2double[nDV_Total];
-  ShiftLagGrad_Old = new su2double[nDV_Total];
+  ShiftLagGradUncon = new su2double[nDV_Total];
 
   AugLagGrad = new su2double[nDV_Total];
   AugLagGradAlpha = new su2double[nDV_Total];
@@ -90,7 +90,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     Gradient[iDV] = 0.0;
     Gradient_Old[iDV] = 0.0;
     ShiftLagGrad[iDV] = 0.0;
-    ShiftLagGrad_Old[iDV] = 0.0;
+    ShiftLagGradUncon[iDV] = 0.0;
     AugLagGrad[iDV] = 0.0;
     AugLagGradAlpha[iDV] = 0.0;
     AugLagGradBeta[iDV] = 0.0;
@@ -150,7 +150,7 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   delete [] Gradient;
   delete [] Gradient_Old;
   delete [] ShiftLagGrad;
-  delete [] ShiftLagGrad_Old;
+  delete [] ShiftLagGradUncon;
 
   delete [] AugLagGrad;
   delete [] AugLagGradAlpha;
@@ -435,6 +435,7 @@ void COneShotFluidDriver::RunOneShot(){
     // UpdateLambda(1.0);
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    UpdateLambdaFirstOrderOpt(1.0);
 
     // /*--- Feasibility step on constraint multipliers ---*/
     // su2double stepsize_mu = 1.0;
@@ -493,12 +494,25 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
+    solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
+    ProjectMeshSensitivities();
+    SetShiftLagGrad();
     solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->LoadSolution();
     solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
     solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
 
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
+
+    /*--- f_u + G_u*Bary ---*/
+    if(nConstr > 0) {
+      ComputeShiftLagUncon();
+      solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangianUncon(geometry);
+      solver[ADJFLOW_SOL]->SetGeometrySensitivityGradientUncon(geometry);
+      ProjectMeshSensitivities();
+      SetShiftLagGradUncon();
+      solver[ADJFLOW_SOL]->LoadSolution();
+    }
 
     /*--- Gamma*h^T*h_u ---*/
     if(nConstr > 0) {
@@ -508,8 +522,8 @@ void COneShotFluidDriver::RunOneShot(){
       solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
       ProjectMeshSensitivities();
       SetAugLagGrad(GAMMA_TERM);
+      solver[ADJFLOW_SOL]->LoadSolution();
     }
-    solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
@@ -532,9 +546,9 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Projection of the gradient N_u---*/
-    solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
-    ProjectMeshSensitivities();
-    SetShiftLagGrad();
+    // solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
+    // ProjectMeshSensitivities();
+    // SetShiftLagGrad();
 
     /*--- Projection of the gradient L_u---*/
     SetAugLagGrad(TOTAL_AUGMENTED);
@@ -1052,6 +1066,12 @@ void COneShotFluidDriver::SetShiftLagGrad(){
   solver[ADJFLOW_SOL]->SetShiftedLagGradNorm(sqrt(norm));
 }
 
+void COneShotFluidDriver::SetShiftLagGradUncon(){
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+    ShiftLagGradUncon[iDV] = Gradient[iDV];
+  }
+}
+
 void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
@@ -1083,6 +1103,38 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       }
     }   
   }
+}
+
+void COneShotFluidDriver::ComputeShiftLagUncon(){
+
+  /*--- Note: Not applicable for unsteady code ---*/
+
+  /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
+   *    of the previous iteration. The values are passed to the AD tool. ---*/
+
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+
+  /*--- Initialize the adjoint of the objective function with 0.0. ---*/
+
+  SetAdj_ObjFunction();
+  SetAdj_ConstrFunction_Zero();
+
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+  AD::ComputeAdjoint();
+
+  /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+  iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+  /*--- Extract the computed sensitivity values. ---*/
+  solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
+
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+  AD::ClearAdjoints();
+
 }
 
 void COneShotFluidDriver::ComputeGammaTerm(){
@@ -1486,29 +1538,29 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const bool active = (ConstrFunc_Old[iConstr] - Lambda_Old[iConstr]/gamma > 0.);
     // const bool active = (ConstrFunc_Old[iConstr] > 0.);
 
-    /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
-    for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
-    }
-    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
-    /*--- Only update if constraint violation improves ---*/
-    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
-    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
-      Lambda[iConstr] = 0.0;
-      // InitializeLambdaTilde(iConstr);
-      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
-      // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
-    }
-    // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
-    else {
-      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] -= helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] = Lambda[iConstr];
-    }
-    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
+    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+    //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
+    // }
+    // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    // /*--- Only update if constraint violation improves ---*/
+    // // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active) && (dh <= 0.)) {
+    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
+    //   Lambda[iConstr] = 0.0;
+    //   // InitializeLambdaTilde(iConstr);
+    //   // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr];
+    //   // Lambda_Tilde[iConstr] -= stepsize*Lambda_Tilde[iConstr]*config->GetMultiplierScale(iConstr);
+    // }
+    // // else if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || (dh <= 0.)) {
+    // else {
+    //   Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda_Tilde[iConstr] -= helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda[iConstr] = Lambda_Old[iConstr] + helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda_Tilde[iConstr] = Lambda[iConstr];
+    // }
+    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
@@ -1522,14 +1574,15 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // // }
     // // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
-    // // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
-    // // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (ConstrFunc_Store[iConstr] + Lambda_Old[iConstr]/gamma > 0.)) {
-    // //   Lambda[iConstr] = Lambda_Old[iConstr] + stepsize*gamma*ConstrFunc_Old[iConstr];
-    // // }
-    // // else {
-    // //   Lambda[iConstr] = 0.;
-    // // }
-    // // Lambda_Tilde[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
+    /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
+    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
+      Lambda[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
+    }
+    else {
+      Lambda[iConstr] = 0.;
+    }
+    Lambda_Tilde[iConstr] += stepsize*gamma*ConstrFunc_Old[iConstr];
 
 
     if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
@@ -1538,6 +1591,12 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     }
   }
 }
+
+// void COneShotFluidDriver::UpdateLambdFirstOrderOpt(su2double stepsize){
+//   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+//     Lambda[iConstr] = 
+//   }
+// }
 
 void COneShotFluidDriver::StoreLambdaGrad() {
   if(nConstr > 0) {

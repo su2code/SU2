@@ -143,6 +143,18 @@ void COneShotSolver::SetGeometrySensitivityGradient(CGeometry *geometry){
     }
 }
 
+void COneShotSolver::SetGeometrySensitivityGradientUncon(CGeometry *geometry){
+
+    unsigned short iDim;
+    unsigned long iPoint;
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_ShiftedLagrangianUncon(iPoint,iDim));
+      }
+    }
+}
+
 void COneShotSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){
     unsigned short iDim;
     unsigned long iPoint;
@@ -150,6 +162,17 @@ void COneShotSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         nodes->SetSensitivity_ShiftedLagrangian(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim));
+      }
+    }
+}
+
+void COneShotSolver::SetSensitivityShiftedLagrangianUncon(CGeometry *geometry){
+    unsigned short iDim;
+    unsigned long iPoint;
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        nodes->SetSensitivity_ShiftedLagrangianUncon(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim));
       }
     }
 }
