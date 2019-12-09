@@ -494,9 +494,6 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
-    solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
-    ProjectMeshSensitivities();
-    SetShiftLagGrad();
     solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->LoadSolution();
     solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
@@ -546,9 +543,9 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Projection of the gradient N_u---*/
-    // solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
-    // ProjectMeshSensitivities();
-    // SetShiftLagGrad();
+    solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
+    ProjectMeshSensitivities();
+    SetShiftLagGrad();
 
     /*--- Projection of the gradient L_u---*/
     SetAugLagGrad(TOTAL_AUGMENTED);
@@ -1141,6 +1138,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
   /*--- Note: Not applicable for unsteady code ---*/
 
+  SetRecording(COMBINED);
+
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
 
@@ -1186,6 +1185,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 void COneShotFluidDriver::ComputeAlphaTerm(){
 
   /*--- Note: Not applicable for unsteady code ---*/
+
+  SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
