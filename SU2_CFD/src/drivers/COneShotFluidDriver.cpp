@@ -999,8 +999,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
     // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-      // Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
-      Lagrangian += gamma/2.*helper*helper;
+      Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
+      // Lagrangian += gamma/2.*helper*helper;
     }
   }
 
@@ -1622,8 +1622,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 #else
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
-        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
-        AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
+        AugLagLamGrad[iConstr] += ConstrFunc[iConstr];
+        // AugLagLamGrad[iConstr] += ConstrFunc[iConstr] + Lambda[iConstr]/gamma;
       }
     }
   }
