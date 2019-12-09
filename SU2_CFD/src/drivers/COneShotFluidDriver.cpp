@@ -269,9 +269,9 @@ void COneShotFluidDriver::RunOneShot(){
   PrimalDualStep();
   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
-  SetObjFunction(false);
+  // SetObjFunction(false);
   StoreObjFunction();
-  SetConstrFunction(false);
+  // SetConstrFunction(false);
   StoreConstrFunction();
 
   /*--- Perform line search on just multiplier ---*/
@@ -375,10 +375,10 @@ void COneShotFluidDriver::RunOneShot(){
         // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
         //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
         // }
-        // SetObjFunction(false);
-        // StoreObjFunction();
-        // SetConstrFunction(false);
-        // StoreConstrFunction();
+        SetObjFunction(false);
+        StoreObjFunction();
+        SetConstrFunction(false);
+        StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
         // LoadOldLambda();
