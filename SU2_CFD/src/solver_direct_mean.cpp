@@ -7903,6 +7903,11 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
                                  CConfig        *config,
                                  unsigned short val_marker) {
 
+  if (false) {
+    /*--- Call the equivalent symmetry plane boundary condition. ---*/
+    BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  }
+  else {
   unsigned short iDim, iVar, jVar, kVar, jDim;
   unsigned long iPoint, iVertex;
   su2double *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
@@ -8074,6 +8079,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
   }
   delete [] Jacobian_b;
   delete [] DubDu;
+  }
 }
 
 
