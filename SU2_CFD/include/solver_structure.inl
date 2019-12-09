@@ -1044,6 +1044,8 @@ inline su2double* CBaselineSolver_FEM::GetVecSolDOFs(void) {return VecSolDOFs.da
 
 inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
 
+inline void CSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
+
 inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 

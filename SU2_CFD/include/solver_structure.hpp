@@ -4125,6 +4125,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+
 
   /*!
    * \brief A virtual member.
@@ -8639,6 +8648,7 @@ private:
   su2double
   StrainMag_Max,
   Omega_Max;             /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  bool WallFunctionUsed;   /*!< \brief Whether or not a Wall Function RANS is used. */
   
 public:
   
@@ -9069,6 +9079,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief Computes the eddy viscosity for the first point off the surface using a wall function (SST only).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetEddyViscFirstPoint(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+
  
 };
 
