@@ -505,14 +505,14 @@ void COneShotFluidDriver::RunOneShot(){
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
 
     /*--- f_u + G_u*Bary ---*/
-    if(nConstr > 0) {
-      ComputeShiftLagUncon();
-      solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangianUncon(geometry);
-      solver[ADJFLOW_SOL]->SetGeometrySensitivityGradientUncon(geometry);
-      ProjectMeshSensitivities();
-      SetShiftLagGradUncon();
-      solver[ADJFLOW_SOL]->LoadSolution();
-    }
+    // if(nConstr > 0) {
+    //   ComputeShiftLagGradUncon();
+    //   solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangianUncon(geometry);
+    //   solver[ADJFLOW_SOL]->SetGeometrySensitivityGradientUncon(geometry);
+    //   ProjectMeshSensitivities();
+    //   SetShiftLagGradUncon();
+    //   solver[ADJFLOW_SOL]->LoadSolution();
+    // }
 
     /*--- Gamma*h^T*h_u ---*/
     if(nConstr > 0) {
@@ -1105,7 +1105,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
   }
 }
 
-void COneShotFluidDriver::ComputeShiftLagUncon(){
+void COneShotFluidDriver::ComputeShiftLagGradUncon(){
 
   /*--- Note: Not applicable for unsteady code ---*/
 
