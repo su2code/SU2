@@ -324,8 +324,8 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
     config->SetOneShotBeta(beta);
   }
   else {
-    alpha = min(max(2.*theta/((1.-rho)*(1.-rho)), 0.9*config->GetOneShotAlpha()), config->GetOneShotAlpha()/0.9);
-    beta  = min(max(2./theta, 0.9*config->GetOneShotBeta()), config->GetOneShotBeta()/0.9);
+    alpha = min(max(alpha, 0.9*config->GetOneShotAlpha()), config->GetOneShotAlpha()/0.9);
+    beta  = min(max(beta, 0.9*config->GetOneShotBeta()), config->GetOneShotBeta()/0.9);
     config->SetOneShotAlpha(alpha);
     config->SetOneShotBeta(beta);
   }
