@@ -265,27 +265,36 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
+  /*--- Do a primal and adjoint update ---*/
+  PrimalDualStep();
+  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+
+  SetObjFunction(false);
+  StoreObjFunction();
+  SetConstrFunction(false);
+  StoreConstrFunction();
+
   /*--- Perform line search on just multiplier ---*/
   if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
     StoreLambdaGrad();
 
-    /*--- Evaluate the objective at the old solution, new design ---*/
+    // /*--- Evaluate the objective at the old solution, new design ---*/
       
-    solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-    solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-    solver[FLOW_SOL]->Friction_Forces(geometry, config);
+    // solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+    // solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+    // solver[FLOW_SOL]->Friction_Forces(geometry, config);
               
-    if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-        solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-    }
-    SetObjFunction(false);
-    StoreObjFunction();
-    SetConstrFunction(false);
-    StoreConstrFunction();
+    // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+    //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+    // }
+    // SetObjFunction(false);
+    // StoreObjFunction();
+    // SetConstrFunction(false);
+    // StoreConstrFunction();
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     stepsize = 1.0;
     ArmijoIter = 0;
@@ -357,19 +366,19 @@ void COneShotFluidDriver::RunOneShot(){
         SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
         config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
 
-        /*--- Evaluate the objective at the old solution, new design ---*/
+        // /*--- Evaluate the objective at the old solution, new design ---*/
       
-        solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-        solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-        solver[FLOW_SOL]->Friction_Forces(geometry, config);
+        // solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+        // solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+        // solver[FLOW_SOL]->Friction_Forces(geometry, config);
                   
-        if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-            solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-        }
-        SetObjFunction(false);
-        StoreObjFunction();
-        SetConstrFunction(false);
-        StoreConstrFunction();
+        // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+        //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+        // }
+        // SetObjFunction(false);
+        // StoreObjFunction();
+        // SetConstrFunction(false);
+        // StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
         // LoadOldLambda();
@@ -386,9 +395,9 @@ void COneShotFluidDriver::RunOneShot(){
 
     }
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
