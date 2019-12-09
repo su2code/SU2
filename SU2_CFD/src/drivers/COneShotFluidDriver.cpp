@@ -436,8 +436,6 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
     solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, ALPHA_TERM);
-    ProjectMeshSensitivities();
-    SetAugLagGrad(ALPHA_TERM);
     solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
