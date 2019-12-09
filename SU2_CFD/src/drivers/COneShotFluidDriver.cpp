@@ -1138,7 +1138,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
   /*--- Note: Not applicable for unsteady code ---*/
 
-  SetRecording(COMBINED);
+  // SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
