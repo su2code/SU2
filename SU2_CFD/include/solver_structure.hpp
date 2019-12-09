@@ -4672,29 +4672,11 @@ public:
    */
   virtual void SetSensitivityShiftedLagrangian(CGeometry *geometry);
 
-    /*!
-   * \brief A virtual member.
-   * \param[in] geometry - geometry class object
-   */
-  virtual void SetSensitivityShiftedLagrangianUncon(CGeometry *geometry);
-
   /*!
    * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
   virtual void SetGeometrySensitivityGradient(CGeometry *geometry);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - geometry class object
-   */
-  virtual void SetGeometrySensitivityGradientUncon(CGeometry *geometry);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - geometry class object
-   */
-  virtual void SetGeometrySensitivityLagrangian(CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
@@ -4722,13 +4704,7 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
-  virtual void ResetSensitivityLagrangian(CGeometry *geometry);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - geometry class object
-   */
-  virtual void UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor);
+  virtual void SetSensitivityLagrangian(CGeometry *geometry, unsigned short kind);
 
   /*!
    * \brief A virtual member.
@@ -15935,12 +15911,6 @@ public:
   void SetSensitivityShiftedLagrangian(CGeometry* geometry);
 
   /*!
-   * \brief Store the geometry sensitivities (Sensitivity) in Sensitivity_ShiftedLagrangianUncon
-   * \param[in] geometry - geometry class object
-   */
-  void SetSensitivityShiftedLagrangianUncon(CGeometry* geometry);
-
-  /*!
    * \brief Calculate either the solver part of the augmented or the shifted Lagrangian
    * (without objective and constraint functions)
    * \param[in] config - config class object
@@ -15972,18 +15942,11 @@ public:
   void SetGeometrySensitivityGradient(CGeometry *geometry);
 
   /*!
-   * \brief Set the geometry sensitivity to the sensitivity of the shifted Lagrangian
-   * (This happens for the sensitivity projection)
-   * \param[in] geometry - geometry class object
-   */
-  void SetGeometrySensitivityGradientUncon(CGeometry *geometry);
-
-  /*!
    * \brief Set the geometry sensitivity to the sensitivity of the augmented Lagrangian
    * (This happens for the sensitivity projection)
    * \param[in] geometry - geometry class object
    */
-  void SetGeometrySensitivityLagrangian(CGeometry *geometry);
+  void SetGeometrySensitivityLagrangian(CGeometry *geometry, unsigned short kind);
 
   /*!
    * \brief Set Solution_Delta for this time step.
@@ -16035,17 +15998,11 @@ public:
   void SetAdjoint_OutputZero(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Set the sensitivity of the doubly augmented Lagrangian to zero.
-   * \param[in] geometry - geometry class element
-   */
-  void ResetSensitivityLagrangian(CGeometry *geometry);
-
-  /*!
    * \brief Update the sensitivity of the doubly augmented Lagrangian with a factor.
    * \param[in] geometry - geometry class element
    * \param[in] factor - multiplier for the update
    */
-  void UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor);
+  void SetSensitivityLagrangian(CGeometry *geometry, unsigned short kind);
 
   /*!
    * \brief Adds the difference in the adjoint solution to the solution (with a finite difference step size).

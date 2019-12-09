@@ -2516,9 +2516,7 @@ inline vector<string> CSolver::GetSolutionFields(){return fields;}
 
 inline void CSolver::SetGeometrySensitivityGradient(CGeometry *geometry){}
 
-inline void CSolver::SetGeometrySensitivityGradientUncon(CGeometry *geometry){}
-
-inline void CSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry){}
+inline void CSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry, unsigned short kind){}
 
 inline void CSolver::SetMeshPointsOld(CConfig *config, CGeometry *geometry){}
 
@@ -2526,11 +2524,7 @@ inline void CSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){}
 
 inline void CSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){}
 
-inline void CSolver::SetSensitivityShiftedLagrangianUncon(CGeometry *geometry){}
-
-inline void CSolver::ResetSensitivityLagrangian(CGeometry *geometry){}
-
-inline void CSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor){}
+inline void CSolver::SetSensitivityLagrangian(CGeometry *geometry, unsigned short kind){}
 
 inline su2double CSolver::CalculateLagrangian(CConfig *config){return 0.0;}
 

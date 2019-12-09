@@ -64,8 +64,7 @@ private:
   MatrixType Solution_Geometry_BGS_k;
 
   MatrixType Sensitivity_ShiftedLagrangian;      /*!< \brief Vector holding the sensitivity of the shifted Lagrangian to the coordinates at this node. */
-  MatrixType Sensitivity_ShiftedLagrangianUncon; /*!< \brief Vector holding the sensitivity of the shifted Lagrangian to the coordinates at this node. */
-  MatrixType Sensitivity_AugmentedLagrangian;    /*!< \brief Vector holding the sensitivity of the augmented Lagrangian to the coordinates at this node. */
+  VectorOfMatrix Sensitivity_AugmentedLagrangian;    /*!< \brief Vector holding the sensitivity of the augmented Lagrangian to the coordinates at this node. */
 
 public:
   /*!
@@ -239,18 +238,11 @@ public:
   inline void SetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) override {Sensitivity_ShiftedLagrangian(iPoint,iDim) = val;}
 
   /*!
-   * \brief Set the sensitivity in the shifted Lagrangian at the node
-   * \param[in] iDim - spacial component
-   * \param[in] val - value of the Sensitivity
-   */
-  inline void SetSensitivity_ShiftedLagrangianUncon(unsigned long iPoint, unsigned short iDim, su2double val) override {Sensitivity_ShiftedLagrangianUncon(iPoint,iDim) = val;}
-
-  /*!
    * \brief Set the sensitivity in the augmented Lagrangian at the node
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
-  inline void SetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) override {Sensitivity_AugmentedLagrangian(iPoint,iDim) = val;}
+  inline void SetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind, su2double val) override {Sensitivity_AugmentedLagrangian(iPoint,iDim,kind) = val;}
 
   /*!
    * \brief Get the Sensitivity in the shifted Lagrangian at the node
@@ -260,17 +252,10 @@ public:
   inline su2double GetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim) override { return Sensitivity_ShiftedLagrangian(iPoint,iDim);}
 
   /*!
-   * \brief Get the Sensitivity in the shifted Lagrangian at the node
-   * \param[in] iDim - spacial component
-   * \return value of the Sensitivity
-   */
-  inline su2double GetSensitivity_ShiftedLagrangianUncon(unsigned long iPoint, unsigned short iDim) override { return Sensitivity_ShiftedLagrangianUncon(iPoint,iDim);}
-
-  /*!
    * \brief Get the Sensitivity in the augmented Lagrangian at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim) override { return Sensitivity_AugmentedLagrangian(iPoint,iDim);}
+  inline su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind) override { return Sensitivity_AugmentedLagrangian(iPoint,iDim,kind);}
 
 };

@@ -423,36 +423,19 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
     solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->LoadSolution();
-    // solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
-    // solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
 
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
-
-    /*--- f_u + G_u*Bary ---*/
-    // if(nConstr > 0) {
-    //   ComputeShiftLagGradUncon();
-    //   solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangianUncon(geometry);
-    //   solver[ADJFLOW_SOL]->SetGeometrySensitivityGradientUncon(geometry);
-    //   ProjectMeshSensitivities();
-    //   SetShiftLagGradUncon();
-    //   solver[ADJFLOW_SOL]->LoadSolution();
-    // }
 
     /*--- Gamma*h^T*h_u ---*/
     if(nConstr > 0) {
       ComputeGammaTerm();
-      solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
-      solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
-      solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
-      ProjectMeshSensitivities();
-      SetAugLagGrad(GAMMA_TERM);
+      solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, GAMMA_TERM);
       solver[ADJFLOW_SOL]->LoadSolution();
     }
 
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
-    solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
-    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
+    solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, ALPHA_TERM);
     solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
     ProjectMeshSensitivities();
     SetAugLagGrad(ALPHA_TERM);
@@ -462,17 +445,11 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->UpdateStateVariable(config);
     ComputeBetaTerm();
     solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
-    solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
-    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
-    solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
-    ProjectMeshSensitivities();
-    SetAugLagGrad(BETA_TERM);
+    solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, BETA_TERM);
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
     /*--- Projection of the gradient N_u---*/
-    solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
     ProjectMeshSensitivities();
-    SetShiftLagGrad();
 
     /*--- Projection of the gradient L_u---*/
     SetAugLagGrad(TOTAL_AUGMENTED);
@@ -635,51 +612,60 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
     visited[iPoint] = false;
   }
 
-  /*--- Initialize the derivatives of the output of the surface deformation routine
-   * with the discrete adjoints from the CFD solution ---*/
+  for(unsigned short kind_gradient = 0; kind_gradient < 4; kind_gradient++) {
 
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      nVertex = geometry->nVertex[iMarker];
-      for (unsigned long iVertex = 0; iVertex <nVertex; iVertex++) {
-        iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (!visited[iPoint]){
-          VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+    if(kind_gradient < 3) solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry, kind_gradient);
+    else                  solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
 
-          for (unsigned short iDim = 0; iDim < nDim; iDim++){
-            Sensitivity = geometry->GetSensitivity(iPoint, iDim);
-            SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
+    /*--- Initialize the derivatives of the output of the surface deformation routine
+     * with the discrete adjoints from the CFD solution ---*/
+
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        nVertex = geometry->nVertex[iMarker];
+        for (unsigned long iVertex = 0; iVertex <nVertex; iVertex++) {
+          iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (!visited[iPoint]){
+            VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+
+            for (unsigned short iDim = 0; iDim < nDim; iDim++){
+              Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+              SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
+            }
+            visited[iPoint] = true;
           }
-          visited[iPoint] = true;
         }
       }
     }
-  }
 
-  delete [] visited;
+    delete [] visited;
 
-  /*--- Compute derivatives and extract gradient ---*/
+    /*--- Compute derivatives and extract gradient ---*/
 
-  AD::ComputeAdjoint();
+    AD::ComputeAdjoint();
 
-  for (unsigned short iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
+    for (unsigned short iDV = 0; iDV  < nDV; iDV++){
+      nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (unsigned short iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-      localGradient = my_Gradient;
-#endif
+      for (unsigned short iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+        DV_Value = config->GetDV_Value(iDV, iDV_Value);
+        my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+  #ifdef HAVE_MPI
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  #else
+        localGradient = my_Gradient;
+  #endif
 
-      Gradient[nDV_Count] = localGradient;
-      nDV_Count++;
+        Gradient[nDV_Count] = localGradient;
+        nDV_Count++;
+      }
     }
+
+    if(kind_gradient < 3) SetAugLagGrad(kind_gradient);
+    else                  SetShiftLagGrad();
+    
+    AD::ClearAdjoints();
   }
-  
-  AD::ClearAdjoints();
 
   AD::Reset();
 }
@@ -1054,8 +1040,6 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 
   /*--- Note: Not applicable for unsteady code ---*/
 
-  // SetRecording(COMBINED);
-
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
 
@@ -1101,8 +1085,6 @@ void COneShotFluidDriver::ComputeGammaTerm(){
 void COneShotFluidDriver::ComputeAlphaTerm(){
 
   /*--- Note: Not applicable for unsteady code ---*/
-
-  SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/

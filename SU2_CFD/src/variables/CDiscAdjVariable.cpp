@@ -61,7 +61,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
 
-  External = Solution;
+  External = Solution;  
   External_Old.resize(nPoint,nVar) = su2double(0.0);
 
   if (fsi) {
@@ -78,8 +78,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
 
   if (config->GetBoolOneShot()) {
     Sensitivity_ShiftedLagrangian.resize(nPoint,nDim) = su2double(0.0);
-    Sensitivity_ShiftedLagrangianUncon.resize(nPoint,nDim) = su2double(0.0);
-    Sensitivity_AugmentedLagrangian.resize(nPoint,nDim) = su2double(0.0);
+    Sensitivity_AugmentedLagrangian.resize(nPoint,nDim,3,0.0);
   }
 
   if (config->GetMultizone_Problem()) {

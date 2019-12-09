@@ -119,14 +119,14 @@ void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 }
 
-void COneShotSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry){
+void COneShotSolver::SetGeometrySensitivityLagrangian(CGeometry *geometry, unsigned short kind){
 
     unsigned short iDim;
     unsigned long iPoint;
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_AugmentedLagrangian(iPoint,iDim));
+        geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_AugmentedLagrangian(iPoint,iDim,kind));
       }
     }
 }
@@ -143,18 +143,6 @@ void COneShotSolver::SetGeometrySensitivityGradient(CGeometry *geometry){
     }
 }
 
-void COneShotSolver::SetGeometrySensitivityGradientUncon(CGeometry *geometry){
-
-    unsigned short iDim;
-    unsigned long iPoint;
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity_ShiftedLagrangianUncon(iPoint,iDim));
-      }
-    }
-}
-
 void COneShotSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){
     unsigned short iDim;
     unsigned long iPoint;
@@ -166,35 +154,13 @@ void COneShotSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){
     }
 }
 
-void COneShotSolver::SetSensitivityShiftedLagrangianUncon(CGeometry *geometry){
+void COneShotSolver::SetSensitivityLagrangian(CGeometry *geometry, unsigned short kind){
     unsigned short iDim;
     unsigned long iPoint;
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetSensitivity_ShiftedLagrangianUncon(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim));
-      }
-    }
-}
-
-void COneShotSolver::ResetSensitivityLagrangian(CGeometry *geometry){
-    unsigned short iDim;
-    unsigned long iPoint;
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetSensitivity_AugmentedLagrangian(iPoint, iDim, 0.0);
-      }
-    }
-}
-
-void COneShotSolver::UpdateSensitivityLagrangian(CGeometry *geometry, su2double factor){
-    unsigned short iDim;
-    unsigned long iPoint;
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetSensitivity_AugmentedLagrangian(iPoint,iDim, nodes->GetSensitivity_AugmentedLagrangian(iPoint,iDim)+factor*nodes->GetSensitivity(iPoint,iDim));
+        nodes->SetSensitivity_AugmentedLagrangian(iPoint, iDim, kind, nodes->GetSensitivity(iPoint,iDim));
       }
     }
 }

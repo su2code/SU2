@@ -2852,15 +2852,11 @@ public:
 
   inline virtual void SetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
 
-  inline virtual void SetSensitivity_ShiftedLagrangianUncon(unsigned long iPoint, unsigned short iDim, su2double val) { }
-
-  inline virtual void SetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, su2double val) { }
+  inline virtual void SetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind, su2double val) { }
 
   inline virtual su2double GetSensitivity_ShiftedLagrangian(unsigned long iPoint, unsigned short iDim) { return 0.0; }
 
-  inline virtual su2double GetSensitivity_ShiftedLagrangianUncon(unsigned long iPoint, unsigned short iDim) { return 0.0; }
-
-  inline virtual su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetSensitivity_AugmentedLagrangian(unsigned long iPoint, unsigned short iDim, unsigned short kind) { return 0.0; }
 
   /*!
    * \brief Set the FSI force sensitivity at the node
