@@ -125,9 +125,14 @@ public:
   void RunOneShot();
 
   /*!
-   * \brief Executes one primal and dual iteration (in a piggy-back manner).
+   * \brief Executes one primal and dual iteration.
    */
   void PrimalDualStep();
+
+  /*!
+   * \brief Executes one primal and dual iteration to compute f_u+G_u*Bary.
+   */
+  void ComputeShiftLagGradUncon();
 
   /*!
    * \brief Executes all operations needed to find the "BCheck"-term of the doubly augmented Lagrangian.
