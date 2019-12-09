@@ -238,16 +238,23 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
+  /*--- Do a primal and adjoint update ---*/
+  PrimalDualStep();
+  solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+
+  StoreObjFunction();
+  StoreConstrFunction();
+
   /*--- Perform line search on just multiplier ---*/
   if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
     StoreLambdaGrad();
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
-    StoreObjFunction();
-    StoreConstrFunction();
+    // StoreObjFunction();
+    // StoreConstrFunction();
 
     stepsize = 1.0;
     ArmijoIter = 0;
@@ -346,11 +353,11 @@ void COneShotFluidDriver::RunOneShot(){
 
     }
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    StoreObjFunction();
-    StoreConstrFunction();
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // StoreObjFunction();
+    // StoreConstrFunction();
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
