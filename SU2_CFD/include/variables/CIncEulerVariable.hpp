@@ -99,6 +99,12 @@ public:
   }
 
   /*!
+   * \brief Get the primitive variables limiter.
+   * \return Primitive variables limiter for the entire domain.
+   */
+  inline MatrixType* GetLimiter_Primitive(void) {return &Limiter_Primitive; }
+
+  /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.

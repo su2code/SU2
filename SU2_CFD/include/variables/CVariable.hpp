@@ -48,7 +48,7 @@ using namespace std;
  * \author F. Palacios
  */
 class CVariable {
-protected:
+public:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
@@ -76,6 +76,7 @@ protected:
     su2double** operator[] (unsigned long i) { return interface[i]; }
   };
 
+protected:
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
@@ -834,6 +835,12 @@ public:
   inline void SetSolution_Min(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Min(iPoint,iVar) = solution; }
 
   /*!
+   * \brief Get the slope limiter.
+   * \return Pointer to the limiters vector.
+   */
+  inline MatrixType* GetLimiter(void) { return &Limiter; }
+
+  /*!
    * \brief Get the value of the slope limiter.
    * \param[in] iPoint - Point index.
    * \return Pointer to the limiters vector.
@@ -857,6 +864,12 @@ public:
   inline su2double GetSolution_Max(unsigned long iPoint, unsigned long iVar) const { return Solution_Max(iPoint,iVar); }
 
   /*!
+   * \brief Get the min solution.
+   * \return Value of the min solution for the domain.
+   */
+  inline MatrixType* GetSolution_Max(void) { return &Solution_Max; }
+
+  /*!
    * \brief Set the value of the preconditioner Beta.
    * \param[in] val_Beta - Value of the low Mach preconditioner variable Beta
    * \param[in] iPoint - Point index.
@@ -864,6 +877,12 @@ public:
    * \return Value of the min solution for the variable <i>iVar</i>.
    */
   inline su2double GetSolution_Min(unsigned long iPoint, unsigned long iVar) const { return Solution_Min(iPoint,iVar); }
+
+  /*!
+   * \brief Get the min solution.
+   * \return Value of the min solution for the domain.
+   */
+  inline MatrixType* GetSolution_Min(void) { return &Solution_Min; }
 
   /*!
    * \brief Get the value of the wind gust
