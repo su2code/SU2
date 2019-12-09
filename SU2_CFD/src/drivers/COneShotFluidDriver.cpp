@@ -342,10 +342,10 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      // else {
+      else {
       //   // LoadOldLambda();
-      //   UpdateLambda(1.0);
-      // }
+        UpdateLambda(1.0);
+      }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
@@ -404,7 +404,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Load multipliers from first line search ---*/
   // LoadLambdaStore();
-  UpdateLambda(1.0);
+  // UpdateLambda(1.0);
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
