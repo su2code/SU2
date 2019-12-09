@@ -169,7 +169,7 @@ void CMultizoneDriver::StartSolver() {
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
-  if (driver_config->GetRestart())
+  if (driver_config->GetRestart() && driver_config->GetTime_Domain())
     TimeIter = driver_config->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
