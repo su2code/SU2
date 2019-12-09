@@ -4710,6 +4710,12 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
+  virtual void SetGeometrySensitivityLagrangian(CGeometry *geometry, unsigned short kind);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - geometry class object
+   */
   virtual void UpdateStateVariable(CConfig *config);
 
   /*!
