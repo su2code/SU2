@@ -313,8 +313,8 @@ void COneShotFluidDriver::RunOneShot(){
       ArmijoIter++;
 
     } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    StoreLambda();
-    LoadOldLambda();
+    // StoreLambda();
+    // LoadOldLambda();
     solver[ADJFLOW_SOL]->LoadSolution();
   }
 
@@ -403,7 +403,7 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
   /*--- Load multipliers from first line search ---*/
-  LoadLambdaStore();
+  // LoadLambdaStore();
   // UpdateLambda(1.0);
 
   /*--- Store FFD info in file ---*/
