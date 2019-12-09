@@ -497,7 +497,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->LoadSolution();
     solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
-    solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
+    // solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
 
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
 
@@ -514,7 +514,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Gamma*h^T*h_u ---*/
     if(nConstr > 0) {
       ComputeGammaTerm();
-      solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
+      // solver[ADJFLOW_SOL]->ResetSensitivityLagrangian(geometry);
       solver[ADJFLOW_SOL]->UpdateSensitivityLagrangian(geometry, 1.0);
       solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry); //Lagrangian
       ProjectMeshSensitivities();
