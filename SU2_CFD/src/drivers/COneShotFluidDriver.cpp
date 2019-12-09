@@ -562,10 +562,10 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  /*--- Initialize Lambda_Tilde at first iteration ---*/
-  if(OneShotIter == config->GetOneShotStart()) {
-    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
-  }
+  // /*--- Initialize Lambda_Tilde at first iteration ---*/
+  // if(OneShotIter == config->GetOneShotStart()) {
+  //   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
+  // }
 }
 
 void COneShotFluidDriver::PrimalDualStep(){
