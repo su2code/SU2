@@ -342,10 +342,10 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      else {
-        // LoadOldLambda();
-        UpdateLambda(1.0);
-      }
+      // else {
+      //   // LoadOldLambda();
+      //   UpdateLambda(1.0);
+      // }
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(true);
