@@ -214,8 +214,8 @@ void generalizedLimiter(CSolver* solver,
 
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        projMax[iVar] = eps;
-        projMin[iVar] =-eps;
+        projMax[iVar] = 0.5*eps;
+        projMin[iVar] =-0.5*eps;
       }
 
       /*--- Compute max/min projection and values over direct neighbors. ---*/
@@ -261,9 +261,13 @@ void generalizedLimiter(CSolver* solver,
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        su2double deltaMax = fieldMax(iPoint,iVar) - field(iPoint,iVar);
-        su2double deltaMin = fieldMin(iPoint,iVar) - field(iPoint,iVar);
-        su2double delta = std::max(std::max(deltaMax, -deltaMin), eps);
+        /*--- Neither projection nor delta are allowed to be 0, in very smooth
+         *    regions of the field this results in ratio of 2, which for most
+         *    limiter functions gives a limiter of 1 (no limiting). ---*/ 
+
+        su2double deltaMax = std::max(fieldMax(iPoint,iVar) - field(iPoint,iVar), eps);
+        su2double deltaMin = std::min(fieldMin(iPoint,iVar) - field(iPoint,iVar),-eps);
+        su2double delta = std::max(deltaMax, -deltaMin);
 
         su2double ratioMax = deltaMax / projMax[iVar];
         su2double ratioMin = deltaMin / projMin[iVar];
