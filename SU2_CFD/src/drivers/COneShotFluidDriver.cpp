@@ -863,11 +863,11 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
 
   }else{
     /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
-    unsigned short TOTAL_AUGMENTED = 3;
-    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
-    CalculateLagrangian();
-    SetAugLagGrad(TOTAL_AUGMENTED);
+    // unsigned short TOTAL_AUGMENTED = 3;
+    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    // CalculateLagrangian();
+    // SetAugLagGrad(TOTAL_AUGMENTED);
     if(config->GetBoolBFGSReset()){
       for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
         for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
