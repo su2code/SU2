@@ -556,7 +556,6 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
   su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient;
   unsigned short nMarker, nDim, nDV, nDV_Value;
   unsigned long nVertex, iPoint;
-  unsigned long nDV_Count = 0;
 
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
@@ -640,6 +639,7 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
 
     AD::ComputeAdjoint();
 
+    unsigned long nDV_Count = 0;
     for (unsigned short iDV = 0; iDV  < nDV; iDV++){
       nDV_Value =  config->GetnDV_Value(iDV);
 
