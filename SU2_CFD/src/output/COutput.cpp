@@ -32,11 +32,11 @@
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
+#include "../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CCSVFileWriter.hpp"
-#include "../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
@@ -559,7 +559,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       }
 
       fileWriter = new CSTLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
-      
+
       break;
 
     default:
