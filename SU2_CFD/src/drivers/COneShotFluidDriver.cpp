@@ -1499,7 +1499,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
                 * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
-                * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
+                * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_DeltaStore(iPoint,iVar);
           }
         }
 #ifdef HAVE_MPI
