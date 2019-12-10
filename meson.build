@@ -16,9 +16,11 @@ su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 subdir('externals/loguru')
 su2_deps += loguru_dep
 
-vtk_dep = dependency('ParaView', cmake_args: ['-DCMAKE_CXX_COMPILER_VERSION=4.8.5', '-DCMAKE_CXX_STANDARD_COMPUTED_DEFAULT=4.8.5'], modules: ['vtkPVCatalyst', 'vtkCommonDataModel', 'vtkPVPythonCatalyst'])
+vtk_dep = dependency('ParaView', cmake_args: ['-DCMAKE_CXX_COMPILER_VERSION=4.8.5', '-DCMAKE_CXX_STANDARD_COMPUTED_DEFAULT=4.8.5'], modules: ['ParaView::Catalyst', 'VTK::CommonCore', 'ParaView::PythonCatalyst'])
+
 
 su2_deps += vtk_dep
+
 
 if build_machine.system() == 'windows'
   default_warning_flags = []
