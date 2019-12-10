@@ -2802,7 +2802,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 
-  auto solution = base_nodes->GetAuxVar();
+  const auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
@@ -2812,21 +2812,21 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 
   bool weighted = true;
-  auto solution = base_nodes->GetAuxVar();
+  const auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
-  auto rmatrix  = base_nodes->GetRmatrix();
+  auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, 1, gradient, *rmatrix);
+                               weighted, solution, 0, 1, gradient, rmatrix);
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
 
-  auto solution = base_nodes->GetSolution();
-  auto gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
+  const auto& solution = base_nodes->GetSolution();
+  auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
 
   computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
-                             *config, *solution, 0, nVar, *gradient);
+                             *config, solution, 0, nVar, gradient);
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
@@ -2839,13 +2839,13 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   else
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
-  auto solution = base_nodes->GetSolution();
-  auto rmatrix = base_nodes->GetRmatrix();
-  auto gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
+  const auto& solution = base_nodes->GetSolution();
+  auto& rmatrix = base_nodes->GetRmatrix();
+  auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
   computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, *solution, 0, nVar, *gradient, *rmatrix);
+                               weighted, solution, 0, nVar, gradient, rmatrix);
 }
 
 void CSolver::Add_External_To_Solution() {
@@ -3111,14 +3111,14 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
-  auto solution = base_nodes->GetSolution();
-  auto gradient = base_nodes->GetGradient_Reconstruction();
-  auto solMin = base_nodes->GetSolution_Min();
-  auto solMax = base_nodes->GetSolution_Max();
-  auto limiter = base_nodes->GetLimiter();
+  const auto& solution = base_nodes->GetSolution();
+  const auto& gradient = base_nodes->GetGradient_Reconstruction();
+  auto& solMin = base_nodes->GetSolution_Min();
+  auto& solMax = base_nodes->GetSolution_Max();
+  auto& limiter = base_nodes->GetLimiter();
 
   computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
-                  *geometry, *config, 0, nVar, *solution, *gradient, *solMin, *solMax, *limiter);
+                  *geometry, *config, 0, nVar, solution, gradient, solMin, solMax, limiter);
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {

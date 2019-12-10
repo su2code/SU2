@@ -1,7 +1,6 @@
 /*!
  * \file computeLimiters.hpp
- * \brief Declaration of compute limiters function, the
- *        implementation is in computeLimiters.cpp.
+ * \brief Compute limiters wrapper function.
  * \author P. Gomes
  * \version 7.0.0 "Blackbird"
  *
@@ -26,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
+#include "CLimiterDetails.hpp"
+#include "computeLimiters_impl.hpp"
 
 /*!
  * \brief A wrapper funtion that calls specialized implementations depending
@@ -49,4 +48,55 @@ void computeLimiters(ENUM_LIMITER LimiterKind,
                      const GradientType& gradient,
                      FieldType& fieldMin,
                      FieldType& fieldMax,
-                     FieldType& limiter);
+                     FieldType& limiter)
+{
+#define INSTANTIATE(KIND) \
+computeLimiters_impl<FieldType, GradientType, KIND>(solver, kindMpiComm, \
+  kindPeriodicComm1, kindPeriodicComm2, geometry, config, varBegin, \
+  varEnd, field, gradient, fieldMin, fieldMax, limiter)
+
+  switch (LimiterKind) {
+    case NO_LIMITER:
+    {
+      SU2_OMP_PARALLEL
+      {
+        SU2_OMP_FOR_STAT(512)
+        for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
+          for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
+           limiter(iPoint, iVar) = 1.0;
+      }
+      break;
+    }
+    case BARTH_JESPERSEN:
+    {
+      INSTANTIATE(BARTH_JESPERSEN);
+      break;
+    }
+    case VENKATAKRISHNAN:
+    {
+      INSTANTIATE(VENKATAKRISHNAN);
+      break;
+    }
+    case VENKATAKRISHNAN_WANG:
+    {
+      INSTANTIATE(VENKATAKRISHNAN_WANG);
+      break;
+    }
+    case WALL_DISTANCE:
+    {
+      INSTANTIATE(WALL_DISTANCE);
+      break;
+    }
+    case SHARP_EDGES:
+    {
+      INSTANTIATE(SHARP_EDGES);
+      break;
+    }
+    default:
+    {
+      SU2_MPI::Error("Unknown limiter type.", CURRENT_FUNCTION);
+      break;
+    }
+  }
+#undef INSTANTIATE
+}

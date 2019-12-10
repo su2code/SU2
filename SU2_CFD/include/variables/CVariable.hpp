@@ -48,7 +48,7 @@ using namespace std;
  * \author F. Palacios
  */
 class CVariable {
-public:
+protected:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
@@ -76,7 +76,6 @@ public:
     su2double** operator[] (unsigned long i) { return interface[i]; }
   };
 
-protected:
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
@@ -463,9 +462,9 @@ public:
 
   /*!
    * \brief Get the entire solution of the problem.
-   * \return Pointer to the solution matrix.
+   * \return Reference to the solution matrix.
    */
-  inline const MatrixType* GetSolution(void) { return &Solution; }
+  inline const MatrixType& GetSolution(void) { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -742,9 +741,9 @@ public:
 
   /*!
    * \brief Get the gradient of the entire solution.
-   * \return Pointer to gradient.
+   * \return Reference to gradient.
    */
-  inline VectorOfMatrix* GetGradient(void) { return &Gradient; }
+  inline VectorOfMatrix& GetGradient(void) { return Gradient; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -789,9 +788,9 @@ public:
 
   /*!
    * \brief Get the value Rmatrix for the entire domain.
-   * \return Pointer to the Rmatrix.
+   * \return Reference to the Rmatrix.
    */
-  inline VectorOfMatrix* GetRmatrix(void) { return &Rmatrix; }
+  inline VectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -836,9 +835,9 @@ public:
 
   /*!
    * \brief Get the slope limiter.
-   * \return Pointer to the limiters vector.
+   * \return Reference to the limiters vector.
    */
-  inline MatrixType* GetLimiter(void) { return &Limiter; }
+  inline MatrixType& GetLimiter(void) { return Limiter; }
 
   /*!
    * \brief Get the value of the slope limiter.
@@ -867,7 +866,7 @@ public:
    * \brief Get the min solution.
    * \return Value of the min solution for the domain.
    */
-  inline MatrixType* GetSolution_Max(void) { return &Solution_Max; }
+  inline MatrixType& GetSolution_Max(void) { return Solution_Max; }
 
   /*!
    * \brief Set the value of the preconditioner Beta.
@@ -882,7 +881,7 @@ public:
    * \brief Get the min solution.
    * \return Value of the min solution for the domain.
    */
-  inline MatrixType* GetSolution_Min(void) { return &Solution_Min; }
+  inline MatrixType& GetSolution_Min(void) { return Solution_Min; }
 
   /*!
    * \brief Get the value of the wind gust
@@ -1985,9 +1984,9 @@ public:
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
-   * \return Pointer to variable reconstruction gradient.
+   * \return Reference to variable reconstruction gradient.
    */
-  inline virtual VectorOfMatrix* GetGradient_Reconstruction(void) { return nullptr; }
+  inline virtual VectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

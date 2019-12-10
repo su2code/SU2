@@ -5273,11 +5273,11 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
 
 void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
 
-  auto primitives = nodes->GetPrimitive();
-  auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  const auto& primitives = nodes->GetPrimitive();
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
   computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
-                             *config, *primitives, 0, nPrimVarGrad, *gradient);
+                             *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
 void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
@@ -5290,26 +5290,26 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   else
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
-  auto primitives = nodes->GetPrimitive();
-  auto rmatrix = nodes->GetRmatrix();
-  auto gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  const auto& primitives = nodes->GetPrimitive();
+  auto& rmatrix = nodes->GetRmatrix();
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
   computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, *primitives, 0, nPrimVarGrad, *gradient, *rmatrix);
+                               weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
 void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
-  auto primitives = nodes->GetPrimitive();
-  auto gradient = nodes->GetGradient_Reconstruction();
-  auto primMin = nodes->GetSolution_Min();
-  auto primMax = nodes->GetSolution_Max();
-  auto limiter = nodes->GetLimiter_Primitive();
+  const auto& primitives = nodes->GetPrimitive();
+  const auto& gradient = nodes->GetGradient_Reconstruction();
+  auto& primMin = nodes->GetSolution_Min();
+  auto& primMax = nodes->GetSolution_Max();
+  auto& limiter = nodes->GetLimiter_Primitive();
 
   computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2,
-    *geometry, *config, 0, nPrimVarGrad, *primitives, *gradient, *primMin, *primMax, *limiter);
+            *geometry, *config, 0, nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
 }
 
 void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
