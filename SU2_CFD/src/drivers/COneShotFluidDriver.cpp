@@ -528,7 +528,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda);
+  SetAdj_ConstrFunction(Lambda_Tilde);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -1141,7 +1141,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda);
+  SetAdj_ConstrFunction(Lambda_Tilde);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -1477,7 +1477,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
       Lambda[iConstr] = max(Lambda[iConstr], 0.);
-      Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
+      // Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
     }
   }
 }
@@ -1531,7 +1531,7 @@ Lambda_Init = my_Lambda;
 #endif
   Lambda_Init -= ConstrFunc_Old[iConstr];
   Lambda_Tilde[iConstr] = gamma*Lambda_Init;
-  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
+  // if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
 }
 
 void COneShotFluidDriver::StoreObjFunction(){
