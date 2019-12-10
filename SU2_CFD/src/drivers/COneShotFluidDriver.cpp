@@ -1508,7 +1508,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 void COneShotFluidDriver::StoreLambdaGrad() {
   if(nConstr > 0) {
     unsigned short nVar = solver[ADJFLOW_SOL]->GetnVar();
-    unsigned long nPointDomain = geometry->GetnPointDomain();
+    unsigned long nPoint = geometry->GetnPoint();
     const su2double beta = config->GetOneShotBeta();
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -1536,7 +1536,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 
 void COneShotFluidDriver::InitializeLambdaTilde(unsigned short iConstr) {
   unsigned short nVar = solver[ADJFLOW_SOL]->GetnVar();
-  unsigned long nPointDomain = geometry->GetnPointDomain();
+  unsigned long nPoint = geometry->GetnPoint();
   const su2double beta = config->GetOneShotBeta();
   const su2double gamma = config->GetOneShotGamma(iConstr);
   su2double my_Lambda = 0., Lambda_Init;
