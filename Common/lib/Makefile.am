@@ -99,6 +99,7 @@ lib_sources = \
   ../include/toolboxes/MMS/CVerificationSolution.inl \
   ../include/toolboxes/MMS/CIncTGVSolution.hpp \
   ../include/toolboxes/MMS/CInviscidVortexSolution.hpp \
+  ../include/toolboxes/MMS/CInviscidShockVortexSolution.hpp \
   ../include/toolboxes/MMS/CMMSIncEulerSolution.hpp \
   ../include/toolboxes/MMS/CMMSIncNSSolution.hpp \
   ../include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp \
@@ -142,6 +143,7 @@ lib_sources = \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \
+  ../src/toolboxes/MMS/CInviscidShockVortexSolution.cpp \
   ../src/toolboxes/MMS/CMMSIncEulerSolution.cpp \
   ../src/toolboxes/MMS/CMMSIncNSSolution.cpp \
   ../src/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.cpp \

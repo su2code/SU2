@@ -84,11 +84,11 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
     
   /*--- Store specific parameters here. ---*/
     
-  ReynoldsFriction = 395.0;  // Friction Reynolds Number.
+  ReynoldsFriction = 5200.0;  // Friction Reynolds Number.
   TWall            = 273.15; // Wall Temperature
   dx               = 0.2;    // Mesh spacing in the x-direction
   dz               = 0.1;    // Mesh spacing in the z-direction
-  Constant_Turb    = 50.;    // Constant to multiply the velocity fluctuation.
+  Constant_Turb    = 10.;    // Constant to multiply the velocity fluctuation.
   CurrentTime      = config->GetDelta_UnstTime();
     
   /*--- Turbulent flow. Use the relation of Malaspinas and Sagaut,JCP 275 2014,

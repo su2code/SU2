@@ -60,6 +60,7 @@ ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
   ../../Common/src/toolboxes/MMS/libSU2_a-CVerificationSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CIncTGVSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CInviscidVortexSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CInviscidShockVortexSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CMMSIncEulerSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CMMSIncNSSolution.o \
   ../../Common/src/toolboxes/MMS/libSU2_a-CMMSNSTwoHalfCirclesSolution.o \

@@ -2051,6 +2051,7 @@ enum ENUM_VERIFICATION_SOLUTIONS {
   NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
   INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
   RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  SHOCK_VORTEX             =  3,       /*!< \brief Invisicd Shock Vortex Interaction. */
   NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
   TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
   INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
@@ -2067,6 +2068,7 @@ static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map 
 ("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
 ("INVISCID_VORTEX",          INVISCID_VORTEX)
 ("RINGLEB",                  RINGLEB)
+("SHOCK_VORTEX",             SHOCK_VORTEX)
 ("NS_UNIT_QUAD",             NS_UNIT_QUAD)
 ("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
 ("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)

@@ -1,7 +1,7 @@
 /*!
- * \file CInviscidVortexSolution.cpp
- * \brief Implementations of the member functions of CInviscidVortexSolution.
- * \author T. Economon, E. van der Weide
+ * \file CInviscidShockVortexSolution.cpp
+ * \brief Implementations of the member functions of CInviscidShockVortexSolution.
+ * \author E. Molina
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,11 +35,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/toolboxes/MMS/CInviscidVortexSolution.hpp"
+#include "../../../include/toolboxes/MMS/CInviscidShockVortexSolution.hpp"
 
-CInviscidVortexSolution::CInviscidVortexSolution(void) : CVerificationSolution() { }
+CInviscidShockVortexSolution::CInviscidShockVortexSolution(void) : CVerificationSolution() { }
 
-CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
+CInviscidShockVortexSolution::CInviscidShockVortexSolution(unsigned short val_nDim,
                                                  unsigned short val_nVar,
                                                  unsigned short val_iMesh,
                                                  CConfig*       config)
@@ -50,25 +50,45 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
-    cout << "         initialized for the inviscid vortex case!!!" << endl;
+    cout << "         initialized for the inviscid shock vortex interaction case!!!" << endl;
     cout << endl << flush;
   }
-
-  /*--- Store the inviscid vortex specific parameters here. ---*/
-  x0Vortex    =  18.75;     // Initial x-coordinate of the vortex center.
-  y0Vortex    =  25.0;     // Initial y-coordinate of the vortex center.
-  RVortex     =  exp(pow(1.,2.))/2.;     // Radius of the vortex.
-  epsVortex   =  0.8;     // Strength of the vortex.
-
-  /* Get the Mach number and advection angle (in degrees). */
-  MachVortex  = config->GetMach();
-  thetaVortex = config->GetAoA();
 
   /*--- Useful coefficients in which Gamma is present. ---*/
   Gamma    = config->GetGamma();
   Gm1      = Gamma - 1.0;
   ovGm1    = 1.0/Gm1;
   gamOvGm1 = ovGm1*Gamma;
+  RGas     = config->GetGas_ConstantND();
+
+  /*--- Vortex Location ---*/
+  x_c   =  0.25;
+  y_c   =  0.5;
+  
+  /*--- Vortex Size ---*/
+  a = 0.075;
+  b = 0.175;
+  
+  /*--- Vortex Strength ---*/
+  M_v = 0.9;
+  v_m = M_v * sqrt(Gamma);
+        
+  /*--- Shock Initialization. ---*/
+  /*--- Upstream conditions. ---*/
+  rho_u = 1.0;
+  u_u   = 1.5 * sqrt(Gamma);
+  v_u   = 1e-20;
+  p_u   = 1.0;
+  t_u = p_u / (rho_u * RGas);
+  
+  /*--- Shock conditions. ---*/
+  M_s   = 1.5;
+
+  /*--- Downstream conditions. ---*/
+  rho_d = rho_u * (Gamma + 1.0) * M_s * M_s / (2.0 + (Gamma - 1.0) * M_s * M_s);
+  u_d   = u_u * (2.0 + (Gamma - 1.0) * M_s * M_s) / ((Gamma + 1.0) * M_s * M_s);
+  v_d   = 1e-20;
+  p_d   = p_u * (1.0 + (2.0 * Gamma / (Gamma + 1.0)) * (M_s * M_s - 1.0));
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
   if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
@@ -100,9 +120,9 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
                    CURRENT_FUNCTION);
 }
 
-CInviscidVortexSolution::~CInviscidVortexSolution(void) { }
+CInviscidShockVortexSolution::~CInviscidShockVortexSolution(void) { }
 
-void CInviscidVortexSolution::GetBCState(const su2double *val_coords,
+void CInviscidShockVortexSolution::GetBCState(const su2double *val_coords,
                                          const su2double val_t,
                                          su2double       *val_solution) {
 
@@ -112,39 +132,67 @@ void CInviscidVortexSolution::GetBCState(const su2double *val_coords,
   GetSolution(val_coords, val_t, val_solution);
 }
 
-void CInviscidVortexSolution::GetSolution(const su2double *val_coords,
+void CInviscidShockVortexSolution::GetSolution(const su2double *val_coords,
                                           const su2double val_t,
                                           su2double       *val_solution) {
+  su2double p, t, u, v, rho;
+  
+  /*--- Shock conditions ---*/
+  if (val_coords[0] <= 0.5){
+    rho = rho_u;
+    p = p_u;
+    t = t_u;
+    u = u_u;
+    v = v_u;
+  }
+  else{
+    rho = rho_d;
+    p = p_d;
+    t = p_d / (rho_d * RGas);
+    u = u_d;
+    v = v_d;
+  }
+  
+  /*--- Distance from Vortex ---*/
+  su2double dx = (val_coords[0] - x_c);
+  su2double dy = (val_coords[1] - y_c);
+  su2double r  = sqrt(dx * dx + dy * dy);
+  
+  /*--- SUPERIMPOSE VORTEX ---*/
+  if (r <= b){
+    su2double sin_theta = dy / r;
+    su2double cos_theta = dx / r;
 
-  /* Compute the free stream velocities in x- and y-direction. */
-  const su2double VelInf = MachVortex*sqrt(Gamma);
-  const su2double uInf   = VelInf*cos(thetaVortex*PI_NUMBER/180.0);
-  const su2double vInf   = VelInf*sin(thetaVortex*PI_NUMBER/180.0);
+    if (r <= a){
+      su2double mag = v_m * r / a;
+      u = u - mag * sin_theta;
+      v = v + mag * cos_theta;
 
-  /* Compute the coordinates relative to the center of the vortex. */
-  const su2double dx = val_coords[0] - (x0Vortex + val_t*uInf);
-  const su2double dy = val_coords[1] - (y0Vortex + val_t*vInf);
+      //# TEMPERATURE AT a, from below
+      su2double radial_term = -2.0 * b * b * log(b) - (0.5 * a * a) + (2.0 * b * b * log(a)) + (0.5 * b * b * b * b / (a * a));
+      su2double t_a = t_u - Gm1 * pow(v_m * a / (a * a - b * b),2) * radial_term / (RGas * Gamma);
+      radial_term = 0.5 * (1.0 - r * r / (a * a));
+      t = t_a - Gm1 * v_m * v_m * radial_term / (RGas * Gamma);
+    }
+    else{
+      su2double mag = v_m * a * (r - b * b / r) / (a * a - b * b);
+      u = u - mag * sin_theta;
+      v = v + mag * cos_theta;
 
-  /* Compute the components of the velocity. */
-  su2double f  = 1.0 - (dx*dx + dy*dy)/(RVortex*RVortex);
-  su2double t1 = epsVortex*dy*exp(0.5*f)/(2.0*PI_NUMBER*RVortex);
-  su2double u  = uInf - VelInf*t1;
-
-  t1          = epsVortex*dx*exp(0.5*f)/(2.0*PI_NUMBER*RVortex);
-  su2double v = vInf + VelInf*t1;
-
-  /* Compute the density and the pressure. */
-  t1 = 1.0 - epsVortex*epsVortex*Gm1
-     *       MachVortex*MachVortex*exp(f)/(8.0*PI_NUMBER*PI_NUMBER);
-
-  su2double rho = pow(t1,ovGm1);
-  su2double p   = pow(t1,gamOvGm1);
-
+      //# TEMPERATURE RADIAL TERM
+      su2double radial_term = -2.0 * b * b * log(b) - (0.5 * r * r) + (2.0 * b * b * log(r)) + (0.5 * b * b * b * b / (r * r));
+      t = t_u - Gm1 * pow(v_m * a / (a * a - b * b),2) * radial_term / (RGas * Gamma);
+    }
+    p = p_u * pow(t / t_u, Gamma / Gm1);
+    
+  }
+  
   /* Compute the conservative variables. Note that both 2D and 3D
      cases are treated correctly. */
   val_solution[0]      = rho;
   val_solution[1]      = rho*u;
   val_solution[2]      = rho*v;
   val_solution[3]      = 0.0;
-  val_solution[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
+  val_solution[nVar-1] = ovGm1*p + 0.5*rho*(u*u + v*v);
+  
 }
