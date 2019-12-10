@@ -149,7 +149,6 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   delete [] Gradient;
   delete [] Gradient_Old;
   delete [] ShiftLagGrad;
-  delete [] ShiftLagGradUncon;
 
   delete [] AugLagGrad;
   delete [] AugLagGradAlpha;
