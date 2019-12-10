@@ -891,7 +891,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
           GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         }
       }
-    // }
+    }
   // }
 }
 
