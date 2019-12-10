@@ -349,9 +349,9 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
-        UpdateLambda(1.0);
+        // /*--- Update constraint multiplier ---*/
+        // LoadOldLambda();
+        // UpdateLambda(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
@@ -854,7 +854,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
            // ((active) && (dh <= 0.))) {
         if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
           // admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
-          admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+          admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         }
       }
     }
@@ -888,7 +888,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
            // ((active) && (dh <= 0.))) {
         if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
           // GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
-          GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+          GradDotDir += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         }
       }
     }
