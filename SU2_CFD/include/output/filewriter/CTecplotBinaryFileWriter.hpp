@@ -2,24 +2,14 @@
  * \file CTecplotBinaryFileWriter.hpp
  * \brief Headers fo the tecplot binary writer class.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,40 +32,40 @@
 #include <assert.h>
 
 class CTecplotBinaryFileWriter final: public CFileWriter{
-  
+
   unsigned long time_iter;  //!< Current value of the time iteration
   su2double timestep;       //!< Current value of the time step
-  
+
 public:
-  
+
   /*!
    * \brief File extension
    */
   const static string fileExt;
-  
+
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
-   */  
-  CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim, 
+   */
+  CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim,
                            string fileName, CParallelDataSorter* data_sorter,
                            unsigned long time_iter, su2double timestep);
-  
+
   /*!
    * \brief Destructor
    */
   ~CTecplotBinaryFileWriter() override;
-  
+
   /*!
    * \brief Write sorted data to file in tecplot binary file format
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
   void Write_Data() override;
-  
+
   /*!
    * \brief Calculate the partitioning of nodes to determine:
    * (a) For a given global node number, to which partition does it belong and what is its local node number; and
@@ -103,7 +93,7 @@ public:
       }
       assert(m_node_range[num_ranks] == global_num_nodes);
     }
-  
+
     /*!
      * \brief Determine the MPI rank that owns a global node number and its corresponding local node number.
      * \param global_node_number[in] - The global node number; global node numbers are sequential across all MPI ranks.
@@ -121,7 +111,7 @@ public:
         --owning_rank;
       node_number = global_node_number - m_node_range[owning_rank];
     }
-  
+
     /*!
      * \brief Determine the number of nodes to be output by a particular rank
      * \param which_rank[in] - The MPI rank
@@ -131,13 +121,13 @@ public:
     {
       return static_cast<int64_t>(m_node_range[which_rank + 1] - m_node_range[which_rank]);
     }
-  
+
   private:
     int m_num_ranks;
     vector<unsigned long> m_node_range;
   };
-  
+
   int64_t GetHaloNodeNumber(unsigned long global_node_number, unsigned long last_local_node, vector<unsigned long> const &halo_node_list);
-  
+
 };
 

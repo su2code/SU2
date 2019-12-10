@@ -4,24 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,7 +80,6 @@ protected:
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
-  MatrixType External_Old;   /*!< \brief Old external (outer) contribution in discrete adjoint multizone problems. */
 
   su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
   su2vector<unsigned short> Non_Physical_Counter; /*!< \brief Number of consecutive iterations that a point has been treated first-order. After a specified number of successful reconstructions, the point can be returned to second-order. */
@@ -137,7 +126,7 @@ protected:
   unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
-  
+
 public:
 
   /*--- Disable default construction copy and assignment. ---*/
@@ -437,15 +426,6 @@ public:
   }
 
   /*!
-   * \brief Add a valaue to the old External vector.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_solution - Value that we want to add to the solution.
-   */
-  inline void Add_ExternalOld(unsigned long iPoint, const su2double* val_sol) {
-    for(unsigned long iVar = 0; iVar < nVar; iVar++) External_Old(iPoint,iVar) += val_sol[iVar];
-  }
-
-  /*!
    * \brief Add a value to the solution, clipping the values.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -498,13 +478,6 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
-  
-  /*!
-   * \brief Get the old external contributions of the problem.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the External_Old row for iPoint.
-   */
-  inline const su2double *Get_ExternalOld(unsigned long iPoint) const { return External_Old[iPoint]; }
 
   /*!
    * \brief Get the solution at time n.
@@ -2178,7 +2151,12 @@ public:
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
   virtual void Set_BGSSolution_k();
-  
+
+  /*!
+   * \brief Restore the previous BGS subiteration to solution.
+   */
+  void Restore_BGSSolution_k();
+
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */

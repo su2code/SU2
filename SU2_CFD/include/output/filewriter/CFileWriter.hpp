@@ -2,24 +2,14 @@
  * \file CFileWriter.hpp
  * \brief Headers fo the file writer class.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,6 +33,7 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <time.h>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
@@ -55,86 +46,86 @@ protected:
    * \brief Vector containing the field names
    */
   std::vector<std::string> fieldnames;
-  
+
   /*!
    * \brief The physical dimension of the problem
    */
   unsigned short nDim;
-  
+
   /*!
    * \brief The MPI rank
    */
   int rank;
-  
+
   /*!
    * \brief The MPI size, aka the number of processors.
    */
   int size;
-  
+
   /*!
    * \brief The file extension to be attached to the filename.
    */
   std::string file_ext;
-  
+
   su2double StartTime, /*!< \brief Start time for time measurement  */
             StopTime , /*!< \brief Stop time for time measurement  */
             UsedTime , /*!< \brief Used time for time measurement  */
             Bandwidth, /*!< \brief Used bandwidth  */
             file_size; /*!< \brief Size of the last written file  */
-  
+
   /*!
    * \brief Determine the file size
    * \param[in] filename - Name of the file.
-   * \return 
+   * \return
    */
   inline unsigned long Determine_Filesize(std::string filename){
       struct stat stat_buf;
       int rc = stat(filename.c_str(), &stat_buf);
       return rc == 0 ? stat_buf.st_size : -1;
   }
-  
+
   /*!
    * \brief Filename
    */
   string fileName;
-  
+
   /*!
    * \brief The parallel data sorter
    */
   CParallelDataSorter* dataSorter;
-  
+
 public:
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
    * \param[in] file_ext - The file extension to be attached to the filename
    * \param[in] nDim - Physical dimension
-   */  
+   */
   CFileWriter(std::vector<std::string> fields, string fileName, CParallelDataSorter* dataSorter, string file_ext, unsigned short nDim);
-  
+
   /*!
    * \brief Destructor
    */
   virtual ~CFileWriter();
-  
+
   /*!
    * \brief Write sorted data to file
    */
   virtual void Write_Data(){}
-  
+
   /*!
    * \brief Get the bandwith used for the last writing
    */
   su2double Get_Bandwidth(){return Bandwidth;}
-  
+
   /*!
    * \brief Get the filesize of the last written file.
    */
   su2double Get_Filesize(){return file_size;}
-  
+
   /*!
    * \brief Get the used time of the last file writing.
-   * \return 
+   * \return
    */
   su2double Get_UsedTime(){return UsedTime;}
 

@@ -2,24 +2,14 @@
  * \file solver_structure.cpp
  * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CBaselineVariable.hpp"
@@ -3231,21 +3222,40 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   
 }
 
-void CSolver::Add_ExternalOld_To_Solution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    base_nodes->AddSolution(iPoint, base_nodes->Get_ExternalOld(iPoint));
+void CSolver::Add_External_To_Solution() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
 }
 
-void CSolver::Add_Solution_To_External(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+void CSolver::Add_Solution_To_External() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
 }
 
-void CSolver::Add_Solution_To_ExternalOld(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    base_nodes->Add_ExternalOld(iPoint, base_nodes->GetSolution(iPoint));
+void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
+
+  /*--- This method is for discrete adjoint solvers and it is used in multi-physics
+   *    contexts, "cross_term" is the old value, the new one is in "Solution".
+   *    We update "cross_term" and the sum of all cross terms (in "External")
+   *    with a fraction of the difference between new and old.
+   *    When "alpha" is 1, i.e. no relaxation, we effectively subtract the old
+   *    value and add the new one to the total ("External"). ---*/
+
+  passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      passivedouble
+      new_val = SU2_TYPE::GetValue(base_nodes->GetSolution(iPoint,iVar)),
+      delta = alpha * (new_val - cross_term(iPoint,iVar));
+      /*--- Update cross term. ---*/
+      cross_term(iPoint,iVar) += delta;
+      Solution[iVar] = delta;
+    }
+    /*--- Update the sum of all cross-terms. ---*/
+    base_nodes->Add_External(iPoint, Solution);
   }
 }
 
@@ -4303,11 +4313,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
@@ -4379,11 +4386,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
     if (rbuf_NotMatching != 0) {
       SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
@@ -4875,7 +4879,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   /*--- Angle of attack ---*/
 
   if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+    if ((config->GetAoA() != AoA_) && (rank == MASTER_NODE)) {
       cout.precision(6);
       cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
       cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
@@ -4884,14 +4888,14 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   }
 
   else {
-    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+    if ((config->GetAoA() != AoA_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the AoA in the solution file." << endl;
   }
 
   /*--- Sideslip angle ---*/
 
   if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+    if ((config->GetAoS() != AoS_) && (rank == MASTER_NODE)) {
       cout.precision(6);
       cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
       cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
@@ -4899,38 +4903,38 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     config->SetAoS(AoS_ + config->GetAoS_Offset());
   }
   else {
-    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+    if ((config->GetAoS() != AoS_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the AoS in the solution file." << endl;
   }
 
   /*--- BCThrust ---*/
 
   if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+    if ((config->GetInitial_BCThrust() != BCThrust_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-      config->SetInitial_BCThrust(BCThrust_);
-    }
+    config->SetInitial_BCThrust(BCThrust_);
+  }
   else {
-    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+    if ((config->GetInitial_BCThrust() != BCThrust_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
   }
 
 
   if (config->GetDiscard_InFiles() == false) {
 
-    if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
     config->SetdCD_dCL(dCD_dCL_);
 
-    if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCMx_dCL() != dCMx_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
     config->SetdCMx_dCL(dCMx_dCL_);
 
-    if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCMy_dCL() != dCMy_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
     config->SetdCMy_dCL(dCMy_dCL_);
 
-    if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
     config->SetdCMz_dCL(dCMz_dCL_);
 
@@ -4938,16 +4942,16 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 	
   else {
 
-    if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
     
-    if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCMx_dCL() != dCMx_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
     
-    if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCMy_dCL() != dCMy_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
     
-    if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+    if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
 
   }
@@ -5034,183 +5038,179 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (dual_time || time_stepping)
     profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
-    /*--- Read the profile data from an ASCII file. ---*/
+  /*--- Read the profile data from an ASCII file. ---*/
 
-    CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
 
-    /*--- Load data from the restart into correct containers. ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-    Marker_Counter = 0;
-    
-    unsigned short global_failure = 0, local_failure = 0;
-    ostringstream error_msg;
+  Marker_Counter = 0;
+  
+  unsigned short global_failure = 0, local_failure = 0;
+  ostringstream error_msg;
 
-    const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
+  const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
-        /*--- Get tag in order to identify the correct inlet data. ---*/
+      /*--- Get tag in order to identify the correct inlet data. ---*/
 
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-        for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+      for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
 
-          /*--- If we have found the matching marker string, continue. ---*/
+        /*--- If we have found the matching marker string, continue. ---*/
 
-          if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
+        if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
 
-            /*--- Increment our counter for marker matches. ---*/
+          /*--- Increment our counter for marker matches. ---*/
 
-            Marker_Counter++;
+          Marker_Counter++;
 
-            /*--- Get data for this profile. ---*/
-            
-            vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-            
-            unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-
-            vector<su2double> Inlet_Values(nColumns);
-            
-            /*--- Loop through the nodes on this marker. ---*/
-
-            for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-
-              iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
-              min_dist = 1e16;
-
-              /*--- Find the distance to the closest point in our inlet profile data. ---*/
-
-              for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
-
-                /*--- Get the coords for this data point. ---*/
-
-                index = iRow*nColumns;
-
-                dist = 0.0;
-                for (unsigned short iDim = 0; iDim < nDim; iDim++)
-                  dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
-                dist = sqrt(dist);
-
-                /*--- Check is this is the closest point and store data if so. ---*/
-
-                if (dist < min_dist) {
-                  min_dist = dist;
-                  for (iVar = 0; iVar < nColumns; iVar++)
-                    Inlet_Values[iVar] = Inlet_Data[index+iVar];
-                }
-
-              }
-
-              /*--- If the diff is less than the tolerance, match the two.
-               We could modify this to simply use the nearest neighbor, or
-               eventually add something more elaborate here for interpolation. ---*/
-
-              if (min_dist < tolerance) {
-
-                solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-
-              } else {
-
-                unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
-                cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
-                cout << "and point " << GlobalIndex;
-                cout << std::scientific;
-                cout << " at location: [" << Coord[0] << ", " << Coord[1];
-                if (nDim ==3) error_msg << ", " << Coord[2];
-                cout << "]" << endl;
-                cout << "Distance to closest point: " << min_dist << endl;
-                cout << "Current tolerance:         " << tolerance << endl;
-                cout << endl;
-                cout << "You can widen the tolerance for point matching by changing the value" << endl;
-                cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
-                local_failure++;
-                break;
-
-              }
-            }
-          }
-        }
-      }
-
-      if (local_failure > 0) break;
-    }
-
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
-                       MPI_SUM, MPI_COMM_WORLD);
-#else
-    global_failure = local_failure;
-#endif
-
-    if (global_failure > 0) {
-      SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
-    }
-
-    /*--- Copy the inlet data down to the coarse levels if multigrid is active.
-     Here, we use a face area-averaging to restrict the values. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
-
-          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          /*--- Get data for this profile. ---*/
           
-          /* Check the number of columns and allocate temp array. */
+          vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
           
-          unsigned short nColumns;
-          for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
-            if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
-              nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-            }
-          }
+          unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+
           vector<su2double> Inlet_Values(nColumns);
-          vector<su2double> Inlet_Fine(nColumns);
           
           /*--- Loop through the nodes on this marker. ---*/
 
-          for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+          for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-            /*--- Get the coarse mesh point and compute the boundary area. ---*/
+            iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+            Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
+            min_dist = 1e16;
 
-            iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
-            geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area_Parent = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
-            Area_Parent = sqrt(Area_Parent);
+            /*--- Find the distance to the closest point in our inlet profile data. ---*/
 
-            /*--- Reset the values for the coarse point. ---*/
+            for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
 
-            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
+              /*--- Get the coords for this data point. ---*/
 
-            /*-- Loop through the children and extract the inlet values
-             from those nodes that lie on the boundary as well as their
-             boundary area. We build a face area-averaged value for the
-             coarse point values from the fine grid points. Note that
-             children from the interior volume will not be included in
-             the averaging. ---*/
+              index = iRow*nColumns;
 
-            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-              Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-              for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
-              Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER, Marker_Tag, geometry[iMesh-1], config);
-              for (iVar = 0; iVar < nColumns; iVar++) {
-                Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+              dist = 0.0;
+              for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
+              dist = sqrt(dist);
+
+              /*--- Check is this is the closest point and store data if so. ---*/
+
+              if (dist < min_dist) {
+                min_dist = dist;
+                for (iVar = 0; iVar < nColumns; iVar++)
+                  Inlet_Values[iVar] = Inlet_Data[index+iVar];
               }
+
             }
 
-            /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
+            /*--- If the diff is less than the tolerance, match the two.
+             We could modify this to simply use the nearest neighbor, or
+             eventually add something more elaborate here for interpolation. ---*/
 
-            solver[iMesh][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+            if (min_dist < tolerance) {
 
+              solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+            } else {
+
+              unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
+              cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+              cout << "and point " << GlobalIndex;
+              cout << std::scientific;
+              cout << " at location: [" << Coord[0] << ", " << Coord[1];
+              if (nDim ==3) error_msg << ", " << Coord[2];
+              cout << "]" << endl;
+              cout << "Distance to closest point: " << min_dist << endl;
+              cout << "Current tolerance:         " << tolerance << endl;
+              cout << endl;
+              cout << "You can widen the tolerance for point matching by changing the value" << endl;
+              cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
+              local_failure++;
+              break;
+
+            }
           }
         }
       }
     }
-  
+
+    if (local_failure > 0) break;
+  }
+
+  SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+
+  if (global_failure > 0) {
+    SU2_MPI::Error("Prescribed inlet data does not match markers within tolerance.", CURRENT_FUNCTION);
+  }
+
+  /*--- Copy the inlet data down to the coarse levels if multigrid is active.
+   Here, we use a face area-averaging to restrict the values. ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
+
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        
+        /* Check the number of columns and allocate temp array. */
+        
+        unsigned short nColumns = 0;
+        for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+          if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+          }
+        }
+        vector<su2double> Inlet_Values(nColumns);
+        vector<su2double> Inlet_Fine(nColumns);
+        
+        /*--- Loop through the nodes on this marker. ---*/
+
+        for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+
+          /*--- Get the coarse mesh point and compute the boundary area. ---*/
+
+          iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
+          Area_Parent = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
+          Area_Parent = sqrt(Area_Parent);
+
+          /*--- Reset the values for the coarse point. ---*/
+
+          for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
+
+          /*-- Loop through the children and extract the inlet values
+           from those nodes that lie on the boundary as well as their
+           boundary area. We build a face area-averaged value for the
+           coarse point values from the fine grid points. Note that
+           children from the interior volume will not be included in
+           the averaging. ---*/
+
+          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
+            Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
+                                                                           Marker_Tag, geometry[iMesh-1], config);
+            for (iVar = 0; iVar < nColumns; iVar++) {
+              Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+            }
+          }
+
+          /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
+
+          solver[iMesh][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+        }
+      }
+    }
+  }
+
   delete [] Normal;
-  
+
 }
 
 void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){

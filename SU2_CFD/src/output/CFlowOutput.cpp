@@ -2,24 +2,14 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,91 +24,92 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "../../include/output/CFlowOutput.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solver_structure.hpp"
 
 CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
-  
+
 }
 
 
 CFlowOutput::~CFlowOutput(void){}
 
 void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
-  
-  
-  /// DESCRIPTION: Average mass flow    
+
+
+  /// DESCRIPTION: Average mass flow
   AddHistoryOutput("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Mach number      
+  /// DESCRIPTION: Average Mach number
   AddHistoryOutput("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mach number on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Temperature        
+  /// DESCRIPTION: Average Temperature
   AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Pressure  
+  /// DESCRIPTION: Average Pressure
   AddHistoryOutput("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Density  
+  /// DESCRIPTION: Average Density
   AddHistoryOutput("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average density on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Enthalpy  
+  /// DESCRIPTION: Average Enthalpy
   AddHistoryOutput("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average enthalpy on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average velocity in normal direction of the surface
   AddHistoryOutput("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average normal velocity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Flow uniformity 
+  /// DESCRIPTION: Flow uniformity
   AddHistoryOutput("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total flow uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
   AddHistoryOutput("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary strength on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Momentum distortion  
+  /// DESCRIPTION: Momentum distortion
   AddHistoryOutput("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total momentum distortion on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Secondary over uniformity 
+  /// DESCRIPTION: Secondary over uniformity
   AddHistoryOutput("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary over uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average total temperature  
+  /// DESCRIPTION: Average total temperature
   AddHistoryOutput("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total temperature all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average total pressure   
+  /// DESCRIPTION: Average total pressure
   AddHistoryOutput("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Pressure drop    
+  /// DESCRIPTION: Pressure drop
   AddHistoryOutput("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
-  
-  
+
+
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
   vector<string> Marker_Analyze;
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++){
     Marker_Analyze.push_back(config->GetMarker_Analyze_TagBound(iMarker_Analyze));
-  }  
-  
-  /// DESCRIPTION: Average mass flow    
+  }
+
+  /// DESCRIPTION: Average mass flow
   AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Mach number      
+  /// DESCRIPTION: Average Mach number
   AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Temperature        
+  /// DESCRIPTION: Average Temperature
   AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Pressure  
+  /// DESCRIPTION: Average Pressure
   AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Density  
+  /// DESCRIPTION: Average Density
   AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Enthalpy  
+  /// DESCRIPTION: Average Enthalpy
   AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average velocity in normal direction of the surface
   AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Flow uniformity 
+  /// DESCRIPTION: Flow uniformity
   AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
   AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Momentum distortion  
+  /// DESCRIPTION: Momentum distortion
   AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Secondary over uniformity 
+  /// DESCRIPTION: Secondary over uniformity
   AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average total temperature  
+  /// DESCRIPTION: Average total temperature
   AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average total pressure   
+  /// DESCRIPTION: Average total pressure
   AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Pressure drop    
+  /// DESCRIPTION: Pressure drop
   AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
-  
+
 }
 
 void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output){
-  
+
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
@@ -138,7 +129,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
-  
+
   su2double  *Vector                    = new su2double[nDim];
   su2double  *Surface_MassFlow          = new su2double[nMarker];
   su2double  *Surface_Mach              = new su2double[nMarker];
@@ -154,7 +145,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   su2double  *Surface_VelocityIdeal     = new su2double[nMarker];
   su2double  *Surface_Area              = new su2double[nMarker];
   su2double  *Surface_MassFlow_Abs      = new su2double[nMarker];
-  
+
   su2double  Tot_Surface_MassFlow          = 0.0;
   su2double  Tot_Surface_Mach              = 0.0;
   su2double  Tot_Surface_Temperature       = 0.0;
@@ -169,11 +160,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   su2double  Tot_Momentum_Distortion       = 0.0;
   su2double  Tot_SecondOverUniformity      = 0.0;
   su2double  Tot_Surface_PressureDrop      = 0.0;
-  
+
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
-  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
+
     Surface_MassFlow[iMarker]          = 0.0;
     Surface_Mach[iMarker]              = 0.0;
     Surface_Temperature[iMarker]       = 0.0;
@@ -190,14 +181,14 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     Surface_MassFlow_Abs[iMarker]      = 0.0;
 
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
-      
+
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
+
         if (geometry->node[iPoint]->GetDomain()) {
-          
+
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-          
+
           if (axisymmetric) {
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
@@ -217,7 +208,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             Vn += Velocity[iDim] * Vector[iDim] * AxiFactor;
             MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
           }
-          
+
           Area       = sqrt (Area);
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
@@ -259,7 +250,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
           else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
           else Weight = 1.0;
-          
+
           Surface_Mach[iMarker]             += Mach*Weight;
           Surface_Temperature[iMarker]      += Temperature*Weight;
           Surface_Density[iMarker]          += Density*Weight;
@@ -278,13 +269,13 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
         }
       }
-      
+
     }
-    
+
   }
-  
+
   /*--- Copy to the appropriate structure ---*/
-  
+
   su2double *Surface_MassFlow_Local          = new su2double [nMarker_Analyze];
   su2double *Surface_Mach_Local              = new su2double [nMarker_Analyze];
   su2double *Surface_Temperature_Local       = new su2double [nMarker_Analyze];
@@ -298,7 +289,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   su2double *Surface_TotalPressure_Local     = new su2double [nMarker_Analyze];
   su2double *Surface_Area_Local              = new su2double [nMarker_Analyze];
   su2double *Surface_MassFlow_Abs_Local      = new su2double [nMarker_Analyze];
-  
+
   su2double *Surface_MassFlow_Total          = new su2double [nMarker_Analyze];
   su2double *Surface_Mach_Total              = new su2double [nMarker_Analyze];
   su2double *Surface_Temperature_Total       = new su2double [nMarker_Analyze];
@@ -329,7 +320,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     Surface_TotalPressure_Local[iMarker_Analyze]     = 0.0;
     Surface_Area_Local[iMarker_Analyze]              = 0.0;
     Surface_MassFlow_Abs_Local[iMarker_Analyze]      = 0.0;
-    
+
     Surface_MassFlow_Total[iMarker_Analyze]          = 0.0;
     Surface_Mach_Total[iMarker_Analyze]              = 0.0;
     Surface_Temperature_Total[iMarker_Analyze]       = 0.0;
@@ -347,17 +338,17 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     Surface_MomentumDistortion_Total[iMarker_Analyze] = 0.0;
 
   }
-  
+
   /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
-  
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
+
     if (config->GetMarker_All_Analyze(iMarker) == YES)  {
-      
+
       for (iMarker_Analyze= 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-        
+
         /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
-        
+
         if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
           Surface_MassFlow_Local[iMarker_Analyze]          += Surface_MassFlow[iMarker];
           Surface_Mach_Local[iMarker_Analyze]              += Surface_Mach[iMarker];
@@ -373,15 +364,15 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           Surface_Area_Local[iMarker_Analyze]              += Surface_Area[iMarker];
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
         }
-        
+
       }
-      
+
     }
-    
+
   }
-  
+
 #ifdef HAVE_MPI
-  
+
   SU2_MPI::Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_Mach_Local, Surface_Mach_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_Temperature_Local, Surface_Temperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -397,7 +388,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   SU2_MPI::Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 #else
-  
+
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     Surface_MassFlow_Total[iMarker_Analyze]          = Surface_MassFlow_Local[iMarker_Analyze];
     Surface_Mach_Total[iMarker_Analyze]              = Surface_Mach_Local[iMarker_Analyze];
@@ -413,14 +404,14 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     Surface_Area_Total[iMarker_Analyze]              = Surface_Area_Local[iMarker_Analyze];
     Surface_MassFlow_Abs_Total[iMarker_Analyze]      = Surface_MassFlow_Abs_Local[iMarker_Analyze];
   }
-  
+
 #endif
-  
+
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
-  
+
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    
+
     if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
     else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
     else Weight = 1.0;
@@ -462,62 +453,62 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     }
 
   }
-  
+
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-        
+
     su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
     SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", MassFlow, iMarker_Analyze);
     Tot_Surface_MassFlow += MassFlow;
-    
+
     su2double Mach = Surface_Mach_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_MACH", Mach, iMarker_Analyze);
     Tot_Surface_Mach += Mach;
-    
+
     su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TEMP", Temperature, iMarker_Analyze);
     Tot_Surface_Temperature += Temperature;
-    
+
     su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_PRESS", Pressure, iMarker_Analyze);
     Tot_Surface_Pressure += Pressure;
-    
+
     su2double Density = Surface_Density_Total[iMarker_Analyze] * config->GetDensity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_DENSITY", Density, iMarker_Analyze);
     Tot_Surface_Density += Density;
-    
+
     su2double Enthalpy = Surface_Enthalpy_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY", Enthalpy, iMarker_Analyze);
     Tot_Surface_Enthalpy += Enthalpy;
-    
+
     su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL", NormalVelocity, iMarker_Analyze);
     Tot_Surface_NormalVelocity += NormalVelocity;
-    
+
     su2double Uniformity = sqrt(Surface_StreamVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("UNIFORMITY", Uniformity, iMarker_Analyze);
     Tot_Surface_StreamVelocity2 += Uniformity;
-    
+
     su2double SecondaryStrength = sqrt(Surface_TransvVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH", SecondaryStrength, iMarker_Analyze);
     Tot_Surface_TransvVelocity2 += SecondaryStrength;
-    
+
     su2double MomentumDistortion = Surface_MomentumDistortion_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION", MomentumDistortion, iMarker_Analyze);
     Tot_Momentum_Distortion += MomentumDistortion;
-    
+
     su2double SecondOverUniform = SecondaryStrength/Uniformity;
     SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY", SecondOverUniform, iMarker_Analyze);
     Tot_SecondOverUniformity += SecondOverUniform;
-    
+
     su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP", TotalTemperature, iMarker_Analyze);
     Tot_Surface_TotalTemperature += TotalTemperature;
-    
+
     su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS", TotalPressure, iMarker_Analyze);
     Tot_Surface_TotalPressure += TotalPressure;
-    
+
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -532,14 +523,14 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     if (nMarker_Analyze == 2) {
       Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
       config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
-    } 
+    }
     SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
     Tot_Surface_PressureDrop += Pressure_Drop;
   }
-  
+
   SetHistoryOutputValue("AVG_MASSFLOW", Tot_Surface_MassFlow);
   SetHistoryOutputValue("AVG_MACH", Tot_Surface_Mach);
-  SetHistoryOutputValue("AVG_TEMP", Tot_Surface_Temperature);  
+  SetHistoryOutputValue("AVG_TEMP", Tot_Surface_Temperature);
   SetHistoryOutputValue("AVG_PRESS", Tot_Surface_Pressure);
   SetHistoryOutputValue("AVG_DENSITY", Tot_Surface_Density);
   SetHistoryOutputValue("AVG_ENTHALPY", Tot_Surface_Enthalpy);
@@ -553,30 +544,30 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   SetHistoryOutputValue("PRESSURE_DROP",  Tot_Surface_PressureDrop);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
-    
+
     cout.precision(6);
     cout.setf(ios::scientific, ios::floatfield);
     cout << endl << "Computing surface mean values." << endl << endl;
-    
+
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
       cout << "Surface "<< config->GetMarker_Analyze_TagBound(iMarker_Analyze) << ":" << endl;
-      
+
       if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout << setw(20) << "Area (m^2): "; else cout << setw(20) << "Area (ft^2): "; }
       else { if (config->GetSystemMeasurements() == SI) cout << setw(20) << "Area (m): "; else cout << setw(20) << "Area (ft): "; }
-      
+
       if (config->GetSystemMeasurements() == SI)      cout << setw(15) << fabs(Surface_Area_Total[iMarker_Analyze]);
       else if (config->GetSystemMeasurements() == US) cout << setw(15) << fabs(Surface_Area_Total[iMarker_Analyze])*12.0*12.0;
-      
+
       cout << endl;
 
       su2double MassFlow = config->GetSurface_MassFlow(iMarker_Analyze);
       if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Mf (kg/s): " << setw(15) << MassFlow;
       else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Mf (lbs/s): " << setw(15) << MassFlow;
-      
+
       su2double NormalVelocity = config->GetSurface_NormalVelocity(iMarker_Analyze);
       if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Vn (m/s): " << setw(15) << NormalVelocity;
       else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Vn (ft/s): " << setw(15) << NormalVelocity;
-      
+
       cout << endl;
 
       su2double Uniformity = config->GetSurface_Uniformity(iMarker_Analyze);
@@ -600,7 +591,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
       su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
       if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "P (Pa): " << setw(15) << Pressure;
       else if (config->GetSystemMeasurements() == US) cout << setw(20) << "P (psf): " << setw(15) << Pressure;
-      
+
       su2double TotalPressure = config->GetSurface_TotalPressure(iMarker_Analyze);
       if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "PT (Pa): " << setw(15) <<TotalPressure;
       else if (config->GetSystemMeasurements() == US) cout << setw(20) << "PT (psf): " << setw(15) <<TotalPressure;
@@ -630,9 +621,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
     }
     cout.unsetf(ios_base::floatfield);
-    
+
   }
-  
+
   delete [] Surface_MassFlow_Local;
   delete [] Surface_Mach_Local;
   delete [] Surface_Temperature_Local;
@@ -646,7 +637,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Surface_TotalPressure_Local;
   delete [] Surface_Area_Local;
   delete [] Surface_MassFlow_Abs_Local;
-  
+
   delete [] Surface_MassFlow_Total;
   delete [] Surface_Mach_Total;
   delete [] Surface_Temperature_Total;
@@ -677,68 +668,68 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Vector;
   delete [] Surface_VelocityIdeal;
   delete [] Surface_MassFlow_Abs;
-  
+
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
 void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
-  
+
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
-  /// DESCRIPTION: Drag coefficient 
+  /// DESCRIPTION: Drag coefficient
   AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Lift coefficient 
+  /// DESCRIPTION: Lift coefficient
   AddHistoryOutput("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Sideforce coefficient   
+  /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Moment around the x-axis    
+  /// DESCRIPTION: Moment around the x-axis
   AddHistoryOutput("MOMENT_X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Moment around the y-axis    
+  /// DESCRIPTION: Moment around the y-axis
   AddHistoryOutput("MOMENT_Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Moment around the z-axis      
+  /// DESCRIPTION: Moment around the z-axis
   AddHistoryOutput("MOMENT_Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Force in x direction    
+  /// DESCRIPTION: Force in x direction
   AddHistoryOutput("FORCE_X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Force in y direction    
+  /// DESCRIPTION: Force in y direction
   AddHistoryOutput("FORCE_Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Force in z direction      
+  /// DESCRIPTION: Force in z direction
   AddHistoryOutput("FORCE_Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
   AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP  
-  
+  /// END_GROUP
+
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
-  }  
-  /// DESCRIPTION: Drag coefficient   
+  }
+  /// DESCRIPTION: Drag coefficient
   AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Lift coefficient   
+  /// DESCRIPTION: Lift coefficient
   AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Sideforce coefficient     
+  /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Moment around the x-axis      
+  /// DESCRIPTION: Moment around the x-axis
   AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Moment around the y-axis      
+  /// DESCRIPTION: Moment around the y-axis
   AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Moment around the z-axis        
+  /// DESCRIPTION: Moment around the z-axis
   AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Force in x direction      
+  /// DESCRIPTION: Force in x direction
   AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Force in y direction      
+  /// DESCRIPTION: Force in y direction
   AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Force in z direction        
+  /// DESCRIPTION: Force in z direction
   AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Lift-to-drag ratio  
+  /// DESCRIPTION: Lift-to-drag ratio
   AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// END_GROUP 
+  /// END_GROUP
 
-  /// DESCRIPTION: Angle of attack  
+  /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
 }
 
 void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
-  
+
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
@@ -753,7 +744,7 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   if (nDim == 3)
     SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
-  
+
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
@@ -767,27 +758,27 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
     SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
     if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);   
-    
+      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);
+
     SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
     if (config->GetAeroelastic_Simulation()){
       SetHistoryOutputPerSurfaceValue("PITCH", config->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
       SetHistoryOutputPerSurfaceValue("PLUNGE", config->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
     }
   }
-  
+
   SetHistoryOutputValue("AOA", config->GetAoA());
 }
 
 
 void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
-  
+
   AddHistoryOutput("CP_DIFF", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
-  
+
 }
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config){
-  
+
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff = 0.0;
@@ -795,129 +786,129 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
   string text_line, surfCp_filename;
   ifstream Surface_file;
   char cstr[200];
-  
+
   /*--- Prepare to read the surface pressure files (CSV) ---*/
-  
+
   surfCp_filename = "TargetCp";
-  
+
   surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curTimeIter, ".dat");
-  
+
   strcpy (cstr, surfCp_filename.c_str());
-    
+
   /*--- Read the surface pressure file ---*/
-  
+
   string::size_type position;
-  
+
   Surface_file.open(cstr, ios::in);
-  
+
   if (!(Surface_file.fail())) {
-    
+
     nPointLocal = geometry->GetnPoint();
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
     nPointGlobal = nPointLocal;
 #endif
-    
+
     Point2Vertex = new unsigned long[nPointGlobal][2];
     PointInDomain = new bool[nPointGlobal];
-    
+
     for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
       PointInDomain[iPoint] = false;
-    
+
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
-      
+
       if ((Boundary == EULER_WALL             ) ||
           (Boundary == HEAT_FLUX              ) ||
           (Boundary == ISOTHERMAL             ) ||
           (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          
+
           /*--- The Pressure file uses the global numbering ---*/
-          
+
           iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
-          
+
           if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
             Point2Vertex[iPoint][0] = iMarker;
             Point2Vertex[iPoint][1] = iVertex;
             PointInDomain[iPoint] = true;
             solver->SetCPressureTarget(iMarker, iVertex, 0.0);
           }
-          
+
         }
       }
     }
-    
+
     getline(Surface_file, text_line);
-    
+
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
         position = text_line.find( ",", 0 );
         if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
-      
+
       if (geometry->GetnDim() == 2) point_line >> iPoint >> XCoord >> YCoord >> Pressure >> PressureCoeff;
       if (geometry->GetnDim() == 3) point_line >> iPoint >> XCoord >> YCoord >> ZCoord >> Pressure >> PressureCoeff;
-      
+
       if (PointInDomain[iPoint]) {
-        
+
         /*--- Find the vertex for the Point and Marker ---*/
-        
+
         iMarker = Point2Vertex[iPoint][0];
         iVertex = Point2Vertex[iPoint][1];
-        
+
         solver->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
-        
+
       }
-      
+
     }
-    
+
     Surface_file.close();
-    
+
     delete [] Point2Vertex;
     delete [] PointInDomain;
-    
+
     /*--- Compute the pressure difference ---*/
-    
+
     PressDiff = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
-      
+
       if ((Boundary == EULER_WALL             ) ||
           (Boundary == HEAT_FLUX              ) ||
           (Boundary == ISOTHERMAL             ) ||
           (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          
+
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          
+
           Cp = solver->GetCPressure(iMarker, iVertex);
           CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
-          
+
           Area = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
             Area += Normal[iDim]*Normal[iDim];
           Area = sqrt(Area);
-          
+
           PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
         }
-        
+
       }
     }
-    
+
 #ifdef HAVE_MPI
-    su2double MyPressDiff = PressDiff;    
+    su2double MyPressDiff = PressDiff;
     SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
+
   }
-  
+
   /*--- Update the total Cp difference coeffient ---*/
-  
+
   solver->SetTotal_CpDiff(PressDiff);
-  
+
   SetHistoryOutputValue("CP_DIFF", PressDiff);
 
 }
@@ -949,38 +940,38 @@ su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
   su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
 
   /*--- Q = ||Omega|| - ||Strain|| ---*/
-  su2double Q = 2*(pow(omega12,2) + pow(omega13,2) + pow(omega23,2)) - 
+  su2double Q = 2*(pow(omega12,2) + pow(omega13,2) + pow(omega23,2)) -
     (pow(s11,2) + pow(s22,2) + pow(s33,2) + 2*(pow(s12,2) + pow(s13,2) + pow(s23,2)));
 
   return Q;
 }
 
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
-  
+
   if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){
     WriteMetaData(config);
   }
-  
+
   if (config->GetWrt_ForcesBreakdown()){
     WriteForcesBreakdown(config, geometry, solver_container);
   }
-  
+
 }
 
 void CFlowOutput::WriteMetaData(CConfig *config){
-    
+
   ofstream meta_file;
-  
+
   string filename = "flow";
-  
+
   filename = config->GetFilename(filename, ".meta", curTimeIter);
-  
+
   /*--- All processors open the file. ---*/
 
   if (rank == MASTER_NODE) {
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
-    
+
     if (config->GetTime_Marching() == DT_STEPPING_1ST || config->GetTime_Marching() == DT_STEPPING_2ND)
       meta_file <<"ITER= " << curTimeIter + 1 << endl;
     else
@@ -997,24 +988,24 @@ void CFlowOutput::WriteMetaData(CConfig *config){
       meta_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
     }
     meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    
-    
+
+
     if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
           config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
           config->GetKind_Solver() == DISC_ADJ_RANS )) {
       meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
     }
   }
-  
+
   meta_file.close();
 }
 
 void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container){
-  
+
   char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
   ofstream Breakdown_file;
-  
+
   bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool unsteady           = (config->GetTime_Marching() != NO);
@@ -1028,15 +1019,15 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
   unsigned short Ref_NonDim = config->GetRef_NonDim();
 
   unsigned short nDim =  geometry->GetnDim();
-  
+
   /*--- Output the mean flow solution using only the master node ---*/
-  
+
   if ( rank == MASTER_NODE) {
-    
+
     cout << endl << "Writing the forces breakdown file ("<< config->GetBreakdown_FileName() << ")." << endl;
-    
+
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
-    
+
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0,
     Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CoPx = 0.0, Total_CoPy = 0.0, Total_CoPz = 0.0,
@@ -1068,14 +1059,14 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     *Surface_CEff_Mnt = NULL, *Surface_CFx_Mnt = NULL, *Surface_CFy_Mnt =
     NULL, *Surface_CFz_Mnt = NULL, *Surface_CMx_Mnt = NULL,
     *Surface_CMy_Mnt = NULL, *Surface_CMz_Mnt = NULL;
-    
+
     /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
      the two lines below that use the dt variable. ---*/
     //time_t now = time(0);
     //string dt = ctime(&now); dt[24] = '.';
-    
+
     /*--- Allocate memory for the coefficients being monitored ---*/
-    
+
     Surface_CL      = new su2double[config->GetnMarker_Monitoring()];
     Surface_CD      = new su2double[config->GetnMarker_Monitoring()];
     Surface_CSF = new su2double[config->GetnMarker_Monitoring()];
@@ -1086,7 +1077,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Surface_CMx        = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMy        = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config->GetnMarker_Monitoring()];
-    
+
     Surface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
     Surface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
     Surface_CSF_Inv = new su2double[config->GetnMarker_Monitoring()];
@@ -1097,7 +1088,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Surface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
-    
+
     Surface_CL_Visc = new su2double[config->GetnMarker_Monitoring()];
     Surface_CD_Visc = new su2double[config->GetnMarker_Monitoring()];
     Surface_CSF_Visc =
@@ -1109,8 +1100,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Surface_CMx_Visc = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMy_Visc = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMz_Visc = new su2double[config->GetnMarker_Monitoring()];
-    
-    
+
+
     Surface_CL_Mnt = new su2double[config->GetnMarker_Monitoring()];
     Surface_CD_Mnt = new su2double[config->GetnMarker_Monitoring()];
     Surface_CSF_Mnt =
@@ -1124,7 +1115,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Surface_CMz_Mnt = new su2double[config->GetnMarker_Monitoring()];
 
     /*--- Flow solution coefficients ---*/
-    
+
     Total_CL       = solver_container[FLOW_SOL]->GetTotal_CL();
     Total_CD       = solver_container[FLOW_SOL]->GetTotal_CD();
     Total_CSF      = solver_container[FLOW_SOL]->GetTotal_CSF();
@@ -1135,7 +1126,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Total_CFx         = solver_container[FLOW_SOL]->GetTotal_CFx();
     Total_CFy         = solver_container[FLOW_SOL]->GetTotal_CFy();
     Total_CFz         = solver_container[FLOW_SOL]->GetTotal_CFz();
-    
+
     if (nDim == 2) {
       Total_CoPx = solver_container[FLOW_SOL]->GetTotal_CoPx() / solver_container[FLOW_SOL]->GetTotal_CFy();
       Total_CoPy = solver_container[FLOW_SOL]->GetTotal_CoPy() / solver_container[FLOW_SOL]->GetTotal_CFx();
@@ -1146,11 +1137,11 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Total_CoPy = 0.0;
       Total_CoPz = solver_container[FLOW_SOL]->GetTotal_CoPz() / solver_container[FLOW_SOL]->GetTotal_CFx();
     }
-    
+
     if (config->GetSystemMeasurements() == US) { Total_CoPx *= 12.0; Total_CoPy *= 12.0; Total_CoPz *= 12.0; }
-    
+
     /*--- Flow inviscid solution coefficients ---*/
-    
+
     Inv_CL =
     solver_container[FLOW_SOL]->GetAllBound_CL_Inv();
     Inv_CD =
@@ -1171,9 +1162,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     solver_container[FLOW_SOL]->GetAllBound_CFy_Inv();
     Inv_CFz =
     solver_container[FLOW_SOL]->GetAllBound_CFz_Inv();
-    
+
     /*--- Flow viscous solution coefficients ---*/
-    
+
     Visc_CL =
     solver_container[FLOW_SOL]->GetAllBound_CL_Visc();
     Visc_CD =
@@ -1194,9 +1185,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     solver_container[FLOW_SOL]->GetAllBound_CFy_Visc();
     Visc_CFz =
     solver_container[FLOW_SOL]->GetAllBound_CFz_Visc();
-    
+
     /*--- Flow momentum solution coefficients ---*/
-    
+
     Mnt_CL =
     solver_container[FLOW_SOL]->GetAllBound_CL_Mnt();
     Mnt_CD =
@@ -1217,10 +1208,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     solver_container[FLOW_SOL]->GetAllBound_CFy_Mnt();
     Mnt_CFz =
     solver_container[FLOW_SOL]->GetAllBound_CFz_Mnt();
-    
-    
+
+
     /*--- Look over the markers being monitored and get the desired values ---*/
-    
+
     for (iMarker_Monitoring = 0;
          iMarker_Monitoring < config->GetnMarker_Monitoring();
          iMarker_Monitoring++) {
@@ -1254,7 +1245,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Surface_CFz[iMarker_Monitoring] =
       solver_container[FLOW_SOL]->GetSurface_CFz(
                                                               iMarker_Monitoring);
-      
+
       Surface_CL_Inv[iMarker_Monitoring] =
       solver_container[FLOW_SOL]->GetSurface_CL_Inv(
                                                                  iMarker_Monitoring);
@@ -1315,7 +1306,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Surface_CFz_Visc[iMarker_Monitoring] =
       solver_container[FLOW_SOL]->GetSurface_CFz_Visc(
                                                                    iMarker_Monitoring);
-      
+
       Surface_CL_Mnt[iMarker_Monitoring] =
       solver_container[FLOW_SOL]->GetSurface_CL_Mnt(
                                                                  iMarker_Monitoring);
@@ -1346,41 +1337,31 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Surface_CFz_Mnt[iMarker_Monitoring] =
       solver_container[FLOW_SOL]->GetSurface_CFz_Mnt(
                                                                   iMarker_Monitoring);
-      
+
     }
-    
-    
+
+
     /*--- Write file name with extension ---*/
-    
+
     string filename = config->GetBreakdown_FileName();
     strcpy (cstr, filename.data());
-    
+
     Breakdown_file.open(cstr, ios::out);
-    
+
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 6.1.0  \"Falcon\"                           |" << "\n";
-    Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
-    Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
+    Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                      |" << "\n";
+    Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
+    Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     //Breakdown_file << "|   Local date and time: " << dt << "                      |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The current SU2 release has been coordinated by the                   |" << "\n";
-    Breakdown_file << "| SU2 International Developers Society <www.su2devsociety.org>          |" << "\n";
-    Breakdown_file << "| with selected contributions from the open-source community            |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The main research teams contributing to the current release are:      |" << "\n";
-    Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << "\n";
-    Breakdown_file << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << "\n";
-    Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << "\n";
-    Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << "\n";
-    Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << "\n";
-    Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
-    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
-    Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
-    Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
+    Breakdown_file << "-------------------------------------------------------------------------" << "\n";
+    Breakdown_file << "| SU2 Project Website: https://su2code.github.io                        |" << "\n";
+    Breakdown_file << "|                                                                       |" << "\n";
+    Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
+    Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
+    Breakdown_file << "-------------------------------------------------------------------------" << "\n";
+    Breakdown_file << "| Copyright 2012-2019, SU2 Contributors                                 |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
@@ -1394,12 +1375,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| You should have received a copy of the GNU Lesser General Public      |" << "\n";
     Breakdown_file << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    
+    Breakdown_file << "-------------------------------------------------------------------------" << "\n";
+
     Breakdown_file.precision(6);
 
     Breakdown_file << "\n" << "\n" << "Problem definition:" << "\n" << "\n";
-    
+
     switch (Kind_Solver) {
       case EULER: case INC_EULER:
         if (compressible) Breakdown_file << "Compressible Euler equations." << "\n";
@@ -1438,7 +1419,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           (Kind_Solver == RANS) || (Kind_Solver == INC_RANS))
         Breakdown_file << "Reynolds number: " << config->GetReynolds() <<"."<< "\n";
     }
-    
+
     if (fixed_cl) {
       Breakdown_file << "Simulation at a cte. CL: " << config->GetTarget_CL() << ".\n";
       Breakdown_file << "Approx. Delta CL / Delta AoA: " << config->GetdCL_dAlpha() << " (1/deg).\n";
@@ -1449,17 +1430,17 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       }
       Breakdown_file << "Approx. Delta CMz / Delta CL: " << config->GetdCMz_dCL() << ".\n";
     }
-    
+
     if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
     else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { Breakdown_file << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
-    
+
     if (config->GetSystemMeasurements() == SI) {
       Breakdown_file << "The reference area is " << config->GetRefArea() << " m^2." << "\n";
       Breakdown_file << "The reference length is " << config->GetRefLength() << " m." << "\n";
     }
-    
+
     if (config->GetSystemMeasurements() == US) {
       Breakdown_file << "The reference area is " << config->GetRefArea()*12.0*12.0 << " in^2." << "\n";
       Breakdown_file << "The reference length is " << config->GetRefLength()*12.0 << " in." << "\n";
@@ -1475,10 +1456,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file << "temperature and pressure using the ideal gas law." << "\n";
       }
     }
-    
+
     if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
     else Breakdown_file << "Force coefficients computed using free-stream values." << "\n";
-    
+
     if (incompressible) {
       Breakdown_file << "Viscous and Inviscid flow: rho_ref, and vel_ref" << "\n";
       Breakdown_file << "are based on the free-stream values, p_ref = rho_ref*vel_ref^2." << "\n";
@@ -1489,12 +1470,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       if (viscous) Breakdown_file << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<< "\n";
       Breakdown_file << "Only dimensional computation, the grid should be dimensional." << "\n";
     }
-    
+
     Breakdown_file <<"-- Input conditions:"<< "\n";
-    
+
     if (compressible) {
       switch (config->GetKind_FluidModel()) {
-          
+
         case STANDARD_AIR:
           Breakdown_file << "Fluid Model: STANDARD_AIR "<< "\n";
           Breakdown_file << "Specific gas constant: " << config->GetGas_Constant();
@@ -1503,14 +1484,14 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< "\n";
           Breakdown_file << "Specific Heat Ratio: 1.4000 "<< "\n";
           break;
-          
+
         case IDEAL_GAS:
           Breakdown_file << "Fluid Model: IDEAL_GAS "<< "\n";
           Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << "\n";
           Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< "\n";
           Breakdown_file << "Specific Heat Ratio: "<< config->GetGamma() << "\n";
           break;
-          
+
         case VW_GAS:
           Breakdown_file << "Fluid Model: Van der Waals "<< "\n";
           Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << "\n";
@@ -1521,7 +1502,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           Breakdown_file << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << "\n";
           Breakdown_file << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << "\n";
           break;
-          
+
         case PR_GAS:
           Breakdown_file << "Fluid Model: Peng-Robinson "<< "\n";
           Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << "\n";
@@ -1533,11 +1514,11 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           Breakdown_file << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << "\n";
           break;
       }
-      
+
       if (viscous) {
-        
+
         switch (config->GetKind_ViscosityModel()) {
-            
+
           case CONSTANT_VISCOSITY:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Laminar Viscosity: " << config->GetMu_Constant();
@@ -1545,7 +1526,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
             Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
             break;
-            
+
           case SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
@@ -1561,23 +1542,23 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< "\n";
             Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
             break;
-            
+
         }
         switch (config->GetKind_ConductivityModel()) {
-            
+
           case CONSTANT_PRANDTL:
             Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
             Breakdown_file << "Prandtl: " << config->GetPrandtl_Lam()<< "\n";
             break;
-            
+
           case CONSTANT_CONDUCTIVITY:
             Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
             break;
-            
+
         }
-        
+
         if ((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)) {
           switch (config->GetKind_ConductivityModel_Turb()) {
             case CONSTANT_PRANDTL_TURB:
@@ -1590,10 +1571,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
               break;
           }
         }
-        
+
       }
     }
-    
+
     if (incompressible) {
       Breakdown_file << "Bulk modulus: " << config->GetBulk_Modulus();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
@@ -1602,29 +1583,29 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
     }
-    
+
     Breakdown_file << "Free-stream static pressure: " << config->GetPressure_FreeStream();
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-    
+
     Breakdown_file << "Free-stream total pressure: " << config->GetPressure_FreeStream() * pow( 1.0+config->GetMach()*config->GetMach()*0.5*(config->GetGamma()-1.0), config->GetGamma()/(config->GetGamma()-1.0) );
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-    
+
     if (compressible) {
       Breakdown_file << "Free-stream temperature: " << config->GetTemperature_FreeStream();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-      
+
       Breakdown_file << "Free-stream total temperature: " << config->GetTemperature_FreeStream() * (1.0 + config->GetMach() * config->GetMach() * 0.5 * (config->GetGamma() - 1.0));
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
     }
-    
+
     Breakdown_file << "Free-stream density: " << config->GetDensity_FreeStream();
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
-    
+
     if (nDim == 2) {
       Breakdown_file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
       Breakdown_file << config->GetVelocity_FreeStream()[1] << ")";
@@ -1635,17 +1616,17 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     }
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s. ";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s. ";
-    
+
     Breakdown_file << "Magnitude: "  << config->GetModVel_FreeStream();
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
-    
+
     if (compressible) {
       Breakdown_file << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
     }
-    
+
     if (viscous) {
       Breakdown_file << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1659,49 +1640,49 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         else if (config->GetSystemMeasurements() == US) Breakdown_file << " 1/s." << "\n";
       }
     }
-    
+
     if (unsteady) { Breakdown_file << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << "\n"; }
-    
+
     /*--- Print out reference values. ---*/
-    
+
     Breakdown_file <<"-- Reference values:"<< "\n";
-    
+
     if (compressible) {
       Breakdown_file << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
     }
-    
+
     Breakdown_file << "Reference pressure: " << config->GetPressure_Ref();
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-    
+
     if (compressible) {
       Breakdown_file << "Reference temperature: " << config->GetTemperature_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
     }
-    
+
     Breakdown_file << "Reference density: " << config->GetDensity_Ref();
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
-    
+
     Breakdown_file << "Reference velocity: " << config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
     else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
-    
+
     if (compressible) {
       Breakdown_file << "Reference energy per unit mass: " << config->GetEnergy_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
     }
-    
+
     if (incompressible) {
       Breakdown_file << "Reference length: " << config->GetLength_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
     }
-    
+
     if (viscous) {
       Breakdown_file << "Reference viscosity: " << config->GetViscosity_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1712,12 +1693,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
       }
     }
-    
-    
+
+
     if (unsteady) Breakdown_file << "Reference time: " << config->GetTime_Ref() <<" s." << "\n";
-    
+
     /*--- Print out resulting non-dim values here. ---*/
-    
+
     Breakdown_file << "-- Resulting non-dimensional state:" << "\n";
     Breakdown_file << "Mach number (non-dim): " << config->GetMach() << "\n";
     if (viscous) {
@@ -1729,16 +1710,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "Froude number (non-dim): " << config->GetFroude() << "\n";
       Breakdown_file << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*config->GetFroude()*config->GetFroude() << "\n";
     }
-    
+
     if (compressible) {
       Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
       Breakdown_file << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << "\n";
     }
-    
+
     Breakdown_file << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
-    
+
     Breakdown_file << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
-    
+
     if (nDim == 2) {
       Breakdown_file << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
       Breakdown_file << config->GetVelocity_FreeStreamND()[1] << "). ";
@@ -1747,10 +1728,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
     }
     Breakdown_file << "Magnitude: "   << config->GetModVel_FreeStreamND() << "\n";
-    
+
     if (compressible)
       Breakdown_file << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << "\n";
-    
+
     if (viscous) {
       Breakdown_file << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
       if (turbulent) {
@@ -1758,7 +1739,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << "\n";
       }
     }
-    
+
     if (unsteady) {
       Breakdown_file << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << "\n";
       Breakdown_file << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << "\n";
@@ -1853,7 +1834,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
           else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
           break;
-          
+
         case INC_IDEAL_GAS_POLY:
           Breakdown_file << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
           Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
@@ -1905,7 +1886,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< "\n";
             Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
             break;
-            
+
           case POLYNOMIAL_VISCOSITY:
             Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
             Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
@@ -1953,9 +1934,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
               }
               Breakdown_file << ")." << endl;
               break;
-              
+
           }
-          
+
           if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
             switch (config->GetKind_ConductivityModel_Turb()) {
               case CONSTANT_PRANDTL_TURB:
@@ -1968,7 +1949,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
                 break;
             }
           }
-          
+
         }
 
       }
@@ -2104,7 +2085,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
       }
       Breakdown_file << "Magnitude: "   << config->GetModVel_FreeStreamND() << "\n";
-      
+
       if (viscous) {
         Breakdown_file << "Initial viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
         if (turbulent) {
@@ -2112,7 +2093,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           Breakdown_file << "Initial specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << "\n";
         }
       }
-      
+
       if (unsteady) {
         Breakdown_file << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << "\n";
         Breakdown_file << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << "\n";
@@ -2121,14 +2102,14 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     }
 
     /*--- Begin forces breakdown info. ---*/
-    
+
     Breakdown_file << fixed;
     Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
 
     if (nDim == 3) {
       su2double m = solver_container[FLOW_SOL]->GetTotal_CFz()/solver_container[FLOW_SOL]->GetTotal_CFx();
       su2double term = (Total_CoPz/m)-Total_CoPx;
-      
+
       if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z-"<< term << "." << "\n\n";
       else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z+"<< fabs(term);
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
@@ -2190,7 +2171,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "%): ";
     Breakdown_file.width(11);
     Breakdown_file << Mnt_CL << "\n";
-    
+
     Breakdown_file << "Total CD:    ";
     Breakdown_file.width(11);
     Breakdown_file << Total_CD;
@@ -2209,7 +2190,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << SU2_TYPE::Int((Mnt_CD * 100.0) / (Total_CD + EPS)) << "%): ";
     Breakdown_file.width(11);
     Breakdown_file << Mnt_CD << "\n";
-    
+
     if (nDim == 3) {
       Breakdown_file << "Total CSF:   ";
       Breakdown_file.width(11);
@@ -2233,7 +2214,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file << Mnt_CSF << "\n";
     }
-    
+
     Breakdown_file << "Total CL/CD: ";
     Breakdown_file.width(11);
     Breakdown_file << Total_CEff;
@@ -2255,7 +2236,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "%): ";
     Breakdown_file.width(11);
     Breakdown_file << Mnt_CEff << "\n";
-    
+
     if (nDim == 3) {
       Breakdown_file << "Total CMx:   ";
       Breakdown_file.width(11);
@@ -2278,7 +2259,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "%): ";
       Breakdown_file.width(11);
       Breakdown_file << Mnt_CMx << "\n";
-      
+
       Breakdown_file << "Total CMy:   ";
       Breakdown_file.width(11);
       Breakdown_file << Total_CMy;
@@ -2301,7 +2282,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file << Mnt_CMy << "\n";
     }
-    
+
     Breakdown_file << "Total CMz:   ";
     Breakdown_file.width(11);
     Breakdown_file << Total_CMz;
@@ -2323,7 +2304,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "%): ";
     Breakdown_file.width(11);
     Breakdown_file << Mnt_CMz << "\n";
-    
+
     Breakdown_file << "Total CFx:   ";
     Breakdown_file.width(11);
     Breakdown_file << Total_CFx;
@@ -2345,7 +2326,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "%): ";
     Breakdown_file.width(11);
     Breakdown_file << Mnt_CFx << "\n";
-    
+
     Breakdown_file << "Total CFy:   ";
     Breakdown_file.width(11);
     Breakdown_file << Total_CFy;
@@ -2367,7 +2348,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "%): ";
     Breakdown_file.width(11);
     Breakdown_file << Mnt_CFy << "\n";
-    
+
     if (nDim == 3) {
       Breakdown_file << "Total CFz:   ";
       Breakdown_file.width(11);
@@ -2391,17 +2372,17 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file << Mnt_CFz << "\n";
     }
-    
+
     Breakdown_file << "\n" << "\n";
-    
+
     for (iMarker_Monitoring = 0;
          iMarker_Monitoring < config->GetnMarker_Monitoring();
          iMarker_Monitoring++) {
-      
+
       Breakdown_file << "Surface name: "
       << config->GetMarker_Monitoring_TagBound(
                                                           iMarker_Monitoring) << "\n" << "\n";
-      
+
       Breakdown_file << "Total CL    (";
       Breakdown_file.width(5);
       Breakdown_file
@@ -2438,7 +2419,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "%): ";
       Breakdown_file.width(11);
       Breakdown_file << Surface_CL_Mnt[iMarker_Monitoring] << "\n";
-      
+
       Breakdown_file << "Total CD    (";
       Breakdown_file.width(5);
       Breakdown_file
@@ -2475,7 +2456,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "%): ";
       Breakdown_file.width(11);
       Breakdown_file << Surface_CD_Mnt[iMarker_Monitoring] << "\n";
-      
+
       if (nDim == 3) {
         Breakdown_file << "Total CSF   (";
         Breakdown_file.width(5);
@@ -2516,7 +2497,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file
         << Surface_CSF_Mnt[iMarker_Monitoring] << "\n";
       }
-      
+
       Breakdown_file << "Total CL/CD (";
       Breakdown_file.width(5);
       Breakdown_file
@@ -2554,9 +2535,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file
       << Surface_CEff_Mnt[iMarker_Monitoring] << "\n";
-      
+
       if (nDim == 3) {
-        
+
         Breakdown_file << "Total CMx   (";
         Breakdown_file.width(5);
         Breakdown_file
@@ -2594,7 +2575,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file.width(11);
         Breakdown_file
         << Surface_CMx_Mnt[iMarker_Monitoring] << "\n";
-        
+
         Breakdown_file << "Total CMy   (";
         Breakdown_file.width(5);
         Breakdown_file
@@ -2633,7 +2614,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file
         << Surface_CMy_Mnt[iMarker_Monitoring] << "\n";
       }
-      
+
       Breakdown_file << "Total CMz   (";
       Breakdown_file.width(5);
       Breakdown_file
@@ -2670,7 +2651,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file
       << Surface_CMz_Mnt[iMarker_Monitoring] << "\n";
-      
+
       Breakdown_file << "Total CFx   (";
       Breakdown_file.width(5);
       Breakdown_file
@@ -2707,7 +2688,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file
       << Surface_CFx_Mnt[iMarker_Monitoring] << "\n";
-      
+
       Breakdown_file << "Total CFy   (";
       Breakdown_file.width(5);
       Breakdown_file
@@ -2744,7 +2725,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file.width(11);
       Breakdown_file
       << Surface_CFy_Mnt[iMarker_Monitoring] << "\n";
-      
+
       if (nDim == 3) {
         Breakdown_file << "Total CFz   (";
         Breakdown_file.width(5);
@@ -2783,14 +2764,14 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file.width(11);
         Breakdown_file
         << Surface_CFz_Mnt[iMarker_Monitoring] << "\n";
-        
+
       }
-      
+
       Breakdown_file << "\n";
-      
-      
+
+
     }
-    
+
     delete [] Surface_CL;
     delete [] Surface_CD;
     delete [] Surface_CSF;
@@ -2801,7 +2782,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     delete [] Surface_CMx;
     delete [] Surface_CMy;
     delete [] Surface_CMz;
-    
+
     delete [] Surface_CL_Inv;
     delete [] Surface_CD_Inv;
     delete [] Surface_CSF_Inv;
@@ -2812,7 +2793,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     delete [] Surface_CMx_Inv;
     delete [] Surface_CMy_Inv;
     delete [] Surface_CMz_Inv;
-    
+
     delete [] Surface_CL_Visc;
     delete [] Surface_CD_Visc;
     delete [] Surface_CSF_Visc;
@@ -2836,24 +2817,24 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     delete [] Surface_CMz_Mnt;
 
     Breakdown_file.close();
-    
+
   }
-  
+
 }
 
 
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
-  
+
   if (config->GetTime_Domain()){
     if (((config->GetTime_Marching() == DT_STEPPING_1ST) ||
          (config->GetTime_Marching() == TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
-    
+
     if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
         ((Iter == 0) || (Iter    % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || 
+         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) ||
          ((Iter+2 == config->GetnTime_Iter())))){
       return true;
     }
@@ -2861,7 +2842,7 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
     if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode()) return false;
     return ((Iter > 0) && Iter % config->GetVolume_Wrt_Freq() == 0) || force_writing;
   }
-  
+
   return false || force_writing;
 }
 
@@ -2875,7 +2856,7 @@ void CFlowOutput::SetTimeAveragedFields(){
   AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TIME_AVERAGE", "Mean pressure");
   AddVolumeOutput("RMS_U",   "RMS[u]", "TIME_AVERAGE", "RMS u");
   AddVolumeOutput("RMS_V",   "RMS[v]", "TIME_AVERAGE", "RMS v");
-  AddVolumeOutput("RMS_UV",  "RMS[uv]", "TIME_AVERAGE", "RMS uv");    
+  AddVolumeOutput("RMS_UV",  "RMS[uv]", "TIME_AVERAGE", "RMS uv");
   AddVolumeOutput("RMS_P",   "RMS[Pressure]",   "TIME_AVERAGE", "RMS Pressure");
   AddVolumeOutput("UUPRIME", "u'u'", "TIME_AVERAGE", "Mean Reynolds-stress component u'u'");
   AddVolumeOutput("VVPRIME", "v'v'", "TIME_AVERAGE", "Mean Reynolds-stress component v'v'");
@@ -2897,7 +2878,7 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
   SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
   if (nDim == 3)
     SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
- 
+
   SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
 
   SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
@@ -2909,15 +2890,15 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetAvgVolumeOutputValue("RMS_VW", iPoint, Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,1));
     SetAvgVolumeOutputValue("RMS_UW", iPoint,  Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,0));
   }
-  
+
   const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY-X", iPoint);
-  const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);    
+  const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);
   const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY-Y", iPoint);
-  const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);    
+  const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);
   const su2double uvmean = GetVolumeOutputValue("RMS_UV", iPoint);
   const su2double pmean  = GetVolumeOutputValue("MEAN_PRESSURE", iPoint);
   const su2double ppmean = GetVolumeOutputValue("RMS_P", iPoint);
-  
+
   SetVolumeOutputValue("UUPRIME", iPoint, -(umean*umean - uumean));
   SetVolumeOutputValue("VVPRIME", iPoint, -(vmean*vmean - vvmean));
   SetVolumeOutputValue("UVPRIME", iPoint, -(umean*vmean - uvmean));
@@ -2930,5 +2911,5 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
-  } 
+  }
 }
