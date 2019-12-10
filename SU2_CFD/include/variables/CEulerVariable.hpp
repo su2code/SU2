@@ -118,7 +118,7 @@ public:
    * \brief Get the primitive variables limiter.
    * \return Primitive variables limiter for the entire domain.
    */
-  inline MatrixType* GetLimiter_Primitive(void) {return &Limiter_Primitive; }
+  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -148,15 +148,15 @@ public:
 
   /*!
    * \brief Get the primitive variable gradients for all points.
-   * \return Pointer to primitive variable gradient.
+   * \return Reference to primitive variable gradient.
    */
-  inline VectorOfMatrix* GetGradient_Primitive(void) { return &Gradient_Primitive; }
+  inline VectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
-   * \return Pointer to variable reconstruction gradient.
+   * \return Reference to variable reconstruction gradient.
    */
-  inline VectorOfMatrix* GetGradient_Reconstruction(void) final { return &Gradient_Reconstruction; }
+  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -249,9 +249,9 @@ public:
 
   /*!
    * \brief Get the primitive variables for all points.
-   * \return Pointer to primitives.
+   * \return Reference to primitives.
    */
-  inline const MatrixType* GetPrimitive(void) const { return &Primitive; }
+  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
 
   /*!
    * \brief Get the primitive variables.

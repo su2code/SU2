@@ -35,8 +35,7 @@
  *       and the geometric modifications (e.g. sharp edges), this is done
  *       via specialization of "CLimiterDetails" (all its methods). Then,
  *       a call to this function with the specialized "LimiterKind" should
- *       be added to the body of "computeLimiters()" in computeLimiters.cpp,
- *       this allows compiling the code only once.
+ *       be added to the body of "computeLimiters()".
  *       See also the notes in computeGradientsGreenGauss.hpp
  *
  * Arguments:

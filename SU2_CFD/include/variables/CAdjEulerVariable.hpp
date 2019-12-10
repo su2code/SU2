@@ -169,8 +169,8 @@ public:
 
   /*!
    * \brief Get the reconstruction gradient for variables at all points.
-   * \return Pointer to reconstruction gradient.
+   * \return Reference to reconstruction gradient.
    */
-  inline VectorOfMatrix* GetGradient_Reconstruction(void) final { return &Gradient_Reconstruction; }
+  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
 };
