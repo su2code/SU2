@@ -2,24 +2,14 @@
  * \file CHeatFVMVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,63 +25,60 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/variables/CHeatFVMVariable.hpp"
 
-CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
 
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-  Solution_BGS_k  = NULL;
+CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+  : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
-}
-
-CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar,
-                                   CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-
-  unsigned short iVar, iMesh, nMGSmooth = 0;
   bool low_fidelity = false;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
 
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-
   /*--- Initialization of heat variable ---*/
-  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
+
+  Solution = heat;
+  Solution_Old = heat;
 
   /*--- Allocate residual structures ---*/
 
-  Res_TruncError = new su2double [nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-
-  if ((nMGSmooth > 0) || low_fidelity) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    if ((config->GetMG_CorrecSmooth(iMesh) > 0) || low_fidelity) {
+      Residual_Sum.resize(nPoint,nVar);
+      Residual_Old.resize(nPoint,nVar);
+      break;
+    }
   }
 
   /*--- Allocate and initialize solution for dual time strategy ---*/
   if (dual_time) {
-    Solution_time_n[0]  = val_Heat;
-    Solution_time_n1[0] = val_Heat;
+    Solution_time_n  = heat;
+    Solution_time_n1 = heat;
   }
 
-  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
-    Undivided_Laplacian = new su2double [nVar];
+  /*--- Gradient related fields ---*/
+  Gradient.resize(nPoint,nVar,nDim,0.0);
+  
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
   }
   
+  if (config->GetLeastSquaresRequired()) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
+
+  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
+    Undivided_Laplacian.resize(nPoint,nVar);
+
+  Max_Lambda_Inv.resize(nPoint);
+  Max_Lambda_Visc.resize(nPoint);
+  Delta_Time.resize(nPoint);
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
-  
-}
-
-CHeatFVMVariable::~CHeatFVMVariable(void) {
-  if (Solution_Direct != NULL) delete [] Solution_Direct;
 }
