@@ -593,7 +593,7 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
 
   su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient;
   unsigned short nMarker, nDim, nDV, nDV_Value;
-  unsigned long nVertex, iPoint;
+  unsigned long nVertex, jPoint;
 
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
@@ -659,15 +659,15 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
       if (config->GetMarker_All_DV(iMarker) == YES) {
         nVertex = geometry->nVertex[iMarker];
         for (unsigned long iVertex = 0; iVertex <nVertex; iVertex++) {
-          iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (!visited[iPoint]){
-            VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+          jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (!visited[jPoint]){
+            VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 
             for (unsigned short iDim = 0; iDim < nDim; iDim++){
-              Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+              Sensitivity = geometry->GetSensitivity(jPoint, iDim);
               SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
             }
-            visited[iPoint] = true;
+            visited[jPoint] = true;
           }
         }
       }
