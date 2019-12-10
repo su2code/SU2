@@ -499,7 +499,12 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   if(OneShotIter == config->GetOneShotStart()) {
-    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+      InitializeLambdaTilde(iConstr);
+      Lambda[iConstr] = Lambda_Tilde[iConstr];
+    }
+    StoreLambda();
+    StoreOldLambda();
   }
 
 }
@@ -1445,6 +1450,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] = 0.0;
       InitializeLambdaTilde(iConstr);
+      Lambda_Old[iConstr] = Lambda_Tilde[iConstr];
+      Lambda_Tilde_Old[iConstr] = Lambda_Tilde[iConstr];
       // Lambda_Tilde[iConstr] = -gamma*ConstrFunc_Old[iConstr];
     }
     else {
