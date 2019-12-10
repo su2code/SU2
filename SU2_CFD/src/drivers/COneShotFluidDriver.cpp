@@ -430,13 +430,23 @@ void COneShotFluidDriver::RunOneShot(){
       } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
     }
 
+    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+
+    // /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
+    // CalculateLagrangian();
+    // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  }
+
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) {
+
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
-  }
 
  
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
