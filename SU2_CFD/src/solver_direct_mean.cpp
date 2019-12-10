@@ -3134,23 +3134,28 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
 void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
                                     unsigned short nVar, CGeometry *geometry, CConfig *config) {
-  // Method that builds ROM-specific variables:
+  // Explanation of certain ROM-specific variables:
   // TrialBasis   (POD-built reduced basis, Phi)
   // GenCoordsY   (generalized coordinate vector, y)
   // Solution_Ref (reference solution, w, typically a snapshot)
   
   std::cout << "Setting up ROM variables" << std::endl;
   
-  // Trial Basis (Phi) (read from file) data in file should be matrix size of : N x nsnaps
+  /*--- Read data from the following three files: ---*/
   
-  string filename = config->GetRom_FileName();
-  ifstream in(filename);
+  string phi_filename  = config->GetRom_FileName();
+  string ref_filename  = "ref_snapshot.csv"; // TODO: make a variable to import ref solution from file
+  string init_filename = "init_snapshot.csv"; // TODO: make a variable to import initial solution from file
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  ifstream in_phi(phi_filename);
   int s = 0;
   
-  if (in) {
+  if (in_phi) {
     std::string line;
     
-    while (getline(in, line)) {
+    while (getline(in_phi, line)) {
       stringstream sep(line);
       string field;
       TrialBasis.push_back({});
@@ -3164,17 +3169,17 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
   unsigned long nsnaps = TrialBasis[0].size();
   unsigned long iPoint, i;
   double *ref_sol = new double[nPointDomain * nVar]();
+  double *init_sol = new double[nPointDomain * nVar]();
   
-  // Reference Solution (read from file)
+  /*--- Reference Solution (read from file) ---*/
   
-  string ff = "ref_snapshot.csv"; // TODO: make a variable to import ref solution from file
-  ifstream inn(ff);
+  ifstream in_ref(ref_filename);
   s = 0;
   
-  if (inn) {
+  if (in_ref) {
     std::string line;
     
-    while (getline(inn, line)) {
+    while (getline(in_ref, line)) {
       stringstream sep(line);
       string field;
       while (getline(sep, field, ',')) {
@@ -3184,21 +3189,15 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
     }
   }
   
-  // Initial Condition: y0 = Phi^T * (w0 - w_ref) :
-  double *init_sol = new double[nPointDomain * nVar]();
-  //su2double w0[4];
-  //w0[0] = config->GetDensity_FreeStream();
-  //w0[1] = config->GetVelocity_FreeStream()[0]*w0[0];
-  //w0[2] = config->GetVelocity_FreeStream()[0]*w0[0];
-  //w0[3] = config->GetEnergy_FreeStream()*w0[0];
-  string fff = "init_snapshot.csv"; // TODO: make a variable to import initial solution from file
-  ifstream inn2(fff);
+  /*--- Initial Solution (read from file) ---*/
+  
+  ifstream in_init(init_filename);
   s = 0;
   
-  if (inn2) {
+  if (in_init) {
     std::string line;
     
-    while (getline(inn2, line)) {
+    while (getline(in_init, line)) {
       stringstream sep(line);
       string field;
       while (getline(sep, field, ',')) {
@@ -3208,35 +3207,32 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
     }
   }
   
-  // Reference Solution (set)
+  /*--- Use reference solution from file to overwrite the solution and solution_old ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     su2double node_sol[nVar];
     
     for (unsigned long iVar = 0; iVar < nVar; iVar++){
       node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
-      //node_sol[i] = 0.0;
       nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
       nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
     }
     
     nodes->Set_RefSolution(iPoint, &node_sol[0]);
+    delete[] node_sol;
   }
   
   
-  
+  /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
   
   for (i = 0; i < nsnaps; i++) {
     double sum = 0.0;
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        //std::cout << TrialBasis[i][iPoint*nVar + iVar] << ", " << w0[iVar] << ", " << node[iPoint]->Get_RefSolution(iVar) << std::endl;
-        //std::cout << TrialBasis[i][iPoint*nVar + iVar] << ", " << w0[iVar] - node[iPoint]->Get_RefSolution(iVar) << std::endl;
         sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
       }
     }
     GenCoordsY.push_back(sum);
-    std::cout << "GenCoordsY Initial: " << GenCoordsY[i] << std::endl;
   }
   
   delete[] ref_sol;
@@ -5314,23 +5310,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
             TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
           }
           
-          if (debug) {
-            std::cout << "iPoint, kPoint and jPoint: " << iPoint << ", " << k << " and " << jPoint << std::endl;
-            std::cout << "Jacobian Matrix:" << std::endl;
-            for (unsigned short i = 0; i < nVar; i++){
-              std::cout << mat[i*nVar] << " " << mat[i*nVar+1] << " " << mat[i*nVar+2] << " " << mat[i*nVar+3] << std::endl;
-            }
-            
-            std::cout << "Phi vector:" << std::endl;
-            std::cout << phi[0] << " " << phi[1] << " " << phi[2] << " " << phi[3] << std::endl;
-            
-            std::cout << "Product:" << std::endl;
-            std::cout << prod[0] << " " << prod[1] << " " << prod[2] << " " << prod[3] << std::endl;
-            
-            std::cout << "Current TestBasis:" << std::endl;
-            unsigned long test = jPoint*m + iPoint*nVar;
-            std::cout << TestBasis2[test] << " " << TestBasis2[test+1] << " " << TestBasis2[test+2] << " " << TestBasis2[test+3] << std::endl;
-          }
+          // save Jacobian for debugging purposes
+          //for (unsigned short = 0; i < nVar; i++){
+          // int place = (nVar*iPoint+1)*m + (nVar*k);
+          // Jac[place] = mat[i*nVar];
+          
+
         }
       }
     }
@@ -5339,7 +5324,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   // Set up variables for QR decomposition, A = QR
   // LDA = m
-  char TRANS = 'T';
+  char TRANS = 'N';
   int NRHS = 1;
   int LWORK = n+n;
   vector<double> WORK(LWORK,0.0);
@@ -5391,13 +5376,10 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a = 1.0;
+  double a =  0.1;
   
   for (int i = 0; i < n; i++) {
-    //std::cout << "Direction: " << r[i] << std::endl;
-    //std::cout << "Before: " << GenCoordsY[i] << std::endl;
     GenCoordsY[i] += a * r[i];
-    //std::cout << "After: " << GenCoordsY[i] << std::endl;
   }
   
   std::string fname4 = "check_red_coords_y.csv";
