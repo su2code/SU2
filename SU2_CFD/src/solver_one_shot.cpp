@@ -475,7 +475,7 @@ void COneShotSolver::SetConstrDerivative(unsigned short iConstr){
   unsigned short iVar;
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       DConsVec[iConstr][iPoint][iVar]=nodes->GetSolution(iPoint,iVar);
     }
