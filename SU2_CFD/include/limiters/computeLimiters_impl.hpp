@@ -81,8 +81,6 @@ void computeLimiters_impl(CSolver* solver,
 
   CLimiterDetails<LimiterKind> details;
 
-  su2double eps = std::numeric_limits<passivedouble>::epsilon();
-
   size_t nPointDomain = geometry.GetnPointDomain();
   size_t nPoint = geometry.GetnPoint();
   size_t nDim = geometry.GetnDim();
@@ -116,6 +114,8 @@ void computeLimiters_impl(CSolver* solver,
   SU2_OMP_PARALLEL
   {
     details.preprocess(geometry, config, varBegin, varEnd, field);
+
+    /*--- Courtesy barrier in case someone forgets preprocess is parallel. ---*/
     SU2_OMP_BARRIER
 
     /*--- Initialize all min/max field values if we have
@@ -169,16 +169,12 @@ void computeLimiters_impl(CSolver* solver,
           AD::SetPreaccIn(gradient(iPoint,iVar,iDim));
       }
 
-      /*--- Initialize min/max projection out of iPoint, this is done
-       *    with a small value to prevent eventual division by 0. ---*/
+      /*--- Initialize min/max projection out of iPoint. ---*/
 
       su2double projMax[MAXNVAR], projMin[MAXNVAR];
 
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      {
-        projMax[iVar] = 0.5*eps;
-        projMin[iVar] =-0.5*eps;
-      }
+        projMax[iVar] = projMin[iVar] = 0.0;
 
       /*--- Compute max/min projection and values over direct neighbors. ---*/
 
@@ -219,23 +215,18 @@ void computeLimiters_impl(CSolver* solver,
 
       su2double geoFactor = details.geometricFactor(iPoint, geometry);
 
-      /*--- Final limiter computation for each variable. ---*/
+      /*--- Final limiter computation for each variable, get the min limiter
+       *    out of the positive/negative projections and deltas. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        /*--- Neither projection nor delta are allowed to be 0, in very smooth
-         *    regions of the field this results in ratio of 2, which for most
-         *    limiter functions gives a limiter of 1 (no limiting). ---*/ 
+        su2double limMax = details.limiterFunction(iVar, projMax[iVar],
+                           fieldMax(iPoint,iVar) - field(iPoint,iVar));
 
-        su2double deltaMax = max(fieldMax(iPoint,iVar) - field(iPoint,iVar), eps);
-        su2double deltaMin = min(fieldMin(iPoint,iVar) - field(iPoint,iVar),-eps);
-        su2double delta = max(deltaMax, -deltaMin);
+        su2double limMin = details.limiterFunction(iVar, projMin[iVar],
+                           fieldMin(iPoint,iVar) - field(iPoint,iVar));
 
-        su2double ratioMax = deltaMax / projMax[iVar];
-        su2double ratioMin = deltaMin / projMin[iVar];
-        su2double ratio = min(ratioMax, ratioMin);
-
-        limiter(iPoint,iVar) = geoFactor * details.smoothFunction(iVar, ratio, delta);
+        limiter(iPoint,iVar) = geoFactor * min(limMax, limMin);
 
         AD::SetPreaccOut(limiter(iPoint,iVar));
       }
@@ -249,9 +240,7 @@ void computeLimiters_impl(CSolver* solver,
 
   if (solver != nullptr)
   {
-    /*--- Account for periodic effects, take the minimum limiter on each periodic pair.
-     *    Recall that only the field min/max were communicated and not the projections, the
-     *    resulting limiter is only correct if the smooth limiter function is monotonic. ---*/
+    /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
 
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
@@ -259,7 +248,7 @@ void computeLimiters_impl(CSolver* solver,
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm2);
     }
 
-    /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
+    /*--- Obtain the limiters at halo points from the MPI ranks that own them. ---*/
 
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);

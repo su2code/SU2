@@ -29,8 +29,8 @@
 
 /*!
  * \brief A traits class for limiters, see notes for "computeLimiters_impl()".
- * \note There is no default implementation the code will compile but not
- *       link, specialization is mandatory.
+ * \note There is no default implementation (the code will compile but not
+ *       link) specialization is mandatory.
  */
 template<ENUM_LIMITER LimiterKind>
 struct CLimiterDetails
@@ -51,13 +51,35 @@ struct CLimiterDetails
   inline su2double geometricFactor(size_t iPoint, CGeometry&) const;
 
   /*!
-   * \brief Smooth (usually) function of the minimum ratio (delta/projection)
-   *        and of the maximum absolute delta, over direct neighbors of a point.
-   * \note This function is called once per point and per variable
+   * \brief Smooth (usually) function of the maximum/minimum (positive/negative)
+   *        gradient projections onto the edges, and the deltas over direct neighbors.
+   *        Both proj and delta may be 0.0, beware of divisions.
+   * \note This function is called twice (min/max) per point per variable
    *       (also inside an AD pre-accumulation region).
    */
-  inline su2double smoothFunction(size_t iVar, su2double ratio, su2double delta) const;
+  inline su2double limiterFunction(size_t iVar, su2double proj, su2double delta) const;
 };
+
+
+/*!
+ * \brief Common small functions used by limiters.
+ */
+namespace LimiterHelpers
+{
+  inline passivedouble epsilon() {return std::numeric_limits<passivedouble>::epsilon();}
+
+  inline su2double venkatFunction(su2double proj, su2double delta, su2double eps2)
+  {
+    su2double y = delta*(delta+proj) + eps2;
+    return (y + delta*proj) / (y + 2*proj*proj);
+  }
+
+  inline su2double raisedSine(su2double dist)
+  {
+    su2double factor = 0.5*(1.0+dist+sin(PI_NUMBER*dist)/PI_NUMBER);
+    return max(0.0, min(factor, 1.0));
+  }
+}
 
 
 /*!
@@ -66,11 +88,13 @@ struct CLimiterDetails
 template<>
 struct CLimiterDetails<BARTH_JESPERSEN>
 {
+  su2double eps2;
+
   /*!
-   * \brief Nothing to preprocess.
+   * \brief Set a small epsilon to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(Ts&...) {}
+  inline void preprocess(Ts&...) {eps2 = LimiterHelpers::epsilon();}
 
   /*!
    * \brief No geometric modification for this kind of limiter.
@@ -79,13 +103,11 @@ struct CLimiterDetails<BARTH_JESPERSEN>
   inline su2double geometricFactor(Ts&...) const {return 1.0;}
 
   /*!
-   * \brief Smooth function of min(2,ratio).
+   * \brief Venkatakrishnan function with a numerical epsilon.
    */
-  inline su2double smoothFunction(size_t, su2double ratio, su2double) const
+  inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    ratio = min(2.0, ratio);
-    su2double lim = ratio*ratio + ratio;
-    return (lim + ratio) / (lim + 2.0);
+    return LimiterHelpers::venkatFunction(proj, delta, eps2);
   }
 };
 
@@ -99,14 +121,16 @@ struct CLimiterDetails<VENKATAKRISHNAN>
   su2double eps2;
 
   /*!
-   * \brief Store the reference lenght based eps^2 parameter.
+   * \brief Store the reference lenght based eps^2 parameter,
+   *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
   inline void preprocess(CGeometry&, CConfig& config, Ts&...)
   {
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
-    eps2 = pow(L*K, 3);
+    su2double eps1 = fabs(L*K);
+    eps2 = max(eps1*eps1*eps1, LimiterHelpers::epsilon());
   }
 
   /*!
@@ -118,10 +142,9 @@ struct CLimiterDetails<VENKATAKRISHNAN>
   /*!
    * \brief Smooth function that disables limiting in smooth regions.
    */
-  inline su2double smoothFunction(size_t, su2double ratio, su2double delta) const
+  inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    su2double lim = ratio*ratio*(1.0+eps2/(delta*delta)) + ratio;
-    return (lim + ratio) / (lim + 2.0);
+    return LimiterHelpers::venkatFunction(proj, delta, eps2);
   }
 };
 
@@ -204,7 +227,10 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       su2double K = config.GetVenkat_LimiterCoeff();
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        eps2(iVar) = pow(K*(fieldMax(0,iVar) - fieldMin(0,iVar)), 2);
+      {
+        su2double range = fieldMax(0,iVar) - fieldMin(0,iVar);
+        eps2(iVar) = max(pow(K*range, 2), LimiterHelpers::epsilon());
+      }
     }
     SU2_OMP_BARRIER
 
@@ -219,12 +245,10 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
   /*!
    * \brief Smooth function that disables limiting in smooth regions.
    */
-  inline su2double smoothFunction(size_t iVar, su2double ratio, su2double delta) const
+  inline su2double limiterFunction(size_t iVar, su2double proj, su2double delta) const
   {
     AD::SetPreaccIn(eps2(iVar));
-
-    su2double lim = ratio*ratio*(1.0+eps2(iVar)/(delta*delta)) + ratio;
-    return (lim + ratio) / (lim + 2.0);
+    return LimiterHelpers::venkatFunction(proj, delta, eps2(iVar));
   }
 };
 
@@ -246,8 +270,8 @@ struct CLimiterDetails<SHARP_EDGES>
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
-    eps1 = L*K;
-    eps2 = eps1*eps1*eps1;
+    eps1 = fabs(L*K);
+    eps2 = max(eps1*eps1*eps1, LimiterHelpers::epsilon());
   }
 
   /*!
@@ -256,21 +280,16 @@ struct CLimiterDetails<SHARP_EDGES>
   inline su2double geometricFactor(size_t iPoint, CGeometry& geometry) const
   {
     AD::SetPreaccIn(geometry.node[iPoint]->GetSharpEdge_Distance());
-
-    su2double dist = (geometry.node[iPoint]->GetSharpEdge_Distance() - sharpCoeff*eps1);
-
-    if(dist < -eps1) return 0.0;
-    else if (dist > eps1) return 1.0;
-    else return 0.5*(1.0+(dist/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*dist/eps1));
+    su2double dist = geometry.node[iPoint]->GetSharpEdge_Distance()/(sharpCoeff*eps1)-1.0;
+    return LimiterHelpers::raisedSine(dist);
   }
 
   /*!
    * \brief Smooth function that disables limiting in smooth regions.
    */
-  inline su2double smoothFunction(size_t, su2double ratio, su2double delta) const
+  inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    su2double lim = ratio*ratio*(1.0+eps2/(delta*delta)) + ratio;
-    return (lim + ratio) / (lim + 2.0);
+    return LimiterHelpers::venkatFunction(proj, delta, eps2);
   }
 };
 
@@ -292,30 +311,25 @@ struct CLimiterDetails<WALL_DISTANCE>
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
-    eps1 = L*K;
-    eps2 = eps1*eps1*eps1;
+    eps1 = fabs(L*K);
+    eps2 = max(eps1*eps1*eps1, LimiterHelpers::epsilon());
   }
 
   /*!
-   * \brief Full limiting (1st order) near sharp edges.
+   * \brief Full limiting (1st order) near walls.
    */
   inline su2double geometricFactor(size_t iPoint, CGeometry& geometry) const
   {
     AD::SetPreaccIn(geometry.node[iPoint]->GetWall_Distance());
-
-    su2double dist = (geometry.node[iPoint]->GetWall_Distance() - sharpCoeff*eps1);
-
-    if(dist < -eps1) return 0.0;
-    else if (dist > eps1) return 1.0;
-    else return 0.5*(1.0+(dist/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*dist/eps1));
+    su2double dist = geometry.node[iPoint]->GetWall_Distance()/(sharpCoeff*eps1)-1.0;
+    return LimiterHelpers::raisedSine(dist);
   }
 
   /*!
    * \brief Smooth function that disables limiting in smooth regions.
    */
-  inline su2double smoothFunction(size_t, su2double ratio, su2double delta) const
+  inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    su2double lim = ratio*ratio*(1.0+eps2/(delta*delta)) + ratio;
-    return (lim + ratio) / (lim + 2.0);
+    return LimiterHelpers::venkatFunction(proj, delta, eps2);
   }
 };
