@@ -304,9 +304,6 @@ void COneShotFluidDriver::RunOneShot(){
       //   UpdateLambda(1.0);
       // }
 
-      /*--- Compute and store GradL dot p ---*/
-      StoreGradDotDir(true);
-
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
         ComputeDesignVarUpdate(stepsize);
@@ -352,6 +349,10 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
       }
+
+      /*--- Compute and store GradL dot p ---*/
+      StoreLambdaGrad();
+      StoreGradDotDir(true);
 
     }
 
@@ -843,7 +844,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
         // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        const bool active = (ConstrFunc_Store[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
         if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
@@ -877,7 +878,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
         // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        const bool active = (ConstrFunc_Store[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
         if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
@@ -1483,7 +1484,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
       // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-      const bool active = (ConstrFunc_Old[iConstr] > 0.);
+      const bool active = (ConstrFunc_Store[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
