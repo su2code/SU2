@@ -447,6 +447,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
     CalculateLagrangian();
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  }
 
  
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
