@@ -299,10 +299,10 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      else {
-        // LoadOldLambda();
-        // UpdateLambda(1.0);
-      }
+      // else {
+      //   // LoadOldLambda();
+      //   // UpdateLambda(1.0);
+      // }
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -325,10 +325,10 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
-        UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
+        // /*--- Update constraint multiplier ---*/
+        // LoadOldLambda();
+        // UpdateLambda(1.0);
+        // // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -349,9 +349,9 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        // /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
-        UpdateLambda(1.0);
+        // // /*--- Update constraint multiplier ---*/
+        // LoadOldLambda();
+        // UpdateLambda(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
@@ -378,7 +378,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Load multipliers from first line search ---*/
   // LoadLambdaStore();
-  // UpdateLambda(1.0);
+  UpdateLambda(1.0);
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -1452,19 +1452,18 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
-      // Lambda[iConstr] = 0.0;
-      InitializeLambdaTilde(iConstr);
       Lambda[iConstr] = 0.0;
+      InitializeLambdaTilde(iConstr);
       Lambda_Old[iConstr] = Lambda_Tilde[iConstr];
       Lambda_Tilde_Old[iConstr] = Lambda_Tilde[iConstr];
       // Lambda_Tilde[iConstr] = -gamma*ConstrFunc_Old[iConstr];
     }
     // else if ((active && dh < 0.) || (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && hdh < 0.)){
     else {
-      InitializeLambdaTilde(iConstr);
-      Lambda[iConstr] = Lambda_Tilde[iConstr];
-      // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // InitializeLambdaTilde(iConstr);
+      // Lambda[iConstr] = Lambda_Tilde[iConstr];
+      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
