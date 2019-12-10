@@ -400,40 +400,51 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
   }
-  else if(OneShotIter > config->GetOneShotStart() && 
-          OneShotIter < config->GetOneShotStop()  && 
-          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-    // /*--- Perform line search on just multiplier ---*/
-    // if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
-    //   StoreLambdaGrad();
+  // else if(OneShotIter > config->GetOneShotStart() && 
+  //         OneShotIter < config->GetOneShotStop()  && 
+  //         ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+  //   // /*--- Perform line search on just multiplier ---*/
+  //   // if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
+  //   //   StoreLambdaGrad();
 
-    //   su2double stepsize_mu = 1.0;
-    //   ArmijoIter = 0;
-    //   bool_tol = false;
-    //   do {
-    //     if(ArmijoIter > 0){
-    //       /*--- Parabolic backtracking ---*/
-    //       su2double stepsize_tmp = UpdateStepSizeQuadratic();
-    //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-    //       if(stepsize_mu < tol) {
-    //         stepsize_mu = 0.;
-    //         bool_tol = true;
-    //       }
-    //     }
-    //     /*--- Compute and store GradL dot p ---*/
-    //     StoreGradDotDir(false);
+  //   //   su2double stepsize_mu = 1.0;
+  //   //   ArmijoIter = 0;
+  //   //   bool_tol = false;
+  //   //   do {
+  //   //     if(ArmijoIter > 0){
+  //   //       /*--- Parabolic backtracking ---*/
+  //   //       su2double stepsize_tmp = UpdateStepSizeQuadratic();
+  //   //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+  //   //       if(stepsize_mu < tol) {
+  //   //         stepsize_mu = 0.;
+  //   //         bool_tol = true;
+  //   //       }
+  //   //     }
+  //   //     /*--- Compute and store GradL dot p ---*/
+  //   //     StoreGradDotDir(false);
 
-    //     /*--- Update constraint multiplier ---*/
-    //     LoadOldLambda();
-    //     UpdateLambda(stepsize_mu);
+  //   //     /*--- Update constraint multiplier ---*/
+  //   //     LoadOldLambda();
+  //   //     UpdateLambda(stepsize_mu);
 
-    //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    //     CalculateLagrangian();
+  //   //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+  //   //     CalculateLagrangian();
 
-    //     ArmijoIter++;
+  //   //     ArmijoIter++;
 
-    //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    // }
+  //   //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+  //   // }
+
+  //   solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+  //   solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+
+  //   /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
+  //   CalculateLagrangian();
+  //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  // }
+
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) {
 
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
