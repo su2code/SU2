@@ -327,8 +327,8 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*--- Update constraint multiplier ---*/
         LoadOldLambda();
-        // UpdateLambda(1.0);
-        UpdateLambda(stepsize);
+        UpdateLambda(1.0);
+        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -527,7 +527,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda);
+  SetAdj_ConstrFunction(Lambda_Tilde);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -841,23 +841,23 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  // else {
-    if (nConstr > 0) {
-      for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        const su2double gamma = config->GetOneShotGamma(iConstr);
-        const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
-        const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Store[iConstr] > 0.);
-        // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
-           // ((active) && (dh <= 0.))) {
-        if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
-          // admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
-          admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
-        }
-      }
-    }
-  // }
+  // // else {
+  //   if (nConstr > 0) {
+  //     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+  //       const su2double gamma = config->GetOneShotGamma(iConstr);
+  //       const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
+  //       const su2double hdh = ConstrFunc_Old[iConstr]*dh;
+  //       // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+  //       const bool active = (ConstrFunc_Store[iConstr] > 0.);
+  //       // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
+  //          // ((active) && (dh <= 0.))) {
+  //       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
+  //         // admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
+  //         admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+  //       }
+  //     }
+  //   }
+  // // }
   admissible_step *= CWolfeOne;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -875,23 +875,23 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  // else {
-    if (nConstr > 0) {
-      for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        const su2double gamma = config->GetOneShotGamma(iConstr);
-        const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
-        const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Store[iConstr] > 0.);
-        // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
-           // ((active) && (dh <= 0.))) {
-        if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
-          // GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
-          GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
-        }
-      }
-    // }
-  }
+  // // else {
+  //   if (nConstr > 0) {
+  //     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+  //       const su2double gamma = config->GetOneShotGamma(iConstr);
+  //       const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
+  //       const su2double hdh = ConstrFunc_Old[iConstr]*dh;
+  //       // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+  //       const bool active = (ConstrFunc_Store[iConstr] > 0.);
+  //       // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
+  //          // ((active) && (dh <= 0.))) {
+  //       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
+  //         // GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
+  //         GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+  //       }
+  //     }
+  //   // }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
@@ -1476,7 +1476,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) {
       Lambda[iConstr] = max(Lambda[iConstr], 0.);
-      Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
+      // Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.);
     }
   }
 }
@@ -1530,7 +1530,7 @@ Lambda_Init = my_Lambda;
 #endif
   Lambda_Init -= ConstrFunc_Old[iConstr];
   Lambda_Tilde[iConstr] = gamma*Lambda_Init;
-  if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
+  // if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
 }
 
 void COneShotFluidDriver::StoreObjFunction(){
