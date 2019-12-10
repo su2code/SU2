@@ -1516,7 +1516,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
       const bool active = (ConstrFunc_Old[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
-        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
                 * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
@@ -1540,7 +1540,7 @@ void COneShotFluidDriver::InitializeLambdaTilde(unsigned short iConstr) {
   const su2double beta = config->GetOneShotBeta();
   const su2double gamma = config->GetOneShotGamma(iConstr);
   su2double my_Lambda = 0., Lambda_Init;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       my_Lambda -= beta
           * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
