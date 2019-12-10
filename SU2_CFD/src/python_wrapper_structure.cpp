@@ -2,24 +2,14 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
  #include "../include/drivers/CDriver.hpp"
 
 void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geometry, CSolver *****solver){
@@ -47,21 +38,21 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
 
   /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
   for(iZone=0; iZone < nZone; iZone++){
-    
+
     if (config[iZone]->GetnMarker_PyCustom() > 0){
-      
+
       if (rank == MASTER_NODE) cout << endl << "----------------- Python Interface Preprocessing ( Zone "<< iZone <<" ) -----------------" << endl;
-      
+
       if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
       for (iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
         geometry[iZone][INST_0][iMesh]->SetCustomBoundary(config[iZone]);
       }
       geometry[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
-      
+
       if ((config[iZone]->GetKind_Solver() == EULER) ||
           (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
           (config[iZone]->GetKind_Solver() == RANS)) {
-        
+
         solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
       }
     }
@@ -274,7 +265,7 @@ unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker){
 
 }
 
-unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex) {
+unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint, GlobalIndex;
 
@@ -285,7 +276,7 @@ unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned sho
 
 }
 
-bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex) {
+bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
 
@@ -310,7 +301,7 @@ passivedouble CDriver::GetUnsteady_TimeStep(){
   return  SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
-passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned long iVertex) {
 
   su2double* Coord;
   unsigned long iPoint;
@@ -321,7 +312,7 @@ passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iV
 
 }
 
-passivedouble CDriver::GetVertexCoordY(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexCoordY(unsigned short iMarker, unsigned long iVertex) {
 
   su2double* Coord;
   unsigned long iPoint;
@@ -331,7 +322,7 @@ passivedouble CDriver::GetVertexCoordY(unsigned short iMarker, unsigned short iV
   return SU2_TYPE::GetValue(Coord[1]);
 }
 
-passivedouble CDriver::GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexCoordZ(unsigned short iMarker, unsigned long iVertex) {
 
   su2double* Coord;
   unsigned long iPoint;
@@ -347,7 +338,7 @@ passivedouble CDriver::GetVertexCoordZ(unsigned short iMarker, unsigned short iV
 
 }
 
-bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex) {
+bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   unsigned short iDim, jDim;
@@ -391,14 +382,14 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
     Area = sqrt(AreaSquare);
 
     /*--- Get the values of pressure and viscosity ---*/
-    Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetPressure();
+    Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     if (viscous_flow) {
       for(iDim=0; iDim<nDim; iDim++) {
         for(jDim=0; jDim<nDim; jDim++) {
-          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, iDim+1, jDim);
         }
       }
-      Viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      Viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     }
 
     /*--- Calculate the inviscid (pressure) part of tn in the fluid nodes (force units) ---*/
@@ -437,37 +428,37 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
 
 }
 
-passivedouble CDriver::GetVertexForceX(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexForceX(unsigned short iMarker, unsigned long iVertex) {
 
   return SU2_TYPE::GetValue(PyWrapNodalForce[0]);
 
 }
 
-passivedouble CDriver::GetVertexForceY(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexForceY(unsigned short iMarker, unsigned long iVertex) {
 
   return SU2_TYPE::GetValue(PyWrapNodalForce[1]);
 
 }
 
-passivedouble CDriver::GetVertexForceZ(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexForceZ(unsigned short iMarker, unsigned long iVertex) {
 
   return SU2_TYPE::GetValue(PyWrapNodalForce[2]);
 
 }
 
-passivedouble CDriver::GetVertexForceDensityX(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexForceDensityX(unsigned short iMarker, unsigned long iVertex) {
   return SU2_TYPE::GetValue(PyWrapNodalForceDensity[0]);
 }
 
-passivedouble CDriver::GetVertexForceDensityY(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexForceDensityY(unsigned short iMarker, unsigned long iVertex) {
   return SU2_TYPE::GetValue(PyWrapNodalForceDensity[1]);
 }
 
-passivedouble CDriver::GetVertexForceDensityZ(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::GetVertexForceDensityZ(unsigned short iMarker, unsigned long iVertex) {
   return SU2_TYPE::GetValue(PyWrapNodalForceDensity[2]);
 }
 
-void CDriver::SetVertexCoordX(unsigned short iMarker, unsigned short iVertex, passivedouble newPosX) {
+void CDriver::SetVertexCoordX(unsigned short iMarker, unsigned long iVertex, passivedouble newPosX) {
 
   unsigned long iPoint;
   su2double *Coord;
@@ -479,7 +470,7 @@ void CDriver::SetVertexCoordX(unsigned short iMarker, unsigned short iVertex, pa
 
 }
 
-void CDriver::SetVertexCoordY(unsigned short iMarker, unsigned short iVertex, passivedouble newPosY) {
+void CDriver::SetVertexCoordY(unsigned short iMarker, unsigned long iVertex, passivedouble newPosY) {
 
   unsigned long iPoint;
   su2double *Coord;
@@ -490,7 +481,7 @@ void CDriver::SetVertexCoordY(unsigned short iMarker, unsigned short iVertex, pa
   PyWrapVarCoord[1] = newPosY - Coord[1];
 }
 
-void CDriver::SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, passivedouble newPosZ) {
+void CDriver::SetVertexCoordZ(unsigned short iMarker, unsigned long iVertex, passivedouble newPosZ) {
 
   unsigned long iPoint;
   su2double *Coord;
@@ -506,7 +497,7 @@ void CDriver::SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, pa
   }
 }
 
-passivedouble CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex) {
+passivedouble CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned long iVertex) {
 
   su2double nodalVarCoordNorm;
 
@@ -517,29 +508,29 @@ passivedouble CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short 
 
 }
 
-passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned short iVertex){
+passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned long iVertex){
 
   unsigned long iPoint;
   su2double vertexWallTemp(0.0);
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-  
+
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
-    vertexWallTemp = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetTemperature();
+    vertexWallTemp = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
   }
 
   return SU2_TYPE::GetValue(vertexWallTemp);
 
 }
 
-void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallTemp){
+void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp){
 
   geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, val_WallTemp);
 }
 
-bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex){
+bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex){
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -564,10 +555,10 @@ bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVe
   }
 
   if(!halo && compressible){
-    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam);
     for(iDim=0; iDim < nDim; iDim++){
-      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(0, iDim);
+      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
       PyWrapNodalHeatFlux[iDim] = -thermal_conductivity*GradT[iDim];
     }
   }
@@ -575,22 +566,22 @@ bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVe
   return halo;
 }
 
-passivedouble CDriver::GetVertexHeatFluxX(unsigned short iMarker, unsigned short iVertex){
+passivedouble CDriver::GetVertexHeatFluxX(unsigned short iMarker, unsigned long iVertex){
 
   return SU2_TYPE::GetValue(PyWrapNodalHeatFlux[0]);
 }
 
-passivedouble CDriver::GetVertexHeatFluxY(unsigned short iMarker, unsigned short iVertex){
+passivedouble CDriver::GetVertexHeatFluxY(unsigned short iMarker, unsigned long iVertex){
 
   return SU2_TYPE::GetValue(PyWrapNodalHeatFlux[1]);
 }
 
-passivedouble CDriver::GetVertexHeatFluxZ(unsigned short iMarker, unsigned short iVertex){
+passivedouble CDriver::GetVertexHeatFluxZ(unsigned short iMarker, unsigned long iVertex){
 
   return SU2_TYPE::GetValue(PyWrapNodalHeatFlux[2]);
 }
 
-passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex){
+passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex){
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -605,7 +596,7 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-  
+
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
 
@@ -621,11 +612,11 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
     for (iDim = 0; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
 
-    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam);
     /*Compute wall heat flux (normal to the wall) based on computed temperature gradient*/
     for(iDim=0; iDim < nDim; iDim++){
-      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(0, iDim);
+      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
       dTdn += GradT[iDim]*UnitNormal[iDim];
     }
 
@@ -635,12 +626,12 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
   return SU2_TYPE::GetValue(vertexWallHeatFlux);
 }
 
-void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallHeatFlux){
+void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux){
 
   geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryHeatFlux(iMarker, iVertex, val_WallHeatFlux);
 }
 
-passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned short iVertex){
+passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned long iVertex){
 
   unsigned long iPoint;
   su2double Prandtl_Lam  = config_container[ZONE_0]->GetPrandtl_Lam();
@@ -651,14 +642,14 @@ passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned s
   su2double laminar_viscosity, thermal_conductivity;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+  laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
   thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam);
 
   return SU2_TYPE::GetValue(thermal_conductivity);
 
 }
 
-vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned short iVertex){
+vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex){
 
   unsigned short iDim;
   su2double *Normal;
@@ -921,7 +912,7 @@ void CFluidDriver::SetInitialMesh() {
   //}
 }
 
-void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ttotal_passive){
+void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ttotal_passive){
 
   su2double val_Ttotal = val_Ttotal_passive;
 
@@ -929,7 +920,7 @@ void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVerte
 
 }
 
-void CFluidDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ptotal_passive){
+void CFluidDriver::SetVertexPtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ptotal_passive){
 
   su2double val_Ptotal = val_Ptotal_passive;
 
@@ -937,7 +928,7 @@ void CFluidDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVerte
 
 }
 
-void CFluidDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_FlowDir_passive){
+void CFluidDriver::SetVertexFlowDir(unsigned short iMarker, unsigned long iVertex, unsigned short iDim, passivedouble val_FlowDir_passive){
 
   su2double val_FlowDir = val_FlowDir_passive;
 
@@ -945,7 +936,7 @@ void CFluidDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVert
 
 }
 
-void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_turb_var_passive){
+void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned long iVertex, unsigned short iDim, passivedouble val_turb_var_passive){
 
   su2double val_turb_var = val_turb_var_passive;
 
@@ -983,7 +974,7 @@ void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex,
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(PyWrapVarCoord);
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Disp(iPoint,PyWrapVarCoord);
 
 }
 
@@ -996,7 +987,7 @@ void CDriver::CommunicateMeshDisplacement(void) {
 
 }
 
-vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   vector<su2double> Disp_Sens(3, 0.0);
@@ -1006,10 +997,10 @@ vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, u
   CSolver *solver =  solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
-  Disp_Sens[0] = solver->node[iPoint]->GetBoundDisp_Sens(0);
-  Disp_Sens[1] = solver->node[iPoint]->GetBoundDisp_Sens(1);
+  Disp_Sens[0] = solver->GetNodes()->GetBoundDisp_Sens(iPoint, 0);
+  Disp_Sens[1] = solver->GetNodes()->GetBoundDisp_Sens(iPoint, 1);
   if (geometry->GetnDim() == 3)
-    Disp_Sens[2] = solver->node[iPoint]->GetBoundDisp_Sens(2);
+    Disp_Sens[2] = solver->GetNodes()->GetBoundDisp_Sens(iPoint, 2);
   else
     Disp_Sens[2] = 0.0;
 
@@ -1021,7 +1012,7 @@ vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, u
 
 }
 
-void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX,
                        passivedouble LoadY, passivedouble LoadZ) {
 
   unsigned long iPoint;
@@ -1030,11 +1021,11 @@ void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passi
   PyWrapNodalForce[2] = LoadZ;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->Set_FlowTraction(PyWrapNodalForce);
+  solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->GetNodes()->Set_FlowTraction(iPoint,PyWrapNodalForce);
 
 }
 
-vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   vector<su2double> Displacements(3, 0.0);
@@ -1044,10 +1035,10 @@ vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsi
   CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL];
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
-  Displacements[0] = solver->node[iPoint]->GetSolution(0);
-  Displacements[1] = solver->node[iPoint]->GetSolution(1);
+  Displacements[0] = solver->GetNodes()->GetSolution(iPoint, 0);
+  Displacements[1] = solver->GetNodes()->GetSolution(iPoint, 1);
   if (geometry->GetnDim() == 3)
-    Displacements[2] = solver->node[iPoint]->GetSolution(2);
+    Displacements[2] = solver->GetNodes()->GetSolution(iPoint, 2);
   else
     Displacements[2] = 0.0;
 
@@ -1059,7 +1050,7 @@ vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsi
 }
 
 
-vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   vector<su2double> Velocity(3, 0.0);
@@ -1070,10 +1061,10 @@ vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned 
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
   if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC){
-    Velocity[0] = solver->node[iPoint]->GetSolution_Vel(0);
-    Velocity[1] = solver->node[iPoint]->GetSolution_Vel(1);
+    Velocity[0] = solver->GetNodes()->GetSolution_Vel(iPoint, 0);
+    Velocity[1] = solver->GetNodes()->GetSolution_Vel(iPoint, 1);
     if (geometry->GetnDim() == 3)
-      Velocity[2] = solver->node[iPoint]->GetSolution_Vel(2);
+      Velocity[2] = solver->GetNodes()->GetSolution_Vel(iPoint, 2);
     else
       Velocity[2] = 0.0;
   }
@@ -1090,7 +1081,7 @@ vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned 
   return Velocity_passive;
 }
 
-vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   vector<su2double> Velocity_n(3, 0.0);
@@ -1101,10 +1092,10 @@ vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigne
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
   if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC){
-    Velocity_n[0] = solver->node[iPoint]->GetSolution_Vel_time_n(0);
-    Velocity_n[1] = solver->node[iPoint]->GetSolution_Vel_time_n(1);
+    Velocity_n[0] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 0);
+    Velocity_n[1] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 1);
     if (geometry->GetnDim() == 3)
-      Velocity_n[2] = solver->node[iPoint]->GetSolution_Vel_time_n(2);
+      Velocity_n[2] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 2);
     else
       Velocity_n[2] = 0.0;
   }
@@ -1122,7 +1113,7 @@ vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigne
 
 }
 
-vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   vector<su2double> FlowLoad_Sens(3, 0.0);
@@ -1132,10 +1123,10 @@ vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, u
   CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
-  FlowLoad_Sens[0] = solver->node[iPoint]->GetFlowTractionSensitivity(0);
-  FlowLoad_Sens[1] = solver->node[iPoint]->GetFlowTractionSensitivity(1);
+  FlowLoad_Sens[0] = solver->GetNodes()->GetFlowTractionSensitivity(iPoint, 0);
+  FlowLoad_Sens[1] = solver->GetNodes()->GetFlowTractionSensitivity(iPoint, 1);
   if (geometry->GetnDim() == 3)
-    FlowLoad_Sens[2] = solver->node[iPoint]->GetFlowTractionSensitivity(2);
+    FlowLoad_Sens[2] = solver->GetNodes()->GetFlowTractionSensitivity(iPoint, 2);
   else
     FlowLoad_Sens[2] = 0.0;
 
@@ -1147,7 +1138,7 @@ vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, u
 
 }
 
-vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long iVertex) {
 
   vector<su2double> FlowLoad(3, 0.0);
   vector<passivedouble> FlowLoad_passive(3, 0.0);
@@ -1177,7 +1168,7 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned shor
 
 }
 
-void CDriver::SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+void CDriver::SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                   passivedouble val_AdjointY, passivedouble val_AdjointZ) {
 
   CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
@@ -1190,7 +1181,7 @@ void CDriver::SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex
 
 }
 
-void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                         passivedouble val_AdjointY, passivedouble val_AdjointZ) {
 
   unsigned long iPoint;
@@ -1199,14 +1190,14 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short i
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-  solver->node[iPoint]->SetSourceTerm_DispAdjoint(0, val_AdjointX);
-  solver->node[iPoint]->SetSourceTerm_DispAdjoint(1, val_AdjointY);
+  solver->GetNodes()->SetSourceTerm_DispAdjoint(iPoint, 0, val_AdjointX);
+  solver->GetNodes()->SetSourceTerm_DispAdjoint(iPoint, 1, val_AdjointY);
   if (geometry->GetnDim() == 3)
-    solver->node[iPoint]->SetSourceTerm_DispAdjoint(2, val_AdjointZ);
+    solver->GetNodes()->SetSourceTerm_DispAdjoint(iPoint, 2, val_AdjointZ);
 
 }
 
-vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex) {
+vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker, unsigned long iVertex) {
 
   unsigned long iPoint;
   vector<su2double> MeshCoord(3, 0.0);
@@ -1217,10 +1208,10 @@ vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker,
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if (solver != NULL) {
-    MeshCoord[0] = solver->node[iPoint]->GetMesh_Coord(0);
-    MeshCoord[1] = solver->node[iPoint]->GetMesh_Coord(1);
+    MeshCoord[0] = solver->GetNodes()->GetMesh_Coord(iPoint,0);
+    MeshCoord[1] = solver->GetNodes()->GetMesh_Coord(iPoint,1);
     if (geometry->GetnDim() == 3)
-      MeshCoord[2] = solver->node[iPoint]->GetMesh_Coord(2);
+      MeshCoord[2] = solver->GetNodes()->GetMesh_Coord(iPoint,2);
     else
       MeshCoord[2] = 0.0;
   }

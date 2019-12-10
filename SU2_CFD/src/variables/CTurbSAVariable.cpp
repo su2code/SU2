@@ -2,24 +2,14 @@
  * \file CTurbSAVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,34 +25,33 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/variables/CTurbSAVariable.hpp"
 
 
-CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
+CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar,
+                                 CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
 
-CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim,
-                                 unsigned short val_nvar, CConfig *config) : CTurbVariable(val_nDim, val_nvar, config) {
+  Solution_Old = Solution = val_nu_tilde;
 
+  muT.resize(nPoint) = val_muT;
+
+  /*--- Allocate and initialize solution for the dual time strategy ---*/
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
 
-  /*--- Initialization of S-A variables ---*/
-  Solution[0] = val_nu_tilde;    Solution_Old[0] = val_nu_tilde;
-
-  /*--- Initialization of the eddy viscosity ---*/
-  muT = val_muT;
-
-  /*--- Allocate and initialize solution for the dual time strategy ---*/
   if (dual_time) {
-    Solution_time_n[0]  = val_nu_tilde;
-    Solution_time_n1[0] = val_nu_tilde;
+    Solution_time_n  = Solution;
+    Solution_time_n1 = Solution;
   }
 
-  DES_LengthScale = 0.0;
-
+  gamma_BC.resize(nPoint);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint);
 }
 
-void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity){
+void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow,
+                                        su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
   su2double numerator, trace0, trace1, denominator;
@@ -71,7 +60,7 @@ void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vo
   AD::SetPreaccIn(PrimGrad_Flow, nDim+1, nDim);
   AD::SetPreaccIn(Vorticity, 3);
   /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(muT);
+  AD::SetPreaccIn(muT(iPoint));
   /*--- Laminar viscosity --- */
   AD::SetPreaccIn(LaminarViscosity);
 
@@ -102,10 +91,8 @@ void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vo
   trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
   denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
 
-  Vortex_Tilting = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT);
+  Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT(iPoint));
 
-  AD::SetPreaccOut(Vortex_Tilting);
+  AD::SetPreaccOut(Vortex_Tilting(iPoint));
   AD::EndPreacc();
 }
-
-CTurbSAVariable::~CTurbSAVariable(void) {}

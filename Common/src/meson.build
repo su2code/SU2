@@ -6,8 +6,6 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'fem_integration_rules.cpp',
            'config_structure.cpp',
            'dual_grid_structure.cpp',
-           'element_structure.cpp',
-           'geometry_structure.cpp',
            'blas_structure.cpp',
            'ad_structure.cpp',
            'grid_movement_structure.cpp',
@@ -15,9 +13,7 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'fem_standard_element.cpp',
            'fem_wall_distance.cpp',
            'grid_adaptation_structure.cpp',
-           'element_linear.cpp',
            'fem_gauss_jacobi_quadrature.cpp',
-           'gauss_structure.cpp',
            'wall_model.cpp',
            'adt_structure.cpp',
            'interpolation_structure.cpp',
@@ -32,6 +28,9 @@ common_src =files(['geometry_structure_fem_part.cpp',
 
 subdir('linear_algebra')
 subdir('toolboxes')
+subdir('geometry')
+subdir('geometry/elements')
+
 if get_option('enable-normal')
   common = static_library('SU2Common', 
                           common_src,

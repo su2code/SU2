@@ -1,0 +1,86 @@
+# Continous Integration setup for SU2.
+# Tests on the develop branch in both serial and parallel.
+
+dist: xenial
+sudo: required
+
+language: c++
+
+cache: 
+    - ccache
+    - pip
+    - directories: 
+      - $HOME/.pyenv_cache
+
+compiler:
+    - gcc
+
+notifications:
+    email:
+        recipients:
+            - su2code-dev@lists.stanford.edu
+  
+branches:
+    only:
+        - develop
+
+virtualenv:
+  system_site_packages: true
+
+env:
+    matrix:
+        # Serial build and test
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled"
+          TEST_SCRIPT=serial_regression.py
+
+        # Parallel build and test
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true"
+          TEST_SCRIPT=parallel_regression.py
+
+        # Serial build and test for AD
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true"
+          TEST_SCRIPT=serial_regression_AD.py
+
+        # Parallel build and test for AD:
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
+          TEST_SCRIPT=parallel_regression_AD.py
+
+before_install:
+    # Temporarily fixes Travis CI issue with paths for Python packages
+    - export PATH=/usr/bin:$PATH
+    - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+    # Install the necessary packages using apt-get with sudo
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq build-essential python3-numpy python3-scipy libopenmpi-dev openmpi-bin swig python3-mpi4py  
+    # to avoid interference with MPI
+    - test -n $CC  && unset CC
+    - test -n $CXX && unset CXX
+
+install:
+    # build ninja
+    - echo $CONFIGURE_COMMAND
+    - $CONFIGURE_COMMAND
+    - ./meson.py build --reconfigure --optimization=2
+    - ./meson.py build --reconfigure --warnlevel=2
+    - ./ninja -C build install
+
+    # Add environmental variables according to the configure step
+    - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
+    - export SU2_HOME=$TRAVIS_BUILD_DIR
+    - export PATH=$PATH:$SU2_RUN
+    - export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+before_script:
+    # Get the test cases
+    - git clone --depth=1 -b develop https://github.com/su2code/TestCases.git ./TestData
+    - cp -R ./TestData/* ./TestCases/
+
+    # Get the tutorial cases
+    - git clone --depth=1 -b develop https://github.com/su2code/su2code.github.io ./Tutorials
+    
+    # Enter the SU2/TestCases/ directory, which is now ready to run
+    - cd TestCases/
+
+script:
+    # Run the tests via the Python scripts
+    - python $TEST_SCRIPT

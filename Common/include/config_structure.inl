@@ -2,24 +2,14 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -364,7 +354,7 @@ inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivi
 
 inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
 
-inline su2double CConfig::GetTemperature_Freestream_Solid(void) { return Temperature_Freestream_Solid;  }
+inline su2double CConfig::GetTemperature_Initial_Solid(void) { return Temperature_Freestream_Solid;  }
 
 inline su2double CConfig::GetElasticyMod(unsigned short id_val) { return ElasticityMod[id_val]; }
 
@@ -453,8 +443,6 @@ inline su2double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 inline su2double CConfig::GetMolecular_Weight(void) { return Molecular_Weight; }
 
 inline su2double CConfig::GetSpecific_Heat_Cp(void) { return Specific_Heat_Cp; }
-
-inline su2double CConfig::GetSpecific_Heat_Cp_Solid(void) { return Specific_Heat_Cp_Solid; }
 
 inline su2double CConfig::GetSpecific_Heat_CpND(void) { return Specific_Heat_CpND; }
 
@@ -753,8 +741,6 @@ inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
 
 inline su2double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 
-inline su2double CConfig::GetCFL_Solid(void) {	return CFLSolid; }
-
 inline void CConfig::SetCFL(unsigned short val_mesh, su2double val_cfl) { CFL[val_mesh] = val_cfl; }
 
 inline su2double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
@@ -992,6 +978,12 @@ inline su2double CConfig::GetmaxTurkelBeta() { return  Max_Beta_RoeTurkel; }
 
 inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; }
 
+inline unsigned short CConfig::GetKind_Gradient_Method_Recon(void) { return Kind_Gradient_Method_Recon; }
+
+inline bool CConfig::GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+
+inline bool CConfig::GetLeastSquaresRequired(void) { return LeastSquaresRequired; }
+
 inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_Deform_Linear_Solver; }
@@ -1016,11 +1008,7 @@ inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return 
 
 inline su2double CConfig::GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
 
-inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
-
 inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation_Factor_AdjFlow; }
-
-inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
 inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
@@ -1047,8 +1035,6 @@ inline su2double CConfig::GetEntropyFix_Coeff(void) { return EntropyFix_Coeff; }
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
 inline su2double CConfig::GetCFLRedCoeff_AdjTurb(void) { return CFLRedCoeff_AdjTurb; }
-
-inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Linear_Iter; }
 
 inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_Nonlinear_Iter; }
 
@@ -1673,11 +1659,9 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 
+inline bool CConfig::GetWrt_AD_Statistics(void) { return Wrt_AD_Statistics; }
+
 inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
-
-inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
-
-inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 
@@ -1773,13 +1757,15 @@ inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
 
 inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
 
-inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
-
-inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
-
 inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
+
+inline unsigned long CConfig::GetUpdate_AoA_Iter_Limit(void) { return Update_AoA_Iter_Limit; }
+
+inline bool CConfig::GetFinite_Difference_Mode(void) { return Finite_Difference_Mode; }
+
+inline void CConfig::SetFinite_Difference_Mode(bool val_fd_mode) { Finite_Difference_Mode = val_fd_mode; }
 
 inline bool CConfig::GetUpdate_BCThrust_Bool(void) { return Update_BCThrust_Bool; }
 
@@ -1881,7 +1867,7 @@ inline bool CConfig::GetEulerPersson(void) { return EulerPersson; }
 
 inline void CConfig::SetEulerPersson(bool val_EulerPersson) { EulerPersson = val_EulerPersson; }
 
-inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
+inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem || (nMarker_Fluid_Load > 0); }
 
 inline void CConfig::SetFSI_Simulation(bool FSI_sim) { FSI_Problem = FSI_sim; }
 
@@ -1909,6 +1895,8 @@ inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
+inline bool CConfig::GetFull_Tape() { return FullTape; }
+
 inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}
 
 inline su2double CConfig::GetQuadrature_Factor_Straight(void) {return Quadrature_Factor_Straight;}
@@ -1928,6 +1916,8 @@ inline bool CConfig::GetUse_Lumped_MassMatrix_DGFEM(void) {return Use_Lumped_Mas
 inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacobian_Spatial_Discretization_Only;}
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
+
+inline bool CConfig::GetCHT_Robin(void) { return CHT_Robin; }
 
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
@@ -2074,7 +2064,11 @@ inline su2double  CConfig::Get_StartTime() {return StartTime;}
 
 inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
+inline void CConfig::SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter) { HistoryWrtFreq[iter] = nIter;}
+
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
+
+inline void CConfig::SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter;}
 
 inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
 

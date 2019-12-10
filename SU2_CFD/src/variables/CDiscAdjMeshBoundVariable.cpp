@@ -2,24 +2,14 @@
  * \file CDiscAdjMeshVariable.cpp
  * \brief Main subroutines for the discrete adjoint mesh variable structure.
  * \author Ruben Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,34 +28,38 @@
 
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
-CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CDiscAdjMeshVariable(val_coor, val_nDim, config) {
 
-  unsigned short iDim;
+CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
+  CVariable(npoint, ndim, config) {
+
+  nDim = ndim;
+
+  VertexMap.Reset(nPoint);
+}
+
+void CDiscAdjMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
+
+  if (VertexMap.GetIsValid()) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  unsigned long nBoundPt = VertexMap.Build();
+
+  /*--- Allocate ---*/
 
   bool fsi = false;
 
   /*--- Initialize Boundary Displacement container to 0.0 ---*/
-  Bound_Disp_Sens   = new su2double [nDim];
-  Bound_Disp_Direct = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Bound_Disp_Sens[iDim]   = 0.0;
-    Bound_Disp_Direct[iDim] = 0.0;
-  }
+
+  Bound_Disp_Sens.resize(nBoundPt,nDim) = su2double(0.0);
+  Bound_Disp_Direct.resize(nBoundPt,nDim) = su2double(0.0);
 
   /*--- Container for the BGS solution at the previous iteration ---*/
-  Solution_BGS_k        = NULL;
-  if (fsi){
-    Solution_BGS_k        = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_BGS_k[iDim]        = 0.0;
-    }
-  }
+
+  if (fsi) Solution_BGS_k.resize(nBoundPt,nDim) = su2double(0.0);
 
 }
 
-CDiscAdjMeshBoundVariable::~CDiscAdjMeshBoundVariable(void) {
-
-  if (Bound_Disp_Sens != NULL)   delete [] Bound_Disp_Sens;
-  if (Bound_Disp_Direct != NULL) delete [] Bound_Disp_Direct;
-
+void CDiscAdjMeshBoundVariable::Set_BGSSolution_k() {
+  Solution_BGS_k = Bound_Disp_Sens;
 }
