@@ -287,9 +287,9 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
-        // stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-        stepsize /= 2.0;
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+        // stepsize /= 2.0;
         if(stepsize < tol) {
           stepsize = tol;
           bool_tol = true;
