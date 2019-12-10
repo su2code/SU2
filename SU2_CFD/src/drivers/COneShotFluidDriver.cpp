@@ -326,10 +326,10 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
-        // // UpdateLambda(1.0);
-        UpdateLambda(stepsize);
+        // /*--- Update constraint multiplier ---*/
+        // LoadOldLambda();
+        // // // UpdateLambda(1.0);
+        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -360,7 +360,7 @@ void COneShotFluidDriver::RunOneShot(){
       // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
-      StoreLambdaGrad();
+      // StoreLambdaGrad();
       StoreGradDotDir(true);
 
     }
