@@ -503,7 +503,8 @@ void COneShotFluidDriver::RunOneShot(){
 
   if(OneShotIter == config->GetOneShotStart()) {
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-      InitializeLambdaTilde(iConstr);
+      // InitializeLambdaTilde(iConstr);
+      Lambda_Tilde[iConstr] = 0.0;
       Lambda[iConstr] = Lambda_Tilde[iConstr];
     }
     StoreLambda();
