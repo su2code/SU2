@@ -376,9 +376,9 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  /*--- Load multipliers from first line search ---*/
-  // LoadLambdaStore();
-  UpdateLambda(1.0);
+  // /*--- Load multipliers from first line search ---*/
+  // // LoadLambdaStore();
+  // UpdateLambda(1.0);
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -403,37 +403,79 @@ void COneShotFluidDriver::RunOneShot(){
   else if(OneShotIter > config->GetOneShotStart() && 
           OneShotIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-    // /*--- Perform line search on just multiplier ---*/
-    // if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
-    //   StoreLambdaGrad();
+    /*--- Perform line search on just multiplier ---*/
+    if(nConstr > 0) {
+      StoreLambdaGrad();
 
-    //   su2double stepsize_mu = 1.0;
-    //   ArmijoIter = 0;
-    //   bool_tol = false;
-    //   do {
-    //     if(ArmijoIter > 0){
-    //       /*--- Parabolic backtracking ---*/
-    //       su2double stepsize_tmp = UpdateStepSizeQuadratic();
-    //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-    //       if(stepsize_mu < tol) {
-    //         stepsize_mu = 0.;
-    //         bool_tol = true;
-    //       }
-    //     }
-    //     /*--- Compute and store GradL dot p ---*/
-    //     StoreGradDotDir(false);
+      su2double stepsize_mu = 1.0;
+      ArmijoIter = 0;
+      bool_tol = false;
+      do {
+        if(ArmijoIter > 0){
+          /*--- Parabolic backtracking ---*/
+          su2double stepsize_tmp = UpdateStepSizeQuadratic();
+          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+          if(stepsize_mu < tol) {
+            stepsize_mu = 0.;
+            bool_tol = true;
+          }
+        }
+        /*--- Compute and store GradL dot p ---*/
+        StoreGradDotDir(false);
 
-    //     /*--- Update constraint multiplier ---*/
-    //     LoadOldLambda();
-    //     UpdateLambda(stepsize_mu);
+        /*--- Update constraint multiplier ---*/
+        LoadOldLambda();
+        UpdateLambda(stepsize_mu);
 
-    //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    //     CalculateLagrangian();
+        /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+        CalculateLagrangian();
 
-    //     ArmijoIter++;
+        ArmijoIter++;
 
-    //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    // }
+      } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    }
+
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+
+    /*--- Recalculate Lagrangian with new Alpha, Beta, and Gamma ---*/
+    CalculateLagrangian();
+    SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  }
+
+  else if(OneShotIter > config->GetOneShotStart() && 
+          OneShotIter < config->GetOneShotStop()){
+    /*--- Perform line search on just multiplier ---*/
+    if(nConstr > 0 && OneShotIter) {
+      StoreLambdaGrad();
+
+      su2double stepsize_mu = 1.0;
+      ArmijoIter = 0;
+      bool_tol = false;
+      do {
+        if(ArmijoIter > 0){
+          /*--- Parabolic backtracking ---*/
+          su2double stepsize_tmp = UpdateStepSizeQuadratic();
+          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+          if(stepsize_mu < tol) {
+            stepsize_mu = 0.;
+            bool_tol = true;
+          }
+        }
+        /*--- Compute and store GradL dot p ---*/
+        StoreGradDotDir(false);
+
+        /*--- Update constraint multiplier ---*/
+        LoadOldLambda();
+        UpdateLambda(stepsize_mu);
+
+        /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+        CalculateLagrangian();
+
+        ArmijoIter++;
+
+      } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+    }
 
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
