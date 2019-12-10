@@ -890,10 +890,10 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         const bool active = (ConstrFunc_Store[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
-        if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
+        // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
           // admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
           admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
-        }
+        // }
       }
     }
   }
@@ -924,10 +924,10 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         const bool active = (ConstrFunc_Store[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
-        if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
+        // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
           // GradDotDir -= (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
           GradDotDir += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
-        }
+        // }
       }
     }
   }
@@ -1533,7 +1533,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
       // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
       const bool active = (ConstrFunc_Store[iConstr] > 0.);
       su2double my_Gradient = 0.;
-      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
+      // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
@@ -1547,7 +1547,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
         AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma;
-      }
+      // }
     }
   }
 }
