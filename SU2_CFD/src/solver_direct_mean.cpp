@@ -3219,7 +3219,6 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
     }
     
     nodes->Set_RefSolution(iPoint, &node_sol[0]);
-    delete[] node_sol;
   }
   
   
