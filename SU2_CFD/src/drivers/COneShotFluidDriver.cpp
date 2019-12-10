@@ -299,10 +299,10 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      // else {
-      //   // LoadOldLambda();
-      //   UpdateLambda(1.0);
-      // }
+      else {
+        // LoadOldLambda();
+        UpdateLambda(1.0);
+      }
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -326,9 +326,9 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
-        // UpdateLambda(1.0);
-        UpdateLambda(stepsize);
+        // LoadOldLambda();
+        // // UpdateLambda(1.0);
+        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -349,9 +349,9 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
-        UpdateLambda(1.0);
+        // /*--- Update constraint multiplier ---*/
+        // LoadOldLambda();
+        // UpdateLambda(1.0);
       }
 
       /*--- Compute and store GradL dot p ---*/
