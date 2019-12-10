@@ -381,9 +381,9 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  /*--- Load multipliers from first line search ---*/
-  LoadLambdaStore();
-  UpdateLambda(1.0);
+  // /*--- Load multipliers from first line search ---*/
+  // LoadLambdaStore();
+  // UpdateLambda(1.0);
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
