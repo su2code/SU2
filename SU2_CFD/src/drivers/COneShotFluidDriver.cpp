@@ -498,6 +498,10 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
+  if(OneShotIter == config->GetOneShotStart()) {
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) InitializeLambdaTilde(iConstr);
+  }
+
 }
 
 void COneShotFluidDriver::PrimalDualStep(){
@@ -1440,7 +1444,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       Lambda[iConstr] = 0.0;
-      Lambda_Tilde[iConstr] = -gamma*ConstrFunc_Old[iConstr];
+      InitializeLambdaTilde(iConstr);
+      // Lambda_Tilde[iConstr] = -gamma*ConstrFunc_Old[iConstr];
     }
     else {
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
