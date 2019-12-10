@@ -1516,7 +1516,7 @@ void COneShotFluidDriver::InitializeLambdaTilde(unsigned short iConstr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       my_Lambda -= beta
           * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
-          * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
+          * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_DeltaStore(iPoint,iVar);
     }
   }
 #ifdef HAVE_MPI
@@ -1524,7 +1524,7 @@ SU2_MPI::Allreduce(&my_Lambda, &Lambda_Init, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WO
 #else
 Lambda_Init = my_Lambda;
 #endif
-  Lambda_Init -= ConstrFunc[iConstr];
+  Lambda_Init -= ConstrFunc_Old[iConstr];
   Lambda_Tilde[iConstr] = gamma*Lambda_Init;
   if(config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) Lambda_Tilde[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
 }
