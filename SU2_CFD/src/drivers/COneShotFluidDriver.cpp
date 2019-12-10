@@ -326,10 +326,10 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        // /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
-        // // // UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
+        /*--- Update constraint multiplier ---*/
+        LoadOldLambda();
+        // // UpdateLambda(1.0);
+        UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
