@@ -327,8 +327,8 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*--- Update constraint multiplier ---*/
         LoadOldLambda();
-        UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
+        // UpdateLambda(1.0);
+        UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
