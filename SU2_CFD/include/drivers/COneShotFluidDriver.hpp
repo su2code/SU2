@@ -58,7 +58,6 @@ protected:
   su2double* Gradient;                  /*!< \brief Vector to store gradient obtained from projection .*/
   su2double* Gradient_Old;              /*!< \brief Vector to store gradient obtained from projection (old value) .*/
   su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
-  su2double* ShiftLagGradUncon;         /*!< \brief Saved gradient N_u of the shifted Lagrangian (old value) .*/
   su2double* DesignVarUpdate;           /*!< \brief Update of the design variable Delta u = u_{k+1} - u_k .*/
   su2double* SearchDirection;           /*!< \brief Search direction for optimization.*/
   su2double** BFGS_Inv;                 /*!< \brief Inverse matrix for BFGS update.*/
