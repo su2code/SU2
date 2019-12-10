@@ -2,24 +2,14 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2790,7 +2780,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                        |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2804,22 +2794,12 @@ void CConfig::SetHeader(unsigned short val_software){
     cout << "|                                                                       |" << endl;
     //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The current SU2 release has been coordinated by the                   |" << endl;
-    cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
-    cout << "| with selected contributions from the open-source community.           |" << endl;
+    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
+    cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The main research teams contributing to the current release are:      |" << endl;
-    cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
-    cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
-    cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
-    cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
-    cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-    cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
-    cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
-    cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
-    cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
+    cout << "| Copyright 2012-2019, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -4702,7 +4682,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_ZoneInterface;
   
@@ -5156,6 +5136,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_Load[iMarker_Fluid_Load];
+    iMarker_CfgFile++;
+  }
 
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FlowLoad[iMarker_FlowLoad];
@@ -5246,21 +5230,23 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
         Marker_CfgFile_DV[iMarker_CfgFile] = YES;
   }
-  
+
   /*--- Add an extra check for DV_MARKER to make sure that any given marker
-   name is recognized as an existing boundary in the problem. ---*/
-  
-  unsigned short markerCount = 0;
+   *    name is recognized as an existing boundary in the problem. ---*/
+
   for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+    bool found = false;
     for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
-        markerCount++;
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV]) {
+        found = true;
+        break;
+      }
+    }
+    if(!found) {
+      SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
     }
   }
-  if ((nMarker_DV > 0) && (markerCount != nMarker_DV)) {
-    SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
-  }
-  
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Moving[iMarker_CfgFile] = NO;
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)

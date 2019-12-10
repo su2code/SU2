@@ -2,24 +2,14 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -446,12 +436,13 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
                                    CConfig *donor_config, CConfig *target_config,
                                    unsigned short iMarkerInt){
 
-  unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
+  unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
   unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag = 0, Target_Flag = 0;
   int Marker_Donor = -1, Marker_Target = -1;
 
-  su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
+  const su2double *SpanValuesDonor, *SpanValuesTarget;
+  su2double dist, test, dist2, test2;
 
 #ifdef HAVE_MPI
   int iSize;
@@ -583,8 +574,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
 void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                                   CGeometry *donor_geometry, CGeometry *target_geometry,
                                   CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
-  unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
+  unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
   unsigned short iSpan, nSpanDonor, nSpanTarget;
   int Marker_Donor = -1, Marker_Target = -1;
   su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,

@@ -3,30 +3,20 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -1119,7 +1109,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [-7.123252, -6.535236, 0.333431, 0.021236] #last 4 columns
+    pywrapper_naca0012.test_vals = [-7.306809, -6.740117, 0.333437, 0.021233] #last 4 columns
     pywrapper_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
@@ -1130,7 +1120,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-12.454442, -6.574917, 1.059622, 0.019138] #last 4 columns
+    pywrapper_turb_naca0012_sst.test_vals = [-15.274205, -6.250384, 1.049989, 0.019166] #last 4 columns
     pywrapper_turb_naca0012_sst.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
@@ -1141,7 +1131,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
-    pywrapper_square_cylinder.test_vals = [-1.164008, 0.077263, 1.398549, 2.197049] #last 4 columns
+    pywrapper_square_cylinder.test_vals = [-1.162621, 0.066395, 1.399789, 2.220408] #last 4 columns
     pywrapper_square_cylinder.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
@@ -1153,7 +1143,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.081587, 0.033262, -0.001667, -0.000155] #last 4 columns
+    pywrapper_aeroelastic.test_vals = [0.081326, 0.033214, -0.001666, -0.000155] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001
@@ -1178,7 +1168,7 @@ def main():
     pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
     pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
     pywrapper_unsteadyCHT.test_iter     = 5
-    pywrapper_unsteadyCHT.test_vals     = [-1.598116, 2.263342, -0.000029, 0.145689] #last 4 columns
+    pywrapper_unsteadyCHT.test_vals     = [-1.614167, 2.245730, -0.000767, 0.175598] #last 4 columns
     pywrapper_unsteadyCHT.su2_exec      = "mpirun -np 2 python launch_unsteady_CHT_FlatPlate.py --parallel -f"
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
@@ -1191,7 +1181,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.598116, 2.259706, -0.040258, 0.143960] #last 4 columns
+    pywrapper_rigidMotion.test_vals     = [-1.614165, 2.242648, -0.037218, 0.173751] #last 4 columns
     pywrapper_rigidMotion.su2_exec      = "mpirun -np 2 python launch_flatPlate_rigidMotion.py --parallel -f"
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001
@@ -1207,7 +1197,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, -0.134610, 0.083745] #last 4 columns
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.003000, 0.012720] #last 4 columns
     tutorial_inv_bump.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_bump.timeout    = 1600
     tutorial_inv_bump.tol        = 0.00001
@@ -1219,7 +1209,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.266096, 0.046783] #last 4 columns
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.292159, 0.052922] #last 4 columns
     tutorial_inv_wedge.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_wedge.timeout    = 1600
     tutorial_inv_wedge.tol        = 0.00001
@@ -1231,7 +1221,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.256216, 0.122658] #last 4 columns
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.247124, 0.085734] #last 4 columns
     tutorial_inv_onera.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_onera.timeout    = 1600
     tutorial_inv_onera.tol        = 0.00001
@@ -1243,7 +1233,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.119017, 60.376542] #last 4 columns
+    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.186570, 69.267308] #last 4 columns
     tutorial_lam_cylinder.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_lam_cylinder.timeout    = 1600
     tutorial_lam_cylinder.tol        = 0.00001
@@ -1255,7 +1245,7 @@ def main():
     tutorial_lam_flatplate.cfg_dir    = "../Tutorials/Laminar_Flat_Plate"
     tutorial_lam_flatplate.cfg_file   = "lam_flatplate.cfg"
     tutorial_lam_flatplate.test_iter  = 0
-    tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.683968, 0.028634] #last 4 columns
+    tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.400044, 0.029413] #last 4 columns
     tutorial_lam_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_lam_flatplate.timeout    = 1600
     tutorial_lam_flatplate.tol        = 0.00001
@@ -1267,7 +1257,7 @@ def main():
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file   = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter  = 0
-    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.899474, -0.753783, 0.200410] #last 4 columns
+    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.899502, -0.429387, 0.201236] #last 4 columns
     tutorial_turb_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_flatplate.timeout    = 1600
     tutorial_turb_flatplate.tol        = 0.00001
@@ -1291,7 +1281,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals  = [-4.499497, -11.518421, 0.391293, 0.343702] #last 4 columns
+    tutorial_turb_oneram6.test_vals  = [-4.499497, -11.473637, 0.332666, 0.098280] #last 4 columns
     tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
@@ -1302,7 +1292,7 @@ def main():
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.086210, 0.174381] #last 4 columns
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.134515, 0.208523] #last 4 columns
     tutorial_design_inv_naca0012.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_inv_naca0012.timeout    = 1600
     tutorial_design_inv_naca0012.tol        = 0.00001
@@ -1314,7 +1304,7 @@ def main():
     tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/Turbulent_2D_Constrained_RAE2822"
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
-    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.931291, 0.293884, 0.331019] #last 4 columns
+    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.941261, 0.218432, 0.190639] #last 4 columns
     tutorial_design_turb_rae2822.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_turb_rae2822.timeout    = 1600
     tutorial_design_turb_rae2822.tol        = 0.00001

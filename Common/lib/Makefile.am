@@ -3,20 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.2.0 "Falcon"
+# \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -62,8 +62,6 @@ lib_sources = \
   ../include/fem_geometry_structure.inl \
   ../include/fem_standard_element.hpp \
   ../include/fem_standard_element.inl \
-  ../include/geometry_structure.hpp \
-  ../include/geometry_structure.inl \
   ../include/CMultiGridQueue.hpp \
   ../include/CMeshReaderFVM.hpp \
   ../include/CSU2ASCIIMeshReaderFVM.hpp \
@@ -85,10 +83,6 @@ lib_sources = \
   ../include/interpolation_structure.hpp \
   ../include/fem_gauss_jacobi_quadrature.hpp \
   ../include/fem_gauss_jacobi_quadrature.inl \
-  ../include/gauss_structure.hpp \
-  ../include/gauss_structure.inl \
-  ../include/element_structure.hpp \
-  ../include/element_structure.inl \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
   ../include/wall_model.hpp \
@@ -125,7 +119,6 @@ lib_sources = \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
-  ../src/geometry_structure.cpp \
   ../src/CMultiGridQueue.cpp \
   ../src/CMeshReaderFVM.cpp \
   ../src/CSU2ASCIIMeshReaderFVM.cpp \
@@ -140,9 +133,17 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
-  ../src/gauss_structure.cpp \
-  ../src/element_structure.cpp \
-  ../src/element_linear.cpp \
+  ../src/geometry/CGeometry.cpp \
+  ../src/geometry/CPhysicalGeometry.cpp \
+  ../src/geometry/CMultiGridGeometry.cpp \
+  ../src/geometry/CDummyGeometry.cpp \
+  ../src/geometry/elements/CElement.cpp \
+  ../src/geometry/elements/CTRIA1.cpp \
+  ../src/geometry/elements/CQUAD4.cpp \
+  ../src/geometry/elements/CTETRA1.cpp \
+  ../src/geometry/elements/CPYRAM5.cpp \
+  ../src/geometry/elements/CPRISM6.cpp \
+  ../src/geometry/elements/CHEXA8.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \

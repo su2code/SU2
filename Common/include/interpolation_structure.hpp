@@ -1,26 +1,16 @@
-/*!
+﻿/*!
  * \file interpolation_structure.hpp
  * \brief Headers of the main subroutines used by SU2_FSI.
  *        The subroutines and functions are in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,7 +37,7 @@
 #include <stdexcept>
 
 #include "config_structure.hpp"
-#include "geometry_structure.hpp"
+#include "geometry/CGeometry.hpp"
 
 using namespace std;
 
@@ -60,54 +50,58 @@ using namespace std;
  */
 class CInterpolator {
 protected:
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
-  unsigned int nZone;
-  unsigned int donorZone, targetZone;
+  int rank, 	            /*!< \brief MPI Rank. */
+  size;       	            /*!< \brief MPI Size. */
+  unsigned int nZone;       /*!< \brief Number of zones*/
+  unsigned int donorZone,
+  targetZone;               /*!< \brief Type of MPI zone */
 
-  unsigned long MaxLocalVertex_Donor,/*!\brief Maximum vertices per processor*/
-  nGlobalFace_Donor,/*!\brief */
-  nGlobalFaceNodes_Donor,/*!\brief */
-  MaxFace_Donor,/*!\brief Maximum faces per processor*/
-  MaxFaceNodes_Donor;/*!\brief Maximum nodes associated with faces per processor*/
-  unsigned long *Buffer_Receive_nVertex_Donor, /*!\brief Buffer to store the number of vertices per processor on the Donor domain */
-  *Buffer_Receive_nFace_Donor, /*!\brief Buffer to store the number of faces per processor*/
-  *Buffer_Receive_nFaceNodes_Donor,/*!\brief Buffer to store the number of nodes associated with faces per processor*/
-  *Buffer_Send_nVertex_Donor,/*!\brief Buffer to send number of vertices on the local processor*/
-  *Buffer_Send_nFace_Donor,/*!\brief Buffer to send number of faces on the local processor*/
-  *Buffer_Send_nFaceNodes_Donor,/*!\brief Buffer to send the number of nodes assocated with faces per processor*/
-  *Buffer_Send_FaceIndex,/*!\brief Buffer to send indices pointing to the node indices that define the faces*/
-  *Buffer_Receive_FaceIndex,/*!\brief Buffer to receive indices pointing to the node indices that define the faces*/
-  *Buffer_Send_FaceNodes,/*!\brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Receive_FaceNodes,/*!\brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Send_FaceProc,/*!\brief Buffer to send processor which stores the node indicated in Buffer_Receive_FaceNodes*/
-  *Buffer_Receive_FaceProc;/*!\brief Buffer to receive processor which stores the node indicated in Buffer_Receive_FaceNodes*/
+  unsigned long
+  MaxLocalVertex_Donor,     /*!< \brief Maximum vertices per processor*/
+  nGlobalFace_Donor,        /*!< \brief Number of global donor faces*/
+  nGlobalFaceNodes_Donor,   /*!< \brief Number of global donor face nodes*/
+  MaxFace_Donor,            /*!< \brief Maximum faces per processor*/
+  MaxFaceNodes_Donor;       /*!< \brief Maximum nodes associated with faces per processor*/
 
-  long   *Buffer_Send_GlobalPoint,/*!\brief Buffer to send global point indices*/
-  *Buffer_Receive_GlobalPoint; /*!\brief Buffer to receive global point indices*/
+  unsigned long
+  *Buffer_Receive_nVertex_Donor,     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain */
+  *Buffer_Receive_nFace_Donor,       /*!< \brief Buffer to store the number of faces per processor*/
+  *Buffer_Receive_nFaceNodes_Donor,  /*!< \brief Buffer to store the number of nodes associated with faces per processor*/
+  *Buffer_Send_nVertex_Donor,        /*!< \brief Buffer to send number of vertices on the local processor*/
+  *Buffer_Send_nFace_Donor,          /*!< \brief Buffer to send number of faces on the local processor*/
+  *Buffer_Send_nFaceNodes_Donor,     /*!< \brief Buffer to send the number of nodes assocated with faces per processor*/
+  *Buffer_Send_FaceIndex,            /*!< \brief Buffer to send indices pointing to the node indices that define the faces*/
+  *Buffer_Receive_FaceIndex,         /*!< \brief Buffer to receive indices pointing to the node indices that define the faces*/
+  *Buffer_Send_FaceNodes,            /*!< \brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
+  *Buffer_Receive_FaceNodes,         /*!< \brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
+  *Buffer_Send_FaceProc,             /*!< \brief Buffer to send processor which stores the node indicated in Buffer_Receive_FaceNodes*/
+  *Buffer_Receive_FaceProc;          /*!< \brief Buffer to receive processor which stores the node indicated in Buffer_Receive_FaceNodes*/
 
-  su2double *Buffer_Send_Coord,/*!\brief Buffer to send coordinate values*/
-  *Buffer_Send_Normal,/*!\brief Buffer to send normal vector values */
-  *Buffer_Receive_Coord,/*!\brief Buffer to receive coordinate values*/
-  *Buffer_Receive_Normal;/*!\brief Buffer to receive normal vector values*/
+  long   *Buffer_Send_GlobalPoint,   /*!< \brief Buffer to send global point indices*/
+  *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices*/
+
+  su2double *Buffer_Send_Coord,  /*!< \brief Buffer to send coordinate values*/
+  *Buffer_Send_Normal,           /*!< \brief Buffer to send normal vector values */
+  *Buffer_Receive_Coord,         /*!< \brief Buffer to receive coordinate values*/
+  *Buffer_Receive_Normal;        /*!< \brief Buffer to receive normal vector values*/
   
-  unsigned long *Receive_GlobalPoint, /*!\brief Buffer to receive Global point indexes*/
-  *Buffer_Receive_nLinkedNodes,       /*!\brief Buffer to receive the number of edges connected to each node*/
-  *Buffer_Receive_LinkedNodes,        /*!\brief Buffer to receive the list of notes connected to the nodes through an edge*/
-  *Buffer_Receive_StartLinkedNodes,   /*!\brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
-  *Buffer_Receive_Proc;               /*!\brief Buffer to receive the thread that owns the node*/
+  unsigned long *Receive_GlobalPoint, /*!< \brief Buffer to receive Global point indexes*/
+  *Buffer_Receive_nLinkedNodes,       /*!< \brief Buffer to receive the number of edges connected to each node*/
+  *Buffer_Receive_LinkedNodes,        /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge*/
+  *Buffer_Receive_StartLinkedNodes,   /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
+  *Buffer_Receive_Proc;               /*!< \brief Buffer to receive the thread that owns the node*/
   
-  unsigned long  nGlobalVertex_Target, /*!\brief Global number of vertex of the target boundary*/
-  nLocalVertex_Target,                 /*!\brief Number of vertex of the target boundary owned by the thread*/
-  nGlobalVertex_Donor,                 /*!\brief Global number of vertex of the donor boundary*/
-  nLocalVertex_Donor,                  /*!\brief Number of vertex of the donor boundary owned by the thread*/
-  nGlobalVertex,                       /*!\brief Dummy variable to temporarily store the global number of vertex of a boundary*/
-  nLocalLinkedNodes;                   /*!\brief Dummy variable to temporarily store the number of vertex of a boundary*/
+  unsigned long  nGlobalVertex_Target, /*!< \brief Global number of vertex of the target boundary*/
+  nLocalVertex_Target,                 /*!< \brief Number of vertex of the target boundary owned by the thread*/
+  nGlobalVertex_Donor,                 /*!< \brief Global number of vertex of the donor boundary*/
+  nLocalVertex_Donor,                  /*!< \brief Number of vertex of the donor boundary owned by the thread*/
+  nGlobalVertex,                       /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary*/
+  nLocalLinkedNodes;                   /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary*/
 
 public:
-  CGeometry**** Geometry;        /*! \brief Vector which stores n zones of geometry. */
-  CGeometry* donor_geometry;    /*! \brief Vector which stores the donor geometry. */
-  CGeometry* target_geometry;   /*! \brief Vector which stores the target geometry. */
+  CGeometry**** Geometry;      /*! \brief Vector which stores n zones of geometry. */
+  CGeometry* donor_geometry;   /*! \brief Vector which stores the donor geometry. */
+  CGeometry* target_geometry;  /*! \brief Vector which stores the target geometry. */
 
   /*!
    * \brief Constructor of the class.
@@ -115,12 +109,12 @@ public:
   CInterpolator(void);
 
   /*!
- * \brief Constructor of the class.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iZone - index of the donor zone
- * \param[in] jZone - index of the target zone
- */
+   * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
+   */
   CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
@@ -220,7 +214,7 @@ public:
 
 /*!
  * \brief Isoparametric interpolation
-  */
+ */
 class CIsoparametric : public CInterpolator {
 public:
 
