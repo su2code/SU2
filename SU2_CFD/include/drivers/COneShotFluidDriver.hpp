@@ -129,11 +129,6 @@ public:
   void PrimalDualStep();
 
   /*!
-   * \brief Executes one primal and dual iteration to compute f_u+G_u*Bary.
-   */
-  void ComputeShiftLagGradUncon();
-
-  /*!
    * \brief Executes all operations needed to find the "BCheck"-term of the doubly augmented Lagrangian.
    */
   void ComputeGammaTerm();
@@ -230,11 +225,6 @@ public:
    * \brief Store the gradient of the shifted Lagrangian.
    */
   void SetShiftLagGrad();
-
-  /*!
-   * \brief Store the gradient of the shifted Lagrangian.
-   */
-  void SetShiftLagGradUncon();
 
   /*!
    * \brief Store the gradient of the augmented Lagrangian.

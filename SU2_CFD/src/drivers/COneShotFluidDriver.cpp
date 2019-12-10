@@ -89,7 +89,6 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     Gradient[iDV] = 0.0;
     Gradient_Old[iDV] = 0.0;
     ShiftLagGrad[iDV] = 0.0;
-    ShiftLagGradUncon[iDV] = 0.0;
     AugLagGrad[iDV] = 0.0;
     AugLagGradAlpha[iDV] = 0.0;
     AugLagGradBeta[iDV] = 0.0;
@@ -999,12 +998,6 @@ void COneShotFluidDriver::SetShiftLagGrad(){
   solver[ADJFLOW_SOL]->SetShiftedLagGradNorm(sqrt(norm));
 }
 
-void COneShotFluidDriver::SetShiftLagGradUncon(){
-  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
-    ShiftLagGradUncon[iDV] = Gradient[iDV];
-  }
-}
-
 void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
@@ -1036,38 +1029,6 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       }
     }   
   }
-}
-
-void COneShotFluidDriver::ComputeShiftLagGradUncon(){
-
-  /*--- Note: Not applicable for unsteady code ---*/
-
-  /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
-   *    of the previous iteration. The values are passed to the AD tool. ---*/
-
-  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-
-  /*--- Initialize the adjoint of the objective function with 0.0. ---*/
-
-  SetAdj_ObjFunction();
-  SetAdj_ConstrFunction_Zero();
-
-  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-
-  AD::ComputeAdjoint();
-
-  /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-  iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
-                                 solver_container, numerics_container, config_container,
-                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-  /*--- Extract the computed sensitivity values. ---*/
-  solver[ADJFLOW_SOL]->SetSensitivity(geometry,solver,config);
-
-  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
-  AD::ClearAdjoints();
-
 }
 
 void COneShotFluidDriver::ComputeGammaTerm(){
