@@ -402,16 +402,16 @@ void COneShotFluidDriver::RunOneShot(){
     if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
       StoreLambdaGrad();
 
-      stepsize = 1.0;
+      su2double stepsize_mu = 1.0;
       ArmijoIter = 0;
       bool_tol = false;
       do {
         if(ArmijoIter > 0){
           /*--- Parabolic backtracking ---*/
           su2double stepsize_tmp = UpdateStepSizeQuadratic();
-          stepsize  = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-          if(stepsize < tol) {
-            stepsize = 0.;
+          stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
+          if(stepsize_mu < tol) {
+            stepsize_mu = 0.;
             bool_tol = true;
           }
         }
@@ -420,7 +420,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*--- Update constraint multiplier ---*/
         LoadOldLambda();
-        UpdateLambda(stepsize);
+        UpdateLambda(stepsize_mu);
 
         /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
         CalculateLagrangian();
