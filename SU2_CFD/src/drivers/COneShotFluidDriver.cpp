@@ -518,7 +518,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda_Tilde);
+  SetAdj_ConstrFunction(Lambda);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -1169,7 +1169,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  SetAdj_ConstrFunction(Lambda_Tilde);
+  SetAdj_ConstrFunction(Lambda);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
