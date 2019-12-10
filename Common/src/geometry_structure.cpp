@@ -11526,6 +11526,9 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   int iProcessor, pProcessor = 0, nProcessor = size;
 
   bool isBadMatch = false;
+  unsigned long checkBadMatch = 0;
+  su2double dist_to_Axis;
+  bool pointonAxis = false;
   
   string Marker_Tag;
   
@@ -11760,6 +11763,16 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
             
+            /*--- Added by Akshay ---*/
+            /*--- Check if point is on the axis ---*/
+            pointonAxis = false;
+            dist_to_Axis = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+				dist_to_Axis += pow((rotCoord[iDim] - Coord_i[iDim]),2.0);
+			
+			dist_to_Axis = sqrt(dist_to_Axis);
+            if (dist_to_Axis < epsilon) pointonAxis = true;
+            
             /*--- Our search is based on the minimum distance, so we
              initialize the distance to a large value. ---*/
             
@@ -11788,7 +11801,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                sure that we avoid the original point by checking that the
                global index values are not the same. ---*/
               
-              if ((jPointGlobal != iPointGlobal)) {
+              //if ((jPointGlobal != iPointGlobal)) {
+			  if ((jPointGlobal != iPointGlobal) || pointonAxis) {
                 
                 /*--- Compute the distance between the candidate periodic
                  point and the transformed coordinates of the owned point. ---*/
@@ -11805,7 +11819,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                  independent periodic point (even if on the same rank). ---*/
                 
                 if (((dist < mindist) && (iProcessor != rank)) ||
-                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+                    ((dist < mindist) && (iProcessor == rank))) {
+                    //((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
                   
                   /*--- We have found an intermediate match. Store the
                    data for this point before continuing the search. ---*/
