@@ -1287,14 +1287,15 @@ void COneShotFluidDriver::ComputePreconditioner(){
     }
   }
   if (nConstr == 1){
+      const su2double gamma = config->GetOneShotGamma(0);
       const bool active = (ConstrFunc[0] + Lambda[0]/gamma > 0.);
       if(active) {
-        BCheck_Norm = BCheck[0][0] - 1./config->GetOneShotGamma(0);
+        BCheck_Norm = BCheck[0][0] - 1./gamma;
         BCheck_Inv[0][0] = 1./BCheck[0][0];
       }
       else {
-        BCheck_Norm = 2./config->GetOneShotGamma(0);
-        BCheck_Inv[0][0] = config->GetOneShotGamma(0);
+        BCheck_Norm = 2./gamma;
+        BCheck_Inv[0][0] = gamma;
       }
   } else {
     bcheck=1./(BCheck[0][0]*BCheck[1][1]*BCheck[2][2]+BCheck[1][0]*BCheck[2][1]*BCheck[0][2]+BCheck[2][0]*BCheck[0][1]*BCheck[1][2]-BCheck[0][0]*BCheck[2][1]*BCheck[1][2]-BCheck[2][0]*BCheck[1][1]*BCheck[0][2]-BCheck[1][0]*BCheck[0][1]*BCheck[2][2]);
