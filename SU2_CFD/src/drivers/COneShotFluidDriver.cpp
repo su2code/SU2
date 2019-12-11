@@ -363,7 +363,7 @@ void COneShotFluidDriver::RunOneShot(){
       // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
-      // StoreLambdaGrad();
+      StoreLambdaGrad();
       StoreGradDotDir(true);
 
     }
