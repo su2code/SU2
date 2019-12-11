@@ -5204,7 +5204,6 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         
         nodes->AddSolution(iPoint, iVar, -Res*Delta);
-        // from develop: nodes->AddSolution(iPoint,iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
@@ -5231,11 +5230,17 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   unsigned short iVar, jVar;
   unsigned long iPoint, kNeigh, kPoint, jPoint;
+  su2double *local_Residual, *local_Res_TruncError, Res;
   
   int m = (int)nPointDomain * nVar;
   int n = (int)TrialBasis[0].size();
   
   su2double* prod = new su2double[nVar];
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
   
   /*--- Compute Test Basis: W = J * Phi ---*/
   
@@ -5262,7 +5267,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
             prod[iVar] += mat_i[iVar*nVar+jVar] * phi[jVar];
           }
         }
-        //Jacobian.MatrixVectorProduct(mat_i, &phi[0], prod);
         
         for (unsigned long i = 0; i < nVar; i++){ // column order
           TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
@@ -5322,7 +5326,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   
   // Set up variables for QR decomposition, A = QR
-  // LDA = m
   char TRANS = 'N';
   int NRHS = 1;
   int LWORK = n+n;
@@ -5330,9 +5333,20 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   int INFO = 1;
   
   vector<double> r(m,0.0);
-  for (int i=0; i < m; i++){
-    r[i] = LinSysRes[i];
+  //for (int i=0; i < m; i++){
+  //  r[i] = LinSysRes[i];
+  //}
+  int index = 0;
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    local_Residual = LinSysRes.GetBlock(iPoint);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      r[index] = local_Residual[iVar] + local_Res_TruncError[iVar];
+      index++;
+    }
   }
+  
 
   if (true) {
     ofstream fs;
@@ -5391,14 +5405,21 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   delete [] prod;
   
   /*--- Update solution ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    local_Residual = LinSysRes.GetBlock(iPoint);
+    
     for (iVar = 0; iVar < nVar; iVar++) {
       su2double sum = 0.0;
+      Res = local_Residual[iVar] + local_Res_TruncError[iVar];
       
       for (unsigned long i = 0; i < TrialBasis[0].size(); i++) {
         sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
       }
       nodes->AddROMSolution(iPoint, iVar, sum);
+      AddRes_RMS(iVar, Res*Res);
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
   }
 
