@@ -267,9 +267,12 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   helper       = myHelper;
 #endif
 
-  rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1.0E-8); // Upper bound 1-(1E-6)
+  // rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1.0E-8); // Upper bound 1-(1E-6)
+  // // theta = min(max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old), theta_old/0.9);
+  // theta = max(max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old), 1.0E-8); // Lower bound 1E-6
+  rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-8); // Upper bound 1-(1E-6)
   // theta = min(max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old), theta_old/0.9);
-  theta = max(max(sqrt(fabs(helper)/normDelta*theta_old), 0.9*theta_old), 1.0E-8); // Lower bound 1E-6
+  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 1.0E-8); // Lower bound 1E-6
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
