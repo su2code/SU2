@@ -1307,7 +1307,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
         BCheck_Inv[0][0] = 1./BCheck[0][0];
       }
       else {
-        BCheck_Norm = 1.1/gamma;
+        BCheck_Norm = 2.0/gamma;
         BCheck_Inv[0][0] = gamma;
       }
   } else {
