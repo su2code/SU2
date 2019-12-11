@@ -3841,7 +3841,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
   /*--- Center of rotation & angular velocity vector from config ---*/
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     Center[iDim] = config->GetMotion_Origin(iDim);
     Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
