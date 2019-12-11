@@ -327,9 +327,9 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
+        LoadOldLambda();
         // // UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
+        UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -355,7 +355,7 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
 
         /*--- Load multipliers from first line search ---*/
-        // LoadLambdaStore();
+        LoadLambdaStore();
       }
 
       // /*--- Update constraint multiplier ---*/
@@ -384,8 +384,8 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  /*--- Load multipliers from first line search ---*/
-  LoadLambdaStore();
+  // /*--- Load multipliers from first line search ---*/
+  // LoadLambdaStore();
   // UpdateLambda(1.0);
 
   /*--- Store FFD info in file ---*/
@@ -902,7 +902,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  else {
+  // else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -918,7 +918,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         // }
       }
     }
-  }
+  // }
   admissible_step *= CWolfeOne;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -936,7 +936,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  else {
+  // else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -952,7 +952,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         // }
       }
     }
-  }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
