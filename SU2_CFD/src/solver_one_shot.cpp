@@ -282,10 +282,10 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
   /* --- Estimate alpha and beta --- */
   // su2double alpha = 2./((1.-rho)*(1.-rho));
   // su2double beta  = 2.;
-  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  // su2double beta  = 2./theta;
-  su2double alpha = 6.*theta/((1.-rho)*(1.-rho));
-  su2double beta  = 6./theta;
+  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  su2double beta  = 2./theta;
+  // su2double alpha = 6.*theta/((1.-rho)*(1.-rho));
+  // su2double beta  = 6./theta;
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
     config->SetOneShotAlpha(alpha);
@@ -306,7 +306,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
   
   /* --- Estimate gamma value --- */
   for(iConstr = 0; iConstr < nConstr; iConstr++) {
-    su2double gamma = 2./val_bcheck_norm;
+    su2double gamma = 1.01/val_bcheck_norm;
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (val_constr_func[iConstr] <= 0.0)) {
       // gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr)), config->GetOneShotGammaMax()), 1.0E-6);
     // }
@@ -314,7 +314,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     //    (val_constr_func[iConstr] + val_lambda[iConstr]/config->GetOneShotGamma(iConstr) <= 0.0)) {
     //    gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // }
-      gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
+      // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
       gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-8);
       config->SetOneShotGamma(gamma, iConstr);
