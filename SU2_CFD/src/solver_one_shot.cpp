@@ -282,8 +282,10 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
   /* --- Estimate alpha and beta --- */
   // su2double alpha = 2./((1.-rho)*(1.-rho));
   // su2double beta  = 2.;
-  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  su2double beta  = 2./theta;
+  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  // su2double beta  = 2./theta;
+  su2double alpha = 6.*theta/((1.-rho)*(1.-rho));
+  su2double beta  = 6./theta;
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
     config->SetOneShotAlpha(alpha);
