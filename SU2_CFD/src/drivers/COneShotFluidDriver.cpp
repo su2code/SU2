@@ -243,9 +243,9 @@ void COneShotFluidDriver::RunOneShot(){
     StoreObjFunction();
     StoreConstrFunction();
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     stepsize = 1.0;
     ArmijoIter = 0;
