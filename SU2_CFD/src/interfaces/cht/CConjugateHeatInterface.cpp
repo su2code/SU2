@@ -63,19 +63,17 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
 
-  bool flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
+  bool compressible_flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS)
-               || (donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool incompressible_flow = ((donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == INC_RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-
-  bool compressible_flow    = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
-  bool incompressible_flow  = (donor_config->GetEnergy_Equation()) && flow;
-  bool heat_equation        = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM
-                               || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
+               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS)
+               && (donor_config->GetEnergy_Equation()));
+  bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM
+               || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
   Coord         = donor_geometry->node[Point_Donor]->GetCoord();
 
