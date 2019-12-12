@@ -236,16 +236,16 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
-  /*--- Perform line search on just multiplier ---*/
-  if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
-    StoreLambdaGrad();
+  // /*--- Perform line search on just multiplier ---*/
+  // if(nConstr > 0 && OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()) {
+  //   StoreLambdaGrad();
 
-    StoreObjFunction();
-    StoreConstrFunction();
+  //   StoreObjFunction();
+  //   StoreConstrFunction();
 
-    // /*--- Do a primal and adjoint update ---*/
-    // PrimalDualStep();
-    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  //   // /*--- Do a primal and adjoint update ---*/
+  //   // PrimalDualStep();
+  //   // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
   //   stepsize = 1.0;
   //   ArmijoIter = 0;
