@@ -290,7 +290,6 @@ void COneShotFluidDriver::RunOneShot(){
         /*--- Parabolic backtracking ---*/
         su2double stepsize_tmp = UpdateStepSizeQuadratic();
         stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-        // stepsize /= 2.0;
         if(stepsize < tol) {
           stepsize = tol;
           bool_tol = true;
@@ -302,10 +301,6 @@ void COneShotFluidDriver::RunOneShot(){
         // solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      // else {
-      //   // LoadOldLambda();
-      //   // UpdateLambda(1.0);
-      // }
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -424,40 +419,8 @@ void COneShotFluidDriver::RunOneShot(){
   else if(OneShotIter > config->GetOneShotStart() && 
           OneShotIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-    // /*--- Perform line search on just multiplier ---*/
-    // if(nConstr > 0) {
-    //   StoreLambdaGrad();
-
-    //   su2double stepsize_mu = 1.0;
-    //   ArmijoIter = 0;
-    //   bool_tol = false;
-    //   do {
-    //     if(ArmijoIter > 0){
-    //       /*--- Parabolic backtracking ---*/
-    //       su2double stepsize_tmp = UpdateStepSizeQuadratic();
-    //       stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-    //       if(stepsize_mu < tol) {
-    //         stepsize_mu = 0.;
-    //         bool_tol = true;
-    //       }
-    //     }
-    //     /*--- Compute and store GradL dot p ---*/
-    //     StoreGradDotDir(false);
-
-    //     /*--- Update constraint multiplier ---*/
-    //     LoadOldLambda();
-    //     UpdateLambda(stepsize_mu);
-
-    //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    //     CalculateLagrangian();
-
-    //     ArmijoIter++;
-
-    //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    // }
-
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-  solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
@@ -569,15 +532,14 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  // if(OneShotIter == config->GetOneShotStart()) {
-  //   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     InitializeLambdaTilde(iConstr);
-  //     // Lambda_Tilde[iConstr] = 0.0;
-  //     Lambda[iConstr] = Lambda_Tilde[iConstr];
-  //   }
-  //   StoreLambda();
-  //   StoreOldLambda();
-  // }
+  if(OneShotIter == config->GetOneShotStart()) {
+    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+      InitializeLambdaTilde(iConstr);
+      Lambda[iConstr] = Lambda_Tilde[iConstr];
+    }
+    StoreLambda();
+    StoreOldLambda();
+  }
 
 }
 
@@ -1578,6 +1540,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
 
+    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       //   helper -= BCheck_Inv[iConstr][jConstr]*Lambda_Old[jConstr]/gamma;
@@ -1585,12 +1549,14 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       // helper = -Lambda_Old[iConstr];
       // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       Lambda[iConstr] = 0.;
+      InitializeLambdaTilde(iConstr);
     }
     else {
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
         helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
       }
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
