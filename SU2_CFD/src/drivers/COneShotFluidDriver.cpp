@@ -358,9 +358,9 @@ void COneShotFluidDriver::RunOneShot(){
         // LoadLambdaStore();
       }
 
-      /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+      // /*--- Update constraint multiplier ---*/
+      // LoadOldLambda();
+      // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
