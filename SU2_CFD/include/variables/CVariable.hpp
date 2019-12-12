@@ -2823,6 +2823,10 @@ public:
     for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Save(iPoint,iVar) = Solution(iPoint,iVar);
   }
 
+  inline vold SetOldSolution_Store(unsigned long iPoint) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Save(iPoint,iVar) = Solution_Store(iPoint,iVar);
+  }
+
   /*!
    * \brief Set stored variables to the old solution.
    */

@@ -209,6 +209,14 @@ void COneShotSolver::LoadSolution(){
   }
 }
 
+void COneShotSolver::SetOldStoreSolution(){
+  unsigned long iPoint;
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    direct_solver->GetNodes()->SetOldSolution_Store(iPoint);
+    nodes->SetOldSolution_Store(iPoint);
+  }
+}
+
 void COneShotSolver::SetSaveSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){

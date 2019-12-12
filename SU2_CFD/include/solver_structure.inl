@@ -2540,6 +2540,8 @@ inline void CSolver::LoadSolution(){}
 
 inline void CSolver::SetSaveSolution(){}
 
+inline void CSolver::SetOldStoreSolution(){}
+
 inline void CSolver::LoadSaveSolution(){}
 
 inline void CSolver::LoadStepSolution(su2double stepsize){}

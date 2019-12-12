@@ -4635,6 +4635,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void SetOldStoreSolution();
+
+  /*!
+   * \brief A virtual member.
+   */
   virtual void LoadSaveSolution();
 
   /*!
@@ -15929,6 +15934,12 @@ public:
    * (This is done to store the solution before calculating the alpha and beta terms)
    */
   void SetSaveSolution();
+
+  /*!
+   * \brief Store the previous solution in Solution_Save.
+   * (This is done to store the solution before calculating the alpha and beta terms)
+   */
+  void SetOldStoreSolution();
 
   /*!
    * \brief Load the current solution from Solution_Save.
