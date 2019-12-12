@@ -533,14 +533,14 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  if(OneShotIter == config->GetOneShotStart()) {
-    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-      InitializeLambdaTilde(iConstr);
-      Lambda[iConstr] = Lambda_Tilde[iConstr];
-    }
-    StoreLambda();
-    StoreOldLambda();
-  }
+  // if(OneShotIter == config->GetOneShotStart()) {
+  //   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     InitializeLambdaTilde(iConstr);
+  //     Lambda[iConstr] = Lambda_Tilde[iConstr];
+  //   }
+  //   StoreLambda();
+  //   StoreOldLambda();
+  // }
 
 }
 
@@ -1551,7 +1551,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda[iConstr] = 0.;
       InitializeLambdaTilde(iConstr);
-      Lambda[iConstr] = Lambda_Tilde[iConstr]
+      Lambda[iConstr] = Lambda_Tilde[iConstr];
     }
     else {
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
