@@ -356,8 +356,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Update constraint multiplier ---*/
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      LoadOldLambda();
+      UpdateLambda(stepsize);
       // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
@@ -385,17 +385,17 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  // /*--- Load multipliers from first line search ---*/
-  // // LoadLambdaStore();
-  if(OneShotIter > config->GetOneShotStart() && 
-     OneShotIter < config->GetOneShotStop()) {
-  //    /*--- Do a primal and adjoint update ---*/
-  //   solver[ADJFLOW_SOL]->LoadSolution();
-  //   PrimalDualStep();
-  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  //   // LoadLambdaStore();
-    UpdateLambda(1.0);
-  }
+  // // /*--- Load multipliers from first line search ---*/
+  // // // LoadLambdaStore();
+  // if(OneShotIter > config->GetOneShotStart() && 
+  //    OneShotIter < config->GetOneShotStop()) {
+  // //    /*--- Do a primal and adjoint update ---*/
+  // //   solver[ADJFLOW_SOL]->LoadSolution();
+  // //   PrimalDualStep();
+  // //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  // //   // LoadLambdaStore();
+  //   UpdateLambda(1.0);
+  // }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -1541,24 +1541,24 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
 
-    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       //   helper -= BCheck_Inv[iConstr][jConstr]*Lambda_Old[jConstr]/gamma;
       // }
-      // helper = -Lambda_Old[iConstr];
-      // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      helper = -Lambda_Old[iConstr];
+      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda[iConstr] = 0.;
-      InitializeLambdaTilde(iConstr);
-      Lambda[iConstr] = Lambda_Tilde[iConstr];
+      // InitializeLambdaTilde(iConstr);
+      // Lambda[iConstr] = Lambda_Tilde[iConstr];
     }
     else {
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
         helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
       }
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
 
     // /*--- gamma*(h-P_I(h+mu/gamma)) ---*/
