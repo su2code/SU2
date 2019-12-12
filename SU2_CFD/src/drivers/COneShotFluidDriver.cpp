@@ -423,6 +423,10 @@ void COneShotFluidDriver::RunOneShot(){
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    solver[ADJFLOW_SOL]->SetSaveSolution();
+    solver[ADJFLOW_SOL]->LoadSolution();
+    if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
+    solver[ADJFLOW_SOL]->LoadSaveSolution();
     UpdateLambda(1.0);
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
