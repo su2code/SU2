@@ -356,9 +356,9 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
+      // LoadOldLambda();
       // UpdateLambda(stepsize);
-      UpdateLambda(1.0);
+      // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
       // LoadLambdaStore();
@@ -387,15 +387,15 @@ void COneShotFluidDriver::RunOneShot(){
 
   // /*--- Load multipliers from first line search ---*/
   // // LoadLambdaStore();
-  // if(OneShotIter > config->GetOneShotStart() && 
-  //    OneShotIter < config->GetOneShotStop()) {
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) {
   //    /*--- Do a primal and adjoint update ---*/
   //   solver[ADJFLOW_SOL]->LoadSolution();
   //   PrimalDualStep();
   //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
   //   // LoadLambdaStore();
-  //   // UpdateLambda(1.0);
-  // }
+    UpdateLambda(1.0);
+  }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
