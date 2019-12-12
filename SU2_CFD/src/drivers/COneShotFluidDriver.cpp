@@ -393,6 +393,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry); 
+    CalculateLagrangian();
     // UpdateLambda(1.0);
   }
 
