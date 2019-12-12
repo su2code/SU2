@@ -888,7 +888,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  // else {
+  else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -905,7 +905,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         // }
       }
     }
-  // }
+  }
   admissible_step *= CWolfeOne;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -923,7 +923,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  // else {
+  else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -942,7 +942,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         // }
       }
     }
-  // }
+  }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
