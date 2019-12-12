@@ -7975,6 +7975,12 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
+  
+  bool pointonAxis = false;
+  
+  bool chksamePoint = false;
+  
+  su2double dist_to_Axis = 0.0;
 
   /*--- Tolerance for distance-based match to report warning. ---*/
 
@@ -8183,6 +8189,17 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
 
+            /*--- Check if the point lies on the axis of rotation. If it does, 
+             the rotated coordinate and the original coordinate are the same. ---*/
+
+            pointonAxis = false;
+            dist_to_Axis = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+				dist_to_Axis = (rotCoord[iDim] - Coord_i[iDim])*(rotCoord[iDim] - Coord_i[iDim]);
+            dist_to_Axis = sqrt(dist_to_Axis);
+
+            if (dist_to_Axis < epsilon) pointonAxis = true;
+
             /*--- Our search is based on the minimum distance, so we
              initialize the distance to a large value. ---*/
 
@@ -8211,7 +8228,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                sure that we avoid the original point by checking that the
                global index values are not the same. ---*/
 
-              if ((jPointGlobal != iPointGlobal)) {
+              if ((jPointGlobal != iPointGlobal) || (pointonAxis)) {
 
                 /*--- Compute the distance between the candidate periodic
                  point and the transformed coordinates of the owned point. ---*/
@@ -8225,10 +8242,15 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
                 /*--- Compare the distance against the existing minimum
                  and also perform checks just to be sure that this is an
-                 independent periodic point (even if on the same rank). ---*/
+                 independent periodic point (even if on the same rank),
+                  unless it lies on the axis of rotation. ---*/
 
-                if (((dist < mindist) && (iProcessor != rank)) ||
-                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+                chksamePoint = false;
+                chksamePoint = (((dist < mindist) && (iProcessor != rank)) ||
+                                ((dist < mindist) && (iProcessor == rank) &&
+                                (jPoint != iPoint)));
+
+                if (chksamePoint || ((dist < mindist) && (pointonAxis))) {
 
                   /*--- We have found an intermediate match. Store the
                    data for this point before continuing the search. ---*/
@@ -8258,7 +8280,9 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
             if (mindist > epsilon) {
               cout.precision(10);
               cout << endl;
-              cout << "   Bad match for point " << iPointGlobal << ".\tNearest";
+              cout << "   Bad match for point " << iPointGlobal << " at "<<Coord_i[0]<<", "<<Coord_i[1];
+              if (nDim == 3) cout<<", "<<Coord_i[2];
+              cout<<".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
               maxdist_local = min(maxdist_local, 0.0);
               isBadMatch = true;
