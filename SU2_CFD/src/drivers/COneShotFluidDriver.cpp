@@ -386,7 +386,8 @@ void COneShotFluidDriver::RunOneShot(){
 
   // /*--- Load multipliers from first line search ---*/
   // LoadLambdaStore();
-  // UpdateLambda(1.0);
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) { UpdateLambda(1.0); }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
