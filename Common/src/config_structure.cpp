@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -5959,7 +5959,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Deform_Mesh, iMarker_Fluid_Load,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_HeatFluxCatalytic, iMarker_HeatFluxNonCatalytic,
+  iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
@@ -6090,8 +6093,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS)) ||
-          (Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver == TNE2_RANS) )
+          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
+          (Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver == TNE2_RANS))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
       	cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -6816,7 +6819,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS)||
-        (Kind_Solver == TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_RANS)) { ) {
+        (Kind_Solver == TNE2_RANS) || (Kind_Solver == DISC_ADJ_TNE2_RANS)) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 

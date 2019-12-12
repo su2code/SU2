@@ -2304,7 +2304,7 @@ inline su2double CTNE2EulerSolver::GetModVelocity_Inf(void) {
 	return sqrt(Vel2);
 }
 
-inline su2double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
+inline su2double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
 
 inline su2double CTNE2EulerSolver::GetCL_Inv(unsigned short val_marker) { return CL_Inv[val_marker]; }
 
@@ -2617,15 +2617,15 @@ inline void CTNE2TurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigne
 
 inline void CTNE2TurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetSolution(0, nu_tilde_Inf);
+    {nodes->SetSolution(iPoint, 0, nu_tilde_Inf);}
 }
 
 inline su2double CTNE2TurbSASolver::GetNuTilde_Inf(void) { return nu_tilde_Inf; }
 
 inline void CTNE2TurbSSTSolver::SetFreeStream_Solution(CConfig *config){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-    node[iPoint]->SetSolution(0, kine_Inf);
-    node[iPoint]->SetSolution(1, omega_Inf);
+    nodes->SetSolution(iPoint, 0, kine_Inf);
+    nodes->SetSolution(iPoint, 1, omega_Inf);
   }
 }
 

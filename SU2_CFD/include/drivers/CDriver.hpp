@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
@@ -70,7 +70,9 @@
 #include "../output/CElasticityOutput.hpp"
 #include "../output/CAdjElasticityOutput.hpp"
 #include "../output/CFlowCompOutput.hpp"
+#include "../output/CTNE2CompOutput.hpp"
 #include "../output/CAdjFlowOutput.hpp"
+#include "../output/CAdjTNE2CompOutput.hpp"
 #include "../output/CFlowCompFEMOutput.hpp"
 #include "../output/CFlowIncOutput.hpp"
 #include "../output/CAdjFlowIncOutput.hpp"

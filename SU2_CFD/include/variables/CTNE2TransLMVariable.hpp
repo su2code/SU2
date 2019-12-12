@@ -37,25 +37,20 @@
 
 #pragma once
 
-#include "CTNE2TurbVariable.hpp"
+#include "CTurbVariable.hpp"
 
 /*!
  * \class CTNE2TransLMVariable
  * \brief Transition model variables.
  * \ingroup Turbulence_Model
- * \author w. Maier.
+ * \author A. Bueno, W. Maier.
  */
 
-class CTNE2TransLMVariable : public CTNE2TurbVariable {
+class CTNE2TransLMVariable final : public CTurbVariable {
 protected:
-  su2double gamma_sep;
+  VectorType gamma_sep;
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTNE2TransLMVariable(void);
 
   /*!
    * \overload
@@ -66,26 +61,27 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2TransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CTNE2TransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2TransLMVariable(void);
+  ~CTNE2TransLMVariable() = default;
 
   /*!
    * \brief ________________.
    */
-  inline su2double GetIntermittency(void) { return Solution[0]; }
+  inline su2double GetIntermittency(unsigned long iPoint) const override { return Solution(iPoint,0); }
 
   /*!
    * \brief ________________.
    * \param[in] gamma_sep_in
    */
-  inline void SetGammaSep(su2double gamma_sep_in) {gamma_sep = gamma_sep_in;}
+  inline void SetGammaSep(unsigned long iPoint, su2double gamma_sep_in) override { gamma_sep(iPoint) = gamma_sep_in; }
 
   /*!
    * \brief Correction for separation-induced transition.
    */
-  inline void SetGammaEff(void) {Solution[0] = max(Solution[0], gamma_sep);}
+  inline void SetGammaEff(unsigned long iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
 };
+

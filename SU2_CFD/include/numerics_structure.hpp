@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_structure.hpp
  * \brief Headers of the main subroutines for the dumerical definition of the problem.
  *        The subroutines and functions are in the <i>numerics_structure.cpp</i>,
@@ -1601,6 +1601,12 @@ public:
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set the element-based local properties in mesh problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
+
+  /*!
    * \brief A virtual member
    * \param[in] config - Config structure
    */
@@ -1800,7 +1806,7 @@ public:
  */
 class CUpwRoeBase_Flow : public CNumerics {
 protected:
-  bool implicit, grid_movement, roe_low_dissipation;
+  bool implicit, dynamic_grid, roe_low_dissipation;
   su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
   su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
   su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
@@ -3108,7 +3114,7 @@ class CupwLin_TNE2TransLM : public CNumerics {
 private:
   su2double *Velocity_i;
   su2double *Velocity_j;
-  bool implicit, grid_movement, incompressible;
+  bool implicit, dynamic_grid, incompressible;
   su2double Density_i, Density_j, q_ij, a0, a1;
   unsigned short iDim;
 
@@ -3174,7 +3180,7 @@ private:
 protected:
   su2double *Velocity_i, *Velocity_j; /*!< \brief Velocity, minus any grid movement. */
   su2double Density_i, Density_j;
-  bool implicit, grid_movement, incompressible;
+  bool implicit, dynamic_grid, incompressible;
   su2double q_ij, /*!< \brief Projected velocity at the face. */
             a0,   /*!< \brief The maximum of the face-normal velocity and 0 */
             a1;   /*!< \brief The minimum of the face-normal velocity and 0 */
@@ -3294,7 +3300,7 @@ public:
 class CUpwSca_TNE2TransLM : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
-  bool implicit, grid_movement;
+  bool implicit, dynamic_grid;
   su2double q_ij, a0, a1;
   unsigned short iDim;
 
@@ -3372,7 +3378,7 @@ class CCentBase_Flow : public CNumerics {
 
 protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  bool dynamic_grid;              /*!< \brief Consider grid movement. */
+  bool dynamic_grid;               /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
   su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
@@ -3578,23 +3584,29 @@ class CCentJSTInc_Flow : public CNumerics {
   
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_V, *Diff_Lapl, /*!< \brief Diference of primitive variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature, /*!< \brief Mean values of primitive variables. */
-  MeandRhodT, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
-  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, Epsilon_4; /*!< \brief Artificial dissipation values. */
+  su2double *Diff_V, *Diff_Lapl,   /*!< \brief Diference of primitive variables and undivided laplacians. */
+  *Velocity_i, *Velocity_j,        /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity_i,
+  ProjVelocity_j,                  /*!< \brief Mean and projected velocities. */
+  sq_vel_i, sq_vel_j,              /*!< \brief Modulus of the velocity and the normal vector. */
+  Temperature_i, Temperature_j,    /*!< \brief Temperature at node 0 and 1. */
+  MeanDensity, MeanPressure,
+  MeanBetaInc2, MeanEnthalpy,
+  MeanCp, MeanTemperature,         /*!< \brief Mean values of primitive variables. */
+  MeandRhodT,                      /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  Param_p, Param_Kappa_2,
+  Param_Kappa_4,                   /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j,
+  MeanLambda,                      /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc2, sc4,
+  StretchingFactor,               /*!< \brief Streching parameters. */
+  *ProjFlux,                      /*!< \brief Projected inviscid flux tensor. */
+  Epsilon_2, Epsilon_4;           /*!< \brief Artificial dissipation values. */
   su2double **Precon;
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid, /*!< \brief Modification for grid movement. */
-  variable_density, /*!< \brief Variable density incompressible flows. */
-  energy; /*!< \brief computation with the energy equation. */
+  bool implicit,                  /*!< \brief Implicit calculation. */
+  dynamic_grid,                   /*!< \brief Modification for grid movement. */
+  variable_density,               /*!< \brief Variable density incompressible flows. */
+  energy;                         /*!< \brief computation with the energy equation. */
 
 public:
   
@@ -3680,14 +3692,16 @@ public:
 class CCentSca_Heat : public CNumerics {
 
 private:
-  unsigned short iDim; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  cte_0, cte_1; /*!< \brief Artificial dissipation values. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid; /*!< \brief Modification for grid movement. */
+  unsigned short iDim;             /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_Lapl,            /*!< \brief Diference of conservative variables and undivided laplacians. */
+  *MeanVelocity, ProjVelocity,
+  ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  Param_Kappa_4,                   /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j,
+  MeanLambda,                      /*!< \brief Local eingenvalues. */
+  cte_0, cte_1;                    /*!< \brief Artificial dissipation values. */
+  bool implicit,                   /*!< \brief Implicit calculation. */
+  dynamic_grid;                    /*!< \brief Modification for grid movement. */
 
 
 public:
@@ -3726,23 +3740,28 @@ public:
 class CCentLaxInc_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_V, /*!< \brief Difference of primitive variables. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature, /*!< \brief Mean values of primitive variables. */
-  MeandRhodT, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
-  Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
-  Epsilon_0; /*!< \brief Artificial dissipation values. */
+  su2double *Diff_V,               /*!< \brief Difference of primitive variables. */
+  *Velocity_i, *Velocity_j,        /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity_i,
+  ProjVelocity_j,                  /*!< \brief Mean and projected velocities. */
+  *ProjFlux,                       /*!< \brief Projected inviscid flux tensor. */
+  sq_vel_i, sq_vel_j,              /*!< \brief Modulus of the velocity and the normal vector. */
+  Temperature_i, Temperature_j,    /*!< \brief Temperature at node 0 and 1. */
+  MeanDensity, MeanPressure,
+  MeanBetaInc2, MeanEnthalpy,
+  MeanCp, MeanTemperature,         /*!< \brief Mean values of primitive variables. */
+  MeandRhodT,                      /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  Param_p, Param_Kappa_0,          /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j,
+  MeanLambda,                      /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc0,
+  StretchingFactor,               /*!< \brief Streching parameters. */
+  Epsilon_0;                      /*!< \brief Artificial dissipation values. */
   su2double **Precon;
-  bool implicit, /*!< \brief Implicit calculation. */
-  dynamic_grid, /*!< \brief Modification for grid movement. */
-  variable_density, /*!< \brief Variable density incompressible flows. */
-  energy; /*!< \brief computation with the energy equation. */
+  bool implicit,                  /*!< \brief Implicit calculation. */
+  dynamic_grid,                   /*!< \brief Modification for grid movement. */
+  variable_density,               /*!< \brief Variable density incompressible flows. */
+  energy;                         /*!< \brief computation with the energy equation. */
   
 public:
   

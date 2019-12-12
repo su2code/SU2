@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
@@ -65,8 +65,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool cold_flow = config->GetCOLD_FLOW();
   bool source    = true;
 
@@ -77,8 +77,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Determine if source term required ---*/
 
   if (cold_flow){
-    if (config->GetExtIter()<config->GetStartConv_Iter()){source = false;}
-    if ((config->GetExtIter() < Source_Iter)                        &&
+    if (config->GetTimeIter()<config->GetStartConv_Iter()){source = false;}
+    if ((config->GetTimeIter() < Source_Iter)                        &&
         (log10(solver_container[MESH_0]->GetRes_RMS(0)) > Res_Mag)  &&
         (GetOrderResReduction() < Res_Red)) {
       source = false;
@@ -109,7 +109,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   /*--- Compute source term residuals ---*/
   if (source){
-    solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+    //solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   }
 
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon, W. Maier, S.R. Copeland
@@ -49,66 +49,59 @@
 class CTNE2EulerVariable : public CVariable {
 protected:
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
-  unsigned short nSpecies;  /*!< \brief Number of species in the gas mixture. */
-  su2double Velocity2;		  /*!< \brief Square of the velocity vector. */
-  su2double Precond_Beta;	  /*!< \brief Low Mach number preconditioner value, Beta. */
+  unsigned long nSpecies;   /*!< \brief Number of species in the gas mixture. */
+  VectorType Velocity2;		/*!< \brief Square of the velocity vector. */
+  MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
   /*--- Primitive variable definition ---*/
-
-  su2double *Primitive;	            /*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
-  su2double **Gradient_Primitive;	  /*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
-  su2double *Limiter_Primitive;     /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
+  MatrixType Primitive;	              /*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
+  VectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
+  MatrixType Limiter_Primitive;       /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
 
   /*--- Secondary variable definition ---*/
-
-  su2double *Secondary;             /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Secondary;   /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Secondary;     /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  MatrixType Secondary;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  VectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  MatrixType Limiter_Secondary;       /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- New solution container for Classical RK4 ---*/
-
-  su2double *Solution_New;
+  MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */
 
   /*--- Other Necessary Variable Definition ---*/
-
-  su2double *dPdU;   /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
-  su2double *dTdU;   /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
-  su2double *dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
-  su2double *eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
-  su2double *Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
+  MatrixType dPdU;   /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
+  MatrixType dTdU;   /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
+  MatrixType dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
+  MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
+  MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
 
   /*--- Index Definition ---*/
 
-  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
 
 public:
 
   /*!
    * \brief Constructor of the class.
-   */
-  CTNE2EulerVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive vars of the problem
-   * \param[in] val_nPrimVarGrad - Number of prim vars gradients of the problem
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of conserved variables.
+   * \param[in] val_nVarPrim - Number of primitive variables.
+   * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2EulerVariable(unsigned short val_nDim, unsigned short val_nVar,
-                     unsigned short val_nPrimVar,
-                     unsigned short val_nPrimVarGrad,
-                     CConfig *config);
+  CTNE2EulerVariable(unsigned long npoint,
+                     unsigned long ndim,
+                     unsigned long nvar, unsigned long nvalprim,
+                     unsigned long nvarprimgrad, CConfig *config);
 
   /*!
-   * \overload
+   * \brief Constructor of the class.
    * \param[in] val_pressure - Value of the flow pressure (initialization value).
    * \param[in] val_massfrac - Value of the mass fraction (initialization value).
    * \param[in] val_mach - Value of the Mach number (initialization value).
    * \param[in] val_temperature - Value of the flow temperature (initialization value).
    * \param[in] val_temperature_ve - Value of the flow temperature_ve (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of conserved variables.
    * \param[in] val_nVarPrim - Number of primitive variables.
@@ -117,133 +110,376 @@ public:
    */
   CTNE2EulerVariable(su2double val_pressure, su2double *val_massfrac,
                      su2double *val_mach, su2double val_temperature,
-                     su2double val_temperature_ve, unsigned short val_nDim,
-                     unsigned short val_nVar, unsigned short val_nVarPrim,
-                     unsigned short val_nVarPrimGrad, CConfig *config);
-
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the flow value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive vars of the problem
-   * \param[in] val_nPrimVarGrad - Number of prim vars gradients of the problem
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTNE2EulerVariable(su2double *val_solution, unsigned short val_nDim,
-                     unsigned short val_nVar, unsigned short val_nVarPrim,
-                     unsigned short val_nVarPrimGrad, CConfig *config);
+                     su2double val_temperature_ve, unsigned long npoint,
+                     unsigned long ndim,
+                     unsigned long nvar, unsigned long nvalprim,
+                     unsigned long nvarprimgrad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTNE2EulerVariable(void);
+  virtual ~CTNE2EulerVariable() = default;
+
+  /*---------------------------------------*/
+  /*---          U,V,S Routines         ---*/
+  /*---------------------------------------*/
 
   /*!
    * \brief Get the new solution of the problem (Classical RK4).
-   * \param[in] val_var - Index of the variable.
+   * \param[in] iVar - Index of the variable.
    * \return Pointer to the old solution vector.
    */
-  inline su2double GetSolution_New(unsigned short val_var) {return Solution_New[val_var]; }
+  inline su2double GetSolution_New(unsigned long iPoint, unsigned long iVar) const final { return Solution_New(iPoint,iVar); }
 
   /*!
    * \brief Set the new solution container for Classical RK4.
    */
-  inline void SetSolution_New(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_New[iVar] = Solution[iVar];
-  }
+  void SetSolution_New() final;
 
   /*!
    * \brief Add a value to the new solution container for Classical RK4.
-   * \param[in] val_var - Number of the variable.
+   * \param[in] iVar - Number of the variable.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
-  inline void AddSolution_New(unsigned short val_var, su2double val_solution) {Solution_New[val_var] += val_solution;}
+  inline void AddSolution_New(unsigned long iPoint, unsigned long iVar, su2double val_solution) final {
+    Solution_New(iPoint,iVar) += val_solution;
+  }
+
+  /*!
+   * \brief Set all the primitive variables for compressible flows.
+   */
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
+
+  /*!
+   * \brief Set all the secondary variable for compressible flows .
+   */
+  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iVar - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
+    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++)
+      Primitive(iPoint,iVar) = val_prim[iVar];
+  }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iVar - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetSecondary(unsigned long iPoint, unsigned long iVar, su2double val_secondary) final {Secondary(iPoint,iVar) = val_secondary; }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetSecondary(unsigned long iPoint, const su2double *val_secondary) final {
+    for (unsigned long iVar = 0; iVar < nSecondaryVar; iVar++)
+      Secondary(iPoint,iVar) = val_secondary[iVar];
+  }
+
+  /*!
+   * \brief Get the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
+
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
+
+  /*!
+   * \brief Get the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline su2double GetSecondary(unsigned long iPoint, unsigned long iVar) const final {return Secondary(iPoint,iVar); }
+
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  inline su2double *GetSecondary(unsigned long iPoint) final { return Secondary[iPoint]; }
+
+  /*---------------------------------------*/
+  /*---  Gradient and Limiter Routines  ---*/
+  /*---------------------------------------*/
 
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */
-  void SetGradient_PrimitiveZero(unsigned short val_primvar);
+  void SetGradient_PrimitiveZero() final;
 
   /*!
-   * \brief Add <i>val_value</i> to the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value to add to the gradient of the primitive variables.
+   * \brief Add <i>value</i> to the gradient of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value to add to the gradient of the primitive variables.
    */
-  inline void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Primitive[val_var][val_dim] += val_value; }
+  inline void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Primitive(iPoint,iVar,iDim) += value;
+  }
 
   /*!
-   * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
+   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value to subtract to the gradient of the primitive variables.
    */
-  inline void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Primitive[val_var][val_dim] -= val_value; }
+  inline void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Primitive(iPoint,iVar,iDim) -= value;
+  }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) {return Gradient_Primitive[val_var][val_dim]; }
+  inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+    return Gradient_Primitive(iPoint,iVar,iDim);
+  }
+
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {return Limiter_Primitive(iPoint,iVar); }
 
   /*!
    * \brief Set the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the gradient.
    */
-  inline void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Primitive[val_var][val_dim] = val_value; }
+  inline void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+    Gradient_Primitive(iPoint,iVar,iDim) = value;
+  }
 
   /*!
-    * \brief Get the value of the primitive variables gradient.
-    * \return Value of the primitive variables gradient.
-    */
-  inline su2double **GetGradient_Primitive(void) {return Gradient_Primitive; }
+   * \brief Set the gradient of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] value - Value of the gradient.
+   */
+  inline void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double value) final {
+    Limiter_Primitive(iPoint,iVar) = value;
+  }
 
   /*!
-   * \brief Set the value of the velocity*velocity.
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
    */
-  void SetVelocity2(void);
+  inline su2double **GetGradient_Primitive(unsigned long iPoint) final { return Gradient_Primitive[iPoint]; }
 
   /*!
-   * \brief Set the value of the mixture density.
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
    */
-  bool SetDensity(void);
+  inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
 
   /*!
-   * \brief Set the value of the pressure.  Requires T&Tve calculation.
+   * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPressure(CConfig *config);
+  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config);
+
+  /*!
+   * \brief Set all the primitive variables for compressible flows.
+   */
+  void SetPrimVar_Gradient(CConfig *config, unsigned long iPoint);
+
+  /*!
+   * \brief Set all the conserved variables.
+   */
+  bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
+                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
+                    su2double *val_Cvves) override;
+
+  /*!
+   * \brief Set Gradient of the primitive variables from
+   */
+  bool GradCons2GradPrimVar(CConfig *config, su2double *U, su2double *V,
+                            su2double **GradU, su2double **GradV) override;
+
+  /*!
+   * \brief Set all the conserved variables.
+   */
+  void Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) override;
+
+
+  /*---------------------------------------*/
+  /*---   Specific variable routines    ---*/
+  /*---------------------------------------*/
+
+  /*!
+   * \brief Set the value of the pressure.
+   */
+  bool SetPressure(unsigned long iPoint, CConfig *config) override;
 
   /*!
    * \brief Set the value of the speed of the sound.
-   * \param[in] config
+   * \param[in] soundspeed2 - Value of soundspeed^2.
    */
-  bool SetSoundSpeed(CConfig *config);
+  bool SetSoundSpeed(unsigned long iPoint) override;
 
   /*!
    * \brief Set the value of the enthalpy.
    */
-  inline void SetEnthalpy(void) { Primitive[H_INDEX] = (Solution[nSpecies+nDim] + Primitive[P_INDEX]) / Primitive[RHO_INDEX]; }
+  inline void SetEnthalpy(unsigned long iPoint) final {
+    Primitive(iPoint,H_INDEX) = (Solution(iPoint,nDim+nSpecies) + Primitive(iPoint,P_INDEX)) / Solution(iPoint,RHO_INDEX);
+  }
 
   /*!
-   * \brief Sets gas mixture quantities (\f$\rho C^{trans-rot}_v\f$ & \f$\rho C^{vib-el}_v\f$)
+   * \brief Set the value of the density for the incompressible flows.
    */
-  void SetGasProperties(CConfig *config);
+  bool SetDensity(unsigned long iPoint) override;
+
+  /*!
+   * \brief Set the value of the temperature.
+   * \param[in] temperature - how agitated the particles are :)
+   */
+  bool SetTemperature(unsigned long iPoint, CConfig *config ) override;
+
+  /*!
+   * \brief Set the norm 2 of the velocity.
+   * \return Norm 2 of the velocity vector.
+   */
+  void SetVelocity2(unsigned long iPoint) override;
+
+  /*!
+   * \brief Get the norm 2 of the velocity.
+   * \return Norm 2 of the velocity vector.
+   */
+  inline su2double GetVelocity2(unsigned long iPoint) const final { return Velocity2(iPoint); }
+
+  /*!
+   * \brief Get the flow pressure.
+   * \return Value of the flow pressure.
+   */
+  inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint,P_INDEX); }
+
+  /*!
+   * \brief Get the speed of the sound.
+   * \return Value of speed of the sound.
+   */
+  inline su2double GetSoundSpeed(unsigned long iPoint) const final { return Primitive(iPoint,A_INDEX); }
+
+  /*!
+   * \brief Get the enthalpy of the flow.
+   * \return Value of the enthalpy of the flow.
+   */
+  inline su2double GetEnthalpy(unsigned long iPoint) const final { return Primitive(iPoint,H_INDEX); }
+
+  /*!
+   * \brief Get the density of the flow.
+   * \return Value of the density of the flow.
+   */
+  inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint,RHO_INDEX); }
+
+  /*!
+   * \brief Get the energy of the flow.
+   * \return Value of the energy of the flow.
+   */
+  inline su2double GetEnergy(unsigned long iPoint) const final { return Solution(iPoint,nSpecies+nDim)/Primitive(iPoint,RHO_INDEX); }
+
+  /*!
+   * \brief Get the temperature of the flow.
+   * \return Value of the temperature of the flow.
+   */
+  inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint,T_INDEX); }
+
+  /*!
+   * \brief Get the velocity of the flow.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the velocity for the dimension <i>iDim</i>.
+   */
+  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final { return Primitive(iPoint,VEL_INDEX+iDim); }
+
+  /*!
+   * \brief Get the projected velocity in a unitary vector direction (compressible solver).
+   * \param[in] val_vector - Direction of projection.
+   * \return Value of the projected velocity.
+   */
+  inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const final {
+    su2double ProjVel = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      ProjVel += Primitive(iPoint,VEL_INDEX+iDim)*val_vector[iDim];
+    return ProjVel;
+  }
+
+  /*!
+   * \brief Set the velocity vector from the solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  inline void SetVelocity(unsigned long iPoint) final {
+    Velocity2(iPoint) = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      Primitive(iPoint,VEL_INDEX+iDim) = Solution(iPoint,nSpecies+iDim) / Primitive(iPoint,RHO_INDEX);
+      Velocity2(iPoint) += pow(Primitive(iPoint,VEL_INDEX+iDim),2);
+    }
+  }
+
+  /*!
+   * \brief Set the velocity vector from the old solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Solution_Old(iPoint,VEL_INDEX+iDim) = val_velocity[iDim]*Primitive(iPoint,RHO_INDEX);
+  }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the vibrational-electronic temperature.
+   */
+  inline su2double GetTemperature_ve(unsigned long iPoint) const
+                                    { return Primitive(iPoint,TVE_INDEX); }
+
+  /*!
+   * \brief Sets the vibrational electronic temperature of the flow.
+   * \return Value of the temperature of the flow.
+   */
+  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve)
+                               { Primitive(iPoint,TVE_INDEX) = val_Tve; return false; }
+
+  /*!
+   * \brief Get the mixture specific heat at constant volume (trans.-rot.).
+   * \return \f$\rho C^{t-r}_{v} \f$
+   */
+  inline su2double GetRhoCv_tr(unsigned long iPoint) const
+                              { return Primitive(iPoint,RHOCVTR_INDEX); }
+
+  /*!
+   * \brief Get the mixture specific heat at constant volume (vib.-el.).
+   * \return \f$\rho C^{v-e}_{v} \f$
+   */
+  inline su2double GetRhoCv_ve(unsigned long iPoint) const
+                              { return Primitive(iPoint,RHOCVVE_INDEX); }
+
+  /*---------------------------------------*/
+  /*--- TNE2 specific variable routines ---*/
+  /*---------------------------------------*/
 
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
   su2double CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species);
-
-  /*!
-   * \brief Returns the stored value of Eve at the specified node
-   */
-  inline su2double *GetEve(void) { return eves; }
 
   /*!
    * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
@@ -255,11 +491,6 @@ public:
    * \brief Calculates enthalpy per mass, \f$C^{vib-el}_{v_s}\f$, for input species (not including KE)
    */
   su2double CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species);
-
-  /*!
-   * \brief Returns the value of Cvve at the specified node
-   */
-  su2double *GetCvve(void) { return Cvves; }
 
   /*!
    * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
@@ -289,219 +520,42 @@ public:
   void SetdTvedrhos(CConfig *config);
 
   /*!
+   * \brief Returns the stored value of Eve at the specified node
+   */
+  inline su2double *GetEve(unsigned long iPoint) { return eves[iPoint]; }
+
+  /*!
+   * \brief Returns the value of Cvve at the specified node
+   */
+  su2double *GetCvve(unsigned long iPoint) { return Cvves[iPoint]; }
+
+  /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  inline su2double *GetdPdU(void) { return dPdU; }
+  inline su2double *GetdPdU(unsigned long iPoint) { return dPdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial T}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTdU(void) { return dTdU; }
+  inline su2double *GetdTdU(unsigned long iPoint) { return dTdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial T^{V-E}}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTvedU(void) { return dTvedU; }
-
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  bool SetPrimVar_Compressible(CConfig *config);
-
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  void SetPrimVar_Gradient(CConfig *config);
-
-  /*!
-   * \brief Set all the conserved variables.
-   */
-  bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
-                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                    su2double *val_Cvves);
-
-  /*!
-   * \brief Set Gradient of the primitive variables from
-   */
-  bool GradCons2GradPrimVar(CConfig *config, su2double *U, su2double *V,
-                            su2double **GradU, su2double **GradV);
-
-  /*!
-   * \brief Set all the conserved variables.
-   */
-  void Prim2ConsVar(CConfig *config, su2double *V, su2double *U);
-
-  /*!
-   * \brief Get the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the primitive variable for the index <i>val_var</i>.
-   */
-  inline su2double GetPrimVar(unsigned short val_var) {return Primitive[val_var]; }
-
-  /*!
-   * \brief Set the value of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_var - Index of the variable.
-   * \return Set the value of the primitive variable for the index <i>val_var</i>.
-   */
-  inline void SetPrimVar(unsigned short val_var, su2double val_prim) {Primitive[val_var] = val_prim; }
-
-  /*!
-   * \brief Set the value of the primitive variables.
-   * \param[in] val_prim - Primitive variables.
-   * \return Set the value of the primitive variable for the index <i>val_var</i>.
-   */
-   inline void SetPrimVar(su2double *val_prim) {
-     for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-       Primitive[iVar] = val_prim[iVar];
-   };
-
-  /*!
-   * \brief Get the primitive variables of the problem.
-   * \return Pointer to the primitive variable vector.
-   */
-  inline su2double *GetPrimVar(void) { return Primitive; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Configuration parameters.
-   */
-  bool SetTemperature(CConfig *config);
-
-  /*!
-   * \brief Get the norm 2 of the velocity.
-   * \return Norm 2 of the velocity vector.
-   */
-  inline su2double GetVelocity2(void) {return Velocity2; }
-  
-  /*!
-   * \brief Get the flow pressure.
-   * \return Value of the flow pressure.
-   */
-  inline su2double GetPressure(void) { return Primitive[P_INDEX]; }
-
-  /*!
-   * \brief Get the speed of the sound.
-   * \return Value of speed of the sound.
-   */
-  inline su2double GetSoundSpeed(void) { return Primitive[A_INDEX]; }
-
-  /*!
-   * \brief Get the enthalpy of the flow.
-   * \return Value of the enthalpy of the flow.
-   */
-  inline su2double GetEnthalpy(void) { return Primitive[H_INDEX]; }
-
-  /*!
-   * \brief Get the density of the flow.
-   * \return Value of the density of the flow.
-   */
-  inline su2double GetDensity(void) { return Primitive[RHO_INDEX]; }
+  inline su2double *GetdTvedU(unsigned long iPoint) { return dTvedU[iPoint]; }
 
   /*!
    * \brief Get the mass fraction \f$\rho_s / \rho \f$ of species s.
    * \param[in] val_Species - Index of species s.
    * \return Value of the mass fraction of species s.
    */
-  inline su2double GetMassFraction(unsigned short val_Species)  {
-    return Primitive[RHOS_INDEX+val_Species] / Primitive[RHO_INDEX];
+  inline su2double GetMassFraction(unsigned long iPoint, unsigned short val_Species) const {
+    return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
   }
 
-  /*!
-   * \brief Get the energy of the flow.
-   * \return Value of the energy of the flow.
-   */
-  inline su2double GetEnergy(void) { return Solution[nSpecies+nDim]/Primitive[RHO_INDEX]; }
-
-  /*!
-   * \brief Get the temperature of the flow.
-   * \return Value of the temperature of the flow.
-   */
-  inline su2double GetTemperature(void) { return Primitive[T_INDEX]; }
-
-  /*!
-   * \brief Sets the temperature of the flow.
-   * \return Value of the temperature of the flow.
-   */
-  inline bool SetTemperature(su2double val_T) { Primitive[T_INDEX] = val_T; return false; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the vibrational-electronic temperature.
-   */
-  inline su2double GetTemperature_ve(void) { return Primitive[TVE_INDEX]; }
-
-  /*!
-   * \brief Sets the vibrational electronic temperature of the flow.
-   * \return Value of the temperature of the flow.
-   */
-  inline bool SetTemperature_ve(su2double val_Tve) { Primitive[TVE_INDEX] = val_Tve; return false; }
-
-  /*!
-   * \brief Get the mixture specific heat at constant volume (trans.-rot.).
-   * \return \f$\rho C^{t-r}_{v} \f$
-   */
-  inline su2double GetRhoCv_tr(void) { return Primitive[RHOCVTR_INDEX]; }
-
-  /*!
-   * \brief Get the mixture specific heat at constant volume (vib.-el.).
-   * \return \f$\rho C^{v-e}_{v} \f$
-   */
-  inline su2double GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
-
-  /*!
-   * \brief Get the velocity of the flow.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the velocity for the dimension <i>val_dim</i>.
-   */
-  inline su2double GetVelocity(unsigned short val_dim) { return Primitive[VEL_INDEX+val_dim]; }
-
-  /*!
-   * \brief Get the projected velocity in a unitary vector direction (compressible solver).
-   * \param[in] val_vector - Direction of projection.
-   * \return Value of the projected velocity.
-   */
-  su2double GetProjVel(su2double *val_vector);
-
-  /*!
-   * \brief Set the velocity vector from the old solution.
-   * \param[in] val_velocity - Pointer to the velocity.
-   */
-  inline void SetVelocity_Old(su2double *val_velocity) {
-   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-     Solution_Old[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
-  }
-
-  /*!
-   * \brief Get the value of the limiter.
-   */
-  inline su2double *GetLimiter_Primitive(void) {return Limiter_Primitive; }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double GetLimiter_Primitive(unsigned short val_var) {return Limiter_Primitive[val_var]; }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline void SetLimiter_Primitive(unsigned short val_var, su2double val_value) {Limiter_Primitive[val_var] = val_value; }
-
-  /*!
-   * \brief Get the value of the preconditioner Beta.
-   * \return Value of the low Mach preconditioner variable Beta
-   */
-  inline su2double GetPreconditioner_Beta() {return Precond_Beta; }
-
-  /*!
-   * \brief Set the value of the preconditioner Beta.
-   * \param[in] Value of the low Mach preconditioner variable Beta
-   */
-  inline void SetPreconditioner_Beta(su2double val_Beta) {Precond_Beta = val_Beta; }
+  /*---------------------------------------*/
+  /*---           TNE2 indices          ---*/
+  /*---------------------------------------*/
 
   /*!
    * \brief Retrieves the value of the species density in the primitive variable vector.

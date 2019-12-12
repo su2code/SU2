@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
@@ -45,7 +45,7 @@ CTNE2UpwScalar::CTNE2UpwScalar(unsigned short val_nDim,
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  grid_movement   = config->GetGrid_Movement();
+  dynamic_grid    = config->GetGrid_Movement();
 
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -67,7 +67,7 @@ void CTNE2UpwScalar::ComputeResidual(su2double *val_residual,
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
-  if (grid_movement) {
+  if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
@@ -77,7 +77,7 @@ void CTNE2UpwScalar::ComputeResidual(su2double *val_residual,
   Density_j = V_j[nDim+2];
 
   q_ij = 0.0;
-  if (grid_movement) {
+  if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];

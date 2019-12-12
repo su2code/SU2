@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_structure.cpp
  * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
@@ -1876,6 +1876,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
       break;
     case SOLUTION_GRADIENT:
       COUNT_PER_POINT  = nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case PRIMITIVE:
+      COUNT_PER_POINT  = nPrimVarGrad;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_GRADIENT:

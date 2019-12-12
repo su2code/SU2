@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -4342,4 +4342,3 @@ public:
     this->doubleInfo = NULL;
   }
 };
-==== BASE ====

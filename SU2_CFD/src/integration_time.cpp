@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
@@ -479,7 +479,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   delete [] Solution;
 }
 
-
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iChildren;
@@ -714,19 +713,48 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       break;
+
+   case RUNTIME_TNE2_SYS:
+
+     /*--- Calculate the inviscid and viscous forces ---*/
+
+     solver_container[FinestMesh][TNE2_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+     solver_container[FinestMesh][TNE2_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+     solver_container[FinestMesh][TNE2_SOL]->Friction_Forces(geometry[FinestMesh], config);
+
+     /*--- Evaluate the buffet metric if requested ---*/
+
+     if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+         solver_container[FinestMesh][TNE2_SOL]->Buffet_Monitoring(geometry[FinestMesh], config);
+     }
+
+     break;
       
-    case RUNTIME_ADJFLOW_SYS:
+   case RUNTIME_ADJFLOW_SYS:
       
-      /*--- Calculate the inviscid and viscous sensitivities ---*/
+     /*--- Calculate the inviscid and viscous sensitivities ---*/
+
+     solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+     solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
-      solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-      solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+     /*--- Smooth the inviscid and viscous sensitivities ---*/
+
+     if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
-      /*--- Smooth the inviscid and viscous sensitivities ---*/
-      
-      if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-      
-      break;
+     break;
+
+  case RUNTIME_ADJTNE2_SYS:
+
+    /*--- Calculate the inviscid and viscous sensitivities ---*/
+
+    solver_container[FinestMesh][ADJTNE2_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
+    solver_container[FinestMesh][ADJTNE2_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
+
+    /*--- Smooth the inviscid and viscous sensitivities ---*/
+
+    if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJTNE2_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
+
+    break;
           
   }
   

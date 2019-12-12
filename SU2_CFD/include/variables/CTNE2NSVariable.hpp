@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNSVariable.hpp
  * \brief Class for defining the variables of the compressible Navier-Stokes solver.
  * \author F. Palacios, T. Economon, W. Maier, S.R. Copeland
@@ -46,45 +46,50 @@
  * \author S. R. Copeland, F. Palacios, W. Maier.
  * \version 6.2.0
  */
-class CTNE2NSVariable : public CTNE2EulerVariable {
+class CTNE2NSVariable final : public CTNE2EulerVariable {
 private:
-  su2double Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
-  su2double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
-  su2double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
-  su2double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
-  su2double *DiffusionCoeff;   /*!< \brief Diffusion coefficient of the mixture. */
-  su2double **Dij;             /*!< \brief Binary diffusion coefficients. */
-  su2double LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
-  su2double ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
-  su2double ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
-  su2double Vorticity[3];	   /*!< \brief Vorticity of the fluid. */
+  VectorType Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
+  VectorType Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
+  VectorType Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
+  VectorType Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
+  MatrixType DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
+  VectorOfMatrix Dij;            /*!< \brief Binary diffusion coefficients. */
+  VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
+  VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
+  VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
+
+  su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
+
+  MatrixType Vorticity;         /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;         /*!< \brief Magnitude of rate of strain tensor. */
+  VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
+  VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
+  VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 
 public:
 
   /*!
    * \brief Constructor of the class.
-   */
-  CTNE2NSVariable(void);
-
-  /*!
-   * \overload
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of conserved variables.
    * \param[in] val_nVarPrim - Number of primitive variables.
    * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2NSVariable(unsigned short val_nDim, unsigned short val_nVar,
-                    unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-                    CConfig *config);
+  CTNE2NSVariable(unsigned long val_nDim, unsigned long val_nVar,
+                  unsigned long val_nPrimVar, unsigned long val_nPrimVarGrad,
+                  unsigned long npoint, CConfig *config);
 
   /*!
-   * \overload
+   * \brief Constructor of the class.
    * \param[in] val_density - Value of the flow density (initialization value).
    * \param[in] val_massfrac - Value of the flow mass fraction (initialization value).
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
    * \param[in] val_temperature - Value of the flow temperature (initialization value).
    * \param[in] val_temperature_ve - Value of the flow temperature_ve (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of conserved variables.
    * \param[in] val_nPrimVar - Number of primitive variables.
@@ -92,12 +97,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTNE2NSVariable(su2double val_density, su2double *val_massfrac, su2double *val_velocity,
-                  su2double val_temperature, su2double val_temperature_ve, unsigned short val_nDim,
-                  unsigned short val_nVar, unsigned short val_nPrimVar,
-                  unsigned short val_nPrimVarGrad, CConfig *config);
+                  su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
+                  unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
+                  unsigned long val_nPrimVarGrad, CConfig *config);
 
   /*!
-   * \overload
+   * \brief Constructor of the class.
    * \param[in] val_solution - Pointer to the flow value (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of conserved variables.
@@ -105,14 +110,19 @@ public:
    * \param[in] val_nPrimgVarGrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2NSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nVar,
-                  unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+  CTNE2NSVariable(su2double *val_solution, unsigned long val_nDim, unsigned long val_nVar,
+                  unsigned long val_nPrimVar, unsigned long val_nPrimVarGrad, unsigned long npoint,
                   CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTNE2NSVariable(void);
+  ~CTNE2NSVariable() = default;
+
+  /*!
+   * \brief Set all the primitive variables for compressible flows.
+   */
+  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config) override;
 
   /*!
    * \brief Set the laminar viscosity.
@@ -144,41 +154,37 @@ public:
    * \brief Get the species diffusion coefficient.
    * \return Value of the species diffusion coefficient.
    */
-  inline su2double* GetDiffusionCoeff(void) { return DiffusionCoeff; }
+  inline su2double* GetDiffusionCoeff(unsigned long iPoint) override { return DiffusionCoeff[iPoint]; }
 
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(void) { return LaminarViscosity; }
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return LaminarViscosity(iPoint); }
 
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(void) { return ThermalCond; }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return ThermalCond(iPoint); }
 
   /*!
    * \brief Get the vib-el. thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity_ve(void) { return ThermalCond_ve; }
+  inline su2double GetThermalConductivity_ve(unsigned long iPoint) const override { return ThermalCond_ve(iPoint); }
 
   /*!
    * \brief Set the temperature at the wall
    */
-  inline void SetWallTemperature(su2double Temperature_Wall) { Primitive[T_INDEX] = Temperature_Wall; }
+  inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
+    Primitive(iPoint,T_INDEX) = temperature_wall;
+  }
 
   /*!
    * \brief Get the value of the vorticity.
-   * \param[in] val_dim - Index of the dimension.
    * \return Value of the vorticity.
    */
-  inline su2double *GetVorticity(unsigned short val_dim) { return Vorticity; }
-
-  /*!
-   * \brief Set all the primitive variables for compressible flows
-   */
-  bool SetPrimVar_Compressible(CConfig *config);
+  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
 
 };

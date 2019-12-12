@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CVariable.hpp
  * \brief Declaration and inlines of the parent class for defining problem
           variables, function definitions in file <i>CVariable.cpp</i>.
@@ -1137,7 +1137,7 @@ public:
    * \param[in] val_Species - Index of species s.
    * \return Value of the mass fraction of species s.
    */
-  inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
+  inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned short val_Species) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1609,17 +1609,17 @@ public:
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
-  inline virtual su2double CalcEve(unsigned long iPoint, su2double *V, CConfig *config, unsigned long val_Species) { return 0.0; }
+  inline virtual su2double CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species) { return 0.0; }
 
   /*!
    * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
    */
-  inline virtual su2double CalcHs(unsigned long iPoint, su2double *V, CConfig *config, unsigned long val_Species) { return 0.0; }
+  inline virtual su2double CalcHs(CConfig *config, su2double T, su2double T_ve,  unsigned short val_Species) { return 0.0; }
 
   /*!
    * \brief Calculates cvve, \f$Cv_s\f$, for input species (not including KE)
    */
-  inline virtual su2double CalcCvve(unsigned long iPoint, su2double val_Tve, CConfig *config, unsigned long val_Species) { return 0.0; }
+  inline virtual su2double CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1627,7 +1627,7 @@ public:
    * \param[in] config - Configuration settings
    * \param[in] dPdU
    */
-  inline virtual void CalcdPdU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dPdU) {}
+  inline virtual void CalcdPdU(su2double *V, su2double *val_eves, CConfig *config, su2double *dPdU) {}
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -1635,7 +1635,7 @@ public:
    * \param[in] config - Configuration settings
    * \param[in] dTdU
    */
-  inline virtual void CalcdTdU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dTdU) {}
+  inline virtual void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU) {}
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -1643,7 +1643,7 @@ public:
    * \param[in] config - Configuration settings
    * \param[in] dTdU
    */
-  inline virtual void CalcdTvedU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dTdU) {}
+  inline virtual void CalcdTvedU(su2double *V, su2double *val_eves, CConfig *config, su2double *dTvedU) {}
 
   /*!
    * \brief A virtual member.
@@ -1770,7 +1770,7 @@ public:
    * \param[in] config - Configuration parameters.
    * \param[in] Coord - Physical coordinates.
    */
-  inline virtual bool SetPrimVar_Compressible(CConfig *config) { return true; }
+  inline virtual bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config) { return true; }
 
   /*!
    * \brief A virtual member.
@@ -1897,7 +1897,7 @@ public:
   inline virtual void Set_isVertex(unsigned long iPoint, bool isVertex) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief A virtual member.nodes
    */
   inline virtual bool Get_isVertex(unsigned long iPoint) const { return false; }
 

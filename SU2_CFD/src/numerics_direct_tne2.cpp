@@ -1414,6 +1414,7 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
 }
 
 CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
+
   delete [] FcL;
   delete [] FcR;
   delete [] dmLdL;
@@ -3151,8 +3152,9 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                                                         config) {
 
   unsigned short iVar, iSpecies;
+
   /*--- Assign booleans from CConfig ---*/
-  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit   = config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT;
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/

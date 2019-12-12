@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -63,6 +63,8 @@ inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CCo
 
 inline void CFEAElasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
+inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
+
 inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
 inline void CFEAElasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
@@ -78,8 +80,6 @@ inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned 
 }
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
-
-inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
 
 inline void CNumerics::ReadDV(CConfig *config){ }
 
@@ -202,8 +202,6 @@ inline void CNumerics::ComputeVibRelaxation(su2double *val_residual, su2double *
 inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
-
-inline su2double CNumerics::GetPrecond_Beta() { return 0; }
 
 inline void CNumerics::SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
 
@@ -629,8 +627,6 @@ inline su2double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Dest
 
 inline su2double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
 
-inline su2double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
-
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
@@ -652,4 +648,3 @@ inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
 }
 
 inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }
-==== BASE ====

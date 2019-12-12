@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_structure.hpp
  * \brief Headers of the main subroutines for solving partial differential equations.
  *        The subroutines and functions are in the <i>solver_structure.cpp</i>,
@@ -96,14 +96,14 @@ using namespace std;
  */
 class CSolver {
 protected:
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
+  int rank, 	  /*!< \brief MPI Rank. */
+  size;       	  /*!< \brief MPI Size. */
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
-  unsigned short nVar,          /*!< \brief Number of variables of the problem. */
-  nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-  nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  unsigned short nVar,           /*!< \brief Number of variables of the problem. */
+  nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
+  nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                 /*!< \brief Number of variables for deallocating the LS Cvector. */
@@ -9388,6 +9388,13 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
+  CTNE2EulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CTNE2EulerVariable* node_infty;
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
 
 public:
 
@@ -9626,7 +9633,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config);
+  void Evaluate_ObjFunc(CConfig *config) override;
 
   /*!
      * \brief Impose via the residual the Euler wall boundary condition.
@@ -9636,8 +9643,8 @@ public:
      * \param[in] config - Definition of the particular problem.
      * \param[in] val_marker - Surface marker where the boundary condition is applied.
      */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                     CConfig *config, unsigned short val_marker);
+  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
      * \brief Impose the far-field boundary condition using characteristics.
@@ -9649,7 +9656,7 @@ public:
      * \param[in] val_marker - Surface marker where the boundary condition is applied.
      */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
      * \brief Impose the symmetry boundary condition using the residual.
@@ -9661,7 +9668,7 @@ public:
      * \param[in] val_marker - Surface marker where the boundary condition is applied.
      */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
      * \brief Impose a subsonic inlet boundary condition.
@@ -9673,7 +9680,7 @@ public:
      * \param[in] val_marker - Surface marker where the boundary condition is applied.
      */
   void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
      * \brief Impose a supersonic inlet boundary condition.
@@ -9686,7 +9693,7 @@ public:
      */
   void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                            CNumerics *conv_numerics, CNumerics *visc_numerics,
-                           CConfig *config, unsigned short val_marker);
+                           CConfig *config, unsigned short val_marker) override;
   /*!
    * \brief Impose the supersonic outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9697,7 +9704,7 @@ public:
    */
   void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics,
-                            CConfig *config, unsigned short val_marker);
+                            CConfig *config, unsigned short val_marker) override;
   /*!
      * \brief Impose the outlet boundary condition.
      * \param[in] geometry - Geometrical definition of the problem.
@@ -9709,7 +9716,7 @@ public:
 
      */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
      * \brief Update the solution using an explicit Euler scheme.
@@ -9717,7 +9724,7 @@ public:
      * \param[in] solver_container - Container vector with all the solutions.
      * \param[in] config - Definition of the particular problem.
      */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
 
   /*!
      * \brief Update the solution using an explicit Euler scheme.
@@ -9727,7 +9734,7 @@ public:
    * \param[in] iRKStep - Runge-Kutta step.
      */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                            CConfig *config, unsigned short iRKStep);
+                            CConfig *config, unsigned short iRKStep) override;
 
   /*!
      * \brief Update the solution using an implicit Euler scheme.
@@ -9735,183 +9742,183 @@ public:
      * \param[in] solver_container - Container vector with all the solutions.
      * \param[in] config - Definition of the particular problem.
      */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
 
   /*!
      * \brief Compute the pressure forces and all the adimensional coefficients.
      * \param[in] geometry - Geometrical definition of the problem.
      * \param[in] config - Definition of the particular problem.
      */
-  void Pressure_Forces(CGeometry *geometry, CConfig *config);
+  void Pressure_Forces(CGeometry *geometry, CConfig *config) override;
 
   /*!
      * \brief Compute the Momentum forces and all the adimensional coefficients.
      * \param[in] geometry - Geometrical definition of the problem.
      * \param[in] config - Definition of the particular problem.
      */
-  void Momentum_Forces(CGeometry *geometry, CConfig *config);
+  void Momentum_Forces(CGeometry *geometry, CConfig *config) override;
 
   /*!
      * \brief Provide the non dimensional lift coefficient (inviscid contribution).
      * \param val_marker Surface where the coefficient is going to be computed.
      * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
      */
-  su2double GetCL_Inv(unsigned short val_marker);
+  su2double GetCL_Inv(unsigned short val_marker)  override;
 
   /*!
      * \brief Provide the non dimensional drag coefficient (inviscid contribution).
      * \param val_marker Surface where the coeficient is going to be computed.
      * \return Value of the drag coefficient (inviscid contribution) on the surface <i>val_marker</i>.
      */
-  su2double GetCD_Inv(unsigned short val_marker);
+  su2double GetCD_Inv(unsigned short val_marker) override;
 
   /*!
      * \brief Provide the non dimensional sideforce coefficient (inviscid contribution).
      * \param val_marker Surface where the coeficient is going to be computed.
      * \return Value of the sideforce coefficient (inviscid contribution) on the surface <i>val_marker</i>.
      */
-  su2double GetCSF_Inv(unsigned short val_marker);
+  su2double GetCSF_Inv(unsigned short val_marker) override;
 
   /*!
      * \brief Provide the non dimensional efficiency coefficient (inviscid contribution).
      * \param val_marker Surface where the coeficient is going to be computed.
      * \return Value of the efficiency coefficient (inviscid contribution) on the surface <i>val_marker</i>.
      */
-  su2double GetCEff_Inv(unsigned short val_marker);
+  su2double GetCEff_Inv(unsigned short val_marker) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional sideforce coefficient.
      * \return Value of the sideforce coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CSF(void);
+  su2double GetTotal_CSF(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional efficiency coefficient.
      * \return Value of the efficiency coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CEff(void);
+  su2double GetTotal_CEff(void) override;
 
   /*!
      * \brief Store the total (inviscid + viscous) non dimensional lift coefficient.
      * \param[in] val_Total_CLift - Value of the total lift coefficient.
      */
-  void SetTotal_CL(su2double val_Total_CL);
+  void SetTotal_CL(su2double val_Total_CL) override;
 
   /*!
    * \author H. Kline
    * \brief Set the total "combo" objective (weighted sum of other values).
    * \param[in] ComboObj - Value of the combined objective.
    */
-  void SetTotal_ComboObj(su2double ComboObj);
+  void SetTotal_ComboObj(su2double ComboObj) override;
 
   /*!
    * \author H. Kline
    * \brief Provide the total "combo" objective (weighted sum of other values).
    * \return Value of the "combo" objective values.
    */
-  su2double GetTotal_ComboObj(void);
+  su2double GetTotal_ComboObj(void) override;
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_CL(void);
+  su2double GetTotal_CL(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
      * \return Value of the drag coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CD(void);
+  su2double GetTotal_CD(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
      * \return Value of the moment x coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CMx(void);
+  su2double GetTotal_CMx(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional y moment coefficient.
      * \return Value of the moment y coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CMy(void);
+  su2double GetTotal_CMy(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional z moment coefficient.
      * \return Value of the moment z coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CMz(void);
+  su2double GetTotal_CMz(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional x force coefficient.
      * \return Value of the force x coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CFx(void);
+  su2double GetTotal_CFx(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional y force coefficient.
      * \return Value of the force y coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CFy(void);
+  su2double GetTotal_CFy(void) override;
 
   /*!
      * \brief Provide the total (inviscid + viscous) non dimensional z force coefficient.
      * \return Value of the force z coefficient (inviscid + viscous contribution).
      */
-  su2double GetTotal_CFz(void);
+  su2double GetTotal_CFz(void) override;
 
   /*!
      * \brief Provide the total heat load.
      * \return Value of the heat load (viscous contribution).
      */
-  su2double GetTotal_HeatFlux(void);
+  su2double GetTotal_HeatFlux(void) override;
 
   /*!
      * \brief Provide the total heat load.
      * \return Value of the heat load (viscous contribution).
      */
-  su2double GetTotal_MaxHeatFlux(void);
+  su2double GetTotal_MaxHeatFlux(void) override;
 
   /*!
      * \brief Store the total heat load.
      * \param[in] val_Total_Heat - Value of the heat load.
      */
-  void SetTotal_HeatFlux(su2double val_Total_Heat);
+  void SetTotal_HeatFlux(su2double val_Total_Heat) override;
 
   /*!
      * \brief Store the total heat load.
      * \param[in] val_Total_Heat - Value of the heat load.
      */
-  void SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat);
+  void SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) override;
 
   /*!
      * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
      * \param[in] val_Total_CDrag - Value of the total drag coefficient.
      */
-  void SetTotal_CD(su2double val_Total_CD);
+  void SetTotal_CD(su2double val_Total_CD) override;
 
   /*!
      * \brief Get the inviscid contribution to the lift coefficient.
      * \return Value of the lift coefficient (inviscid contribution).
      */
-  su2double GetAllBound_CL_Inv(void);
+  su2double GetAllBound_CL_Inv(void) override;
 
   /*!
      * \brief Get the inviscid contribution to the drag coefficient.
      * \return Value of the drag coefficient (inviscid contribution).
      */
-  su2double GetAllBound_CD_Inv(void);
+  su2double GetAllBound_CD_Inv(void) override;
 
   /*!
      * \brief Get the inviscid contribution to the sideforce coefficient.
      * \return Value of the sideforce coefficient (inviscid contribution).
      */
-  su2double GetAllBound_CSF_Inv(void);
+  su2double GetAllBound_CSF_Inv(void) override;
 
   /*!
      * \brief Get the inviscid contribution to the efficiency coefficient.
      * \return Value of the efficiency coefficient (inviscid contribution).
      */
-  su2double GetAllBound_CEff_Inv(void);
+  su2double GetAllBound_CEff_Inv(void) override;
 
   /*!
      * \brief Provide the Pressure coefficient.
@@ -9919,7 +9926,7 @@ public:
      * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
      * \return Value of the pressure coefficient.
      */
-  su2double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+  su2double GetCPressure(unsigned short val_marker, unsigned long val_vertex) override;
 
   /*!
      * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -9931,7 +9938,7 @@ public:
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
      */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
      * \brief Load a direct flow solution for use with the adjoint solver.
@@ -11659,10 +11666,19 @@ protected:
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
 
+  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  CTurbVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 

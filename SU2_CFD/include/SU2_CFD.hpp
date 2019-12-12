@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file SU2_CFD.hpp
  * \brief Headers of the main subroutines of the code SU2_CFD.
  *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
@@ -39,7 +39,7 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
-#include "CLI11.hpp"
+#include "../../externals/CLI11/CLI11.hpp"
 
 #include <ctime>
 

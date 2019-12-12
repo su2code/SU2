@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
@@ -72,7 +72,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   switch (config->GetKind_Solver()) {
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+  case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -91,7 +91,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CTNE2Iteration(config);
-    direct_output = new CFlowCompOutput(config, nDim);
+    direct_output = new CTNE2CompOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -375,18 +375,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     solver[TNE2_SOL]->SetTotal_ComboObj(0.0);
 
-    if (config->GetnMarker_Analyze() != 0)
-      output->SpecialOutput_AnalyzeSurface(solver[TNE2_SOL], geometry, config, false);
-
-    if ((config->GetnMarker_Analyze() != 0) && compressible)
-      output->SpecialOutput_Distortion(solver[TNE2_SOL], geometry, config, false);
-
-    if (config->GetnMarker_NearFieldBound() != 0)
-      output->SpecialOutput_SonicBoom(solver[TNE2_SOL], geometry, config, false);
-
-    if (config->GetPlot_Section_Forces())
-      output->SpecialOutput_SpanLoad(solver[TNE2_SOL], geometry, config, false);
-
     /*--- Surface based obj. function ---*/
 
     solver[TNE2_SOL]->Evaluate_ObjFunc(config);
@@ -585,4 +573,3 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ClearAdjoints();
 
 }
-==== BASE ====
