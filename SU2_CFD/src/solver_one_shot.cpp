@@ -287,10 +287,10 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   /* --- Estimate alpha and beta --- */
-  su2double alpha = 2./((1.-rho)*(1.-rho));
-  su2double beta  = 2.;
-  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  // su2double beta  = 2./theta;
+  // su2double alpha = 2./((1.-rho)*(1.-rho));
+  // su2double beta  = 2.;
+  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  su2double beta  = 2./theta;
   // su2double alpha = 6.*theta/((1.-rho)*(1.-rho));
   // su2double beta  = 6./theta;
 
@@ -322,7 +322,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
        (val_constr_func[iConstr] + val_lambda[iConstr]/config->GetOneShotGamma(iConstr) > 0.0)) {
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
        // (val_constr_func[iConstr] < 0.0)){
-       gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
+       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     }
       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
