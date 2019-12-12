@@ -8280,9 +8280,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
             if (mindist > epsilon) {
               cout.precision(10);
               cout << endl;
-              cout << "   Bad match for point " << iPointGlobal << " at "<<Coord_i[0]<<", "<<Coord_i[1];
-              if (nDim == 3) cout<<", "<<Coord_i[2];
-              cout<<".\tNearest";
+              cout << "   Bad match for point " << iPointGlobal <<".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
               maxdist_local = min(maxdist_local, 0.0);
               isBadMatch = true;
