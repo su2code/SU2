@@ -393,7 +393,6 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry); 
-    CalculateLagrangian();
     // UpdateLambda(1.0);
   }
 
@@ -456,7 +455,6 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
-    CalculateLagrangian();
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
 
@@ -508,6 +506,7 @@ void COneShotFluidDriver::RunOneShot(){
   // }
  
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
+  CalculateLagrangian();
   StoreOldLambda();
   StoreOldConstrFunction();
   StoreObjFunction();
