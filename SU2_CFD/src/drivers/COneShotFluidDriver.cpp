@@ -243,9 +243,9 @@ void COneShotFluidDriver::RunOneShot(){
     StoreObjFunction();
     StoreConstrFunction();
 
-    /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    // /*--- Do a primal and adjoint update ---*/
+    // PrimalDualStep();
+    // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     stepsize = 1.0;
     ArmijoIter = 0;
@@ -386,9 +386,15 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
   // /*--- Load multipliers from first line search ---*/
-  // LoadLambdaStore();
+  LoadLambdaStore();
   if(OneShotIter > config->GetOneShotStart() && 
-     OneShotIter < config->GetOneShotStop()) { UpdateLambda(1.0); }
+     OneShotIter < config->GetOneShotStop()) {
+     /*--- Do a primal and adjoint update ---*/
+    solver[ADJFLOW_SOL]->LoadSolution();
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry); 
+    // UpdateLambda(1.0);
+  }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
