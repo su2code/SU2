@@ -349,7 +349,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*--- Update constraint multiplier ---*/
         LoadOldLambda();
-        UpdateLambda(1.0);
+        // UpdateLambda(1.0);
 
         /*--- Load multipliers from first line search ---*/
         // LoadLambdaStore();
