@@ -324,9 +324,9 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         // /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
+        // LoadOldLambda();
         // UpdateLambda(1.0);
-        UpdateLambda(stepsize);
+        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -348,7 +348,7 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
-        LoadOldLambda();
+        // LoadOldLambda();
         // UpdateLambda(1.0);
 
         /*--- Load multipliers from first line search ---*/
@@ -416,12 +416,14 @@ void COneShotFluidDriver::RunOneShot(){
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    UpdateLambda(1.0);
   }
   else if(OneShotIter > config->GetOneShotStart() && 
           OneShotIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+    UpdateLambda(1.0);
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
@@ -1545,7 +1547,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
 
-    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
       // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1564,7 +1566,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
-    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
     //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
