@@ -247,36 +247,36 @@ void COneShotFluidDriver::RunOneShot(){
     // PrimalDualStep();
     // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
-    stepsize = 1.0;
-    ArmijoIter = 0;
-    bool_tol = false;
-    do {
-      if(ArmijoIter > 0){
-        /*--- Parabolic backtracking ---*/
-        su2double stepsize_tmp = UpdateStepSizeQuadratic();
-        stepsize  = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-        if(stepsize < tol) {
-          stepsize = 0.;
-          bool_tol = true;
-        }
-      }
-      /*--- Compute and store GradL dot p ---*/
-      StoreGradDotDir(false);
+  //   stepsize = 1.0;
+  //   ArmijoIter = 0;
+  //   bool_tol = false;
+  //   do {
+  //     if(ArmijoIter > 0){
+  //       /*--- Parabolic backtracking ---*/
+  //       su2double stepsize_tmp = UpdateStepSizeQuadratic();
+  //       stepsize  = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+  //       if(stepsize < tol) {
+  //         stepsize = 0.;
+  //         bool_tol = true;
+  //       }
+  //     }
+  //     /*--- Compute and store GradL dot p ---*/
+  //     StoreGradDotDir(false);
 
-      /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+  //     /*--- Update constraint multiplier ---*/
+  //     LoadOldLambda();
+  //     UpdateLambda(stepsize);
 
-      /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-      CalculateLagrangian();
+  //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+  //     CalculateLagrangian();
 
-      ArmijoIter++;
+  //     ArmijoIter++;
 
-    } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-    StoreLambda();
-    LoadOldLambda();
-    solver[ADJFLOW_SOL]->LoadSolution();
-  }
+  //   } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+  //   StoreLambda();
+  //   LoadOldLambda();
+  //   solver[ADJFLOW_SOL]->LoadSolution();
+  // }
 
   /*--- Perform line search on the design ---*/
   stepsize = 1.0;
@@ -360,15 +360,15 @@ void COneShotFluidDriver::RunOneShot(){
         // LoadLambdaStore();
       }
 
-      // /*--- Update constraint multiplier ---*/
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      /*--- Update constraint multiplier ---*/
+      LoadOldLambda();
+      UpdateLambda(stepsize);
 
       // /*--- Load multipliers from first line search ---*/
       // LoadLambdaStore();
 
       /*--- Compute and store GradL dot p ---*/
-      // StoreLambdaGrad();
+      StoreLambdaGrad();
       StoreGradDotDir(true);
 
     }
@@ -397,7 +397,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    LoadLambdaStore();
+    // LoadLambdaStore();
     // UpdateLambda(1.0);
   }
 
@@ -924,7 +924,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
       admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  else {
+  // else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -941,7 +941,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         // }
       }
     }
-  }
+  // }
   admissible_step *= CWolfeOne;
 
   return (Lagrangian <= Lagrangian_Old + admissible_step);
@@ -959,7 +959,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
-  else {
+  // else {
     if (nConstr > 0) {
       for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         const su2double gamma = config->GetOneShotGamma(iConstr);
@@ -978,7 +978,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         // }
       }
     }
-  }
+  // }
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
