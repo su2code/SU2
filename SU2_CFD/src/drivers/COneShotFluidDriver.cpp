@@ -932,7 +932,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         //   admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*ConstrFunc_Old[iConstr];
         // }
-          admissible_step += (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
+          admissible_step -= (Lambda[iConstr]-Lambda_Old[iConstr])*AugLagLamGrad[iConstr];
         // }
       }
     }
@@ -951,7 +951,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
       // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      GradDotDir -= DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   // else {
