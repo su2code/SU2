@@ -357,8 +357,8 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Update constraint multiplier ---*/
       LoadOldLambda();
-      UpdateLambda(stepsize);
-      // UpdateLambda(1.0);
+      // UpdateLambda(stepsize);
+      UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
       // LoadLambdaStore();
@@ -1549,8 +1549,9 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       // }
       // helper = -Lambda_Old[iConstr];
       // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      Lambda[iConstr] = 0.;
+      // Lambda[iConstr] = 0.;
       InitializeLambdaTilde(iConstr);
+      Lambda[iConstr] = Lambda_Tilde[iConstr]
     }
     else {
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
