@@ -396,7 +396,8 @@ void COneShotFluidDriver::RunOneShot(){
      /*--- Do a primal and adjoint update ---*/
     solver[ADJFLOW_SOL]->LoadSolution();
     PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry); 
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    LoadLambdaStore();
     // UpdateLambda(1.0);
   }
 
