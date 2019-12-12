@@ -232,7 +232,7 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
 
   /*--- Store the old solution and the old design for line search ---*/
-  // solver[ADJFLOW_SOL]->SetOldStoreSolution();
+  solver[ADJFLOW_SOL]->SetOldStoreSolution();
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
@@ -298,8 +298,8 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design and solution for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // solver[ADJFLOW_SOL]->LoadSaveSolution();
-        solver[ADJFLOW_SOL]->LoadSolution();
+        solver[ADJFLOW_SOL]->LoadSaveSolution();
+        // solver[ADJFLOW_SOL]->LoadSolution();
 
       }
       // else {
@@ -364,8 +364,8 @@ void COneShotFluidDriver::RunOneShot(){
       // LoadOldLambda();
       // UpdateLambda(stepsize);
 
-      /*--- Load multipliers from first line search ---*/
-      LoadLambdaStore();
+      // /*--- Load multipliers from first line search ---*/
+      // LoadLambdaStore();
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
