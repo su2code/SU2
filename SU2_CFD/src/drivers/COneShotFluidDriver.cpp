@@ -324,9 +324,9 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         // /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
+        LoadOldLambda();
         // UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
+        UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -348,7 +348,7 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
+        LoadOldLambda();
         // UpdateLambda(1.0);
 
         /*--- Load multipliers from first line search ---*/
@@ -356,8 +356,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+      // LoadOldLambda();
+      // UpdateLambda(stepsize);
       // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
