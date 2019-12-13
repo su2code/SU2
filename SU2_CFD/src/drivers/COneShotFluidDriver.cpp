@@ -1564,7 +1564,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
-    Lambda_Tilde_Old[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
     //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
