@@ -448,45 +448,7 @@ void COneShotFluidDriver::RunOneShot(){
   //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
 
   // }
-
-  // else if(OneShotIter > config->GetOneShotStart() && 
-  //         OneShotIter < config->GetOneShotStop()){
-  //   /*--- Perform line search on just multiplier ---*/
-  //   if(nConstr > 0) {
-  //     StoreLambdaGrad();
-
-  //     su2double stepsize_mu = 1.0;
-  //     ArmijoIter = 0;
-  //     bool_tol = false;
-  //     do {
-  //       if(ArmijoIter > 0){
-  //         /*--- Parabolic backtracking ---*/
-  //         su2double stepsize_tmp = UpdateStepSizeQuadratic();
-  //         stepsize_mu  = UpdateStepSizeBound(stepsize_tmp, stepsize_mu/10., stepsize_mu/2.);
-  //         if(stepsize_mu < tol) {
-  //           stepsize_mu = 0.;
-  //           bool_tol = true;
-  //         }
-  //       }
-  //       /*--- Compute and store GradL dot p ---*/
-  //       StoreGradDotDir(false);
-
-  //       /*--- Update constraint multiplier ---*/
-  //       LoadOldLambda();
-  //       UpdateLambda(stepsize_mu);
-
-  //       /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-  //       CalculateLagrangian();
-
-  //       ArmijoIter++;
-
-  //     } while((!CheckFirstWolfe(false)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
-  //   }
-
-  //   /*--- Recalculate Lagrangian with new Lambda ---*/
-  //   CalculateLagrangian();
-  // }
- 
+  
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   CalculateLagrangian();
   StoreOldLambda();
@@ -575,8 +537,8 @@ void COneShotFluidDriver::PrimalDualStep(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    // const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+    const bool active = (ConstrFunc_Old[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = Lambda[iConstr];
     }
@@ -906,8 +868,8 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        // const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+        const bool active = (ConstrFunc_Old[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
         // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
@@ -941,8 +903,8 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        // const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+        const bool active = (ConstrFunc_Old[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
         // if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active && dh < 0.)) {
@@ -1005,8 +967,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double helper = ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma;
-    const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
-    // const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    // const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
@@ -1124,8 +1086,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    // const bool active = (ConstrFunc[iConstr] > 0.);
+    // const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
+    const bool active = (ConstrFunc[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = ConstrFunc[iConstr];
     }
@@ -1209,8 +1171,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    // const bool active = (ConstrFunc[iConstr] > 0.);
+    // const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
+    const bool active = (ConstrFunc[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = Lambda[iConstr];
     }
@@ -1297,8 +1259,8 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
   if (nConstr == 1){
       const su2double gamma = config->GetOneShotGamma(0);
-      const bool active = (ConstrFunc[0] + Lambda[0]/gamma > 0.);
-      // const bool active = (ConstrFunc[0] > 0.);
+      // const bool active = (ConstrFunc[0] + Lambda[0]/gamma > 0.);
+      const bool active = (ConstrFunc[0] > 0.);
       if(active) {
         BCheck_Norm = BCheck[0][0] - 1./gamma;
         BCheck_Inv[0][0] = 1./BCheck[0][0];
@@ -1530,8 +1492,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc[iConstr]*dh;
-    const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    // const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+    const bool active = (ConstrFunc_Old[iConstr] > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
@@ -1564,8 +1526,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       //   helper -= BCheck_Inv[iConstr][jConstr]*Lambda_Old[jConstr]/gamma;
       // }
       helper = -Lambda_Old[iConstr];
-      // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      Lambda[iConstr] = 0.;
+      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+      // Lambda[iConstr] = 0.;
       // InitializeLambdaTilde(iConstr);
       // Lambda[iConstr] = Lambda_Tilde[iConstr];
     }
@@ -1609,8 +1571,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
     const su2double beta = config->GetOneShotBeta();
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
-      const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-      // const bool active = (ConstrFunc_Old[iConstr] > 0.);
+      // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+      const bool active = (ConstrFunc_Old[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1625,7 +1587,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
 #else
   AugLagLamGrad[iConstr] = my_Gradient;
 #endif
-        AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma;
+        // AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma;
+        AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr];
       }
       else {
         AugLagLamGrad[iConstr] = 0.0;
