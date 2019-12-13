@@ -323,18 +323,13 @@ void COneShotFluidDriver::RunOneShot(){
     SetConstrFunction(false);
     StoreConstrFunction();
 
-    UpdateLambda(stepsize);
-    // UpdateLambda(1.0);
+    // UpdateLambda(stepsize);
+    UpdateLambda(1.0);
 
      /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
   }
-
-  // if(OneShotIter > config->GetOneShotStart() && 
-  //    OneShotIter < config->GetOneShotStop()) {
-  //   UpdateLambda(stepsize);
-  // }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -355,18 +350,12 @@ void COneShotFluidDriver::RunOneShot(){
     if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
     solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
-    // UpdateLambda(1.0);
   }
   else if(OneShotIter > config->GetOneShotStart() && 
           OneShotIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
-    // solver[ADJFLOW_SOL]->SetSaveSolution();
-    // solver[ADJFLOW_SOL]->LoadSolution();
-    // if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
-    // solver[ADJFLOW_SOL]->LoadSaveSolution();
-    // UpdateLambda(1.0);
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
