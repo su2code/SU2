@@ -211,7 +211,7 @@ void COneShotFluidDriver::Run(){
       for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         if((OneShotIter <= config->GetOneShotStart()) || 
            ((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
-            ((ConstrFunc[iConstr] > 0.) || (Lambda_Tilde[iConstr] < 1.0E-16)))) {
+            ((ConstrFunc[iConstr] > 0.) || (Lambda[iConstr] < 1.0E-16)))) {
           StopCalc = false;
           break;
         }
@@ -1432,7 +1432,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc[iConstr]*dh;
     // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Old[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
@@ -1459,27 +1459,27 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
 
-    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
     }
 
-    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
-      // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      //   helper -= BCheck_Inv[iConstr][jConstr]*Lambda_Old[jConstr]/gamma;
-      // }
-      // helper = -Lambda_Old[iConstr];
-      Lambda[iConstr] -= Lambda_Old[iConstr]*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda[iConstr] = 0.;
-      // InitializeLambdaTilde(iConstr);
-      // Lambda[iConstr] = Lambda_Tilde[iConstr];
-    }
-    else {
-      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-      // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    }
-    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
+    //   // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+    //   //   helper -= BCheck_Inv[iConstr][jConstr]*Lambda_Old[jConstr]/gamma;
+    //   // }
+    //   // helper = -Lambda_Old[iConstr];
+    //   Lambda[iConstr] -= Lambda_Old[iConstr]*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda[iConstr] = 0.;
+    //   // InitializeLambdaTilde(iConstr);
+    //   // Lambda[iConstr] = Lambda_Tilde[iConstr];
+    // }
+    // else {
+    //   Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    //   // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // }
+    Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
     //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
