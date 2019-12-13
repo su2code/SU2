@@ -297,8 +297,8 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design and solution for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // solver[ADJFLOW_SOL]->LoadSaveSolution();
-        solver[ADJFLOW_SOL]->LoadSolution();
+        solver[ADJFLOW_SOL]->LoadSaveSolution();
+        // solver[ADJFLOW_SOL]->LoadSolution();
 
       }
 
@@ -387,20 +387,20 @@ void COneShotFluidDriver::RunOneShot(){
 
   // // /*--- Load multipliers from first line search ---*/
   // // // LoadLambdaStore();
-  // if(OneShotIter > config->GetOneShotStart() && 
-  //    OneShotIter < config->GetOneShotStop()) {
-  // //    /*--- Do a primal and adjoint update ---*/
-  // //   solver[ADJFLOW_SOL]->LoadSolution();
-  // //   PrimalDualStep();
-  // //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  // //   // LoadLambdaStore();
-  //   UpdateLambda(1.0);
-  // }
-
   if(OneShotIter > config->GetOneShotStart() && 
      OneShotIter < config->GetOneShotStop()) {
+     /*--- Do a primal and adjoint update ---*/
+    solver[ADJFLOW_SOL]->LoadSolution();
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  //   // LoadLambdaStore();
     UpdateLambda(stepsize);
   }
+
+  // if(OneShotIter > config->GetOneShotStart() && 
+  //    OneShotIter < config->GetOneShotStop()) {
+  //   UpdateLambda(stepsize);
+  // }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
