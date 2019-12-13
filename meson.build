@@ -16,8 +16,12 @@ su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 subdir('externals/loguru')
 su2_deps += loguru_dep
 
-vtk_dep = dependency('ParaView', cmake_args: get_option('cmake-args'), modules: ['ParaView::Catalyst', 'VTK::CommonCore', 'ParaView::PythonCatalyst'])
+cmake_arch = ''
+if get_option('cmake-arch') != ''
+  cmake_arch = '-DCMAKE_LIBRARY_ARCHITECTURE=' + get_option('cmake-arch')
+endif
 
+vtk_dep = dependency('ParaView', cmake_args: cmake_arch, modules: ['ParaView::Catalyst', 'VTK::CommonCore', 'ParaView::PythonCatalyst'])
 
 su2_deps += vtk_dep
 
