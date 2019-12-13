@@ -297,10 +297,11 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design and solution for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        solver[ADJFLOW_SOL]->LoadSaveSolution();
         // solver[ADJFLOW_SOL]->LoadSolution();
 
       }
+
+      solver[ADJFLOW_SOL]->LoadSaveSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
