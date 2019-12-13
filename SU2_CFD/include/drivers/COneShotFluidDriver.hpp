@@ -129,6 +129,11 @@ public:
   void PrimalDualStep();
 
   /*!
+   * \brief Compute functionals to be used for objective and constraints.
+   */
+  void ComputeFunctionals();
+
+  /*!
    * \brief Executes all operations needed to find the "BCheck"-term of the doubly augmented Lagrangian.
    */
   void ComputeGammaTerm();
@@ -151,21 +156,17 @@ public:
 
   /*!
    * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    * \param[in] surface_movement - Surface movement class of the problem.
    * \param[in] Gradient - Output to store the gradient data.
    */
-  void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient);
+  void SetProjection_AD(CSurfaceMovement *surface_movement, su2double* Gradient);
 
   /*!
    * \brief Performs a surface deformation and volumetric deformation (see also SU2_DEF).
-   * \param[in] geometry - geometry class.
-   * \param[in] config - config class.
    * \param[in] surface_movement - surface movement class
    * \param[in] grid_movement - volumetric movement class
    */
-  void SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement);
+  void SurfaceDeformation(CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement);
 
   /*!
    * \brief Update the inverse of the BFGS approximation.

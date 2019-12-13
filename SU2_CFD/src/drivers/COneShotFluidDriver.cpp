@@ -265,18 +265,11 @@ void COneShotFluidDriver::RunOneShot(){
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
         ComputeDesignVarUpdate(stepsize);
         config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
-        SurfaceDeformation(geometry, config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
+        SurfaceDeformation(surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
         config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
 
         /*--- Evaluate the objective at the old solution, new design ---*/
-      
-        solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-        solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-        solver[FLOW_SOL]->Friction_Forces(geometry, config);
-                  
-        if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-          solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-        }
+        ComputeFunctionals();
         SetObjFunction(false);
         StoreObjFunction();
         SetConstrFunction(false);
@@ -293,14 +286,7 @@ void COneShotFluidDriver::RunOneShot(){
         ComputeDesignVarUpdate(0.0);
 
         /*--- Evaluate the objective at the old solution, new design ---*/
-      
-        solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-        solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-        solver[FLOW_SOL]->Friction_Forces(geometry, config);
-                  
-        if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-          solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-        }
+        ComputeFunctionals();
         SetObjFunction(false);
         StoreObjFunction();
         SetConstrFunction(false);
@@ -352,13 +338,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   //   /*--- Evaluate the objective at the old solution, new design ---*/
       
-  //   solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-  //   solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-  //   solver[FLOW_SOL]->Friction_Forces(geometry, config);
-              
-  //   if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-  //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-  //   }
+  //   ComputeFunctionals();
 
   //   SetObjFunction(false);
   //   StoreObjFunction();
@@ -596,7 +576,17 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 
 }
 
-void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient){
+void COneShotFluidDriver::ComputeFunctionals(){
+  solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+  solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+  solver[FLOW_SOL]->Friction_Forces(geometry, config);
+                  
+  if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+    solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+  }
+}
+
+void COneShotFluidDriver::SetProjection_AD(CSurfaceMovement *surface_movement, su2double* Gradient){
 
   su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient;
   unsigned short nMarker, nDim, nDV, nDV_Value;
@@ -713,7 +703,7 @@ void COneShotFluidDriver::SetProjection_AD(CGeometry *geometry, CConfig *config,
   AD::Reset();
 }
 
-void COneShotFluidDriver::SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
+void COneShotFluidDriver::SurfaceDeformation(CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
 
   unsigned short nDV_Value;
   bool allmoving=true;
@@ -1282,7 +1272,7 @@ void COneShotFluidDriver::ProjectMeshSensitivities(){
   grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
   surface_movement[ZONE_0]->CopyBoundary(geometry, config);
   // project sensitivities (surface) on design variables
-  SetProjection_AD(geometry, config, surface_movement[ZONE_0] , Gradient);
+  SetProjection_AD(surface_movement[ZONE_0] , Gradient);
   config->SetKind_SU2(SU2_CFD); // set SU2_CFD as solver
 }
 
