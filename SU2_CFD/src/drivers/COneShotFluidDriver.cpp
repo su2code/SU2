@@ -357,8 +357,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+      // LoadOldLambda();
+      // UpdateLambda(stepsize);
       // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
@@ -392,20 +392,20 @@ void COneShotFluidDriver::RunOneShot(){
      OneShotIter < config->GetOneShotStop()) {
     solver[ADJFLOW_SOL]->LoadSolution();
 
-    // /*--- Evaluate the objective at the old solution, new design ---*/
+    /*--- Evaluate the objective at the old solution, new design ---*/
       
-    // solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-    // solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-    // solver[FLOW_SOL]->Friction_Forces(geometry, config);
+    solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+    solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+    solver[FLOW_SOL]->Friction_Forces(geometry, config);
               
-    // if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-    //   solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-    // }
+    if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+      solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+    }
 
-    // SetObjFunction(false);
-    // StoreObjFunction();
-    // SetConstrFunction(false);
-    // StoreConstrFunction();
+    SetObjFunction(false);
+    StoreObjFunction();
+    SetConstrFunction(false);
+    StoreConstrFunction();
 
     // UpdateLambda(stepsize);
 
