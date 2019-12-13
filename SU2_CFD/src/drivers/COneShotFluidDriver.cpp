@@ -407,7 +407,7 @@ void COneShotFluidDriver::RunOneShot(){
     SetConstrFunction(false);
     StoreConstrFunction();
 
-    // UpdateLambda(stepsize);
+    UpdateLambda(1.0);
 
      /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
