@@ -356,9 +356,9 @@ void COneShotFluidDriver::RunOneShot(){
         // LoadLambdaStore();
       }
 
-      // /*--- Update constraint multiplier ---*/
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      /*--- Update constraint multiplier ---*/
+      LoadOldLambda();
+      UpdateLambda(stepsize);
       // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
@@ -395,7 +395,7 @@ void COneShotFluidDriver::RunOneShot(){
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
     // LoadLambdaStore();
-    UpdateLambda(stepsize);
+    // UpdateLambda(stepsize);
     StoreObjFunction();
     StoreConstrFunction();
   }
