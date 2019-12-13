@@ -211,7 +211,7 @@ void COneShotFluidDriver::Run(){
       for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
         if((OneShotIter <= config->GetOneShotStart()) || 
            ((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
-            ((ConstrFunc[iConstr] > 0.) || (Lambda[iConstr] < 1.0E-16)))) {
+            ((ConstrFunc[iConstr] > 0.) || (Lambda_Tilde[iConstr] < 1.0E-16)))) {
           StopCalc = false;
           break;
         }
@@ -316,8 +316,8 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Update constraint multiplier ---*/
       LoadOldLambda();
-      UpdateLambda(stepsize);
-      // UpdateLambda(1.0);
+      // UpdateLambda(stepsize);
+      UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
       // LoadLambdaStore();
@@ -1503,7 +1503,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
 
-    // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
+    if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
@@ -1523,7 +1523,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
       // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
-    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
     //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
