@@ -295,8 +295,11 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
   // su2double beta  = 6./theta;
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
-    config->SetOneShotAlpha(alpha);
-    config->SetOneShotBeta(beta);
+
+  alpha = max(min(alpha, 1.0E8), 1.0E-8);
+  beta = max(min(beta, 1.0E8), 1.0E-8);
+  config->SetOneShotAlpha(alpha);
+  config->SetOneShotBeta(beta);
   // }
   // else {
   //   alpha = min(max(alpha, 0.5*config->GetOneShotAlpha()), 2.0*config->GetOneShotAlpha());
